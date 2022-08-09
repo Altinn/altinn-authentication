@@ -1,0 +1,20 @@
+networks:
+  altinnplatform_network:
+    external: false
+services:
+  altinn_platform_authentication:
+    build:
+      context: C:\repos\authnenticationmove\altinn-studio
+      dockerfile: Authentication/Dockerfile
+    container_name: altinn-platform-authentication
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5040
+    image: altinnplatformauthentication:latest
+    networks:
+      altinnplatform_network: null
+    ports:
+    - published: 5040
+      target: 5040
+    restart: always
+version: '3.4'
