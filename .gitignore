@@ -38,19 +38,3 @@ msbuild.wrn
 
 #Test
 TestResults
-src/Authentication/obj/Altinn.Platform.Authentication.csproj.nuget.dgspec.json
-src/Authentication/obj/Altinn.Platform.Authentication.csproj.nuget.g.props
-src/Authentication/obj/Altinn.Platform.Authentication.csproj.nuget.g.targets
-src/Authentication/obj/project.assets.json
-src/Authentication/obj/project.nuget.cache
-src/Authentication/obj/Debug/net6.0/Altinn.Platform.Authentication.assets.cache
-src/Authentication/obj/Debug/net6.0/Altinn.Platform.Authentication.csproj.AssemblyReference.cache
-src/Authentication/obj/Debug/net6.0/Altinn.Platform.Authentication.GeneratedMSBuildEditorConfig.editorconfig
-test/Altinn.Platform.Authentication.Tests/obj/Altinn.Platform.Authentication.Tests.csproj.nuget.dgspec.json
-test/Altinn.Platform.Authentication.Tests/obj/Altinn.Platform.Authentication.Tests.csproj.nuget.g.props
-test/Altinn.Platform.Authentication.Tests/obj/Altinn.Platform.Authentication.Tests.csproj.nuget.g.targets
-test/Altinn.Platform.Authentication.Tests/obj/project.assets.json
-test/Altinn.Platform.Authentication.Tests/obj/project.nuget.cache
-test/Altinn.Platform.Authentication.Tests/obj/Debug/net6.0/Altinn.Platform.Authentication.Tests.assets.cache
-test/Altinn.Platform.Authentication.Tests/obj/Debug/net6.0/Altinn.Platform.Authentication.Tests.csproj.AssemblyReference.cache
-test/Altinn.Platform.Authentication.Tests/obj/Debug/net6.0/Altinn.Platform.Authentication.Tests.GeneratedMSBuildEditorConfig.editorconfig
