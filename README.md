@@ -1,5 +1,14 @@
 # Altinn Platform Authentication
 
+This repository covers the Altinn Platform Authentication component. This component is responsible for authentication of users, systems and organizations that access the Altinn 3 platform. 
+
+Read more about the component on docs.altinn.studio
+
+- [Authentication capabilities](https://docs.altinn.studio/technology/architecture/capabilities/runtime/security/authentication/) supported by this component
+- [Solution components](https://docs.altinn.studio/technology/architecture/components/application/solution/altinn-platform/authentication/)
+- [Construction components](https://docs.altinn.studio/technology/architecture/components/application/construction/altinn-platform/authentication/)
+
+
 ## Build status
 [![Storage build status](https://dev.azure.com/brreg/altinn-studio/_apis/build/status/altinn-platform/authentication-master?label=platform/authentication)](https://dev.azure.com/brreg/altinn-studio/_build/latest?definitionId=41)
 
