@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29409.12
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{DFD11A0E-FC6D-4979-87A4-7A7B5DC66695}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Altinn.Platform.Authentication", "src\Authentication\Altinn.Platform.Authentication.csproj", "{A7470874-7D29-4526-A9C6-4133595C1182}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Altinn.Platform.Authentication.Tests", "test\Altinn.Platform.Authentication.Tests\Altinn.Platform.Authentication.Tests.csproj", "{BBEE9804-91DA-4244-9795-A49D83465D52}"
@@ -15,10 +13,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DFD11A0E-FC6D-4979-87A4-7A7B5DC66695}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DFD11A0E-FC6D-4979-87A4-7A7B5DC66695}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DFD11A0E-FC6D-4979-87A4-7A7B5DC66695}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DFD11A0E-FC6D-4979-87A4-7A7B5DC66695}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A7470874-7D29-4526-A9C6-4133595C1182}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A7470874-7D29-4526-A9C6-4133595C1182}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7470874-7D29-4526-A9C6-4133595C1182}.Release|Any CPU.ActiveCfg = Release|Any CPU
