@@ -1,7 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0.302-alpine3.16 AS build
-WORKDIR /Authentication
+WORKDIR Authentication/
 
-COPY Authentication .
+COPY src/Authentication ./Authentication
+WORKDIR Authentication/
 
 RUN dotnet build Altinn.Platform.Authentication.csproj -c Release -o /app_output
 RUN dotnet publish Altinn.Platform.Authentication.csproj -c Release -o /app_output

@@ -6,19 +6,21 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'src/Authentication/**'
+      - 'src/**'
+      - 'Dockerfile'
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened]
     paths:
-      - 'src/Authentication/**'
+      - 'src/**'
+      - 'Dockerfile'
 jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build ./src/Authentication --tag altinn-authentication:${{github.sha}}
+      run: docker build . --tag altinn-authentication:${{github.sha}}
 
     - uses: Azure/container-scan@v0.1
       with:
