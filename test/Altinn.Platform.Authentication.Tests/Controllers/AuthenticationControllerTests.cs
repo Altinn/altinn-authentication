@@ -145,7 +145,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(requestMessage);
 
             // Assert
-            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         }
 
         /// <summary>

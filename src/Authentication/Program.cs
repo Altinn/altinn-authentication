@@ -53,6 +53,8 @@ var app = builder.Build();
 
 Configure();
 
+logger.LogInformation("This should not be merged");
+
 app.Run();
 
 void ConfigureSetupLogging()
