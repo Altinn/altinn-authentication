@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-
+using Altinn.Common.Authentication.Configuration;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
@@ -19,20 +21,26 @@ namespace AltinnCore.Authentication.JwtCookie
     /// </summary>
     public class JwtCookieHandler : AuthenticationHandler<JwtCookieOptions>
     {
+        private JwtSecurityTokenHandler _validator = new JwtSecurityTokenHandler();
+        private readonly JwtCookieHandlerSettings _cookieHandlerSettings;
+
         /// <summary>
         /// The default constructor
         /// </summary>
         /// <param name="options">The options</param>
+        /// <param name="cookieHandlerSettings">The settings required for certain forms of authentication</param>
         /// <param name="logger">The logger</param>
         /// <param name="encoder">The Url encoder</param>
         /// <param name="clock">The system clock</param>
         public JwtCookieHandler(
             IOptionsMonitor<JwtCookieOptions> options,
+            IOptions<JwtCookieHandlerSettings> cookieHandlerSettings,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock)
             : base(options, logger, encoder, clock)
         {
+            _cookieHandlerSettings = cookieHandlerSettings.Value;
         }
 
         /// <summary>
@@ -93,6 +101,7 @@ namespace AltinnCore.Authentication.JwtCookie
                 }
 
                 TokenValidationParameters validationParameters = Options.TokenValidationParameters.Clone();
+
                 if (Options.ConfigurationManager != null)
                 {
                     OpenIdConnectConfiguration configuration = await Options.ConfigurationManager.GetConfigurationAsync(Context.RequestAborted);
@@ -101,9 +110,16 @@ namespace AltinnCore.Authentication.JwtCookie
                     {
                         var issuers = new[] { configuration.Issuer };
                         validationParameters.ValidIssuers = validationParameters.ValidIssuers?.Concat(issuers) ?? issuers;
+                        string issuer = _validator.ReadJwtToken(token).Issuer;
 
-                        validationParameters.IssuerSigningKeys =
-                            validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
+                        if (issuer == _cookieHandlerSettings.MaskinportenValidIssuer)
+                        {
+                            validationParameters.IssuerSigningKeys = await GetSigningKeys(_cookieHandlerSettings.MaskinportenWellKnownConfigEndpoint);
+                        }
+                        else
+                        {
+                            validationParameters.IssuerSigningKeys = validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
+                        } 
                     }
                 }
 
@@ -178,6 +194,24 @@ namespace AltinnCore.Authentication.JwtCookie
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Get the signing keys published by the given endpoint.
+        /// </summary>
+        /// <param name="url">The url of the endpoint</param>
+        /// <returns>The signing keys published by the endpoint</returns>
+        public async Task<ICollection<SecurityKey>> GetSigningKeys(string url)
+        {
+            var configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                url,
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever());
+
+            var discoveryDocument = await configurationManager.GetConfigurationAsync();
+            ICollection<SecurityKey> signingKeys = discoveryDocument.SigningKeys;
+
+            return signingKeys;
         }
     }
 }
