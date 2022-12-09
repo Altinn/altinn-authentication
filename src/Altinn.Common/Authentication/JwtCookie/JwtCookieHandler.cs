@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Altinn.Common.Authentication.Configuration;
+using Altinn.Common.Authentication.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,25 +23,29 @@ namespace AltinnCore.Authentication.JwtCookie
     public class JwtCookieHandler : AuthenticationHandler<JwtCookieOptions>
     {
         private JwtSecurityTokenHandler _validator = new JwtSecurityTokenHandler();
-        private readonly JwtCookieHandlerSettings _cookieHandlerSettings;
+        private readonly OidcProviderSettings _oidcProviderSettings;
+        private readonly PlatformSettings _platformSettings;
 
         /// <summary>
         /// The default constructor
         /// </summary>
         /// <param name="options">The options</param>
-        /// <param name="cookieHandlerSettings">The settings required for certain forms of authentication</param>
+        /// <param name="oidcProviderSettings">The settings related to oidc providers</param>
+        /// <param name="platformSettings">Platform specific settings</param>
         /// <param name="logger">The logger</param>
         /// <param name="encoder">The Url encoder</param>
         /// <param name="clock">The system clock</param>
         public JwtCookieHandler(
             IOptionsMonitor<JwtCookieOptions> options,
-            IOptions<JwtCookieHandlerSettings> cookieHandlerSettings,
+            IOptions<OidcProviderSettings> oidcProviderSettings,
+            IOptions<PlatformSettings> platformSettings,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock)
             : base(options, logger, encoder, clock)
         {
-            _cookieHandlerSettings = cookieHandlerSettings.Value;
+            _oidcProviderSettings = oidcProviderSettings.Value;
+            _platformSettings = platformSettings.Value;
         }
 
         /// <summary>
@@ -112,14 +117,30 @@ namespace AltinnCore.Authentication.JwtCookie
                         validationParameters.ValidIssuers = validationParameters.ValidIssuers?.Concat(issuers) ?? issuers;
                         string issuer = _validator.ReadJwtToken(token).Issuer;
 
-                        if (issuer == _cookieHandlerSettings.MaskinportenValidIssuer)
+                        if (issuer != null)
                         {
-                            validationParameters.IssuerSigningKeys = await GetSigningKeys(_cookieHandlerSettings.MaskinportenWellKnownConfigEndpoint);
+                            if (_oidcProviderSettings != null)
+                            {
+                                foreach (KeyValuePair<string, OidcProvider> provider in _oidcProviderSettings)
+                                {
+                                    if (provider.Value.Issuer == issuer)
+                                    {
+                                        validationParameters.IssuerSigningKeys = await GetSigningKeys(provider.Value.WellKnownConfigEndpoint);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (!string.IsNullOrEmpty(_platformSettings.OpenIdWellKnownEndpoint))
+                                {
+                                    validationParameters.IssuerSigningKeys = await GetSigningKeys(_platformSettings.OpenIdWellKnownEndpoint);
+                                }
+                            }
                         }
                         else
                         {
                             validationParameters.IssuerSigningKeys = validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
-                        } 
+                        }
                     }
                 }
 
