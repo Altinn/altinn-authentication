@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-
+using Altinn.Common.Authentication.Configuration;
+using Altinn.Common.Authentication.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
@@ -19,20 +22,30 @@ namespace AltinnCore.Authentication.JwtCookie
     /// </summary>
     public class JwtCookieHandler : AuthenticationHandler<JwtCookieOptions>
     {
+        private JwtSecurityTokenHandler _validator = new JwtSecurityTokenHandler();
+        private readonly OidcProviderSettings _oidcProviderSettings;
+        private readonly PlatformSettings _platformSettings;
+
         /// <summary>
         /// The default constructor
         /// </summary>
         /// <param name="options">The options</param>
+        /// <param name="oidcProviderSettings">The settings related to oidc providers</param>
+        /// <param name="platformSettings">Platform specific settings</param>
         /// <param name="logger">The logger</param>
         /// <param name="encoder">The Url encoder</param>
         /// <param name="clock">The system clock</param>
         public JwtCookieHandler(
             IOptionsMonitor<JwtCookieOptions> options,
+            IOptions<OidcProviderSettings> oidcProviderSettings,
+            IOptions<PlatformSettings> platformSettings,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock)
             : base(options, logger, encoder, clock)
         {
+            _oidcProviderSettings = oidcProviderSettings.Value;
+            _platformSettings = platformSettings.Value;
         }
 
         /// <summary>
@@ -93,6 +106,7 @@ namespace AltinnCore.Authentication.JwtCookie
                 }
 
                 TokenValidationParameters validationParameters = Options.TokenValidationParameters.Clone();
+
                 if (Options.ConfigurationManager != null)
                 {
                     OpenIdConnectConfiguration configuration = await Options.ConfigurationManager.GetConfigurationAsync(Context.RequestAborted);
@@ -101,9 +115,32 @@ namespace AltinnCore.Authentication.JwtCookie
                     {
                         var issuers = new[] { configuration.Issuer };
                         validationParameters.ValidIssuers = validationParameters.ValidIssuers?.Concat(issuers) ?? issuers;
+                        string issuer = _validator.ReadJwtToken(token).Issuer;
 
-                        validationParameters.IssuerSigningKeys =
-                            validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
+                        if (issuer != null)
+                        {
+                            if (_oidcProviderSettings != null)
+                            {
+                                foreach (KeyValuePair<string, OidcProvider> provider in _oidcProviderSettings)
+                                {
+                                    if (provider.Value.Issuer == issuer)
+                                    {
+                                        validationParameters.IssuerSigningKeys = await GetSigningKeys(provider.Value.WellKnownConfigEndpoint);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (!string.IsNullOrEmpty(_platformSettings.OpenIdWellKnownEndpoint))
+                                {
+                                    validationParameters.IssuerSigningKeys = await GetSigningKeys(_platformSettings.OpenIdWellKnownEndpoint);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            validationParameters.IssuerSigningKeys = validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
+                        }
                     }
                 }
 
@@ -178,6 +215,24 @@ namespace AltinnCore.Authentication.JwtCookie
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Get the signing keys published by the given endpoint.
+        /// </summary>
+        /// <param name="url">The url of the endpoint</param>
+        /// <returns>The signing keys published by the endpoint</returns>
+        public async Task<ICollection<SecurityKey>> GetSigningKeys(string url)
+        {
+            var configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                url,
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever());
+
+            var discoveryDocument = await configurationManager.GetConfigurationAsync();
+            ICollection<SecurityKey> signingKeys = discoveryDocument.SigningKeys;
+
+            return signingKeys;
         }
     }
 }
