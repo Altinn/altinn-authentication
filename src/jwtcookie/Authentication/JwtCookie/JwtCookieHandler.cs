@@ -24,28 +24,24 @@ namespace AltinnCore.Authentication.JwtCookie
     {
         private JwtSecurityTokenHandler _validator = new JwtSecurityTokenHandler();
         private readonly OidcProviderSettings _oidcProviderSettings;
-        private readonly PlatformSettings _platformSettings;
 
         /// <summary>
         /// The default constructor
         /// </summary>
         /// <param name="options">The options</param>
         /// <param name="oidcProviderSettings">The settings related to oidc providers</param>
-        /// <param name="platformSettings">Platform specific settings</param>
         /// <param name="logger">The logger</param>
         /// <param name="encoder">The Url encoder</param>
         /// <param name="clock">The system clock</param>
         public JwtCookieHandler(
             IOptionsMonitor<JwtCookieOptions> options,
             IOptions<OidcProviderSettings> oidcProviderSettings,
-            IOptions<PlatformSettings> platformSettings,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock)
             : base(options, logger, encoder, clock)
         {
             _oidcProviderSettings = oidcProviderSettings.Value;
-            _platformSettings = platformSettings.Value;
         }
 
         /// <summary>
@@ -117,23 +113,13 @@ namespace AltinnCore.Authentication.JwtCookie
                         validationParameters.ValidIssuers = validationParameters.ValidIssuers?.Concat(issuers) ?? issuers;
                         string issuer = _validator.ReadJwtToken(token).Issuer;
 
-                        if (issuer != null)
+                        if (issuer != null && _oidcProviderSettings != null)
                         {
-                            if (_oidcProviderSettings != null)
+                            foreach (KeyValuePair<string, OidcProvider> provider in _oidcProviderSettings)
                             {
-                                foreach (KeyValuePair<string, OidcProvider> provider in _oidcProviderSettings)
+                                if (provider.Value.Issuer == issuer)
                                 {
-                                    if (provider.Value.Issuer == issuer)
-                                    {
-                                        validationParameters.IssuerSigningKeys = await GetSigningKeys(provider.Value.WellKnownConfigEndpoint);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if (!string.IsNullOrEmpty(_platformSettings.OpenIdWellKnownEndpoint))
-                                {
-                                    validationParameters.IssuerSigningKeys = await GetSigningKeys(_platformSettings.OpenIdWellKnownEndpoint);
+                                    validationParameters.IssuerSigningKeys = await GetSigningKeys(provider.Value.WellKnownConfigEndpoint);
                                 }
                             }
                         }
