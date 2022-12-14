@@ -113,7 +113,7 @@ namespace AltinnCore.Authentication.JwtCookie
                         validationParameters.ValidIssuers = validationParameters.ValidIssuers?.Concat(issuers) ?? issuers;
                         string issuer = _validator.ReadJwtToken(token).Issuer;
 
-                        if (issuer != null && _oidcProviderSettings != null)
+                        if (issuer != null && _oidcProviderSettings.Count > 0)
                         {
                             foreach (KeyValuePair<string, OidcProvider> provider in _oidcProviderSettings)
                             {
