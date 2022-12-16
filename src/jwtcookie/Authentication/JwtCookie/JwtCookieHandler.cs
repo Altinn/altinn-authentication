@@ -122,6 +122,11 @@ namespace AltinnCore.Authentication.JwtCookie
                                     validationParameters.IssuerSigningKeys = await GetSigningKeys(provider.Value.WellKnownConfigEndpoint);
                                 }
                             }
+
+                            if (validationParameters.IssuerSigningKeys == null)
+                            {
+                                validationParameters.IssuerSigningKeys = validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
+                            }
                         }
                         else
                         {
