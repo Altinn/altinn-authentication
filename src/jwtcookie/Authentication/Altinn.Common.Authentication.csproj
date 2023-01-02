@@ -12,7 +12,7 @@
   <PropertyGroup>
     <!-- NuGet package properties -->
     <PackageId>JWTCookieAuthentication</PackageId>
-    <PackageVersion>3.0.0</PackageVersion>
+    <PackageVersion>3.0.0-alpha</PackageVersion>
     <PackageTags>altinn studio, authentication, jwt, JWTCookieAuthentication</PackageTags>
     <Description>
       JWTCookieAuthentication is a package for usage of JWT token for authentication both
