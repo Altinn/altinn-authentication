@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-
+using Altinn.Common.Authentication.Configuration;
+using Altinn.Common.Authentication.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
@@ -19,20 +22,25 @@ namespace AltinnCore.Authentication.JwtCookie
     /// </summary>
     public class JwtCookieHandler : AuthenticationHandler<JwtCookieOptions>
     {
+        private readonly OidcProviderSettings _oidcProviderSettings;
+
         /// <summary>
         /// The default constructor
         /// </summary>
         /// <param name="options">The options</param>
+        /// <param name="oidcProviderSettings">The settings related to oidc providers</param>
         /// <param name="logger">The logger</param>
         /// <param name="encoder">The Url encoder</param>
         /// <param name="clock">The system clock</param>
         public JwtCookieHandler(
             IOptionsMonitor<JwtCookieOptions> options,
+            IOptions<OidcProviderSettings> oidcProviderSettings,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock)
             : base(options, logger, encoder, clock)
         {
+            _oidcProviderSettings = oidcProviderSettings.Value;
         }
 
         /// <summary>
@@ -92,25 +100,56 @@ namespace AltinnCore.Authentication.JwtCookie
                     return AuthenticateResult.NoResult();
                 }
 
-                TokenValidationParameters validationParameters = Options.TokenValidationParameters.Clone();
-                if (Options.ConfigurationManager != null)
+                JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
+                if (!validator.CanReadToken(token))
                 {
+                    return AuthenticateResult.Fail("No SecurityTokenValidator available for token: " + token);
+                }
+
+                TokenValidationParameters validationParameters = null;
+                string issuer = validator.ReadJwtToken(token).Issuer;
+
+                if (issuer != null && _oidcProviderSettings.Count > 0)
+                {
+                    foreach (KeyValuePair<string, OidcProvider> provider in _oidcProviderSettings)
+                    {
+                        if (provider.Value.Issuer == issuer)
+                        {
+                            // Match found for configured OIDC Provider. Set up validator and get signing keys
+                            validationParameters = new TokenValidationParameters()
+                            {
+                                ValidateIssuerSigningKey = true,
+                                ValidateAudience = false,
+                                RequireExpirationTime = true,
+                                ValidateLifetime = true,
+                                ClockSkew = TimeSpan.Zero
+                            };
+
+                            OpenIdConnectConfiguration configuration = await GetOidcConfiguration(provider.Value.WellKnownConfigEndpoint);
+                            if (configuration != null)
+                            {
+                                var issuers = new[] { configuration.Issuer };
+                                validationParameters.ValidIssuers = validationParameters.ValidIssuers?.Concat(issuers) ?? issuers;
+                                validationParameters.IssuerSigningKeys = validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                if (validationParameters == null && Options.ConfigurationManager != null)
+                {
+                    // Use standard configured OIDC config for JTWCookie provider from startup.
+                    validationParameters = Options.TokenValidationParameters.Clone();
                     OpenIdConnectConfiguration configuration = await Options.ConfigurationManager.GetConfigurationAsync(Context.RequestAborted);
 
                     if (configuration != null)
                     {
                         var issuers = new[] { configuration.Issuer };
                         validationParameters.ValidIssuers = validationParameters.ValidIssuers?.Concat(issuers) ?? issuers;
-
-                        validationParameters.IssuerSigningKeys =
-                            validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
+                        validationParameters.IssuerSigningKeys = validationParameters.IssuerSigningKeys?.Concat(configuration.SigningKeys) ?? configuration.SigningKeys;
                     }
-                }
-
-                JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
-                if (!validator.CanReadToken(token))
-                {
-                    return AuthenticateResult.Fail("No SecurityTokenValidator available for token: " + token);
                 }
 
                 ClaimsPrincipal principal;
@@ -178,6 +217,22 @@ namespace AltinnCore.Authentication.JwtCookie
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Get the signing keys published by the given endpoint.
+        /// </summary>
+        /// <param name="wellKnownEndpoint">The url of the endpoint</param>
+        /// <returns>The signing keys published by the endpoint</returns>
+        public async Task<OpenIdConnectConfiguration> GetOidcConfiguration(string wellKnownEndpoint)
+        {
+            var configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                wellKnownEndpoint,
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever());
+
+            OpenIdConnectConfiguration discoveryDocument = await configurationManager.GetConfigurationAsync();
+            return discoveryDocument;
         }
     }
 }
