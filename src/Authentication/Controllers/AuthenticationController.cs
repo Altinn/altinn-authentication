@@ -365,8 +365,8 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             try
             {
-                ICollection<SecurityKey> signingKeys =
-                    await _signingKeysRetriever.GetSigningKeys(_generalSettings.MaskinportenWellKnownConfigEndpoint);
+                ICollection<SecurityKey> signingKeys = await GetSigningKeys(_generalSettings.MaskinportenWellKnownConfigEndpoint);
+                ICollection<SecurityKey> alternativeSigningKeys = await GetSigningKeys(_generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint);
 
                 TokenValidationParameters validationParameters = new TokenValidationParameters
                 {
@@ -379,11 +379,11 @@ namespace Altinn.Platform.Authentication.Controllers
                     ClockSkew = TimeSpan.Zero
                 };
 
-                ClaimsPrincipal originalPrincipal = _validator.ValidateToken(originalToken, validationParameters, out _);
+                ClaimsPrincipal originalPrincipal = GetClaimsPrincipalAndValidateMaskinportenToken(originalToken, validationParameters, alternativeSigningKeys);
                 _logger.LogInformation("Token is valid");
 
                 string issOriginal = originalPrincipal.Claims.Where(c => c.Type.Equals(IssClaimName)).Select(c => c.Value).FirstOrDefault();
-                if (issOriginal == null || !_generalSettings.MaskinportenWellKnownConfigEndpoint.Contains(issOriginal))
+                if (issOriginal == null || (!_generalSettings.MaskinportenWellKnownConfigEndpoint.Contains(issOriginal) && !_generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint.Contains(issOriginal)))
                 {
                     _logger.LogInformation("Invalid issuer {issOriginal}", issOriginal);
                     return Unauthorized();
@@ -537,7 +537,7 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             try
             {
-                JwtSecurityToken token = await ValidateAndExtractOidcToken(originalToken, _generalSettings.IdPortenWellKnownConfigEndpoint);
+                JwtSecurityToken token = await ValidateAndExtractOidcToken(originalToken, _generalSettings.IdPortenWellKnownConfigEndpoint, _generalSettings.IdPortenAlternativeWellKnownConfigEndpoint);
 
                 string pid = token.Claims.Where(c => c.Type.Equals(PidClaimName)).Select(c => c.Value).FirstOrDefault();
                 string authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
@@ -545,7 +545,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 if (string.IsNullOrWhiteSpace(pid) || string.IsNullOrWhiteSpace(authLevel))
                 {
-                    _logger.LogInformation("Token containted invalid or missing claims.");
+                    _logger.LogInformation("Token contained invalid or missing claims.");
                     return Unauthorized();
                 }
 
@@ -901,12 +901,56 @@ namespace Altinn.Platform.Authentication.Controllers
             return Enum.AuthenticationMethod.NotDefined;
         }
 
-        private async Task<JwtSecurityToken> ValidateAndExtractOidcToken(string originalToken, string wellKnownConfigEndpoint)
+        private async Task<JwtSecurityToken> ValidateAndExtractOidcToken(string originalToken, string wellKnownConfigEndpoint, string alternativeWellKnownConfigEndpoint = null)
         {
-            ICollection<SecurityKey> signingKeys =
-               await _signingKeysRetriever.GetSigningKeys(wellKnownConfigEndpoint);
+            try
+            {
+                ICollection<SecurityKey> signingKeys = await _signingKeysRetriever.GetSigningKeys(wellKnownConfigEndpoint);
+                return ValidateToken(originalToken, signingKeys);
+            }
+            catch (Exception)
+            {
+                if (!string.IsNullOrEmpty(alternativeWellKnownConfigEndpoint))
+                {
+                    ICollection<SecurityKey> alternativeSigningKeys =
+                   await _signingKeysRetriever.GetSigningKeys(alternativeWellKnownConfigEndpoint);
 
-            return ValidateToken(originalToken, signingKeys);
+                    return ValidateToken(originalToken, alternativeSigningKeys);
+                }
+
+                throw;
+            }
+        }
+
+        private ClaimsPrincipal GetClaimsPrincipalAndValidateMaskinportenToken(string originalToken, TokenValidationParameters validationParameters, ICollection<SecurityKey> alternativeSigningKeys)
+        {
+            try
+            {
+                ClaimsPrincipal originalPrincipal = _validator.ValidateToken(originalToken, validationParameters, out _);
+                return originalPrincipal;
+            }
+            catch (SecurityTokenUnableToValidateException)
+            {
+                validationParameters.IssuerSigningKeys = alternativeSigningKeys;
+                return _validator.ValidateToken(originalToken, validationParameters, out _);
+            }
+            catch (SecurityTokenSignatureKeyNotFoundException)
+            {
+                validationParameters.IssuerSigningKeys = alternativeSigningKeys;
+                return _validator.ValidateToken(originalToken, validationParameters, out _);
+            }
+        }
+
+        private async Task<ICollection<SecurityKey>> GetSigningKeys(string endpoint)
+        {
+            try
+            {
+                return await _signingKeysRetriever.GetSigningKeys(endpoint);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private JwtSecurityToken ValidateToken(string originalToken, ICollection<SecurityKey> signingKeys)
