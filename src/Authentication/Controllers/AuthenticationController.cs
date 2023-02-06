@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 
@@ -383,7 +384,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 _logger.LogInformation("Token is valid");
 
                 string issOriginal = originalPrincipal.Claims.Where(c => c.Type.Equals(IssClaimName)).Select(c => c.Value).FirstOrDefault();
-                if (issOriginal == null || (!_generalSettings.MaskinportenWellKnownConfigEndpoint.Contains(issOriginal) && !_generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint.Contains(issOriginal)))
+                if (issOriginal == null || !IssuerMatchesWellknownEndpoint(issOriginal, _generalSettings.MaskinportenWellKnownConfigEndpoint, _generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint))
                 {
                     _logger.LogInformation("Invalid issuer {issOriginal}", issOriginal);
                     return Unauthorized();
@@ -410,7 +411,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 if (HasServiceOwnerScope(originalPrincipal))
                 {
                     org = await _organisationService.LookupOrg(orgNumber);
-                    if (org == "digdir" && test)
+                    if (OrgIsDigDirAndTestIsTrue(org, test))
                     {
                         org = "ttd";
                     }
@@ -657,6 +658,30 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return false;
+        }
+
+        private static bool IssuerMatchesWellknownEndpoint(string issOriginal, string wellknownEndpoint, string alternativeWellknownEndpoint)
+        {
+            if (!wellknownEndpoint.Contains(issOriginal) && !alternativeWellknownEndpoint.Contains(issOriginal))
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        private static bool OrgIsDigDirAndTestIsTrue(string org, bool test)
+        {
+            if (org == "digdir" && test)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>
