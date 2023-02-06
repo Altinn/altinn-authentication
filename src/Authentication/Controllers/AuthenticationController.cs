@@ -384,7 +384,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 _logger.LogInformation("Token is valid");
 
                 string issOriginal = originalPrincipal.Claims.Where(c => c.Type.Equals(IssClaimName)).Select(c => c.Value).FirstOrDefault();
-                if (issOriginal == null || !IssuerMatchesWellknownEndpoint(issOriginal, _generalSettings.MaskinportenWellKnownConfigEndpoint, _generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint))
+                if (IsValidIssuer(issOriginal, _generalSettings.MaskinportenWellKnownConfigEndpoint, _generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint))
                 {
                     _logger.LogInformation("Invalid issuer {issOriginal}", issOriginal);
                     return Unauthorized();
@@ -669,6 +669,18 @@ namespace Altinn.Platform.Authentication.Controllers
             else
             {
                 return true;
+            }
+        }
+
+        private static bool IsValidIssuer(string issOriginal, string maskinportenWellKnownConfigEndpoint, string maskinportenWellKnownAlternativeConfigEndpoint)
+        {
+            if (issOriginal == null || !IssuerMatchesWellknownEndpoint(issOriginal, maskinportenWellKnownConfigEndpoint, maskinportenWellKnownAlternativeConfigEndpoint))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
