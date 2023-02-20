@@ -73,9 +73,19 @@ namespace Altinn.Platform.Authentication.Configuration
         public string MaskinportenWellKnownConfigEndpoint { get; set; }
 
         /// <summary>
+        /// Gets or sets the alternative URL of the well known configuration endpoint for Maskinporten.
+        /// </summary>
+        public string MaskinportenWellKnownAlternativeConfigEndpoint { get; set; }
+
+        /// <summary>
         /// Gets url of the well known configuration endpoint for ID-porten from environment variable.
         /// </summary>
         public string IdPortenWellKnownConfigEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets url of the alternative well known configuration endpoint for ID-porten from environment variable.
+        /// </summary>
+        public string IdPortenAlternativeWellKnownConfigEndpoint { get; set; }
 
         /// <summary>
         /// Gets or sets the url to the json file which holds the valid organisation entries (which inclides name, organisation number and org identifier)
