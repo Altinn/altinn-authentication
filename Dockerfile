@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0.103-alpine3.16 AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0.201-alpine3.16 AS build
 WORKDIR Authentication/
 
 COPY src/Authentication ./Authentication
