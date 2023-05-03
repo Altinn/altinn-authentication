@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 namespace Altinn.Common.Authentication.Utils
 {
     /// <summary>
-    /// Util to handles configuration managers. SIngleton patterh
+    /// Util to handles configuration managers. Singleton pattern
     /// </summary>
     public sealed class ConfigurationMangerUtil
     {
