@@ -236,7 +236,7 @@ namespace AltinnCore.Authentication.JwtCookie
                    wellKnownEndpoint,
                    new OpenIdConnectConfigurationRetriever(),
                    new HttpDocumentRetriever());
-                ConfigurationMangerUtil.Instance.ConfigManagers.Add(wellKnownEndpoint.ToLower(), configurationManager);
+                ConfigurationMangerUtil.Instance.ConfigManagers[configKey] = configurationManager;
             }
 
             configurationManager = ConfigurationMangerUtil.Instance.ConfigManagers[configKey];
