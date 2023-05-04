@@ -229,8 +229,11 @@ namespace AltinnCore.Authentication.JwtCookie
         {
             string configKey = wellKnownEndpoint.ToLower();
             ConfigurationManager<OpenIdConnectConfiguration> configurationManager;
-
-            if (!ConfigurationMangerUtil.Instance.ConfigManagers.ContainsKey(configKey))
+            if (ConfigurationMangerUtil.Instance.ConfigManagers.ContainsKey(configKey))
+            {
+                configurationManager = ConfigurationMangerUtil.Instance.ConfigManagers[configKey];
+            }
+            else
             {
                 configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
                    wellKnownEndpoint,
@@ -238,8 +241,6 @@ namespace AltinnCore.Authentication.JwtCookie
                    new HttpDocumentRetriever());
                 ConfigurationMangerUtil.Instance.ConfigManagers[configKey] = configurationManager;
             }
-
-            configurationManager = ConfigurationMangerUtil.Instance.ConfigManagers[configKey];
 
             OpenIdConnectConfiguration discoveryDocument = await configurationManager.GetConfigurationAsync();
             return discoveryDocument;
