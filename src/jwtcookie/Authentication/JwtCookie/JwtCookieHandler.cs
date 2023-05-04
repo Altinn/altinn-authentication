@@ -7,6 +7,7 @@ using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Altinn.Common.Authentication.Configuration;
 using Altinn.Common.Authentication.Models;
+using Altinn.Common.Authentication.Utils;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -226,10 +227,20 @@ namespace AltinnCore.Authentication.JwtCookie
         /// <returns>The signing keys published by the endpoint</returns>
         public async Task<OpenIdConnectConfiguration> GetOidcConfiguration(string wellKnownEndpoint)
         {
-            var configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                wellKnownEndpoint,
-                new OpenIdConnectConfigurationRetriever(),
-                new HttpDocumentRetriever());
+            string configKey = wellKnownEndpoint.ToLower();
+            ConfigurationManager<OpenIdConnectConfiguration> configurationManager;
+            if (ConfigurationMangerUtil.Instance.ConfigManagers.ContainsKey(configKey))
+            {
+                configurationManager = ConfigurationMangerUtil.Instance.ConfigManagers[configKey];
+            }
+            else
+            {
+                configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                   wellKnownEndpoint,
+                   new OpenIdConnectConfigurationRetriever(),
+                   new HttpDocumentRetriever());
+                ConfigurationMangerUtil.Instance.ConfigManagers[configKey] = configurationManager;
+            }
 
             OpenIdConnectConfiguration discoveryDocument = await configurationManager.GetConfigurationAsync();
             return discoveryDocument;
