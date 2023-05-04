@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -20,12 +21,12 @@ namespace Altinn.Common.Authentication.Utils
 
         private ConfigurationMangerUtil()
         {
-            ConfigManagers = new Dictionary<string, ConfigurationManager<OpenIdConnectConfiguration>>();
+            ConfigManagers = new ConcurrentDictionary<string, ConfigurationManager<OpenIdConnectConfiguration>>();
         }
 
         /// <summary>
         /// The config managers for the different well know urls
         /// </summary>
-        public Dictionary<string, ConfigurationManager<OpenIdConnectConfiguration>> ConfigManagers { get; set; }
+        public ConcurrentDictionary<string, ConfigurationManager<OpenIdConnectConfiguration>> ConfigManagers { get; set; }
     }
 }
