@@ -58,6 +58,9 @@ namespace Altinn.Platform.Authentication.Controllers
         private const string AuthMethodClaimName = "amr";
         private const string IssClaimName = "iss";
         private const string OriginalIssClaimName = "originaliss";
+        private const string IdportenLevel0 = "idporten-loa-low";
+        private const string IdportenLevel3 = "idporten-loa-substantial";
+        private const string IdportenLevel4 = "idporten-loa-high";
         private readonly GeneralSettings _generalSettings;
         private readonly ILogger _logger;
         private readonly IOrganisationsService _organisationService;
@@ -72,6 +75,9 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private readonly OidcProviderSettings _oidcProviderSettings;
         private readonly IAntiforgery _antiforgery;
+
+
+
 
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
@@ -559,13 +565,32 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 string issuer = _generalSettings.AltinnOidcIssuerUrl;
 
+                string authLevelValue = "0";
+
+                if (authLevel.Equals(IdportenLevel0))
+                {
+                    authLevelValue = "0";
+                }
+                else if (authLevel.Equals(IdportenLevel3))
+                {
+                    authLevelValue = "3";
+                }
+                else if (authLevel.Equals(IdportenLevel4))
+                {
+                    authLevelValue = "4";
+                }
+                else
+                {
+                    authLevelValue = authLevel.Substring(authLevel.Length - 1, 1);
+                }
+
                 List<Claim> claims = new List<Claim>();
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userProfile.UserName, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userProfile.PartyId.ToString(), ClaimValueTypes.Integer32, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authMethod, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevel.Substring(authLevel.Length - 1, 1), ClaimValueTypes.Integer32, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue, ClaimValueTypes.Integer32, issuer));
                 claims.AddRange(token.Claims);
 
                 string[] claimTypesToRemove = { "aud", IssClaimName, "at_hash", "jti", "sub" };
