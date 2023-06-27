@@ -76,9 +76,6 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly OidcProviderSettings _oidcProviderSettings;
         private readonly IAntiforgery _antiforgery;
 
-
-
-
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
         /// </summary>
