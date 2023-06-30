@@ -70,7 +70,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IUserProfileService _userProfileService;
         private readonly IEnterpriseUserAuthenticationService _enterpriseUserAuthenticationService;
         private readonly JwtSecurityTokenHandler _validator;
-        private readonly ISigningKeysResolver _designerSigningKeysResolver;
+        private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
         private readonly IOidcProvider _oidcProvider;
 
         private readonly OidcProviderSettings _oidcProviderSettings;
@@ -101,7 +101,7 @@ namespace Altinn.Platform.Authentication.Controllers
             IUserProfileService userProfileService,
             IEnterpriseUserAuthenticationService enterpriseUserAuthenticationService,
             IOrganisationsService organisationRepository,
-            ISigningKeysResolver signingKeysResolver,
+            IPublicSigningKeyProvider signingKeysResolver,
             IOidcProvider oidcProvider,
             IAntiforgery antiforgery)
         {
