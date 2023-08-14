@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Model;
+using Azure;
 using Azure.Storage.Queues;
+using Azure.Storage.Queues.Models;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Clients
@@ -35,7 +37,7 @@ namespace Altinn.Platform.Authentication.Clients
             try
             {
                 QueueClient client = await GetAuthenticationEventQueueClient();
-                await client.SendMessageAsync(Convert.ToBase64String(Encoding.UTF8.GetBytes(content)));
+                Response<SendReceipt> response = await client.SendMessageAsync(Convert.ToBase64String(Encoding.UTF8.GetBytes(content)));      
             }
             catch (Exception e)
             {
@@ -47,13 +49,20 @@ namespace Altinn.Platform.Authentication.Clients
 
         private async Task<QueueClient> GetAuthenticationEventQueueClient()
         {
-            if (_authenticationEventQueueClient == null)
+            try
             {
-                _authenticationEventQueueClient = new QueueClient(_settings.ConnectionString, _settings.AuthenticationEventQueueName);
-                await _authenticationEventQueueClient.CreateIfNotExistsAsync();
-            }
+                if (_authenticationEventQueueClient == null)
+                {
+                    _authenticationEventQueueClient = new QueueClient(_settings.ConnectionString, _settings.AuthenticationEventQueueName);
+                    await _authenticationEventQueueClient.CreateIfNotExistsAsync();
+                }
 
-            return _authenticationEventQueueClient;
+                return _authenticationEventQueueClient;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }

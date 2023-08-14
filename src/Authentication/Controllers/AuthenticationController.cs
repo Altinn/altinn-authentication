@@ -73,6 +73,8 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly OidcProviderSettings _oidcProviderSettings;
         private readonly IAntiforgery _antiforgery;
 
+        private readonly IEventLog _eventLog;
+
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
         /// </summary>
@@ -88,6 +90,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="signingKeysResolver">Signing keys resolver for Altinn Common AccessToken</param>
         /// <param name="oidcProvider">The OIDC provider</param>
         /// <param name="antiforgery">The anti forgery service.</param>
+        /// <param name="eventLog">the event logging service</param>
         public AuthenticationController(
             ILogger<AuthenticationController> logger,
             IOptions<GeneralSettings> generalSettings,
@@ -100,7 +103,8 @@ namespace Altinn.Platform.Authentication.Controllers
             IOrganisationsService organisationRepository,
             ISigningKeysResolver signingKeysResolver,
             IOidcProvider oidcProvider,
-            IAntiforgery antiforgery)
+            IAntiforgery antiforgery,
+            IEventLog eventLog)
         {
             _logger = logger;
             _generalSettings = generalSettings.Value;
@@ -115,6 +119,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _validator = new JwtSecurityTokenHandler();
             _oidcProvider = oidcProvider;
             _antiforgery = antiforgery;
+            _eventLog = eventLog;
         }
 
         /// <summary>
@@ -222,6 +227,13 @@ namespace Altinn.Platform.Authentication.Controllers
                     return StatusCode(StatusCodes.Status503ServiceUnavailable);
                 }
             }
+
+            AuthenticationEvent authenticationEvent = new AuthenticationEvent();
+            authenticationEvent.AuthenticationMethod = userAuthentication.AuthenticationMethod.ToString();
+            authenticationEvent.AuthenticationLevel = userAuthentication.AuthenticationLevel.ToString();
+            authenticationEvent.UserId = userAuthentication.UserID.ToString();
+
+            _eventLog.CreateAuthenticationEvent(authenticationEvent);
 
             if (userAuthentication != null && userAuthentication.IsAuthenticated)
             {

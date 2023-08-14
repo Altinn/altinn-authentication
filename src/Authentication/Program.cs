@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -6,6 +7,8 @@ using System.Threading.Tasks;
 
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
+using Altinn.Platform.Authentication.Clients;
+using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
@@ -186,6 +189,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
     services.Configure<AltinnCore.Authentication.Constants.KeyVaultSettings>(config.GetSection("kvSetting"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
+    services.Configure<QueueStorageSettings>(config.GetSection("QueueStorageSettings"));
     services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
 
     services.Configure<AccessTokenSettings>(config.GetSection("AccessTokenSettings"));
@@ -225,6 +229,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IEFormidlingAccessValidator, EFormidlingAccessValidator>();
     services.AddHttpClient<IOidcProvider, OidcProviderService>();
     services.AddSingleton<IAuthentication, AuthenticationCore>();
+    services.AddSingleton<IEventsQueueClient, EventsQueueClient>();
+    services.AddSingleton<IEventLog, EventLogService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     {
