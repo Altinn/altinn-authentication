@@ -4,6 +4,7 @@ using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Azure.Messaging;
+using Microsoft.Extensions.Azure;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -29,6 +30,20 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="authenticationEvent">authentication event to be stored in the queue</param>
         public void CreateAuthenticationEvent(AuthenticationEvent authenticationEvent)
         {
+            _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
+        }
+
+        /// <summary>
+        /// Queues an authentication event to the logqueue
+        /// </summary>
+        /// <param name="authenticatedUser">authentication information of the authenticated user</param>
+        public void CreateAuthenticationEvent(UserAuthenticationModel authenticatedUser)
+        {
+            AuthenticationEvent authenticationEvent = new AuthenticationEvent();
+            authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
+            authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
+            authenticationEvent.UserId = authenticatedUser.UserID.ToString();
+            authenticationEvent.EventType = authenticatedUser.IsAuthenticated ? AuthenticationEventType.Authenticated.ToString() : AuthenticationEventType.AuthenticationFailed.ToString();
             _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
         }
     }

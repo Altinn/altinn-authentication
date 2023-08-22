@@ -33,6 +33,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -273,6 +274,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
             // catch swashbuckle exception if it doesn't find the generated xml documentation file
         }
     });
+
+    services.AddFeatureManagement();
 }
 
 static string GetXmlCommentsPathForControllers()
