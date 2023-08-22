@@ -225,7 +225,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IOrganisationsService, OrganisationsService>();
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
     services.AddSingleton<ISigningKeysRetriever, SigningKeysRetriever>();
-    services.AddSingleton<ISigningKeysResolver, SigningKeysResolver>();
+    services.AddSingleton<IPublicSigningKeyProvider, PublicSigningKeyProvider>();
     services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
     services.AddSingleton<IEFormidlingAccessValidator, EFormidlingAccessValidator>();
     services.AddHttpClient<IOidcProvider, OidcProviderService>();

@@ -12,7 +12,7 @@ namespace Altinn.Platform.Authentication.Tests.Fakes
     /// <summary>
     /// Represents a stub for the <see cref="SigningKeysResolver"/> class to be used in integration tests.
     /// </summary>
-    public class SigningKeyResolverStub : ISigningKeysResolver
+    public class SigningKeyResolverStub : IPublicSigningKeyProvider
     {
         /// <inheritdoc/>/>
         public Task<IEnumerable<SecurityKey>> GetSigningKeys(string issuer)
