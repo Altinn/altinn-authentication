@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Clients
             try
             {
                 QueueClient client = await GetAuthenticationEventQueueClient();
-                Response<SendReceipt> response = await client.SendMessageAsync(Convert.ToBase64String(Encoding.UTF8.GetBytes(content)));      
+                await client.SendMessageAsync(Convert.ToBase64String(Encoding.UTF8.GetBytes(content)));      
             }
             catch (Exception e)
             {
@@ -59,7 +59,7 @@ namespace Altinn.Platform.Authentication.Clients
 
                 return _authenticationEventQueueClient;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
