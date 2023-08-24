@@ -5,7 +5,7 @@
     /// </summary>
     public enum AuthenticationEventType
     {
-        Authenticated,
-        AuthenticationFailed
+        AuthenticationFailed,
+        Authenticated
     }
 }
