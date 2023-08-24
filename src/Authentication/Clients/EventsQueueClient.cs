@@ -53,7 +53,7 @@ namespace Altinn.Platform.Authentication.Clients
             {
                 if (_authenticationEventQueueClient == null)
                 {
-                    _authenticationEventQueueClient = new QueueClient(_settings.ConnectionString, _settings.AuthenticationEventQueueName);
+                    _authenticationEventQueueClient = new QueueClient(_settings.EventLogConnectionString, _settings.AuthenticationEventQueueName);
                     await _authenticationEventQueueClient.CreateIfNotExistsAsync();
                 }
 

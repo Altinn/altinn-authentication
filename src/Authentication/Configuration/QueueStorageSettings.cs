@@ -10,7 +10,7 @@ namespace Altinn.Platform.Authentication.Configuration
         /// <summary>
         /// ConnectionString for the storage account
         /// </summary>
-        public string ConnectionString { get; set; }
+        public string EventLogConnectionString { get; set; }
 
         /// <summary>
         /// Name of the queue to push authentication event, before persisting to db.
