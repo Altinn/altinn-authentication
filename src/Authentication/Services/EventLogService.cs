@@ -27,24 +27,18 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Queues an authentication event to the logqueue
         /// </summary>
-        /// <param name="authenticationEvent">authentication event to be stored in the queue</param>
-        public void CreateAuthenticationEvent(AuthenticationEvent authenticationEvent)
-        {
-            _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
-        }
-
-        /// <summary>
-        /// Queues an authentication event to the logqueue
-        /// </summary>
         /// <param name="authenticatedUser">authentication information of the authenticated user</param>
         public void CreateAuthenticationEvent(UserAuthenticationModel authenticatedUser)
         {
-            AuthenticationEvent authenticationEvent = new AuthenticationEvent();
-            authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
-            authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
-            authenticationEvent.UserId = authenticatedUser.UserID.ToString();
-            authenticationEvent.EventType = authenticatedUser.IsAuthenticated ? AuthenticationEventType.Authenticated.ToString() : AuthenticationEventType.AuthenticationFailed.ToString();
-            _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
+            if (authenticatedUser != null)
+            {
+                AuthenticationEvent authenticationEvent = new AuthenticationEvent();
+                authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
+                authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
+                authenticationEvent.UserId = authenticatedUser.UserID.ToString();
+                authenticationEvent.EventType = authenticatedUser.IsAuthenticated ? AuthenticationEventType.Authenticated.ToString() : AuthenticationEventType.AuthenticationFailed.ToString();
+                _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
+            }
         }
     }
 }
