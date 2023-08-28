@@ -16,14 +16,11 @@ using Xunit;
 namespace Altinn.Platform.Authentication.Tests.Services
 {
     public class EventLogServiceTest
-    {
-        //public EventLogServiceTest() { }
-        
+    {       
         [Fact]
         public async Task QueueAuthenticationEvent_OK()
         {
             // Arrange
-            //AuthenticationEvent authenticationEvent = GetAuthenticationEvent();
             UserAuthenticationModel userAuthenticationModel = GetUserAuthenticationModel(SecurityLevel.QuiteSensitive, AuthenticationMethod.AltinnPIN, true, 45321);
 
             Mock<IEventsQueueClient> queueMock = new();
@@ -42,7 +39,6 @@ namespace Altinn.Platform.Authentication.Tests.Services
         public async Task QueueAuthenticationEvent_Error()
         {
             // Arrange
-            //AuthenticationEvent authenticationEvent = GetAuthenticationEvent();
             UserAuthenticationModel userAuthenticationModel = null;
 
             Mock<IEventsQueueClient> queueMock = new();
