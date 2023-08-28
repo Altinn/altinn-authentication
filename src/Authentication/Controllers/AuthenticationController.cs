@@ -15,6 +15,7 @@ using System.Web;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Enum;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -32,6 +33,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 
@@ -76,6 +78,9 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly OidcProviderSettings _oidcProviderSettings;
         private readonly IAntiforgery _antiforgery;
 
+        private readonly IEventLog _eventLog;
+        private readonly IFeatureManager _featureManager;
+
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
         /// </summary>
@@ -91,6 +96,8 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="signingKeysResolver">Signing keys resolver for Altinn Common AccessToken</param>
         /// <param name="oidcProvider">The OIDC provider</param>
         /// <param name="antiforgery">The anti forgery service.</param>
+        /// <param name="eventLog">the event logging service</param>
+        /// <param name="featureManager">the feature toggle service</param>
         public AuthenticationController(
             ILogger<AuthenticationController> logger,
             IOptions<GeneralSettings> generalSettings,
@@ -103,7 +110,9 @@ namespace Altinn.Platform.Authentication.Controllers
             IOrganisationsService organisationRepository,
             IPublicSigningKeyProvider signingKeysResolver,
             IOidcProvider oidcProvider,
-            IAntiforgery antiforgery)
+            IAntiforgery antiforgery,
+            IEventLog eventLog,
+            IFeatureManager featureManager)
         {
             _logger = logger;
             _generalSettings = generalSettings.Value;
@@ -118,6 +127,8 @@ namespace Altinn.Platform.Authentication.Controllers
             _validator = new JwtSecurityTokenHandler();
             _oidcProvider = oidcProvider;
             _antiforgery = antiforgery;
+            _eventLog = eventLog;
+            _featureManager = featureManager;
         }
 
         /// <summary>
@@ -225,6 +236,8 @@ namespace Altinn.Platform.Authentication.Controllers
                     return StatusCode(StatusCodes.Status503ServiceUnavailable);
                 }
             }
+
+            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication);
 
             if (userAuthentication != null && userAuthentication.IsAuthenticated)
             {
