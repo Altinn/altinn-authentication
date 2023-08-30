@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Clients.Interfaces;
+using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Azure.Messaging;
@@ -36,7 +37,7 @@ namespace Altinn.Platform.Authentication.Services
                 authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
                 authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
                 authenticationEvent.UserId = authenticatedUser.UserID.ToString();
-                authenticationEvent.EventType = authenticatedUser.IsAuthenticated ? AuthenticationEventType.Authenticated.ToString() : AuthenticationEventType.AuthenticationFailed.ToString();
+                authenticationEvent.EventType = authenticatedUser.EventType.ToString();
                 _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
             }
         }

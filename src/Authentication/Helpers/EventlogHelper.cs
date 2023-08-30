@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.FeatureManagement;
@@ -17,8 +18,17 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="featureManager">handler for feature manager service</param>
         /// <param name="eventLog">handler for eventlog service</param>
         /// <param name="userAuthentication">authentication object</param>
-        public async static Task CreateAuthenticationEvent(IFeatureManager featureManager, IEventLog eventLog, UserAuthenticationModel userAuthentication)
+        public async static Task CreateAuthenticationEvent(IFeatureManager featureManager, IEventLog eventLog, UserAuthenticationModel userAuthentication, AuthenticationEventType? eventType)
         {
+            if (eventType != null)
+            {
+                userAuthentication.EventType = eventType;
+            }
+            else
+            {
+                userAuthentication.EventType = userAuthentication.IsAuthenticated ? AuthenticationEventType.Authenticated : AuthenticationEventType.AuthenticationFailed;
+            }
+            
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
                 eventLog.CreateAuthenticationEvent(userAuthentication);

@@ -237,7 +237,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
             }
 
-            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication);
+            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, null);
 
             if (userAuthentication != null && userAuthentication.IsAuthenticated)
             {

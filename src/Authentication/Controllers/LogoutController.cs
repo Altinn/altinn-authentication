@@ -1,8 +1,11 @@
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Extensions;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
@@ -27,6 +31,9 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly OidcProviderSettings _oidcProviderSettings;
         private readonly JwtSecurityTokenHandler _validator;
 
+        private readonly IEventLog _eventLog;
+        private readonly IFeatureManager _featureManager;
+
         /// <summary>
         /// Defay
         /// </summary>
@@ -34,11 +41,15 @@ namespace Altinn.Platform.Authentication.Controllers
             ILogger<LogoutController> logger,
             IOptions<GeneralSettings> generalSettings,
             IOptions<OidcProviderSettings> oidcProviderSettings,
-            IOidcProvider oidcProvider)
+            IOidcProvider oidcProvider,
+            IEventLog eventLog,
+            IFeatureManager featureManager)
         {
             _generalSettings = generalSettings.Value;
             _oidcProviderSettings = oidcProviderSettings.Value;
             _validator = new JwtSecurityTokenHandler();
+            _eventLog = eventLog;
+            _featureManager = featureManager;
         }
 
         /// <summary>
@@ -49,17 +60,21 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("logout")]
         public ActionResult Logout()
         {
+            UserAuthenticationModel userAuthentication;
+            JwtSecurityToken jwt = null;
             string orgIss = null;
             string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
             if (_validator.CanReadToken(tokenCookie))
             {
-                JwtSecurityToken jwt = _validator.ReadJwtToken(tokenCookie);
+                jwt = _validator.ReadJwtToken(tokenCookie);
                 orgIss = jwt.Claims.Where(c => c.Type.Equals(OriginalIssClaimName)).Select(c => c.Value).FirstOrDefault();
             }
 
             OidcProvider provider = GetOidcProvider(orgIss);
+            userAuthentication = AuthenticationHelper.GetUserFromToken(jwt, provider);
             if (provider == null)
             {
+                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, AuthenticationEventType.Logout);
                 return Redirect(_generalSettings.SBLLogoutEndpoint);
             }
 
@@ -67,6 +82,7 @@ namespace Altinn.Platform.Authentication.Controllers
             Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
             Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
 
+            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, AuthenticationEventType.Logout);
             return Redirect(provider.LogoutEndpoint);
         }
 
