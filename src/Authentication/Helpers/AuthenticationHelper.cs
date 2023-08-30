@@ -34,71 +34,59 @@ namespace Altinn.Platform.Authentication.Helpers
             {
                 foreach (Claim claim in jwtSecurityToken.Claims)
                 {
-                    // General OIDC claims
-                    if (claim.Type.Equals("nonce"))
+                    // Handle various claim types
+                    switch (claim.Type)
                     {
-                        userAuthenticationModel.Nonce = claim.Value;
-                        continue;
-                    }
+                        // General OIDC claims
+                        case "nonce":
+                            userAuthenticationModel.Nonce = claim.Value;
+                            break;
 
-                    // Altinn Specific claims
-                    if (claim.Type.Equals(AltinnCoreClaimTypes.UserId))
-                    {
-                        userAuthenticationModel.UserID = Convert.ToInt32(claim.Value);
-                        continue;
-                    }
+                        // Altinn Specific claims
+                        case AltinnCoreClaimTypes.UserId:
+                            userAuthenticationModel.UserID = Convert.ToInt32(claim.Value);
+                            break;
 
-                    if (claim.Type.Equals(AltinnCoreClaimTypes.PartyID))
-                    {
-                        userAuthenticationModel.PartyID = Convert.ToInt32(claim.Value);
-                        continue;
-                    }
+                        case AltinnCoreClaimTypes.PartyID:
+                            userAuthenticationModel.PartyID = Convert.ToInt32(claim.Value);
+                            break;
 
-                    if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticateMethod))
-                    {
-                        userAuthenticationModel.AuthenticationMethod = (Enum.AuthenticationMethod)System.Enum.Parse(typeof(Enum.AuthenticationMethod), claim.Value);
-                        continue;
-                    }
+                        case AltinnCoreClaimTypes.AuthenticateMethod:
+                            userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), claim.Value);
+                            break;
 
-                    if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticationLevel))
-                    {
-                        userAuthenticationModel.AuthenticationLevel = (Enum.SecurityLevel)System.Enum.Parse(typeof(Enum.SecurityLevel), claim.Value);
-                        continue;
-                    }
+                        case AltinnCoreClaimTypes.AuthenticationLevel:
+                            userAuthenticationModel.AuthenticationLevel = (SecurityLevel)System.Enum.Parse(typeof(SecurityLevel), claim.Value);
+                            break;
 
-                    // ID-porten specific claims
-                    if (claim.Type.Equals("pid"))
-                    {
-                        userAuthenticationModel.SSN = claim.Value;
-                        continue;
-                    }
+                        // ID-porten specific claims
+                        case "pid":
+                            userAuthenticationModel.SSN = claim.Value;
+                            break;
 
-                    if (claim.Type.Equals("amr"))
-                    {
-                        userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
-                        continue;
-                    }
+                        case "amr":
+                            userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
+                            break;
 
-                    if (claim.Type.Equals("acr"))
-                    {
-                        userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevel(claim.Value);
-                        continue;
-                    }
+                        case "acr":
+                            userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevel(claim.Value);
+                            break;
 
-                    if (!string.IsNullOrEmpty(provider?.ExternalIdentityClaim) && claim.Type.Equals(provider?.ExternalIdentityClaim))
-                    {
-                        userAuthenticationModel.ExternalIdentity = claim.Value;
-                    }
+                        default:
+                            // Check for external identity claim
+                            if (!string.IsNullOrEmpty(provider?.ExternalIdentityClaim) && claim.Type.Equals(provider?.ExternalIdentityClaim))
+                            {
+                                userAuthenticationModel.ExternalIdentity = claim.Value;
+                            }
 
-                    // General claims handling
-                    if (provider?.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
-                    {
-                        if (!userAuthenticationModel.ProviderClaims.ContainsKey(claim.Type))
-                        {
-                            userAuthenticationModel.ProviderClaims.Add(claim.Type, new List<string>());
-                        }
+                            // General claims handling
+                            if (provider?.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
+                            {
+                                userAuthenticationModel.ProviderClaims.TryAdd(claim.Type, new List<string>());
+                                userAuthenticationModel.ProviderClaims[claim.Type].Add(claim.Value);
+                            }
 
-                        userAuthenticationModel.ProviderClaims[claim.Type].Add(claim.Value);
+                            break;
                     }
                 }
 
