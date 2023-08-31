@@ -194,7 +194,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                     OidcCodeResponse oidcCodeResponse = await _oidcProvider.GetTokens(code, provider, GetRedirectUri(provider));
                     JwtSecurityToken jwtSecurityToken = await ValidateAndExtractOidcToken(oidcCodeResponse.IdToken, provider.WellKnownConfigEndpoint);
-                    userAuthentication = GetUserFromToken(jwtSecurityToken, provider);
+                    userAuthentication = AuthenticationHelper.GetUserFromToken(jwtSecurityToken, provider);
                     if (!ValidateNonce(HttpContext, userAuthentication.Nonce))
                     {
                         return BadRequest("Invalid nonce");
@@ -799,95 +799,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 .OrderByDescending(c => c.NotBefore)
                 .FirstOrDefault();
         }
-
-        private static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider)
-        {
-            UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel()
-            {
-                IsAuthenticated = true,
-                ProviderClaims = new Dictionary<string, List<string>>(),
-                Iss = provider.IssuerKey,
-                AuthenticationMethod = AuthenticationMethod.NotDefined
-            };
-
-            foreach (Claim claim in jwtSecurityToken.Claims)
-            {
-                // General OIDC claims
-                if (claim.Type.Equals("nonce"))
-                {
-                    userAuthenticationModel.Nonce = claim.Value;
-                    continue;
-                }
-
-                // Altinn Specific claims
-                if (claim.Type.Equals(AltinnCoreClaimTypes.UserId))
-                {
-                    userAuthenticationModel.UserID = Convert.ToInt32(claim.Value);
-                    continue;
-                }
-
-                if (claim.Type.Equals(AltinnCoreClaimTypes.PartyID))
-                {
-                    userAuthenticationModel.PartyID = Convert.ToInt32(claim.Value);
-                    continue;
-                }
-
-                if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticateMethod))
-                {
-                    userAuthenticationModel.AuthenticationMethod = (Enum.AuthenticationMethod)System.Enum.Parse(typeof(Enum.AuthenticationMethod), claim.Value);
-                    continue;
-                }
-
-                if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticationLevel))
-                {
-                    userAuthenticationModel.AuthenticationLevel = (Enum.SecurityLevel)System.Enum.Parse(typeof(Enum.SecurityLevel), claim.Value);
-                    continue;
-                }
-
-                // ID-porten specific claims
-                if (claim.Type.Equals("pid"))
-                {
-                    userAuthenticationModel.SSN = claim.Value;
-                    continue;
-                }
-
-                if (claim.Type.Equals("amr"))
-                {
-                    userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
-                    continue;
-                }
-
-                if (claim.Type.Equals("acr"))
-                {
-                    userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevel(claim.Value);
-                    continue;
-                }
-
-                if (!string.IsNullOrEmpty(provider.ExternalIdentityClaim) && claim.Type.Equals(provider.ExternalIdentityClaim))
-                {
-                    userAuthenticationModel.ExternalIdentity = claim.Value;
-                }
-
-                // General claims handling
-                if (provider.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
-                {
-                    if (!userAuthenticationModel.ProviderClaims.ContainsKey(claim.Type))
-                    {
-                        userAuthenticationModel.ProviderClaims.Add(claim.Type, new List<string>());
-                    }
-
-                    userAuthenticationModel.ProviderClaims[claim.Type].Add(claim.Value);
-                }
-            }
-
-            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
-            {
-                userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), provider.DefaultAuthenticationMethod);
-            }
-
-            return userAuthenticationModel;
-        }
-
+        
         private async Task IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
         {
             UserProfile profile;
