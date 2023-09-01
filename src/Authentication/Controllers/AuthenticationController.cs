@@ -841,50 +841,6 @@ namespace Altinn.Platform.Authentication.Controllers
             return provider.UserNamePrefix + hashedIdentity.ToLower() + DateTime.Now.Millisecond;
         }
 
-        /// <summary>
-        /// Converts IDporten acr claim �Authentication Context Class Reference� - The security level of assurance for the
-        /// authentication. Possible values are Level3 (i.e. MinID was used) or Level4 (other eIDs).
-        /// The level must be validated by the client.
-        /// </summary>
-        private static SecurityLevel GetAuthenticationLevel(string acr)
-        {
-            switch (acr)
-            {
-                case "Level3":
-                    return Enum.SecurityLevel.Sensitive;
-                case "Level4":
-                    return Enum.SecurityLevel.VerySensitive;
-            }
-
-            return SecurityLevel.SelfIdentifed;
-        }
-
-        /// <summary>
-        /// Converts external methods to internal  Minid-PIN, Minid-OTC, Commfides, Buypass, BankID, BankID Mobil or eIDAS
-        /// </summary>
-        private static AuthenticationMethod GetAuthenticationMethod(string amr)
-        {
-            switch (amr)
-            {
-                case "Minid-PIN":
-                    return Enum.AuthenticationMethod.MinIDPin;
-                case "Minid-OTC":
-                    return Enum.AuthenticationMethod.MinIDOTC;
-                case "Commfides":
-                    return Enum.AuthenticationMethod.Commfides;
-                case "Buypass":
-                    return Enum.AuthenticationMethod.BuyPass;
-                case "BankID":
-                    return Enum.AuthenticationMethod.BankID;
-                case "BankID Mobil":
-                    return Enum.AuthenticationMethod.BankIDMobil;
-                case "eIDAS":
-                    return Enum.AuthenticationMethod.EIDAS;
-            }
-
-            return Enum.AuthenticationMethod.NotDefined;
-        }
-
         private async Task<JwtSecurityToken> ValidateAndExtractOidcToken(string originalToken, string wellKnownConfigEndpoint, string alternativeWellKnownConfigEndpoint = null)
         {
             try

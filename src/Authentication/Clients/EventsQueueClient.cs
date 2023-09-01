@@ -8,6 +8,7 @@ using Altinn.Platform.Authentication.Model;
 using Azure;
 using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Clients
@@ -21,14 +22,19 @@ namespace Altinn.Platform.Authentication.Clients
         private readonly QueueStorageSettings _settings;
 
         private QueueClient _authenticationEventQueueClient;
+        private readonly ILogger<EventsQueueClient> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventsQueueClient"/> class.
         /// </summary>
         /// <param name="settings">The queue storage settings</param>
-        public EventsQueueClient(IOptions<QueueStorageSettings> settings)
+        /// <param name="logger">the logger handler</param>
+        public EventsQueueClient(
+            IOptions<QueueStorageSettings> settings,
+            ILogger<EventsQueueClient> logger)
         {
             _settings = settings.Value;
+            _logger = logger;
         }
 
         /// <inheritdoc/>
@@ -39,9 +45,10 @@ namespace Altinn.Platform.Authentication.Clients
                 QueueClient client = await GetAuthenticationEventQueueClient();
                 await client.SendMessageAsync(Convert.ToBase64String(Encoding.UTF8.GetBytes(content)));      
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return new QueuePostReceipt { Success = false, Exception = e };
+                _logger.LogError(ex, ex.Message);
+                return new QueuePostReceipt { Success = false, Exception = ex };
             }
 
             return new QueuePostReceipt { Success = true };
@@ -49,20 +56,13 @@ namespace Altinn.Platform.Authentication.Clients
 
         private async Task<QueueClient> GetAuthenticationEventQueueClient()
         {
-            try
+            if (_authenticationEventQueueClient == null)
             {
-                if (_authenticationEventQueueClient == null)
-                {
-                    _authenticationEventQueueClient = new QueueClient(_settings.EventLogConnectionString, _settings.AuthenticationEventQueueName);
-                    await _authenticationEventQueueClient.CreateIfNotExistsAsync();
-                }
+                _authenticationEventQueueClient = new QueueClient(_settings.EventLogConnectionString, _settings.AuthenticationEventQueueName);
+                await _authenticationEventQueueClient.CreateIfNotExistsAsync();
+            }
 
-                return _authenticationEventQueueClient;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            return _authenticationEventQueueClient;
         }
     }
 }
