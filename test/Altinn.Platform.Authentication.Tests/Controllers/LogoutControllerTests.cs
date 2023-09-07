@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Controllers;
+using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -98,6 +100,64 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             if (response.Headers.TryGetValues("location", out values))
             {
                 Assert.Equal("http://localhost/ui/authentication/logout", values.First());
+            }
+        }
+
+        /// <summary>
+        /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
+        /// </summary>
+        [Fact]
+        public async Task Logout_LogedIn_RedirectToSBL_SelfIdentifiedUser()
+        {
+            string token = PrincipalUtil.GetSelfIdentifiedUserToken("siusertest", "12345", "2345678");
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
+            SetupUtil.AddAuthCookie(requestMessage, token);
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
+
+            IEnumerable<string> values;
+            if (response.Headers.TryGetValues("location", out values))
+            {
+                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
+            }
+        }
+
+        /// <summary>
+        /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
+        /// </summary>
+        [Fact]
+        public async Task Logout_LogedIn_RedirectToSBL_ExternalAuthenticationMethod()
+        {
+            List<Claim> claims = new List<Claim>();
+            string issuer = "www.altinn.no";
+            claims.Add(new Claim("originaliss", "uidp", ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("amr", AuthenticationMethod.BankID.ToString(), ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("acr", SecurityLevel.Sensitive.ToString(), ClaimValueTypes.String, issuer));
+
+            string token = PrincipalUtil.GetToken(1337, claims);
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
+            SetupUtil.AddAuthCookie(requestMessage, token);
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
+
+            IEnumerable<string> values;
+            if (response.Headers.TryGetValues("location", out values))
+            {
+                Assert.Equal("https://idporten.azurewebsites.net/api/v1/logout", values.First());
             }
         }
 

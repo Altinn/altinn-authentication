@@ -1,4 +1,4 @@
-﻿namespace Altinn.Platform.Authentication.Model
+﻿namespace Altinn.Platform.Authentication.Enum
 {
     /// <summary>
     /// Enumeration for authentication event types
@@ -6,6 +6,7 @@
     public enum AuthenticationEventType
     {
         AuthenticationFailed,
-        Authenticated
+        Authenticated,
+        Logout
     }
 }
