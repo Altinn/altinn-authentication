@@ -266,6 +266,8 @@ namespace Altinn.Platform.Authentication.Controllers
 
             string serializedToken = await GenerateToken(principal);
 
+            UserAuthenticationModel userAuthentication = AuthenticationHelper.GetUserFromToken(serializedToken, null);
+            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, AuthenticationEventType.Refresh);
             _logger.LogInformation("End of refreshing token");
 
             return Ok(serializedToken);
@@ -365,6 +367,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal);
+                UserAuthenticationModel userAuthentication = AuthenticationHelper.GetUserFromToken(serializedToken, null);
+                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, AuthenticationEventType.TokenExchange);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -484,6 +488,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal);
+                UserAuthenticationModel userAuthentication = AuthenticationHelper.GetUserFromToken(serializedToken, null);
+                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, AuthenticationEventType.TokenExchange);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -617,6 +623,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal, token.ValidTo);
+                UserAuthenticationModel userAuthentication = AuthenticationHelper.GetUserFromToken(serializedToken, null);
+                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, AuthenticationEventType.TokenExchange);
                 return Ok(serializedToken);
             }
             catch (Exception ex)

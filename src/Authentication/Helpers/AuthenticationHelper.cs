@@ -100,6 +100,24 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
+        /// Get user information from the serializwd token string
+        /// </summary>
+        /// <param name="jwtToken">serialized jwt token string</param>
+        /// <param name="provider">token provider</param>
+        /// <returns></returns>
+        public static UserAuthenticationModel GetUserFromToken(string jwtToken, OidcProvider provider)
+        {
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                JwtSecurityToken token = tokenHandler.ReadJwtToken(jwtToken);
+                return GetUserFromToken(token, provider);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Converts IDporten acr claim �Authentication Context Class Reference� - The security level of assurance for the
         /// authentication. Possible values are Level3 (i.e. MinID was used) or Level4 (other eIDs).
         /// The level must be validated by the client.
