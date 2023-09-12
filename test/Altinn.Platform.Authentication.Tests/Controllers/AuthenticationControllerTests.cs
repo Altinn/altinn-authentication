@@ -1181,7 +1181,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             List<Claim> claims = new List<Claim>();
 
             string pid = "19108000239";
-            string amr = "MinId-PIN";
+            string amr = "Minid-PIN";
             string acr = "Level4";
 
             claims.Add(new Claim("pid", pid));
@@ -1231,7 +1231,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             List<Claim> claims = new List<Claim>();
 
             string pid = "19108000239";
-            string amr = "MinId-PIN";
+            string amr = "Minid-PIN";
             string acr = "idporten-loa-high";
 
             claims.Add(new Claim("pid", pid));

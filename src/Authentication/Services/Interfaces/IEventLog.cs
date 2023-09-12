@@ -11,7 +11,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <summary>
         /// Creates an authentication event in storage queue
         /// </summary>
-        /// <param name="authenticatedUser">authenticated user information</param>
-        public void CreateAuthenticationEvent(UserAuthenticationModel authenticatedUser);
+        /// <param name="authenticationEvent">authentication user event</param>
+        public void CreateAuthenticationEvent(AuthenticationEvent authenticationEvent);
     }
 }

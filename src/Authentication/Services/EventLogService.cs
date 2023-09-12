@@ -28,16 +28,11 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Queues an authentication event to the logqueue
         /// </summary>
-        /// <param name="authenticatedUser">authentication information of the authenticated user</param>
-        public void CreateAuthenticationEvent(UserAuthenticationModel authenticatedUser)
+        /// <param name="authenticationEvent">authentication event of the authenticated user</param>
+        public void CreateAuthenticationEvent(AuthenticationEvent authenticationEvent)
         {
-            if (authenticatedUser != null)
+            if (authenticationEvent != null)
             {
-                AuthenticationEvent authenticationEvent = new AuthenticationEvent();
-                authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
-                authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
-                authenticationEvent.UserId = authenticatedUser.UserID.ToString();
-                authenticationEvent.EventType = authenticatedUser.EventType.ToString();
                 _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
             }
         }

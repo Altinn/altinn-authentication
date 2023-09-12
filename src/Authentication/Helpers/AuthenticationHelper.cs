@@ -26,103 +26,94 @@ namespace Altinn.Platform.Authentication.Helpers
             {
                 IsAuthenticated = true,
                 ProviderClaims = new Dictionary<string, List<string>>(),
-                Iss = provider?.IssuerKey,
+                Iss = provider.IssuerKey,
                 AuthenticationMethod = AuthenticationMethod.NotDefined
             };
 
-            if (jwtSecurityToken != null)
+            foreach (Claim claim in jwtSecurityToken.Claims)
             {
-                foreach (Claim claim in jwtSecurityToken.Claims)
+                // General OIDC claims
+                if (claim.Type.Equals("nonce"))
                 {
-                    // Handle various claim types
-                    switch (claim.Type)
+                    userAuthenticationModel.Nonce = claim.Value;
+                    continue;
+                }
+
+                // Altinn Specific claims
+                if (claim.Type.Equals(AltinnCoreClaimTypes.UserId))
+                {
+                    userAuthenticationModel.UserID = Convert.ToInt32(claim.Value);
+                    continue;
+                }
+
+                if (claim.Type.Equals(AltinnCoreClaimTypes.PartyID))
+                {
+                    userAuthenticationModel.PartyID = Convert.ToInt32(claim.Value);
+                    continue;
+                }
+
+                if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticateMethod))
+                {
+                    userAuthenticationModel.AuthenticationMethod = (Enum.AuthenticationMethod)System.Enum.Parse(typeof(Enum.AuthenticationMethod), claim.Value);
+                    continue;
+                }
+
+                if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticationLevel))
+                {
+                    userAuthenticationModel.AuthenticationLevel = (Enum.SecurityLevel)System.Enum.Parse(typeof(Enum.SecurityLevel), claim.Value);
+                    continue;
+                }
+
+                // ID-porten specific claims
+                if (claim.Type.Equals("pid"))
+                {
+                    userAuthenticationModel.SSN = claim.Value;
+                    continue;
+                }
+
+                if (claim.Type.Equals("amr"))
+                {
+                    userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
+                    continue;
+                }
+
+                if (claim.Type.Equals("acr"))
+                {
+                    userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevel(claim.Value);
+                    continue;
+                }
+
+                if (!string.IsNullOrEmpty(provider.ExternalIdentityClaim) && claim.Type.Equals(provider.ExternalIdentityClaim))
+                {
+                    userAuthenticationModel.ExternalIdentity = claim.Value;
+                }
+
+                // General claims handling
+                if (provider.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
+                {
+                    if (!userAuthenticationModel.ProviderClaims.ContainsKey(claim.Type))
                     {
-                        // General OIDC claims
-                        case "nonce":
-                            userAuthenticationModel.Nonce = claim.Value;
-                            break;
-
-                        // Altinn Specific claims
-                        case AltinnCoreClaimTypes.UserId:
-                            userAuthenticationModel.UserID = Convert.ToInt32(claim.Value);
-                            break;
-
-                        case AltinnCoreClaimTypes.PartyID:
-                            userAuthenticationModel.PartyID = Convert.ToInt32(claim.Value);
-                            break;
-
-                        case AltinnCoreClaimTypes.AuthenticateMethod:
-                            userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), claim.Value);
-                            break;
-
-                        case AltinnCoreClaimTypes.AuthenticationLevel:
-                            userAuthenticationModel.AuthenticationLevel = (SecurityLevel)System.Enum.Parse(typeof(SecurityLevel), claim.Value);
-                            break;
-
-                        // ID-porten specific claims
-                        case "pid":
-                            userAuthenticationModel.SSN = claim.Value;
-                            break;
-
-                        case "amr":
-                            userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
-                            break;
-
-                        case "acr":
-                            userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevel(claim.Value);
-                            break;
-
-                        default:
-                            // Check for external identity claim
-                            if (!string.IsNullOrEmpty(provider?.ExternalIdentityClaim) && claim.Type.Equals(provider?.ExternalIdentityClaim))
-                            {
-                                userAuthenticationModel.ExternalIdentity = claim.Value;
-                            }
-
-                            // General claims handling
-                            if (provider?.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
-                            {
-                                userAuthenticationModel.ProviderClaims.TryAdd(claim.Type, new List<string>());
-                                userAuthenticationModel.ProviderClaims[claim.Type].Add(claim.Value);
-                            }
-
-                            break;
+                        userAuthenticationModel.ProviderClaims.Add(claim.Type, new List<string>());
                     }
-                }
 
-                if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
-                {
-                    userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), provider?.DefaultAuthenticationMethod);
+                    userAuthenticationModel.ProviderClaims[claim.Type].Add(claim.Value);
                 }
+            }
+
+            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
+            {
+                userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), provider.DefaultAuthenticationMethod);
             }
 
             return userAuthenticationModel;
         }
-
-        /// <summary>
-        /// Get user information from the serializwd token string
-        /// </summary>
-        /// <param name="jwtToken">serialized jwt token string</param>
-        /// <param name="provider">token provider</param>
-        /// <returns></returns>
-        public static UserAuthenticationModel GetUserFromToken(string jwtToken, OidcProvider provider)
-        {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            if (!string.IsNullOrEmpty(jwtToken))
-            {
-                JwtSecurityToken token = tokenHandler.ReadJwtToken(jwtToken);
-                return GetUserFromToken(token, provider);
-            }
-
-            return null;
-        }
-
+       
         /// <summary>
         /// Converts IDporten acr claim �Authentication Context Class Reference� - The security level of assurance for the
         /// authentication. Possible values are Level3 (i.e. MinID was used) or Level4 (other eIDs).
         /// The level must be validated by the client.
         /// </summary>
-        private static SecurityLevel GetAuthenticationLevel(string acr)
+        public static SecurityLevel GetAuthenticationLevel(string acr)
         {
             switch (acr)
             {
@@ -138,7 +129,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <summary>
         /// Converts external methods to internal  Minid-PIN, Minid-OTC, Commfides, Buypass, BankID, BankID Mobil or eIDAS
         /// </summary>
-        private static AuthenticationMethod GetAuthenticationMethod(string amr)
+        public static AuthenticationMethod GetAuthenticationMethod(string amr)
         {
             switch (amr)
             {

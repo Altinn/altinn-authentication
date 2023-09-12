@@ -21,7 +21,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         public async Task QueueAuthenticationEvent_OK()
         {
             // Arrange
-            UserAuthenticationModel userAuthenticationModel = GetUserAuthenticationModel(SecurityLevel.QuiteSensitive, AuthenticationMethod.AltinnPIN, true, 45321);
+            AuthenticationEvent authenticationEvent = GetAuthenticationEvent(SecurityLevel.QuiteSensitive, AuthenticationMethod.AltinnPIN, AuthenticationEventType.Authenticated, "45321");
 
             Mock<IEventsQueueClient> queueMock = new();
             queueMock
@@ -30,7 +30,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             var service = GetEventLogService(queueMock: queueMock.Object);
 
             // Act
-            service.CreateAuthenticationEvent(userAuthenticationModel);
+            service.CreateAuthenticationEvent(authenticationEvent);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Once);
         }
@@ -39,7 +39,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         public async Task QueueAuthenticationEvent_Error()
         {
             // Arrange
-            UserAuthenticationModel userAuthenticationModel = null;
+            AuthenticationEvent authenticationEvent = null;
 
             Mock<IEventsQueueClient> queueMock = new();
             queueMock
@@ -48,7 +48,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             var service = GetEventLogService(queueMock: queueMock.Object);
 
             // Act
-            service.CreateAuthenticationEvent(userAuthenticationModel);
+            service.CreateAuthenticationEvent(authenticationEvent);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Never);
         }
@@ -64,17 +64,17 @@ namespace Altinn.Platform.Authentication.Tests.Services
             return service;
         }
 
-        private static UserAuthenticationModel GetUserAuthenticationModel(SecurityLevel authenticationLevel, AuthenticationMethod authenticationMethod, bool isAuthenticated, int userId)
+        private static AuthenticationEvent GetAuthenticationEvent(SecurityLevel authenticationLevel, AuthenticationMethod authenticationMethod, AuthenticationEventType eventType, string userId)
         {
-            UserAuthenticationModel authenticationModel = new()
+            AuthenticationEvent authenticationEvent = new()
             {
-                AuthenticationLevel = authenticationLevel,
-                AuthenticationMethod = authenticationMethod,
-                IsAuthenticated = isAuthenticated,
-                UserID = userId
+                AuthenticationLevel = authenticationLevel.ToString(),
+                AuthenticationMethod = authenticationMethod.ToString(),
+                EventType = eventType.ToString(),
+                UserId = userId
             };
 
-            return authenticationModel;
+            return authenticationEvent;
         }
     }
 }

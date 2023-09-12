@@ -60,7 +60,6 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("logout")]
         public ActionResult Logout()
         {
-            UserAuthenticationModel userAuthentication;
             JwtSecurityToken jwt = null;
             string orgIss = null;
             string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
@@ -71,10 +70,9 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             OidcProvider provider = GetOidcProvider(orgIss);
-            userAuthentication = AuthenticationHelper.GetUserFromToken(jwt, provider);
             if (provider == null)
             {
-                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, AuthenticationEventType.Logout);
+                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, tokenCookie, AuthenticationEventType.Logout);
                 return Redirect(_generalSettings.SBLLogoutEndpoint);
             }
 
@@ -82,7 +80,7 @@ namespace Altinn.Platform.Authentication.Controllers
             Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
             Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
 
-            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, AuthenticationEventType.Logout);
+            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, tokenCookie, AuthenticationEventType.Logout);
             return Redirect(provider.LogoutEndpoint);
         }
 
