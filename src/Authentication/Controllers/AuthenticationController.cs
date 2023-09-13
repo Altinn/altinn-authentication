@@ -240,7 +240,7 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             AuthenticationEventType eventType = (userAuthentication != null && userAuthentication.IsAuthenticated) ? AuthenticationEventType.Authenticated : AuthenticationEventType.AuthenticationFailed;
-            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, originalToken, eventType);
+            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, eventType);
 
             if (userAuthentication != null && userAuthentication.IsAuthenticated)
             {

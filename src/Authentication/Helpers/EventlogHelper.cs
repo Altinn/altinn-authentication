@@ -29,7 +29,23 @@ namespace Altinn.Platform.Authentication.Helpers
         {            
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
-                AuthenticationEvent authenticationEvent = MapAuthenticationEventFromToken(jwtToken, eventType);              
+                AuthenticationEvent authenticationEvent = MapAuthenticationEvent(jwtToken, eventType);              
+                eventLog.CreateAuthenticationEvent(authenticationEvent);
+            }
+        }
+
+        /// <summary>
+        /// Creates an authentication event
+        /// </summary>
+        /// <param name="featureManager">handler for feature manager service</param>
+        /// <param name="eventLog">handler for eventlog service</param>
+        /// <param name="authenticatedUser">authenticat</param>
+        /// <param name="eventType">authentication event type</param>
+        public async static Task CreateAuthenticationEvent(IFeatureManager featureManager, IEventLog eventLog, UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType)
+        {
+            if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
+            {
+                AuthenticationEvent authenticationEvent = MapAuthenticationEvent(authenticatedUser, eventType);
                 eventLog.CreateAuthenticationEvent(authenticationEvent);
             }
         }
@@ -40,7 +56,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="jwtToken">authenticated token</param>
         /// <param name="eventType">authentication event type</param>
         /// <returns>authentication event</returns>
-        public static AuthenticationEvent MapAuthenticationEventFromToken(string jwtToken, AuthenticationEventType eventType)
+        public static AuthenticationEvent MapAuthenticationEvent(string jwtToken, AuthenticationEventType eventType)
         {
             JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             AuthenticationEvent authenticationEvent = null;
@@ -91,6 +107,27 @@ namespace Altinn.Platform.Authentication.Helpers
                 }
 
                 return authenticationEvent;
+            }
+
+            return authenticationEvent;
+        }
+
+        /// <summary>
+        /// Maps authenticated user information to authentication event
+        /// </summary>
+        /// <param name="authenticatedUser">authenticated user</param>
+        /// <param name="eventType">type of authentication event</param>
+        /// <returns>authentication event</returns>
+        public static AuthenticationEvent MapAuthenticationEvent(UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType)
+        {
+            AuthenticationEvent authenticationEvent = null;
+            if (authenticatedUser != null)
+            {
+                authenticationEvent = new AuthenticationEvent();
+                authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
+                authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
+                authenticationEvent.UserId = authenticatedUser.UserID.ToString();
+                authenticationEvent.EventType =eventType.ToString();
             }
 
             return authenticationEvent;
