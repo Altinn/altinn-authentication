@@ -76,17 +76,14 @@ namespace Altinn.Platform.Authentication.Helpers
                                 authenticationEvent.UserId = claim.Value;
                                 break;
 
-                            case AltinnCoreClaimTypes.Org:
-                                authenticationEvent.OrgNumber = claim.Value;
-                                break;
-
                             case AltinnCoreClaimTypes.OrgNumber:
                                 authenticationEvent.OrgNumber = claim.Value;
                                 break;
 
                             case AltinnCoreClaimTypes.AuthenticateMethod:
                                 AuthenticationMethod authenticationMethod;
-                                authenticationEvent.AuthenticationMethod = System.Enum.TryParse<AuthenticationMethod>(claim.Value, false, out authenticationMethod) ? authenticationMethod.ToString() : AuthenticationMethod.NotDefined.ToString();
+                                authenticationEvent.AuthenticationMethod = System.Enum.TryParse<AuthenticationMethod>(claim.Value, true, out authenticationMethod) ? authenticationMethod.ToString() : AuthenticationMethod.NotDefined.ToString();
+                                                                
                                 break;
 
                             case AltinnCoreClaimTypes.AuthenticationLevel:
@@ -127,7 +124,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
                 authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
                 authenticationEvent.UserId = authenticatedUser.UserID.ToString();
-                authenticationEvent.EventType =eventType.ToString();
+                authenticationEvent.EventType = eventType.ToString();
             }
 
             return authenticationEvent;

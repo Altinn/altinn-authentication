@@ -147,6 +147,8 @@ namespace Altinn.Platform.Authentication.Helpers
                     return Enum.AuthenticationMethod.BankIDMobil;
                 case "eIDAS":
                     return Enum.AuthenticationMethod.EIDAS;
+                case "maskinporten":
+                    return Enum.AuthenticationMethod.MaskinPorten;
             }
 
             return Enum.AuthenticationMethod.NotDefined;
