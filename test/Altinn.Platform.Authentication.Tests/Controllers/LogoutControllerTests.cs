@@ -132,6 +132,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims
         /// </summary>
         [Fact]
         public async Task Logout_LogedIn_RedirectToSBL_ExternalAuthenticationMethod()
@@ -206,6 +207,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Frontchannel logout
+        /// Event log : Audit log feature is turned on and the event is logged
         /// </summary>
         [Fact]
         public async Task Logout_FrontChannelOK()
@@ -249,6 +251,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Frontchannel logout with event log feature turned off
+        /// Event log : Audit log feature is turned off and the event is not logged
         /// </summary>
         [Fact]
         public async Task Logout_FrontChannelOK_Auditlog_off()

@@ -65,6 +65,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateOrganisation_RequestTokenWithValidExternalToken_ReturnsNewToken()
@@ -285,6 +286,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateEnterpriseUser_RequestToken_ReturnsOK()
@@ -332,6 +334,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateEnterpriseUser_RequestToken_PasswordContainsColon_ReturnsOK()
@@ -476,6 +479,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.AuthenticateUser"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateUser_RequestTokenWithValidAltinnCookie_ReturnsNewToken()
@@ -654,7 +658,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         ///  8. Authentication compoment verifies token and create authentication info
         ///  9. Authentication component creates altinn 3 token and puts it in to a cookie
         ///  10. Redirects back to original app
-        ///  11. Verify the authentication event is logged with expected authentication event
+        ///  11. Verify the authentication event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateUserWithOIDC_FullProcess_RedirectsToOIDCAndBackWithValidToken()
@@ -1201,6 +1205,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateEndUser_RequestTokenWithValidExternalToken_ReturnsNewToken()
