@@ -26,7 +26,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="jwtToken">token in the authentication request</param>
         /// <param name="eventType">authentication event type</param>
         public async static Task CreateAuthenticationEvent(IFeatureManager featureManager, IEventLog eventLog, string jwtToken, AuthenticationEventType eventType)
-        {            
+        {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
                 AuthenticationEvent authenticationEvent = MapAuthenticationEvent(jwtToken, eventType);              

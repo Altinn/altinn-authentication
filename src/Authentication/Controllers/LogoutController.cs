@@ -96,6 +96,8 @@ namespace Altinn.Platform.Authentication.Controllers
             CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
             Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
             Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
+            string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
+            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, tokenCookie, AuthenticationEventType.Logout);
             return Ok();
         }
 

@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 using Moq;
 using Xunit;
 
@@ -139,11 +140,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string issuer = "www.altinn.no";
             claims.Add(new Claim("originaliss", "uidp", ClaimValueTypes.String, issuer));
             claims.Add(new Claim("amr", AuthenticationMethod.BankID.ToString(), ClaimValueTypes.String, issuer));
-            claims.Add(new Claim("acr", SecurityLevel.Sensitive.ToString(), ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("acr", "Level4", ClaimValueTypes.String, issuer));
 
             string token = PrincipalUtil.GetToken(1337, claims);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.BankID, SecurityLevel.VerySensitive, null, AuthenticationEventType.Logout, "1337");
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object);
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
             SetupUtil.AddAuthCookie(requestMessage, token);
@@ -159,6 +164,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 Assert.Equal("https://idporten.azurewebsites.net/api/v1/logout", values.First());
             }
+
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent, Moq.Times.Once());
         }
 
         /// <summary>
@@ -209,7 +216,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string token = PrincipalUtil.GetToken(1337, claims);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.AltinnPIN, SecurityLevel.QuiteSensitive, null, AuthenticationEventType.Logout, "1337");
+
+            Mock<IFeatureManager> featureManageMock = new Mock<IFeatureManager>();
+            featureManageMock
+                .Setup(m => m.IsEnabledAsync("AuditLog"))
+                .Returns(Task.FromResult(true));
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, featureManageMock.Object);
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/frontchannel_logout");
             SetupUtil.AddAuthCookie(requestMessage, token);
@@ -227,9 +243,54 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.Equal(".ASPXAUTH=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.First());
                 Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Last());
             }
+
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent, Moq.Times.Once());
         }
 
-        private HttpClient GetTestClient(ISblCookieDecryptionService cookieDecryptionService, IUserProfileService userProfileService, bool enableOidc = false, bool forceOidc = false, string defaultOidc = "altinn")
+        /// <summary>
+        /// Frontchannel logout with event log feature turned off
+        /// </summary>
+        [Fact]
+        public async Task Logout_FrontChannelOK_Auditlog_off()
+        {
+            List<Claim> claims = new List<Claim>();
+            string issuer = "www.altinn.no";
+            claims.Add(new Claim("originaliss", "uidp", ClaimValueTypes.String, issuer));
+
+            string token = PrincipalUtil.GetToken(1337, claims);
+
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.AltinnPIN, SecurityLevel.QuiteSensitive, null, AuthenticationEventType.Logout, "1337");
+
+            Mock<IFeatureManager> featureManageMock = new Mock<IFeatureManager>();
+            featureManageMock
+                .Setup(m => m.IsEnabledAsync("AuditLog"))
+                .Returns(Task.FromResult(false));
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, featureManageMock.Object);
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/frontchannel_logout");
+            SetupUtil.AddAuthCookie(requestMessage, token);
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+
+            IEnumerable<string> values;
+
+            if (response.Headers.TryGetValues("Set-Cookie", out values))
+            {
+                Assert.Equal(".ASPXAUTH=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.First());
+                Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Last());
+            }
+
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent, Moq.Times.Never());
+        }
+
+        private HttpClient GetTestClient(ISblCookieDecryptionService cookieDecryptionService, IUserProfileService userProfileService, IEventLog eventLog = null, IFeatureManager featureManager = null, bool enableOidc = false, bool forceOidc = false, bool auditLog = true, string defaultOidc = "altinn")
         {
             HttpClient client = _factory.WithWebHostBuilder(builder =>
             {
@@ -261,6 +322,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
                     services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
                     services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
+                    if (featureManager != null)
+                    {
+                        services.AddSingleton(featureManager);
+                    }
+                    
+                    if (eventLog != null)
+                    {
+                        services.AddSingleton(eventLog);
+                    }
                 });
             }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
@@ -271,6 +341,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
             return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+        }
+
+        private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, string orgNumber, AuthenticationEventType authEventType, string userId = null)
+        {
+            AuthenticationEvent authenticationEvent = new AuthenticationEvent();
+            authenticationEvent.AuthenticationMethod = authMethod.ToString();
+            authenticationEvent.AuthenticationLevel = authLevel.ToString();
+            authenticationEvent.OrgNumber = orgNumber;
+            authenticationEvent.EventType = authEventType.ToString();
+            authenticationEvent.UserId = userId;
+
+            return authenticationEvent;
+        }
+
+        private static void AssertAuthenticationEvent(Mock<IEventLog> eventQueue, AuthenticationEvent expectedAuthenticationEvent, Moq.Times invocationsTime)
+        {
+            eventQueue.Verify(e => e.CreateAuthenticationEvent(It.Is<AuthenticationEvent>(q => q.AuthenticationMethod == expectedAuthenticationEvent.AuthenticationMethod && q.AuthenticationLevel == expectedAuthenticationEvent.AuthenticationLevel && q.OrgNumber == expectedAuthenticationEvent.OrgNumber && q.UserId == expectedAuthenticationEvent.UserId && q.EventType == expectedAuthenticationEvent.EventType)), invocationsTime);
         }
     }
 }
