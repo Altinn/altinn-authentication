@@ -93,6 +93,16 @@ namespace Altinn.Platform.Authentication.Enum
         /// <summary>
         /// User is logged in with help of IDPORTEN OTC
         /// </summary>
-        MinIDOTC = 15
+        MinIDOTC = 15,
+
+        /// <summary>
+        /// user is logged in with the help of maskinporten token
+        /// </summary>
+        MaskinPorten = 16,
+
+        /// <summary>
+        /// user is logged in with the help of virksomhets bruker
+        /// </summary>
+        VirksomhetsBruker = 17,
     }
 }

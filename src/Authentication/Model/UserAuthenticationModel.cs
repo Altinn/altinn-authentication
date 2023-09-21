@@ -73,10 +73,5 @@ namespace Altinn.Platform.Authentication.Model
         /// The external identity
         /// </summary>
         public string ExternalIdentity { get; internal set; }
-
-        /// <summary>
-        /// The authentication event type
-        /// </summary>
-        public AuthenticationEventType? EventType { get; set; }
     }
 }

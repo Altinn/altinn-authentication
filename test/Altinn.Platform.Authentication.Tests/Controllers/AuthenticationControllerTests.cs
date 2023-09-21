@@ -9,9 +9,11 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 using Altinn.Common.AccessToken.Services;
+using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Controllers;
 using Altinn.Platform.Authentication.Enum;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -23,6 +25,7 @@ using AltinnCore.Authentication.JwtCookie;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Azure.KeyVault;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -62,6 +65,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateOrganisation_RequestTokenWithValidExternalToken_ReturnsNewToken()
@@ -88,7 +92,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.MaskinPorten, SecurityLevel.Sensitive, "974760223", AuthenticationEventType.TokenExchange);
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
 
@@ -105,6 +113,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(principal);
 
             Assert.False(principal.HasClaim(c => c.Type == "urn:altinn:org"));
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent);
         }
 
         /// <summary>
@@ -277,6 +286,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateEnterpriseUser_RequestToken_ReturnsOK()
@@ -303,7 +313,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.VirksomhetsBruker, SecurityLevel.Sensitive, "974760223", AuthenticationEventType.TokenExchange, "1234");
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
@@ -315,10 +329,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent);
         }
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateEnterpriseUser_RequestToken_PasswordContainsColon_ReturnsOK()
@@ -345,18 +361,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.VirksomhetsBruker, SecurityLevel.Sensitive, "974760223", AuthenticationEventType.TokenExchange, "1234");
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyMjpWYWxpZDpQYXNzd29yZA==");
 
-            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/exchange/maskinporten");
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/exchange/maskinporten");           
 
             // Act
             HttpResponseMessage response = await client.SendAsync(requestMessage);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent);            
         }
 
         /// <summary>
@@ -458,6 +479,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.AuthenticateUser"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateUser_RequestTokenWithValidAltinnCookie_ReturnsNewToken()
@@ -475,7 +497,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             _cookieDecryptionService.Setup(s => s.DecryptTicket(It.IsAny<string>())).ReturnsAsync(userAuthenticationModel);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.AltinnPIN, SecurityLevel.QuiteSensitive, null, AuthenticationEventType.Authenticated, "434");
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object);
 
             string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost";
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
@@ -528,6 +554,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.True(httpOnly);
             Assert.True(sessionCookie);
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent);
         }
 
         /// <summary>
@@ -563,7 +590,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true";
@@ -596,7 +623,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true, "idporten");
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, true, true, "idporten");
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true";
@@ -631,13 +658,19 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         ///  8. Authentication compoment verifies token and create authentication info
         ///  9. Authentication component creates altinn 3 token and puts it in to a cookie
         ///  10. Redirects back to original app
+        ///  11. Verify the authentication event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateUserWithOIDC_FullProcess_RedirectsToOIDCAndBackWithValidToken()
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true);
+            
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.BankIDMobil, SecurityLevel.VerySensitive, null, AuthenticationEventType.Authenticated, "1337");
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true";
@@ -683,6 +716,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(platformToken);
             ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
             Assert.NotNull(claimPrincipal);
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent);
         }
 
         /// <summary>
@@ -710,7 +744,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 234234, PartyId = 234234, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfileNotFound);
             _userProfileService.Setup(u => u.CreateUser(It.IsAny<UserProfile>())).ReturnsAsync(userProfile);
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null,true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication?iss=uidp";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true&iss=uidp";
@@ -791,7 +825,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             UserProfile userProfile = new UserProfile { UserId = 234235, PartyId = 234235, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication?iss=uidp";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true&iss=uidp";
@@ -862,7 +896,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true";
@@ -915,7 +949,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true";
@@ -963,7 +997,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true&iss=idporten";
@@ -996,7 +1030,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, true);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true&iss=idporten";
@@ -1029,7 +1063,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, false, false);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, false, false);
             string redirectUri = "http://localhost/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl);
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true&iss=idporten";
@@ -1056,7 +1090,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, true, false);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, true, false);
             string redirectUri = "http://localhost/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl);
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true";
@@ -1171,6 +1205,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
         /// </summary>
         [Fact]
         public async Task AuthenticateEndUser_RequestTokenWithValidExternalToken_ReturnsNewToken()
@@ -1181,7 +1216,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             List<Claim> claims = new List<Claim>();
 
             string pid = "19108000239";
-            string amr = "MinId-PIN";
+            string amr = "Minid-PIN";
             string acr = "Level4";
 
             claims.Add(new Claim("pid", pid));
@@ -1195,7 +1230,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            Mock<IEventLog> eventQueue = new Mock<IEventLog>();
+            eventQueue.Setup(q => q.CreateAuthenticationEvent(It.IsAny<AuthenticationEvent>()));
+            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.MinIDPin, SecurityLevel.VerySensitive, null, AuthenticationEventType.TokenExchange, "20000");
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object);
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -1217,6 +1256,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(principal.HasClaim(c => c.Type == "pid"));
             Assert.Equal(expectedAuthLevel, principal.FindFirstValue("urn:altinn:authlevel"));
             Assert.Equal(securityTokenExternal.ValidTo, securityToken.ValidTo);
+            AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent);
         }
 
         /// <summary>
@@ -1231,7 +1271,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             List<Claim> claims = new List<Claim>();
 
             string pid = "19108000239";
-            string amr = "MinId-PIN";
+            string amr = "Minid-PIN";
             string acr = "idporten-loa-high";
 
             claims.Add(new Claim("pid", pid));
@@ -1408,7 +1448,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        private HttpClient GetTestClient(ISblCookieDecryptionService cookieDecryptionService, IUserProfileService userProfileService, bool enableOidc = false, bool forceOidc = false, string defaultOidc = "altinn")
+        private HttpClient GetTestClient(ISblCookieDecryptionService cookieDecryptionService, IUserProfileService userProfileService, IEventLog eventLog = null, bool enableOidc = false, bool forceOidc = false, string defaultOidc = "altinn")
         {
             HttpClient client = _factory.WithWebHostBuilder(builder =>
             {
@@ -1440,6 +1480,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
                     services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
                     services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
+                    if (eventLog != null)
+                    {
+                        services.AddSingleton(eventLog);
+                    }                    
                 });
             }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
@@ -1589,6 +1633,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             redirectToOidcProviderResponse.Headers.TryGetValues(HeaderNames.SetCookie, out IEnumerable<string> setCookieHeaders);
             Assert.NotEmpty(setCookieHeaders);
             Assert.True(HasCookieValue(setCookieHeaders, "authngoto", gotoUrl));
+        }
+
+        private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, string orgNumber, AuthenticationEventType authEventType, string userId = null)
+        {
+            AuthenticationEvent authenticationEvent = new AuthenticationEvent();
+            authenticationEvent.AuthenticationMethod = authMethod.ToString();
+            authenticationEvent.AuthenticationLevel = authLevel.ToString();
+            authenticationEvent.OrgNumber = orgNumber;
+            authenticationEvent.EventType = authEventType.ToString();
+            authenticationEvent.UserId = userId;
+
+            return authenticationEvent;
+        }
+
+        private static void AssertAuthenticationEvent(Mock<IEventLog> eventQueue, AuthenticationEvent expectedAuthenticationEvent)
+        {
+            eventQueue.Verify(e => e.CreateAuthenticationEvent(It.Is<AuthenticationEvent>(q => q.AuthenticationMethod == expectedAuthenticationEvent.AuthenticationMethod && q.AuthenticationLevel == expectedAuthenticationEvent.AuthenticationLevel && q.OrgNumber == expectedAuthenticationEvent.OrgNumber && q.UserId == expectedAuthenticationEvent.UserId && q.EventType == expectedAuthenticationEvent.EventType)), Times.Once());
         }
     }
 }

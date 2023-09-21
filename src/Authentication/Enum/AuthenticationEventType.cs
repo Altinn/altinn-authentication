@@ -7,6 +7,8 @@
     {
         AuthenticationFailed,
         Authenticated,
-        Logout
+        Refresh,
+        TokenExchange,
+        Logout,
     }
 }
