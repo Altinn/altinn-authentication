@@ -26,8 +26,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         [Fact]
         public async Task QueueAuthenticationEvent_OK()
         {
-            // Arrange
-            AuthenticationEvent authenticationEvent = GetAuthenticationEvent(SecurityLevel.QuiteSensitive, AuthenticationMethod.AltinnPIN, AuthenticationEventType.Authenticate, 45321);
+            // Arrange            
             UserAuthenticationModel authenticatedUser = GetAuthenticationModel(SecurityLevel.QuiteSensitive, AuthenticationMethod.AltinnPIN, AuthenticationEventType.Authenticate, 45321);
 
             Mock<IEventsQueueClient> queueMock = new();
