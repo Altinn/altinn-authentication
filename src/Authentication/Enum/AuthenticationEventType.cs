@@ -5,8 +5,7 @@
     /// </summary>
     public enum AuthenticationEventType
     {
-        AuthenticationFailed,
-        Authenticated,
+        Authenticate,
         Refresh,
         TokenExchange,
         Logout,

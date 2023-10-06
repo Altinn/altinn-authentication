@@ -16,7 +16,7 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Id of the user that triggered that authentication event 
         /// </summary>
-        public string UserId { get; set; }
+        public int? UserId { get; set; }
 
         /// <summary>
         /// Relevant if the event is triggered by enterprise user
@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Relevant if the event is triggered by enterprise user?
         /// </summary>
-        public string? OrgNumber { get; set; }
+        public int? OrgNumber { get; set; }
 
         /// <summary>
         /// The type of authentication used by the user (BankId etc)
@@ -44,8 +44,18 @@ namespace Altinn.Platform.Authentication.Model
         public string AuthenticationLevel { get; set; }
 
         /// <summary>
-        /// The session id
+        /// The ip address of the cliet request
         /// </summary>
-        public string SessionId { get; set; }
+        public string IpAddress { get; set; }
+
+        /// <summary>
+        /// The authentication result
+        /// </summary>
+        public bool IsAuthenticated { get; set; }
+
+        /// <summary>
+        /// Date, time of when the authentication event can be deleted
+        /// </summary>
+        public DateTime TimeToDelete { get; set; }
     }
 }

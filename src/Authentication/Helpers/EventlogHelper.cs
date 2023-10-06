@@ -9,6 +9,7 @@ using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.Constants;
+using Microsoft.AspNetCore.Http;
 using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Helpers
@@ -19,44 +20,12 @@ namespace Altinn.Platform.Authentication.Helpers
     public static class EventlogHelper
     {
         /// <summary>
-        /// Creates an authentication event
-        /// </summary>
-        /// <param name="featureManager">handler for feature manager service</param>
-        /// <param name="eventLog">handler for eventlog service</param>
-        /// <param name="jwtToken">token in the authentication request</param>
-        /// <param name="eventType">authentication event type</param>
-        public async static Task CreateAuthenticationEvent(IFeatureManager featureManager, IEventLog eventLog, string jwtToken, AuthenticationEventType eventType)
-        {
-            if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
-            {
-                AuthenticationEvent authenticationEvent = MapAuthenticationEvent(jwtToken, eventType);              
-                eventLog.CreateAuthenticationEvent(authenticationEvent);
-            }
-        }
-
-        /// <summary>
-        /// Creates an authentication event
-        /// </summary>
-        /// <param name="featureManager">handler for feature manager service</param>
-        /// <param name="eventLog">handler for eventlog service</param>
-        /// <param name="authenticatedUser">authenticat</param>
-        /// <param name="eventType">authentication event type</param>
-        public async static Task CreateAuthenticationEvent(IFeatureManager featureManager, IEventLog eventLog, UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType)
-        {
-            if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
-            {
-                AuthenticationEvent authenticationEvent = MapAuthenticationEvent(authenticatedUser, eventType);
-                eventLog.CreateAuthenticationEvent(authenticationEvent);
-            }
-        }
-
-        /// <summary>
         /// Maps claims to the authentication event model
         /// </summary>
         /// <param name="jwtToken">authenticated token</param>
         /// <param name="eventType">authentication event type</param>
         /// <returns>authentication event</returns>
-        public static AuthenticationEvent MapAuthenticationEvent(string jwtToken, AuthenticationEventType eventType)
+        public static AuthenticationEvent MapAuthenticationEvent(string jwtToken, AuthenticationEventType eventType, HttpContext context, DateTime currentDateTime, bool isAuthenticated = true)
         {
             JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             AuthenticationEvent authenticationEvent = null;
@@ -73,11 +42,11 @@ namespace Altinn.Platform.Authentication.Helpers
                         switch (claim.Type)
                         {
                             case AltinnCoreClaimTypes.UserId:
-                                authenticationEvent.UserId = claim.Value;
+                                authenticationEvent.UserId = Convert.ToInt32(claim.Value);
                                 break;
 
                             case AltinnCoreClaimTypes.OrgNumber:
-                                authenticationEvent.OrgNumber = claim.Value;
+                                authenticationEvent.OrgNumber = Convert.ToInt32(claim.Value);
                                 break;
 
                             case AltinnCoreClaimTypes.AuthenticateMethod:
@@ -100,7 +69,11 @@ namespace Altinn.Platform.Authentication.Helpers
                         }
                     }
 
+                    authenticationEvent.Created = currentDateTime;
                     authenticationEvent.EventType = eventType.ToString();
+                    authenticationEvent.IpAddress = GetClientIpAddress(context);
+                    authenticationEvent.IsAuthenticated = isAuthenticated;
+                    authenticationEvent.TimeToDelete = currentDateTime.AddYears(3);
                 }
 
                 return authenticationEvent;
@@ -115,19 +88,42 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="authenticatedUser">authenticated user</param>
         /// <param name="eventType">type of authentication event</param>
         /// <returns>authentication event</returns>
-        public static AuthenticationEvent MapAuthenticationEvent(UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType)
+        public static AuthenticationEvent MapAuthenticationEvent(UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType, HttpContext context, DateTime currentDateTime)
         {
             AuthenticationEvent authenticationEvent = null;
             if (authenticatedUser != null)
             {
                 authenticationEvent = new AuthenticationEvent();
+                authenticationEvent.Created = currentDateTime;
                 authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
                 authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
-                authenticationEvent.UserId = authenticatedUser.UserID.ToString();
+                authenticationEvent.UserId = authenticatedUser.UserID;
                 authenticationEvent.EventType = eventType.ToString();
+                authenticationEvent.IpAddress = GetClientIpAddress(context);
+                authenticationEvent.IsAuthenticated = authenticatedUser.IsAuthenticated;
+                authenticationEvent.TimeToDelete = currentDateTime.AddYears(3);
             }
 
             return authenticationEvent;
+        }
+
+        /// <summary>
+        /// Get the client ip address
+        /// </summary>
+        /// <param name="context">the http request context</param>
+        /// <returns></returns>
+        public static string GetClientIpAddress(HttpContext context)
+        {
+            // Try to get the client IP address from the X-Real-IP header
+            var clientIp = context?.Request?.Headers["X-Real-IP"].FirstOrDefault();
+
+            // If the X-Real-IP header is not present, fall back to the RemoteIpAddress property
+            if (string.IsNullOrEmpty(clientIp))
+            {
+                clientIp = context?.Connection?.RemoteIpAddress?.ToString();
+            }
+
+            return clientIp;
         }
     }
 }
