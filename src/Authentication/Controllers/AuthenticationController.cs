@@ -238,9 +238,8 @@ namespace Altinn.Platform.Authentication.Controllers
                     return StatusCode(StatusCodes.Status503ServiceUnavailable);
                 }
             }
-
-            AuthenticationEventType eventType = (userAuthentication != null && userAuthentication.IsAuthenticated) ? AuthenticationEventType.Authenticated : AuthenticationEventType.AuthenticationFailed;
-            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, userAuthentication, eventType);
+            
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, userAuthentication, AuthenticationEventType.Authenticate, HttpContext);
 
             if (userAuthentication != null && userAuthentication.IsAuthenticated)
             {
@@ -269,7 +268,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             string serializedToken = await GenerateToken(principal);
 
-            EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, serializedToken, AuthenticationEventType.Refresh);
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext);
             _logger.LogInformation("End of refreshing token");
 
             return Ok(serializedToken);
@@ -369,7 +368,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal);
-                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, serializedToken, AuthenticationEventType.TokenExchange);
+                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -489,7 +488,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal);
-                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, serializedToken, AuthenticationEventType.TokenExchange);
+                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -623,7 +622,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal, token.ValidTo);
-                EventlogHelper.CreateAuthenticationEvent(_featureManager, _eventLog, serializedToken, AuthenticationEventType.TokenExchange);
+                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
