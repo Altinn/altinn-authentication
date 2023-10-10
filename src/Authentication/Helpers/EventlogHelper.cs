@@ -120,6 +120,12 @@ namespace Altinn.Platform.Authentication.Helpers
             // If the X-Real-IP header is not present, fall back to the RemoteIpAddress property
             if (string.IsNullOrEmpty(clientIp))
             {
+                clientIp = context?.Request?.Headers["X-Forwarded-For"].FirstOrDefault();
+            }
+
+            // If the X-Forwarded-For header is not present, fall back to the RemoteIpAddress property
+            if (string.IsNullOrEmpty(clientIp))
+            {
                 clientIp = context?.Connection?.RemoteIpAddress?.ToString();
             }
 
