@@ -51,29 +51,28 @@ namespace Altinn.Platform.Authentication.Helpers
 
                             case AltinnCoreClaimTypes.AuthenticateMethod:
                                 AuthenticationMethod authenticationMethod;
-                                authenticationEvent.AuthenticationMethod = System.Enum.TryParse<AuthenticationMethod>(claim.Value, true, out authenticationMethod) ? authenticationMethod.ToString() : AuthenticationMethod.NotDefined.ToString();
+                                authenticationEvent.AuthenticationMethod = System.Enum.TryParse<AuthenticationMethod>(claim.Value, true, out authenticationMethod) ? authenticationMethod : AuthenticationMethod.NotDefined;
                                                                 
                                 break;
 
                             case AltinnCoreClaimTypes.AuthenticationLevel:
-                                authenticationEvent.AuthenticationLevel = ((SecurityLevel)System.Enum.Parse(typeof(SecurityLevel), claim.Value)).ToString();
+                                authenticationEvent.AuthenticationLevel = (SecurityLevel)System.Enum.Parse(typeof(SecurityLevel), claim.Value);
                                 break;
 
                             case "amr":
-                                authenticationEvent.AuthenticationMethod = AuthenticationHelper.GetAuthenticationMethod(claim.Value).ToString();
+                                authenticationEvent.AuthenticationMethod = AuthenticationHelper.GetAuthenticationMethod(claim.Value);
                                 break;
 
                             case "acr":
-                                authenticationEvent.AuthenticationLevel = AuthenticationHelper.GetAuthenticationLevel(claim.Value).ToString();
+                                authenticationEvent.AuthenticationLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(claim.Value);
                                 break;
                         }
                     }
 
                     authenticationEvent.Created = currentDateTime;
-                    authenticationEvent.EventType = eventType.ToString();
+                    authenticationEvent.EventType = eventType;
                     authenticationEvent.IpAddress = GetClientIpAddress(context);
-                    authenticationEvent.IsAuthenticated = isAuthenticated;
-                    authenticationEvent.TimeToDelete = currentDateTime.AddYears(3);
+                    authenticationEvent.IsAuthenticated = isAuthenticated;                    
                 }
 
                 return authenticationEvent;
@@ -95,13 +94,12 @@ namespace Altinn.Platform.Authentication.Helpers
             {
                 authenticationEvent = new AuthenticationEvent();
                 authenticationEvent.Created = currentDateTime;
-                authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod.ToString();
-                authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel.ToString();
+                authenticationEvent.AuthenticationMethod = authenticatedUser.AuthenticationMethod;
+                authenticationEvent.AuthenticationLevel = authenticatedUser.AuthenticationLevel;
                 authenticationEvent.UserId = authenticatedUser.UserID;
-                authenticationEvent.EventType = eventType.ToString();
+                authenticationEvent.EventType = eventType;
                 authenticationEvent.IpAddress = GetClientIpAddress(context);
-                authenticationEvent.IsAuthenticated = authenticatedUser.IsAuthenticated;
-                authenticationEvent.TimeToDelete = currentDateTime.AddYears(3);
+                authenticationEvent.IsAuthenticated = authenticatedUser.IsAuthenticated;                
             }
 
             return authenticationEvent;

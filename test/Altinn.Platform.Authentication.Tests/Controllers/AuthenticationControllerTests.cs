@@ -1647,11 +1647,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             AuthenticationEvent authenticationEvent = new AuthenticationEvent();
             authenticationEvent.Created = new DateTime(2018, 05, 15, 02, 05, 00);
-            authenticationEvent.AuthenticationMethod = authMethod.ToString();
-            authenticationEvent.AuthenticationLevel = authLevel.ToString();
+            authenticationEvent.AuthenticationMethod = authMethod;
+            authenticationEvent.AuthenticationLevel = authLevel;
             authenticationEvent.OrgNumber = orgNumber;
-            authenticationEvent.EventType = authEventType.ToString();
-            authenticationEvent.TimeToDelete = new DateTime(2021, 05, 15, 02, 05, 00);
+            authenticationEvent.EventType = authEventType;            
             authenticationEvent.UserId = userId;
             authenticationEvent.IsAuthenticated = isAuthenticated;
 

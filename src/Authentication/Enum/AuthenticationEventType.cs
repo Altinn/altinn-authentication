@@ -5,9 +5,9 @@
     /// </summary>
     public enum AuthenticationEventType
     {
-        Authenticate,
-        Refresh,
-        TokenExchange,
-        Logout,
+        Authenticate = 1,
+        Refresh = 2,
+        TokenExchange = 3,
+        Logout = 4,
     }
 }

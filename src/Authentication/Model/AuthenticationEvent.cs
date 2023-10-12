@@ -1,5 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Net.Security;
+using Altinn.Platform.Authentication.Enum;
 
 namespace Altinn.Platform.Authentication.Model
 {
@@ -26,7 +28,7 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// The type of authentication event
         /// </summary>
-        public string EventType { get; set; }
+        public AuthenticationEventType EventType { get; set; }
 
         /// <summary>
         /// Relevant if the event is triggered by enterprise user?
@@ -36,12 +38,12 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// The type of authentication used by the user (BankId etc)
         /// </summary>
-        public string AuthenticationMethod { get; set; }
+        public AuthenticationMethod AuthenticationMethod { get; set; }
 
         /// <summary>
         /// The level of authentication used by the user (1, 2,  etc)
         /// </summary>
-        public string AuthenticationLevel { get; set; }
+        public SecurityLevel AuthenticationLevel { get; set; }
 
         /// <summary>
         /// The ip address of the cliet request
@@ -52,10 +54,5 @@ namespace Altinn.Platform.Authentication.Model
         /// The authentication result
         /// </summary>
         public bool IsAuthenticated { get; set; }
-
-        /// <summary>
-        /// Date, time of when the authentication event can be deleted
-        /// </summary>
-        public DateTime TimeToDelete { get; set; }
     }
 }

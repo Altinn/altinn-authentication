@@ -164,9 +164,9 @@ namespace Altinn.Platform.Authentication.Tests.Services
         {
             AuthenticationEvent authenticationEvent = new()
             {
-                AuthenticationLevel = authenticationLevel.ToString(),
-                AuthenticationMethod = authenticationMethod.ToString(),
-                EventType = eventType.ToString(),
+                AuthenticationLevel = authenticationLevel,
+                AuthenticationMethod = authenticationMethod,
+                EventType = eventType,
                 UserId = userId
             };
 
@@ -180,8 +180,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
                 AuthenticationLevel = authenticationLevel,
                 AuthenticationMethod = authenticationMethod,
                 IsAuthenticated = true,
-                UserID = userId,
-                
+                UserID = userId                
             };
 
             return authenticatedUser;
