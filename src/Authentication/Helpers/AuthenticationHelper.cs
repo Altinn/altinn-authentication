@@ -79,7 +79,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals("acr"))
                 {
-                    userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevel(claim.Value);
+                    userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevelForIdPorten(claim.Value);
                     continue;
                 }
 
@@ -109,21 +109,23 @@ namespace Altinn.Platform.Authentication.Helpers
         }
        
         /// <summary>
-        /// Converts IDporten acr claim �Authentication Context Class Reference� - The security level of assurance for the
+        /// Converts IDporten acr claim Authentication Context Class Reference - The security level of assurance for the
         /// authentication. Possible values are Level3 (i.e. MinID was used) or Level4 (other eIDs).
         /// The level must be validated by the client.
         /// </summary>
-        public static SecurityLevel GetAuthenticationLevel(string acr)
+        public static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
         {
             switch (acr)
             {
+                case "Level0":
+                    return Enum.SecurityLevel.NotSensitive;
                 case "Level3":
                     return Enum.SecurityLevel.Sensitive;
                 case "Level4":
                     return Enum.SecurityLevel.VerySensitive;
+                default: 
+                    return Enum.SecurityLevel.NotSensitive;
             }
-
-            return SecurityLevel.SelfIdentifed;
         }
 
         /// <summary>

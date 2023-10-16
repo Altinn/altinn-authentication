@@ -104,5 +104,10 @@ namespace Altinn.Platform.Authentication.Enum
         /// user is logged in with the help of virksomhets bruker
         /// </summary>
         VirksomhetsBruker = 17,
+
+        /// <summary>
+        /// user is logged in with the help of testid in idporten
+        /// </summary>
+        TestID = 18,
     }
 }
