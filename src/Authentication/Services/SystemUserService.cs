@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<SystemUserResponse> CreateSystemUser(SystemUserCreateRequest request)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(theMockList[0]);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<SystemUserResponse> GetSingleSystemUserById(Guid systemUserId)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(theMockList.Find(s => s.Id == systemUserId.ToString()));
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(theMockList[0]);
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task UpdateSystemUserById(Guid systemUserId)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(theMockList[0]);
         }
 
         /// <summary>
