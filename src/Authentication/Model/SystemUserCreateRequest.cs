@@ -1,16 +1,38 @@
-﻿namespace Altinn.Platform.Authentication.Model
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Model
 {
     /// <summary>
     /// Model for the request object from the Frontend's BFF when creating a new System User (or doing an Update?)
     /// </summary>
     public class SystemUserCreateRequest
     {
+#nullable enable
         /// <summary>
         /// GUID created by the "real" Authentication Component
         /// When the Frontend send a request for a new SystemUser it may have a temporary Id
         /// Also when doing Updates the Frontend must send in the proper Id
         /// </summary>
         public string? Id { get; set; }
+
+        /// <summary>
+        /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
+        /// In these cases the SupplierName and SupplierOrgNo will be blank
+        /// </summary>
+        public string? ClientId { get; set; }
+
+        /// <summary>
+        /// The name of the Supplier of the Product used in this Integration.
+        /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
+        /// </summary>
+        public string? SupplierName { get; set; }
+
+        /// <summary>
+        /// The organization number for the Supplier of the Product 
+        /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
+        /// </summary>
+        public string? SupplierOrgNo { get; set; }
+#nullable disable
 
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
@@ -35,23 +57,5 @@
         /// user party serivces
         /// </summary>
         public string OwnedByPartyId { get; set; }
-
-        /// <summary>
-        /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
-        /// In these cases the SupplierName and SupplierOrgNo will be blank
-        /// </summary>
-        public string? ClientId { get; set; }
-
-        /// <summary>
-        /// The name of the Supplier of the Product used in this Integration.
-        /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
-        /// </summary>
-        public string? SupplierName { get; set; }
-
-        /// <summary>
-        /// The organization number for the Supplier of the Product 
-        /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
-        /// </summary>
-        public string? SupplierOrgNo { get; set; }
     }
 }

@@ -38,12 +38,6 @@
         public string OwnedByPartyId { get; set; }        
 
         /// <summary>
-        /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
-        /// In these cases the SupplierName and SupplierOrgNo will be blank
-        /// </summary>
-        public string? ClientId { get; set; }
-
-        /// <summary>
         /// Nice to have for debugging and logging.
         /// </summary>
         public string Created { get; set; }
@@ -56,6 +50,7 @@
         /// </summary>
         public bool IsDeleted { get; set; }
 
+#nullable enable
         /// <summary>
         /// The name of the Supplier of the Product used in this Integration.
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
@@ -67,5 +62,11 @@
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
         public string? SupplierOrgNo { get; set; }
+
+        /// <summary>
+        /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
+        /// In these cases the SupplierName and SupplierOrgNo will be blank
+        /// </summary>
+        public string? ClientId { get; set; }
     }
 }
