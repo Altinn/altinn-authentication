@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("list/{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas()
         {
-            await Task.Delay(50);
+            await Task.Delay(10);
             return Ok();
         }
 
@@ -30,7 +30,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("systemuser/{partyId}/{systemUserId}")]
         public async Task<ActionResult> GetSingleSystemUserById()
         {
-            await Task.Delay(50);
+            await Task.Delay(20);
             return Ok();
         }
 
@@ -41,7 +41,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpDelete("systemuser/{partyId}/{systemUserId}")]
         public async Task<ActionResult> SetDeleteFlagOnSystemUser()
         {
-            await Task.Delay(50);
+            await Task.Delay(30);
             return Ok();
         }
 
@@ -55,7 +55,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpPost("systemuser/{partyId}/{createRequestId}")]
         public async Task<ActionResult> CreateSystemUser()
         {
-            await Task.Delay(50);
+            await Task.Delay(40);
             return Ok();
         }
 
