@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -59,10 +60,11 @@ namespace Altinn.Platform.Authentication.Controllers
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>        
-        [ProducesResponseType(StatusCodes.Status201Created)]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(SystemUserResponse), StatusCodes.Status201Created)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPost("systemuser/{partyId}/{createRequestId}")]
-        public async Task<ActionResult> CreateSystemUser()
+        public async Task<ActionResult<SystemUserResponse>> CreateSystemUser()
         {
             await Task.Delay(40);
             return Ok();
@@ -74,6 +76,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Consumes("application/x-www-form-urlencoded")]
         [HttpPut("systemuser/{partyId}/{systemUserId}")]
         public async Task<ActionResult> UpdateSystemUserById()
         {
