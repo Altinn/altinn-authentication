@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Altinn.Platform.Authentication.Controllers
@@ -16,6 +17,8 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Returns the list of SystemUsers this PartyID has registered
         /// </summary>
         /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("list/{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas()
         {
@@ -27,6 +30,8 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
         /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("systemuser/{partyId}/{systemUserId}")]
         public async Task<ActionResult> GetSingleSystemUserById()
         {
@@ -38,6 +43,8 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpDelete("systemuser/{partyId}/{systemUserId}")]
         public async Task<ActionResult> SetDeleteFlagOnSystemUser()
         {
@@ -51,7 +58,9 @@ namespace Altinn.Platform.Authentication.Controllers
         /// But the calling client may send a guid for the request of creating a new system user
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
-        /// <returns></returns>
+        /// <returns></returns>        
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPost("systemuser/{partyId}/{createRequestId}")]
         public async Task<ActionResult> CreateSystemUser()
         {
@@ -63,6 +72,8 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPut("systemuser/{partyId}/{systemUserId}")]
         public async Task<ActionResult> UpdateSystemUserById()
         {

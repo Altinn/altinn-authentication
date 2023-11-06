@@ -1,10 +1,13 @@
-﻿namespace Altinn.Platform.Authentication.Model
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Model
 {
     /// <summary>
     /// The model of the System User response given in the CRUD API in SystemUserController.cs
     /// This model will be exchanged between this Authentication component, the PostGress db and the BFF for the Frontend.
     /// The BFF will provide a tailored DTO to the Frontend.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class SystemUserResponse
     {
         /// <summary>
@@ -50,23 +53,25 @@
         /// </summary>
         public bool IsDeleted { get; set; }
 
-#nullable enable
         /// <summary>
         /// The name of the Supplier of the Product used in this Integration.
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
-        public string? SupplierName { get; set; }
+        [AllowNull]
+        public string SupplierName { get; set; }
 
         /// <summary>
         /// The organization number for the Supplier of the Product 
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
-        public string? SupplierOrgNo { get; set; }
+        [AllowNull]
+        public string SupplierOrgNo { get; set; }
 
         /// <summary>
         /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
         /// In these cases the SupplierName and SupplierOrgNo will be blank
         /// </summary>
-        public string? ClientId { get; set; }
+        [AllowNull]
+        public string ClientId { get; set; }
     }
 }
