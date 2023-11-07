@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         public SystemUserService()
         {
-            theMockList = MockTestHelper();
+            theMockList = MockDataHelper();
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Helper method during development, just some Mock data.
         /// </summary>
         /// <returns></returns>
-        private static List<SystemUser> MockTestHelper()
+        private static List<SystemUser> MockDataHelper()
         {            
             SystemUser systemUser1 = new()
             {
