@@ -34,7 +34,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("list/{partyId}")]
+        [HttpGet("{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
         {
             List<SystemUserResponse> theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
@@ -53,7 +53,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("systemuser/{partyId}/{systemUserId}")]
+        [HttpGet("{partyId}/{systemUserId}")]
         public async Task<ActionResult> GetSingleSystemUserById(Guid systemUserId)
         {
             SystemUserResponse systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
@@ -71,7 +71,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpDelete("systemuser/{partyId}/{systemUserId}")]
+        [HttpDelete("{partyId}/{systemUserId}")]
         public async Task<ActionResult> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
             SystemUserResponse toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
@@ -95,7 +95,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(typeof(SystemUserResponse), StatusCodes.Status201Created)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Consumes("application/x-www-form-urlencoded")]
-        [HttpPost("systemuser/{partyId}/{createRequestId}")]
+        [HttpPost("{partyId}/{createRequestId}")]
         public async Task<ActionResult<SystemUserResponse>> CreateSystemUser([FromBody] SystemUserCreateRequest request)
         {
             SystemUserResponse toBeCreated = await _systemUserService.CreateSystemUser(request);
@@ -114,7 +114,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Consumes("application/x-www-form-urlencoded")]
-        [HttpPut("systemuser/{partyId}/{systemUserId}")]
+        [HttpPut("{partyId}/{systemUserId}")]
         public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUserCreateRequest request)
         {
             SystemUserResponse toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
