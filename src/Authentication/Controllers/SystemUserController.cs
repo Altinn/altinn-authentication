@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement.Mvc;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
@@ -13,6 +15,7 @@ namespace Altinn.Platform.Authentication.Controllers
     /// CRUD API for the System User 
     /// </summary>
     /// [Authorize]
+    [FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
     public class SystemUserController : ControllerBase
@@ -37,7 +40,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
         {
-            List<SystemUserResponse> theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
+            List<SystemUser> theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
 
             if (theList is not null && theList.Count > 0)
             {
@@ -56,7 +59,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("{partyId}/{systemUserId}")]
         public async Task<ActionResult> GetSingleSystemUserById(Guid systemUserId)
         {
-            SystemUserResponse systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
+            SystemUser systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
             if (systemUser is not null)
             {
                 return Ok();
@@ -74,7 +77,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpDelete("{partyId}/{systemUserId}")]
         public async Task<ActionResult> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
-            SystemUserResponse toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
+            SystemUser toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
             if (toBeDeleted is not null)
             {
                 await _systemUserService.SetDeleteFlagOnSystemUser(systemUserId);
@@ -92,13 +95,13 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         /// <returns></returns>        
         [Produces("application/json")]
-        [ProducesResponseType(typeof(SystemUserResponse), StatusCodes.Status201Created)]        
+        [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Consumes("application/x-www-form-urlencoded")]
         [HttpPost("{partyId}/{createRequestId}")]
-        public async Task<ActionResult<SystemUserResponse>> CreateSystemUser([FromBody] SystemUserCreateRequest request)
+        public async Task<ActionResult<SystemUser>> CreateSystemUser([FromBody] SystemUser request)
         {
-            SystemUserResponse toBeCreated = await _systemUserService.CreateSystemUser(request);
+            SystemUser toBeCreated = await _systemUserService.CreateSystemUser(request);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);
@@ -115,9 +118,9 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Consumes("application/x-www-form-urlencoded")]
         [HttpPut("{partyId}/{systemUserId}")]
-        public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUserCreateRequest request)
+        public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUser request)
         {
-            SystemUserResponse toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
+            SystemUser toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
             if (toBeUpdated is not null)
             {
                 await _systemUserService.UpdateSystemUserById(Guid.Parse(request.Id));

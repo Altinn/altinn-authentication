@@ -15,19 +15,19 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Returns the list of SystemUsers this PartyID has registered
         /// </summary>
         /// <returns></returns>
-        Task<List<SystemUserResponse>> GetListOfSystemUsersPartyHas(int partyId);
+        Task<List<SystemUser>> GetListOfSystemUsersPartyHas(int partyId);
 
         /// <summary>
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
         /// <returns></returns>
-        Task<SystemUserResponse> GetSingleSystemUserById(Guid systemUserId);
+        Task<SystemUser> GetSingleSystemUserById(Guid systemUserId);
 
         /// <summary>
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns></returns>
-        Task SetDeleteFlagOnSystemUser(Guid systemUserId);
+        Task<int> SetDeleteFlagOnSystemUser(Guid systemUserId);
 
         /// <summary>
         /// Creates a new SystemUser
@@ -36,7 +36,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns> 
-        Task<SystemUserResponse> CreateSystemUser(SystemUserCreateRequest request);
+        Task<SystemUser> CreateSystemUser(SystemUser request);
 
         /// <summary>
         /// Replaces the values for the existing system user with those from the update 

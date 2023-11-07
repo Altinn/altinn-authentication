@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUserResponse> CreateSystemUser(SystemUserCreateRequest request)
+        public Task<SystemUser> CreateSystemUser(SystemUser request)
         {
             throw new System.NotImplementedException();
         }
@@ -28,7 +28,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// Returns the list of SystemUsers this PartyID has registered
         /// </summary>
         /// <returns></returns>
-        public Task<List<SystemUserResponse>> GetListOfSystemUsersPartyHas(int partyId)
+        public Task<List<SystemUser>> GetListOfSystemUsersPartyHas(int partyId)
         {
             throw new System.NotImplementedException();
         }
@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUserResponse> GetSingleSystemUserById(Guid systemUserId)
+        public Task<SystemUser> GetSingleSystemUserById(Guid systemUserId)
         {
             throw new System.NotImplementedException();
         }
@@ -46,7 +46,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns></returns>
-        public Task SetDeleteFlagOnSystemUser(Guid systemUserId)
+        public Task<int> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
             throw new System.NotImplementedException();
         }

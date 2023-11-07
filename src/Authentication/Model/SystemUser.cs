@@ -8,7 +8,7 @@ namespace Altinn.Platform.Authentication.Model
     /// The BFF will provide a tailored DTO to the Frontend.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public class SystemUserResponse
+    public class SystemUser
     {
         /// <summary>
         /// GUID created by the "real" Authentication Component

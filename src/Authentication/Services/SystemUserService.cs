@@ -12,7 +12,7 @@ namespace Altinn.Platform.Authentication.Services
     /// </summary>
     public class SystemUserService : ISystemUserService
     {
-        private readonly List<SystemUserResponse> theMockList;
+        private readonly List<SystemUser> theMockList;
 
         /// <summary>
         /// The Constructor
@@ -29,16 +29,16 @@ namespace Altinn.Platform.Authentication.Services
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUserResponse> CreateSystemUser(SystemUserCreateRequest request)
+        public Task<SystemUser> CreateSystemUser(SystemUser request)
         {
             return Task.FromResult(theMockList[0]);
         }
 
         /// <summary>
-        /// Returns the list of SystemUsers this PartyID has registered
+        /// Returns the list of SystemUsers this PartyID has registered, including "deleted" ones.
         /// </summary>
         /// <returns></returns>
-        public Task<List<SystemUserResponse>> GetListOfSystemUsersPartyHas(int partyId)
+        public Task<List<SystemUser>> GetListOfSystemUsersPartyHas(int partyId)
         {
             return Task.FromResult(theMockList);
         }
@@ -47,7 +47,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUserResponse> GetSingleSystemUserById(Guid systemUserId)
+        public Task<SystemUser> GetSingleSystemUserById(Guid systemUserId)
         {
             return Task.FromResult(theMockList.Find(s => s.Id == systemUserId.ToString()));
         }
@@ -56,9 +56,11 @@ namespace Altinn.Platform.Authentication.Services
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns></returns>
-        public Task SetDeleteFlagOnSystemUser(Guid systemUserId)
+        public Task<int> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
-            return Task.FromResult(theMockList[0]);
+            SystemUser toBeDeleted = theMockList.Find(s => s.Id == systemUserId.ToString());
+            toBeDeleted.IsDeleted = true;
+            return Task.FromResult(1);
         }
 
         /// <summary>
@@ -74,9 +76,9 @@ namespace Altinn.Platform.Authentication.Services
         /// Helper method during development, just some Mock data.
         /// </summary>
         /// <returns></returns>
-        private static List<SystemUserResponse> MockTestHelper()
+        private static List<SystemUser> MockTestHelper()
         {            
-            SystemUserResponse systemUser1 = new()
+            SystemUser systemUser1 = new()
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbd",
                 IntegrationTitle = "Vårt regnskapsystem",
@@ -88,7 +90,7 @@ namespace Altinn.Platform.Authentication.Services
                 ClientId = string.Empty
             };
 
-            SystemUserResponse systemUser2 = new()
+            SystemUser systemUser2 = new()
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbe",
                 IntegrationTitle = "Vårt andre regnskapsystem",
@@ -100,7 +102,7 @@ namespace Altinn.Platform.Authentication.Services
                 ClientId = string.Empty
             };
 
-            SystemUserResponse systemUser3 = new()
+            SystemUser systemUser3 = new()
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
@@ -112,7 +114,7 @@ namespace Altinn.Platform.Authentication.Services
                 ClientId = string.Empty
             };
 
-            List<SystemUserResponse> systemUserList = new()
+            List<SystemUser> systemUserList = new()
         {
             systemUser1,
             systemUser2,

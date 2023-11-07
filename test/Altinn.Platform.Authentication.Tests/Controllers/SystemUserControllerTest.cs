@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemUser_Get_Single_ReturnsOK()
         {
-            SystemUserResponse test = await _systemUserService.GetSingleSystemUserById(Guid.Parse("37ce1792-3b35-4d50-a07d-636017aa7dbd"));
+            SystemUser test = await _systemUserService.GetSingleSystemUserById(Guid.Parse("37ce1792-3b35-4d50-a07d-636017aa7dbd"));
                         
             Assert.True(test is not null);
         }
@@ -39,10 +39,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemUser_Get_ListForPartyId_ReturnsListOK()
         {
-            List<SystemUserResponse> test = await _systemUserService.GetListOfSystemUsersPartyHas(1);
+            List<SystemUser> test = await _systemUserService.GetListOfSystemUsersPartyHas(1);
 
             Assert.True(test is not null);
             Assert.True(test.Count > 0);
+        }
+
+        [Fact]
+        public async Task SystemUser_Delete_ReturnsOk()
+        {
+            List<SystemUser> list = await _systemUserService.GetListOfSystemUsersPartyHas(1);
+            var id = list[0].Id;            
+
+            await _systemUserService.SetDeleteFlagOnSystemUser(Guid.Parse(id));
+            
+            SystemUser res = await _systemUserService.GetSingleSystemUserById(Guid.Parse(id));
+
+            Assert.True(res.IsDeleted);
         }
     }
 }
