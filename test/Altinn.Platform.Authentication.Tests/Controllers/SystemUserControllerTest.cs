@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Controllers;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -28,11 +29,20 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetSystemUserListForPartyId_ReturnsListOK()
+        public async Task SystemUser_Get_Single_ReturnsOK()
         {
-            var test = _systemUserService.GetSingleSystemUserById(Guid.Empty);
+            SystemUserResponse test = await _systemUserService.GetSingleSystemUserById(Guid.Parse("37ce1792-3b35-4d50-a07d-636017aa7dbd"));
+                        
+            Assert.True(test is not null);
+        }
+
+        [Fact]
+        public async Task SystemUser_Get_ListForPartyId_ReturnsListOK()
+        {
+            List<SystemUserResponse> test = await _systemUserService.GetListOfSystemUsersPartyHas(1);
 
             Assert.True(test is not null);
+            Assert.True(test.Count > 0);
         }
     }
 }
