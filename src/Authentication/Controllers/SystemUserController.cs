@@ -43,6 +43,11 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
         {
+            if (partyId < 1)
+            {
+                return NotFound();
+            }
+
             List<SystemUser> theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
 
             if (theList is not null && theList.Count > 0)
@@ -99,10 +104,9 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>        
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Consumes("application/x-www-form-urlencoded")]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]        
         [HttpPost("{partyId}/{createRequestId}")]
-        public async Task<ActionResult<SystemUser>> CreateSystemUser([FromBody] SystemUser request)
+        public async Task<ActionResult<SystemUser>> CreateSystemUser(SystemUser request)
         {
             SystemUser toBeCreated = await _systemUserService.CreateSystemUser(request);
             if (toBeCreated is not null)

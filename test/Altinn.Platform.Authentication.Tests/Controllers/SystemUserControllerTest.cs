@@ -15,6 +15,7 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
+using Altinn.Platform.Register.Models;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -52,6 +53,29 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemUser_Get_ListForPartyId_ReturnsListOK()
+        {
+            HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            int partyId = 1;
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), jsonOptions);
+
+            Assert.True(list is not null);
+            Assert.True(list.Count > 0);
+        }
+
+        [Fact]
+        public async Task SystemUser_Get_ListForPartyId_ReturnsNotFound()
+        {
+            HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            int partyId = 0;
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.True(!response.IsSuccessStatusCode);
+        }
+
+        [Fact]
         public async Task SystemUser_Get_Single_ReturnsOK()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
@@ -70,16 +94,20 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task SystemUser_Get_ListForPartyId_ReturnsListOK()
+        public async Task SystemUser_Get_Single_ReturnsNotFound()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
             int partyId = 1;
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), jsonOptions);
+            var id = list[0].Id;
+            string para = $"{partyId}/123456778890";
 
-            Assert.True(list is not null);
-            Assert.True(list.Count > 0);
+            HttpRequestMessage request3 = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
+            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
+
+            Assert.True(!response3.IsSuccessStatusCode);
         }
 
         [Fact]
@@ -102,6 +130,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemUser_Delete_ReturnsNotFound()
+        {
+            HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            int partyId = 1;
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), jsonOptions);
+            var id = list[0].Id;
+            string para = $"{partyId}/{id}";
+            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{para}");
+            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+
+            HttpRequestMessage request3 = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/1/1234567890");
+            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
+
+            Assert.True(!response3.IsSuccessStatusCode);
+        }
+
+        [Fact]
         public async Task SystemUser_Update_ReturnsOk()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
@@ -121,6 +168,76 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             SystemUser shouldBeUpdated = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), jsonOptions);
             Assert.Equal("Hey there!", shouldBeUpdated.Description);
+        }
+
+        [Fact]
+        public async Task SystemUser_Update_ReturnsNotFound()
+        {
+            HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            int partyId = 1;
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), jsonOptions);
+            var id = list[0].Id;
+            string para = $"{partyId}/{id}";
+
+            list[0].Description = "Hey there!";
+            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Put, $"/authentication/api/v1/systemuser/{para}");
+            request2.Content = JsonContent.Create<SystemUser>(list[0], new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"), jsonOptions);
+            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+
+            HttpRequestMessage request3 = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/1/122323453456");
+            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
+
+            Assert.True(!response3.IsSuccessStatusCode);
+        }
+
+        [Fact]
+        public async Task SystemUser_Create_ReturnsOk()
+        {
+            HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            int partyId = 1;
+            Guid id = Guid.NewGuid();
+
+            string para = $"{partyId}/{id}";
+            SystemUser newSystemUser = new SystemUser
+            {
+                Description = "This is the new SystemUser!",
+                Id = id.ToString()
+            };
+
+            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Post, $"/authentication/api/v1/systemuser/{para}");
+            request2.Content = JsonContent.Create<SystemUser>(newSystemUser, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"), jsonOptions);
+            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+
+            HttpRequestMessage request3 = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
+            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
+            SystemUser shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), jsonOptions);
+            Assert.Equal("This is the new SystemUser!", shouldBeCreated.Description);            
+        }
+
+        [Fact]
+        public async Task SystemUser_Create_ReturnsNotFound()
+        {
+            HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            int partyId = 1;
+            Guid id = Guid.NewGuid();
+
+            string para = $"{partyId}/{id}";
+            SystemUser newSystemUser = new SystemUser
+            {
+                Description = "This is the new SystemUser!",
+                Id = "12334523456346"
+            };
+
+            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Post, $"/authentication/api/v1/systemuser/{para}");
+            request2.Content = JsonContent.Create<SystemUser>(newSystemUser, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"), jsonOptions);
+            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+
+            HttpRequestMessage request3 = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
+            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
+
+            Assert.True(!response3.IsSuccessStatusCode);
         }
 
         private HttpClient GetTestClient(ISblCookieDecryptionService sblCookieDecryptionService, IUserProfileService userProfileService, IFeatureManager featureManager = null)

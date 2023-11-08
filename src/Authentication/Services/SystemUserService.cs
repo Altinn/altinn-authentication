@@ -31,7 +31,8 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<SystemUser> CreateSystemUser(SystemUser request)
         {
-            return Task.FromResult(theMockList[0]);
+            theMockList.Add(request);
+            return Task.FromResult(request);
         }
 
         /// <summary>
