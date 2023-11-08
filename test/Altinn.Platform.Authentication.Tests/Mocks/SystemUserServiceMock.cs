@@ -55,7 +55,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
-        public Task UpdateSystemUserById(Guid systemUserId)
+        public Task<int> UpdateSystemUserById(Guid systemUserId, SystemUser request)
         {
             throw new System.NotImplementedException();
         }

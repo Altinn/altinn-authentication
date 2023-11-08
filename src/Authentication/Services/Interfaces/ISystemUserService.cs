@@ -42,6 +42,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
-        Task UpdateSystemUserById(Guid systemUserId);
+        Task<int> UpdateSystemUserById(Guid systemUserId, SystemUser request);
     }
 }

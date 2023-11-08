@@ -15,6 +15,9 @@ namespace Altinn.Platform.Authentication.Controllers
     /// CRUD API for the System User 
     /// </summary>
     /// [Authorize]
+#if !DEBUG
+    [ApiExplorerSettings(IgnoreApi = true)]
+#endif
     [FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
@@ -57,12 +60,12 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{partyId}/{systemUserId}")]
-        public async Task<ActionResult> GetSingleSystemUserById(Guid systemUserId)
+        public async Task<ActionResult> GetSingleSystemUserById(int partyId, Guid systemUserId)
         {
             SystemUser systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
             if (systemUser is not null)
             {
-                return Ok();
+                return Ok(systemUser);
             }
 
             return NotFound();
@@ -81,10 +84,10 @@ namespace Altinn.Platform.Authentication.Controllers
             if (toBeDeleted is not null)
             {
                 await _systemUserService.SetDeleteFlagOnSystemUser(systemUserId);
-                return Ok();
+                return Ok(1);
             }
 
-            return NotFound();            
+            return NotFound(0);            
         }
 
         /// <summary>
@@ -116,14 +119,13 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Consumes("application/x-www-form-urlencoded")]
         [HttpPut("{partyId}/{systemUserId}")]
-        public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUser request)
+        public async Task<ActionResult> UpdateSystemUserById(SystemUser request)
         {
             SystemUser toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
             if (toBeUpdated is not null)
             {
-                await _systemUserService.UpdateSystemUserById(Guid.Parse(request.Id));
+                await _systemUserService.UpdateSystemUserById(Guid.Parse(request.Id), request);
                 return Ok();
             }
 

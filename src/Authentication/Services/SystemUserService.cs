@@ -67,9 +67,11 @@ namespace Altinn.Platform.Authentication.Services
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
-        public Task UpdateSystemUserById(Guid systemUserId)
+        public Task<int> UpdateSystemUserById(Guid systemUserId, SystemUser request)
         {
-            return Task.FromResult(theMockList[0]);
+            int array = theMockList.FindIndex(su => su.Id == request.Id);
+            theMockList[array] = request;
+            return Task.FromResult(1);
         }
 
         /// <summary>
