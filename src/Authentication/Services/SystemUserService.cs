@@ -33,7 +33,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (int.Parse(request.OwnedByPartyId) < 1)
             {
-                return null;
+                return Task.FromResult<SystemUser>(null);
             }
 
             theMockList.Add(request);
@@ -48,7 +48,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (partyId < 1)
             {
-                return null;
+                return Task.FromResult<List<SystemUser>>(null);
             }
 
             return Task.FromResult(theMockList);
