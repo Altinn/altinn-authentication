@@ -139,13 +139,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), jsonOptions);
             var id = list[0].Id;
             string para = $"{partyId}/{id}";
-            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{para}");
+            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Delete, $"/authentication/api/v1/systemuser/1/1234567890");
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
 
-            HttpRequestMessage request3 = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/1/1234567890");
-            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-
-            Assert.True(!response3.IsSuccessStatusCode);
+            Assert.True(!response2.IsSuccessStatusCode);
         }
 
         [Fact]
@@ -174,22 +171,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Update_ReturnsNotFound()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            int partyId = 1;
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), jsonOptions);
-            var id = list[0].Id;
-            string para = $"{partyId}/{id}";
 
-            list[0].Description = "Hey there!";
-            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Put, $"/authentication/api/v1/systemuser/{para}");
-            request2.Content = JsonContent.Create<SystemUser>(list[0], new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"), jsonOptions);
+            SystemUser doesNotExist = new() { Id = "123"};
+
+            HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser/1/122323453456")
+            {
+                Content = JsonContent.Create<SystemUser>(doesNotExist, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"), jsonOptions)
+            };
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
 
-            HttpRequestMessage request3 = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/1/122323453456");
-            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-
-            Assert.True(!response3.IsSuccessStatusCode);
+            Assert.True(!response2.IsSuccessStatusCode);
         }
 
         [Fact]
@@ -203,7 +194,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUser newSystemUser = new SystemUser
             {
                 Description = "This is the new SystemUser!",
-                Id = id.ToString()
+                Id = id.ToString(),
+                OwnedByPartyId = partyId.ToString()
             };
 
             HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Post, $"/authentication/api/v1/systemuser/{para}");

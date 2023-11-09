@@ -43,12 +43,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
         {
-            if (partyId < 1)
-            {
-                return NotFound();
-            }
-
-            List<SystemUser> theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
+            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
 
             if (theList is not null && theList.Count > 0)
             {
@@ -67,7 +62,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("{partyId}/{systemUserId}")]
         public async Task<ActionResult> GetSingleSystemUserById(int partyId, Guid systemUserId)
         {
-            SystemUser systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
+            SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
             if (systemUser is not null)
             {
                 return Ok(systemUser);
@@ -85,7 +80,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpDelete("{partyId}/{systemUserId}")]
         public async Task<ActionResult> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
-            SystemUser toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
+            SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
             if (toBeDeleted is not null)
             {
                 await _systemUserService.SetDeleteFlagOnSystemUser(systemUserId);
@@ -108,7 +103,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpPost("{partyId}/{createRequestId}")]
         public async Task<ActionResult<SystemUser>> CreateSystemUser(SystemUser request)
         {
-            SystemUser toBeCreated = await _systemUserService.CreateSystemUser(request);
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);
@@ -126,7 +121,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpPut("{partyId}/{systemUserId}")]
         public async Task<ActionResult> UpdateSystemUserById(SystemUser request)
         {
-            SystemUser toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
+            SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
             if (toBeUpdated is not null)
             {
                 await _systemUserService.UpdateSystemUserById(Guid.Parse(request.Id), request);

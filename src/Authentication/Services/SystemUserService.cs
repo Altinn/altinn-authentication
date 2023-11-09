@@ -31,6 +31,11 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<SystemUser> CreateSystemUser(SystemUser request)
         {
+            if (int.Parse(request.OwnedByPartyId) < 1)
+            {
+                return null;
+            }
+
             theMockList.Add(request);
             return Task.FromResult(request);
         }
@@ -41,6 +46,11 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<List<SystemUser>> GetListOfSystemUsersPartyHas(int partyId)
         {
+            if (partyId < 1)
+            {
+                return null;
+            }
+
             return Task.FromResult(theMockList);
         }
 
@@ -50,7 +60,9 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<SystemUser> GetSingleSystemUserById(Guid systemUserId)
         {
-            return Task.FromResult(theMockList.Find(s => s.Id == systemUserId.ToString()));
+            SystemUser search = theMockList.Find(s => s.Id == systemUserId.ToString());
+            
+            return Task.FromResult(search);
         }
 
         /// <summary>
