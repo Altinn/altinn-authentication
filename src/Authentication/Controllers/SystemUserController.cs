@@ -11,14 +11,11 @@ using Microsoft.FeatureManagement.Mvc;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
+#nullable enable
     /// <summary>
     /// CRUD API for the System User 
     /// </summary>
-    /// [Authorize]
-#if !DEBUG
-    [ApiExplorerSettings(IgnoreApi = true)]
-#endif
-#nullable enable
+    [Authorize]
     [FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
