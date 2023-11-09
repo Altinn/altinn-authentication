@@ -279,8 +279,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                         services.AddSingleton(featureManager);
                     }
                 });
-
-            }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false});
+            }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
             return client;
         }
