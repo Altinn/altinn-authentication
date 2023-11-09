@@ -172,7 +172,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
 
-            SystemUser doesNotExist = new() { Id = "123"};
+            SystemUser doesNotExist = new() { Id = "123" };
 
             HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser/1/122323453456")
             {
@@ -191,7 +191,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid id = Guid.NewGuid();
 
             string para = $"{partyId}/{id}";
-            SystemUser newSystemUser = new SystemUser
+            SystemUser newSystemUser = new()
             {
                 Description = "This is the new SystemUser!",
                 Id = id.ToString(),

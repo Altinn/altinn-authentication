@@ -18,6 +18,7 @@ namespace Altinn.Platform.Authentication.Controllers
 #if !DEBUG
     [ApiExplorerSettings(IgnoreApi = true)]
 #endif
+#nullable enable
     [FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
