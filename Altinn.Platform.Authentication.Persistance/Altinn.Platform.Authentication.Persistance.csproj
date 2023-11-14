@@ -10,9 +10,23 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<AdditionalFiles Include="..\..\stylecop.json">
-			<Link>stylecop.json</Link>
-		</AdditionalFiles>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AdditionalFiles Include="..\stylecop.json" Link="stylecop.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\src\Authentication\Altinn.Platform.Authentication.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Migration\v0.00\" />
+	  <Folder Include="Migration\_pre\" />
+	  <Folder Include="Migration\_post\" />
+	  <Folder Include="Migration\_init\" />
+	  <Folder Include="Migration\_erase\" />
+	  <Folder Include="Migration\_draft\" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
