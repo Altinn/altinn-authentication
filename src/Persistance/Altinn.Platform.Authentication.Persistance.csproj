@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net7.0</TargetFramework>
@@ -8,25 +8,21 @@
 	<ItemGroup Condition="'$(Configuration)'=='Debug'">
 		<PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.507">
 			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <AdditionalFiles Include="..\stylecop.json" Link="stylecop.json" />
+	  <AdditionalFiles Include="..\..\stylecop.json" Link="stylecop.json" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\src\Authentication\Altinn.Platform.Authentication.csproj" />
+	  <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
+	  <PackageReference Include="Npgsql" Version="7.0.6" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Migration\v0.00\" />
-	  <Folder Include="Migration\_pre\" />
-	  <Folder Include="Migration\_post\" />
-	  <Folder Include="Migration\_init\" />
-	  <Folder Include="Migration\_erase\" />
-	  <Folder Include="Migration\_draft\" />
+	  <ProjectReference Include="..\Authentication\Altinn.Platform.Authentication.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">

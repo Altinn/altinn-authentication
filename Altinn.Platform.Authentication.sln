@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Altinn.Platform.Authenticat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Altinn.Platform.Authentication.Tests", "test\Altinn.Platform.Authentication.Tests\Altinn.Platform.Authentication.Tests.csproj", "{BBEE9804-91DA-4244-9795-A49D83465D52}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altinn.Platform.Authentication.Persistance", "Altinn.Platform.Authentication.Persistance\Altinn.Platform.Authentication.Persistance.csproj", "{65D3801A-9A77-4F42-A8BF-A17713D17FC0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Altinn.Platform.Authentication.Persistance", "src\Persistance\Altinn.Platform.Authentication.Persistance.csproj", "{2AB77F2E-870A-40AC-B0FF-22616A7CF028}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{BBEE9804-91DA-4244-9795-A49D83465D52}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBEE9804-91DA-4244-9795-A49D83465D52}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBEE9804-91DA-4244-9795-A49D83465D52}.Release|Any CPU.Build.0 = Release|Any CPU
-		{65D3801A-9A77-4F42-A8BF-A17713D17FC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{65D3801A-9A77-4F42-A8BF-A17713D17FC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{65D3801A-9A77-4F42-A8BF-A17713D17FC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{65D3801A-9A77-4F42-A8BF-A17713D17FC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AB77F2E-870A-40AC-B0FF-22616A7CF028}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AB77F2E-870A-40AC-B0FF-22616A7CF028}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AB77F2E-870A-40AC-B0FF-22616A7CF028}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AB77F2E-870A-40AC-B0FF-22616A7CF028}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
