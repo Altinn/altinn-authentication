@@ -100,7 +100,7 @@ namespace Altinn.Platform.Authentication.Services
                 Description = "Koblet opp mot Visma. Snakk med Pål om abonnement",
                 ProductName = "visma_vis_v2",
                 OwnedByPartyId = "orgno:91235123",
-                Created = "2023-09-12",
+                Created = System.DateTime.Parse("2023-09-12"),
                 IsDeleted = false,
                 ClientId = string.Empty
             };
@@ -112,7 +112,7 @@ namespace Altinn.Platform.Authentication.Services
                 Description = "Snakk med Per om abonnement",
                 ProductName = "visma_vis_sys",
                 OwnedByPartyId = "orgno:91235124",
-                Created = "2023-09-22",
+                Created = System.DateTime.Parse("2023-09-22"),
                 IsDeleted = false,
                 ClientId = string.Empty
             };
@@ -124,7 +124,7 @@ namespace Altinn.Platform.Authentication.Services
                 Description = "Kai og Guri vet alt om dette systemet.",
                 ProductName = "fiken_superskatt",
                 OwnedByPartyId = "orgno:91235125",
-                Created = "2023-09-22",
+                Created = System.DateTime.Parse("2023-09-22"),
                 IsDeleted = false,
                 ClientId = string.Empty
             };

@@ -43,7 +43,7 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Nice to have for debugging and logging.
         /// </summary>
-        public string Created { get; set; }
+        public System.DateTime Created { get; set; }
 
         /// <summary>
         /// False by default, if a SystemUser is deleted in the API,

@@ -17,20 +17,30 @@ namespace Altinn.Platform.Authentication.Persistance
         private readonly string _connectionString;
 
         private readonly string insertSystemIntegration =
-            "SELECT * FROM altinn_authentication.insert_system_user_integration(@_integration_title, @_integration_description, @_product_name, @_owned_by_party_id, @_supplier_name, @_supplier_org_no, @_client_id)";
+            "SELECT * FROM altinn_authentication.insert_system_user_integration(" +
+            "@integration_title, " +
+            "@integration_description, " +
+            "@product_name, " +
+            "@owned_by_party_id, " +
+            "@supplier_name, " +
+            "@supplier_org_no, " +
+            "@client_id)";
 
+        /// <summary>
+        /// Private helper class to hold the Column names as constant strings to aid in typing SQL commands.
+        /// </summary>
         private class Column
         {
-            internal const string Id = "system_user_integration_id";
-            internal const string IntegrationTitle = "_integration_title";
-            internal const string Description = "_integration_description";
-            internal const string ProductName = "_product_name";
-            internal const string OwnedByPartyId = "_owned_by_party_id";
-            internal const string SupplierName = "_supplier_name";
-            internal const string SupplierOrgNo = "_supplier_org_no";
-            internal const string ClientId = "_client_id";
-            internal const string IsDeleted = "_is_deleted";
-            internal const string Created = "_created";
+            internal const string Id = "system_user_integration_id";       // UUID : Normally set by the db using gen 4 uuid random generator by default, but could also be set by the Frontend. 
+            internal const string IntegrationTitle = "integration_title";  // User's chosen name for this Integration
+            internal const string Description = "integration_description"; // User's own written description of this Integration
+            internal const string ProductName = "product_name";            // The chosen "Of the shelf Product". The self made systems are not implemented yet
+            internal const string OwnedByPartyId = "owned_by_party_id";    // The user that owns this Integration
+            internal const string SupplierName = "supplier_name";          // Of the shelf product vendor
+            internal const string SupplierOrgNo = "supplier_org_no";       // Of the shelf product vendor
+            internal const string ClientId = "client_id";                  // Not implemented yet. Will be used instead of SupplierName and OrgNo for Persons
+            internal const string IsDeleted = "is_deleted";                // Used instead of regular deletion
+            internal const string Created = "created";                     // Always set by the db
         }
 
         /// <summary>
@@ -65,12 +75,34 @@ namespace Altinn.Platform.Authentication.Persistance
                 command.Parameters.AddWithValue(Column.ClientId, toBeInserted.ClientId);
                 command.Parameters.AddWithValue(Column.IsDeleted, toBeInserted.IsDeleted);
 
-                return toBeInserted;
+                using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+                if (reader.Read())
+                {
+                    return ConvertFromReaderToSystemUser(reader);
+                }
+
+                return null;
             }
             catch (Exception ex)
             {
                 throw;
             }
+        }
+
+        private static SystemUser ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
+        {
+            return new SystemUser
+            {
+                Id = reader.GetFieldValue<string>(Column.Id),
+                Description = reader.GetFieldValue<string>(Column.Description),
+                ProductName = reader.GetFieldValue<string>(Column.ProductName),
+                OwnedByPartyId = reader.GetFieldValue<string>(Column.OwnedByPartyId),
+                SupplierName = reader.GetFieldValue<string>(Column.SupplierName),
+                SupplierOrgNo = reader.GetFieldValue<string>(Column.SupplierOrgNo),
+                ClientId = reader.GetFieldValue<string>(Column.ClientId),
+                IntegrationTitle = reader.GetFieldValue<string>(Column.IntegrationTitle),
+                Created = reader.GetFieldValue<DateTime>(Column.Created)
+            };
         }
     }
 }
