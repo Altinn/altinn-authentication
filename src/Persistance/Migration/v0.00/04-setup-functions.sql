@@ -8,9 +8,9 @@ CREATE OR REPLACE FUNCTION altinn_authentication.insert_system_user_integration(
 	_supplier_org_no varchar,
 	_client_id varchar
 )
-RETURNS varchar AS
+RETURNS uuid AS
 $BODY$
-
+DECLARE returnId uuid;
 BEGIN
 	INSERT INTO altinn_authentication.system_user_integration(	
 	integration_title,
@@ -29,8 +29,8 @@ BEGIN
 	_supplier_org_no,
 	_client_id
 	)
-	RETURNING system_user_integration_id
-	
+	RETURNING system_user_integration_id INTO returnId;
+	RETURN returnID;
 END
 $BODY$
 LANGUAGE plpgsql;
