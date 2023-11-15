@@ -104,7 +104,7 @@ namespace Altinn.Platform.Authentication.Controllers
             SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request);
             if (toBeCreated is not null)
             {
-                return Ok(toBeCreated);
+                return Ok(toBeCreated.Id);
             }
 
             return NotFound();

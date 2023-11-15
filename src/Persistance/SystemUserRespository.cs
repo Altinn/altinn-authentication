@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.RepositoryInterfaces;
@@ -18,16 +19,17 @@ namespace Altinn.Platform.Authentication.Persistance
 
         private readonly string insertSystemIntegration =
             "SELECT * FROM altinn_authentication.insert_system_user_integration(" +
-            "@integration_title, " +
-            "@integration_description, " +
-            "@product_name, " +
-            "@owned_by_party_id, " +
-            "@supplier_name, " +
-            "@supplier_org_no, " +
-            "@client_id)";
+            "@_integration_title, " +
+            "@_integration_description, " +
+            "@_product_name, " +
+            "@_owned_by_party_id, " +
+            "@_supplier_name, " +
+            "@_supplier_org_no, " +
+            "@_client_id)";
 
         /// <summary>
         /// Private helper class to hold the Column names as constant strings to aid in typing SQL commands.
+        /// Prefix with an underscore when using them as input fields to the Functions: see the In_() method.
         /// </summary>
         private class Column
         {
@@ -40,7 +42,7 @@ namespace Altinn.Platform.Authentication.Persistance
             internal const string SupplierOrgNo = "supplier_org_no";       // Of the shelf product vendor
             internal const string ClientId = "client_id";                  // Not implemented yet. Will be used instead of SupplierName and OrgNo for Persons
             internal const string IsDeleted = "is_deleted";                // Used instead of regular deletion
-            internal const string Created = "created";                     // Always set by the db
+            internal const string Created = "created";                     // Always set by the db            
         }
 
         /// <summary>
@@ -66,14 +68,15 @@ namespace Altinn.Platform.Authentication.Persistance
                 await connection.OpenAsync();
 
                 NpgsqlCommand command = new(insertSystemIntegration, connection);
-                command.Parameters.AddWithValue(Column.IntegrationTitle, toBeInserted.IntegrationTitle);
-                command.Parameters.AddWithValue(Column.Description, toBeInserted.Description);
-                command.Parameters.AddWithValue(Column.ProductName, toBeInserted.ProductName);
-                command.Parameters.AddWithValue(Column.OwnedByPartyId, toBeInserted.OwnedByPartyId);
-                command.Parameters.AddWithValue(Column.SupplierName, toBeInserted.SupplierName);
-                command.Parameters.AddWithValue(Column.SupplierOrgNo, toBeInserted.SupplierOrgNo);
-                command.Parameters.AddWithValue(Column.ClientId, toBeInserted.ClientId);
-                command.Parameters.AddWithValue(Column.IsDeleted, toBeInserted.IsDeleted);
+
+                command.Parameters.AddWithValue(In_(Column.IntegrationTitle), toBeInserted.IntegrationTitle);
+                command.Parameters.AddWithValue(In_(Column.Description), toBeInserted.Description);
+                command.Parameters.AddWithValue(In_(Column.ProductName), toBeInserted.ProductName);
+                command.Parameters.AddWithValue(In_(Column.OwnedByPartyId), toBeInserted.OwnedByPartyId);
+                command.Parameters.AddWithValue(In_(Column.SupplierName), toBeInserted.SupplierName);
+                command.Parameters.AddWithValue(In_(Column.SupplierOrgNo), toBeInserted.SupplierOrgNo);
+                command.Parameters.AddWithValue(In_(Column.ClientId), toBeInserted.ClientId);
+                command.Parameters.AddWithValue(In_(Column.IsDeleted), toBeInserted.IsDeleted);
 
                 using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
                 if (reader.Read())
@@ -103,6 +106,11 @@ namespace Altinn.Platform.Authentication.Persistance
                 IntegrationTitle = reader.GetFieldValue<string>(Column.IntegrationTitle),
                 Created = reader.GetFieldValue<DateTime>(Column.Created)
             };
+        }
+
+        private static string In_(string field)
+        {
+            return "_" + field;
         }
     }
 }
