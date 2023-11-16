@@ -34,3 +34,30 @@ BEGIN
 END
 $BODY$
 LANGUAGE plpgsql;
+
+-- Function: get_system_user_integration_by_id
+CREATE OR REPLACE FUNCTION altinn_authentication.get_system_user_integration_by_id(
+	_system_user_integration_id uuid
+)
+RETURNS altinn_authentication.system_user_integration AS
+$BODY$
+BEGIN
+	SELECT * from altinn_authentication.system_user_integration sui 
+	WHERE sui.system_user_integration_id = _system_user_integration_id
+	AND sui.is_deleted = false;
+END
+$BODY$
+LANGUAGE plpgsql;
+
+-- Function: get_all_active_integrations_for_party
+CREATE OR REPLACE FUNCTION altinn_authentication.get_system_user_integration_by_id(
+	_owned_by_party_id varchar
+)
+RETURNS altinn_authentication.system_user_integration AS
+$BODY$
+BEGIN
+	SELECT * from altinn_authentication.system_user_integration sui 
+	WHERE sui.owned_by_party_id = _owned_by_party_id;
+END
+$BODY$
+LANGUAGE plpgsql;
