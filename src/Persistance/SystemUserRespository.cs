@@ -28,10 +28,10 @@ namespace Altinn.Platform.Authentication.Persistance
             "@_client_id)";
 
         /// <summary>
-        /// Private helper class to hold the Column names as constant strings to aid in typing SQL commands.
-        /// Prefix with an underscore when using them as input fields to the Functions: see the In_() method.
+        /// Private helper class to hold the Column names of the System_User_Integration table as constant strings to aid in typing SQL commands.
+        /// Prefix with an underscore when using them as input Parameters to the Functions: see the In_() method.         
         /// </summary>
-        private class Column
+        private static class Params
         {
             internal const string Id = "system_user_integration_id";       // UUID : Normally set by the db using gen 4 uuid random generator by default, but could also be set by the Frontend. 
             internal const string IntegrationTitle = "integration_title";  // User's chosen name for this Integration
@@ -69,14 +69,14 @@ namespace Altinn.Platform.Authentication.Persistance
 
                 NpgsqlCommand command = new(insertSystemIntegration, connection);
 
-                command.Parameters.AddWithValue(In_(Column.IntegrationTitle), toBeInserted.IntegrationTitle);
-                command.Parameters.AddWithValue(In_(Column.Description), toBeInserted.Description);
-                command.Parameters.AddWithValue(In_(Column.ProductName), toBeInserted.ProductName);
-                command.Parameters.AddWithValue(In_(Column.OwnedByPartyId), toBeInserted.OwnedByPartyId);
-                command.Parameters.AddWithValue(In_(Column.SupplierName), toBeInserted.SupplierName);
-                command.Parameters.AddWithValue(In_(Column.SupplierOrgNo), toBeInserted.SupplierOrgNo);
-                command.Parameters.AddWithValue(In_(Column.ClientId), toBeInserted.ClientId);
-                command.Parameters.AddWithValue(In_(Column.IsDeleted), toBeInserted.IsDeleted);
+                command.Parameters.AddWithValue(In_(Params.IntegrationTitle), toBeInserted.IntegrationTitle);
+                command.Parameters.AddWithValue(In_(Params.Description), toBeInserted.Description);
+                command.Parameters.AddWithValue(In_(Params.ProductName), toBeInserted.ProductName);
+                command.Parameters.AddWithValue(In_(Params.OwnedByPartyId), toBeInserted.OwnedByPartyId);
+                command.Parameters.AddWithValue(In_(Params.SupplierName), toBeInserted.SupplierName);
+                command.Parameters.AddWithValue(In_(Params.SupplierOrgNo), toBeInserted.SupplierOrgNo);
+                command.Parameters.AddWithValue(In_(Params.ClientId), toBeInserted.ClientId);
+                command.Parameters.AddWithValue(In_(Params.IsDeleted), toBeInserted.IsDeleted);
 
                 using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
                 if (reader.Read())
@@ -96,15 +96,15 @@ namespace Altinn.Platform.Authentication.Persistance
         {
             return new SystemUser
             {
-                Id = reader.GetFieldValue<string>(Column.Id),
-                Description = reader.GetFieldValue<string>(Column.Description),
-                ProductName = reader.GetFieldValue<string>(Column.ProductName),
-                OwnedByPartyId = reader.GetFieldValue<string>(Column.OwnedByPartyId),
-                SupplierName = reader.GetFieldValue<string>(Column.SupplierName),
-                SupplierOrgNo = reader.GetFieldValue<string>(Column.SupplierOrgNo),
-                ClientId = reader.GetFieldValue<string>(Column.ClientId),
-                IntegrationTitle = reader.GetFieldValue<string>(Column.IntegrationTitle),
-                Created = reader.GetFieldValue<DateTime>(Column.Created)
+                Id = reader.GetFieldValue<string>(Params.Id),
+                Description = reader.GetFieldValue<string>(Params.Description),
+                ProductName = reader.GetFieldValue<string>(Params.ProductName),
+                OwnedByPartyId = reader.GetFieldValue<string>(Params.OwnedByPartyId),
+                SupplierName = reader.GetFieldValue<string>(Params.SupplierName),
+                SupplierOrgNo = reader.GetFieldValue<string>(Params.SupplierOrgNo),
+                ClientId = reader.GetFieldValue<string>(Params.ClientId),
+                IntegrationTitle = reader.GetFieldValue<string>(Params.IntegrationTitle),
+                Created = reader.GetFieldValue<DateTime>(Params.Created)
             };
         }
 
