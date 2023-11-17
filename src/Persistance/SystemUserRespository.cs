@@ -13,6 +13,7 @@ namespace Altinn.Platform.Authentication.Persistance
     /// <summary>
     /// SystemUser Repository.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class SystemUserRespository : ISystemUserRespository
     {
         private readonly string _connectionString;
@@ -49,9 +50,9 @@ namespace Altinn.Platform.Authentication.Persistance
         /// SystemUserRepository Constructor
         /// </summary>
         /// <param name="postgresSettings"> Holds the Connection string to PostgresSQL db, and pwd to Authorization db</param>
-        public SystemUserRespository(IOptions<PostgresSQLSettings> postgresSettings)
+        public SystemUserRespository(IOptions<PostgreSqlSettings> postgresSettings)
         {
-            _connectionString = string.Format(postgresSettings.Value.ConnectionString, postgresSettings.Value.AuthorizationDbPwd);
+            _connectionString = string.Format(postgresSettings.Value.ConnectionString, postgresSettings.Value.AuthenticationDbPwd);
         }
 
         /// <inheritdoc />
