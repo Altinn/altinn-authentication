@@ -24,8 +24,18 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="jwtToken">authenticated token</param>
         /// <param name="eventType">authentication event type</param>
+        /// <param name="context">the http context</param>
+        /// <param name="currentDateTime">the timestamp of the event</param>
+        /// <param name="externalSessionId">the external session id</param>
+        /// <param name="isAuthenticated">true when the request is authenticated</param>
         /// <returns>authentication event</returns>
-        public static AuthenticationEvent MapAuthenticationEvent(string jwtToken, AuthenticationEventType eventType, HttpContext context, DateTime currentDateTime, bool isAuthenticated = true)
+        public static AuthenticationEvent MapAuthenticationEvent(
+            string jwtToken, 
+            AuthenticationEventType eventType, 
+            HttpContext context, 
+            DateTime currentDateTime,
+            string? externalSessionId,
+            bool isAuthenticated = true)
         {
             JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             AuthenticationEvent authenticationEvent = null;
@@ -66,13 +76,17 @@ namespace Altinn.Platform.Authentication.Helpers
                             case "acr":
                                 authenticationEvent.AuthenticationLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(claim.Value);
                                 break;
+                            case "jti":
+                                authenticationEvent.SessionId = claim.Value;
+                                break;
                         }
                     }
 
                     authenticationEvent.Created = currentDateTime;
                     authenticationEvent.EventType = eventType;
                     authenticationEvent.IpAddress = GetClientIpAddress(context);
-                    authenticationEvent.IsAuthenticated = isAuthenticated;                    
+                    authenticationEvent.IsAuthenticated = isAuthenticated;
+                    authenticationEvent.ExternalSessionId = externalSessionId;
                 }
 
                 return authenticationEvent;
@@ -86,6 +100,8 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="authenticatedUser">authenticated user</param>
         /// <param name="eventType">type of authentication event</param>
+        /// <param name="context">the http context</param>
+        /// <param name="currentDateTime">the date time of the event</param>
         /// <returns>authentication event</returns>
         public static AuthenticationEvent MapAuthenticationEvent(UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType, HttpContext context, DateTime currentDateTime)
         {
@@ -99,7 +115,9 @@ namespace Altinn.Platform.Authentication.Helpers
                 authenticationEvent.UserId = authenticatedUser.UserID;
                 authenticationEvent.EventType = eventType;
                 authenticationEvent.IpAddress = GetClientIpAddress(context);
-                authenticationEvent.IsAuthenticated = authenticatedUser.IsAuthenticated;                
+                authenticationEvent.IsAuthenticated = authenticatedUser.IsAuthenticated;
+                authenticationEvent.SessionId = authenticatedUser.SessionId;
+                authenticationEvent.ExternalSessionId = authenticatedUser.ExternalSessionId;
             }
 
             return authenticationEvent;

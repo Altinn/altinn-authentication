@@ -26,6 +26,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Instantiation for event log servcie
         /// </summary>
         /// <param name="queueClient">queue client to store event in event log</param>
+        /// <param name="systemClock">the systemclock to get the current datetime</param>
         public EventLogService(IEventsQueueClient queueClient, ISystemClock systemClock)
         {
             _queueClient = queueClient;
@@ -58,11 +59,17 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="jwtToken">the token cookie with user information</param>
         /// <param name="eventType">authentication event type</param>
         /// <param name="context">the http context</param>
-        public async Task CreateAuthenticationEventAsync(IFeatureManager featureManager, string jwtToken, AuthenticationEventType eventType, HttpContext context)
+        /// <param name="externalSessionId">the external session id</param>
+        public async Task CreateAuthenticationEventAsync(
+            IFeatureManager featureManager, 
+            string jwtToken, 
+            AuthenticationEventType eventType, 
+            HttpContext context,
+            string? externalSessionId = null)
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
-                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _systemClock.UtcNow.DateTime);
+                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _systemClock.UtcNow.DateTime, externalSessionId);
                 if (authenticationEvent != null)
                 {
                     _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));

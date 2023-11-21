@@ -58,6 +58,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private const string PidClaimName = "pid";
         private const string AuthLevelClaimName = "acr";
         private const string AuthMethodClaimName = "amr";
+        private const string ExternalSessionIdClaimName = "jti";
         private const string IssClaimName = "iss";
         private const string OriginalIssClaimName = "originaliss";
         private const string IdportenLevel0 = "idporten-loa-low";
@@ -80,6 +81,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private readonly IEventLog _eventLog;
         private readonly IFeatureManager _featureManager;
+        private readonly IGuidService _guidService;
 
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
@@ -98,6 +100,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="antiforgery">The anti forgery service.</param>
         /// <param name="eventLog">the event logging service</param>
         /// <param name="featureManager">the feature toggle service</param>
+        /// <param name="guidService">the guid service</param>
         public AuthenticationController(
             ILogger<AuthenticationController> logger,
             IOptions<GeneralSettings> generalSettings,
@@ -112,7 +115,8 @@ namespace Altinn.Platform.Authentication.Controllers
             IOidcProvider oidcProvider,
             IAntiforgery antiforgery,
             IEventLog eventLog,
-            IFeatureManager featureManager)
+            IFeatureManager featureManager,
+            IGuidService guidService)
         {
             _logger = logger;
             _generalSettings = generalSettings.Value;
@@ -129,6 +133,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _antiforgery = antiforgery;
             _eventLog = eventLog;
             _featureManager = featureManager;
+            _guidService = guidService;
         }
 
         /// <summary>
@@ -239,8 +244,6 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
             }
             
-            _eventLog.CreateAuthenticationEventAsync(_featureManager, userAuthentication, AuthenticationEventType.Authenticate, HttpContext);
-
             if (userAuthentication != null && userAuthentication.IsAuthenticated)
             {
                 await CreateTokenCookie(userAuthentication);
@@ -404,6 +407,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 _logger.LogInformation("Token is valid");
 
                 string issOriginal = originalPrincipal.Claims.Where(c => c.Type.Equals(IssClaimName)).Select(c => c.Value).FirstOrDefault();
+                string externalSessionId = originalPrincipal.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
                 if (IsValidIssuer(issOriginal, _generalSettings.MaskinportenWellKnownConfigEndpoint, _generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint))
                 {
                     _logger.LogInformation("Invalid issuer {issOriginal}", issOriginal);
@@ -473,7 +477,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authenticatemethod, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "3", ClaimValueTypes.Integer32, issuer));
 
-                string[] claimTypesToRemove = { "aud", IssClaimName, "client_amr" };
+                string[] claimTypesToRemove = { "aud", IssClaimName, "client_amr", "jti" };
                 foreach (string claimType in claimTypesToRemove)
                 {
                     Claim audClaim = claims.Find(c => c.Type == claimType);
@@ -481,6 +485,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
+                claims.Add(new Claim("jti", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
 
                 ClaimsIdentity identity = new ClaimsIdentity(OrganisationIdentity);
 
@@ -488,7 +493,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal);
-                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext);
+                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -564,7 +569,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 string pid = token.Claims.Where(c => c.Type.Equals(PidClaimName)).Select(c => c.Value).FirstOrDefault();
                 string authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
                 string authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
-
+                string externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
+                
                 if (string.IsNullOrWhiteSpace(pid) || string.IsNullOrWhiteSpace(authLevel))
                 {
                     _logger.LogInformation("Token contained invalid or missing claims.");
@@ -616,13 +622,14 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
+                claims.Add(new Claim("jti", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
 
                 ClaimsIdentity identity = new ClaimsIdentity(EndUserSystemIdentity);
                 identity.AddClaims(claims);
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal, token.ValidTo);
-                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext);
+                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -931,13 +938,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             if (!string.IsNullOrEmpty(iss))
             {
-                foreach (KeyValuePair<string, OidcProvider> kvp in _oidcProviderSettings)
-                {
-                    if (kvp.Value.Issuer.Equals(iss))
-                    {
-                        return kvp.Value;
-                    }
-                }
+                return _oidcProviderSettings.Where(kvp => kvp.Value.Issuer.Equals(iss)).Select(kvp => kvp.Value).FirstOrDefault();
             }
 
             if (!string.IsNullOrEmpty(_generalSettings.DefaultOidcProvider) && _oidcProviderSettings.ContainsKey(_generalSettings.DefaultOidcProvider))
@@ -1029,6 +1030,8 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             List<Claim> claims = new List<Claim>();
             string issuer = _generalSettings.AltinnOidcIssuerUrl;
+            string sessionId = _guidService.NewGuid();
+            userAuthentication.SessionId = sessionId;
             claims.Add(new Claim(ClaimTypes.NameIdentifier, userAuthentication.UserID.ToString(), ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userAuthentication.UserID.ToString(), ClaimValueTypes.String, issuer));
 
@@ -1045,6 +1048,7 @@ namespace Altinn.Platform.Authentication.Controllers
             claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userAuthentication.PartyID.ToString(), ClaimValueTypes.Integer32, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, userAuthentication.AuthenticationMethod.ToString(), ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, ((int)userAuthentication.AuthenticationLevel).ToString(), ClaimValueTypes.Integer32, issuer));
+            claims.Add(new Claim("jti", sessionId, ClaimValueTypes.String, issuer));
 
             if (userAuthentication.ProviderClaims != null && userAuthentication.ProviderClaims.Count > 0)
             {
@@ -1061,6 +1065,7 @@ namespace Altinn.Platform.Authentication.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal principal = new ClaimsPrincipal(identity);
             string serializedToken = await GenerateToken(principal);
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, userAuthentication, AuthenticationEventType.Authenticate, HttpContext);
             CreateJwtCookieAndAppendToResponse(serializedToken);
             if (userAuthentication.TicketUpdated)
             {
