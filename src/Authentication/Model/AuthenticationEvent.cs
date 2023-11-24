@@ -21,6 +21,11 @@ namespace Altinn.Platform.Authentication.Model
         public string? ExternalSessionId { get; set; }
 
         /// <summary>
+        /// External Token issuer of the authentication request if found
+        /// </summary>
+        public string? ExternalTokenIssuer { get; set; }
+
+        /// <summary>
         /// Date, time of the authentication event. Set by producer of logevents
         /// </summary>
         public DateTime Created { get; set; }

@@ -33,14 +33,12 @@ namespace Altinn.Platform.Authentication.Services
             _systemClock = systemClock;
         }
 
-        /// <summary>
-        /// Creates an authentication event
-        /// </summary>
-        /// <param name="featureManager">handler for feature manager service</param>
-        /// <param name="authenticatedUser">authenticat</param>
-        /// <param name="eventType">authentication event type</param>
-        /// <param name="context">the http context</param>
-        public async Task CreateAuthenticationEventAsync(IFeatureManager featureManager, UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType, HttpContext context)
+        /// <inheritdoc/>
+        public async Task CreateAuthenticationEventAsync(
+            IFeatureManager featureManager, 
+            UserAuthenticationModel authenticatedUser, 
+            AuthenticationEventType eventType, 
+            HttpContext context)
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
@@ -52,24 +50,18 @@ namespace Altinn.Platform.Authentication.Services
             }
         }
 
-        /// <summary>
-        /// Creates an authentication event
-        /// </summary>
-        /// <param name="featureManager">handler for feature manager service</param>
-        /// <param name="jwtToken">the token cookie with user information</param>
-        /// <param name="eventType">authentication event type</param>
-        /// <param name="context">the http context</param>
-        /// <param name="externalSessionId">the external session id</param>
+        /// <inheritdoc/>
         public async Task CreateAuthenticationEventAsync(
             IFeatureManager featureManager, 
             string jwtToken, 
             AuthenticationEventType eventType, 
             HttpContext context,
-            string? externalSessionId = null)
+            string? externalSessionId = null,
+            string? externalTokenIssuer = null)
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
-                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _systemClock.UtcNow.DateTime, externalSessionId);
+                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _systemClock.UtcNow.DateTime, externalSessionId, externalTokenIssuer);
                 if (authenticationEvent != null)
                 {
                     _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
