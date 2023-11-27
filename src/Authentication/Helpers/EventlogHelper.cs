@@ -130,8 +130,8 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns></returns>
         public static string GetClientIpAddress(HttpContext context)
         {
-            // The first ipaddress in the header is the client ipaddress
-            string clientIp = context?.Request?.Headers["X-Forwarded-For"].FirstOrDefault();        
+            // The first ipaddress in the x-forwarded-for header is the client ipaddress. The ip from x-forwarded-for is read into remoteip depending on the forward limit
+            string clientIp = context?.Connection?.RemoteIpAddress?.ToString();
             return clientIp;
         }
     }
