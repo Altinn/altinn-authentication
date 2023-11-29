@@ -1,11 +1,8 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Altinn.Platform.Authentication.Model;
-using Altinn.Platform.Authentication.Persistance.Configuration;
+using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.RepositoryInterfaces;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace Altinn.Platform.Authentication.Persistance
@@ -14,19 +11,9 @@ namespace Altinn.Platform.Authentication.Persistance
     /// SystemUser Repository.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public class SystemUserRespository : ISystemUserRespository
+    internal class SystemUserRespository : ISystemUserRespository
     {
-        private readonly string _connectionString;
-
-        private readonly string insertSystemIntegration =
-            "SELECT * FROM altinn_authentication.insert_system_user_integration(" +
-            "@_integration_title, " +
-            "@_integration_description, " +
-            "@_product_name, " +
-            "@_owned_by_party_id, " +
-            "@_supplier_name, " +
-            "@_supplier_org_no, " +
-            "@_client_id)";
+        private readonly NpgsqlDataSource _dataSource;        
 
         /// <summary>
         /// Private helper class to hold the Column names of the System_User_Integration table as constant strings to aid in typing SQL commands.
@@ -49,43 +36,34 @@ namespace Altinn.Platform.Authentication.Persistance
         /// <summary>
         /// SystemUserRepository Constructor
         /// </summary>
-        /// <param name="postgresSettings"> Holds the Connection string to PostgresSQL db, and pwd to Authorization db</param>
-        public SystemUserRespository(IOptions<PostgreSqlSettings> postgresSettings)
+        /// <param name="dataSource">Holds the Postgres db datasource</param>
+        public SystemUserRespository(
+            NpgsqlDataSource dataSource)      
         {
-            _connectionString = string.Format(postgresSettings.Value.ConnectionString, postgresSettings.Value.AuthenticationDbPwd);
+            //_connectionString = string.Format(postgresSettings.Value.ConnectionString, postgresSettings.Value.AuthenticationDbPwd);
+            _dataSource = dataSource;
         }
 
         /// <inheritdoc />
-        public async Task<SystemUser> InsertSystemUser(SystemUser toBeInserted)
+        public async Task<bool> SetDeleteSystemUserById(Guid id)
         {
-            return await InsertSystemUserDb(toBeInserted);
-        }
+            const string QUERY = /*strpsql*/@"
+                UPDATE altinn_authentication.system_user_integration
+	            SET is_deleted = TRUE
+        	    WHERE altinn_authentication.system_user_integration.system_user_integration_id = @system_user_integration_id;
+	            GET DIAGNOSTICS success = ROW_COUNT;
+	            RETURN success > 0;
+                ";
 
-        private async Task<SystemUser> InsertSystemUserDb(SystemUser toBeInserted)
-        {
             try
             {
-                await using NpgsqlConnection connection = new(_connectionString);
-                await connection.OpenAsync();
+                await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-                NpgsqlCommand command = new(insertSystemIntegration, connection);
+                command.Parameters.AddWithValue(Params.Id);
 
-                command.Parameters.AddWithValue(In_(Params.IntegrationTitle), toBeInserted.IntegrationTitle);
-                command.Parameters.AddWithValue(In_(Params.Description), toBeInserted.Description);
-                command.Parameters.AddWithValue(In_(Params.ProductName), toBeInserted.ProductName);
-                command.Parameters.AddWithValue(In_(Params.OwnedByPartyId), toBeInserted.OwnedByPartyId);
-                command.Parameters.AddWithValue(In_(Params.SupplierName), toBeInserted.SupplierName);
-                command.Parameters.AddWithValue(In_(Params.SupplierOrgNo), toBeInserted.SupplierOrgNo);
-                command.Parameters.AddWithValue(In_(Params.ClientId), toBeInserted.ClientId);
-                command.Parameters.AddWithValue(In_(Params.IsDeleted), toBeInserted.IsDeleted);
-
-                using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
-                if (reader.Read())
-                {
-                    return ConvertFromReaderToSystemUser(reader);
-                }
-
-                return null;
+                return await command.ExecuteEnumerableAsync()
+                    .SelectAwait(ConvertFromReaderToBoolean)
+                    .FirstOrDefaultAsync();
             }
             catch (Exception ex)
             {
@@ -93,9 +71,114 @@ namespace Altinn.Platform.Authentication.Persistance
             }
         }
 
-        private static SystemUser ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
+        /// <inheritdoc />
+        public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId)
         {
-            return new SystemUser
+            const string QUERY = /*strpsql*/@"
+                SELECT * from altinn_authentication.system_user_integration sui 
+	            WHERE sui.owned_by_party_id = @owned_by_party_id	
+	                  AND sui.is_deleted = false;
+                ";
+
+            try
+            {
+                await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+                command.Parameters.AddWithValue(Params.OwnedByPartyId, partyId);
+
+                IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
+                return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<SystemUser> GetSystemUserById(Guid id)
+        {
+            const string QUERY = /*strpsql*/@"
+            SELECT 
+	    	    system_user_integration_id,
+		        integration_title,
+		        integration_description,
+		        product_name,
+		        owned_by_party_id,
+		        supplier_name,
+		        supplier_org_no,
+		        client_id,
+		        is_deleted,
+		        created
+	        FROM altinn_authentication.system_user_integration sui 
+	        WHERE sui.system_user_integration_id = @system_user_integration_id
+	            AND sui.is_deleted = false;
+            ";
+
+            try
+            {
+                await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+                command.Parameters.AddWithValue(Params.Id, id);
+
+                return await command.ExecuteEnumerableAsync()
+                    .SelectAwait(ConvertFromReaderToSystemUser)
+                    .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<SystemUser> InsertSystemUser(SystemUser toBeInserted)
+        {
+            const string QUERY = /*strpsql*/@"            
+                INSERT INTO altinn_authentication.system_user_integration(
+                    integration_title,
+                    integration_description,
+                    product_name,
+                    owned_by_party_id,
+                    supplier_name,
+                    supplier_org_no,
+                    client_id)
+                VALUES(
+                    @integration_title,
+                    @integration_description,
+                    @product_name,
+                    @owned_by_party_id,
+                    @supplier_name,
+                    @supplier_org_no,
+                    @client_id    
+                )
+                RETURNING system_user_integration_id;";
+
+            try
+            {
+                await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+                
+                command.Parameters.AddWithValue(Params.IntegrationTitle, toBeInserted.IntegrationTitle);
+                command.Parameters.AddWithValue(Params.Description, toBeInserted.Description);
+                command.Parameters.AddWithValue(Params.ProductName, toBeInserted.ProductName);
+                command.Parameters.AddWithValue(Params.OwnedByPartyId, toBeInserted.OwnedByPartyId);
+                command.Parameters.AddWithValue(Params.SupplierName, toBeInserted.SupplierName);
+                command.Parameters.AddWithValue(Params.SupplierOrgNo, toBeInserted.SupplierOrgNo);
+                command.Parameters.AddWithValue(Params.ClientId, toBeInserted.ClientId);
+                command.Parameters.AddWithValue(Params.IsDeleted, toBeInserted.IsDeleted);
+
+                return await command.ExecuteEnumerableAsync()
+                    .SelectAwait(ConvertFromReaderToSystemUser)
+                    .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        private static ValueTask<SystemUser> ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
+        {
+            return new ValueTask<SystemUser>(new SystemUser 
             {
                 Id = reader.GetFieldValue<string>(Params.Id),
                 Description = reader.GetFieldValue<string>(Params.Description),
@@ -106,12 +189,12 @@ namespace Altinn.Platform.Authentication.Persistance
                 ClientId = reader.GetFieldValue<string>(Params.ClientId),
                 IntegrationTitle = reader.GetFieldValue<string>(Params.IntegrationTitle),
                 Created = reader.GetFieldValue<DateTime>(Params.Created)
-            };
+            });
         }
 
-        private static string In_(string field)
+        private static ValueTask<bool> ConvertFromReaderToBoolean(NpgsqlDataReader reader)
         {
-            return "_" + field;
+            return new ValueTask<bool>(reader.GetBoolean(0));
         }
     }
 }
