@@ -75,7 +75,18 @@ namespace Altinn.Platform.Authentication.Persistance
         public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId)
         {
             const string QUERY = /*strpsql*/@"
-                SELECT * from altinn_authentication.system_user_integration sui 
+                SELECT 
+                    system_user_integration_id,
+		            integration_title,
+		            integration_description,
+		            product_name,
+		            owned_by_party_id,
+		            supplier_name,
+		            supplier_org_no,
+		            client_id,
+		            is_deleted,
+		            created                    
+                FROM altinn_authentication.system_user_integration sui 
 	            WHERE sui.owned_by_party_id = @owned_by_party_id	
 	                  AND sui.is_deleted = false;
                 ";
