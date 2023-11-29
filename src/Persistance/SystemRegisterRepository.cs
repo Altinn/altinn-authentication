@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Extensions;
+using Altinn.Platform.Authentication.RepositoryInterfaces;
 using Npgsql;
 
 namespace Altinn.Platform.Authentication.Persistance;
@@ -8,7 +9,7 @@ namespace Altinn.Platform.Authentication.Persistance;
 /// <summary>
 /// The System Register Repository
 /// </summary>
-internal class SystemRegisterRepository
+internal class SystemRegisterRepository : ISystemRegisterRepository
 {
     private readonly NpgsqlDataSource _datasource;
 
@@ -31,11 +32,8 @@ internal class SystemRegisterRepository
     {
         _datasource = dataSource;
     }
-
-    /// <summary>
-    /// Returns the list of currently available (is_deleted = false ) Registered Systems
-    /// </summary>
-    /// <returns>List of SystemRegister</returns>
+    
+    /// <inheritdoc/>    
     public async Task<List<RegisteredSystem>> GetAllSystems()
     {
         const string QUERY = /*strpsql*/@"
