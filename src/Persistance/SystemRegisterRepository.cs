@@ -34,7 +34,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
     
     /// <inheritdoc/>    
-    public async Task<List<RegisteredSystem>> GetAllSystems()
+    public async Task<List<RegisteredSystem>> GetAllActiveSystems()
     {
         const string QUERY = /*strpsql*/@"
         SELECT 
@@ -59,6 +59,55 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
+    /// <inheritdoc/>  
+    public async Task<string> CreateRegisteredSystem(RegisteredSystem toBeInserted)
+    {
+        const string QUERY = /*strpsql*/@"
+        INSERT INTO altinn_authentication.system_register(
+            registered_system_id,
+            system_vendor,
+            description)
+        VALUES(
+            @registered_system_id,
+            @system_vendor,
+            @description)
+        RETURNING hidden_internal_guid;";
+
+        CheckNameAvailableFixIfNot(toBeInserted);
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue(Params.SystemTypeId, toBeInserted.SystemTypeId);
+            command.Parameters.AddWithValue(Params.SystemVendor, toBeInserted.SystemVendor);
+            command.Parameters.AddWithValue(Params.Description, toBeInserted.Description);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToString)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    private void CheckNameAvailableFixIfNot(RegisteredSystem toBeInserted)
+    {
+        var alreadyExist = GetRegisteredSystemById(toBeInserted.SystemTypeId);
+        if (alreadyExist is not null)
+        {
+            toBeInserted.SystemTypeId = toBeInserted.SystemTypeId + "_" + DateTime.Now.Millisecond.ToString();
+        }
+    }
+
+    /// <inheritdoc/>  
+    public Task<RegisteredSystem> GetRegisteredSystemById(string id)
+    {
+        throw new NotImplementedException();
+    }    
+    
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
@@ -67,5 +116,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SystemVendor = reader.GetFieldValue<string>(Params.SystemVendor),
             Description = reader.GetFieldValue<string>(Params.Description)
         });
+    }
+
+    private static ValueTask<string> ConvertFromReaderToString(NpgsqlDataReader reader)
+    {
+        return new ValueTask<string>(reader.GetString(0));
     }
 }
