@@ -160,8 +160,7 @@ namespace Altinn.Platform.Authentication.Persistance
                     @owned_by_party_id,
                     @supplier_name,
                     @supplier_org_no,
-                    @client_id    
-                )
+                    @client_id)
                 RETURNING system_user_integration_id;";
 
             try
