@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Data.Common;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.RepositoryInterfaces;
@@ -134,21 +135,58 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public Task<bool> SetRegisteredSystemDepricated(string id)
+    public async Task<bool> RenameRegisteredSystemById(string id, string newName)
     {
-        throw new NotImplementedException();
+        const string QUERY = /*strpsql*/@"
+                UPDATE altinn_authentication.system_register
+	            SET registered_system_id = @newName
+        	    WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
+	            GET DIAGNOSTICS success = ROW_COUNT;
+	            RETURN success > 0;
+                ";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue(Params.SystemTypeId, id);
+            command.Parameters.AddWithValue("newName", newName);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToBoolean)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 
     /// <inheritdoc/> 
-    public Task<bool> RenameRegisteredSystemById(string id)
+    public async Task<bool> SetDeleteRegisteredSystemById(string id)
     {
-        throw new NotImplementedException();
-    }
+        const string QUERY = /*strpsql*/@"
+                UPDATE altinn_authentication.system_register
+	            SET is_deleted = TRUE
+        	    WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
+	            GET DIAGNOSTICS success = ROW_COUNT;
+	            RETURN success > 0;
+                ";
 
-    /// <inheritdoc/> 
-    public Task<bool> SetDeleteRegisteredSystemById(string id)
-    {
-        throw new NotImplementedException();
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue(Params.SystemTypeId, id);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToBoolean)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
@@ -164,5 +202,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     private static ValueTask<string> ConvertFromReaderToString(NpgsqlDataReader reader)
     {
         return new ValueTask<string>(reader.GetString(0));
+    }
+
+    private static ValueTask<bool> ConvertFromReaderToBoolean(NpgsqlDataReader reader)
+    {
+        return new ValueTask<bool>(reader.GetBoolean(0));
     }
 }
