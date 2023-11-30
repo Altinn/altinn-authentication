@@ -15,7 +15,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     /// <summary>
     /// Helper class which remembers the model's field names' mapping to the implemented Column names in the database, to ease with typing SQL commands and avoid typos.
-    /// Please observe that it is not this class that actually determine the column names! See the Yunicle migration script for that!
+    /// Please observe that it is not this class that actually determine the column names! See the Yuniql migration script for that!
     /// </summary>
     private static class Params
     {
@@ -40,12 +40,12 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     public async Task<List<RegisteredSystem>> GetAllActiveSystems()
     {
         const string QUERY = /*strpsql*/@"
-        SELECT 
-            registered_system_id,
-            system_vendor, 
-            short_description
-        FROM altinn_authentication.system_register sr
-        WHERE sr.is_deleted = FALSE;
+            SELECT 
+                registered_system_id,
+                system_vendor, 
+                short_description
+            FROM altinn_authentication.system_register sr
+            WHERE sr.is_deleted = FALSE;
         ";
 
         try
@@ -66,15 +66,15 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     public async Task<string> CreateRegisteredSystem(RegisteredSystem toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
-        INSERT INTO altinn_authentication.system_register(
-            registered_system_id,
-            system_vendor,
-            short_description)
-        VALUES(
-            @registered_system_id,
-            @system_vendor,
-            @description)
-        RETURNING hidden_internal_guid;";
+            INSERT INTO altinn_authentication.system_register(
+                registered_system_id,
+                system_vendor,
+                short_description)
+            VALUES(
+                @registered_system_id,
+                @system_vendor,
+                @description)
+            RETURNING hidden_internal_guid;";
 
         CheckNameAvailableFixIfNot(toBeInserted);
 
@@ -106,9 +106,31 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public Task<RegisteredSystem> GetRegisteredSystemById(string id)
+    public async Task<RegisteredSystem> GetRegisteredSystemById(string id)
     {
-        throw new NotImplementedException();
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                registered_system_id,
+                system_vendor, 
+                short_description
+            FROM altinn_authentication.system_register sr
+            WHERE sr.registered_system_id = @registered_system_id;
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue(Params.SystemTypeId, id);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToSystemRegister)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 
     /// <inheritdoc/> 
