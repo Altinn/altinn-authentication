@@ -5,12 +5,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Persistance.Extensions;
 
 /// <summary>
 /// Extension class used for injecting the repository into the Service Collection of the parent project.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public static class DependencyInjection
 {
     /// <summary>

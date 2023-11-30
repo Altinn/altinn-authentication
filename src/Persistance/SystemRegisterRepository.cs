@@ -90,7 +90,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(Params.Description, toBeInserted.Description);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToString)
+                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToString)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -155,7 +155,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("newName", newName);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToBoolean)
+                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -182,7 +182,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(Params.SystemTypeId, id);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToBoolean)
+                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -199,15 +199,5 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SystemVendor = reader.GetFieldValue<string>(Params.SystemVendor),
             Description = reader.GetFieldValue<string>(Params.Description)
         });
-    }
-
-    private static ValueTask<string> ConvertFromReaderToString(NpgsqlDataReader reader)
-    {
-        return new ValueTask<string>(reader.GetString(0));
-    }
-
-    private static ValueTask<bool> ConvertFromReaderToBoolean(NpgsqlDataReader reader)
-    {
-        return new ValueTask<bool>(reader.GetBoolean(0));
-    }
+    }   
 }

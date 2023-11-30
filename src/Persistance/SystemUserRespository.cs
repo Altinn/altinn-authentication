@@ -62,7 +62,7 @@ namespace Altinn.Platform.Authentication.Persistance
                 command.Parameters.AddWithValue(Params.Id);
 
                 return await command.ExecuteEnumerableAsync()
-                    .SelectAwait(ConvertFromReaderToBoolean)
+                    .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
                     .FirstOrDefaultAsync();
             }
             catch (Exception ex)
@@ -202,9 +202,5 @@ namespace Altinn.Platform.Authentication.Persistance
             });
         }
 
-        private static ValueTask<bool> ConvertFromReaderToBoolean(NpgsqlDataReader reader)
-        {
-            return new ValueTask<bool>(reader.GetBoolean(0));
-        }
     }
 }

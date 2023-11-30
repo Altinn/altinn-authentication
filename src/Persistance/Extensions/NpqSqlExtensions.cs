@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Npgsql;
 
 namespace Altinn.Platform.Authentication.Persistance.Extensions;
@@ -6,6 +7,7 @@ namespace Altinn.Platform.Authentication.Persistance.Extensions;
 /// <summary>
 /// Helper extensions for Npgsql.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal static class NpqSqlExtensions
 {
     /// <summary>
@@ -25,5 +27,25 @@ internal static class NpqSqlExtensions
         {
             yield return reader;
         }
+    }
+
+    /// <summary>
+    /// Helper method
+    /// </summary>
+    /// <param name="reader">Npqsqldatareader</param>
+    /// <returns></returns>
+    internal static ValueTask<bool> ConvertFromReaderToBoolean(NpgsqlDataReader reader)
+    {
+        return new ValueTask<bool>(reader.GetBoolean(0));
+    }
+
+    /// <summary>
+    /// Helper method
+    /// </summary>
+    /// <param name="reader">NpgsqlDataReader</param>
+    /// <returns></returns>
+    internal static ValueTask<string> ConvertFromReaderToString(NpgsqlDataReader reader)
+    {
+        return new ValueTask<string>(reader.GetString(0));
     }
 }
