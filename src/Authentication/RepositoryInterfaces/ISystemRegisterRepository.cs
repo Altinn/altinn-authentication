@@ -19,12 +19,39 @@ public interface ISystemRegisterRepository
     /// Inserts a new Registered System, using an optimistic choice for the ID
     /// if the ID already exists, an integer is appended to it's end.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>Returns the human readable Id</returns>
     Task<string> CreateRegisteredSystem(RegisteredSystem toBeInserted);
 
     /// <summary>
     /// Returns a single RegisteredSystem, even if it was set to deleted.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The Registered System</returns>
     Task<RegisteredSystem> GetRegisteredSystemById(string id);
+
+    /// <summary>
+    /// When a vendor wants to discontinue a product, 
+    /// first set the registered system to deprecated to alert
+    /// the integrations. Then when all integrations are "deleted"
+    /// Set the product to deleted using the SetDelete api call.
+    /// </summary>
+    /// <param name="id">The human-readable Id</param>
+    /// <returns>True if set to deprecated, false if deleted or already deprecated.</returns>
+    Task<bool> SetRegisteredSystemDepricated(string id);
+
+    /// <summary>
+    /// The registered systems may be renamed,
+    /// this works because they also have a hidden internal id.
+    /// This is useful if the first attempt to name them when
+    /// registering collided with an existing name.
+    /// </summary>
+    /// <returns>True if renamed</returns>
+    Task<bool> RenameRegisteredSystemById(string id);
+
+    /// <summary>
+    /// Set's the product's is_deleted column to True.
+    /// This will break any existing integrations.
+    /// </summary>
+    /// <param name="id">The id</param>
+    /// <returns>True if set to deleted</returns>
+    Task<bool> SetDeleteRegisteredSystemById(string id);
 }

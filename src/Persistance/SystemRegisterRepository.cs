@@ -15,13 +15,16 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     /// <summary>
     /// Helper class which remembers the model's field names' mapping to the implemented Column names in the database, to ease with typing SQL commands and avoid typos.
-    /// Please observe that it is not this class that actually determine the column names!
+    /// Please observe that it is not this class that actually determine the column names! See the Yunicle migration script for that!
     /// </summary>
     private static class Params
     {
+        internal const string HiddenInternalId = "hidden_internal_id";
         internal const string SystemTypeId = "registered_system_id";
         internal const string SystemVendor = "system_vendor";
-        internal const string Description = "description";
+        internal const string Description = "short_description";
+        internal const string Created = "created";
+        internal const string IsDeleted = "is_deleted";
     }
 
     /// <summary>
@@ -40,7 +43,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         SELECT 
             registered_system_id,
             system_vendor, 
-            description
+            short_description
         FROM altinn_authentication.system_register sr
         WHERE sr.is_deleted = FALSE;
         ";
@@ -66,7 +69,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         INSERT INTO altinn_authentication.system_register(
             registered_system_id,
             system_vendor,
-            description)
+            short_description)
         VALUES(
             @registered_system_id,
             @system_vendor,
@@ -106,8 +109,26 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     public Task<RegisteredSystem> GetRegisteredSystemById(string id)
     {
         throw new NotImplementedException();
-    }    
-    
+    }
+
+    /// <inheritdoc/> 
+    public Task<bool> SetRegisteredSystemDepricated(string id)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/> 
+    public Task<bool> RenameRegisteredSystemById(string id)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/> 
+    public Task<bool> SetDeleteRegisteredSystemById(string id)
+    {
+        throw new NotImplementedException();
+    }
+
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
