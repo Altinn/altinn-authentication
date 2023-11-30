@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.RepositoryInterfaces;
@@ -10,6 +11,7 @@ namespace Altinn.Platform.Authentication.Persistance;
 /// <summary>
 /// The System Register Repository
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal class SystemRegisterRepository : ISystemRegisterRepository
 {
     private readonly NpgsqlDataSource _datasource;
