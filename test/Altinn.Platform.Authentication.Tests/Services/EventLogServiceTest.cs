@@ -27,7 +27,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         public async Task QueueAuthenticationEvent_OK()
         {
             // Arrange            
-            UserAuthenticationModel authenticatedUser = GetAuthenticationModel(SecurityLevel.QuiteSensitive, AuthenticationMethod.AltinnPIN, AuthenticationEventType.Authenticate, 45321);
+            UserAuthenticationModel authenticatedUser = GetAuthenticationModel(SecurityLevel.QuiteSensitive, AuthenticationMethod.AltinnPIN, 45321);
 
             Mock<IEventsQueueClient> queueMock = new();
             queueMock
@@ -160,20 +160,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             return service;
         }
 
-        private static AuthenticationEvent GetAuthenticationEvent(SecurityLevel authenticationLevel, AuthenticationMethod authenticationMethod, AuthenticationEventType eventType, int? userId)
-        {
-            AuthenticationEvent authenticationEvent = new()
-            {
-                AuthenticationLevel = authenticationLevel,
-                AuthenticationMethod = authenticationMethod,
-                EventType = eventType,
-                UserId = userId
-            };
-
-            return authenticationEvent;
-        }
-
-        private static UserAuthenticationModel GetAuthenticationModel(SecurityLevel authenticationLevel, AuthenticationMethod authenticationMethod, AuthenticationEventType eventType, int userId)
+        private static UserAuthenticationModel GetAuthenticationModel(SecurityLevel authenticationLevel, AuthenticationMethod authenticationMethod, int userId)
         {
             UserAuthenticationModel authenticatedUser = new()
             {
