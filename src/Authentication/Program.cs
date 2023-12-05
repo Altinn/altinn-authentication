@@ -192,6 +192,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHealthChecks().AddCheck<HealthCheck>("authentication_health_check");
 
     services.AddSingleton(config);
+
+    services.AddPersistanceLayer();
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
     services.Configure<AltinnCore.Authentication.Constants.KeyVaultSettings>(config.GetSection("kvSetting"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
@@ -309,7 +311,6 @@ void Configure()
     }
 
     ConfigurePostgresSql();
-    PersistanceDependencyInjection.AddPersistanceLayer(builder.Services);
 
     app.UseSwagger(o => o.RouteTemplate = "authentication/swagger/{documentName}/swagger.json");
 

@@ -3,6 +3,7 @@
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -45,6 +46,7 @@ public static class PersistanceDependencyInjection
 
             var builder = new NpgsqlDataSourceBuilder(connectionString);
             builder.UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>());
+            return builder.Build();
         });
 
         services.TryAddTransient((IServiceProvider sp) => sp.GetRequiredService<NpgsqlDataSource>().CreateConnection());
