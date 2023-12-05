@@ -25,11 +25,11 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Creates an authentication event in storage queue
         /// </summary>
         /// <param name="featureManager">the feature manager handler</param>
-        /// <param name="jwttoken">the authenticated user information in token</param>
+        /// <param name="jwtToken">the authenticated user information in token</param>
         /// <param name="eventType">type of authentication event</param>
         /// <param name="context">the http context</param>
+        /// <param name="externalSessionId">the session id from the external token</param>
         /// <returns></returns>
-        public Task CreateAuthenticationEventAsync(IFeatureManager featureManager, string jwttoken, AuthenticationEventType eventType, HttpContext context);
-
+        public Task CreateAuthenticationEventAsync(IFeatureManager featureManager, string jwtToken, AuthenticationEventType eventType, HttpContext context, string? externalSessionId = null);
     }
 }
