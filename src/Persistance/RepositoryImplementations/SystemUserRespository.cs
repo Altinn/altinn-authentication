@@ -1,11 +1,11 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
-using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
-using Altinn.Platform.Authentication.RepositoryInterfaces;
 using Npgsql;
 
-namespace Altinn.Platform.Authentication.Persistance
+namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations
 {
     /// <summary>
     /// SystemUser Repository.
@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Persistance
     [ExcludeFromCodeCoverage]
     internal class SystemUserRespository : ISystemUserRespository
     {
-        private readonly NpgsqlDataSource _dataSource;        
+        private readonly NpgsqlDataSource _dataSource;
 
         /// <summary>
         /// Private helper class to hold the Column names of the System_User_Integration table as constant strings to aid in typing SQL commands.
@@ -38,21 +38,19 @@ namespace Altinn.Platform.Authentication.Persistance
         /// </summary>
         /// <param name="dataSource">Holds the Postgres db datasource</param>
         public SystemUserRespository(
-            NpgsqlDataSource dataSource)      
+            NpgsqlDataSource dataSource)
         {
             //_connectionString = string.Format(postgresSettings.Value.ConnectionString, postgresSettings.Value.AuthenticationDbPwd);
             _dataSource = dataSource;
         }
 
         /// <inheritdoc />
-        public async Task<bool> SetDeleteSystemUserById(Guid id)
+        public async Task SetDeleteSystemUserById(Guid id)
         {
             const string QUERY = /*strpsql*/@"
                 UPDATE altinn_authentication.system_user_integration
 	            SET is_deleted = TRUE
         	    WHERE altinn_authentication.system_user_integration.system_user_integration_id = @system_user_integration_id;
-	            GET DIAGNOSTICS success = ROW_COUNT;
-	            RETURN success > 0;
                 ";
 
             try
@@ -61,7 +59,7 @@ namespace Altinn.Platform.Authentication.Persistance
 
                 command.Parameters.AddWithValue(Params.Id);
 
-                return await command.ExecuteEnumerableAsync()
+                await command.ExecuteEnumerableAsync()
                     .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
                     .FirstOrDefaultAsync();
             }
@@ -166,7 +164,7 @@ namespace Altinn.Platform.Authentication.Persistance
             try
             {
                 await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
-                
+
                 command.Parameters.AddWithValue(Params.IntegrationTitle, toBeInserted.IntegrationTitle);
                 command.Parameters.AddWithValue(Params.Description, toBeInserted.Description);
                 command.Parameters.AddWithValue(Params.ProductName, toBeInserted.ProductName);
@@ -188,7 +186,7 @@ namespace Altinn.Platform.Authentication.Persistance
 
         private static ValueTask<SystemUser> ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
         {
-            return new ValueTask<SystemUser>(new SystemUser 
+            return new ValueTask<SystemUser>(new SystemUser
             {
                 Id = reader.GetFieldValue<string>(Params.Id),
                 Description = reader.GetFieldValue<string>(Params.Description),

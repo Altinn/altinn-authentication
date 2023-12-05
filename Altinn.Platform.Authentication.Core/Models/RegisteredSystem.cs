@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Altinn.Platform.Authentication.Model
+namespace Altinn.Platform.Authentication.Core.Models
 {
     /// <summary>
     /// Model for the System Register

@@ -1,12 +1,12 @@
 ﻿using System.Data;
-using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
-using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
-using Altinn.Platform.Authentication.RepositoryInterfaces;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
-namespace Altinn.Platform.Authentication.Persistance;
+namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 
 /// <summary>
 /// The System Register Repository
@@ -15,6 +15,7 @@ namespace Altinn.Platform.Authentication.Persistance;
 internal class SystemRegisterRepository : ISystemRegisterRepository
 {
     private readonly NpgsqlDataSource _datasource;
+    private readonly ILogger _logger;
 
     /// <summary>
     /// Helper class which remembers the model's field names' mapping to the implemented Column names in the database, to ease with typing SQL commands and avoid typos.
@@ -34,11 +35,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// Constructor
     /// </summary>
     /// <param name="dataSource">Needs connection to a Postgres db</param>
-    public SystemRegisterRepository(NpgsqlDataSource dataSource)
+    /// <param name="logger">The logger</param>
+    public SystemRegisterRepository(NpgsqlDataSource dataSource, ILogger logger)
     {
         _datasource = dataSource;
+        _logger = logger;
     }
-    
+
     /// <inheritdoc/>    
     public async Task<List<RegisteredSystem>> GetAllActiveSystems()
     {
@@ -61,6 +64,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetAllActiveSystems // Exception");
             throw;
         }
     }
@@ -95,6 +99,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
             throw;
         }
     }
@@ -132,6 +137,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetRegisteredSystemById // Exception");
             throw;
         }
     }
@@ -143,8 +149,6 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 UPDATE altinn_authentication.system_register
 	            SET registered_system_id = @newName
         	    WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
-	            GET DIAGNOSTICS success = ROW_COUNT;
-	            RETURN success > 0;
                 ";
 
         try
@@ -160,6 +164,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // RenameRegisteredSystemById // Exception");
             throw;
         }
     }
@@ -171,8 +176,6 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 UPDATE altinn_authentication.system_register
 	            SET is_deleted = TRUE
         	    WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
-	            GET DIAGNOSTICS success = ROW_COUNT;
-	            RETURN success > 0;
                 ";
 
         try
@@ -187,6 +190,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // SetDeleteRegisteredSystemById // Exception");
             throw;
         }
     }
@@ -199,5 +203,5 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SystemVendor = reader.GetFieldValue<string>(Params.SystemVendor),
             Description = reader.GetFieldValue<string>(Params.Description)
         });
-    }   
+    }
 }

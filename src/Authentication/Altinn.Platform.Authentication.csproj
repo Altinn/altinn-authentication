@@ -21,11 +21,14 @@
     <PackageReference Include="Microsoft.AspNetCore.Antiforgery" Version="2.2.0" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.6.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.AzureKeyVault" Version="3.1.24" />
-	  <PackageReference Include="Microsoft.FeatureManagement" Version="3.0.0" />
-	  <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="3.0.0" />
-	  <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.0.3" />
+	<PackageReference Include="Microsoft.FeatureManagement" Version="3.0.0" />
+	<PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="3.0.0" />
+	<PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.0.3" />
     <PackageReference Include="JWTCookieAuthentication" Version="3.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+	<PackageReference Include="Npgsql" Version="7.0.6" />
+	<PackageReference Include="Yuniql.AspNetCore" Version="1.2.25" />
+	<PackageReference Include="Yuniql.PostgreSql" Version="1.3.15" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
@@ -57,5 +60,9 @@
     <Content Include="JWTValidationCert.cer">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Persistance\Altinn.Platform.Authentication.Persistance.csproj" />
   </ItemGroup>
 </Project>

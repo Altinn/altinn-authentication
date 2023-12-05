@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Altinn.Platform.Authentication.Model
+namespace Altinn.Platform.Authentication.Core.Models
 {
     /// <summary>
     /// The model of the System User response given in the CRUD API in SystemUserController.cs

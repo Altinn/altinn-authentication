@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Model;
+﻿using Altinn.Platform.Authentication.Core.Models;
 
-namespace Altinn.Platform.Authentication.RepositoryInterfaces;
+namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 
 /// <summary>
 /// Interface to the System Register Repository

@@ -1,11 +1,13 @@
-﻿using Altinn.Platform.Authentication.Persistance.Configuration;
-using Altinn.Platform.Authentication.RepositoryInterfaces;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Persistance.Configuration;
+using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Persistance.Extensions;
 
@@ -13,7 +15,7 @@ namespace Altinn.Platform.Authentication.Persistance.Extensions;
 /// Extension class used for injecting the repository into the Service Collection of the parent project.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public static class DependencyInjection
+public static class PersistanceDependencyInjection
 {
     /// <summary>
     /// Used in the parent project to insert the Repositories and Postgres DB into the Dependency Injection Service Collection
