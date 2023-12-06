@@ -31,6 +31,10 @@ public static class PersistanceDependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Helper method for DI
+    /// </summary>
+    /// <param name="services">IServiceCollection for parent DI</param>
     private static void AddPostgreSqlDatabase(IServiceCollection services) 
     {
         services.AddOptions<PostgreSqlSettings>()
@@ -52,8 +56,12 @@ public static class PersistanceDependencyInjection
         services.TryAddTransient((IServiceProvider sp) => sp.GetRequiredService<NpgsqlDataSource>().CreateConnection());
     }
 
+    /// <summary>
+    /// Extension method for DI
+    /// </summary>
+    /// <param name="services">IServiceCollection for parent DI</param>
     private static void AddSystemUserRepository(IServiceCollection services) 
     {
-        services.TryAddTransient<ISystemUserRespository, SystemUserRespository>();
+        services.TryAddTransient<ISystemUserRepository, SystemUserRepository>();
     }
 }

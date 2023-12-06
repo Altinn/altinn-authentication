@@ -11,7 +11,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations
     /// SystemUser Repository.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    internal class SystemUserRespository : ISystemUserRespository
+    internal class SystemUserRepository : ISystemUserRepository
     {
         private readonly NpgsqlDataSource _dataSource;
 
@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations
         /// SystemUserRepository Constructor
         /// </summary>
         /// <param name="dataSource">Holds the Postgres db datasource</param>
-        public SystemUserRespository(
+        public SystemUserRepository(
             NpgsqlDataSource dataSource)
         {
             //_connectionString = string.Format(postgresSettings.Value.ConnectionString, postgresSettings.Value.AuthenticationDbPwd);

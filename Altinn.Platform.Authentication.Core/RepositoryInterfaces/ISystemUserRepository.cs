@@ -5,7 +5,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 /// <summary>
 /// Repository Interface, to be implemented in the Persistance layer
 /// </summary>
-public interface ISystemUserRespository
+public interface ISystemUserRepository
 {
     /// <summary>
     /// Insert the descriptor of the new SystemUser, returns the persisted SystemUser with a db generated Entity ID
