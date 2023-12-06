@@ -67,7 +67,7 @@ public abstract class DbTestBase : IAsyncLifetime
 
         var configuration = new Yuniql.AspNetCore.Configuration();
         configuration.Platform = SUPPORTED_DATABASES.POSTGRESQL;
-        configuration.Workspace = Path.Combine(FindWorkspace(), "src", "Altinn.Platform.Authentication.Persistence", "Migration");
+        configuration.Workspace = Path.Combine(FindWorkspace(), "src", "Persistance", "Migration");
         configuration.ConnectionString = connectionString;
         configuration.IsAutoCreateDatabase = false;
 

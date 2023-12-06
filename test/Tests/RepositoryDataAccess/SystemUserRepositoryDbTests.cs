@@ -27,15 +27,18 @@ public class SystemUserRepositoryDbTests : DbTestBase
     [Fact]
     public async Task InsertSystemUser()
     {
-        await Repository.InsertSystemUser(new Core.Models.SystemUser 
+        Guid? test = await Repository.InsertSystemUser(new Core.Models.SystemUser 
         {
             Description = "TestDescription",
             IntegrationTitle = "TestIntegrationTitle",
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
-            SupplierOrgNo = "123456789 MVA"
+            SupplierOrgNo = "123456789 MVA",
+            ClientId = " "            
         });
+
+        Assert.True(test is not null);
     }
 
     //[Fact]

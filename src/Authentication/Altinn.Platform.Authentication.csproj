@@ -63,6 +63,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Core\Altinn.Platform.Authentication.Core.csproj" />
     <ProjectReference Include="..\Persistance\Altinn.Platform.Authentication.Persistance.csproj" />
   </ItemGroup>
 </Project>

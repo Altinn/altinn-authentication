@@ -12,7 +12,7 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="toBeInserted">The desciptor of the new SystemUser to be inserted, has either a null ID, or an ID provided by the frontend, the db generate a UUID if none is provided.</param>
     /// <returns></returns>
-    Task<SystemUser> InsertSystemUser(SystemUser toBeInserted);
+    Task<Guid> InsertSystemUser(SystemUser toBeInserted);
 
     /// <summary>
     /// Returns the list of all active system user integration for the given party id
