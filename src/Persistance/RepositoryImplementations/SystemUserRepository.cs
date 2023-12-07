@@ -57,7 +57,7 @@ internal class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.Id);
+            command.Parameters.AddWithValue(Params.Id, id);
 
             await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
@@ -93,7 +93,7 @@ internal class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.OwnedByPartyId, partyId);
+            command.Parameters.AddWithValue(Params.OwnedByPartyId, partyId.ToString());
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
             return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
@@ -193,7 +193,7 @@ internal class SystemUserRepository : ISystemUserRepository
     {
         return new ValueTask<SystemUser>(new SystemUser
         {
-            Id = reader.GetFieldValue<string>(Params.Id),
+            Id = reader.GetFieldValue<Guid>(Params.Id).ToString(),
             Description = reader.GetFieldValue<string>(Params.Description),
             ProductName = reader.GetFieldValue<string>(Params.ProductName),
             OwnedByPartyId = reader.GetFieldValue<string>(Params.OwnedByPartyId),

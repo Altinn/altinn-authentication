@@ -95,9 +95,9 @@ namespace Altinn.Platform.Authentication.Controllers
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>        
-        [Produces("application/json")]
-        [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
-        [ProducesResponseType(StatusCodes.Status404NotFound)]        
+        // [Produces("application/json")]
+        // [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
+        // [ProducesResponseType(StatusCodes.Status404NotFound)]        
         [HttpPost("{partyId}/{createRequestId}")]
         public async Task<ActionResult<SystemUser>> CreateSystemUser(SystemUser request)
         {
