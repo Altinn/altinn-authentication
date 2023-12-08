@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUser request)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDTO request, int partyId)
         {
             throw new System.NotImplementedException();
         }

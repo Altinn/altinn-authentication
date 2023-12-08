@@ -29,15 +29,17 @@ namespace Altinn.Platform.Authentication.Services
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUser request)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDTO request, int partyId)
         {
-            if (int.Parse(request.OwnedByPartyId) < 1)
+            SystemUser newSystemUser = new()
             {
-                return Task.FromResult<SystemUser>(null);
-            }
-
-            theMockList.Add(request);
-            return Task.FromResult(request);
+                Id = Guid.NewGuid().ToString(),
+                IntegrationTitle = request.IntegrationTitle,
+                ProductName = request.ProductName,
+                OwnedByPartyId = partyId.ToString()
+            };
+            theMockList.Add(newSystemUser);
+            return Task.FromResult(newSystemUser);
         }
 
         /// <summary>

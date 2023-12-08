@@ -191,24 +191,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid id = Guid.NewGuid();
 
             string para = $"{partyId}/{id}";
-            SystemUser newSystemUser = new()
+            SystemUserRequestDTO newSystemUser = new()
             {
-                Description = "This is the new SystemUser!",
-                Id = id.ToString(),
-                OwnedByPartyId = partyId.ToString()
+                IntegrationTitle = "IntegrationTitleValue",
+                ProductName = "ProductNameValue"
             };
 
-            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Post, $"/authentication/api/v1/systemuser/{para}");
-            request2.Content = JsonContent.Create<SystemUser>(newSystemUser, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"), jsonOptions);
+            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Post, $"/authentication/api/v1/systemuser");
+            request2.Content = JsonContent.Create<SystemUserRequestDTO>(newSystemUser, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"));
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+                         
+            SystemUser shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await response2.Content.ReadAsStringAsync(), jsonOptions);
 
-            HttpRequestMessage request3 = new HttpRequestMessage(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
-            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-            SystemUser shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), jsonOptions);
+            Assert.Equal(StatusCodes.Status200OK, (int)response2.StatusCode);
 
-            Assert.Equal(StatusCodes.Status201Created, (int)response3.StatusCode);
-
-            Assert.Equal("This is the new SystemUser!", shouldBeCreated.Description);            
+            Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);            
         }
 
         [Fact]

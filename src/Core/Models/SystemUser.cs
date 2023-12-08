@@ -13,21 +13,22 @@ namespace Altinn.Platform.Authentication.Core.Models
     {
         /// <summary>
         /// GUID created by the "real" Authentication Component
-        /// When the Frontend send a request for the 
+        /// When the Frontend send a request for the creation of a new SystemUser the Id is null
         /// </summary>
-        [JsonPropertyName ("id")]
+        [AllowNull]
+        [JsonPropertyName ("Id")]
         public string Id { get; set; }
 
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
         /// </summary>
-        [JsonPropertyName("integrationtitle")]
+        [JsonPropertyName("IntegrationYitle")]
         public string IntegrationTitle { get; set; }
 
         /// <summary>
         /// The user entered Description
         /// </summary>
-        [JsonPropertyName("description")]
+        [JsonPropertyName("Description")]
         public string Description { get; set; }
 
         /// <summary>
@@ -36,20 +37,21 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The "real" Authentication Component should validate that the SystemName is unique
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// </summary>
-        [JsonPropertyName("productname")]
+        [JsonPropertyName("ProductName")]
         public string ProductName { get; set; }
 
         /// <summary>
         /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and
         /// user party serivces
         /// </summary>
-        [JsonPropertyName("ownedbypartyid")]
+        [JsonPropertyName("OwnedbyPartyId")]
         public string OwnedByPartyId { get; set; }
 
         /// <summary>
         /// Nice to have for debugging and logging.
         /// </summary>
-        [JsonPropertyName("created")]
+        [AllowNull]
+        [JsonPropertyName("Created")]
         public System.DateTime Created { get; set; }
 
         /// <summary>
@@ -58,7 +60,8 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// from the database. This is to avoid complications with cascade delete,
         /// and the need to maintain consistent logging, and possible compliance rules.
         /// </summary>
-        [JsonPropertyName("isdeleted")]
+        [AllowNull]
+        [JsonPropertyName("IsDeleted")]
         public bool IsDeleted { get; set; }
 
         /// <summary>
@@ -66,7 +69,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("suppliername")]
+        [JsonPropertyName("SupplierName")]
         public string SupplierName { get; set; }
 
         /// <summary>
@@ -74,7 +77,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("supplierorgno")]
+        [JsonPropertyName("SupplierOrgno")]
         public string SupplierOrgNo { get; set; }
 
         /// <summary>
@@ -82,7 +85,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// In these cases the SupplierName and SupplierOrgNo will be blank
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("clientid")]
+        [JsonPropertyName("ClientId")]
         public string ClientId { get; set; }
     }
 }

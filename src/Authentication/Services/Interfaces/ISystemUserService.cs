@@ -35,7 +35,7 @@ public interface ISystemUserService
     /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
     /// </summary>
     /// <returns></returns> 
-    Task<SystemUser> CreateSystemUser(SystemUser request);
+    Task<SystemUser> CreateSystemUser(SystemUserRequestDTO request, int partyId);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the update 

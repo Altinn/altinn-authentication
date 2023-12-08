@@ -35,3 +35,11 @@ GET {{authApiRootUrl}}/{{systemuser}}/{{partyId}}
 //
 GET {{authApiRootUrl}}/{{systemuser}}/{{partyId}}/{{systemUserId}}
 
+
+###
+GET https://localhost:44377/authentication/swagger/index.html
+
+
+
+###
+POST {{authApiRootUrl}}/{{systemuser}} -H 'accept: */*' -H 'Content-Type: application/json; charset=utf-8' -d '{"IntegrationTitle": "IntegrationTitle", "ProductName": "ProductName" }'
