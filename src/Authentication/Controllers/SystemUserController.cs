@@ -95,11 +95,11 @@ namespace Altinn.Platform.Authentication.Controllers
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>        
-        // [Produces("application/json")]
-        // [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
-        // [ProducesResponseType(StatusCodes.Status404NotFound)]        
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
+        [ProducesResponseType(StatusCodes.Status404NotFound)]        
         [HttpPost("{partyId}/{createRequestId}")]
-        public async Task<ActionResult<SystemUser>> CreateSystemUser(SystemUser request)
+        public async Task<ActionResult<SystemUser>> CreateSystemUser([FromBody] SystemUser request)
         {
             SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request);
             if (toBeCreated is not null)
@@ -117,7 +117,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPut("{partyId}/{systemUserId}")]
-        public async Task<ActionResult> UpdateSystemUserById(SystemUser request)
+        public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUser request)
         {
             SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
             if (toBeUpdated is not null)
