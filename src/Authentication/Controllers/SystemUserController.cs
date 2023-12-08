@@ -116,7 +116,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpPut("{partyId}/{systemUserId}")]
+        [HttpPut]
         public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUser request)
         {
             SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
