@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Persistance.Configuration;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Testcontainers.PostgreSql;
@@ -119,7 +121,7 @@ public abstract class DbTestBase : IAsyncLifetime
         /// <inheritdoc/>
         public bool IsTraceToDirectory { get; set; } = false;
 
-        /// <inheritdoc/>
+        /// <inheritdoc/>        
         public string? TraceDirectory { get; set; }
 
         /// <inheritdoc/>
