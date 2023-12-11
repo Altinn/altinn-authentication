@@ -19,10 +19,4 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         services.AddPersistanceLayer();
         base.ConfigureServices(services);
     }
-
-    [Fact]
-    public async Task CreatePartyRegistry()
-    {
-        // var info1 = await Repository.
-    }
 }

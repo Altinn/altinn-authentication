@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models
@@ -22,14 +23,9 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
         /// </summary>
-        [JsonPropertyName("IntegrationYitle")]
+        [Required]
+        [JsonPropertyName("IntegrationTitle")]
         public string IntegrationTitle { get; set; }
-
-        /// <summary>
-        /// The user entered Description
-        /// </summary>
-        [JsonPropertyName("Description")]
-        public string Description { get; set; }
 
         /// <summary>
         /// For off the shelf systems.
@@ -37,6 +33,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The "real" Authentication Component should validate that the SystemName is unique
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// </summary>
+        [Required]
         [JsonPropertyName("ProductName")]
         public string ProductName { get; set; }
 
@@ -44,7 +41,8 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and
         /// user party serivces
         /// </summary>
-        [JsonPropertyName("OwnedbyPartyId")]
+        [Required]
+        [JsonPropertyName("OwnedByPartyId")]
         public string OwnedByPartyId { get; set; }
 
         /// <summary>

@@ -82,10 +82,11 @@ namespace Altinn.Platform.Authentication.Services
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
-        public Task<int> UpdateSystemUserById(Guid systemUserId, SystemUser request)
+        public Task<int> UpdateSystemUserById(SystemUserUpdateDTO request)
         {
-            int array = theMockList.FindIndex(su => su.Id == request.Id);
-            theMockList[array] = request;
+            int array = theMockList.FindIndex(su => su.Id == request.Id.ToString());
+            theMockList[array].IntegrationTitle = request.IntegrationTitle;
+            theMockList[array].ProductName = request.ProductName;
             return Task.FromResult(1);
         }
 
@@ -99,36 +100,39 @@ namespace Altinn.Platform.Authentication.Services
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbd",
                 IntegrationTitle = "Vårt regnskapsystem",
-                Description = "Koblet opp mot Visma. Snakk med Pål om abonnement",
-                ProductName = "visma_vis_v2",
+                ProductName = "supplier_name_cool_system",
                 OwnedByPartyId = "orgno:91235123",
                 Created = System.DateTime.Parse("2023-09-12"),
                 IsDeleted = false,
-                ClientId = string.Empty
+                ClientId = string.Empty,
+                SupplierName = "Supplier1 Name",
+                SupplierOrgNo = "123456789"
             };
 
             SystemUser systemUser2 = new()
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbe",
                 IntegrationTitle = "Vårt andre regnskapsystem",
-                Description = "Snakk med Per om abonnement",
-                ProductName = "visma_vis_sys",
+                ProductName = "supplier2_product_name",
                 OwnedByPartyId = "orgno:91235124",
                 Created = System.DateTime.Parse("2023-09-22"),
                 IsDeleted = false,
-                ClientId = string.Empty
+                ClientId = string.Empty,
+                SupplierName = "Supplier2 Name",
+                SupplierOrgNo = "123456789"
             };
 
             SystemUser systemUser3 = new()
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
-                Description = "Kai og Guri vet alt om dette systemet.",
-                ProductName = "fiken_superskatt",
+                ProductName = "supplier3_product_name",
                 OwnedByPartyId = "orgno:91235125",
                 Created = System.DateTime.Parse("2023-09-22"),
                 IsDeleted = false,
-                ClientId = string.Empty
+                ClientId = string.Empty,
+                SupplierName = "Supplier3 Name",
+                SupplierOrgNo = "123456789"
             };
 
             List<SystemUser> systemUserList = new()

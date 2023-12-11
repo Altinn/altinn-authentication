@@ -31,7 +31,6 @@ public class SystemUserRepositoryDbTests : DbTestBase
     {
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser 
         {
-            Description = "InsertSystemUser",
             IntegrationTitle = "InsertSystemUserTitle",
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",
@@ -48,7 +47,6 @@ public class SystemUserRepositoryDbTests : DbTestBase
     {
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
-            Description = "GetAllActiveSystemUsersForParty",
             IntegrationTitle = "GetAllActiveSystemUsersForPartyTitle",
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",
@@ -67,7 +65,6 @@ public class SystemUserRepositoryDbTests : DbTestBase
     {
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
-            Description = "GetSystemUserById",
             IntegrationTitle = "GetSystemUserByIdTitle",
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",
@@ -86,7 +83,6 @@ public class SystemUserRepositoryDbTests : DbTestBase
     {
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
-            Description = "GetSystemUserById",
             IntegrationTitle = "GetSystemUserByIdTitle",
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",

@@ -14,8 +14,7 @@ Body
 application/json; charset=utf-8, 323 bytes
   {
     "id": "37ce1792-3b35-4d50-a07d-636017aa7dbd",
-    "integrationtitle": "Vårt regnskapsystem",
-    "description": "Koblet opp mot Visma. Snakk med Pål om abonnement",
+    "integrationtitle": "Vårt regnskapsystem"
     "productname": "visma_vis_v2",
     "ownedbypartyid": "orgno:91235123",
     "created": "2023-09-12T00:00:00",
@@ -38,7 +37,6 @@ GET {{authApiRootUrl}}/{{systemuser}}/{{partyId}}/{{systemUserId}}
 
 ###
 GET https://localhost:44377/authentication/swagger/index.html
-
 
 
 ###

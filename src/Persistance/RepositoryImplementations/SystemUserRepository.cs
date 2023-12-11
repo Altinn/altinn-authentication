@@ -23,7 +23,6 @@ internal class SystemUserRepository : ISystemUserRepository
     {
         internal const string Id = "system_user_integration_id";       // UUID : Normally set by the db using gen 4 uuid random generator by default, but could also be set by the Frontend. 
         internal const string IntegrationTitle = "integration_title";  // User's chosen name for this Integration
-        internal const string Description = "integration_description"; // User's own written description of this Integration
         internal const string ProductName = "product_name";            // The chosen "Of the shelf Product". The self made systems are not implemented yet
         internal const string OwnedByPartyId = "owned_by_party_id";    // The user that owns this Integration
         internal const string SupplierName = "supplier_name";          // Of the shelf product vendor
@@ -76,7 +75,6 @@ internal class SystemUserRepository : ISystemUserRepository
                 SELECT 
                     system_user_integration_id,
 		            integration_title,
-		            integration_description,
 		            product_name,
 		            owned_by_party_id,
 		            supplier_name,
@@ -111,7 +109,6 @@ internal class SystemUserRepository : ISystemUserRepository
             SELECT 
 	    	    system_user_integration_id,
 		        integration_title,
-		        integration_description,
 		        product_name,
 		        owned_by_party_id,
 		        supplier_name,
@@ -145,7 +142,6 @@ internal class SystemUserRepository : ISystemUserRepository
         const string QUERY = /*strpsql*/@"            
                 INSERT INTO altinn_authentication.system_user_integration(
                     integration_title,
-                    integration_description,
                     product_name,
                     owned_by_party_id,
                     supplier_name,
@@ -153,7 +149,6 @@ internal class SystemUserRepository : ISystemUserRepository
                     client_id)
                 VALUES(
                     @integration_title,
-                    @integration_description,
                     @product_name,
                     @owned_by_party_id,
                     @supplier_name,
@@ -166,7 +161,6 @@ internal class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue(Params.IntegrationTitle, toBeInserted.IntegrationTitle);
-            command.Parameters.AddWithValue(Params.Description, toBeInserted.Description);
             command.Parameters.AddWithValue(Params.ProductName, toBeInserted.ProductName);
             command.Parameters.AddWithValue(Params.OwnedByPartyId, toBeInserted.OwnedByPartyId);
             command.Parameters.AddWithValue(Params.SupplierName, toBeInserted.SupplierName);
@@ -194,7 +188,6 @@ internal class SystemUserRepository : ISystemUserRepository
         return new ValueTask<SystemUser>(new SystemUser
         {
             Id = reader.GetFieldValue<Guid>(Params.Id).ToString(),
-            Description = reader.GetFieldValue<string>(Params.Description),
             ProductName = reader.GetFieldValue<string>(Params.ProductName),
             OwnedByPartyId = reader.GetFieldValue<string>(Params.OwnedByPartyId),
             SupplierName = reader.GetFieldValue<string>(Params.SupplierName),

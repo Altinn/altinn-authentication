@@ -41,5 +41,5 @@ public interface ISystemUserService
     /// Replaces the values for the existing system user with those from the update 
     /// </summary>
     /// <returns></returns>
-    Task<int> UpdateSystemUserById(Guid systemUserId, SystemUser request);
+    Task<int> UpdateSystemUserById(SystemUserUpdateDTO request);
 }
