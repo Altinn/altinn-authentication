@@ -28,7 +28,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Moq;
-using Newtonsoft.Json.Serialization;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
@@ -156,6 +155,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), jsonOptions);
+
             SystemUserUpdateDTO dto = new() 
                 {
                     Id = list[0].Id,
@@ -206,6 +206,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string para = $"{partyId}/{id}";
             SystemUserRequestDTO newSystemUser = new()
             {
+                PartyId = partyId.ToString(),
                 IntegrationTitle = "IntegrationTitleValue",
                 ProductName = "ProductNameValue"
             };

@@ -10,7 +10,13 @@ namespace Altinn.Platform.Authentication.Core.Models
     /// </summary>
     [ExcludeFromCodeCoverage]
     public class SystemUserRequestDTO
-    {       
+    {
+        [JsonPropertyName("PartyId")]
+        /// <summary>
+        /// PartyId is the owning Legal Entity, whether an organization or a privat person
+        /// </summary>
+        public string PartyId { get; set; }
+
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
         /// </summary>
