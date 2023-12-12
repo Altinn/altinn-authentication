@@ -163,13 +163,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     IntegrationTitle = list[0].IntegrationTitle, 
                     ProductName = list[0].ProductName 
                 };
-            
+
             string para = $"{partyId}/{list[0].Id}";
             
             dto.ProductName = "updated_product_name";
-            HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser)");
-            request2.Content = JsonContent.Create<SystemUserUpdateDTO>(dto, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"));            
-            HttpResponseMessage response2 = await client.SendAsync(request2);
+
+            HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Put, $"/authentication/api/v1/systemuser");
+            request2.Content = JsonContent.Create<SystemUserUpdateDTO>(dto, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+            
             Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
 
             HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
