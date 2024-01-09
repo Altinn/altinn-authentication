@@ -10,7 +10,8 @@ namespace Altinn.Platform.Authentication.Core.Models
     /// The BFF will provide a tailored DTO to the Frontend.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public class SystemUserUpdateDTO
+#nullable enable
+    public class SystemUserUpdateDto
     {
         /// <summary>
         /// GUID created by the "real" Authentication Component

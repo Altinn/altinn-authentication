@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUserRequestDTO request, int partyId)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
             throw new System.NotImplementedException();
         }
@@ -55,7 +55,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
-        public Task<int> UpdateSystemUserById(SystemUserUpdateDTO request)
+        public Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
             throw new System.NotImplementedException();
         }

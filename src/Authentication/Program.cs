@@ -339,39 +339,39 @@ void Configure()
     app.UseAuthorization();
     app.MapControllers();
     app.MapHealthChecks("/health");
+}
 
-    void ConfigurePostgresSql()
+void ConfigurePostgresSql()
+{
+    if (builder.Configuration.GetValue<bool>("PostgresSqlSettings:EnableDBConnection"))
     {
-        if (builder.Configuration.GetValue<bool>("PostgresSqlSettings:EnableDBConnection"))
+        ConsoleTraceService traceService = new() { IsDebugEnabled = true };
+
+        string connectionString = string.Format(
+            builder.Configuration.GetValue<string>("PostgresSqlSettings:AdminConnectionString"),
+            builder.Configuration.GetValue<string>("PostgresSqlSettings:authenticationDbAdminPassword"));
+
+        string worksSpace = Path.Combine(
+            Environment.CurrentDirectory,
+            builder.Configuration.GetValue<string>("PostgresSqlSettings:WorkspacePath"));
+
+        if (builder.Environment.IsDevelopment())
         {
-            ConsoleTraceService traceService = new() { IsDebugEnabled = true };
-
-            string connectionString = string.Format(
-                builder.Configuration.GetValue<string>("PostgresSqlSettings:AdminConnectionString"),
-                builder.Configuration.GetValue<string>("PostgresSqlSettings:authenticationDbAdminPassword"));
-
-            string worksSpace = Path.Combine(
-                Environment.CurrentDirectory,
+            worksSpace = Path.Combine(
+                Directory.GetParent(Environment.CurrentDirectory).FullName,
                 builder.Configuration.GetValue<string>("PostgresSqlSettings:WorkspacePath"));
-
-            if (builder.Environment.IsDevelopment())
-            {
-                worksSpace = Path.Combine(
-                    Directory.GetParent(Environment.CurrentDirectory).FullName,
-                    builder.Configuration.GetValue<string>("PostgresSqlSettings:WorkspacePath"));
-            }
-
-            app.UseYuniql(
-                new PostgreSqlDataService(traceService),
-                new PostgreSqlBulkImportService(traceService),
-                traceService,
-                new Configuration 
-                {
-                    Workspace = worksSpace,
-                    ConnectionString = connectionString,
-                    IsAutoCreateDatabase = false,
-                    IsDebug = true
-                });
         }
+
+        app.UseYuniql(
+            new PostgreSqlDataService(traceService),
+            new PostgreSqlBulkImportService(traceService),
+            traceService,
+            new Configuration
+            {
+                Workspace = worksSpace,
+                ConnectionString = connectionString,
+                IsAutoCreateDatabase = false,
+                IsDebug = true
+            });
     }
 }

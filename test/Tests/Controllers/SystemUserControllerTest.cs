@@ -156,7 +156,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), jsonOptions);
 
-            SystemUserUpdateDTO dto = new() 
+            SystemUserUpdateDto dto = new() 
                 {
                     Id = list[0].Id,
                     OwnedByPartyId = partyId.ToString(),                     
@@ -169,7 +169,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             dto.ProductName = "updated_product_name";
 
             HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Put, $"/authentication/api/v1/systemuser");
-            request2.Content = JsonContent.Create<SystemUserUpdateDTO>(dto, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"));
+            request2.Content = JsonContent.Create<SystemUserUpdateDto>(dto, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"));
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
             
             Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
@@ -204,7 +204,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid id = Guid.NewGuid();
 
             string para = $"{partyId}/{id}";
-            SystemUserRequestDTO newSystemUser = new()
+            SystemUserRequestDto newSystemUser = new()
             {
                 PartyId = partyId.ToString(),
                 IntegrationTitle = "IntegrationTitleValue",
@@ -212,7 +212,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             };
 
             HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Post, $"/authentication/api/v1/systemuser");
-            request2.Content = JsonContent.Create<SystemUserRequestDTO>(newSystemUser, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"));
+            request2.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"));
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
                          
             SystemUser shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await response2.Content.ReadAsStringAsync(), jsonOptions);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Core.Models;
@@ -29,7 +30,7 @@ namespace Altinn.Platform.Authentication.Services
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUserRequestDTO request, int partyId)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
             SystemUser newSystemUser = new()
             {
@@ -82,7 +83,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
-        public Task<int> UpdateSystemUserById(SystemUserUpdateDTO request)
+        public Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
             int array = theMockList.FindIndex(su => su.Id == request.Id.ToString());
             theMockList[array].IntegrationTitle = request.IntegrationTitle;
@@ -94,6 +95,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Helper method during development, just some Mock data.
         /// </summary>
         /// <returns></returns>
+        [ExcludeFromCodeCoverage]
         private static List<SystemUser> MockDataHelper()
         {            
             SystemUser systemUser1 = new()

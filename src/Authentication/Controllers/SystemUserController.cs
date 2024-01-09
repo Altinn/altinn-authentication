@@ -99,7 +99,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
         [HttpPost]
-        public async Task<ActionResult<SystemUser>> CreateSystemUser([FromBody] SystemUserRequestDTO request)
+        public async Task<ActionResult<SystemUser>> CreateSystemUser([FromBody] SystemUserRequestDto request)
         {           
             SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, 1);
             if (toBeCreated is not null)
@@ -117,7 +117,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPut]
-        public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUserUpdateDTO request)
+        public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUserUpdateDto request)
         {
             SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
             if (toBeUpdated is not null)

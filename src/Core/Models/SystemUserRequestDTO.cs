@@ -9,7 +9,8 @@ namespace Altinn.Platform.Authentication.Core.Models
     /// The BFF will provide a tailored DTO to the Frontend.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public class SystemUserRequestDTO
+#nullable enable
+    public class SystemUserRequestDto
     {
         [JsonPropertyName("PartyId")]
         /// <summary>
