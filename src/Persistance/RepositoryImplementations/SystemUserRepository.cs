@@ -39,7 +39,6 @@ internal class SystemUserRepository : ISystemUserRepository
     public SystemUserRepository(
         NpgsqlDataSource dataSource)
     {
-        //_connectionString = string.Format(postgresSettings.Value.ConnectionString, postgresSettings.Value.AuthenticationDbPwd);
         _dataSource = dataSource;
     }
 
@@ -64,6 +63,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
+            Log(ex);
             throw;
         }
     }
@@ -98,6 +98,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
+            Log(ex);
             throw;
         }
     }
@@ -132,6 +133,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
+            Log(ex);
             throw;
         }
     }
@@ -174,6 +176,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
+            Log(ex);
             throw;
         }
     }
@@ -198,4 +201,7 @@ internal class SystemUserRepository : ISystemUserRepository
         });
     }
 
+    private static void Log(Exception ex)
+    {
+    }
 }
