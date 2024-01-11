@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Persistance.Configuration
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Persistance.Configuration
 {
     /// <summary>
     /// Settings for the PostgreSQL db.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class PostgreSqlSettings
     {
         /// <summary>
