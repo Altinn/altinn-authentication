@@ -11,6 +11,7 @@ namespace Altinn.Platform.Authentication.Services
     /// <summary>
     /// The service that supports the SystemUser CRUD APIcontroller
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class SystemUserService : ISystemUserService
     {
         private readonly List<SystemUser> theMockList;
@@ -94,8 +95,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Helper method during development, just some Mock data.
         /// </summary>
-        /// <returns></returns>
-        [ExcludeFromCodeCoverage]
+        /// <returns></returns>        
         private static List<SystemUser> MockDataHelper()
         {            
             SystemUser systemUser1 = new()

@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Authentication\Altinn.Platform.Authentication.csproj" />
+    <ProjectReference Include="..\..\src\Authentication\Altinn.Platform.Authentication.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
