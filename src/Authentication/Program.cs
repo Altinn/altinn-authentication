@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -374,4 +375,12 @@ void ConfigurePostgresSql()
                 IsDebug = true
             });
     }
+}
+
+/// <summary>
+/// Needed to exclude the Program.cs file from Sonarcloud test requirment
+/// </summary>
+[ExcludeFromCodeCoverage]
+public partial class Program
+{
 }
