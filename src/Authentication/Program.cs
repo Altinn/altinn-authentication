@@ -253,7 +253,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IEventsQueueClient, EventsQueueClient>();
     services.AddSingleton<IEventLog, EventLogService>();
     services.AddSingleton<ISystemClock, SystemClock>();
-    services.AddSingleton<ISystemUserService, SystemUserService>();
+    services.AddSingleton<ISystemUserService, SystemUserService>();    
     services.AddSingleton<IGuidService, GuidService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))

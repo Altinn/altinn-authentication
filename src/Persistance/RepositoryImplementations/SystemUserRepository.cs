@@ -41,7 +41,7 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <param name="logger">Holds the ref to the Logger</param>
     public SystemUserRepository(
         NpgsqlDataSource dataSource,
-        ILogger logger)
+        ILogger<SystemUserRepository> logger)
     {
         _dataSource = dataSource;
         _logger = logger;

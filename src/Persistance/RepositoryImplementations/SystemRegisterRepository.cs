@@ -36,7 +36,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// </summary>
     /// <param name="dataSource">Needs connection to a Postgres db</param>
     /// <param name="logger">The logger</param>
-    public SystemRegisterRepository(NpgsqlDataSource dataSource, ILogger logger)
+    public SystemRegisterRepository(NpgsqlDataSource dataSource, ILogger<SystemRegisterRepository> logger)
     {
         _datasource = dataSource;
         _logger = logger;
