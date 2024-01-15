@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
@@ -14,6 +15,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 internal class SystemUserRepository : ISystemUserRepository
 {
     private readonly NpgsqlDataSource _dataSource;
+    private readonly ILogger _logger;
 
     /// <summary>
     /// Private helper class to hold the Column names of the System_User_Integration table as constant strings to aid in typing SQL commands.
@@ -36,10 +38,13 @@ internal class SystemUserRepository : ISystemUserRepository
     /// SystemUserRepository Constructor
     /// </summary>
     /// <param name="dataSource">Holds the Postgres db datasource</param>
+    /// <param name="logger">Holds the ref to the Logger</param>
     public SystemUserRepository(
-        NpgsqlDataSource dataSource)
+        NpgsqlDataSource dataSource,
+        ILogger logger)
     {
         _dataSource = dataSource;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -63,7 +68,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            Log(ex);
+            Log(ex, "SetDeleteSystemUserById");
             throw;
         }
     }
@@ -98,7 +103,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            Log(ex);
+            Log(ex, "GetAllActiveSystemUsersForParty");
             throw;
         }
     }
@@ -133,7 +138,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            Log(ex);
+            Log(ex, "GetSystemUserById");
             throw;
         }
     }
@@ -176,7 +181,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            Log(ex);
+            Log(ex, "InsertSystemUser");
             throw;
         }
     }
@@ -201,7 +206,8 @@ internal class SystemUserRepository : ISystemUserRepository
         });
     }
 
-    private static void Log(Exception ex)
+    private void Log(Exception ex, string caller)
     {
+        _logger.LogError(ex, $"Authentication // SystemRegisterRepository // {caller} // Exception");       
     }
 }
