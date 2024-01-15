@@ -69,6 +69,41 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
+    /// <summary>
+    /// Variant method for admin to check deleted systemregisters, and or creation dates.
+    /// </summary>
+    /// <param name="is_deleted">Choose to fetch deleted or not deleted items</param>
+    /// <param name="created">Choose a specific creation from date</param>
+    /// <returns></returns>
+    public async Task<List<RegisteredSystem>> GetRegisteredSystemsVariant(bool is_deleted, string created)
+    {
+        const string QUERY = /*strpsql*/@"
+        SELECT 
+            registered_system_id,
+            system_vendor,
+            short_description
+        FROM altinn_authentication.system_register sr
+        WHERE sr.is_deleted = @is_deleted 
+        AND sr.created >= @created;";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue(Params.IsDeleted, is_deleted);
+            command.Parameters.AddWithValue(Params.Created, created);
+
+            return await command.ExecuteEnumerableAsync()
+                 .SelectAwait(ConvertFromReaderToSystemRegister)
+                 .ToListAsync();                
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetRegisteredSystemsVariant // Exception");
+            throw;
+        }
+    }
+
     /// <inheritdoc/>  
     public async Task<string> CreateRegisteredSystem(RegisteredSystem toBeInserted)
     {

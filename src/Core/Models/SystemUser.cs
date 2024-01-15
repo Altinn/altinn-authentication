@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models
 {
+#nullable enable
     /// <summary>
     /// The model of the System User response given in the CRUD API in SystemUserController.cs
     /// This model will be exchanged between this Authentication component, the PostGress db and the BFF for the Frontend.
