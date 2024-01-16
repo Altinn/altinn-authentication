@@ -68,7 +68,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            Log(ex, "SetDeleteSystemUserById");
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // SetDeleteSystemUserById // Exception");
             throw;
         }
     }
@@ -103,7 +103,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            Log(ex, "GetAllActiveSystemUsersForParty");
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetAllActiveSystemUsersForParty // Exception");
             throw;
         }
     }
@@ -138,7 +138,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            Log(ex, "GetSystemUserById");
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetSystemUserById // Exception");
             throw;
         }
     }
@@ -181,7 +181,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            Log(ex, "InsertSystemUser");
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // InsertSystemUser // Exception");
             throw;
         }
     }
@@ -204,10 +204,5 @@ internal class SystemUserRepository : ISystemUserRepository
             IntegrationTitle = reader.GetFieldValue<string>(Params.IntegrationTitle),
             Created = reader.GetFieldValue<DateTime>(Params.Created)
         });
-    }
-
-    private void Log(Exception ex, string caller)
-    {
-        _logger.LogError(ex, $"Authentication // SystemRegisterRepository // {caller} // Exception");       
     }
 }
