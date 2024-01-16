@@ -26,7 +26,8 @@ public static class PersistanceDependencyInjection
     public static IServiceCollection AddPersistanceLayer(this IServiceCollection services)
     {
         AddPostgreSqlDatabase(services);
-        AddSystemUserRepository(services);        
+        AddSystemUserRepository(services);
+        AddSystemRegisterRepository(services);
 
         return services;
     }
@@ -63,5 +64,14 @@ public static class PersistanceDependencyInjection
     private static void AddSystemUserRepository(IServiceCollection services) 
     {
         services.TryAddTransient<ISystemUserRepository, SystemUserRepository>();
+    }
+
+    /// <summary>
+    /// Extension method for DI
+    /// </summary>
+    /// <param name="services">IServiceCollection for parent DI</param>
+    private static void AddSystemRegisterRepository(IServiceCollection services)
+    {
+        services.TryAddTransient<ISystemRegisterRepository, SystemRegisterRepository>();
     }
 }
