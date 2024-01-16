@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -14,7 +13,6 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
-using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
@@ -41,7 +39,6 @@ using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
 using Yuniql.AspNetCore;
 using Yuniql.PostgreSql;
 
@@ -205,8 +202,6 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHealthChecks().AddCheck<HealthCheck>("authentication_health_check");
 
     services.AddSingleton(config);
-
-    services.AddPersistanceLayer();
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
     services.Configure<AltinnCore.Authentication.Constants.KeyVaultSettings>(config.GetSection("kvSetting"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
@@ -253,7 +248,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IEventsQueueClient, EventsQueueClient>();
     services.AddSingleton<IEventLog, EventLogService>();
     services.AddSingleton<ISystemClock, SystemClock>();
-    services.AddSingleton<ISystemUserService, SystemUserService>();    
+    services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<IGuidService, GuidService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
@@ -326,7 +321,6 @@ void Configure()
     }
 
     ConfigurePostgresSql();
-
     app.UseSwagger(o => o.RouteTemplate = "authentication/swagger/{documentName}/swagger.json");
 
     app.UseSwaggerUI(c =>
@@ -338,8 +332,11 @@ void Configure()
     app.UseRouting();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.MapControllers();
-    app.MapHealthChecks("/health");
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapControllers();
+        endpoints.MapHealthChecks("/health");
+    });
 }
 
 void ConfigurePostgresSql()
