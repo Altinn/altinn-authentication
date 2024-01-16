@@ -16,24 +16,7 @@ internal class SystemUserRepository : ISystemUserRepository
 {
     private readonly NpgsqlDataSource _dataSource;
     private readonly ILogger _logger;
-
-    /// <summary>
-    /// Private helper class to hold the Column names of the System_User_Integration table as constant strings to aid in typing SQL commands.
-    /// Prefix with an underscore when using them as input Parameters to the Functions: see the In_() method.         
-    /// </summary>
-    private static class Params
-    {
-        internal const string Id = "system_user_integration_id";       // UUID : Normally set by the db using gen 4 uuid random generator by default, but could also be set by the Frontend. 
-        internal const string IntegrationTitle = "integration_title";  // User's chosen name for this Integration
-        internal const string ProductName = "product_name";            // The chosen "Of the shelf Product". The self made systems are not implemented yet
-        internal const string OwnedByPartyId = "owned_by_party_id";    // The user that owns this Integration
-        internal const string SupplierName = "supplier_name";          // Of the shelf product vendor
-        internal const string SupplierOrgNo = "supplier_org_no";       // Of the shelf product vendor
-        internal const string ClientId = "client_id";                  // Not implemented yet. Will be used instead of SupplierName and OrgNo for Persons
-        internal const string IsDeleted = "is_deleted";                // Used instead of regular deletion
-        internal const string Created = "created";                     // Always set by the db            
-    }
-
+    
     /// <summary>
     /// SystemUserRepository Constructor
     /// </summary>
@@ -60,7 +43,7 @@ internal class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.Id, id);
+            command.Parameters.AddWithValue("system_user_integration_id", id);
 
             await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
@@ -96,7 +79,7 @@ internal class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.OwnedByPartyId, partyId.ToString());
+            command.Parameters.AddWithValue("owned_by_party_id", partyId.ToString());
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
             return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
@@ -130,7 +113,7 @@ internal class SystemUserRepository : ISystemUserRepository
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
-            command.Parameters.AddWithValue(Params.Id, id);
+            command.Parameters.AddWithValue("system_user_integration_id", id);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)
@@ -167,13 +150,12 @@ internal class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.IntegrationTitle, toBeInserted.IntegrationTitle);
-            command.Parameters.AddWithValue(Params.ProductName, toBeInserted.ProductName);
-            command.Parameters.AddWithValue(Params.OwnedByPartyId, toBeInserted.OwnedByPartyId);
-            command.Parameters.AddWithValue(Params.SupplierName, toBeInserted.SupplierName);
-            command.Parameters.AddWithValue(Params.SupplierOrgNo, toBeInserted.SupplierOrgNo);
-            command.Parameters.AddWithValue(Params.ClientId, toBeInserted.ClientId);
-            command.Parameters.AddWithValue(Params.IsDeleted, toBeInserted.IsDeleted);
+            command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
+            command.Parameters.AddWithValue("product_name", toBeInserted.ProductName);
+            command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.OwnedByPartyId);
+            command.Parameters.AddWithValue("supplier_name", toBeInserted.SupplierName);
+            command.Parameters.AddWithValue("supplier_org_no", toBeInserted.SupplierOrgNo);
+            command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
@@ -195,14 +177,14 @@ internal class SystemUserRepository : ISystemUserRepository
     {
         return new ValueTask<SystemUser>(new SystemUser
         {
-            Id = reader.GetFieldValue<Guid>(Params.Id).ToString(),
-            ProductName = reader.GetFieldValue<string>(Params.ProductName),
-            OwnedByPartyId = reader.GetFieldValue<string>(Params.OwnedByPartyId),
-            SupplierName = reader.GetFieldValue<string>(Params.SupplierName),
-            SupplierOrgNo = reader.GetFieldValue<string>(Params.SupplierOrgNo),
-            ClientId = reader.GetFieldValue<string>(Params.ClientId),
-            IntegrationTitle = reader.GetFieldValue<string>(Params.IntegrationTitle),
-            Created = reader.GetFieldValue<DateTime>(Params.Created)
+            Id = reader.GetFieldValue<Guid>("system_user_integration_id").ToString(),
+            ProductName = reader.GetFieldValue<string>("product_name"),
+            OwnedByPartyId = reader.GetFieldValue<string>("owned_by_party_id"),
+            SupplierName = reader.GetFieldValue<string>("supplier_name"),
+            SupplierOrgNo = reader.GetFieldValue<string>("supplier_org_no"),
+            ClientId = reader.GetFieldValue<string>("client_id"),
+            IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
+            Created = reader.GetFieldValue<DateTime>("created")
         });
     }
 }

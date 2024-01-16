@@ -12,6 +12,7 @@ namespace Altinn.Platform.Authentication.Core.Models
 #nullable enable
     public class SystemUserRequestDto
     {
+        [AllowNull]
         [JsonPropertyName("PartyId")]
         /// <summary>
         /// PartyId is the owning Legal Entity, whether an organization or a privat person
@@ -21,6 +22,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
         /// </summary>
+        [AllowNull]
         [JsonPropertyName("IntegrationTitle")]
         public string IntegrationTitle { get; set; }
 
@@ -30,6 +32,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The "real" Authentication Component should validate that the SystemName is unique
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// </summary>
+        [AllowNull]
         [JsonPropertyName("ProductName")]
         public string ProductName { get; set; }
     }

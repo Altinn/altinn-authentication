@@ -18,20 +18,6 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     private readonly ILogger _logger;
 
     /// <summary>
-    /// Helper class which remembers the model's field names' mapping to the implemented Column names in the database, to ease with typing SQL commands and avoid typos.
-    /// Please observe that it is not this class that actually determine the column names! See the Yuniql migration script for that!
-    /// </summary>
-    private static class Params
-    {
-        internal const string HiddenInternalId = "hidden_internal_id";
-        internal const string SystemTypeId = "registered_system_id";
-        internal const string SystemVendor = "system_vendor";
-        internal const string Description = "short_description";
-        internal const string Created = "created";
-        internal const string IsDeleted = "is_deleted";
-    }
-
-    /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="dataSource">Needs connection to a Postgres db</param>
@@ -69,41 +55,6 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    /// <summary>
-    /// Variant method for admin to check deleted systemregisters, and or creation dates.
-    /// </summary>
-    /// <param name="is_deleted">Choose to fetch deleted or not deleted items</param>
-    /// <param name="created">Choose a specific creation from date</param>
-    /// <returns></returns>
-    public async Task<List<RegisteredSystem>> GetRegisteredSystemsVariant(bool is_deleted, string created)
-    {
-        const string QUERY = /*strpsql*/@"
-        SELECT 
-            registered_system_id,
-            system_vendor,
-            short_description
-        FROM altinn_authentication.system_register sr
-        WHERE sr.is_deleted = @is_deleted 
-        AND sr.created >= @created;";
-
-        try
-        {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
-
-            command.Parameters.AddWithValue(Params.IsDeleted, is_deleted);
-            command.Parameters.AddWithValue(Params.Created, created);
-
-            return await command.ExecuteEnumerableAsync()
-                 .SelectAwait(ConvertFromReaderToSystemRegister)
-                 .ToListAsync();                
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetRegisteredSystemsVariant // Exception");
-            throw;
-        }
-    }
-
     /// <inheritdoc/>  
     public async Task<string> CreateRegisteredSystem(RegisteredSystem toBeInserted)
     {
@@ -124,9 +75,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.SystemTypeId, toBeInserted.SystemTypeId);
-            command.Parameters.AddWithValue(Params.SystemVendor, toBeInserted.SystemVendor);
-            command.Parameters.AddWithValue(Params.Description, toBeInserted.Description);
+            command.Parameters.AddWithValue("registered_system_id", toBeInserted.SystemTypeId);
+            command.Parameters.AddWithValue("system_vendor", toBeInserted.SystemVendor);
+            command.Parameters.AddWithValue("description", toBeInserted.Description);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpqSqlExtensions.ConvertFromReaderToString)
@@ -164,7 +115,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.SystemTypeId, id);
+            command.Parameters.AddWithValue("registered_system_id", id);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemRegister)
@@ -190,7 +141,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.SystemTypeId, id);
+            command.Parameters.AddWithValue("registered_system_id", id);
             command.Parameters.AddWithValue("newName", newName);
 
             return await command.ExecuteEnumerableAsync()
@@ -217,7 +168,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(Params.SystemTypeId, id);
+            command.Parameters.AddWithValue("registered_system_id", id);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
@@ -234,9 +185,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
-            SystemTypeId = reader.GetFieldValue<string>(Params.SystemTypeId),
-            SystemVendor = reader.GetFieldValue<string>(Params.SystemVendor),
-            Description = reader.GetFieldValue<string>(Params.Description)
+            SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
+            SystemVendor = reader.GetFieldValue<string>("system_vendor"),
+            Description = reader.GetFieldValue<string>("description")
         });
     }
 }

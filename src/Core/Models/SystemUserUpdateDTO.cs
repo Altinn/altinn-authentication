@@ -16,6 +16,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// <summary>
         /// GUID created by the "real" Authentication Component
         /// When the Frontend send a request for the creation of a new SystemUser the Id is null
+        /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
         [AllowNull]
         [JsonPropertyName("Id")]
@@ -24,14 +25,17 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// <summary>
         /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and
         /// user party serivces
+        /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
-        [Required]
+        [AllowNull]
         [JsonPropertyName("OwnedByPartyId")]
         public string OwnedByPartyId { get; set; }
 
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
+        /// Even if this DTO allows null, the db field is of course still required     
         /// </summary>
+        [AllowNull]
         [JsonPropertyName("IntegrationTitle")]
         public string IntegrationTitle { get; set; }
 
@@ -40,7 +44,9 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Should probably be human readable (instead of a GUID) but unique string without whitespace
         /// The "real" Authentication Component should validate that the SystemName is unique
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
+        /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
+        [AllowNull]
         [JsonPropertyName("ProductName")]
         public string ProductName { get; set; }
     }
