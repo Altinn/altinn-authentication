@@ -11,6 +11,7 @@ using Testcontainers.PostgreSql;
 using Xunit;
 using Yuniql.Core;
 
+#nullable enable
 namespace Altinn.Platform.Persistence.Tests;
 
 public abstract class DbTestBase : IAsyncLifetime
