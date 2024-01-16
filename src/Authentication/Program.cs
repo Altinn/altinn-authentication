@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -39,8 +38,6 @@ using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Yuniql.AspNetCore;
-using Yuniql.PostgreSql;
 
 ILogger logger;
 
@@ -320,7 +317,6 @@ void Configure()
         app.UseExceptionHandler("/authentication/api/v1/error");
     }
 
-    ConfigurePostgresSql();
     app.UseSwagger(o => o.RouteTemplate = "authentication/swagger/{documentName}/swagger.json");
 
     app.UseSwaggerUI(c =>
@@ -337,39 +333,4 @@ void Configure()
         endpoints.MapControllers();
         endpoints.MapHealthChecks("/health");
     });
-}
-
-void ConfigurePostgresSql()
-{
-    if (builder.Configuration.GetValue<bool>("PostgresSqlSettings:EnableDBConnection"))
-    {
-        ConsoleTraceService traceService = new() { IsDebugEnabled = true };
-
-        string connectionString = string.Format(
-            builder.Configuration.GetValue<string>("PostgresSqlSettings:AdminConnectionString"),
-            builder.Configuration.GetValue<string>("PostgresSqlSettings:authenticationDbAdminPassword"));
-
-        string worksSpace = Path.Combine(
-            Environment.CurrentDirectory,
-            builder.Configuration.GetValue<string>("PostgresSqlSettings:WorkspacePath"));
-
-        if (builder.Environment.IsDevelopment())
-        {
-            worksSpace = Path.Combine(
-                Directory.GetParent(Environment.CurrentDirectory).FullName,
-                builder.Configuration.GetValue<string>("PostgresSqlSettings:WorkspacePath"));
-        }
-
-        app.UseYuniql(
-            new PostgreSqlDataService(traceService),
-            new PostgreSqlBulkImportService(traceService),
-            traceService,
-            new Configuration
-            {
-                Workspace = worksSpace,
-                ConnectionString = connectionString,
-                IsAutoCreateDatabase = false,
-                IsDebug = true
-            });
-    }
 }
