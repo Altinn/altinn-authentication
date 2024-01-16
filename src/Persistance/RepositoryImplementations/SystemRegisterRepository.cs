@@ -56,7 +56,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<string> CreateRegisteredSystem(RegisteredSystem toBeInserted)
+    public async Task<string?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO altinn_authentication.system_register(
@@ -100,7 +100,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<RegisteredSystem> GetRegisteredSystemById(string id)
+    public async Task<RegisteredSystem?> GetRegisteredSystemById(string id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 

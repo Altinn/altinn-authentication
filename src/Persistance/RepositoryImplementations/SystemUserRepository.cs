@@ -92,7 +92,7 @@ internal class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser> GetSystemUserById(Guid id)
+    public async Task<SystemUser?> GetSystemUserById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 

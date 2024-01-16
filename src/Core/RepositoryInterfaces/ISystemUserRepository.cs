@@ -26,7 +26,7 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="id">The Guid id</param>
     /// <returns>Returns a System User Integration</returns>
-    Task<SystemUser> GetSystemUserById(Guid id);
+    Task<SystemUser?> GetSystemUserById(Guid id);
 
     /// <summary>
     /// Sets the id'ed System User Integration's IsDeleted flag to true in the db, and returns true if it succeeds

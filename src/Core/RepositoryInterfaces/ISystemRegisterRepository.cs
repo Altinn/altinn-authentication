@@ -18,13 +18,13 @@ public interface ISystemRegisterRepository
     /// if the ID already exists, an integer is appended to it's end.
     /// </summary>
     /// <returns>Returns the human readable Id</returns>
-    Task<string> CreateRegisteredSystem(RegisteredSystem toBeInserted);
+    Task<string?> CreateRegisteredSystem(RegisteredSystem toBeInserted);
 
     /// <summary>
     /// Returns a single RegisteredSystem, even if it was set to deleted.
     /// </summary>
     /// <returns>The Registered System</returns>
-    Task<RegisteredSystem> GetRegisteredSystemById(string id);
+    Task<RegisteredSystem?> GetRegisteredSystemById(string id);
 
     /// <summary>
     /// The registered systems may be renamed,
