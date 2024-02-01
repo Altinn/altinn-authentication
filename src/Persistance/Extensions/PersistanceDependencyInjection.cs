@@ -26,7 +26,7 @@ public static class PersistanceDependencyInjection
     public static IServiceCollection AddPersistanceLayer(this IServiceCollection services)
     {
         AddPostgreSqlDatabase(services);
-        AddSystemUserRepository(services);
+        AddSystemUserRepository(services);        
         AddSystemRegisterRepository(services);
 
         return services;
