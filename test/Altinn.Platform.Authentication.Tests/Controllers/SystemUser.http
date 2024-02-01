@@ -1,0 +1,46 @@
+﻿//Change to the correct rootUrl for testing locally or towards servers
+//Within VS debugger
+@rootHttpUrl = http://localhost:5006
+@authApiRootUrl = https://localhost:44377
+@localAltinCloud = http://local.altinn.cloud
+@systemuser = authentication/api/v1/systemuser
+
+// This Mock data only works for the Mocked Client during debug/test in VS:
+@partyId = 1
+@systemUserId = 37ce1792-3b35-4d50-a07d-636017aa7dbd 
+
+// SystemUser Json Body structure: 
+Body
+application/json; charset=utf-8, 323 bytes
+  {
+    "id": "37ce1792-3b35-4d50-a07d-636017aa7dbd",
+    "integrationtitle": "Vårt regnskapsystem"
+    "productname": "visma_vis_v2",
+    "ownedbypartyid": "orgno:91235123",
+    "created": "2023-09-12T00:00:00",
+    "isdeleted": false,
+    "clientid": ""
+  }
+
+
+###
+// Gets the list of all SystemUsers for a given PartyId
+//
+GET {{authApiRootUrl}}/{{systemuser}}/{{partyId}}
+
+
+###
+// Get a specific SystemUser
+//
+GET {{authApiRootUrl}}/{{systemuser}}/{{partyId}}/{{systemUserId}}
+
+
+###
+GET {{authApiRootUrl}}/authentication/swagger/index.html
+
+
+###
+POST {{authApiRootUrl}}/{{systemuser}} -H accept: */* -H Content-Type: application/json; charset=utf-8 -d {"IntegrationTitle": "IntegrationTitle", "ProductName": "ProductName" }
+
+###
+PUT {{authApiRootUrl}}/{{systemuser}} -H accept: application/json -H Content-Type: application/json -d { "Id": "37ce1792-3b35-4d50-a07d-636017aa7dbd", "OwnedByPartyId": "1", "IntegrationTitle": "string", "ProductName": "string" }

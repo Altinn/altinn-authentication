@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 namespace Altinn.Platform.Authentication.Tests.Mocks
@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUser request)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
             throw new System.NotImplementedException();
         }
@@ -55,7 +55,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
-        public Task<int> UpdateSystemUserById(Guid systemUserId, SystemUser request)
+        public Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
             throw new System.NotImplementedException();
         }

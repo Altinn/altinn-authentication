@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
-using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 namespace Altinn.Platform.Authentication.Services
@@ -10,6 +11,7 @@ namespace Altinn.Platform.Authentication.Services
     /// <summary>
     /// The service that supports the SystemUser CRUD APIcontroller
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class SystemUserService : ISystemUserService
     {
         private readonly List<SystemUser> theMockList;
@@ -29,15 +31,17 @@ namespace Altinn.Platform.Authentication.Services
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUser request)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
-            if (int.Parse(request.OwnedByPartyId) < 1)
+            SystemUser newSystemUser = new()
             {
-                return Task.FromResult<SystemUser>(null);
-            }
-
-            theMockList.Add(request);
-            return Task.FromResult(request);
+                Id = Guid.NewGuid().ToString(),
+                IntegrationTitle = request.IntegrationTitle,
+                ProductName = request.ProductName,
+                OwnedByPartyId = partyId.ToString()
+            };
+            theMockList.Add(newSystemUser);
+            return Task.FromResult(newSystemUser);
         }
 
         /// <summary>
@@ -80,53 +84,54 @@ namespace Altinn.Platform.Authentication.Services
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns></returns>
-        public Task<int> UpdateSystemUserById(Guid systemUserId, SystemUser request)
+        public Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
-            int array = theMockList.FindIndex(su => su.Id == request.Id);
-            theMockList[array] = request;
+            int array = theMockList.FindIndex(su => su.Id == request.Id.ToString());
+            theMockList[array].IntegrationTitle = request.IntegrationTitle;
+            theMockList[array].ProductName = request.ProductName;
             return Task.FromResult(1);
         }
 
         /// <summary>
         /// Helper method during development, just some Mock data.
         /// </summary>
-        /// <returns></returns>
+        /// <returns></returns>        
         private static List<SystemUser> MockDataHelper()
         {            
             SystemUser systemUser1 = new()
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbd",
                 IntegrationTitle = "Vårt regnskapsystem",
-                Description = "Koblet opp mot Visma. Snakk med Pål om abonnement",
-                ProductName = "visma_vis_v2",
+                ProductName = "supplier_name_cool_system",
                 OwnedByPartyId = "orgno:91235123",
-                Created = "2023-09-12",
                 IsDeleted = false,
-                ClientId = string.Empty
+                ClientId = string.Empty,
+                SupplierName = "Supplier1 Name",
+                SupplierOrgNo = "123456789"
             };
 
             SystemUser systemUser2 = new()
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbe",
                 IntegrationTitle = "Vårt andre regnskapsystem",
-                Description = "Snakk med Per om abonnement",
-                ProductName = "visma_vis_sys",
+                ProductName = "supplier2_product_name",
                 OwnedByPartyId = "orgno:91235124",
-                Created = "2023-09-22",
                 IsDeleted = false,
-                ClientId = string.Empty
+                ClientId = string.Empty,
+                SupplierName = "Supplier2 Name",
+                SupplierOrgNo = "123456789"
             };
 
             SystemUser systemUser3 = new()
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
-                Description = "Kai og Guri vet alt om dette systemet.",
-                ProductName = "fiken_superskatt",
+                ProductName = "supplier3_product_name",
                 OwnedByPartyId = "orgno:91235125",
-                Created = "2023-09-22",
                 IsDeleted = false,
-                ClientId = string.Empty
+                ClientId = string.Empty,
+                SupplierName = "Supplier3 Name",
+                SupplierOrgNo = "123456789"
             };
 
             List<SystemUser> systemUserList = new()

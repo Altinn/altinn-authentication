@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
-using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,8 +15,8 @@ namespace Altinn.Platform.Authentication.Controllers
     /// <summary>
     /// CRUD API for the System User 
     /// </summary>
-    ///[Authorize]
-    [FeatureGate(FeatureFlags.SystemUser)]
+    /// [Authorize]
+    /// [FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
     public class SystemUserController : ControllerBase
@@ -96,12 +96,12 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         /// <returns></returns>        
         [Produces("application/json")]
-        [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
+        [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
-        [HttpPost("{partyId}/{createRequestId}")]
-        public async Task<ActionResult<SystemUser>> CreateSystemUser(SystemUser request)
-        {
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request);
+        [HttpPost]
+        public async Task<ActionResult<SystemUser>> CreateSystemUser([FromBody] SystemUserRequestDto request)
+        {           
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, 1);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);
@@ -116,13 +116,13 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpPut("{partyId}/{systemUserId}")]
-        public async Task<ActionResult> UpdateSystemUserById(SystemUser request)
+        [HttpPut]
+        public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUserUpdateDto request)
         {
             SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
             if (toBeUpdated is not null)
             {
-                await _systemUserService.UpdateSystemUserById(Guid.Parse(request.Id), request);
+                await _systemUserService.UpdateSystemUserById(request);
                 return Ok();
             }
 
