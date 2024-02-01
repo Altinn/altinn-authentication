@@ -8,6 +8,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
@@ -245,6 +246,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IEventLog, EventLogService>();
     services.AddSingleton<ISystemClock, SystemClock>();
     services.AddSingleton<ISystemUserService, SystemUserService>();
+    services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IGuidService, GuidService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
