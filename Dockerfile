@@ -3,8 +3,8 @@ WORKDIR Authentication/
 
 
 COPY src/Authentication ./Authentication
-COPY src/Core ./Authentication/Core
-COPY src/Persistance ./Authentication/Persistance
+COPY src/Core ./Core
+COPY src/Persistance ./Persistance
 
 RUN dotnet restore
 
