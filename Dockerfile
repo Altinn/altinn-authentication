@@ -2,7 +2,9 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0.202-alpine3.16 AS build
 WORKDIR Authentication/
 
 
-COPY src .
+COPY src/Authentication ./
+COPY src/Core ./Core
+COPY src/Persistance ./Persistance
 
 RUN dotnet restore
 
