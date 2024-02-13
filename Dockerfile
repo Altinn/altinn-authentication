@@ -9,12 +9,8 @@ COPY src/Persistance/Altinn.Platform.Authentication.Persistance.csproj ./Altinn.
 RUN dotnet restore Altinn.Platform.Authentication.csproj
 
 RUN dotnet build Altinn.Platform.Authentication.csproj -c Release -o /app_output
-RUN dotnet build Altinn.Platform.Authentication.Core.csproj -c Release -o /app_output
-RUN dotnet build Altinn.Platform.Authentication.Persistance.csproj -c Release -o /app_output
 
 RUN dotnet publish Altinn.Platform.Authentication.csproj -c Release -o /app_output
-RUN dotnet publish Altinn.Platform.Authentication.Core.csproj -c Release -o /app_output
-RUN dotnet publish Altinn.Platform.Authentication.Persistance.csproj -c Release -o /app_output
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0.4-alpine3.16 AS final
 EXPOSE 5040
