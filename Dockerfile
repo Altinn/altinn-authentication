@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:7.0.202-alpine3.16 AS build
-WORKDIR Authentication/
+WORKDIR AuthenticationApp/
 
 
 COPY src/Authentication ./
