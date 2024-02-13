@@ -6,7 +6,7 @@ COPY src/Authentication/Altinn.Platform.Authentication.csproj ./Altinn.Platform.
 COPY src/Core/Altinn.Platform.Authentication.Core.csproj ./Altinn.Platform.Authentication.Core.csproj
 COPY src/Persistance/Altinn.Platform.Authentication.Persistance.csproj ./Altinn.Platform.Authentication.Persistance.csproj
 
-RUN dotnet restore
+RUN dotnet restore Altinn.Platform.Authentication.csproj
 
 RUN dotnet build Altinn.Platform.Authentication.csproj -c Release -o /app_output
 RUN dotnet build Altinn.Platform.Authentication.Core.csproj -c Release -o /app_output
