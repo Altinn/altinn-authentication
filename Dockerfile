@@ -6,9 +6,9 @@ COPY src/ ./src
 
 RUN dotnet restore ./src/Authentication/Altinn.Platform.Authentication.csproj
 
-RUN dotnet build Altinn.Platform.Authentication.csproj -c Release -o /app_output
+RUN dotnet build ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -o /app_output
 
-RUN dotnet publish Altinn.Platform.Authentication.csproj -c Release -o /app_output
+RUN dotnet publish ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -o /app_output
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0.4-alpine3.16 AS final
 EXPOSE 5040
