@@ -3,8 +3,8 @@ WORKDIR AuthenticationApp/
 
 
 COPY src/Authentication/Altinn.Platform.Authentication.csproj ./Altinn.Platform.Authentication.csproj
-COPY src/Core/Altinn.Platform.Authentication.Core.csproj ./Altinn.Platform.Authentication.Core.csproj
-COPY src/Persistance/Altinn.Platform.Authentication.Persistance.csproj ./Altinn.Platform.Authentication.Persistance.csproj
+COPY src/Core/Altinn.Platform.Authentication.Core.csproj ./Core/Altinn.Platform.Authentication.Core.csproj
+COPY src/Persistance/Altinn.Platform.Authentication.Persistance.csproj ./Persistance/Altinn.Platform.Authentication.Persistance.csproj
 
 RUN dotnet restore Altinn.Platform.Authentication.csproj
 
