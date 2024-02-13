@@ -2,9 +2,9 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0.202-alpine3.16 AS build
 WORKDIR AuthenticationApp/
 
 
-COPY src/Authentication ./
-COPY src/Core ./Core
-COPY src/Persistance ./Persistance
+COPY src/Authentication/Altinn.Platform.Authentication.csproj ./Altinn.Platform.Authentication.csproj
+COPY src/Core/Altinn.Platform.Authentication.Core.csproj ./Altinn.Platform.Authentication.Core.csproj
+COPY src/Persistance/Altinn.Platform.Authentication.Persistance.csproj ./Altinn.Platform.Authentication.Persistance.csproj
 
 RUN dotnet restore
 
