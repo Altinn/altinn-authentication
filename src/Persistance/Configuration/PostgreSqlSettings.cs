@@ -10,6 +10,7 @@ namespace Altinn.Platform.Authentication.Persistance.Configuration
     {
         /// <summary>
         /// Gets or Sets the connection string to the postgres db.
+        /// 
         /// </summary>
         [AllowNull]
         public string ConnectionString { get; set; }

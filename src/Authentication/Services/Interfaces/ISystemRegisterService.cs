@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces
 {
