@@ -157,6 +157,8 @@ namespace Altinn.Platform.Authentication.Helpers
                     return Enum.AuthenticationMethod.EIDAS;
                 case "maskinporten":
                     return Enum.AuthenticationMethod.MaskinPorten;
+                case "testid":
+                    return AuthenticationMethod.TestID;
             }
 
             return Enum.AuthenticationMethod.NotDefined;
