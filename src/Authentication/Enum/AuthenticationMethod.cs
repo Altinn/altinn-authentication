@@ -98,16 +98,27 @@ namespace Altinn.Platform.Authentication.Enum
         /// <summary>
         /// user is logged in with the help of maskinporten token
         /// </summary>
-        MaskinPorten = 16,
+        EnterpriseMaskinportenIdentified = 16,
+
+        /// <summary>
+        /// user is logged in with the help of  Idporten Test  ID
+        /// </summary>
+        IdportenTestId = 17,
+
+        /// <summary>
+        /// user is logged in with the help of  min id app
+        /// </summary>
+        MinIDApp = 18,
 
         /// <summary>
         /// user is logged in with the help of virksomhets bruker
         /// </summary>
-        VirksomhetsBruker = 17,
+        VirksomhetsBruker = 19,
 
         /// <summary>
-        /// user is logged in with the help of testid in idporten
+        /// user is logged in with the help of Maskinporten
         /// </summary>
-        TestID = 18,
+        MaskinPorten = 20,
+
     }
 }
