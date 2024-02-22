@@ -2,8 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 namespace Altinn.Platform.Authentication.Services
