@@ -56,20 +56,18 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<string?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO altinn_authentication.system_register(
                 registered_system_id,
                 system_vendor,
-                short_description)
+                friendly_product_name)
             VALUES(
                 @registered_system_id,
                 @system_vendor,
                 @description)
-            RETURNING hidden_internal_guid;";
-
-        CheckNameAvailableFixIfNot(toBeInserted);
+            RETURNING hidden_internal_id;";                
 
         try
         {
@@ -80,22 +78,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("description", toBeInserted.Description);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToString)
+                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToGuid)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
             throw;
-        }
-    }
-
-    private void CheckNameAvailableFixIfNot(RegisteredSystem toBeInserted)
-    {
-        var alreadyExist = GetRegisteredSystemById(toBeInserted.SystemTypeId);
-        if (alreadyExist is not null)
-        {
-            toBeInserted.SystemTypeId = toBeInserted.SystemTypeId + "_" + DateTime.Now.Millisecond.ToString();
         }
     }
 
@@ -106,7 +95,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SELECT 
                 registered_system_id,
                 system_vendor, 
-                short_description
+                friendly_product_name
             FROM altinn_authentication.system_register sr
             WHERE sr.registered_system_id = @registered_system_id;
         ";
@@ -187,7 +176,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
-            Description = reader.GetFieldValue<string>("description")
+            Description = reader.GetFieldValue<string>("friendly_product_name")
         });
     }
 }
