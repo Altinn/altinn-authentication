@@ -11,7 +11,7 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for SystemRegister
 /// </summary>
-[Route("authfront/api/v1/systemregister")]
+[Route("authentication/api/v1/systemregister")]
 [ApiController]
 public class SystemRegisterController : ControllerBase
 {
