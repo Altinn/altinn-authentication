@@ -33,4 +33,12 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="id">The Guid id</param>
     Task SetDeleteSystemUserById(Guid id);
+
+    /// <summary>
+    /// Updates the Product Name on an Integration by Guid
+    /// </summary>
+    /// <param name="guid"></param>
+    /// <param name="productName"></param>
+    /// <returns></returns>
+    Task<int> UpdateProductName(Guid guid, string productName);
 }

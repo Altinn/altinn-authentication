@@ -86,7 +86,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
                     services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
                     services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
-                    services.AddSingleton<ISystemUserService, SystemUserService>();
+                    services.AddSingleton<ISystemUserService, SystemUserService>();                    
                     services.AddSingleton<IUserProfileService, UserProfileService>();
                     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
                     if (featureManager is not null)

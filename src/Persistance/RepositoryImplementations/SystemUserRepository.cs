@@ -168,6 +168,38 @@ internal class SystemUserRepository : ISystemUserRepository
         }
     }
 
+    /// <inheritdoc />
+    public async Task<int> UpdateProductName(Guid guid, string productName)
+    {
+        const string QUERY = /*strspsql*/@"
+                UPDATE altinn_authentication.system_user_integration
+                SET product_name = @product_name
+                WHERE system_user_integration_id = @id
+                ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("id", guid);
+            command.Parameters.AddWithValue("product_name", productName);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToInt)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // InsertSystemUser // Exception");
+            throw;
+        }
+    }    
+
+    private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
+    {
+        return new ValueTask<int>(reader.GetFieldValue<int>(0));
+    }
+
     private ValueTask<Guid> ConvertFromReaderToGuid(NpgsqlDataReader reader)
     {
         return new ValueTask<Guid>(reader.GetFieldValue<Guid>(0));
