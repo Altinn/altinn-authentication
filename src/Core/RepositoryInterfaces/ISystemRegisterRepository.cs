@@ -1,4 +1,5 @@
-﻿using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+﻿using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 
@@ -46,4 +47,12 @@ public interface ISystemRegisterRepository
     /// <param name="id">The id</param>
     /// <returns>True if set to deleted</returns>
     Task<bool> SetDeleteRegisteredSystemById(string id);
+
+    /// <summary>
+    /// Retrieves the list, if any, of Default Rights 
+    /// the System Vendor has put on the Registered System.
+    /// </summary>
+    /// <param name="systemId"></param>
+    /// <returns>List of Default Rights</returns>
+    Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId);
 }

@@ -10,11 +10,14 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
     {
         /// <summary>
         /// The unique Id for this product, in human-readable string format.
-        /// The id is in the format of some_words_stiched_together_with_underscore
-        /// we use an Optimistic Concurrency pattern to create new System Types Ids,
-        /// where the id of the product is prefixed with the SystemVendor to help with uniqueness.
-        /// When the SystemVendor tries to register a new system type, they should be aware of their own 
-        /// previous system names when giving the new system it's id.
+        /// The id is in the format of system_vendor_name_plus_name_chosen_by_them.
+        /// 
+        /// An Optimistic Concurrency pattern to create new System Types Ids is used,
+        /// where the Id of the product is prefixed with the SystemVendor to help with uniqueness.
+        /// 
+        /// When the SystemVendor tries to register a new system type (product), 
+        /// they should be aware of their own previous system names 
+        /// when giving the new system it's id.
         /// </summary>
         public string SystemTypeId { get; set; } = string.Empty;
 

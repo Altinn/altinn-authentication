@@ -44,7 +44,7 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves a list of the predfined default rights for the Product type
+    /// Retrieves a list of the predfined default rights for the Product type, if any
     /// </summary>
     /// <param name="productId">The Id of the Product </param>
     /// <param name="cancellationToken">The cancellation token</param>

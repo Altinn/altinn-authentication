@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -168,6 +169,52 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // SetDeleteRegisteredSystemById // Exception");
             throw;
         }
+    }
+
+    /// <inheritdoc/> 
+    public async Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId)
+    {
+        const string QUERY = /*strpsql*/@"
+                SELECT unnest default_rights
+                FROM altinn_authentication.system_register
+                WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
+                ";    
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("registered_system_id", systemId);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToDefaultRights)
+                .ToListAsync();
+                         
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetDefaultRightsForRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// The list of DefaultRight for each Registered System is stored as a text array in the db.
+    /// Each element in this Array Type is a concatenation of the Servive Provider ( NAV, Skatteetaten, etc ...)
+    /// and the Right joined with an underscore.
+    /// This is to avoid a two dimensional array in the db, this is safe and easier since
+    /// each Right is always in the context of it's parent Service Provider anyway.
+    /// The Right can either denote a single Right or a package of Rights; which is handled in Access Management.
+    /// </summary>
+    private ValueTask<DefaultRights> ConvertFromReaderToDefaultRights(NpgsqlDataReader reader)
+    {
+        string[] arrayElement = reader.GetFieldValue<string>("default_right").Split('_');
+
+        return new ValueTask<DefaultRights>(new DefaultRights
+        {
+            ServiceProvider = arrayElement[0],
+            Right = arrayElement[1]            
+        });
     }
 
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)

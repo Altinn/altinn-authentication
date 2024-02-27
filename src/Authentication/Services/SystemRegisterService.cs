@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -29,6 +30,12 @@ namespace Altinn.Platform.Authentication.Services
         public Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetAllActiveSystems();
+        }
+
+        /// <inheritdoc/>
+        public Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId, CancellationToken cancellation = default)
+        {
+            return _systemRegisterRepository.GetDefaultRightsForRegisteredSystem(systemId);
         }
     }
 }
