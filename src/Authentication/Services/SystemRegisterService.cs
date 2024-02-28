@@ -24,9 +24,7 @@ namespace Altinn.Platform.Authentication.Services
             _systemRegisterRepository = systemRegisterRepository;
         }
 
-        /// <summary>
-        /// Inheritdoc
-        /// </summary>
+        /// <inheritdoc/>
         public Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetAllActiveSystems();

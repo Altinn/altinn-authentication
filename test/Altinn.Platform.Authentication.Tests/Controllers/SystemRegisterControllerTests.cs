@@ -45,7 +45,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _systemRegisterService = new Mock<ISystemRegisterService>();
             _userProfileService = new Mock<IUserProfileService>();
             _sblCookieDecryptionService = new Mock<ISblCookieDecryptionService>();
-        }
+        }        
 
         [Fact]
         public async Task SystemRegister_Get_ListofAll()
