@@ -74,6 +74,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
         public async Task<bool> SetDeleteFlagOnSystemUser(Guid systemUserId)
+
         {
             SystemUser toBeDeleted = await _repository.GetSystemUserById(systemUserId);
             if (toBeDeleted != null) 
@@ -89,6 +90,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns>Number of rows affected</returns>
+
         public async Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
             SystemUser search = await _repository.GetSystemUserById(Guid.Parse(request.Id));

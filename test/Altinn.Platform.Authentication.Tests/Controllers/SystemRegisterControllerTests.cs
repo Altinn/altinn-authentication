@@ -103,6 +103,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     services.AddSingleton<ISystemUserService, SystemUserServiceMock>();                    
                     services.AddSingleton<IUserProfileService, UserProfileService>();
                     services.AddSingleton<ISystemRegisterService, SystemRegisterServiceMock>();
+
                     if (featureManager is not null)
                     {
                         services.AddSingleton(featureManager);

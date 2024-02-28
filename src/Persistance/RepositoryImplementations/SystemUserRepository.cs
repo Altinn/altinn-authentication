@@ -191,6 +191,7 @@ internal class SystemUserRepository : ISystemUserRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateProductName // Exception");
+
             throw;
         }
     }    
