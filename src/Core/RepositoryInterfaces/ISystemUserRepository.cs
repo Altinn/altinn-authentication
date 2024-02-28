@@ -39,6 +39,6 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="guid"></param>
     /// <param name="productName"></param>
-    /// <returns></returns>
+    /// <returns>Number of rows affected</returns>
     Task<int> UpdateProductName(Guid guid, string productName);
 }

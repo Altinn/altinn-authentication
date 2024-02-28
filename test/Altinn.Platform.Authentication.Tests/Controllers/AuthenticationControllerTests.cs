@@ -1454,6 +1454,61 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
+        /// <summary>
+        /// Test of method <see cref="AuthenticationController.RefreshJwtCookie"/>.
+        /// </summary>
+        [Fact]
+        public async Task AuthenticateAltinn3Token_ValidToken_ReturnsNewToken_Refresh()
+        {
+            // Arrange
+            string expectedAuthLevel = "4";
+
+            List<Claim> claims = new List<Claim>();
+
+            string pid = "19108000239";
+            string amr = "Minid-PIN";
+            string acr = "idporten-loa-high";
+            string jti = "BHqitIevJmeX_IrOzmS1XOvAQAWlrTK2OioLnx43Kqw";
+
+            claims.Add(new Claim("pid", pid));
+            claims.Add(new Claim("amr", amr));
+            claims.Add(new Claim("acr", acr));
+            claims.Add(new Claim("jti", jti));
+
+            ClaimsIdentity identity = new ClaimsIdentity();
+            identity.AddClaims(claims);
+            ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
+
+            UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
+            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
+            string url = "/authentication/api/v1/exchange/id-porten";
+
+            // Act
+            HttpResponseMessage response = await client.GetAsync(url);
+
+            // Get the altinn token
+            string token = await response.Content.ReadAsStringAsync();
+            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token);
+            string altinnSessionId = altinnTokenPrincipal.FindFirstValue("jti");
+
+            url = "/authentication/api/v1/refresh";
+            HttpClient refreshClient = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            refreshClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            HttpResponseMessage refreshedTokenMessage = await refreshClient.GetAsync(url);
+            string refreshedToken = await refreshedTokenMessage.Content.ReadAsStringAsync();
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken);
+
+            Assert.NotNull(principal);
+            Assert.NotEqual(jti, principal.FindFirstValue("jti"));
+            Assert.Equal(altinnSessionId, principal.FindFirstValue("jti"));
+            Assert.True(principal.HasClaim(c => c.Type == "amr"));
+        }
+
         private HttpClient GetTestClient(
             ISblCookieDecryptionService cookieDecryptionService, 
             IUserProfileService userProfileService, 

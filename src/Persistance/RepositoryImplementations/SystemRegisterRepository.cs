@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -56,20 +57,18 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<string?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO altinn_authentication.system_register(
                 registered_system_id,
                 system_vendor,
-                short_description)
+                friendly_product_name)
             VALUES(
                 @registered_system_id,
                 @system_vendor,
                 @description)
-            RETURNING hidden_internal_guid;";
-
-        CheckNameAvailableFixIfNot(toBeInserted);
+            RETURNING hidden_internal_id;";                
 
         try
         {
@@ -80,22 +79,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("description", toBeInserted.Description);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToString)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
             throw;
-        }
-    }
-
-    private void CheckNameAvailableFixIfNot(RegisteredSystem toBeInserted)
-    {
-        var alreadyExist = GetRegisteredSystemById(toBeInserted.SystemTypeId);
-        if (alreadyExist is not null)
-        {
-            toBeInserted.SystemTypeId = toBeInserted.SystemTypeId + "_" + DateTime.Now.Millisecond.ToString();
         }
     }
 
@@ -106,7 +96,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SELECT 
                 registered_system_id,
                 system_vendor, 
-                short_description
+                friendly_product_name
             FROM altinn_authentication.system_register sr
             WHERE sr.registered_system_id = @registered_system_id;
         ";
@@ -145,7 +135,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("newName", newName);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -171,7 +161,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("registered_system_id", id);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -181,13 +171,59 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
+    /// <inheritdoc/> 
+    public async Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId)
+    {
+        const string QUERY = /*strpsql*/@"
+                SELECT unnest default_rights
+                FROM altinn_authentication.system_register
+                WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
+                ";    
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("registered_system_id", systemId);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToDefaultRights)
+                .ToListAsync();
+                         
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetDefaultRightsForRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// The list of DefaultRight for each Registered System is stored as a text array in the db.
+    /// Each element in this Array Type is a concatenation of the Servive Provider ( NAV, Skatteetaten, etc ...)
+    /// and the Right joined with an underscore.
+    /// This is to avoid a two dimensional array in the db, this is safe and easier since
+    /// each Right is always in the context of it's parent Service Provider anyway.
+    /// The Right can either denote a single Right or a package of Rights; which is handled in Access Management.
+    /// </summary>
+    private ValueTask<DefaultRights> ConvertFromReaderToDefaultRights(NpgsqlDataReader reader)
+    {
+        string[] arrayElement = reader.GetFieldValue<string>("default_right").Split('_');
+
+        return new ValueTask<DefaultRights>(new DefaultRights
+        {
+            ServiceProvider = arrayElement[0],
+            Right = arrayElement[1]            
+        });
+    }
+
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
             SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
-            Description = reader.GetFieldValue<string>("description")
+            Description = reader.GetFieldValue<string>("friendly_product_name")
         });
     }
 }

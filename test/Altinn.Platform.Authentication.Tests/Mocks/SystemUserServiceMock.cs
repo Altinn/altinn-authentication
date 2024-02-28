@@ -48,7 +48,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// Returns the list of SystemUsers this PartyID has registered, including "deleted" ones.
         /// </summary>
         /// <returns></returns>
-        public Task<List<SystemUser>> GetListOfSystemUsersPartyHas(int partyId)
+        public Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId)
         {
             if (partyId < 1)
             {
@@ -73,11 +73,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns></returns>
-        public Task<int> SetDeleteFlagOnSystemUser(Guid systemUserId)
+        public Task<bool> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
             SystemUser toBeDeleted = theMockList.Find(s => s.Id == systemUserId.ToString());
             toBeDeleted.IsDeleted = true;
-            return Task.FromResult(1);
+            return Task.FromResult(true);
         }
 
         /// <summary>
