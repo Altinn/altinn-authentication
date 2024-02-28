@@ -1,11 +1,13 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Altinn.Platform.Authentication.Core.Models;
 
+#nullable enable
 namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
 {
     /// <summary>
     /// Model for the System Register
+    /// A Registered System is a product supplied by a System Vendor,
+    /// it may need Rights to use or acccess Resources at a Service Provider.
     /// </summary>
-    [ExcludeFromCodeCoverage]
     public class RegisteredSystem
     {
         /// <summary>
@@ -30,5 +32,10 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// A short description of the product, used when filtering the dropdown menu.
         /// </summary>
         public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The array of Rights versus System Provider's Resources needed to use this Registered System
+        /// </summary>
+        public DefaultRights[]? DefaultRights { get; set; } 
     }
 }

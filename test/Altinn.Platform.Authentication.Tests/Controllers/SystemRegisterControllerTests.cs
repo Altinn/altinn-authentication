@@ -60,12 +60,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemRegister_Get_ProductDefaultRights()
         {
-            string name = "Awesome";
+            string name = "Awesome_Tax";
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/product/{name}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<DefaultRights> list = JsonSerializer.Deserialize<List<DefaultRights>>(await response.Content.ReadAsStringAsync(), jsonOptions);
             Assert.Equal("Skatteetaten", list[0].ServiceProvider);
+            Assert.Equal("Read", list[0].Right);
+            Assert.Equal("MVA", list[0].Resource);
         }
 
         private HttpClient GetTestClient(ISblCookieDecryptionService sblCookieDecryptionService, IUserProfileService userProfileService, IFeatureManager featureManager = null)

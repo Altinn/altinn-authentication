@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
@@ -31,28 +32,29 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             RegisteredSystem reg1 = new()
             {
                 SystemVendor = "Awesome",
-                SystemTypeId = "Tax",
-                Description = "Awesome_Tax"
+                SystemTypeId = "Awesome_Tax",
+                Description = "Awesome_Tax",
+                DefaultRights = new[] {}
             };
 
             RegisteredSystem reg2 = new()
             {
                 SystemVendor = "Wonderful",
-                SystemTypeId = "Tax",
+                SystemTypeId = "Wonderful_Tax",
                 Description = "Wonderful_Tax"
             };
 
             RegisteredSystem reg3 = new()
             {
                 SystemVendor = "Brilliant",
-                SystemTypeId = "HR",
+                SystemTypeId = "Brilliant_HR",
                 Description = "Brilliant_HR"
             };
 
             RegisteredSystem reg4 = new()
             {
                 SystemVendor = "Fantastic",
-                SystemTypeId = "HR",
+                SystemTypeId = "Fantastic_HR",
                 Description = "Fantastic_HR"
             };
 
@@ -62,6 +64,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             };
 
             return list;
+        }
+
+        public Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId, CancellationToken cancellation = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }
