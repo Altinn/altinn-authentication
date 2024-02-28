@@ -26,6 +26,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System</param>
         /// <param name="cancellation">Cancellation token</param>
         /// <returns>List of Default Rights</returns>
-        Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId, CancellationToken cancellation = default);
+        Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default);
     }
 }

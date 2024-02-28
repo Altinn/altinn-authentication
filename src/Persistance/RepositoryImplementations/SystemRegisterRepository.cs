@@ -172,7 +172,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public async Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId)
+    public async Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(string systemId)
     {
         const string QUERY = /*strpsql*/@"
                 SELECT unnest default_rights
