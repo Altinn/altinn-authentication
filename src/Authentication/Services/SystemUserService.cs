@@ -47,8 +47,8 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Returns the list of SystemUsers this PartyID has registered.
         /// </summary>
-        /// <returns></returns>
-        public async Task<List<SystemUser>> GetListOfSystemUsersPartyHas(int partyId)
+        /// <returns>list of SystemUsers</returns>
+        public async Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId)
         {
             if (partyId < 1)
             {
@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
-        /// <returns></returns>
+        /// <returns>SystemUser</returns>
         public async Task<SystemUser> GetSingleSystemUserById(Guid systemUserId)
         {
             SystemUser search = await _repository.GetSystemUserById(systemUserId);
@@ -72,23 +72,23 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
-        /// <returns></returns>
-        public async Task<int> SetDeleteFlagOnSystemUser(Guid systemUserId)
+        /// <returns>Boolean True if row affected</returns>
+        public async Task<bool> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
             SystemUser toBeDeleted = await _repository.GetSystemUserById(systemUserId);
             if (toBeDeleted != null) 
             {
                 await _repository.SetDeleteSystemUserById(systemUserId);
-                return 1;
+                return true;
             }
 
-            return 0;
+            return false;
         }
 
         /// <summary>
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Number of rows affected</returns>
         public async Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
             SystemUser search = await _repository.GetSystemUserById(Guid.Parse(request.Id));

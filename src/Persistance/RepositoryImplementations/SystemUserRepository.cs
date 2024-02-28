@@ -46,7 +46,7 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_user_integration_id", id);
 
             await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -190,7 +190,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // InsertSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateProductName // Exception");
             throw;
         }
     }    

@@ -41,7 +41,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
         {
-            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
+            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(partyId);
 
             if (theList is not null && theList.Count > 0)
             {

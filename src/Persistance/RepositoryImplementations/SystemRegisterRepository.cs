@@ -79,7 +79,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("description", toBeInserted.Description);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToGuid)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -135,7 +135,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("newName", newName);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -161,7 +161,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("registered_system_id", id);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
