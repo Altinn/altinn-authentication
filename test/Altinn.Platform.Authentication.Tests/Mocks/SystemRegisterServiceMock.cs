@@ -34,7 +34,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Awesome",
                 SystemTypeId = "Awesome_Tax",
                 Description = "Awesome_Tax",
-                DefaultRights = new DefaultRights[]
+                DefaultRights = new DefaultRight[]
                 {
                     new()
                     {
@@ -56,7 +56,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Wonderful",
                 SystemTypeId = "Wonderful_Tax",
                 Description = "Wonderful_Tax",
-                DefaultRights = new DefaultRights[]
+                DefaultRights = new DefaultRight[]
                 {
                     new()
                     {
@@ -78,7 +78,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Brilliant",
                 SystemTypeId = "Brilliant_HR",
                 Description = "Brilliant_HR",
-                DefaultRights = new DefaultRights[]
+                DefaultRights = new DefaultRight[]
                 {
                     new()
                     {
@@ -100,7 +100,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Fantastic",
                 SystemTypeId = "Fantastic_HR",
                 Description = "Fantastic_HR",
-                DefaultRights = new DefaultRights[]
+                DefaultRights = new DefaultRight[]
                 {
                     new()
                     {
@@ -125,13 +125,13 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return list;
         }
 
-        public async Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
+        public async Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
         {
             await Task.Delay(50, cancellation);
              
             var sys = _registeredSystemsMockList.Find(r => r.SystemTypeId.Equals(systemId));
 
-            List<DefaultRights> list = new();
+            List<DefaultRight> list = new();
             list.AddRange(sys.DefaultRights);
 
             return list;

@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/product/{name}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<DefaultRights> list = JsonSerializer.Deserialize<List<DefaultRights>>(await response.Content.ReadAsStringAsync(), jsonOptions);
+            List<DefaultRight> list = JsonSerializer.Deserialize<List<DefaultRight>>(await response.Content.ReadAsStringAsync(), jsonOptions);
             Assert.Equal("Skatteetaten", list[0].ServiceProvider);
             Assert.Equal("Read", list[0].Right);
             Assert.Equal("MVA", list[0].Resource);

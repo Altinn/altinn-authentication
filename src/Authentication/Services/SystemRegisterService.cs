@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
+        public Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetDefaultRightsForRegisteredSystem(systemId);
         }

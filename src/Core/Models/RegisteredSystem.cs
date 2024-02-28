@@ -36,6 +36,6 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// The array of Rights versus System Provider's Resources needed to use this Registered System
         /// </summary>
-        public DefaultRights[]? DefaultRights { get; set; } 
+        public DefaultRight[]? DefaultRights { get; set; } 
     }
 }

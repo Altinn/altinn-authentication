@@ -3,7 +3,7 @@
     /// <summary>
     /// DTO for a Default Right on a Registered System
     /// </summary>
-    public class DefaultRights
+    public class DefaultRight
     {
         /// <summary>
         /// The identifier for the Right

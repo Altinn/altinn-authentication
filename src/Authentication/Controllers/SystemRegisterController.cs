@@ -53,7 +53,7 @@ public class SystemRegisterController : ControllerBase
     [HttpGet("product/{productId}")]
     public async Task<ActionResult> GetDefaultRightsForRegisteredSystem(string productId, CancellationToken cancellationToken = default)
     {
-        List<DefaultRights> lista = await _systemRegisterService.GetDefaultRightsForRegisteredSystem(productId, cancellationToken);
+        List<DefaultRight> lista = await _systemRegisterService.GetDefaultRightsForRegisteredSystem(productId, cancellationToken);
         if (lista is null || lista.Count == 0) 
         {
             return NoContent();
