@@ -59,5 +59,10 @@ namespace AltinnCore.Authentication.Constants
         /// The org number.
         /// </summary>
         public const string OrgNumber = "urn:altinn:orgNumber";
+
+        /// <summary>
+        /// The org number.
+        /// </summary>
+        public const string App = "urn:altinn:app";
     }
 }

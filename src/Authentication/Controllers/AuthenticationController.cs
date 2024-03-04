@@ -366,6 +366,8 @@ namespace Altinn.Platform.Authentication.Controllers
                     claims.Add(claim);
                 }
 
+                claims.Add(new Claim("jti", _guidService.NewGuid(), ClaimValueTypes.String, jwt.Issuer));
+
                 ClaimsIdentity identity = new ClaimsIdentity(AltinnStudioIdentity);
                 identity.AddClaims(claims);
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);

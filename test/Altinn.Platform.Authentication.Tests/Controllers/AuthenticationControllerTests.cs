@@ -37,6 +37,7 @@ using Moq;
 using Newtonsoft.Json;
 
 using Xunit;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
@@ -1415,7 +1416,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange
             string accessToken = JwtTokenMock.GenerateAccessToken("studio", "studio.designer", TimeSpan.FromMinutes(2));
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
+            eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
+
+            AuthenticationEvent expectedAuthenticationEvent = new AuthenticationEvent();
+            expectedAuthenticationEvent.Created = new DateTime(2018, 05, 15, 02, 05, 00);
+            expectedAuthenticationEvent.App = "studio.designer";
+            expectedAuthenticationEvent.AuthenticationMethod = AuthenticationMethod.AltinnPIN;
+            expectedAuthenticationEvent.AuthenticationLevel = SecurityLevel.SelfIdentifed;
+            expectedAuthenticationEvent.OrgNumber = null;
+            expectedAuthenticationEvent.EventType = AuthenticationEventType.TokenExchange;
+            expectedAuthenticationEvent.UserId = null;
+            expectedAuthenticationEvent.IsAuthenticated = true;
+            expectedAuthenticationEvent.SessionId = "eaec330c-1e2d-4acb-8975-5f3eba12b2fb";
+            expectedAuthenticationEvent.ExternalTokenIssuer = "studio";
+
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, systemClock.Object, guidService.Object);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
@@ -1432,6 +1448,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(principal);
 
             Assert.True(principal.HasClaim(c => c.Type == "urn:altinn:app"));
+            AssertionUtil.AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent, Times.Once());
         }
 
         /// <summary>

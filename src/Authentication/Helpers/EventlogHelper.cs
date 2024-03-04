@@ -59,6 +59,10 @@ namespace Altinn.Platform.Authentication.Helpers
                                 authenticationEvent.OrgNumber = Convert.ToInt32(claim.Value);
                                 break;
 
+                            case "urn:altinn:app":
+                                authenticationEvent.App = claim.Value;
+                                break;
+
                             case AltinnCoreClaimTypes.AuthenticateMethod:
                                 AuthenticationMethod authenticationMethod;
                                 authenticationEvent.AuthenticationMethod = System.Enum.TryParse<AuthenticationMethod>(claim.Value, true, out authenticationMethod) ? authenticationMethod : AuthenticationMethod.NotDefined;
@@ -78,6 +82,9 @@ namespace Altinn.Platform.Authentication.Helpers
                                 break;
                             case "jti":
                                 authenticationEvent.SessionId = claim.Value;
+                                break;
+                            case "iss":
+                                authenticationEvent.ExternalTokenIssuer = claim.Value;
                                 break;
                         }
                     }

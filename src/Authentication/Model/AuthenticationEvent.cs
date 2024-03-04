@@ -21,6 +21,11 @@ namespace Altinn.Platform.Authentication.Model
         public string? ExternalSessionId { get; set; }
 
         /// <summary>
+        /// External Token issuer of the authentication request if found
+        /// </summary>
+        public string? ExternalTokenIssuer { get; set; }
+
+        /// <summary>
         /// Date, time of the authentication event. Set by producer of logevents
         /// </summary>
         public DateTime Created { get; set; }
@@ -29,6 +34,11 @@ namespace Altinn.Platform.Authentication.Model
         /// Id of the user that triggered that authentication event 
         /// </summary>
         public int? UserId { get; set; }
+
+        /// <summary>
+        /// App name in the exchange token 
+        /// </summary>
+        public string? App { get; set; }
 
         /// <summary>
         /// Relevant if the event is triggered by enterprise user
