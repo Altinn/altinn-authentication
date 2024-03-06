@@ -15,7 +15,7 @@ namespace Altinn.Platform.Authentication.Controllers
     /// <summary>
     /// CRUD API for the System User 
     /// </summary>
-    /// [Authorize]
+    [Authorize]
     /// [FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
@@ -41,7 +41,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
         {
-            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
+            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(partyId);
 
             if (theList is not null && theList.Count > 0)
             {

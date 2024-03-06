@@ -3,25 +3,23 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
+using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
-
 using AltinnCore.Authentication.Constants;
 using AltinnCore.Authentication.JwtCookie;
-
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
-
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -65,6 +63,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
     options.RequireHeaderSymmetry = false;
 });
+
+builder.Services.AddPersistanceLayer();
 
 var app = builder.Build();
 
@@ -246,6 +246,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IEventLog, EventLogService>();
     services.AddSingleton<ISystemClock, SystemClock>();
     services.AddSingleton<ISystemUserService, SystemUserService>();
+    services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IGuidService, GuidService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
