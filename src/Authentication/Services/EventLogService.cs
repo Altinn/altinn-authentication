@@ -44,7 +44,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
-                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(authenticatedUser, eventType, context, _systemClock.UtcNow.DateTime);
+                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(authenticatedUser, eventType, context, _systemClock.UtcNow.UtcDateTime);
                 if (authenticationEvent != null)
                 {
                     _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
@@ -65,11 +65,11 @@ namespace Altinn.Platform.Authentication.Services
             string jwtToken, 
             AuthenticationEventType eventType, 
             HttpContext context,
-            string? externalSessionId = null)
+            string? externalSessionId = null) 
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
-                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _systemClock.UtcNow.DateTime, externalSessionId);
+                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _systemClock.UtcNow.UtcDateTime, externalSessionId);
                 if (authenticationEvent != null)
                 {
                     _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));

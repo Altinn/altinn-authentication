@@ -1717,7 +1717,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string? externalSessionId = null)
         {
             AuthenticationEvent authenticationEvent = new AuthenticationEvent();
-            authenticationEvent.Created = new DateTime(2018, 05, 15, 02, 05, 00);
+            authenticationEvent.Created = new DateTime(2018, 05, 15, 01, 05, 00, DateTimeKind.Utc);
             authenticationEvent.AuthenticationMethod = authMethod;
             authenticationEvent.AuthenticationLevel = authLevel;
             authenticationEvent.OrgNumber = orgNumber;
