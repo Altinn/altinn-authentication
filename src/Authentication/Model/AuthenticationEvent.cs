@@ -23,7 +23,7 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Date, time of the authentication event. Set by producer of logevents
         /// </summary>
-        public DateTime Created { get; set; }
+        public DateTimeOffset Created { get; set; }
 
         /// <summary>
         /// Id of the user that triggered that authentication event 

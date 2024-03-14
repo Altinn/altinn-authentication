@@ -33,7 +33,7 @@ namespace Altinn.Platform.Authentication.Helpers
             string jwtToken, 
             AuthenticationEventType eventType, 
             HttpContext context, 
-            DateTime currentDateTime,
+            DateTimeOffset currentDateTime,
             string? externalSessionId,
             bool isAuthenticated = true)
         {
@@ -103,7 +103,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="context">the http context</param>
         /// <param name="currentDateTime">the date time of the event</param>
         /// <returns>authentication event</returns>
-        public static AuthenticationEvent MapAuthenticationEvent(UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType, HttpContext context, DateTime currentDateTime)
+        public static AuthenticationEvent MapAuthenticationEvent(UserAuthenticationModel authenticatedUser, AuthenticationEventType eventType, HttpContext context, DateTimeOffset currentDateTime)
         {
             AuthenticationEvent authenticationEvent = null;
             if (authenticatedUser != null)

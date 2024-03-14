@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
@@ -20,17 +21,17 @@ namespace Altinn.Platform.Authentication.Services
     public class EventLogService : IEventLog
     {
         private readonly IEventsQueueClient _queueClient;
-        private readonly ISystemClock _systemClock;
+        private readonly TimeProvider _timeProvider;
 
         /// <summary>
         /// Instantiation for event log servcie
         /// </summary>
         /// <param name="queueClient">queue client to store event in event log</param>
-        /// <param name="systemClock">the systemclock to get the current datetime</param>
-        public EventLogService(IEventsQueueClient queueClient, ISystemClock systemClock)
+        /// <param name="timeProvider">the timeprovider to get the current datetime</param>
+        public EventLogService(IEventsQueueClient queueClient, TimeProvider timeProvider)
         {
             _queueClient = queueClient;
-            _systemClock = systemClock;
+            _timeProvider = timeProvider;
         }
 
         /// <summary>
@@ -44,7 +45,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
-                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(authenticatedUser, eventType, context, _systemClock.UtcNow.UtcDateTime);
+                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(authenticatedUser, eventType, context, _timeProvider.GetUtcNow().ToOffset(TimeSpan.Zero));
                 if (authenticationEvent != null)
                 {
                     _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
@@ -69,7 +70,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
-                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _systemClock.UtcNow.UtcDateTime, externalSessionId);
+                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _timeProvider.GetUtcNow().ToOffset(TimeSpan.Zero), externalSessionId);
                 if (authenticationEvent != null)
                 {
                     _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));
