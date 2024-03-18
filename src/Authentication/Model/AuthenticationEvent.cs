@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.Net.Security;
 using Altinn.Platform.Authentication.Enum;
