@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.Constants;
 
