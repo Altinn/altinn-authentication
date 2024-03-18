@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.KeyVault;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Azure.KeyVault;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 
 namespace Altinn.Platform.Authentication.Model
@@ -6,6 +7,7 @@ namespace Altinn.Platform.Authentication.Model
     /// <summary>
     /// The key vault settings used to fetch certificate information from key vault
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class KeyVaultSettings
     {
         /// <summary>
@@ -45,6 +47,7 @@ namespace Altinn.Platform.Authentication.Model
     /// <summary>
     /// The certificate settings
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class CertificateSettings
     {
         /// <summary>
