@@ -12,6 +12,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -30,6 +31,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement;
@@ -267,7 +269,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
 
     services.AddSingleton(config);
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
-    services.Configure<AltinnCore.Authentication.Constants.KeyVaultSettings>(config.GetSection("kvSetting"));
+    services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
     services.Configure<QueueStorageSettings>(config.GetSection("QueueStorageSettings"));
     services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
@@ -311,7 +313,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IAuthentication, AuthenticationCore>();
     services.AddSingleton<IEventsQueueClient, EventsQueueClient>();
     services.AddSingleton<IEventLog, EventLogService>();
-    services.AddSingleton<ISystemClock, SystemClock>();
+    services.TryAddSingleton(TimeProvider.System);
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IGuidService, GuidService>();
