@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS altinn_authentication.system_register
 	system_vendor varchar(255) NOT NULL,
 	default_rights text array, -- each element in the array is an Identifier for a given ServiceResource in Altinn-Resource-Registry
 	is_deleted bool default False,
+	client_id text array, -- Unique in own table
 	created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	UNIQUE (registered_system_id)
 )
