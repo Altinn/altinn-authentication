@@ -1,0 +1,45 @@
+﻿{
+  "SystemRegister": {
+    "SystemVendorId": "Awesome_Norway_Office",
+    "SystemTypeId": "Awesome_Tax",
+    "Descriptions": {
+      "En_En": "Our new Tax Software from Awesome ASA!",
+      "No_Nb": "Vårt nye Awesome Skatterapporteringsprogram!",
+      "No_Nn": "Okkar nye Awesome Skatterapporteringsprogram!"
+    },
+      "AreaTags": {
+        "Tag": [
+          {
+            "Area": "Tax"
+          },
+          {
+            "Area": "Salary"
+          }
+        ]
+      },
+      "DefaultRights": {
+        "DefaultRight": [
+          {
+            "ServiceProviderId": "Skatteetaten",
+            "ResourceId": "MVA",
+            "RightId": "Read"
+          },
+          {
+            "ServiceProviderId": "Skatteetaten",
+            "ResourceId": "MVA",
+            "RightId": "Write"
+          },
+          {
+            "ServiceProviderId": "Skatteetaten",
+            "ResourceId": "Lønn",
+            "RightId": "Read"
+          },
+          {
+            "ServiceProviderId": "Skatteetaten",
+            "ResourceId": "Lønn",
+            "RightId": "Write"
+          }
+        ]
+      }
+    }
+}

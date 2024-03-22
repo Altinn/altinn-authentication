@@ -58,5 +58,6 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="systemId">The human readable string id</param>
     /// <returns>List of Default Rights</returns>
-    Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId);
+    Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId);
+    Task<bool> CreateClient(string clientId);
 }

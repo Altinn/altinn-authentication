@@ -22,7 +22,9 @@ using Xunit;
 namespace Altinn.Platform.Authentication.Tests.Services
 {
     public class EventLogServiceTest
-    {       
+    {
+        private readonly Mock<TimeProvider> timeProviderMock = new Mock<TimeProvider>();
+
         [Fact]
         public async Task QueueAuthenticationEvent_OK()
         {
@@ -32,15 +34,12 @@ namespace Altinn.Platform.Authentication.Tests.Services
             Mock<IEventsQueueClient> queueMock = new();
             queueMock
                 .Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>())).ReturnsAsync(new QueuePostReceipt { Success = true });
-            Mock<ISystemClock> systemClockMock = new();
-            systemClockMock
-                .Setup(m => m.UtcNow)
-                .Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, new TimeSpan(1, 0, 0)));
+
             Mock<IFeatureManager> featureManageMock = new Mock<IFeatureManager>();
             featureManageMock
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
-            var service = GetEventLogService(queueMock: queueMock.Object, systemClockMock.Object);
+            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
             // Act
@@ -78,15 +77,12 @@ namespace Altinn.Platform.Authentication.Tests.Services
             Mock<IEventsQueueClient> queueMock = new();
             queueMock
                 .Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>())).ReturnsAsync(new QueuePostReceipt { Success = true });
-            Mock<ISystemClock> systemClockMock = new();
-            systemClockMock
-                .Setup(m => m.UtcNow)
-                .Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, new TimeSpan(1, 0, 0)));
+
             Mock<IFeatureManager> featureManageMock = new Mock<IFeatureManager>();
             featureManageMock
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
-            var service = GetEventLogService(queueMock: queueMock.Object, systemClockMock.Object);
+            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
             // Act
@@ -105,15 +101,11 @@ namespace Altinn.Platform.Authentication.Tests.Services
             queueMock
                 .Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>())).ReturnsAsync(new QueuePostReceipt { Success = true });
 
-            Mock<ISystemClock> systemClockMock = new();
-            systemClockMock
-                .Setup(m => m.UtcNow)
-                .Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, new TimeSpan(1, 0, 0)));
             Mock<IFeatureManager> featureManageMock = new Mock<IFeatureManager>();
             featureManageMock
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
-            var service = GetEventLogService(queueMock: queueMock.Object, systemClockMock.Object);
+            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
             // Act
@@ -132,15 +124,11 @@ namespace Altinn.Platform.Authentication.Tests.Services
             queueMock
                 .Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>())).ReturnsAsync(new QueuePostReceipt { Success = true });
 
-            Mock<ISystemClock> systemClockMock = new();
-            systemClockMock
-                .Setup(m => m.UtcNow)
-                .Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, new TimeSpan(1, 0, 0)));
             Mock<IFeatureManager> featureManageMock = new Mock<IFeatureManager>();
             featureManageMock
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
-            var service = GetEventLogService(queueMock: queueMock.Object, systemClockMock.Object);
+            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
             // Act
@@ -149,14 +137,14 @@ namespace Altinn.Platform.Authentication.Tests.Services
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Never);
         }
 
-        private static IEventLog GetEventLogService(IEventsQueueClient queueMock = null, ISystemClock systemClockMock = null)
+        private static IEventLog GetEventLogService(IEventsQueueClient queueMock = null, TimeProvider timeProviderMock = null)
         {
             if (queueMock == null)
             {
                 queueMock = new EventsQueueClientMock();
             }
 
-            var service = new EventLogService(queueMock, systemClockMock);
+            var service = new EventLogService(queueMock, timeProviderMock);
             return service;
         }
 
@@ -171,6 +159,11 @@ namespace Altinn.Platform.Authentication.Tests.Services
             };
 
             return authenticatedUser;
+        }
+
+        private void SetupDateTimeMock()
+        {
+            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
     }
 }

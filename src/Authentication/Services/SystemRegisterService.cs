@@ -24,18 +24,22 @@ namespace Altinn.Platform.Authentication.Services
             _systemRegisterRepository = systemRegisterRepository;
         }
 
-        /// <summary>
-        /// Inheritdoc
-        /// </summary>
+        /// <inheritdoc/>
         public Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetAllActiveSystems();
         }
 
         /// <inheritdoc/>
-        public Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId, CancellationToken cancellation = default)
+        public Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetDefaultRightsForRegisteredSystem(systemId);
+        }
+
+        /// <inheritdoc/>
+        public Task<bool> CreateClient(string clientId, CancellationToken cancellationToken)
+        {
+            return _systemRegisterRepository.CreateClient(clientId);
         }
     }
 }
