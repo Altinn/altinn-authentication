@@ -37,7 +37,7 @@ public class SystemRegisterController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
-        List<RegisteredSystem> lista = new();
+        List<RegisteredSystem> lista = [];
 
         lista.AddRange(await _systemRegisterService.GetListRegSys(cancellationToken));
 
@@ -60,5 +60,35 @@ public class SystemRegisterController : ControllerBase
         }
         
         return Ok(lista);
+    }
+
+    /// <summary>
+    /// Inserts a new unique ClientId
+    /// </summary>
+    /// <param name="clientId">The Client_Ids are maintained by Maskinporten, but we need to reference them in the db</param>
+    /// <param name="cancellationToken">The Cancellationtoken</param>
+    /// <returns></returns>
+    [HttpPost("client/{clientId}")]
+    public async Task<ActionResult> CreateClient(string clientId, CancellationToken cancellationToken = default)
+    {
+        var okay = await _systemRegisterService.CreateClient(clientId, cancellationToken);
+        if (!okay)
+        {
+            return BadRequest();            
+        }
+
+        return Ok(okay);
+    }
+
+    /// <summary>
+    /// Create a new Registered System ( Product) 
+    /// </summary>
+    /// <param name="registeredSystem">The descriptor model of a new Registered System</param>
+    /// <param name="cancellationToken">The Cancellationtoken</param>
+    /// <returns></returns>
+    [HttpPost("product")]
+    public async Task<ActionResult> RegisteredSystem([FromBody] RegisteredSystem registeredSystem, CancellationToken cancellationToken = default)
+    {
+        return Ok(registeredSystem);
     }
 }

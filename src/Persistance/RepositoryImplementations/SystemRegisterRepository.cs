@@ -226,4 +226,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             Description = reader.GetFieldValue<string>("friendly_product_name")
         });
     }
+
+    /// <inheritdoc/> 
+    public Task<bool> CreateClient(string clientId)
+    {
+        throw new NotImplementedException();
+    }
 }
