@@ -50,7 +50,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly WebApplicationFactory<AuthenticationController> _factory;
         private readonly Mock<IUserProfileService> _userProfileService;
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService;
-        private readonly Mock<ISystemClock> systemClock = new Mock<ISystemClock>();
+        private readonly Mock<TimeProvider> timeProviderMock = new Mock<TimeProvider>();
         private readonly Mock<IGuidService> guidService = new Mock<IGuidService>();
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.MaskinPorten, SecurityLevel.Sensitive, 974760223, AuthenticationEventType.TokenExchange);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, systemClock.Object, guidService.Object);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
 
@@ -321,7 +321,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.VirksomhetsBruker, SecurityLevel.Sensitive, 974760223, AuthenticationEventType.TokenExchange, 1234, true, "fe155387-c5f2-42e9-943a-811789db663a");
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, systemClock.Object, guidService.Object);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
@@ -372,7 +372,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.VirksomhetsBruker, SecurityLevel.Sensitive, 974760223, AuthenticationEventType.TokenExchange, 1234);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, systemClock.Object, guidService.Object);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyMjpWYWxpZDpQYXNzd29yZA==");
@@ -508,7 +508,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.AltinnPIN, SecurityLevel.QuiteSensitive, null, AuthenticationEventType.Authenticate, 434, true);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, systemClock.Object, guidService.Object);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
 
             string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost";
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
@@ -677,7 +677,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.BankIDMobil, SecurityLevel.VerySensitive, null, AuthenticationEventType.Authenticate, 1337, true);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, systemClock.Object, guidService.Object, true, true);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object, true, true);
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true";
@@ -1240,7 +1240,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.MinIDPin, SecurityLevel.VerySensitive, null, AuthenticationEventType.TokenExchange, 20000);
 
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, systemClock.Object, guidService.Object);
+            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -1513,7 +1513,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ISblCookieDecryptionService cookieDecryptionService, 
             IUserProfileService userProfileService, 
             IEventsQueueClient eventLog = null, 
-            ISystemClock systemClockMock = null,
+            TimeProvider timeProviderMock = null,
             IGuidService guidService = null,
             bool enableOidc = false, 
             bool forceOidc = false, 
@@ -1554,9 +1554,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                         services.AddSingleton(eventLog);
                     }
 
-                    if (systemClockMock != null)
+                    if (timeProviderMock != null)
                     {
-                        services.AddSingleton(systemClockMock);
+                        services.AddSingleton(timeProviderMock);
                     }
 
                     if (guidService != null)
@@ -1717,7 +1717,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string? externalSessionId = null)
         {
             AuthenticationEvent authenticationEvent = new AuthenticationEvent();
-            authenticationEvent.Created = new DateTime(2018, 05, 15, 02, 05, 00);
+            authenticationEvent.Created = new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero);
             authenticationEvent.AuthenticationMethod = authMethod;
             authenticationEvent.AuthenticationLevel = authLevel;
             authenticationEvent.OrgNumber = orgNumber;
@@ -1732,9 +1732,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupDateTimeMock()
         {
-            systemClock
-                .Setup(m => m.UtcNow)
-                .Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, new TimeSpan(1, 0, 0)));
+            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
 
         private void SetupGuidMock()
