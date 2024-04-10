@@ -779,12 +779,15 @@ namespace Altinn.Platform.Authentication.Controllers
                 expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds);
             }
 
+            DateTime now = DateTime.UtcNow.AddSeconds(-10);
             JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = expires,
-                SigningCredentials = new X509SigningCredentials(certificate)
+                SigningCredentials = new X509SigningCredentials(certificate),
+                IssuedAt = now,
+                NotBefore = now,
             };
 
             SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
