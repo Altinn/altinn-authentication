@@ -12,12 +12,12 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
 using AltinnCore.Authentication.Constants;
-using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.JwtCookie;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
@@ -42,8 +42,10 @@ using Microsoft.OpenApi.Models;
 ILogger logger;
 
 string applicationInsightsKeySecretName = "ApplicationInsights--InstrumentationKey";
+string postgresConfigKeySecretName = "PostgresConfig";
 
 string applicationInsightsConnectionString = string.Empty;
+string postgresConnectionString = string.Empty;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -145,12 +147,77 @@ async Task ConnectToKeyVaultAndSetApplicationInsights(ConfigurationManager confi
         try
         {
             config.AddAzureKeyVault(
-                 keyVaultSettings.SecretUri, keyVaultSettings.ClientId, keyVaultSettings.ClientSecret);
+                 keyVaultSettings.SecretUri, 
+                 keyVaultSettings.ClientId, 
+                 keyVaultSettings.ClientSecret);
         }
         catch (Exception vaultException)
         {
             logger.LogError(vaultException, $"Unable to add key vault secrets to config.");
         }
+    }
+}
+
+async Task ConnectToKeyVaultAndSetConfig(ConfigurationManager config)
+{
+    logger.LogInformation("Program // Connect to key vault and set up configuration");
+
+    Altinn.Common.AccessToken.Configuration.KeyVaultSettings keyVaultSettings = new();
+    config.GetSection("kvSetting").Bind(keyVaultSettings);
+
+    if (!string.IsNullOrEmpty(keyVaultSettings.ClientId) &&
+        !string.IsNullOrEmpty(keyVaultSettings.TenantId) &&
+        !string.IsNullOrEmpty(keyVaultSettings.ClientSecret) &&
+        !string.IsNullOrEmpty(keyVaultSettings.SecretUri))
+    {
+        Environment.SetEnvironmentVariable("AZURE_CLIENT_ID", keyVaultSettings.ClientId);
+        Environment.SetEnvironmentVariable("AZURE_CLIENT_SECRET", keyVaultSettings.ClientSecret);
+        Environment.SetEnvironmentVariable("AZURE_TENANT_ID", keyVaultSettings.TenantId);
+
+        await SetUpAzureInsights(keyVaultSettings, config);
+        await SetUpPostgresConfigFromKeyVault(keyVaultSettings, config);
+        AddAzureKeyVault(keyVaultSettings, config);
+    }
+}
+
+async Task SetUpAzureInsights(Altinn.Common.AccessToken.Configuration.KeyVaultSettings keyVaultSettings, ConfigurationManager config)
+{
+    try
+    {
+        SecretClient client = new SecretClient(new Uri(keyVaultSettings.SecretUri), new EnvironmentCredential());
+        KeyVaultSecret secret = await client.GetSecretAsync(applicationInsightsKeySecretName);
+        applicationInsightsConnectionString = string.Format("InstrumentationKey={0}", secret.Value);
+    }
+    catch (Exception vaultException)
+    {
+        logger.LogError(vaultException, $"Unable to read application insights key.");
+    }
+}
+
+async Task SetUpPostgresConfigFromKeyVault(Altinn.Common.AccessToken.Configuration.KeyVaultSettings keyVaultSettings, ConfigurationManager config)
+{
+    try
+    {
+        SecretClient client = new(new Uri(keyVaultSettings.SecretUri), new EnvironmentCredential());
+        KeyVaultSecret secret = await client.GetSecretAsync(postgresConfigKeySecretName);
+        postgresConnectionString = secret.Value;
+    }
+    catch (Exception postgresConfigException) 
+    {
+        logger.LogError(postgresConfigException, "Program // Unable to read postgres config from key vault.");
+    }
+}
+
+void AddAzureKeyVault(Altinn.Common.AccessToken.Configuration.KeyVaultSettings keyVaultSettings, ConfigurationManager config)
+{
+    try
+    {
+        config.AddAzureKeyVault(
+             keyVaultSettings.SecretUri, keyVaultSettings.ClientId, keyVaultSettings.ClientSecret);
+    }
+    catch (Exception vaultException)
+    {
+        logger.LogError(vaultException, $"Unable to add key vault secrets to config.");
     }
 }
 

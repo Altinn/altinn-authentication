@@ -172,7 +172,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public async Task<List<DefaultRights>> GetDefaultRightsForRegisteredSystem(Guid systemId)
+    public async Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId)
     {
         const string QUERY = /*strpsql*/@"
                 SELECT unnest default_rights
@@ -206,11 +206,11 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// each Right is always in the context of it's parent Service Provider anyway.
     /// The Right can either denote a single Right or a package of Rights; which is handled in Access Management.
     /// </summary>
-    private ValueTask<DefaultRights> ConvertFromReaderToDefaultRights(NpgsqlDataReader reader)
+    private ValueTask<DefaultRight> ConvertFromReaderToDefaultRights(NpgsqlDataReader reader)
     {
         string[] arrayElement = reader.GetFieldValue<string>("default_right").Split('_');
 
-        return new ValueTask<DefaultRights>(new DefaultRights
+        return new ValueTask<DefaultRight>(new DefaultRight
         {
             ServiceProvider = arrayElement[0],
             Right = arrayElement[1]            
@@ -225,5 +225,11 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
             Description = reader.GetFieldValue<string>("friendly_product_name")
         });
+    }
+
+    /// <inheritdoc/> 
+    public Task<bool> CreateClient(string clientId)
+    {
+        throw new NotImplementedException();
     }
 }

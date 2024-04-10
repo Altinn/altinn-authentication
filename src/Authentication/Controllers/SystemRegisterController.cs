@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
@@ -27,7 +28,7 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves the List of the Registered Systems
+    /// Retrieves the List of all the Registered Systems, except those marked as deleted.
     /// </summary>
     /// <param name="cancellationToken">The Cancellation Token</param>
     /// <returns></returns>
@@ -36,7 +37,7 @@ public class SystemRegisterController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
-        List<RegisteredSystem> lista = new();
+        List<RegisteredSystem> lista = [];
 
         lista.AddRange(await _systemRegisterService.GetListRegSys(cancellationToken));
 
@@ -50,15 +51,44 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [HttpGet("product/{productId}")]
-    public async Task<ActionResult> GetDefaultRightsForProductName(string productId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> GetDefaultRightsForRegisteredSystem(string productId, CancellationToken cancellationToken = default)
     {
-        List<DefaultRights> lista = new();
-        DefaultRights l1 = new() { Right = "Mva Registrering", ServiceProvider = "Skatteetaten" };
-        DefaultRights l2 = new() { Right = "Lønns Rapportering", ServiceProvider = "Skatteetaten" };
-        DefaultRights l3 = new() { Right = "Lakselus Rapportering", ServiceProvider = "Mattilsynet" };
-        lista.Add(l1);
-        lista.Add(l2);
-        lista.Add(l3);
+        List<DefaultRight> lista = await _systemRegisterService.GetDefaultRightsForRegisteredSystem(productId, cancellationToken);
+        if (lista is null || lista.Count == 0) 
+        {
+            return NoContent();
+        }
+        
         return Ok(lista);
+    }
+
+    /// <summary>
+    /// Inserts a new unique Maskinporten-ClientId, these are maintained by Maskinporten, and are inserted to our db by them.
+    /// </summary>
+    /// <param name="clientId">The Client_Ids are maintained by Maskinporten, but we need to reference them in the db</param>
+    /// <param name="cancellationToken">The Cancellationtoken</param>
+    /// <returns></returns>
+    [HttpPost("client/{clientId}")]
+    public async Task<ActionResult> CreateClient(string clientId, CancellationToken cancellationToken = default)
+    {
+        var okay = await _systemRegisterService.CreateClient(clientId, cancellationToken);
+        if (!okay)
+        {
+            return BadRequest();            
+        }
+
+        return Ok(okay);
+    }
+
+    /// <summary>
+    /// Create a new Registered System ( Product) 
+    /// </summary>
+    /// <param name="registeredSystem">The descriptor model of a new Registered System</param>
+    /// <param name="cancellationToken">The Cancellationtoken</param>
+    /// <returns></returns>
+    [HttpPost("product")]
+    public async Task<ActionResult> RegisteredSystem([FromBody] RegisteredSystem registeredSystem, CancellationToken cancellationToken = default)
+    {
+        return Ok(registeredSystem);
     }
 }
