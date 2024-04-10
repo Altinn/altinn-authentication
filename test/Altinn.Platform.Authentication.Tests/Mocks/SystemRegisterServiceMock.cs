@@ -136,5 +136,10 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             return list;
         }
+
+        public Task<bool> CreateClient(string clientId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
