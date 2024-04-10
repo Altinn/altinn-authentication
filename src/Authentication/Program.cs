@@ -13,6 +13,7 @@ using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -270,6 +271,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton(config);
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
     services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
+    services.Configure<PostgreSqlSettings>(config.GetSection("PostgreSqlSettings"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
     services.Configure<QueueStorageSettings>(config.GetSection("QueueStorageSettings"));
     services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));

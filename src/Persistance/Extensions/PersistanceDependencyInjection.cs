@@ -36,18 +36,18 @@ public static class PersistanceDependencyInjection
     /// Helper method for DI
     /// </summary>
     /// <param name="services">IServiceCollection for parent DI</param>
-    private static void AddPostgreSqlDatabase(IServiceCollection services) 
+    private static void AddPostgreSqlDatabase(this IServiceCollection services) 
     {
         services.AddOptions<PostgreSqlSettings>()
                  .Validate(s => !string.IsNullOrEmpty(s.ConnectionString), "Missing Connection string")
-                 .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbPwd), "Missing db password");
+                 .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbPassword), "Missing db password");
 
         services.TryAddSingleton((IServiceProvider sp) =>
         {
             var settings = sp.GetRequiredService<IOptions<PostgreSqlSettings>>().Value;
             var connectionString = string.Format(
                 settings.ConnectionString,
-                settings.AuthenticationDbPwd);
+                settings.AuthenticationDbPassword);
 
             var builder = new NpgsqlDataSourceBuilder(connectionString);
             builder.UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>());
@@ -61,7 +61,7 @@ public static class PersistanceDependencyInjection
     /// Extension method for DI
     /// </summary>
     /// <param name="services">IServiceCollection for parent DI</param>
-    private static void AddSystemUserRepository(IServiceCollection services) 
+    private static void AddSystemUserRepository(this IServiceCollection services) 
     {
         services.TryAddTransient<ISystemUserRepository, SystemUserRepository>();
     }
@@ -70,7 +70,7 @@ public static class PersistanceDependencyInjection
     /// Extension method for DI
     /// </summary>
     /// <param name="services">IServiceCollection for parent DI</param>
-    private static void AddSystemRegisterRepository(IServiceCollection services)
+    private static void AddSystemRegisterRepository(this IServiceCollection services)
     {
         services.TryAddTransient<ISystemRegisterRepository, SystemRegisterRepository>();
     }

@@ -19,6 +19,6 @@ namespace Altinn.Platform.Authentication.Persistance.Configuration
         /// Gets or Sets the password for the app user for the postgres db.
         /// </summary>
         [AllowNull]
-        public string AuthenticationDbPwd { get; set; }
+        public string AuthenticationDbPassword { get; set; }
     }
 }

@@ -15,8 +15,8 @@ namespace Altinn.Platform.Authentication.Controllers
     /// <summary>
     /// CRUD API for the System User 
     /// </summary>
-    [Authorize]
-    [FeatureGate(FeatureFlags.SystemUser)]
+    //[Authorize]
+    //[FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
     public class SystemUserController : ControllerBase
