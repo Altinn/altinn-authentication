@@ -10,7 +10,15 @@ CREATE TABLE IF NOT EXISTS altinn_authentication.system_user_integration
 	client_id varchar(255), -- foreign key to client_id table 
 	is_deleted bool default False,
 	created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	UNIQUE (owned_by_party_id, product_name)
+	UNIQUE (owned_by_party_id, product_name),
+	CONSTRAINT fk_integrations_registeredsystems
+	FOREIGN KEY (product_name)
+	REFERENCES altinn_authentication.system_register (registered_system_id)
+	ON DELETE CASCADE,
+	CONSTRAINT fk_integrations_clientids
+	FOREIGN KEY (client_id)
+	REFERENCES altinn_authentication.maskinporten_client (client_id)
+	ON DELETE NO ACTION
 )
 
 TABLESPACE pg_default;

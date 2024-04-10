@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
     public interface ISystemRegisterService
     {
         /// <summary>
-        /// Retrieves the list of all Registered Systems
+        /// Retrieves the list of all Registered Systems, except those marked as deleted.
         /// </summary>
         /// <param name="cancellation">The cancellation token</param>
         /// <returns></returns>

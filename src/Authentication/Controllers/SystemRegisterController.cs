@@ -28,7 +28,7 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves the List of all the Registered Systems available
+    /// Retrieves the List of all the Registered Systems, except those marked as deleted.
     /// </summary>
     /// <param name="cancellationToken">The Cancellation Token</param>
     /// <returns></returns>
@@ -63,7 +63,7 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
-    /// Inserts a new unique ClientId
+    /// Inserts a new unique Maskinporten-ClientId, these are maintained by Maskinporten, and are inserted to our db by them.
     /// </summary>
     /// <param name="clientId">The Client_Ids are maintained by Maskinporten, but we need to reference them in the db</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
