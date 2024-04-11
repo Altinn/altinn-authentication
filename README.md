@@ -19,7 +19,7 @@ These instructions will get you a copy of the authentication component up and ru
 
 ### Prerequisites
 
-1. [.NET 7.0 SDK](https://dotnet.microsoft.com/download/dotnet/7.0)
+1. [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 2. Code editor of your choice
 3. Newest [Git](https://git-scm.com/downloads)
 4. [Docker CE](https://www.docker.com/get-docker)
