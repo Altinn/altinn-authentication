@@ -42,7 +42,7 @@ public interface ISystemRegisterRepository
     /// <param name="id">The human readable string Id</param>
     /// <param name="newName">The new human readable string Id</param>
     /// <returns>True if renamed</returns>
-    Task<bool> RenameRegisteredSystemById(string id, string newName);
+    Task<int> RenameRegisteredSystemByGuid(Guid id, string newName);
 
     /// <summary>
     /// Set's the product's is_deleted column to True.
@@ -60,4 +60,11 @@ public interface ISystemRegisterRepository
     /// <returns>List of Default Rights</returns>
     Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId);
     Task<bool> CreateClient(string clientId);
+
+    /// <summary>
+    /// Used for internal maintenance, the Guid is not part of any APIs
+    /// </summary>
+    /// <param name="id">The external string ID</param>
+    /// <returns></returns>
+    Task<Guid?> RetrieveGuidFromStringId (string id);
 }

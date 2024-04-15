@@ -67,7 +67,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 @registered_system_id,
                 @system_vendor,
                 @description)
-            RETURNING hidden_internal_id;";                
+            RETURNING hidden_internal_id;";
 
         try
         {
@@ -118,23 +118,23 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public async Task<bool> RenameRegisteredSystemById(string id, string newName)
+    public async Task<int> RenameRegisteredSystemByGuid(Guid id, string newName)
     {
-        const string QUERY = /*strpsql*/@"
+        const string UPDATEQUERY = /*strpsql*/@"
                 UPDATE altinn_authentication.system_register
 	            SET registered_system_id = @newName
-        	    WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
+        	    WHERE altinn_authentication.system_register.hidden_internal_id = @guid
                 ";
 
         try
         {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using NpgsqlCommand command = _datasource.CreateCommand(UPDATEQUERY);
 
-            command.Parameters.AddWithValue("registered_system_id", id);
+            command.Parameters.AddWithValue("guid", id);
             command.Parameters.AddWithValue("newName", newName);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToInt)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -177,7 +177,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 SELECT unnest default_rights
                 FROM altinn_authentication.system_register
                 WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
-                ";    
+                ";
 
         try
         {
@@ -188,7 +188,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToDefaultRights)
                 .ToListAsync();
-                         
+
         }
         catch (Exception ex)
         {
@@ -212,7 +212,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         return new ValueTask<DefaultRight>(new DefaultRight
         {
             ServiceProvider = arrayElement[0],
-            Right = arrayElement[1]            
+            Right = arrayElement[1]
         });
     }
 
@@ -242,6 +242,32 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
             command.Parameters.AddWithValue("new_client_id", insertedId);
             return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateClient // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/> 
+    public async Task<Guid?> RetrieveGuidFromStringId(string id)
+    {
+        const string GUIDQUERY = /*strpsql*/@"
+                SELECT hidden_internal_id
+                FROM altinn_authentication.system_register
+        	    WHERE altinn_authentication.system_register.registered_system_id = @registered_system_id;
+                ";
+    
+        try
+        {
+            await using NpgsqlCommand guidCommand = _datasource.CreateCommand(GUIDQUERY);
+
+            guidCommand.Parameters.AddWithValue("registered_system_id", id);
+
+            return await guidCommand.ExecuteEnumerableAsync()
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
+                .SingleOrDefaultAsync();
         }
         catch (Exception ex)
         {

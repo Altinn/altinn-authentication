@@ -58,4 +58,14 @@ internal static class NpgSqlExtensions
     {
         return new ValueTask<Guid>(reader.GetGuid(0));
     }
+
+    /// <summary>
+    /// Helper method
+    /// </summary>
+    /// <param name="reader">NpgsqlDataReader</param>
+    /// <returns>Query field converted to Int</returns>
+    internal static ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
+    {
+        return new ValueTask<int>(reader.GetInt32(0));
+    }
 }

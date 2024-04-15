@@ -70,4 +70,30 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         List<RegisteredSystem> res = await Repository.GetAllActiveSystems();
         Assert.NotEmpty(res);
     }
+
+    [Fact]
+    public async Task SystemRegister_RenameRegisteredSystemById()
+    {
+        string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
+        string friendlyId2 = "Awesome_Test_System_String_Human_Readable_Id2";
+
+        Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
+            new RegisteredSystem
+            {
+                Description = "Test",
+                SystemTypeId = friendlyId,
+                SystemVendor = "Awesome"
+            });
+
+        Assert.NotEqual(Guid.Empty, registeredSystemId);
+
+        Guid? guid = await Repository.RetrieveGuidFromStringId(friendlyId);
+        Assert.True(guid is not null);
+                
+        var succeed = await Repository.RenameRegisteredSystemByGuid((Guid)guid, friendlyId2);
+        //Assert.True(succeed);
+
+        var there = await Repository.GetRegisteredSystemById(friendlyId2);        
+        Assert.Equal(friendlyId2, there?.SystemTypeId);         
+    }
 }
