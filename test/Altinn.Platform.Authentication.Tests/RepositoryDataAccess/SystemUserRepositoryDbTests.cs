@@ -18,6 +18,7 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 public class SystemUserRepositoryDbTests : DbTestBase
 {
     protected ISystemUserRepository Repository => Services.GetRequiredService<ISystemUserRepository>();
+
     protected ISystemRegisterRepository RegisterRepository => Services.GetRequiredService<ISystemRegisterRepository>();
 
     protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();

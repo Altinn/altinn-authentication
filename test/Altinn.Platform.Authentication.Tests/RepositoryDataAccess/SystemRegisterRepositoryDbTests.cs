@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -41,5 +42,32 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         RegisteredSystem? isitthere = await Repository.GetRegisteredSystemById(friendlyId);
         Assert.True(isitthere is not null);
         Assert.Equal("Awesome", isitthere.SystemVendor);
-    }        
+    }
+
+    [Fact]
+    public async Task SystemRegister_GetAllActiveSystems()
+    {
+        string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
+
+        Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
+            new RegisteredSystem
+            {
+                Description = "Test",
+                SystemTypeId = friendlyId,
+                SystemVendor = "Awesome"
+            });
+
+        string friendlyId2 = "Second_Test_System_String_Human_Readable_Id";
+
+        Guid? registeredSystemId2 = await Repository.CreateRegisteredSystem(
+            new RegisteredSystem
+            {
+                Description = "Test",
+                SystemTypeId = friendlyId2,
+                SystemVendor = "Awesome"
+            });
+
+        List<RegisteredSystem> res = await Repository.GetAllActiveSystems();
+        Assert.NotEmpty(res);
+    }
 }

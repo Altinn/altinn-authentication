@@ -12,7 +12,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 /// <summary>
 /// The System Register Repository
 /// </summary>
-[ExcludeFromCodeCoverage]
 internal class SystemRegisterRepository : ISystemRegisterRepository
 {
     private readonly NpgsqlDataSource _datasource;
