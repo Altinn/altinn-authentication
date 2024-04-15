@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Persistence.Tests;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 public class SystemUserRepositoryDbTests : DbTestBase
 {
     protected ISystemUserRepository Repository => Services.GetRequiredService<ISystemUserRepository>();
+    protected ISystemRegisterRepository RegisterRepository => Services.GetRequiredService<ISystemRegisterRepository>();
 
     protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
@@ -29,6 +31,13 @@ public class SystemUserRepositoryDbTests : DbTestBase
     [Fact]
     public async Task InsertSystemUser()
     {
+        Guid guid = Guid.NewGuid();
+
+        RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
+
+        await RegisterRepository.CreateClient(guid.ToString());
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser 
         {
             IntegrationTitle = "InsertSystemUserTitle",
@@ -36,7 +45,7 @@ public class SystemUserRepositoryDbTests : DbTestBase
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = Guid.NewGuid()            
+            ClientId = guid
         });
 
         Assert.True(systemUserId is not null);
@@ -45,6 +54,13 @@ public class SystemUserRepositoryDbTests : DbTestBase
     [Fact]
     public async Task GetAllActiveSystemUsersForParty()
     {
+        Guid guid = Guid.NewGuid();
+
+        RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
+
+        await RegisterRepository.CreateClient(guid.ToString());
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
             IntegrationTitle = "GetAllActiveSystemUsersForPartyTitle",
@@ -52,7 +68,7 @@ public class SystemUserRepositoryDbTests : DbTestBase
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = Guid.NewGuid()
+            ClientId = guid
         });
 
         var res = await Repository.GetAllActiveSystemUsersForParty(1);
@@ -63,6 +79,13 @@ public class SystemUserRepositoryDbTests : DbTestBase
     [Fact]
     public async Task GetSystemUserById()
     {
+        Guid guid = Guid.NewGuid();
+
+        RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
+
+        await RegisterRepository.CreateClient(guid.ToString());
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
             IntegrationTitle = "GetSystemUserByIdTitle",
@@ -70,7 +93,7 @@ public class SystemUserRepositoryDbTests : DbTestBase
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = Guid.NewGuid()
+            ClientId = guid
         });
 
         SystemUser? systemUser = await Repository.GetSystemUserById((Guid)systemUserId);
@@ -81,6 +104,13 @@ public class SystemUserRepositoryDbTests : DbTestBase
     [Fact]
     public async Task SetDeleteSystemUserById()
     {
+        Guid guid = Guid.NewGuid();
+
+        RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
+
+        await RegisterRepository.CreateClient(guid.ToString());
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
             IntegrationTitle = "GetSystemUserByIdTitle",
@@ -88,7 +118,7 @@ public class SystemUserRepositoryDbTests : DbTestBase
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = Guid.NewGuid()
+            ClientId = guid
         });
 
         await Repository.SetDeleteSystemUserById((Guid)systemUserId);
