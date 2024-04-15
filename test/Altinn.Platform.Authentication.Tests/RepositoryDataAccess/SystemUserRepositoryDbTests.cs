@@ -36,7 +36,7 @@ public class SystemUserRepositoryDbTests : DbTestBase
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = " "            
+            ClientId = Guid.NewGuid()            
         });
 
         Assert.True(systemUserId is not null);
@@ -52,7 +52,7 @@ public class SystemUserRepositoryDbTests : DbTestBase
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = " "
+            ClientId = Guid.NewGuid()
         });
 
         var res = await Repository.GetAllActiveSystemUsersForParty(1);
@@ -70,7 +70,7 @@ public class SystemUserRepositoryDbTests : DbTestBase
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = " "
+            ClientId = Guid.NewGuid()
         });
 
         SystemUser? systemUser = await Repository.GetSystemUserById((Guid)systemUserId);
@@ -88,7 +88,7 @@ public class SystemUserRepositoryDbTests : DbTestBase
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = " "
+            ClientId = Guid.NewGuid()
         });
 
         await Repository.SetDeleteSystemUserById((Guid)systemUserId);

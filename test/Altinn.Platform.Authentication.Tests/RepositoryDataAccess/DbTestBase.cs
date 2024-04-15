@@ -64,7 +64,7 @@ public abstract class DbTestBase : IAsyncLifetime
         container.Configure<PostgreSqlSettings>(settings =>
         {
             settings.ConnectionString = connectionString;
-            settings.AuthenticationDbPwd = "unused";
+            settings.AuthenticationDbPassword = "unused";
         });
         ConfigureServices(container);
 

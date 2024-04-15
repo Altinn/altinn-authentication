@@ -34,8 +34,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Awesome",
                 SystemTypeId = "Awesome_Tax",
                 Description = "Awesome_Tax",
-                DefaultRights = new DefaultRight[]
-                {
+                DefaultRights =
+                [
                     new()
                     {
                         ServiceProvider = "Skatteetaten",
@@ -48,7 +48,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                         Resource = "MVA",
                         Right = "Write"
                     }
-                }
+                ]
             };
 
             RegisteredSystem reg2 = new()
@@ -56,8 +56,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Wonderful",
                 SystemTypeId = "Wonderful_Tax",
                 Description = "Wonderful_Tax",
-                DefaultRights = new DefaultRight[]
-                {
+                DefaultRights = 
+                 [
                     new()
                     {
                         ServiceProvider = "Skatteetaten",
@@ -70,7 +70,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                         Resource = "MVA",
                         Right = "Write"
                     }
-                }
+                ]
             };
 
             RegisteredSystem reg3 = new()
@@ -78,8 +78,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Brilliant",
                 SystemTypeId = "Brilliant_HR",
                 Description = "Brilliant_HR",
-                DefaultRights = new DefaultRight[]
-                {
+                DefaultRights = 
+                 [
                     new()
                     {
                         ServiceProvider = "Skatteetaten",
@@ -92,7 +92,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                         Resource = "Lønn",
                         Right = "Write"
                     }
-                }
+                ]
             };
 
             RegisteredSystem reg4 = new()
@@ -100,8 +100,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Fantastic",
                 SystemTypeId = "Fantastic_HR",
                 Description = "Fantastic_HR",
-                DefaultRights = new DefaultRight[]
-                {
+                DefaultRights = 
+                 [
                     new()
                     {
                         ServiceProvider = "Skatteetaten",
@@ -114,7 +114,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                         Resource = "Lønn",
                         Right = "Write"
                     }
-                }
+                ]
             };
 
             List<RegisteredSystem> list = new()
@@ -138,6 +138,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         public Task<bool> CreateClient(string clientId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default)
         {
             throw new NotImplementedException();
         }
