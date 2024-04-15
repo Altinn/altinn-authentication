@@ -83,12 +83,18 @@ public class SystemRegisterController : ControllerBase
     /// <summary>
     /// Create a new Registered System ( Product) 
     /// </summary>
-    /// <param name="registeredSystem">The descriptor model of a new Registered System</param>
+    /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
     [HttpPost("product")]
-    public async Task<ActionResult> RegisteredSystem([FromBody] RegisteredSystem registeredSystem, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> CreateRegisteredSystem([FromBody] RegisteredSystem registerNewSystem, CancellationToken cancellationToken = default)
     {
-        return Ok(registeredSystem);
+        var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
+        if (registeredSystemGuid is null)
+        {
+            return BadRequest();
+        }
+
+        return Ok(registeredSystemGuid);
     }
 }

@@ -228,8 +228,26 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public Task<bool> CreateClient(string clientId)
+    public async Task<bool> CreateClient(string clientId)
     {
-        throw new NotImplementedException();
+        Guid insertedId = Guid.Parse(clientId);
+
+        const string QUERY = /*strpsql*/@"
+            INSERT INTO altinn_authentication.maskinporten_client(
+            client_id)
+            VALUES
+            (@new_client_id)";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            command.Parameters.AddWithValue("new_client_id", insertedId);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateClient // Exception");
+            throw;
+        }
     }
 }

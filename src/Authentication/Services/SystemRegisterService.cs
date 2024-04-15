@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
@@ -40,6 +41,12 @@ namespace Altinn.Platform.Authentication.Services
         public Task<bool> CreateClient(string clientId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.CreateClient(clientId);
+        }
+
+        /// <inheritdoc/>
+        public Task<Guid?> CreateRegisteredSystem( RegisteredSystem system, CancellationToken cancellation = default)
+        {
+            return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
     }
 }

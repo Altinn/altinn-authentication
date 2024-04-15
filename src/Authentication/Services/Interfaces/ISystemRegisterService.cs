@@ -36,5 +36,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">The Cancellationtoken</param>
         /// <returns></returns>
         Task<bool> CreateClient(string clientId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Inserts a new Registered System
+        /// </summary>
+        /// <param name="system">The descriptor DTO for a new Registered System</param>
+        /// <param name="cancellation">The Cancelation token</param>
+        /// <returns></returns>
+        Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default);
     }
 }
