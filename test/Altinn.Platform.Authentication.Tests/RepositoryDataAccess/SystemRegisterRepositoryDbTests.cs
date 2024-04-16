@@ -91,7 +91,7 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         Assert.True(guid is not null);
                 
         var succeed = await Repository.RenameRegisteredSystemByGuid((Guid)guid, friendlyId2);
-        //Assert.True(succeed);
+        Assert.Equal(1, succeed);
 
         var there = await Repository.GetRegisteredSystemById(friendlyId2);        
         Assert.Equal(friendlyId2, there?.SystemTypeId);         

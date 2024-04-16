@@ -133,9 +133,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("guid", id);
             command.Parameters.AddWithValue("newName", newName);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToInt)
-                .FirstOrDefaultAsync();
+            return await command.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
         {
