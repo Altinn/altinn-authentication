@@ -39,6 +39,8 @@ using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Yuniql.AspNetCore;
+using Yuniql.PostgreSql;
 
 ILogger logger;
 
@@ -72,6 +74,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddPersistanceLayer();
 
 var app = builder.Build();
+
+ConfigurePostgreSql();
 
 Configure();
 
@@ -400,9 +404,36 @@ void Configure()
     app.UseRouting();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.UseEndpoints(endpoints =>
+    app.MapControllers();
+    app.MapHealthChecks("/health");
+}
+
+void ConfigurePostgreSql()
+{
+    if (builder.Configuration.GetValue<bool>("PostgreSqlSettings:EnableDBConnection"))
     {
-        endpoints.MapControllers();
-        endpoints.MapHealthChecks("/health");
-    });
+        ConsoleTraceService traceService = new ConsoleTraceService { IsDebugEnabled = true };
+
+        string connectionString = string.Format(
+            builder.Configuration.GetValue<string>("PostgreSqlSettings:AdminConnectionString"),
+            builder.Configuration.GetValue<string>("PostgreSqlSettings:AuthenticationDbAdminPassword"));
+
+        string workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        if (builder.Environment.IsDevelopment())
+        {
+            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        }
+
+        app.UseYuniql(
+            new PostgreSqlDataService(traceService),
+            new PostgreSqlBulkImportService(traceService),
+            traceService,
+            new Configuration
+            {
+                Workspace = workspacePath,
+                ConnectionString = connectionString,
+                IsAutoCreateDatabase = false,
+                IsDebug = true,
+            });
+    }
 }
