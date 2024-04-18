@@ -123,7 +123,7 @@ namespace AltinnCore.Authentication.JwtCookie
                                 ValidateAudience = false,
                                 RequireExpirationTime = true,
                                 ValidateLifetime = true,
-                                ClockSkew = TimeSpan.Zero
+                                ClockSkew = TimeSpan.FromSeconds(10)
                             };
 
                             OpenIdConnectConfiguration configuration = await GetOidcConfiguration(provider.Value.WellKnownConfigEndpoint);
@@ -143,6 +143,7 @@ namespace AltinnCore.Authentication.JwtCookie
                 {
                     // Use standard configured OIDC config for JTWCookie provider from startup.
                     validationParameters = Options.TokenValidationParameters.Clone();
+                    validationParameters.ClockSkew = TimeSpan.FromSeconds(10);
                     OpenIdConnectConfiguration configuration = await Options.ConfigurationManager.GetConfigurationAsync(Context.RequestAborted);
 
                     if (configuration != null)

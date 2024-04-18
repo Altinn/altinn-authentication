@@ -135,7 +135,7 @@ namespace Altinn.Platform.Authentication.Tests
                 ValidateAudience = false,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.FromSeconds(10)
             };
 
             JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
@@ -159,7 +159,7 @@ namespace Altinn.Platform.Authentication.Tests
                 ValidateAudience = false,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.FromSeconds(10)
             };
 
             JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
@@ -189,7 +189,7 @@ namespace Altinn.Platform.Authentication.Tests
                 ValidateAudience = false,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.FromSeconds(10)
             };
 
             JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
