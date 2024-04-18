@@ -355,7 +355,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     ValidateAudience = false,
                     RequireExpirationTime = true,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = new TimeSpan(0, 0, 10)
                 };
 
                 ClaimsPrincipal originalPrincipal = _validator.ValidateToken(originalToken, validationParameters, out _);
@@ -400,7 +400,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     ValidateAudience = false,
                     RequireExpirationTime = true,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = new TimeSpan(0, 0, 10)
                 };
 
                 ClaimsPrincipal originalPrincipal = GetClaimsPrincipalAndValidateMaskinportenToken(originalToken, validationParameters, alternativeSigningKeys);
@@ -916,7 +916,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ValidateAudience = false,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = new TimeSpan(0, 0, 10)
             };
 
             _validator.ValidateToken(originalToken, validationParameters, out _);
