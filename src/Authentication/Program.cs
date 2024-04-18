@@ -222,7 +222,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
                  ValidateAudience = false,
                  RequireExpirationTime = true,
                  ValidateLifetime = true,
-                 ClockSkew = new TimeSpan(0, 0, 10)
+                 ClockSkew = TimeSpan.FromSeconds(10)
              };
 
              if (builder.Environment.IsDevelopment())
