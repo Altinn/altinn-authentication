@@ -43,4 +43,4 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         working-directory: src/jwtcookie/Authentication
         run: |
-          dotnet nuget push bin/Release/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ env.NUGET_API_KEY }}
+          dotnet nuget push bin/Release/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY"
