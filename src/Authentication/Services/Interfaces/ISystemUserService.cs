@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
 
@@ -48,4 +49,17 @@ public interface ISystemUserService
     /// <param name="request">The DTO describing the Product the Caller wants to create.</param> 
     /// <returns>Returns the number of rows affected</returns>
     Task<int> UpdateSystemUserById(SystemUserUpdateDto request);
+
+    /// <summary>
+    /// Used by IdPorten, to find if a given systemOrg owns a SystemUser Integration for a Vendor's Product, by ClientId.
+    /// ConsumerId is the first entry in the path.
+    /// SystemOrg is the second entry in the path.
+    /// ClientId is the third entry in the path.
+    /// </summary>
+    /// <param name="clientId">The unique id maintained by IdPorten tying their clients to the Registered Systems we maintain</param>        
+    /// <param name="consumerId">The legal number (Orgno) of the Vendor creating the Registered System (Accounting system)</param>
+    /// <param name="systemOrg">The legal number (Orgno) of the party owning the System User Integration</param>
+    /// <param name="cancellationToken">Cancellationtoken</param>/// 
+    /// <returns>The SystemUserIntegration model API DTO</returns>
+    Task<SystemUser> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken);
 }

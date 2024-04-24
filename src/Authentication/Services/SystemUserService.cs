@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Core.Models;
@@ -105,6 +106,14 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return await _repository.UpdateProductName(Guid.Parse(request.Id), request.ProductName);
+        }
+
+        /// <inheritdoc/>
+        public Task<SystemUser> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken)
+        {
+
+
+
         }
     }
 }
