@@ -91,7 +91,6 @@ namespace Altinn.Platform.Authentication.Services
         /// Replaces the values for the existing system user with those from the update 
         /// </summary>
         /// <returns>Number of rows affected</returns>
-
         public async Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
             SystemUser search = await _repository.GetSystemUserById(Guid.Parse(request.Id));
@@ -111,9 +110,17 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<SystemUser> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken)
         {
-
-
-
+            return Task.FromResult(new SystemUser
+            {
+                Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
+                IntegrationTitle = "Et helt annet system",
+                ProductName = "supplier3_product_name",
+                OwnedByPartyId = "orgno:" + systemOrg,
+                IsDeleted = false,
+                ClientId = Guid.Parse(clientId),
+                SupplierName = "Supplier3 Name",
+                SupplierOrgNo = consumerId
+            });
         }
     }
 }

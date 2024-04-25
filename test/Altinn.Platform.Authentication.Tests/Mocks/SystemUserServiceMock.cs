@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Core.Models;
@@ -141,6 +142,21 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             systemUser3
         };
             return systemUserList;
+        }
+
+        public Task<SystemUser> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken)
+        {
+            return Task.FromResult( new SystemUser 
+            {
+                Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
+                IntegrationTitle = "Et helt annet system",
+                ProductName = "supplier3_product_name",
+                OwnedByPartyId = "orgno:" + systemOrg,
+                IsDeleted = false,
+                ClientId = Guid.Parse(clientId),
+                SupplierName = "Supplier3 Name",
+                SupplierOrgNo = consumerId
+            });
         }
     }
 }
