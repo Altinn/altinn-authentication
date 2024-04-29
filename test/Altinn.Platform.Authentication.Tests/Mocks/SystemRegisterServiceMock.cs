@@ -137,11 +137,18 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return list;
         }
 
+        /// <summary>
+        /// The ClientId list is maintained to ensure uniqueness
+        /// </summary>
+        /// <param name="clientId">A Guid inserted by Idporten</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns></returns>
         public Task<bool> CreateClient(string clientId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(true);
         }
 
+        /// <inheritdoc/>
         public Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default)
         {
             throw new NotImplementedException();

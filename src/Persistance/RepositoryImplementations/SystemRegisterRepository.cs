@@ -269,7 +269,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateClient // Exception");
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // RetrieveGuidFromStringId // Exception");
             throw;
         }
     }
