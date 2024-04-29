@@ -24,6 +24,12 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         base.ConfigureServices(services);
     }
 
+    /// <summary>
+    /// Inserts a new Product / Registered System, which define the needed
+    /// Rights to be delegated by the end user to the 
+    /// Product (identified by ClientId in Idporten) .
+    /// </summary>
+    /// <returns></returns>
     [Fact]
     public async Task SystemRegister_InsertRegisteredSystem()
     {
@@ -44,6 +50,11 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         Assert.Equal("Awesome", isitthere.SystemVendor);
     }
 
+    /// <summary>
+    /// Retrieves the list of all available ( not inactivated / soft deleted)
+    /// Products / Registered Systems that can be selected for Integration.
+    /// </summary>
+    /// <returns></returns>
     [Fact]
     public async Task SystemRegister_GetAllActiveSystems()
     {
@@ -71,6 +82,11 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         Assert.NotEmpty(res);
     }
 
+
+    /// <summary>
+    /// Test renaming a Product
+    /// </summary>
+    /// <returns></returns>
     [Fact]
     public async Task SystemRegister_RenameRegisteredSystemById()
     {

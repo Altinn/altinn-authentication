@@ -29,6 +29,10 @@ public class SystemUserRepositoryDbTests : DbTestBase
         base.ConfigureServices(services);
     }
 
+    /// <summary>
+    /// Inserts a new SystemUser, using the same input expected from GUI or API
+    /// </summary>
+    /// <returns></returns>
     [Fact]
     public async Task InsertSystemUser()
     {
@@ -52,6 +56,10 @@ public class SystemUserRepositoryDbTests : DbTestBase
         Assert.True(systemUserId is not null);
     }
 
+    /// <summary>
+    /// Used to populate the Overview page for a specific user
+    /// </summary>
+    /// <returns></returns>
     [Fact]
     public async Task GetAllActiveSystemUsersForParty()
     {
@@ -77,6 +85,10 @@ public class SystemUserRepositoryDbTests : DbTestBase
         Assert.True(res is not null && res.Count > 0 && res.Find((SystemUser usr) => usr.Id == systemUserId.ToString()) is not null);
     }
 
+    /// <summary>
+    /// Retrieves a specific SystemUserIntegration
+    /// </summary>
+    /// <returns></returns>
     [Fact]
     public async Task GetSystemUserById()
     {
@@ -102,8 +114,13 @@ public class SystemUserRepositoryDbTests : DbTestBase
         Assert.True(systemUser is not null && systemUser.Id == systemUserId.ToString());
     }
 
+
+    /// <summary>
+    /// Sets the SystemUserIntegration to be in a "deleted" state.
+    /// </summary>
+    /// <returns></returns>
     [Fact]
-    public async Task SetDeleteSystemUserById()
+    public async Task SoftDeleteSystemUserById()
     {
         Guid guid = Guid.NewGuid();
 
