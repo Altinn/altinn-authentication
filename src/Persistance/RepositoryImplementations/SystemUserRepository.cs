@@ -34,9 +34,9 @@ internal class SystemUserRepository : ISystemUserRepository
     public async Task SetDeleteSystemUserById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
-                UPDATE altinn_authentication.system_user_integration
+                UPDATE altinn_authentication_integration.system_user_integration
 	            SET is_deleted = TRUE
-        	    WHERE altinn_authentication.system_user_integration.system_user_integration_id = @system_user_integration_id;
+        	    WHERE altinn_authentication_integration.system_user_integration.system_user_integration_id = @system_user_integration_id;
                 ";
 
         try
@@ -70,7 +70,7 @@ internal class SystemUserRepository : ISystemUserRepository
 		            client_id,
 		            is_deleted,
 		            created                    
-                FROM altinn_authentication.system_user_integration sui 
+                FROM altinn_authentication_integration.system_user_integration sui 
 	            WHERE sui.owned_by_party_id = @owned_by_party_id	
 	                  AND sui.is_deleted = false;
                 ";
@@ -105,7 +105,7 @@ internal class SystemUserRepository : ISystemUserRepository
 		        client_id,
 		        is_deleted,
 		        created
-	        FROM altinn_authentication.system_user_integration sui 
+	        FROM altinn_authentication_integration.system_user_integration sui 
 	        WHERE sui.system_user_integration_id = @system_user_integration_id
 	            AND sui.is_deleted = false;
             ";
@@ -130,7 +130,7 @@ internal class SystemUserRepository : ISystemUserRepository
     public async Task<Guid> InsertSystemUser(SystemUser toBeInserted)
     {
         const string QUERY = /*strpsql*/@"            
-                INSERT INTO altinn_authentication.system_user_integration(
+                INSERT INTO altinn_authentication_integration.system_user_integration(
                     integration_title,
                     product_name,
                     owned_by_party_id,
@@ -172,7 +172,7 @@ internal class SystemUserRepository : ISystemUserRepository
     public async Task<int> UpdateProductName(Guid guid, string productName)
     {
         const string QUERY = /*strspsql*/@"
-                UPDATE altinn_authentication.system_user_integration
+                UPDATE altinn_authentication_integration.system_user_integration
                 SET product_name = @product_name
                 WHERE system_user_integration_id = @id
                 ";

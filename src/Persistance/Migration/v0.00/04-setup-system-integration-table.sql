@@ -1,5 +1,5 @@
-﻿--Table: altinn_authentication.system_integration
-CREATE TABLE IF NOT EXISTS altinn_authentication.system_user_integration
+﻿--Table: altinn_authentication_integration.system_integration
+CREATE TABLE IF NOT EXISTS altinn_authentication_integration.system_user_integration
 (
 	system_user_integration_id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
 	integration_title varchar(255) NOT NULL,
