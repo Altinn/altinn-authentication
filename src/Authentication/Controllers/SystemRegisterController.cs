@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Altinn.Authentication.Controllers;
@@ -12,6 +13,7 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for SystemRegister
 /// </summary>
+[Authorize]
 [Route("authentication/api/v1/systemregister")]
 [ApiController]
 public class SystemRegisterController : ControllerBase
@@ -31,8 +33,7 @@ public class SystemRegisterController : ControllerBase
     /// Retrieves the List of all the Registered Systems, except those marked as deleted.
     /// </summary>
     /// <param name="cancellationToken">The Cancellation Token</param>
-    /// <returns></returns>
-    //[Authorize]
+    /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
     public async Task<ActionResult> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
@@ -64,8 +65,10 @@ public class SystemRegisterController : ControllerBase
 
     /// <summary>
     /// Inserts a new unique Maskinporten-ClientId, these are maintained by Maskinporten, and are inserted to our db by them.
+    /// 
     /// </summary>
-    /// <param name="clientId">The Client_Ids are maintained by Maskinporten, but we need to reference them in the db</param>
+    /// <param name="clientId">The Client_Ids are maintained by Maskinporten, they are the key Maskinporten use
+    /// to uniquely identify a SystemVendor's Registered Systems.</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
     [HttpPost("client/{clientId}")]

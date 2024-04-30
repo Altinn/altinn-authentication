@@ -21,7 +21,7 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
-using Altinn.Platform.Register.Models;
+using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using Azure;
 using Microsoft.AspNetCore.Authentication;
@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Get_ListForPartyId_ReturnsListOK()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 1;
@@ -84,7 +84,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Get_ListForPartyId_ReturnsNotFound()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 0;
@@ -99,7 +99,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Get_Single_ReturnsOK()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 1;
@@ -121,7 +121,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Get_Single_ReturnsNotFound()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 1;
@@ -142,7 +142,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Delete_ReturnsOk()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 1;
@@ -166,7 +166,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Delete_ReturnsNotFound()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 1;
@@ -186,7 +186,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Update_ReturnsOk()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 1;
@@ -224,7 +224,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Update_ReturnsNotFound()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             SystemUser doesNotExist = new() { Id = "123" };
@@ -243,7 +243,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Create_ReturnsOk()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 1;
@@ -272,7 +272,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Create_ReturnsNotFound()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
             int partyId = 1;
@@ -364,32 +364,5 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             return authenticationEvent;
         }
-
-        private static string TestTokenUtil() 
-        {
-            // Arrange
-            List<Claim> claims = new();
-
-            string orgNr = "974760223";
-
-            object iso6523Consumer = new
-            {
-                authority = "iso6523-actorid-upis",
-                ID = $"9908:{orgNr}"
-            };
-
-            claims.Add(new Claim("consumer", JsonSerializer.Serialize(iso6523Consumer)));
-            claims.Add(new Claim("client_orgno", orgNr));
-            claims.Add(new Claim("scope", "altinn:instances.write altinn:instances.read"));
-            claims.Add(new Claim("iss", "https://ver2.maskinporten.no/"));
-            claims.Add(new Claim("jti", "fe155387-c5f2-42e9-943a-811789db663a"));
-
-            ClaimsIdentity identity = new(OrganisationIdentity);
-            identity.AddClaims(claims);
-            ClaimsPrincipal externalPrincipal = new(identity);
-
-            return JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
-        }
-
     }
 }

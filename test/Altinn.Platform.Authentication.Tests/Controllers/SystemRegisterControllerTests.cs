@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
+using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -51,6 +53,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ListofAll()
         {
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);            
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead );
             List<RegisteredSystem> list = JsonSerializer.Deserialize<List<RegisteredSystem>>(await response.Content.ReadAsStringAsync(), jsonOptions);
@@ -62,6 +67,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             string name = "Awesome_Tax";
             HttpClient client = GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/product/{name}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<DefaultRight> list = JsonSerializer.Deserialize<List<DefaultRight>>(await response.Content.ReadAsStringAsync(), jsonOptions);
