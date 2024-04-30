@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS altinn_authentication_integration.system_user_integra
 	UNIQUE (owned_by_party_id, product_name),
 	CONSTRAINT fk_integrations_registeredsystems
 	FOREIGN KEY (product_name)
-	REFERENCES altinn_authentication.system_register (registered_system_id)
+	REFERENCES altinn_authentication_integration.system_register (registered_system_id)
 	ON DELETE CASCADE,
 	CONSTRAINT fk_integrations_clientids
 	FOREIGN KEY (client_id)
