@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS altinn_authentication_integration.system_user_integra
 	ON DELETE CASCADE,
 	CONSTRAINT fk_integrations_clientids
 	FOREIGN KEY (client_id)
-	REFERENCES altinn_authentication.maskinporten_client (client_id)
+	REFERENCES altinn_authentication_integration.maskinporten_client (client_id)
 	ON DELETE NO ACTION
 )
 
