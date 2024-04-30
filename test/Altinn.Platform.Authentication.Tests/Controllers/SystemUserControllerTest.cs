@@ -6,12 +6,9 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Claims;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Common.AccessToken.Services;
-using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Controllers;
 using Altinn.Platform.Authentication.Core.Models;
@@ -23,17 +20,13 @@ using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
-using Azure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Azure.KeyVault.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Microsoft.FeatureManagement;
 using Moq;
 using Xunit;
 
@@ -44,8 +37,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     /// </summary>
     public class SystemUserControllerTest :IClassFixture<WebApplicationFactory<SystemUserController>>
     {
-        private const string OrganisationIdentity = "OrganisationLogin";
-
         private readonly WebApplicationFactory<SystemUserController> _factory;
         private readonly Mock<ISystemUserService> _systemUserService;
         private readonly Mock<IUserProfileService> _userProfileService;
