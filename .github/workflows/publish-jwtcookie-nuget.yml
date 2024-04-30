@@ -1,0 +1,45 @@
+name: Pack and publish JWTCookieAuthentication nuget package
+
+on:   
+  release:
+    types:
+      - published
+
+jobs:
+  build-pack:
+    if: startsWith(github.ref, 'refs/tags/JWTCookieAuthentication-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+
+      - name: Build
+        working-directory: src/jwtcookie/Authentication
+        run: |
+          dotnet build --configuration Release
+
+      - name: Pack JWTCookieAuthentication
+        working-directory: src/jwtcookie/Authentication
+        run: |
+          dotnet pack --configuration Release --no-build
+
+      - name: Create artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget package
+          path: src/jwtcookie/Authentication/bin/Release/*.nupkg
+          if-no-files-found: error
+           
+      - name: publish JWTCookieAuthentication
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        working-directory: src/jwtcookie/Authentication
+        run: |
+          dotnet nuget push bin/Release/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY"
