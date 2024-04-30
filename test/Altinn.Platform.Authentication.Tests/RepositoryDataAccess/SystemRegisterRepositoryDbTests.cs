@@ -82,7 +82,6 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         Assert.NotEmpty(res);
     }
 
-
     /// <summary>
     /// Test renaming a Product
     /// </summary>

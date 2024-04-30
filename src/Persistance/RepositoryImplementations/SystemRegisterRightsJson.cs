@@ -1,7 +1,7 @@
 ﻿namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations
 {
     /// <summary>
-    /// DTO used when serializing DefaultRights json to the db
+    /// DTO used when serializing DefaultRight json to and from the db
     /// </summary>
     internal class SystemRegisterRightsJson
     {

@@ -114,7 +114,6 @@ public class SystemUserRepositoryDbTests : DbTestBase
         Assert.True(systemUser is not null && systemUser.Id == systemUserId.ToString());
     }
 
-
     /// <summary>
     /// Sets the SystemUserIntegration to be in a "deleted" state.
     /// </summary>

@@ -6,7 +6,7 @@
     public class DefaultRight
     {
         /// <summary>
-        /// For instance Read, Write, Sign
+        /// For instance: Read, Write, Sign
         /// Optional
         /// </summary>                
         public string? ActionRight { get; set; }

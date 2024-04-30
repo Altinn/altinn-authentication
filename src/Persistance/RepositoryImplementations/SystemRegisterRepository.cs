@@ -210,7 +210,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         return new ValueTask<DefaultRight>(new DefaultRight
         {
             ServiceProvider = arrayElement[0],
-            Right = arrayElement[1]
+            ActionRight = arrayElement[1]
         });
     }
 

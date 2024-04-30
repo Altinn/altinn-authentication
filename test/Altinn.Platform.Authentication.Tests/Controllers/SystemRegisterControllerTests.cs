@@ -66,8 +66,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<DefaultRight> list = JsonSerializer.Deserialize<List<DefaultRight>>(await response.Content.ReadAsStringAsync(), jsonOptions);
             Assert.Equal("Skatteetaten", list[0].ServiceProvider);
-            Assert.Equal("Read", list[0].Right);
-            Assert.Equal("MVA", list[0].Resource);
+            Assert.Equal("Read", list[0].ActionRight);
+            Assert.Equal("mva", list[0].Resources[0].Value);
         }
 
         private HttpClient GetTestClient(ISblCookieDecryptionService sblCookieDecryptionService, IUserProfileService userProfileService, IFeatureManager featureManager = null)
