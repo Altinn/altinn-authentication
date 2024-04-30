@@ -424,11 +424,6 @@ void ConfigurePostgreSql()
 
         string workspacePath = Path.Combine(FindWorkspace(), builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
 
-        //if (builder.Environment.IsDevelopment())
-        //{
-        //    workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
-        //}
-
         var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
         var user = connectionStringBuilder.Username;
 

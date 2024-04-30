@@ -6,14 +6,15 @@
     public class DefaultRight
     {
         /// <summary>
-        /// The identifier for the Right
-        /// </summary>
-        public string Right { get; set; } = string.Empty;
+        /// For instance Read, Write, Sign
+        /// Optional
+        /// </summary>                
+        public string? ActionRight { get; set; }
 
         /// <summary>
-        /// The resource at the Service Provider which the Right is for.
+        /// The list of resources at the Service Provider which the Right is for.
         /// </summary>
-        public string Resource { get; set; } = string.Empty;
+        public List<AttributePair> Resources { get; set; } = [];
 
         /// <summary>
         /// The identifier for the Service Provider of the Resource.        

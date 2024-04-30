@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
@@ -38,15 +36,29 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 [
                     new()
                     {
+                        ActionRight = "Read",
                         ServiceProvider = "Skatteetaten",
-                        Resource = "MVA",
-                        Right = "Read"
+                        Resources =
+                        [
+                            new AttributePair 
+                            { 
+                                Id = "urn:altinn:app", 
+                                Value = "mva"
+                            }
+                        ]
                     },
                     new()
                     {
+                        ActionRight = "Write",
                         ServiceProvider = "Skatteetaten",
-                        Resource = "MVA",
-                        Right = "Write"
+                        Resources =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:app",
+                                Value = "mva"
+                            }
+                        ]
                     }
                 ]
             };
@@ -56,19 +68,33 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Wonderful",
                 SystemTypeId = "Wonderful_Tax",
                 Description = "Wonderful_Tax",
-                DefaultRights = 
-                 [
+                DefaultRights =
+                [
                     new()
                     {
+                        ActionRight = "Read",
                         ServiceProvider = "Skatteetaten",
-                        Resource = "MVA",
-                        Right = "Read"
+                        Resources =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:app",
+                                Value = "mva"
+                            }
+                        ]
                     },
                     new()
                     {
+                        ActionRight = "Write",
                         ServiceProvider = "Skatteetaten",
-                        Resource = "MVA",
-                        Right = "Write"
+                        Resources =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:app",
+                                Value = "mva"
+                            }
+                        ]
                     }
                 ]
             };
@@ -78,19 +104,33 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Brilliant",
                 SystemTypeId = "Brilliant_HR",
                 Description = "Brilliant_HR",
-                DefaultRights = 
-                 [
+                DefaultRights =
+                [
                     new()
                     {
+                        ActionRight = "Read",
                         ServiceProvider = "Skatteetaten",
-                        Resource = "Lønn",
-                        Right = "Read"
+                        Resources =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:app",
+                                Value = "lonn"
+                            }
+                        ]
                     },
                     new()
                     {
+                        ActionRight = "Write",
                         ServiceProvider = "Skatteetaten",
-                        Resource = "Lønn",
-                        Right = "Write"
+                        Resources =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:app",
+                                Value = "lonn"
+                            }
+                        ]
                     }
                 ]
             };
@@ -100,27 +140,41 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SystemVendor = "Fantastic",
                 SystemTypeId = "Fantastic_HR",
                 Description = "Fantastic_HR",
-                DefaultRights = 
-                 [
+                DefaultRights =
+                [
                     new()
                     {
+                        ActionRight = "Read",
                         ServiceProvider = "Skatteetaten",
-                        Resource = "Lønn",
-                        Right = "Read"
+                        Resources =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:app",
+                                Value = "lonn"
+                            }
+                        ]
                     },
                     new()
                     {
+                        ActionRight = "Write",
                         ServiceProvider = "Skatteetaten",
-                        Resource = "Lønn",
-                        Right = "Write"
+                        Resources =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:app",
+                                Value = "lonn"
+                            }
+                        ]
                     }
                 ]
             };
 
-            List<RegisteredSystem> list = new()
-            {
-                reg1, reg2, reg3, reg4
-            };
+            List<RegisteredSystem> list =
+                [
+                    reg1, reg2, reg3, reg4
+                ];
 
             return list;
         }
@@ -131,7 +185,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
              
             var sys = _registeredSystemsMockList.Find(r => r.SystemTypeId.Equals(systemId));
 
-            List<DefaultRight> list = new();
+            List<DefaultRight> list = [];
             list.AddRange(sys.DefaultRights);
 
             return list;
