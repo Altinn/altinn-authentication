@@ -37,5 +37,10 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// The array of Rights versus System Provider's Resources needed to use this Registered System
         /// </summary>
         public List<DefaultRight> DefaultRights { get; set; } = [];
+
+        /// <summary>
+        /// Registered Systems can be set to Soft Deleted
+        /// </summary>
+        public bool SoftDeleted { get; set; } = false;
     }
 }

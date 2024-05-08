@@ -111,4 +111,29 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         var there = await Repository.GetRegisteredSystemById(friendlyId2);        
         Assert.Equal(friendlyId2, there?.SystemTypeId);         
     }
+
+    [Fact] 
+    public async Task SystemRegister_SetDeleteRegisteredSystemById()
+    {
+        string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
+
+        Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
+            new RegisteredSystem
+            {
+                Description = "Test",
+                SystemTypeId = friendlyId,
+                SystemVendor = "Awesome"
+            });
+
+        Assert.NotEqual(Guid.Empty, registeredSystemId);
+
+        RegisteredSystem? isitthere = await Repository.GetRegisteredSystemById(friendlyId);
+        Assert.True(isitthere is not null);
+        Assert.Equal("Awesome", isitthere.SystemVendor);
+
+        await Repository.SetDeleteRegisteredSystemById(friendlyId);
+
+        var there = await Repository.GetRegisteredSystemById(friendlyId);        
+        Assert.True(there?.SoftDeleted);
+    }
 }

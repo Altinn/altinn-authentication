@@ -46,7 +46,7 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_user_integration_id", id);
 
             await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)   
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)

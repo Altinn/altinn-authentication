@@ -95,7 +95,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SELECT 
                 registered_system_id,
                 system_vendor, 
-                friendly_product_name
+                friendly_product_name,
+                is_deleted
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.registered_system_id = @registered_system_id;
         ";
@@ -220,7 +221,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
-            Description = reader.GetFieldValue<string>("friendly_product_name")
+            Description = reader.GetFieldValue<string>("friendly_product_name"),
+            SoftDeleted = reader.GetFieldValue<bool>("is_deleted")
         });
     }
 
