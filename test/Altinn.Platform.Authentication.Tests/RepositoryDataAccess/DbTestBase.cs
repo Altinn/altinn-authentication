@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Persistance.Configuration;
+using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -14,7 +15,9 @@ using Yuniql.Core;
 #nullable enable
 namespace Altinn.Platform.Persistence.Tests;
 
-public abstract class DbTestBase : IAsyncLifetime
+public abstract class DbTestBase : 
+    IAsyncLifetime,
+    IClassFixture<DbFixture>
 {
     private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder()
         .WithImage("docker.io/postgres:15.4-alpine")

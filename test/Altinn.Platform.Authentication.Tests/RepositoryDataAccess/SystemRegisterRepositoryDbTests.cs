@@ -31,7 +31,7 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
     /// Product (identified by ClientId in Idporten) .
     /// </summary>
     /// <returns></returns>
-    //[Fact]
+    [Fact]
     public async Task SystemRegister_InsertRegisteredSystem()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
@@ -72,7 +72,7 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
     /// Products / Registered Systems that can be selected for Integration.
     /// </summary>
     /// <returns></returns>
-    //[Fact]
+    [Fact]
     public async Task SystemRegister_GetAllActiveSystems()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
@@ -103,7 +103,7 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
     /// Test renaming a Product
     /// </summary>
     /// <returns></returns>
-    //[Fact]
+    [Fact]
     public async Task SystemRegister_RenameRegisteredSystemById()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
@@ -129,7 +129,7 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         Assert.Equal(friendlyId2, there?.SystemTypeId);         
     }
 
-    //[Fact] 
+    [Fact] 
     public async Task SystemRegister_SetDeleteRegisteredSystemById()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
@@ -154,7 +154,7 @@ public class SystemRegisterRepositoryDbTests : DbTestBase
         Assert.True(there?.SoftDeleted);
     }
 
-    //[Fact]
+    [Fact]
     public async Task SystemRegister_GetDefaultRightsForRegisteredSystem()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
