@@ -207,4 +207,3 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
     }
 }
-
