@@ -15,7 +15,8 @@ using Xunit;
 namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 
 #nullable enable
-public class SystemUserRepositoryDbTests : DbTestBase
+public class SystemUserRepositoryDbTests(DbFixture dbFixture)
+    : DbTestBase(dbFixture)
 {
     protected ISystemUserRepository Repository => Services.GetRequiredService<ISystemUserRepository>();
 

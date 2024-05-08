@@ -79,7 +79,7 @@ public class DbFixture
                 var configuration = new Yuniql.AspNetCore.Configuration
                 {
                     Platform = SUPPORTED_DATABASES.POSTGRESQL,
-                    Workspace = Path.Combine(FindWorkspace(), "src", "Altinn.ResourceRegistry.Persistence", "Migration"),
+                    Workspace = Path.Combine(FindWorkspace(), "src", "Persistance", "Migration"),
                     ConnectionString = connectionString,
                     IsAutoCreateDatabase = false,
                     Environment = "integrationtest",
