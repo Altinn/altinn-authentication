@@ -66,6 +66,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="appsettings.test.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="selfSignedEncryptionTestCertificate.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

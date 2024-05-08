@@ -422,29 +422,16 @@ void ConfigurePostgreSql()
             builder.Configuration.GetValue<string>("PostgreSqlSettings:AdminConnectionString"),
             builder.Configuration.GetValue<string>("PostgreSqlSettings:AuthenticationDbAdminPassword"));
 
-        string workspacePath = Path.Combine(FindWorkspace(), builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        string workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        if (builder.Environment.IsDevelopment())
+        {
+            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        }
 
         var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
         var user = connectionStringBuilder.Username;
 
-        if (builder.Environment.IsDevelopment())
-        {
-            app.UseYuniql(
-            new PostgreSqlDataService(traceService),
-            new PostgreSqlBulkImportService(traceService),
-            traceService,
-            new Configuration
-            {
-                Workspace = workspacePath,
-                ConnectionString = connectionString,
-                IsAutoCreateDatabase = false,
-                IsDebug = true,
-            });
-        }
-
-        if (builder.Environment.IsProduction())
-        {
-            app.UseYuniql(
+        app.UseYuniql(
             new PostgreSqlDataService(traceService),
             new PostgreSqlBulkImportService(traceService),
             traceService,
@@ -458,23 +445,13 @@ void ConfigurePostgreSql()
                 Tokens = [
                     KeyValuePair.Create("YUNIQL-USER", user)
                 ]
-            });
-        }
-
-        static string FindWorkspace()
-        {
-            var dir = Environment.CurrentDirectory;
-            while (dir != null)
-            {
-                if (Directory.Exists(Path.Combine(dir, ".git")))
-                {
-                    return dir;
-                }
-
-                dir = Directory.GetParent(dir)?.FullName;
-            }
-
-            throw new InvalidOperationException("Workspace directory not found");
-        }
+            });            
     }
+}
+
+/// <summary>
+/// Startup class.
+/// </summary>
+public partial class Program
+{
 }

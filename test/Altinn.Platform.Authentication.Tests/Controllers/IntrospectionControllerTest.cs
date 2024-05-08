@@ -13,7 +13,7 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Helpers;
-
+using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using AltinnCore.Authentication.Constants;
 using AltinnCore.Authentication.JwtCookie;
 
@@ -28,40 +28,48 @@ using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
-    public class IntrospectionControllerTest : IClassFixture<WebApplicationFactory<IntrospectionController>>
+    public class IntrospectionControllerTest(DbFixture dbFixture, WebApplicationFixture webApplicationFixture) 
+        : WebApplicationTests(dbFixture,  webApplicationFixture)
     {
-        private readonly WebApplicationFactory<IntrospectionController> _factory;
-        private readonly Mock<IEFormidlingAccessValidator> _eformidlingValidatorService;
+        private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
+        private readonly Mock<IEFormidlingAccessValidator> _eformidlingValidatorService = new();
         private readonly string _baseUrl = "/authentication/api/v1/introspection";
-        private readonly ClaimsPrincipal _testPrincipal;
-        private readonly JsonSerializerOptions _options;
+        
+        protected override void ConfigureServices(IServiceCollection services)
+        {
+            base.ConfigureServices(services);
+
+            services.AddSingleton<IEFormidlingAccessValidator>(_eformidlingValidatorService.Object);
+            services.AddSingleton<IAuthentication, AuthenticationCore>();            
+            services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
+        }
 
         /// <summary>
         /// Initialises a new instance of the <see cref="IntrospectionControllerTest"/> class with the given WebApplicationFactory.
         /// </summary>
         /// <param name="factory">The WebApplicationFactory to use when creating a test server.</param>   
-        public IntrospectionControllerTest(WebApplicationFactory<IntrospectionController> factory)
-        {
-            _factory = factory;
-            _eformidlingValidatorService = new Mock<IEFormidlingAccessValidator>();
+        //public IntrospectionControllerTest(WebApplicationFactory<IntrospectionController> factory)
+        //{
+        //    _factory = factory;
+        //    _eformidlingValidatorService = new Mock<IEFormidlingAccessValidator>();
 
-            List<Claim> claims = new List<Claim>();
-            string issuer = "www.altinn.no";
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, "1337", ClaimValueTypes.String, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.UserId, "1337", ClaimValueTypes.String, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, "1337", ClaimValueTypes.Integer32, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "Mock", ClaimValueTypes.String, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "2", ClaimValueTypes.Integer32, issuer));
+        //    List<Claim> claims = new List<Claim>();
+        //    string issuer = "www.altinn.no";
+        //    claims.Add(new Claim(ClaimTypes.NameIdentifier, "1337", ClaimValueTypes.String, issuer));
+        //    claims.Add(new Claim(AltinnCoreClaimTypes.UserId, "1337", ClaimValueTypes.String, issuer));
+        //    claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, "1337", ClaimValueTypes.Integer32, issuer));
+        //    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "Mock", ClaimValueTypes.String, issuer));
+        //    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "2", ClaimValueTypes.Integer32, issuer));
 
-            ClaimsIdentity identity = new ClaimsIdentity("mock");
-            identity.AddClaims(claims);
-            _testPrincipal = new ClaimsPrincipal(identity);
+        //    ClaimsIdentity identity = new ClaimsIdentity("mock");
+        //    identity.AddClaims(claims);
+        //    _testPrincipal = new ClaimsPrincipal(identity);
 
-            _options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-        }
+        //    _options = new JsonSerializerOptions
+        //    {
+        //        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        //    };
+        //}
 
         /// <summary>
         /// Scenario : Endpoint called with token hint `eFormidlingAccessToken`
@@ -94,9 +102,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             };
 
             requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-            HttpClient client = GetTestClient(_eformidlingValidatorService.Object);
+            HttpClient client = CreateClient();
 
-            string token = JwtTokenMock.GenerateToken(_testPrincipal, TimeSpan.FromMinutes(2));
+            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2));
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             // Act
@@ -134,9 +142,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
-            HttpClient client = GetTestClient(_eformidlingValidatorService.Object);
+            HttpClient client = CreateClient();
 
-            string token = JwtTokenMock.GenerateToken(_testPrincipal, TimeSpan.FromMinutes(2));
+            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2));
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             // Act
@@ -159,7 +167,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task ValidateToken_NoBearerToken_Unauthorized()
         {
             // Arrange                 
-            HttpClient client = GetTestClient(_eformidlingValidatorService.Object);
+            HttpClient client = CreateClient();
 
             // Act
             HttpResponseMessage res = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, _baseUrl));
@@ -168,19 +176,35 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
         }
 
-        private HttpClient GetTestClient(IEFormidlingAccessValidator eFormidlingAccessValidatorMock)
-        {
-            HttpClient client = _factory.WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureTestServices(services =>
-                {
-                    services.AddSingleton<IAuthentication, AuthenticationCore>();
-                    services.AddSingleton(eFormidlingAccessValidatorMock);
-                    services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
-                });
-            }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        //private HttpClient GetTestClient(IEFormidlingAccessValidator eFormidlingAccessValidatorMock)
+        //{
+        //    HttpClient client = _factory.WithWebHostBuilder(builder =>
+        //    {
+        //        builder.ConfigureTestServices(services =>
+        //        {
+        //            services.AddSingleton<IAuthentication, AuthenticationCore>();
+        //            services.AddSingleton(eFormidlingAccessValidatorMock);
+        //            services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
+        //        });
+        //    }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-            return client;
+        //    return client;
+        //}
+
+        private ClaimsPrincipal GetTestPrincipal()
+        {
+            List<Claim> claims = new List<Claim>();
+            string issuer = "www.altinn.no";
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, "1337", ClaimValueTypes.String, issuer));
+            claims.Add(new Claim(AltinnCoreClaimTypes.UserId, "1337", ClaimValueTypes.String, issuer));
+            claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, "1337", ClaimValueTypes.Integer32, issuer));
+            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "Mock", ClaimValueTypes.String, issuer));
+            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "2", ClaimValueTypes.Integer32, issuer));
+
+            ClaimsIdentity identity = new ClaimsIdentity("mock");
+            identity.AddClaims(claims);
+            return new ClaimsPrincipal(identity);
         }
     }
 }
+
