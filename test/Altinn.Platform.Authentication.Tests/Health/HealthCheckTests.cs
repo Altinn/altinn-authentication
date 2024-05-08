@@ -3,7 +3,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Health;
-
+using Altinn.Platform.Authentication.Tests;
+using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Xunit;
@@ -13,18 +14,10 @@ namespace Altinn.Platform.Authentication.UnitTest
     /// <summary>
     /// Health check 
     /// </summary>
-    public class HealthCheckTests : IClassFixture<WebApplicationFactory<HealthCheck>>
+    public class HealthCheckTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
+        : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private readonly WebApplicationFactory<HealthCheck> _factory;
-
-        /// <summary>
-        /// Default constructor
-        /// </summary>
-        /// <param name="factory">The web applicaiton factory</param>
-        public HealthCheckTests(WebApplicationFactory<HealthCheck> factory)
-        {
-            _factory = factory;
-        }
 
         /// <summary>
         /// Verify that component responds on health check
@@ -33,7 +26,7 @@ namespace Altinn.Platform.Authentication.UnitTest
         [Fact]
         public async Task VerifyHeltCheck_OK()
         {
-            HttpClient client = GetTestClient();
+            HttpClient client = CreateClient();
 
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "/health")
             {
@@ -42,18 +35,6 @@ namespace Altinn.Platform.Authentication.UnitTest
             HttpResponseMessage response = await client.SendAsync(httpRequestMessage);
             await response.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        }
-
-        private HttpClient GetTestClient()
-        {
-            HttpClient client = _factory.WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureTestServices(services =>
-                {
-                });
-            }).CreateClient();
-
-            return client;
         }
     }
 }

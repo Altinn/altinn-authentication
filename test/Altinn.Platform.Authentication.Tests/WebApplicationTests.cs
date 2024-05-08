@@ -31,7 +31,7 @@ public abstract class WebApplicationTests
     protected IServiceProvider Services => _scope!.ServiceProvider;
 
     protected HttpClient CreateClient()
-        => _webApp!.CreateClient();
+        => _webApp!.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
     protected virtual ValueTask DisposeAsync()
     {
