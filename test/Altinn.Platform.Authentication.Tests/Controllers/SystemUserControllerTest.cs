@@ -42,7 +42,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     public class SystemUserControllerTest(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
-
         private readonly Mock<IUserProfileService> _userProfileService = new Mock<IUserProfileService>();
         private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new Mock<ISblCookieDecryptionService>();
         private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);

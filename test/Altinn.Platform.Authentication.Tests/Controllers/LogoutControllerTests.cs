@@ -110,7 +110,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Logout_TimedOut_RedirectToSBL()
         {
             // Arrange
-            HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            HttpClient client = CreateClient();// GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
 
