@@ -50,6 +50,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<TimeProvider> timeProviderMock = new();
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
+        private IConfiguration _configuration;
 
         protected override void ConfigureServices(IServiceCollection services)
         {
@@ -67,13 +68,20 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 conf.AddJsonFile(configPath);
             });
 
-            var configuration = new ConfigurationBuilder()
+            var configuration = new ConfigurationBuilder()            
               .AddJsonFile(configPath)
+              .AddInMemoryCollection(
+                new Dictionary<string, string>
+                {
+                    { "GeneralSettings:EnableOidc", "false" },
+                    { "GeneralSettings:ForceOidc", "false" },
+                    { "GeneralSettings:DefaultOidcProvider", "altinn" }
+                })
               .Build();
 
-            configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-            configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
-            configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
+            //configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
+            //configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
+            //configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
 
@@ -96,6 +104,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
             SetupDateTimeMock();
             SetupGuidMock();
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -640,7 +649,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            
+
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
+
             //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
@@ -675,7 +687,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            
+
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
+            _configuration["GeneralSettings:DefaultOidcProvider"] = "idporten";
+
             //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true, "idporten");
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
@@ -719,12 +735,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
-            
-            Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
-            eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
+
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
+
+            //Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
+            _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.BankIDMobil, SecurityLevel.VerySensitive, null, AuthenticationEventType.Authenticate, 1337, true);
 
             //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object, true, true);
+
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
@@ -771,7 +791,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(platformToken);
             ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
             Assert.NotNull(claimPrincipal);
-            AssertionUtil.AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent, Times.Once());
+            AssertionUtil.AssertAuthenticationEvent(_eventQueue, expectedAuthenticationEvent, Times.Once());
         }
 
         /// <summary>
@@ -799,6 +819,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 234234, PartyId = 234234, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfileNotFound);
             _userProfileService.Setup(u => u.CreateUser(It.IsAny<UserProfile>())).ReturnsAsync(userProfile);
+
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
 
             // HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
@@ -883,6 +906,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 234235, PartyId = 234235, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
 
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
+
             //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
 
@@ -957,6 +983,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
 
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
+
             //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
@@ -1012,6 +1041,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
 
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
+
             //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
@@ -1061,6 +1093,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
 
             //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
@@ -1097,6 +1131,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            _configuration["GeneralSettings:EnableOidc"] = "true";
+            _configuration["GeneralSettings:ForceOidc"] = "true";
 
             //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();

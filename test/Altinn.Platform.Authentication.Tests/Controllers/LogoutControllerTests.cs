@@ -273,9 +273,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.AltinnPIN, SecurityLevel.QuiteSensitive, null, AuthenticationEventType.Logout, 1337);
 
-            //_featureManager
-            //    .Setup(m => m.IsEnabledAsync("AuditLog"))
-            //    .Returns(Task.FromResult(true));
+            _featureManager
+                .Setup(m => m.IsEnabledAsync("AuditLog"))
+                .Returns(Task.FromResult(true));
 
             HttpClient client = CreateClient();//GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, featureManageMock.Object, timeProviderMock.Object);
 
