@@ -44,6 +44,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private readonly WebApplicationFactory<LogoutController> _factory;
+        private IConfiguration _configuration;
   
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<IOrganisationsService> _organisationsService = new();
@@ -66,8 +67,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             });
 
             var configuration = new ConfigurationBuilder()
-              .AddJsonFile(configPath)
-              .Build();
+             .AddJsonFile(configPath)
+             .AddInMemoryCollection(
+               new Dictionary<string, string>
+               {
+                    { "GeneralSettings:EnableOidc", "false" },
+                    { "GeneralSettings:ForceOidc", "false" },
+                    { "GeneralSettings:DefaultOidcProvider", "altinn" },
+                    { "FeatureManagement:EnableAuditLog", "false" }
+               })
+             .Build();
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
 
@@ -88,6 +97,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_timeProviderMock.Object);
             services.AddSingleton(_organisationsService.Object);
             SetupDateTimeMock();
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -197,9 +207,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.BankID, SecurityLevel.VerySensitive, null, AuthenticationEventType.Logout, 1337);
 
-            _featureManager
-                .Setup(m => m.IsEnabledAsync("AuditLog"))
-                .Returns(Task.FromResult(true));
+            _configuration["FeatureManagement:EnableAuditLog"] = "true";
 
             HttpClient client = CreateClient();// GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, featureManageMock.Object, timeProviderMock.Object);
 
