@@ -49,7 +49,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<IOrganisationsService> _organisationsService = new();
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
-        private readonly Mock<TimeProvider> timeProviderMock = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private readonly Mock<TimeProvider> _timeProviderMock = new();
         private readonly Mock<IFeatureManager> _featureManager = new();
@@ -80,8 +79,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
 
-            _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
-
             services.Configure<GeneralSettings>(generalSettingSection);
             services.AddSingleton(_cookieDecryptionService.Object);
             services.AddSingleton(_userProfileService.Object);
@@ -95,8 +92,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_featureManager.Object);
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(_timeProviderMock.Object);
-            services.AddSingleton(_organisationsService.Object);
-            SetupDateTimeMock();
+            services.AddSingleton(_organisationsService.Object);            
             _configuration = configuration;
         }
 
@@ -120,7 +116,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Logout_TimedOut_RedirectToSBL()
         {
             // Arrange
-            HttpClient client = CreateClient();// GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
 
@@ -145,7 +141,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             string token = PrincipalUtil.GetToken(1337, null);
 
-            HttpClient client = CreateClient();//GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
             SetupUtil.AddAuthCookie(requestMessage, token);
@@ -171,7 +167,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             string token = PrincipalUtil.GetSelfIdentifiedUserToken("siusertest", "12345", "2345678");
 
-            HttpClient client = CreateClient();//GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
             SetupUtil.AddAuthCookie(requestMessage, token);
@@ -207,9 +203,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.BankID, SecurityLevel.VerySensitive, null, AuthenticationEventType.Logout, 1337);
 
-            _configuration["FeatureManagement:EnableAuditLog"] = "true";
+            _featureManager
+            .Setup(m => m.IsEnabledAsync("AuditLog"))
+            .Returns(Task.FromResult(true));
 
-            HttpClient client = CreateClient();// GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, featureManageMock.Object, timeProviderMock.Object);
+            SetupDateTimeMock();
+            
+            HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
             SetupUtil.AddAuthCookie(requestMessage, token);
@@ -241,7 +241,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string token = PrincipalUtil.GetToken(1337, claims);
 
-            HttpClient client = CreateClient();//GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout");
             SetupUtil.AddAuthCookie(requestMessage, token);
@@ -285,7 +285,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
 
-            HttpClient client = CreateClient();//GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, featureManageMock.Object, timeProviderMock.Object);
+            SetupDateTimeMock();
+
+            HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/frontchannel_logout");
             SetupUtil.AddAuthCookie(requestMessage, token);
@@ -328,7 +330,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(false));
 
-            HttpClient client = CreateClient(); // GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, featureManageMock.Object, timeProviderMock.Object);
+            HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/frontchannel_logout");
             SetupUtil.AddAuthCookie(requestMessage, token);
@@ -349,59 +351,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AssertionUtil.AssertAuthenticationEvent(eventQueue, expectedAuthenticationEvent, Moq.Times.Never());
         }
-
-        private HttpClient GetTestClient(ISblCookieDecryptionService cookieDecryptionService, IUserProfileService userProfileService, IEventsQueueClient eventLog = null, IFeatureManager featureManager = null, TimeProvider timeProviderMock = null, bool enableOidc = false, bool forceOidc = false, bool auditLog = true, string defaultOidc = "altinn")
-        {
-            HttpClient client = _factory.WithWebHostBuilder(builder =>
-            {
-                string configPath = GetConfigPath();
-                builder.ConfigureAppConfiguration((context, conf) =>
-                {
-                    conf.AddJsonFile(configPath);
-                });
-
-                var configuration = new ConfigurationBuilder()
-                  .AddJsonFile(configPath)
-                  .Build();
-
-                configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-                configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
-                configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
-
-                IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-
-                builder.ConfigureTestServices(services =>
-                {
-                    services.Configure<GeneralSettings>(generalSettingSection);
-                    services.AddSingleton(cookieDecryptionService);
-                    services.AddSingleton(userProfileService);
-                    services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
-                    services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
-                    services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
-                    services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
-                    services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-                    services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
-                    services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
-                    if (featureManager != null)
-                    {
-                        services.AddSingleton(featureManager);
-                    }
-                    
-                    if (eventLog != null)
-                    {
-                        services.AddSingleton(eventLog);
-                    }
-
-                    if (timeProviderMock != null)
-                    {
-                        services.AddSingleton(timeProviderMock);
-                    }
-                });
-            }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-
-            return client;
-        }
-
+       
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
@@ -424,7 +374,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupDateTimeMock()
         {
-            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            _timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
     }
 }
