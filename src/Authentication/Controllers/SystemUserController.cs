@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
@@ -15,8 +16,8 @@ namespace Altinn.Platform.Authentication.Controllers
     /// <summary>
     /// CRUD API for the System User 
     /// </summary>
-    /// [Authorize]
-    /// [FeatureGate(FeatureFlags.SystemUser)]
+    [Authorize]
+    [FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
     public class SystemUserController : ControllerBase
@@ -41,7 +42,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("{partyId}")]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
         {
-            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersPartyHas(partyId);
+            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(partyId);
 
             if (theList is not null && theList.Count > 0)
             {
@@ -67,6 +68,31 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return NotFound();
+        }
+
+        /// <summary>
+        /// Used by MaskinPorten, to find if a given systemOrg owns a SystemUser Integration for a Vendor's Product, by an ExternalId
+        /// ConsumerId is the first entry in the path.
+        /// SystemOrg is the second entry in the path.
+        /// ClientId is the third entry in the path.
+        /// </summary>
+        /// <param name="clientId">The unique id maintained by MaskinPorten tying their clients to the Registered Systems we maintain</param>        
+        /// <param name="consumerId">The legal number (Orgno) of the Vendor creating the Registered System (Accounting system)</param>
+        /// <param name="systemOrg">The legal number (Orgno) of the party owning the System User Integration</param>
+        /// <param name="cancellationToken">Cancellationtoken</param>/// 
+        /// <returns>The SystemUserIntegration model API DTO</returns>
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        [HttpGet("byExternalId/{consumerId}/{systemOrg}/{clientId}")]
+        public async Task<ActionResult> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken = default)
+        {
+            SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, consumerId, systemOrg, cancellationToken);
+            
+            if (res is null) 
+            { 
+                return NotFound(); 
+            }
+
+            return Ok(res);
         }
 
         /// <summary>

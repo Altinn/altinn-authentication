@@ -88,6 +88,6 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// </summary>
         [AllowNull]
         [JsonPropertyName("ClientId")]
-        public string ClientId { get; set; }
+        public Guid ClientId { get; set; }
     }
 }

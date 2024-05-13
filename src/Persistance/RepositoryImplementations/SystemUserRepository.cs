@@ -34,9 +34,9 @@ internal class SystemUserRepository : ISystemUserRepository
     public async Task SetDeleteSystemUserById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
-                UPDATE altinn_authentication.system_user_integration
+                UPDATE altinn_authentication_integration.system_user_integration
 	            SET is_deleted = TRUE
-        	    WHERE altinn_authentication.system_user_integration.system_user_integration_id = @system_user_integration_id;
+        	    WHERE altinn_authentication_integration.system_user_integration.system_user_integration_id = @system_user_integration_id;
                 ";
 
         try
@@ -46,7 +46,7 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_user_integration_id", id);
 
             await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpqSqlExtensions.ConvertFromReaderToBoolean)
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)   
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -70,7 +70,7 @@ internal class SystemUserRepository : ISystemUserRepository
 		            client_id,
 		            is_deleted,
 		            created                    
-                FROM altinn_authentication.system_user_integration sui 
+                FROM altinn_authentication_integration.system_user_integration sui 
 	            WHERE sui.owned_by_party_id = @owned_by_party_id	
 	                  AND sui.is_deleted = false;
                 ";
@@ -105,7 +105,7 @@ internal class SystemUserRepository : ISystemUserRepository
 		        client_id,
 		        is_deleted,
 		        created
-	        FROM altinn_authentication.system_user_integration sui 
+	        FROM altinn_authentication_integration.system_user_integration sui 
 	        WHERE sui.system_user_integration_id = @system_user_integration_id
 	            AND sui.is_deleted = false;
             ";
@@ -130,7 +130,7 @@ internal class SystemUserRepository : ISystemUserRepository
     public async Task<Guid> InsertSystemUser(SystemUser toBeInserted)
     {
         const string QUERY = /*strpsql*/@"            
-                INSERT INTO altinn_authentication.system_user_integration(
+                INSERT INTO altinn_authentication_integration.system_user_integration(
                     integration_title,
                     product_name,
                     owned_by_party_id,
@@ -168,6 +168,39 @@ internal class SystemUserRepository : ISystemUserRepository
         }
     }
 
+    /// <inheritdoc />
+    public async Task<int> UpdateProductName(Guid guid, string productName)
+    {
+        const string QUERY = /*strspsql*/@"
+                UPDATE altinn_authentication_integration.system_user_integration
+                SET product_name = @product_name
+                WHERE system_user_integration_id = @id
+                ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("id", guid);
+            command.Parameters.AddWithValue("product_name", productName);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToInt)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateProductName // Exception");
+
+            throw;
+        }
+    }    
+
+    private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
+    {
+        return new ValueTask<int>(reader.GetFieldValue<int>(0));
+    }
+
     private ValueTask<Guid> ConvertFromReaderToGuid(NpgsqlDataReader reader)
     {
         return new ValueTask<Guid>(reader.GetFieldValue<Guid>(0));
@@ -182,7 +215,7 @@ internal class SystemUserRepository : ISystemUserRepository
             OwnedByPartyId = reader.GetFieldValue<string>("owned_by_party_id"),
             SupplierName = reader.GetFieldValue<string>("supplier_name"),
             SupplierOrgNo = reader.GetFieldValue<string>("supplier_org_no"),
-            ClientId = reader.GetFieldValue<string>("client_id"),
+            ClientId = reader.GetFieldValue<Guid>("client_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created")
         });

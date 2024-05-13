@@ -1,27 +1,28 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Persistance.Configuration;
+using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
-
+using AltinnCore.Authentication.Constants;
 using AltinnCore.Authentication.JwtCookie;
-
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
-
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -39,12 +40,17 @@ using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
+using Yuniql.AspNetCore;
+using Yuniql.PostgreSql;
 
 ILogger logger;
 
 string applicationInsightsKeySecretName = "ApplicationInsights--InstrumentationKey";
+string postgresConfigKeySecretName = "PostgresConfig";
 
 string applicationInsightsConnectionString = string.Empty;
+string postgresConnectionString = string.Empty;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,7 +73,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.RequireHeaderSymmetry = false;
 });
 
+builder.Services.AddPersistanceLayer();
+
 var app = builder.Build();
+
+ConfigurePostgreSql();
 
 Configure();
 
@@ -110,6 +120,7 @@ async Task SetConfigurationProviders(ConfigurationManager config)
     config.AddEnvironmentVariables();
 
     await ConnectToKeyVaultAndSetApplicationInsights(config);
+    await ConnectToKeyVaultAndSetConfig(config);
 
     config.AddCommandLine(args);
 }
@@ -144,12 +155,78 @@ async Task ConnectToKeyVaultAndSetApplicationInsights(ConfigurationManager confi
         try
         {
             config.AddAzureKeyVault(
-                 keyVaultSettings.SecretUri, keyVaultSettings.ClientId, keyVaultSettings.ClientSecret);
+                 keyVaultSettings.SecretUri, 
+                 keyVaultSettings.ClientId, 
+                 keyVaultSettings.ClientSecret);
         }
         catch (Exception vaultException)
         {
             logger.LogError(vaultException, $"Unable to add key vault secrets to config.");
         }
+    }
+}
+
+async Task ConnectToKeyVaultAndSetConfig(ConfigurationManager config)
+{
+    logger.LogInformation("Program // Connect to key vault and set up configuration");
+
+    Altinn.Common.AccessToken.Configuration.KeyVaultSettings keyVaultSettings = new();
+    config.GetSection("kvSetting").Bind(keyVaultSettings);
+
+    if (!string.IsNullOrEmpty(keyVaultSettings.ClientId) &&
+        !string.IsNullOrEmpty(keyVaultSettings.TenantId) &&
+        !string.IsNullOrEmpty(keyVaultSettings.ClientSecret) &&
+        !string.IsNullOrEmpty(keyVaultSettings.SecretUri))
+    {
+        Environment.SetEnvironmentVariable("AZURE_CLIENT_ID", keyVaultSettings.ClientId);
+        Environment.SetEnvironmentVariable("AZURE_CLIENT_SECRET", keyVaultSettings.ClientSecret);
+        Environment.SetEnvironmentVariable("AZURE_TENANT_ID", keyVaultSettings.TenantId);
+
+        await SetUpAzureInsights(keyVaultSettings, config);        
+        AddAzureKeyVault(keyVaultSettings, config);
+
+        await SetUpPostgresConfigFromKeyVault(keyVaultSettings, config);
+    }
+}
+
+async Task SetUpAzureInsights(Altinn.Common.AccessToken.Configuration.KeyVaultSettings keyVaultSettings, ConfigurationManager config)
+{
+    try
+    {
+        SecretClient client = new SecretClient(new Uri(keyVaultSettings.SecretUri), new EnvironmentCredential());
+        KeyVaultSecret secret = await client.GetSecretAsync(applicationInsightsKeySecretName);
+        applicationInsightsConnectionString = string.Format("InstrumentationKey={0}", secret.Value);
+    }
+    catch (Exception vaultException)
+    {
+        logger.LogError(vaultException, $"Unable to read application insights key.");
+    }
+}
+
+async Task SetUpPostgresConfigFromKeyVault(Altinn.Common.AccessToken.Configuration.KeyVaultSettings keyVaultSettings, ConfigurationManager config)
+{
+    try
+    {
+        SecretClient client = new(new Uri(keyVaultSettings.SecretUri), new EnvironmentCredential());
+        KeyVaultSecret secret = await client.GetSecretAsync(postgresConfigKeySecretName);
+        postgresConnectionString = secret.Value;
+    }
+    catch (Exception postgresConfigException) 
+    {
+        logger.LogError(postgresConfigException, "Program // Unable to read postgres config from key vault.");
+    }
+}
+
+void AddAzureKeyVault(Altinn.Common.AccessToken.Configuration.KeyVaultSettings keyVaultSettings, ConfigurationManager config)
+{
+    try
+    {
+        config.AddAzureKeyVault(
+             keyVaultSettings.SecretUri, keyVaultSettings.ClientId, keyVaultSettings.ClientSecret);
+    }
+    catch (Exception vaultException)
+    {
+        logger.LogError(vaultException, $"Unable to add key vault secrets to config.");
     }
 }
 
@@ -202,6 +279,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton(config);
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
     services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
+    services.Configure<PostgreSqlSettings>(config.GetSection("PostgreSqlSettings"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
     services.Configure<QueueStorageSettings>(config.GetSection("QueueStorageSettings"));
     services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
@@ -247,6 +325,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IEventLog, EventLogService>();
     services.TryAddSingleton(TimeProvider.System);
     services.AddSingleton<ISystemUserService, SystemUserService>();
+    services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IGuidService, GuidService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
@@ -329,9 +408,50 @@ void Configure()
     app.UseRouting();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.UseEndpoints(endpoints =>
+    app.MapControllers();
+    app.MapHealthChecks("/health");
+}
+
+void ConfigurePostgreSql()
+{
+    if (builder.Configuration.GetValue<bool>("PostgreSqlSettings:EnableDBConnection"))
     {
-        endpoints.MapControllers();
-        endpoints.MapHealthChecks("/health");
-    });
+        ConsoleTraceService traceService = new ConsoleTraceService { IsDebugEnabled = true };
+
+        string connectionString = string.Format(
+            builder.Configuration.GetValue<string>("PostgreSqlSettings:AdminConnectionString"),
+            builder.Configuration.GetValue<string>("PostgreSqlSettings:AuthenticationDbAdminPassword"));
+
+        string workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        if (builder.Environment.IsDevelopment())
+        {
+            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        }
+
+        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
+        var user = connectionStringBuilder.Username;
+
+        app.UseYuniql(
+            new PostgreSqlDataService(traceService),
+            new PostgreSqlBulkImportService(traceService),
+            traceService,
+            new Configuration
+            {
+                Environment = "prod",
+                Workspace = workspacePath,
+                ConnectionString = connectionString,
+                IsAutoCreateDatabase = false,
+                IsDebug = true,
+                Tokens = [
+                    KeyValuePair.Create("YUNIQL-USER", user)
+                ]
+            });            
+    }
+}
+
+/// <summary>
+/// Startup class.
+/// </summary>
+public partial class Program
+{
 }
