@@ -166,7 +166,7 @@ public class DbFixture
             services.AddOptions<PostgreSQLSettings>()
                 .Configure((PostgreSQLSettings settings) =>
                 {
-                    settings.ConnectionString = ConnectionString;
+                    settings.AuthenticationDbUserConnectionString = ConnectionString;
                     settings.AuthenticationDbPassword = "unused";
                 });
         }
