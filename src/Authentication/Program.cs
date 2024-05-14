@@ -42,15 +42,18 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using Yuniql.AspNetCore;
+using Yuniql.Extensibility;
 using Yuniql.PostgreSql;
 
 ILogger logger;
 
 string applicationInsightsKeySecretName = "ApplicationInsights--InstrumentationKey";
-string postgresConfigKeySecretName = "PostgresConfig";
+string postgresConfigKeySecretNameAdmin = "PostgreSQLSettings--AuthenticationDbAdminConnectionString";
+string postgresConfigKeySecretNameUser = "PostgreSQLSettings--AuthenticationDbUserConnectionString";
 
 string applicationInsightsConnectionString = string.Empty;
-string postgresConnectionString = string.Empty;
+string postgresAdminConnectionString = string.Empty;
+string postgresUserConnectionString = string.Empty;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -208,8 +211,12 @@ async Task SetUpPostgresConfigFromKeyVault(Altinn.Common.AccessToken.Configurati
     try
     {
         SecretClient client = new(new Uri(keyVaultSettings.SecretUri), new EnvironmentCredential());
-        KeyVaultSecret secret = await client.GetSecretAsync(postgresConfigKeySecretName);
-        postgresConnectionString = secret.Value;
+        KeyVaultSecret secretAdmin = await client.GetSecretAsync(postgresConfigKeySecretNameAdmin);
+        postgresAdminConnectionString = secretAdmin.Value;
+
+        KeyVaultSecret secretUser = await client.GetSecretAsync(postgresConfigKeySecretNameUser);
+        postgresUserConnectionString = secretUser.Value;
+
     }
     catch (Exception postgresConfigException) 
     {
@@ -279,7 +286,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton(config);
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
     services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
-    services.Configure<PostgreSqlSettings>(config.GetSection("PostgreSqlSettings"));
+    services.Configure<PostgreSQLSettings>(config.GetSection("PostgreSQLSettings"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
     services.Configure<QueueStorageSettings>(config.GetSection("QueueStorageSettings"));
     services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
@@ -414,21 +421,23 @@ void Configure()
 
 void ConfigurePostgreSql()
 {
-    if (builder.Configuration.GetValue<bool>("PostgreSqlSettings:EnableDBConnection"))
+    if (builder.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
     {
-        ConsoleTraceService traceService = new ConsoleTraceService { IsDebugEnabled = true };
+        //Yuniql Migration Scripts
+        ConsoleTraceService traceService = new() { IsDebugEnabled = true };
 
-        string connectionString = string.Format(
-            builder.Configuration.GetValue<string>("PostgreSqlSettings:AdminConnectionString"),
-            builder.Configuration.GetValue<string>("PostgreSqlSettings:AuthenticationDbAdminPassword"));
-
-        string workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        string workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
         if (builder.Environment.IsDevelopment())
         {
-            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+            string connectionString = string.Format(
+                builder.Configuration.GetValue<string>("PostgreSQLSettings:AdminConnectionString"),
+                builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminPassword"));
+            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
         }
 
-        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
+        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);
+        workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));        
+        
         var user = connectionStringBuilder.Username;
 
         app.UseYuniql(
@@ -439,13 +448,11 @@ void ConfigurePostgreSql()
             {
                 Environment = "prod",
                 Workspace = workspacePath,
-                ConnectionString = connectionString,
+                ConnectionString = postgresAdminConnectionString,
                 IsAutoCreateDatabase = false,
                 IsDebug = true,
-                Tokens = [
-                    KeyValuePair.Create("YUNIQL-USER", user)
-                ]
-            });            
+                Tokens = [KeyValuePair.Create("YUNIQL-USER", user)]
+            });
     }
 }
 

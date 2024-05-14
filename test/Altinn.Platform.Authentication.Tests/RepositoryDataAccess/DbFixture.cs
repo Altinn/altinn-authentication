@@ -163,10 +163,10 @@ public class DbFixture
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddOptions<PostgreSqlSettings>()
-                .Configure((PostgreSqlSettings settings) =>
+            services.AddOptions<PostgreSQLSettings>()
+                .Configure((PostgreSQLSettings settings) =>
                 {
-                    settings.ConnectionString = ConnectionString;
+                    settings.AuthenticationDbUserConnectionString = ConnectionString;
                     settings.AuthenticationDbPassword = "unused";
                 });
         }

@@ -38,16 +38,18 @@ public static class PersistanceDependencyInjection
     /// <param name="services">IServiceCollection for parent DI</param>
     private static void AddPostgreSqlDatabase(this IServiceCollection services) 
     {
-        services.AddOptions<PostgreSqlSettings>()
-                 .Validate(s => !string.IsNullOrEmpty(s.ConnectionString), "Missing Connection string")
+        services.AddOptions<PostgreSQLSettings>()
+                 .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbUserConnectionString), "Missing Connection string")
                  .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbPassword), "Missing db password");
 
         services.TryAddSingleton((IServiceProvider sp) =>
         {
-            var settings = sp.GetRequiredService<IOptions<PostgreSqlSettings>>().Value;
-            var connectionString = string.Format(
-                settings.ConnectionString,
-                settings.AuthenticationDbPassword);
+            var settings = sp.GetRequiredService<IOptions<PostgreSQLSettings>>().Value;
+            var connectionString = settings.AuthenticationDbUserConnectionString;
+            
+            // var connectionString = string.Format(
+            //    settings.AuthenticationDbUserConnectionString,
+            //    settings.AuthenticationDbPassword);
 
             var builder = new NpgsqlDataSourceBuilder(connectionString);
             builder.UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>());
