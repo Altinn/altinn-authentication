@@ -435,14 +435,12 @@ void ConfigurePostgreSql()
         }
 
         var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);
+            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
+        }
+
+        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
         var user = connectionStringBuilder.Username;
 
-        app.UseYuniql(
-            new PostgreSqlDataService(traceService),
-            new PostgreSqlBulkImportService(traceService),
-            traceService,
-            new Configuration
-            {
                 Environment = "prod",
                 Workspace = workspacePath,
                 ConnectionString = postgresAdminConnectionString,
