@@ -42,6 +42,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using Yuniql.AspNetCore;
+using Yuniql.Extensibility;
 using Yuniql.PostgreSql;
 
 ILogger logger;
@@ -435,21 +436,23 @@ void ConfigurePostgreSql()
         }
 
         var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);
-            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));
-        }
-
-        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
+        workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSqlSettings:WorkspacePath"));        
+        
         var user = connectionStringBuilder.Username;
 
+        app.UseYuniql(
+            new PostgreSqlDataService(traceService),
+            new PostgreSqlBulkImportService(traceService),
+            traceService,
+            new Configuration
+            {
                 Environment = "prod",
                 Workspace = workspacePath,
                 ConnectionString = postgresAdminConnectionString,
                 IsAutoCreateDatabase = false,
                 IsDebug = true,
-                Tokens = [
-                    KeyValuePair.Create("YUNIQL-USER", user)
-                ]
-            });            
+                Tokens = [KeyValuePair.Create("YUNIQL-USER", user)]
+            });
     }
 }
 
