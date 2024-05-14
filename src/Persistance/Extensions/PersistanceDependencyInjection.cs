@@ -38,13 +38,13 @@ public static class PersistanceDependencyInjection
     /// <param name="services">IServiceCollection for parent DI</param>
     private static void AddPostgreSqlDatabase(this IServiceCollection services) 
     {
-        services.AddOptions<PostgreSqlSettings>()
+        services.AddOptions<PostgreSQLSettings>()
                  .Validate(s => !string.IsNullOrEmpty(s.ConnectionString), "Missing Connection string")
                  .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbPassword), "Missing db password");
 
         services.TryAddSingleton((IServiceProvider sp) =>
         {
-            var settings = sp.GetRequiredService<IOptions<PostgreSqlSettings>>().Value;
+            var settings = sp.GetRequiredService<IOptions<PostgreSQLSettings>>().Value;
             var connectionString = string.Format(
                 settings.ConnectionString,
                 settings.AuthenticationDbPassword);
