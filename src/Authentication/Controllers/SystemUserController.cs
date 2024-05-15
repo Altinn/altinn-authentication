@@ -85,7 +85,9 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("byExternalId/{consumerId}/{systemOrg}/{clientId}")]
         public async Task<ActionResult> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken = default)
         {
-            SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, consumerId, systemOrg, cancellationToken);
+            //SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, consumerId, systemOrg, cancellationToken);
+
+            var res = "Hello Idporten!";
             
             if (res is null) 
             { 
