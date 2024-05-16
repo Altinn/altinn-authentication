@@ -1,21 +1,23 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0.204-alpine3.18 AS build
-WORKDIR AuthenticationApp/
+WORKDIR /app
 
 
-COPY src/ ./src
+COPY src/Authentication/Altinn.Platform.Authentication.csproj ./src/Authentication/Altinn.Platform.Authentication.csproj
+COPY src/Core/Altinn.Platform.Authentication.Core.csproj ./src/Core/Altinn.Platform.Authentication.Core.csproj
+COPY src/Persistance/Altinn.Platform.Authentication.Persistance.csproj ./src/Persistance/Altinn.Platform.Authentication.Persistance.csproj
 
 RUN dotnet restore ./src/Authentication/Altinn.Platform.Authentication.csproj
 
-RUN dotnet build ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -o /app_output
-
-RUN dotnet publish ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -o /app_output
+COPY src/ ./src
+RUN dotnet build ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -o app_output \
+    && dotnet publish ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -r linux-x64 -o app_output --no-self-contained
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0.4-alpine3.18 AS final
-EXPOSE 5040
+EXPOSE 5040 
 WORKDIR /app
-COPY --from=build /app_output .
+COPY --from=build /app/app_output .
 
-COPY src/Persistance/Migration ./Persistance/Migration
+COPY src/Persistance/Migration /app/Persistance/Migration 
 
 # setup the user and group
 # the user will have no password, using shell /bin/false and using the group dotnet

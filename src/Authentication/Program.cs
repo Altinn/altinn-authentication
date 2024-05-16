@@ -423,21 +423,21 @@ void ConfigurePostgreSql()
 {
     if (builder.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
     {
-        //Yuniql Migration Scripts
         ConsoleTraceService traceService = new() { IsDebugEnabled = true };
 
         string workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
         if (builder.Environment.IsDevelopment())
         {
             string connectionString = string.Format(
-                builder.Configuration.GetValue<string>("PostgreSQLSettings:AdminConnectionString"),
-                builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminPassword"));
+            builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminConnectionString"),
+            builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminPassword"));
             workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
+            postgresAdminConnectionString = connectionString;
         }
 
         var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);
-        workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));        
-        
+        workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
+
         var user = connectionStringBuilder.Username;
 
         app.UseYuniql(

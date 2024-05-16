@@ -87,11 +87,23 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             //SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, consumerId, systemOrg, cancellationToken);
 
-            var res = "Hello Idporten!";
-            
-            if (res is null) 
-            { 
-                return NotFound(); 
+            //to be deleted, only used once for the convenience of Idporten to test if access is open
+            SystemUser res = new()
+            {
+                ClientId = Guid.Parse(clientId),
+                Created = DateTime.UtcNow,
+                Id = Guid.NewGuid().ToString(),
+                IntegrationTitle = "Yes_The_Connection_Works",
+                IsDeleted = false,
+                OwnedByPartyId = systemOrg,
+                SupplierOrgNo = consumerId,
+                SupplierName = "Vendor's Name",
+                ProductName = "Vendor's Registered System",
+            };
+
+            if (res is null)
+            {
+                return NotFound();
             }
 
             return Ok(res);
