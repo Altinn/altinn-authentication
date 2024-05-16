@@ -15,7 +15,7 @@ EXPOSE 5040
 WORKDIR /app
 COPY --from=build /app_output .
 
-COPY src/Persistance/Migration ./Migration
+COPY src/Persistance/Migration ./Persistance/Migration
 
 # setup the user and group
 # the user will have no password, using shell /bin/false and using the group dotnet
