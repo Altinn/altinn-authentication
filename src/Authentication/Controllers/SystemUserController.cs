@@ -41,7 +41,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{partyId}")]
-        [Authorize(Policy = AuthnConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
         public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
         {
             List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(partyId);
@@ -61,11 +61,11 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{partyId}/{systemUserId}")]
-        [Authorize(Policy = AuthnConstants.POLICY_ACCESS_MANAGEMENT_READ)]
-        public async Task<ActionResult> GetSingleSystemUserById(int partyId, Guid systemUserId)
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+        public async Task<ActionResult> GetSingleSystemUserById(string partyId, Guid systemUserId)
         {
             SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
-            if (systemUser is not null)
+            if (systemUser is not null && systemUser.OwnedByPartyId == partyId)
             {
                 return Ok(systemUser);
             }
@@ -85,7 +85,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="cancellationToken">Cancellationtoken</param>/// 
         /// <returns>The SystemUserIntegration model API DTO</returns>
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        [Authorize(Policy = AuthnConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
         [HttpGet("byExternalId/{consumerId}/{systemOrg}/{clientId}")]
         public async Task<ActionResult> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken = default)
         {
@@ -119,12 +119,12 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Authorize(Policy = AuthnConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
         [HttpDelete("{partyId}/{systemUserId}")]
-        public async Task<ActionResult> SetDeleteFlagOnSystemUser(Guid systemUserId)
+        public async Task<ActionResult> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId)
         {
             SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
-            if (toBeDeleted is not null)
+            if (toBeDeleted is not null && toBeDeleted.OwnedByPartyId == partyId)
             {
                 await _systemUserService.SetDeleteFlagOnSystemUser(systemUserId);
                 return Ok(1);
@@ -143,10 +143,13 @@ namespace Altinn.Platform.Authentication.Controllers
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Authorize(Policy = AuthnConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
-        [HttpPost]
-        public async Task<ActionResult<SystemUser>> CreateSystemUser([FromBody] SystemUserRequestDto request)
-        {           
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+        [HttpPost("{partyId}")]
+        public async Task<ActionResult<SystemUser>> CreateSystemUser(string partyId, [FromBody] SystemUserRequestDto request)
+        {
+            // enforce that only the authorized partyId can make systemUsers for themselves
+            request.PartyId = partyId;
+
             SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, 1);
             if (toBeCreated is not null)
             {
@@ -162,10 +165,13 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Authorize(Policy = AuthnConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
-        [HttpPut]
-        public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUserUpdateDto request)
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+        [HttpPut("{partyId}")]
+        public async Task<ActionResult> UpdateSystemUserById(string partyId, [FromBody] SystemUserUpdateDto request)
         {
+            // enforce that only the authorized partyId can update systemUsers for themselves
+            request.OwnedByPartyId = partyId;
+
             SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
             if (toBeUpdated is not null)
             {

@@ -41,6 +41,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -368,8 +369,10 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
 
     services.AddAuthorizationBuilder()
         .AddPolicy("PlatformAccess", policy => policy.Requirements.Add(new AccessTokenRequirement()))
-        .AddPolicy(AuthnConstants.POLICY_ACCESS_MANAGEMENT_READ, policy => policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))
-        .AddPolicy(AuthnConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy => policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")));
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ, policy => policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy => policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")))
+        .AddPolicy(AuthzConstants.POLICY_RESOURCEOWNER_AUTHORIZEDPARTIES, policy =>
+          policy.Requirements.Add(new ScopeAccessRequirement(new string[] { AuthzConstants.SCOPE_RESOURCEOWNER_AUTHORIZEDPARTIES, AuthzConstants.SCOPE_RESOURCEOWNER_AUTHORIZEDPARTIES_ADMIN })));
 
     services.AddTransient<IAuthorizationHandler, ClaimAccessHandler>();
     services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();

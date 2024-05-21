@@ -6,6 +6,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -37,7 +38,6 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
-    [Authorize(Policy = "PlatformAccess")]
     public async Task<ActionResult> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
         List<RegisteredSystem> lista = [];
@@ -53,7 +53,6 @@ public class SystemRegisterController : ControllerBase
     /// <param name="productId">The Id of the Product </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns> 
-    [Authorize(Policy = "PlatformAccess")]
     [HttpGet("product/{productId}")]
     public async Task<ActionResult> GetDefaultRightsForRegisteredSystem(string productId, CancellationToken cancellationToken = default)
     {
@@ -74,7 +73,6 @@ public class SystemRegisterController : ControllerBase
     /// to uniquely identify a SystemVendor's Registered Systems.</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
-    [Authorize(Policy = "PlatformAccess")]
     [HttpPost("client/{clientId}")]
     public async Task<ActionResult> CreateClient(string clientId, CancellationToken cancellationToken = default)
     {
@@ -93,7 +91,6 @@ public class SystemRegisterController : ControllerBase
     /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
-    [Authorize(Policy = "PlatformAccess")]
     [HttpPost("product")]
     public async Task<ActionResult> CreateRegisteredSystem([FromBody] RegisteredSystem registerNewSystem, CancellationToken cancellationToken = default)
     {
