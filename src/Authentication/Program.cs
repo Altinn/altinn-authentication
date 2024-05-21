@@ -4,11 +4,14 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Altinn.Common.AccessToken;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
+using Altinn.Common.PEP.Authorization;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
@@ -28,6 +31,8 @@ using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -360,6 +365,15 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
         options.HeaderName = "X-XSRF-TOKEN";
     });
+
+    services.AddAuthorizationBuilder()
+        .AddPolicy("PlatformAccess", policy => policy.Requirements.Add(new AccessTokenRequirement()))
+        .AddPolicy(AuthnConstants.POLICY_ACCESS_MANAGEMENT_READ, policy => policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))
+        .AddPolicy(AuthnConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy => policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")));
+
+    services.AddTransient<IAuthorizationHandler, ClaimAccessHandler>();
+    services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
+    services.AddTransient<IAuthorizationHandler, ScopeAccessHandler>();
 
     // Add Swagger support (Swashbuckle)
     services.AddSwaggerGen(c =>
