@@ -44,6 +44,7 @@ public class DbFixture
         private readonly AsyncLock _dbLock = new();
         private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder()
             .WithImage("docker.io/postgres:16.1-alpine")
+            .WithUsername("auth_authentication")
             .WithCleanUp(true)
             .Build();
 
