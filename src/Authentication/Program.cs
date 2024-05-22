@@ -436,7 +436,6 @@ void ConfigurePostgreSql()
         }
 
         var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);
-        workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
 
         var user = connectionStringBuilder.Username;
 
