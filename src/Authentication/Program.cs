@@ -8,6 +8,8 @@ using Altinn.Common.AccessToken;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Authorization;
+using Altinn.Common.PEP.Clients;
+using Altinn.Common.PEP.Implementation;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
@@ -35,6 +37,7 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -367,16 +370,25 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         options.HeaderName = "X-XSRF-TOKEN";
     });
 
-    services.AddAuthorizationBuilder()
-        .AddPolicy("PlatformAccess", policy => policy.Requirements.Add(new AccessTokenRequirement()))
-        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ, policy => policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))
-        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy => policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")))
-        .AddPolicy(AuthzConstants.POLICY_RESOURCEOWNER_AUTHORIZEDPARTIES, policy =>
-          policy.Requirements.Add(new ScopeAccessRequirement(new string[] { AuthzConstants.SCOPE_RESOURCEOWNER_AUTHORIZEDPARTIES, AuthzConstants.SCOPE_RESOURCEOWNER_AUTHORIZEDPARTIES_ADMIN })));
+    services.AddHttpClient<AuthorizationApiClient>();
+    services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
+    services.AddTransient<Altinn.Common.PEP.Interfaces.IPDP, PDPAppSI>();
 
-    services.AddTransient<IAuthorizationHandler, ClaimAccessHandler>();
-    services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
-    services.AddTransient<IAuthorizationHandler, ScopeAccessHandler>();
+    services.AddAuthorizationBuilder()
+
+        //.AddPolicy("PlatformAccess", policy => policy.Requirements.Add(new AccessTokenRequirement()))
+
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ, policy => policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy => policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")));
+        
+        //.AddPolicy(AuthzConstants.POLICY_RESOURCEOWNER_AUTHORIZEDPARTIES, policy =>
+        //  policy.Requirements.Add(new ScopeAccessRequirement(new string[] { AuthzConstants.SCOPE_RESOURCEOWNER_AUTHORIZEDPARTIES, AuthzConstants.SCOPE_RESOURCEOWNER_AUTHORIZEDPARTIES_ADMIN })));
+
+        //services.AddTransient<IAuthorizationHandler, ClaimAccessHandler>();
+    
+        services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
+    
+        //services.AddTransient<IAuthorizationHandler, ScopeAccessHandler>();
 
     // Add Swagger support (Swashbuckle)
     services.AddSwaggerGen(c =>
@@ -452,8 +464,7 @@ void ConfigurePostgreSql()
             postgresAdminConnectionString = connectionString;
         }
 
-        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);
-        workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
+        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);        
 
         var user = connectionStringBuilder.Username;
 

@@ -9,6 +9,9 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 using Altinn.Common.AccessToken.Services;
+using Altinn.Common.PEP.Authorization;
+using Altinn.Common.PEP.Clients;
+using Altinn.Common.PEP.Implementation;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Controllers;
@@ -23,7 +26,9 @@ using Altinn.Platform.Authentication.Tests.Utils;
 using Altinn.Platform.Profile.Models;
 using AltinnCore.Authentication.Constants;
 using AltinnCore.Authentication.JwtCookie;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -50,6 +55,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<TimeProvider> timeProviderMock = new();
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
+        private readonly Mock<ResourceAccessHandler> _resourceAccessHandler = new();
         private IConfiguration _configuration;
 
         protected override void ConfigureServices(IServiceCollection services)
@@ -102,6 +108,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
+            services.AddHttpClient<AuthorizationApiClient>();
+            services.AddTransient<IHttpContextAccessor,  HttpContextAccessor>();
+            services.AddTransient<Altinn.Common.PEP.Interfaces.IPDP, PDPAppSI>();            
+            services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
             SetupDateTimeMock();
             SetupGuidMock();
             _configuration = configuration;
