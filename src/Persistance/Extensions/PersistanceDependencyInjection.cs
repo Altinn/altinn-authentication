@@ -45,7 +45,7 @@ public static class PersistanceDependencyInjection
         services.TryAddSingleton((IServiceProvider sp) =>
         {
             var settings = sp.GetRequiredService<IOptions<PostgreSQLSettings>>().Value;
-            var connectionString = settings.AuthenticationDbUserConnectionString;
+            var connectionString = settings.AuthenticationDbUserConnectionString + ";Include Error Detail = true";
             
             // var connectionString = string.Format(
             //    settings.AuthenticationDbUserConnectionString,
