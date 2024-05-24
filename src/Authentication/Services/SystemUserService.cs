@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 namespace Altinn.Platform.Authentication.Services
@@ -17,13 +18,15 @@ namespace Altinn.Platform.Authentication.Services
     public class SystemUserService : ISystemUserService
     {
         private readonly ISystemUserRepository _repository;
+        private readonly ISystemRegisterRepository _registerRepository;
 
         /// <summary>
         /// The Constructor
         /// </summary>
-        public SystemUserService(ISystemUserRepository systemUserRepository)
+        public SystemUserService(ISystemUserRepository systemUserRepository, ISystemRegisterRepository systemRegisterRepository)
         {            
             _repository = systemUserRepository;
+            _registerRepository = systemRegisterRepository;
         }
 
         /// <summary>
@@ -33,11 +36,15 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>The SystemUser created</returns>
         public async Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
+            RegisteredSystem regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
+            Guid clientId = regSystem.ClientId;
+
             SystemUser newSystemUser = new()
             {                
                 IntegrationTitle = request.IntegrationTitle,
                 ProductName = request.ProductName,
-                OwnedByPartyId = partyId.ToString()
+                OwnedByPartyId = partyId.ToString(),
+                ClientId = clientId
             };
 
             Guid insertedId = await _repository.InsertSystemUser(newSystemUser);            
