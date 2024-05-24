@@ -36,7 +36,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 registered_system_id,
                 system_vendor, 
                 friendly_product_name,
-                is_deleted
+                is_deleted,
+                client_id
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.is_deleted = FALSE;
         ";
