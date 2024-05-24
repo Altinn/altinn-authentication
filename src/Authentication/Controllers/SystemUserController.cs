@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Returns the list of SystemUsers this PartyID has registered
         /// </summary>
         /// <returns></returns>
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{partyId}")]
@@ -138,7 +138,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>        
-        //[Authorize]
+        [Authorize]
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
