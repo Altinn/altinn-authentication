@@ -36,7 +36,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 registered_system_id,
                 system_vendor, 
                 friendly_product_name,
-                is_deleted
+                is_deleted,
+                client_id
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.is_deleted = FALSE;
         ";
@@ -97,7 +98,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 registered_system_id,
                 system_vendor, 
                 friendly_product_name,
-                is_deleted
+                is_deleted,
+                client_id
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.registered_system_id = @registered_system_id;
         ";
@@ -218,12 +220,14 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
+        Guid.TryParse(reader.GetFieldValue<string[]>("client_id")[0], out Guid clientId);
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
             SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
             Description = reader.GetFieldValue<string>("friendly_product_name"),
-            SoftDeleted = reader.GetFieldValue<bool>("is_deleted")
+            SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
+            ClientId = clientId
         });
     }
 
