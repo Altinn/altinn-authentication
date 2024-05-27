@@ -22,10 +22,10 @@ namespace Altinn.Platform.Authentication.Core.Models
 
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
-        /// In the db this field is required, but if we use this model as a DTO, we allow null
+        /// In the db this field is required.
         /// </summary>
         [JsonPropertyName("IntegrationTitle")]
-        public string IntegrationTitle { get; set; } = string.Empty;
+        public string IntegrationTitle { get; set; } 
 
         /// <summary>
         /// For off the shelf systems.
