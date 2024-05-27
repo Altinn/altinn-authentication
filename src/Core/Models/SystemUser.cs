@@ -17,17 +17,15 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// GUID created by the "real" Authentication Component
         /// When the Frontend send a request for the creation of a new SystemUser the Id is null
         /// </summary>
-        [AllowNull]
-        [JsonPropertyName ("Id")]
-        public string Id { get; set; }
+        [JsonPropertyName("Id")]
+        public string Id { get; set; } = string.Empty;
 
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
-        /// In the db this field is required, but if we use this model as a DTO, we allow null
+        /// In the db this field is required.
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("IntegrationTitle")]
-        public string IntegrationTitle { get; set; }
+        public string IntegrationTitle { get; set; } 
 
         /// <summary>
         /// For off the shelf systems.
@@ -36,25 +34,22 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// In the db this field is required, but if we use this model as a DTO, we allow null
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("ProductName")]
-        public string ProductName { get; set; }
+        public string ProductName { get; set; } = string.Empty;
 
         /// <summary>
         /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and
         /// user party serivces
         /// In the db this field is required, but if we use this model as a DTO, we allow null
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("OwnedByPartyId")]
-        public string OwnedByPartyId { get; set; }
+        public string OwnedByPartyId { get; set; } = string.Empty;
 
         /// <summary>
         /// Nice to have for debugging and logging.
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("Created")]
-        public System.DateTime Created { get; set; }
+        public System.DateTime Created { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// False by default, if a SystemUser is deleted in the API,
@@ -62,32 +57,28 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// from the database. This is to avoid complications with cascade delete,
         /// and the need to maintain consistent logging, and possible compliance rules.
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("IsDeleted")]
-        public bool IsDeleted { get; set; }
+        public bool IsDeleted { get; set; } = false;
 
         /// <summary>
         /// The name of the Supplier of the Product used in this Integration.
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("SupplierName")]
-        public string SupplierName { get; set; }
+        public string SupplierName { get; set; } = string.Empty;
 
         /// <summary>
         /// The organization number for the Supplier of the Product 
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("SupplierOrgno")]
-        public string SupplierOrgNo { get; set; }
+        public string SupplierOrgNo { get; set; } = string.Empty;
 
         /// <summary>
         /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
         /// In these cases the SupplierName and SupplierOrgNo will be blank
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("ClientId")]
-        public Guid ClientId { get; set; }
+        public Guid ClientId { get; set; } = Guid.Empty;
     }
 }

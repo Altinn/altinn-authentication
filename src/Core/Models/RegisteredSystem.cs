@@ -42,5 +42,10 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// Registered Systems can be set to Soft Deleted
         /// </summary>
         public bool SoftDeleted { get; set; } = false;
+
+        /// <summary>
+        /// The client Id
+        /// </summary>
+        public Guid ClientId { get; set; } = Guid.Empty;
     }
 }
