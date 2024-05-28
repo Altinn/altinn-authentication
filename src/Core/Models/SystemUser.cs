@@ -17,14 +17,14 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// GUID created by the "real" Authentication Component
         /// When the Frontend send a request for the creation of a new SystemUser the Id is null
         /// </summary>
-        [JsonPropertyName("Id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
         /// <summary>
         /// The Title and Description are strings set by the end-user in the Frontend.
         /// In the db this field is required.
         /// </summary>
-        [JsonPropertyName("IntegrationTitle")]
+        [JsonPropertyName("integrationTitle")]
         public string IntegrationTitle { get; set; } 
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// In the db this field is required, but if we use this model as a DTO, we allow null
         /// </summary>
-        [JsonPropertyName("ProductName")]
+        [JsonPropertyName("productName")]
         public string ProductName { get; set; } = string.Empty;
 
         /// <summary>
@@ -42,13 +42,13 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// user party serivces
         /// In the db this field is required, but if we use this model as a DTO, we allow null
         /// </summary>
-        [JsonPropertyName("OwnedByPartyId")]
+        [JsonPropertyName("ownedByPartyId")]
         public string OwnedByPartyId { get; set; } = string.Empty;
 
         /// <summary>
         /// Nice to have for debugging and logging.
         /// </summary>
-        [JsonPropertyName("Created")]
+        [JsonPropertyName("created")]
         public System.DateTime Created { get; set; } = DateTime.UtcNow;
 
         /// <summary>
@@ -57,28 +57,28 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// from the database. This is to avoid complications with cascade delete,
         /// and the need to maintain consistent logging, and possible compliance rules.
         /// </summary>
-        [JsonPropertyName("IsDeleted")]
+        [JsonPropertyName("isDeleted")]
         public bool IsDeleted { get; set; } = false;
 
         /// <summary>
         /// The name of the Supplier of the Product used in this Integration.
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
-        [JsonPropertyName("SupplierName")]
+        [JsonPropertyName("supplierName")]
         public string SupplierName { get; set; } = string.Empty;
 
         /// <summary>
         /// The organization number for the Supplier of the Product 
         /// In later phases, it will be possible to use non-supplier based Products, in which case the ClientId property should be filled out.
         /// </summary>
-        [JsonPropertyName("SupplierOrgno")]
+        [JsonPropertyName("supplierOrgno")]
         public string SupplierOrgNo { get; set; } = string.Empty;
 
         /// <summary>
         /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
         /// In these cases the SupplierName and SupplierOrgNo will be blank
         /// </summary>
-        [JsonPropertyName("ClientId")]
+        [JsonPropertyName("clientId")]
         public Guid ClientId { get; set; } = Guid.Empty;
     }
 }
