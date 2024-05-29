@@ -44,9 +44,33 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem( RegisteredSystem system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.CreateRegisteredSystem(system);
+            int count = system.DefaultRights.Count;
+            string[] defaultRights = new string[count];
+            int i = 0;
+            if (system.DefaultRights != null)
+            {
+                foreach (DefaultRight defaultRight in system.DefaultRights)
+                {
+                    defaultRights[i] = ConvertDefaultRightsToString(defaultRight.Resources);
+                    i++;
+                }
+            }
+
+            return _systemRegisterRepository.CreateRegisteredSystem(system, defaultRights);
+        }
+
+        private static string ConvertDefaultRightsToString(List<AttributePair> pairList)
+        {
+            string str = string.Empty;
+
+            foreach (AttributePair pair in pairList)
+            {
+                str += "{" + pair.Id + "=" + pair.Value + "}";
+            }
+
+            return str;
         }
     }
 }

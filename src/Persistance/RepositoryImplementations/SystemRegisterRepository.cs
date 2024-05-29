@@ -59,17 +59,19 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted, string[] defaultRights)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO altinn_authentication_integration.system_register(
                 registered_system_id,
                 system_vendor,
-                friendly_product_name)
+                friendly_product_name,
+                default_rights)
             VALUES(
                 @registered_system_id,
                 @system_vendor,
-                @description)
+                @description,
+                @default_rights)
             RETURNING hidden_internal_id;";
 
         try
@@ -79,6 +81,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("registered_system_id", toBeInserted.SystemTypeId);
             command.Parameters.AddWithValue("system_vendor", toBeInserted.SystemVendor);
             command.Parameters.AddWithValue("description", toBeInserted.Description);
+            command.Parameters.AddWithValue("default_rights", defaultRights);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)

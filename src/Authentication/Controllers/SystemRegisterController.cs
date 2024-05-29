@@ -13,7 +13,7 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for SystemRegister
 /// </summary>
-//[Authorize]
+[Authorize]
 [Route("authentication/api/v1/systemregister")]
 [ApiController]
 public class SystemRegisterController : ControllerBase
