@@ -37,7 +37,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_vendor, 
                 friendly_product_name,
                 is_deleted,
-                client_id
+                client_id,
+                default_rights
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.is_deleted = FALSE;
         ";
@@ -227,8 +228,37 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
             Description = reader.GetFieldValue<string>("friendly_product_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
-            ClientId = clientId
+            ClientId = clientId,
+            DefaultRights = ReadDefaultRightsFromDb(reader.GetFieldValue<string[]>("default_rights"))
         });
+    }
+
+    private static List<DefaultRight> ReadDefaultRightsFromDb(string[] arrayDefaultRights)
+    {
+        var list = new List<DefaultRight>();
+
+        foreach (string arrayElement in arrayDefaultRights)
+        {
+            var subElement = arrayElement.Split("=");
+
+            DefaultRight def = new()
+                { 
+                    ServiceProvider = string.Empty, // will be enriched later in the chain, is not always a part of the URN
+                    ActionRight = "All", // This will be changed in a later delivery, for now, all rights are needed
+                    Resources =
+                    [
+                        new() 
+                        {
+                            Id = subElement[0],
+                            Value = subElement[1]
+                        }
+                    ]
+                 
+                };
+            list.Add(def);
+        }
+
+        return list;
     }
 
     /// <inheritdoc/> 
