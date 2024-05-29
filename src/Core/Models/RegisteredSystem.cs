@@ -50,6 +50,6 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// The client Id
         /// </summary>
         [Required]
-        public Guid[] ClientId { get; set; } = [];
+        public List<Guid> ClientId { get; set; } = [];
     }
 }

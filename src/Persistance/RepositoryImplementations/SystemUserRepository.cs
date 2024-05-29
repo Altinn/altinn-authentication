@@ -215,7 +215,7 @@ internal class SystemUserRepository : ISystemUserRepository
             OwnedByPartyId = reader.GetFieldValue<string>("owned_by_party_id"),
             SupplierName = reader.GetFieldValue<string>("supplier_name"),
             SupplierOrgNo = reader.GetFieldValue<string>("supplier_org_no"),
-            ClientId = reader.GetFieldValue<Guid[]>("client_id"),
+            ClientId = reader.GetFieldValue<Guid>("client_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created")
         });

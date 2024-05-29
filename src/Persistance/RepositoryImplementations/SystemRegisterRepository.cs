@@ -106,7 +106,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_vendor, 
                 friendly_product_name,
                 is_deleted,
-                client_id
+                client_id,
+                default_rights
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.registered_system_id = @registered_system_id;
         ";
@@ -227,14 +228,26 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
-        //Guid.TryParse(reader.GetFieldValue<string[]>("client_id")[0], out Guid clientId);
+        string[] stringGuids = reader.GetFieldValue<string[]>("client_id");
+        List<Guid> clientIds = [];
+
+        foreach (string str in stringGuids)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                continue;
+            }                                        
+
+            clientIds.Add(Guid.Parse(str));
+        }
+        
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
             SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
             Description = reader.GetFieldValue<string>("friendly_product_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
-            ClientId = reader.GetFieldValue<Guid[]>("client_id"),
+            ClientId = clientIds,
             DefaultRights = ReadDefaultRightsFromDb(reader.GetFieldValue<string[]>("default_rights"))
         });
     }
