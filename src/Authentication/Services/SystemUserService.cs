@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
             RegisteredSystem regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
-            Guid clientId = regSystem.ClientId;
+            Guid[] clientId = regSystem.ClientId;
 
             SystemUser newSystemUser = new()
             {                
@@ -124,7 +124,7 @@ namespace Altinn.Platform.Authentication.Services
                 ProductName = "supplier3_product_name",
                 OwnedByPartyId = "orgno:" + systemOrg,
                 IsDeleted = false,
-                ClientId = Guid.Parse(clientId),
+                ClientId = [Guid.Parse(clientId)],
                 SupplierName = "Supplier3 Name",
                 SupplierOrgNo = consumerId
             });

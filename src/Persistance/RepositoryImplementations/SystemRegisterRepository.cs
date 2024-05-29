@@ -66,12 +66,14 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 registered_system_id,
                 system_vendor,
                 friendly_product_name,
-                default_rights)
+                default_rights,
+                client_id)
             VALUES(
                 @registered_system_id,
                 @system_vendor,
                 @description,
-                @default_rights)
+                @default_rights,
+                @client_id)
             RETURNING hidden_internal_id;";
 
         try
@@ -82,6 +84,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_vendor", toBeInserted.SystemVendor);
             command.Parameters.AddWithValue("description", toBeInserted.Description);
             command.Parameters.AddWithValue("default_rights", defaultRights);
+            command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -224,14 +227,14 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
-        Guid.TryParse(reader.GetFieldValue<string[]>("client_id")[0], out Guid clientId);
+        //Guid.TryParse(reader.GetFieldValue<string[]>("client_id")[0], out Guid clientId);
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
             SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
             Description = reader.GetFieldValue<string>("friendly_product_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
-            ClientId = clientId,
+            ClientId = reader.GetFieldValue<Guid[]>("client_id"),
             DefaultRights = ReadDefaultRightsFromDb(reader.GetFieldValue<string[]>("default_rights"))
         });
     }

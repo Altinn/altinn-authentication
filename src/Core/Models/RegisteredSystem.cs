@@ -1,4 +1,5 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
+using System.ComponentModel.DataAnnotations;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
@@ -21,11 +22,13 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// they should be aware of their own previous system names 
         /// when giving the new system it's id.
         /// </summary>
+        [Required]
         public string SystemTypeId { get; set; } = string.Empty;
 
         /// <summary>
         /// Which Vendor provides this product
         /// </summary>
+        [Required]
         public string SystemVendor { get; set; } = string.Empty;
 
         /// <summary>
@@ -46,6 +49,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// The client Id
         /// </summary>
-        public Guid ClientId { get; set; } = Guid.Empty;
+        [Required]
+        public Guid[] ClientId { get; set; } = [];
     }
 }

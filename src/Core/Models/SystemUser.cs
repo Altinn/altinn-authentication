@@ -79,6 +79,6 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// In these cases the SupplierName and SupplierOrgNo will be blank
         /// </summary>
         [JsonPropertyName("clientId")]
-        public Guid ClientId { get; set; } = Guid.Empty;
+        public Guid[] ClientId { get; set; } = [];
     }
 }

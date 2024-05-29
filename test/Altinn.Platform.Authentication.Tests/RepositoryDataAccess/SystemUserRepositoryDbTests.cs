@@ -37,12 +37,13 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     [Fact]
     public async Task InsertSystemUser()
     {
-        Guid guid = Guid.NewGuid();
+        Guid[] guids = [Guid.NewGuid()];
+        string[] defaultRights = [];
 
         RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
 
-        await RegisterRepository.CreateClient(guid.ToString());
-        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+        await RegisterRepository.CreateClient(guids[0].ToString());
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
 
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser 
         {
@@ -51,7 +52,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = guid
+            ClientId = guids
         });
 
         Assert.True(systemUserId is not null);
@@ -64,12 +65,13 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     [Fact]
     public async Task GetAllActiveSystemUsersForParty()
     {
-        Guid guid = Guid.NewGuid();
+        Guid[] guids = [Guid.NewGuid()];
+        string[] defaultRights = [];
 
         RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
 
-        await RegisterRepository.CreateClient(guid.ToString());
-        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+        await RegisterRepository.CreateClient(guids[0].ToString());
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
 
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
@@ -78,7 +80,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = guid
+            ClientId = guids
         });
 
         var res = await Repository.GetAllActiveSystemUsersForParty(1);
@@ -93,12 +95,13 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     [Fact]
     public async Task GetSystemUserById()
     {
-        Guid guid = Guid.NewGuid();
+        Guid[] guids = [Guid.NewGuid()];
+        string[] defaultRights = [];
 
         RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
 
-        await RegisterRepository.CreateClient(guid.ToString());
-        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+        await RegisterRepository.CreateClient(guids[0].ToString());
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
 
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
@@ -107,7 +110,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = guid
+            ClientId = guids
         });
 
         SystemUser? systemUser = await Repository.GetSystemUserById((Guid)systemUserId);
@@ -122,12 +125,13 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     [Fact]
     public async Task SoftDeleteSystemUserById()
     {
-        Guid guid = Guid.NewGuid();
+        Guid[] guids = [Guid.NewGuid()];
+        string[] defaultRights = [];
 
         RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
 
-        await RegisterRepository.CreateClient(guid.ToString());
-        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+        await RegisterRepository.CreateClient(guids[0].ToString());
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
 
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
@@ -136,7 +140,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA",
-            ClientId = guid
+            ClientId = guids
         });
 
         await Repository.SetDeleteSystemUserById((Guid)systemUserId);

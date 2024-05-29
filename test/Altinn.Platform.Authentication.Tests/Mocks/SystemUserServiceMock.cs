@@ -106,7 +106,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ProductName = "supplier_name_cool_system",
                 OwnedByPartyId = "orgno:91235123",
                 IsDeleted = false,
-                ClientId = Guid.Empty,
+                ClientId = [],
                 SupplierName = "Supplier1 Name",
                 SupplierOrgNo = "123456789"
             };
@@ -118,7 +118,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ProductName = "supplier2_product_name",
                 OwnedByPartyId = "orgno:91235124",
                 IsDeleted = false,
-                ClientId = Guid.Empty,
+                ClientId = [],
                 SupplierName = "Supplier2 Name",
                 SupplierOrgNo = "123456789"
             };
@@ -130,7 +130,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ProductName = "supplier3_product_name",
                 OwnedByPartyId = "orgno:91235125",
                 IsDeleted = false,
-                ClientId = Guid.Empty,
+                ClientId = [],
                 SupplierName = "Supplier3 Name",
                 SupplierOrgNo = "123456789"
             };
@@ -153,7 +153,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ProductName = "supplier3_product_name",
                 OwnedByPartyId = "orgno:" + systemOrg,
                 IsDeleted = false,
-                ClientId = Guid.Parse(clientId),
+                ClientId = [Guid.Parse(clientId)],
                 SupplierName = "Supplier3 Name",
                 SupplierOrgNo = consumerId
             });

@@ -284,7 +284,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string para = $"{partyId}/{id}";
             SystemUserRequestDto newSystemUser = new()
             {
-                PartyId = partyId,
+                PartyId = partyId.ToString(),
                 IntegrationTitle = "IntegrationTitleValue",
                 ProductName = "ProductNameValue"
             };
