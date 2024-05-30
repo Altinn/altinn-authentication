@@ -34,6 +34,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// A short description of the product, used when filtering the dropdown menu.
         /// </summary>
+        [Required]
         public string FriendlyProductName { get; set; } = string.Empty;
 
         /// <summary>
