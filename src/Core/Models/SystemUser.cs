@@ -39,11 +39,17 @@ namespace Altinn.Platform.Authentication.Core.Models
 
         /// <summary>
         /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and
-        /// user party serivces
+        /// user party serivces.
         /// In the db this field is required, but if we use this model as a DTO, we allow null
         /// </summary>
         [JsonPropertyName("ownedByPartyId")]
         public string OwnedByPartyId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The Organisation number for the end-user Organisation.         
+        /// </summary>
+        [JsonPropertyName("ownedByOrgNo")]
+        public string OwnedByOrgNo {  get; set; } = string.Empty;
 
         /// <summary>
         /// Nice to have for debugging and logging.

@@ -50,5 +50,5 @@ public interface ISystemUserRepository
     /// <param name="systemUserOwnerOrgNo">The id of the end user which owns this SystemUser Integration</param>
     /// <param name="cancellationToken">Cancellationtoken</param>
     /// <returns></returns>
-    Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken);
+    Task<SystemUser?> CheckIfPartyHasIntegrationByOrgNo(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken);
 }

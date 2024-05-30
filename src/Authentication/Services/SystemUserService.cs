@@ -123,7 +123,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
         {
-            return await _repository.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, cancellationToken);
+            return await _repository.CheckIfPartyHasIntegrationByOrgNo(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, cancellationToken);
         }
     }
 }

@@ -100,6 +100,7 @@ internal class SystemUserRepository : ISystemUserRepository
 		        integration_title,
 		        product_name,
 		        owned_by_party_id,
+                owned_by_org_no,
 		        supplier_name,
 		        supplier_org_no,
 		        client_id,
@@ -134,6 +135,7 @@ internal class SystemUserRepository : ISystemUserRepository
                     integration_title,
                     product_name,
                     owned_by_party_id,
+                    owned_by_org_no,
                     supplier_name,
                     supplier_org_no,
                     client_id)
@@ -141,6 +143,7 @@ internal class SystemUserRepository : ISystemUserRepository
                     @integration_title,
                     @product_name,
                     @owned_by_party_id,
+                    @owned_by_orgno,
                     @supplier_name,
                     @supplier_org_no,
                     @client_id)
@@ -153,6 +156,7 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
             command.Parameters.AddWithValue("product_name", toBeInserted.ProductName);
             command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.OwnedByPartyId);
+            command.Parameters.AddWithValue("owned_by_org_no", toBeInserted.OwnedByOrgNo);
             command.Parameters.AddWithValue("supplier_name", toBeInserted.SupplierName);
             command.Parameters.AddWithValue("supplier_org_no", toBeInserted.SupplierOrgNo);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
@@ -197,7 +201,7 @@ internal class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
+    public async Task<SystemUser?> CheckIfPartyHasIntegrationByOrgNo(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
     {
         const string QUERY = /*strspsql*/@"
               SELECT 
@@ -205,22 +209,23 @@ internal class SystemUserRepository : ISystemUserRepository
 		        integration_title,
 		        product_name,
 		        owned_by_party_id,
+                owned_by_org_no,
 		        supplier_name,
 		        supplier_org_no,
 		        client_id,
 		        is_deleted,
 		        created
 	        FROM altinn_authentication_integration.system_user_integration sui 
-	        WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
-	            AND sui.is_deleted = false
-                AND sui.client_id = @clientId;
+	        WHERE sui.is_deleted = false
+                AND sui.client_id = @clientId
+                AND sui.owned_by_org_no = @owned_by_org_no;
             ";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
+            command.Parameters.AddWithValue("owned_by_org_no", systemUserOwnerOrgNo);
             command.Parameters.AddWithValue("clientId", Guid.Parse(clientId));
 
             return await command.ExecuteEnumerableAsync()
@@ -251,6 +256,7 @@ internal class SystemUserRepository : ISystemUserRepository
             Id = reader.GetFieldValue<Guid>("system_user_integration_id").ToString(),
             ProductName = reader.GetFieldValue<string>("product_name"),
             OwnedByPartyId = reader.GetFieldValue<string>("owned_by_party_id"),
+            OwnedByOrgNo = reader.GetFieldValue<string>("owned_by_org_no"),
             SupplierName = reader.GetFieldValue<string>("supplier_name"),
             SupplierOrgNo = reader.GetFieldValue<string>("supplier_org_no"),
             ClientId = reader.GetFieldValue<Guid>("client_id"),
