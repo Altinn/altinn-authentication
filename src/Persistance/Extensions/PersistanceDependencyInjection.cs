@@ -39,8 +39,7 @@ public static class PersistanceDependencyInjection
     private static void AddPostgreSqlDatabase(this IServiceCollection services) 
     {
         services.AddOptions<PostgreSQLSettings>()
-                 .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbUserConnectionString), "Missing Connection string")
-                 .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbPassword), "Missing db password");
+                 .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbUserConnectionString), "Missing Connection string");
 
         services.TryAddSingleton((IServiceProvider sp) =>
         {
