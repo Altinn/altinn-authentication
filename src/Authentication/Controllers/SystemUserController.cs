@@ -84,21 +84,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("byExternalId")]
         public async Task<ActionResult> CheckIfPartyHasIntegration([FromQuery] string clientId, [FromQuery] string systemProviderOrgNo, [FromQuery] string systemUserOwnerOrgNo, CancellationToken cancellationToken = default)
         {
-            //SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, consumerId, systemOrg, cancellationToken);
-
-            //to be deleted, only used once for the convenience of Idporten to test if access is open
-            SystemUser res = new()
-            {
-                ClientId = Guid.Parse(clientId),
-                Created = DateTime.UtcNow,
-                Id = Guid.NewGuid().ToString(),
-                IntegrationTitle = "Yes_The_Connection_Works",
-                IsDeleted = false,
-                OwnedByPartyId = systemUserOwnerOrgNo,
-                SupplierOrgNo = systemProviderOrgNo,
-                SupplierName = "Vendor's Name",
-                ProductName = "Vendor's Registered System",
-            };
+            SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, cancellationToken);
 
             if (res is null)
             {

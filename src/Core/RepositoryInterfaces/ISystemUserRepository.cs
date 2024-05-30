@@ -41,4 +41,14 @@ public interface ISystemUserRepository
     /// <param name="productName"></param>
     /// <returns>Number of rows affected</returns>
     Task<int> UpdateProductName(Guid guid, string productName);
+
+    /// <summary>
+    /// Used by Maskinporten to verify a valid SystemUser during Lookup from a systemProvider
+    /// </summary>
+    /// <param name="clientId">The key connecting the SystemUser integration to a unique Registered System by a SystemProvider</param>
+    /// <param name="systemProviderOrgNo">Used for disambiguation</param>
+    /// <param name="systemUserOwnerOrgNo">The id of the end user which owns this SystemUser Integration</param>
+    /// <param name="cancellationToken">Cancellationtoken</param>
+    /// <returns></returns>
+    Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken);
 }

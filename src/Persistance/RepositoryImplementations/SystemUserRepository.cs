@@ -194,7 +194,45 @@ internal class SystemUserRepository : ISystemUserRepository
 
             throw;
         }
-    }    
+    }
+
+    /// <inheritdoc />
+    public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strspsql*/@"
+              SELECT 
+	    	    system_user_integration_id,
+		        integration_title,
+		        product_name,
+		        owned_by_party_id,
+		        supplier_name,
+		        supplier_org_no,
+		        client_id,
+		        is_deleted,
+		        created
+	        FROM altinn_authentication_integration.system_user_integration sui 
+	        WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
+	            AND sui.is_deleted = false
+                AND sui.client_id = @clientId;
+            ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
+            command.Parameters.AddWithValue("clientId", Guid.Parse(clientId));
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToSystemUser)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CheckIfPartyHasIntegration // Exception");
+            throw;
+        }
+    }
 
     private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
     {
