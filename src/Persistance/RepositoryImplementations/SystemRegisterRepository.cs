@@ -71,7 +71,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             VALUES(
                 @registered_system_id,
                 @system_vendor,
-                @description,
+                @friendly_product_name,
                 @default_rights,
                 @client_id)
             RETURNING hidden_internal_id;";
@@ -82,7 +82,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             command.Parameters.AddWithValue("registered_system_id", toBeInserted.SystemTypeId);
             command.Parameters.AddWithValue("system_vendor", toBeInserted.SystemVendor);
-            command.Parameters.AddWithValue("description", toBeInserted.FriendlyProductName);
+            command.Parameters.AddWithValue("friendly_product_name", toBeInserted.FriendlyProductName);
             command.Parameters.AddWithValue("default_rights", defaultRights);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
 
