@@ -37,7 +37,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_vendor, 
                 friendly_product_name,
                 is_deleted,
-                client_id
+                client_id,
+                default_rights
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.is_deleted = FALSE;
         ";
@@ -58,17 +59,21 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted, string[] defaultRights)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO altinn_authentication_integration.system_register(
                 registered_system_id,
                 system_vendor,
-                friendly_product_name)
+                friendly_product_name,
+                default_rights,
+                client_id)
             VALUES(
                 @registered_system_id,
                 @system_vendor,
-                @description)
+                @friendly_product_name,
+                @default_rights,
+                @client_id)
             RETURNING hidden_internal_id;";
 
         try
@@ -77,7 +82,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             command.Parameters.AddWithValue("registered_system_id", toBeInserted.SystemTypeId);
             command.Parameters.AddWithValue("system_vendor", toBeInserted.SystemVendor);
-            command.Parameters.AddWithValue("description", toBeInserted.Description);
+            command.Parameters.AddWithValue("friendly_product_name", toBeInserted.FriendlyProductName);
+            command.Parameters.AddWithValue("default_rights", defaultRights);
+            command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -99,7 +106,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_vendor, 
                 friendly_product_name,
                 is_deleted,
-                client_id
+                client_id,
+                default_rights
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.registered_system_id = @registered_system_id;
         ";
@@ -220,15 +228,56 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
-        Guid.TryParse(reader.GetFieldValue<string[]>("client_id")[0], out Guid clientId);
+        string[] stringGuids = reader.GetFieldValue<string[]>("client_id");
+        List<Guid> clientIds = [];
+
+        foreach (string str in stringGuids)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                continue;
+            }                                        
+
+            clientIds.Add(Guid.Parse(str));
+        }
+        
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
             SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
-            Description = reader.GetFieldValue<string>("friendly_product_name"),
+            FriendlyProductName = reader.GetFieldValue<string>("friendly_product_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
-            ClientId = clientId
+            ClientId = clientIds,
+            DefaultRights = ReadDefaultRightsFromDb(reader.GetFieldValue<string[]>("default_rights"))
         });
+    }
+
+    private static List<DefaultRight> ReadDefaultRightsFromDb(string[] arrayDefaultRights)
+    {
+        var list = new List<DefaultRight>();
+
+        foreach (string arrayElement in arrayDefaultRights)
+        {
+            var subElement = arrayElement.Split("=");
+
+            DefaultRight def = new()
+                { 
+                    ServiceProvider = string.Empty, // will be enriched later in the chain, is not always a part of the URN
+                    ActionRight = "All", // This will be changed in a later delivery, for now, all rights are needed
+                    Resources =
+                    [
+                        new() 
+                        {
+                            Id = subElement[0],
+                            Value = subElement[1]
+                        }
+                    ]
+                 
+                };
+            list.Add(def);
+        }
+
+        return list;
     }
 
     /// <inheritdoc/> 

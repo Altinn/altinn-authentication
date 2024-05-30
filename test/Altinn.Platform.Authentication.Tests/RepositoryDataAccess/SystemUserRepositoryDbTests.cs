@@ -38,11 +38,12 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     public async Task InsertSystemUser()
     {
         Guid guid = Guid.NewGuid();
+        string[] defaultRights = [];
 
         RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
 
         await RegisterRepository.CreateClient(guid.ToString());
-        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
 
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser 
         {
@@ -65,11 +66,12 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     public async Task GetAllActiveSystemUsersForParty()
     {
         Guid guid = Guid.NewGuid();
+        string[] defaultRights = [];
 
         RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
 
         await RegisterRepository.CreateClient(guid.ToString());
-        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
 
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
@@ -94,11 +96,12 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     public async Task GetSystemUserById()
     {
         Guid guid = Guid.NewGuid();
+        string[] defaultRights = [];
 
         RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
 
         await RegisterRepository.CreateClient(guid.ToString());
-        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
 
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
@@ -123,11 +126,12 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     public async Task SoftDeleteSystemUserById()
     {
         Guid guid = Guid.NewGuid();
+        string[] defaultRights = [];
 
         RegisteredSystem registeredSystem = new() { SystemTypeId = "Awesome_System" };
 
         await RegisterRepository.CreateClient(guid.ToString());
-        await RegisterRepository.CreateRegisteredSystem(registeredSystem);
+        await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
 
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {

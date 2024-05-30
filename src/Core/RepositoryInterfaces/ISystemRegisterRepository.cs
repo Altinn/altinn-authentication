@@ -24,7 +24,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="toBeInserted">The newly created Product to be inserted</param>
     /// <returns>Returns the hidden system Guid</returns>
-    Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted);
+    Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted, string[] defaultRights);
 
     /// <summary>
     /// Returns a single RegisteredSystem, even if it was set to deleted.
