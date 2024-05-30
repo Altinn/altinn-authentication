@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 SystemVendor = "Awesome",
                 SystemTypeId = "Awesome_Tax",
-                Description = "Awesome_Tax",
+                FriendlyProductName = "Awesome_Tax",
                 DefaultRights =
                 [
                     new()
@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 SystemVendor = "Wonderful",
                 SystemTypeId = "Wonderful_Tax",
-                Description = "Wonderful_Tax",
+                FriendlyProductName = "Wonderful_Tax",
                 DefaultRights =
                 [
                     new()
@@ -103,7 +103,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 SystemVendor = "Brilliant",
                 SystemTypeId = "Brilliant_HR",
-                Description = "Brilliant_HR",
+                FriendlyProductName = "Brilliant_HR",
                 DefaultRights =
                 [
                     new()
@@ -139,7 +139,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 SystemVendor = "Fantastic",
                 SystemTypeId = "Fantastic_HR",
-                Description = "Fantastic_HR",
+                FriendlyProductName = "Fantastic_HR",
                 DefaultRights =
                 [
                     new()

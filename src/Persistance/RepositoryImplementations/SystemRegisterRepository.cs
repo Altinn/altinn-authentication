@@ -245,7 +245,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             SystemTypeId = reader.GetFieldValue<string>("registered_system_id"),
             SystemVendor = reader.GetFieldValue<string>("system_vendor"),
-            Description = reader.GetFieldValue<string>("friendly_product_name"),
+            FriendlyProductName = reader.GetFieldValue<string>("friendly_product_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
             ClientId = clientIds,
             DefaultRights = ReadDefaultRightsFromDb(reader.GetFieldValue<string[]>("default_rights"))

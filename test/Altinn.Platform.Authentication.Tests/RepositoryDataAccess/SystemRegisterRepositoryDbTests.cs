@@ -41,7 +41,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisteredSystem
             {
-                Description = "Test",
+                FriendlyProductName = "Test",
                 SystemTypeId = friendlyId,
                 SystemVendor = "Awesome",
                 DefaultRights = new List<DefaultRight>() 
@@ -84,7 +84,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisteredSystem
             {
-                Description = "Test",
+                FriendlyProductName = "Test",
                 SystemTypeId = friendlyId,
                 SystemVendor = "Awesome"
             },
@@ -95,7 +95,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId2 = await Repository.CreateRegisteredSystem(
             new RegisteredSystem
             {
-                Description = "Test",
+                FriendlyProductName = "Test",
                 SystemTypeId = friendlyId2,
                 SystemVendor = "Awesome"
             },
@@ -119,7 +119,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisteredSystem
             {
-                Description = "Test",
+                FriendlyProductName = "Test",
                 SystemTypeId = friendlyId,
                 SystemVendor = "Awesome"
             },
@@ -146,7 +146,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisteredSystem
             {
-                Description = "Test",
+                FriendlyProductName = "Test",
                 SystemTypeId = friendlyId,
                 SystemVendor = "Awesome"
             },
@@ -173,7 +173,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisteredSystem
             {
-                Description = "Test",
+                FriendlyProductName = "Test",
                 SystemTypeId = friendlyId,
                 SystemVendor = "Awesome",
                 DefaultRights = new List<DefaultRight>()
