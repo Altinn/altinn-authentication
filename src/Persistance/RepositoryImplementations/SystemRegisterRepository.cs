@@ -82,7 +82,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             command.Parameters.AddWithValue("registered_system_id", toBeInserted.SystemTypeId);
             command.Parameters.AddWithValue("system_vendor", toBeInserted.SystemVendor);
-            command.Parameters.AddWithValue("description", toBeInserted.Description);
+            command.Parameters.AddWithValue("description", toBeInserted.FriendlyProductName);
             command.Parameters.AddWithValue("default_rights", defaultRights);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
 
