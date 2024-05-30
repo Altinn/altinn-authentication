@@ -125,10 +125,10 @@ namespace Altinn.Platform.Authentication.Controllers
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
-        [HttpPost("{partyId}")]
-        public async Task<ActionResult<SystemUser>> CreateSystemUser(int partyId, [FromBody] SystemUserRequestDto request)
+        [HttpPost("{partyOrgNo}")]
+        public async Task<ActionResult<SystemUser>> CreateSystemUser(string partyOrgNo, [FromBody] SystemUserRequestDto request)
         {           
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, partyId);
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, partyOrgNo);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);

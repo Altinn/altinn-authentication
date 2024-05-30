@@ -143,7 +143,7 @@ internal class SystemUserRepository : ISystemUserRepository
                     @integration_title,
                     @product_name,
                     @owned_by_party_id,
-                    @owned_by_orgno,
+                    @owned_by_org_no,
                     @supplier_name,
                     @supplier_org_no,
                     @client_id)

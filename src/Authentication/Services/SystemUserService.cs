@@ -35,7 +35,7 @@ namespace Altinn.Platform.Authentication.Services
         /// The unique Id for the systemuser is handled by the db.
         /// </summary>
         /// <returns>The SystemUser created</returns>
-        public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, int partyId)
+        public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, string partyOrgNo)
         {
             RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
             if (regSystem == null)
@@ -49,7 +49,8 @@ namespace Altinn.Platform.Authentication.Services
             {                
                 IntegrationTitle = request.IntegrationTitle,
                 ProductName = request.ProductName,
-                OwnedByPartyId = partyId.ToString(),
+                OwnedByPartyId = request.PartyId.ToString(),
+                OwnedByOrgNo = partyOrgNo,
                 ClientId = clientId
             };
 
