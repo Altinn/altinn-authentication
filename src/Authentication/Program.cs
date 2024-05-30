@@ -429,8 +429,7 @@ void ConfigurePostgreSql()
         if (builder.Environment.IsDevelopment())
         {
             string connectionString = string.Format(
-            builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminConnectionString"),
-            builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminPassword"));
+            builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminConnectionString"));
             workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
             postgresAdminConnectionString = connectionString;
         }

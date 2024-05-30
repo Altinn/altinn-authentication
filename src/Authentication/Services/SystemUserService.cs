@@ -9,6 +9,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
+#nullable enable
 namespace Altinn.Platform.Authentication.Services
 {
     /// <summary>
@@ -34,10 +35,15 @@ namespace Altinn.Platform.Authentication.Services
         /// The unique Id for the systemuser is handled by the db.
         /// </summary>
         /// <returns>The SystemUser created</returns>
-        public async Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
+        public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
-            RegisteredSystem regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
-            Guid clientId = regSystem.ClientId;
+            RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
+            if (regSystem == null)
+            {
+                return null;
+            }
+
+            Guid clientId = regSystem.ClientId[0];
 
             SystemUser newSystemUser = new()
             {                
@@ -48,7 +54,7 @@ namespace Altinn.Platform.Authentication.Services
             };
 
             Guid insertedId = await _repository.InsertSystemUser(newSystemUser);            
-            SystemUser inserted = await _repository.GetSystemUserById(insertedId);
+            SystemUser? inserted = await _repository.GetSystemUserById(insertedId);
             return inserted;
         }
 
@@ -115,19 +121,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<SystemUser> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken)
+        public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new SystemUser
-            {
-                Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
-                IntegrationTitle = "Et helt annet system",
-                ProductName = "supplier3_product_name",
-                OwnedByPartyId = "orgno:" + systemOrg,
-                IsDeleted = false,
-                ClientId = Guid.Parse(clientId),
-                SupplierName = "Supplier3 Name",
-                SupplierOrgNo = consumerId
-            });
+            return await _repository.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, cancellationToken);
         }
     }
 }

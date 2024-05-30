@@ -1,4 +1,5 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
+using System.ComponentModel.DataAnnotations;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
@@ -21,17 +22,20 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// they should be aware of their own previous system names 
         /// when giving the new system it's id.
         /// </summary>
+        [Required]
         public string SystemTypeId { get; set; } = string.Empty;
 
         /// <summary>
         /// Which Vendor provides this product
         /// </summary>
+        [Required]
         public string SystemVendor { get; set; } = string.Empty;
 
         /// <summary>
         /// A short description of the product, used when filtering the dropdown menu.
         /// </summary>
-        public string Description { get; set; } = string.Empty;
+        [Required]
+        public string FriendlyProductName { get; set; } = string.Empty;
 
         /// <summary>
         /// The array of Rights versus System Provider's Resources needed to use this Registered System
@@ -46,6 +50,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// The client Id
         /// </summary>
-        public Guid ClientId { get; set; } = Guid.Empty;
+        [Required]
+        public List<Guid> ClientId { get; set; } = [];
     }
 }
