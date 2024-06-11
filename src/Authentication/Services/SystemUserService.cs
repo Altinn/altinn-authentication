@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>The SystemUser created</returns>
         public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
-            RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
+            RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
             if (regSystem == null)
             {
                 return null;

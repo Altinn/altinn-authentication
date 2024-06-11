@@ -9,6 +9,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
@@ -28,6 +29,7 @@ using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -122,8 +124,8 @@ async Task SetConfigurationProviders(ConfigurationManager config)
 
     config.AddEnvironmentVariables();
 
-    await ConnectToKeyVaultAndSetApplicationInsights(config);
-    await ConnectToKeyVaultAndSetConfig(config);
+    //await ConnectToKeyVaultAndSetApplicationInsights(config);
+    //await ConnectToKeyVaultAndSetConfig(config);
 
     config.AddCommandLine(args);
 }
@@ -375,6 +377,12 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         {
             // catch swashbuckle exception if it doesn't find the generated xml documentation file
         }
+    });
+
+    services.AddAuthorization(options =>
+    {
+        options.AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy => policy
+            .RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN));
     });
 
     services.AddFeatureManagement();
