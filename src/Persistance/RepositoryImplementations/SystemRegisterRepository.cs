@@ -81,7 +81,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("custom_system_id", toBeInserted.CustomSystemId);
-            command.Parameters.AddWithValue("systemvendor_orgnumber", Convert.ToInt32(toBeInserted.SystemVendorOrgNumber));
+            command.Parameters.AddWithValue("systemvendor_orgnumber", toBeInserted.SystemVendorOrgNumber);
             command.Parameters.AddWithValue("friendly_product_name", toBeInserted.FriendlyProductName);
             command.Parameters.AddWithValue("rights", rights);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
@@ -109,7 +109,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 client_id,
                 rights
             FROM altinn_authentication_integration.system_register sr
-            WHERE sr.registered_system_id = @custom_system_id;
+            WHERE sr.custom_system_id = @custom_system_id;
         ";
 
         try
@@ -242,7 +242,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         return new ValueTask<RegisterSystemResponse>(new RegisterSystemResponse
         {
             CustomSystemId = reader.GetFieldValue<string>("custom_system_id"),
-            SystemVendorOrgNumber = reader.GetFieldValue<string>("systemvendor_orgnumber"),
+            SystemVendorOrgNumber = reader.GetFieldValue<int>("systemvendor_orgnumber"),
             FriendlyProductName = reader.GetFieldValue<string>("friendly_product_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
             ClientId = clientIds,

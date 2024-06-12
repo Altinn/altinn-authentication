@@ -29,7 +29,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// Organization number of the system Vendor that offers the product (system)
         /// </summary>
         [Required]
-        public string SystemVendorOrgNumber { get; set; } = string.Empty;
+        public int SystemVendorOrgNumber { get; set; }
 
         /// <summary>
         /// A short name of the product, used when displaying to the user

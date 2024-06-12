@@ -84,7 +84,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
                     }
                 };
 
-        RegisterSystemRequest registeredSystem = new() { CustomSystemId = "Awesome_System", SystemVendorOrgNumber="98343434", FriendlyProductName="Awesome System", ClientId = clientId, SoftDeleted=false};
+        RegisterSystemRequest registeredSystem = new() { CustomSystemId = "Awesome_System", SystemVendorOrgNumber=991825827, FriendlyProductName="Awesome System", ClientId = clientId, SoftDeleted=false};
 
         await RegisterRepository.CreateClient(guid.ToString());
         await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
