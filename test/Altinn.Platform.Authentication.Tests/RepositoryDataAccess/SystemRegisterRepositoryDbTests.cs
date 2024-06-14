@@ -43,7 +43,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
             {
                 SystemName = "Test",
                 SystemId = friendlyId,
-                SystemVendorOrgNumber = 991825827,
+                SystemVendorOrgNumber = "991825827",
                 Rights = new List<Right>() 
                 { 
                     new Right() 
@@ -65,7 +65,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
 
         RegisterSystemResponse? isitthere = await Repository.GetRegisteredSystemById(friendlyId);
         Assert.True(isitthere is not null);
-        Assert.Equal(991825827, isitthere.SystemVendorOrgNumber);
+        Assert.Equal("991825827", isitthere.SystemVendorOrgNumber);
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
             {
                 SystemName = "Test",
                 SystemId = friendlyId,
-                SystemVendorOrgNumber = 991825827
+                SystemVendorOrgNumber = "991825827"
             },
             defaultRights);
 
@@ -95,7 +95,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
             {
                 SystemName = "Test",
                 SystemId = friendlyId2,
-                SystemVendorOrgNumber = 991825827
+                SystemVendorOrgNumber = "991825827"
             },
             defaultRights);
 
@@ -119,7 +119,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
             {
                 SystemName = "Test",
                 SystemId = friendlyId,
-                SystemVendorOrgNumber = 991825827
+                SystemVendorOrgNumber = "991825827"
             },
             defaultRights);
 
@@ -146,7 +146,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
             {
                 SystemName = "Test",
                 SystemId = friendlyId,
-                SystemVendorOrgNumber = 991825827
+                SystemVendorOrgNumber = "991825827"
             },
             defaultRights);
 
@@ -154,7 +154,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
 
         RegisterSystemResponse? isitthere = await Repository.GetRegisteredSystemById(friendlyId);
         Assert.True(isitthere is not null);
-        Assert.Equal(991825827, isitthere.SystemVendorOrgNumber);
+        Assert.Equal("991825827", isitthere.SystemVendorOrgNumber);
 
         await Repository.SetDeleteRegisteredSystemById(friendlyId);
 
@@ -173,7 +173,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
             {
                 SystemName = "Test",
                 SystemId = friendlyId,
-                SystemVendorOrgNumber = 991825827,
+                SystemVendorOrgNumber = "991825827",
                 Rights = new List<Right>()
                 {
                     new Right()

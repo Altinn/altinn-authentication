@@ -39,8 +39,10 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     {
         Guid guid = Guid.NewGuid();
         string[] defaultRights = [];
+        List<Guid> clientId = new List<Guid>();
+        clientId.Add(guid);
 
-        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System" };
+        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber = "991825827", SystemName = "Awesome System", ClientId = clientId, SoftDeleted = false };
 
         await RegisterRepository.CreateClient(guid.ToString());
         await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
@@ -84,7 +86,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
                     }
                 };
 
-        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber=991825827, SystemName="Awesome System", ClientId = clientId, SoftDeleted=false};
+        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber="991825827", SystemName="Awesome System", ClientId = clientId, SoftDeleted=false};
 
         await RegisterRepository.CreateClient(guid.ToString());
         await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
@@ -114,7 +116,10 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid guid = Guid.NewGuid();
         string[] defaultRights = [];
 
-        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System" };
+        List<Guid> clientId = new List<Guid>();
+        clientId.Add(guid);
+
+        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber = "991825827", SystemName = "Awesome System", ClientId = clientId, SoftDeleted = false };
 
         await RegisterRepository.CreateClient(guid.ToString());
         await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
@@ -144,7 +149,10 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid guid = Guid.NewGuid();
         string[] defaultRights = [];
 
-        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System" };
+        List<Guid> clientId = new List<Guid>();
+        clientId.Add(guid);
+
+        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber = "991825827", SystemName = "Awesome System", ClientId = clientId, SoftDeleted = false };
 
         await RegisterRepository.CreateClient(guid.ToString());
         await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);

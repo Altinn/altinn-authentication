@@ -242,7 +242,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         return new ValueTask<RegisterSystemResponse>(new RegisterSystemResponse
         {
             SystemId = reader.GetFieldValue<string>("system_id"),
-            SystemVendorOrgNumber = reader.GetFieldValue<int>("systemvendor_orgnumber"),
+            SystemVendorOrgNumber = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             SystemName = reader.GetFieldValue<string>("system_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
             ClientId = clientIds,

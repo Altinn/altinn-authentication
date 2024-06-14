@@ -2,7 +2,7 @@ ALTER TABLE altinn_authentication_integration.system_register
 DROP COLUMN system_vendor;
 
 ALTER TABLE altinn_authentication_integration.system_register
-ADD COLUMN systemvendor_orgnumber integer;
+ADD COLUMN systemvendor_orgnumber varchar(12);
 
 ALTER TABLE altinn_authentication_integration.system_register
 RENAME COLUMN registered_system_id TO system_id;
