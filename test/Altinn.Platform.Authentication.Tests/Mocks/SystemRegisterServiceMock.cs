@@ -30,8 +30,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             RegisterSystemResponse reg1 = new()
             {
                 SystemVendorOrgName = "Test Org AS",
-                CustomSystemId = "Awesome_Tax",
-                FriendlyProductName = "Awesome_Tax",
+                SystemId = "Awesome_Tax",
+                SystemName = "Awesome_Tax",
                 Rights =
                 [
                     new()
@@ -62,8 +62,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             RegisterSystemResponse reg2 = new()
             {
                 SystemVendorOrgName = "Wonderful",
-                CustomSystemId = "Wonderful_Tax",
-                FriendlyProductName = "Wonderful_Tax",
+                SystemId = "Wonderful_Tax",
+                SystemName = "Wonderful_Tax",
                 Rights =
                 [
                     new()
@@ -93,7 +93,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             RegisterSystemResponse reg3 = new()
             {
-                FriendlyProductName = "Brilliant_HR",
+                SystemName = "Brilliant_HR",
                 Rights =
                 [
                     new()
@@ -123,7 +123,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             RegisterSystemResponse reg4 = new()
             {
-                FriendlyProductName = "Fantastic_HR",
+                SystemName = "Fantastic_HR",
                 Rights =
                 [
                     new()
@@ -163,7 +163,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             await Task.Delay(50, cancellation);
              
-            var sys = _registeredSystemsMockList.Find(r => r.CustomSystemId.Equals(systemId));
+            var sys = _registeredSystemsMockList.Find(r => r.SystemId.Equals(systemId));
 
             List<Right> list = [];
             list.AddRange(sys.Rights);

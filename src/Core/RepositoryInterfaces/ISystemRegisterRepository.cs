@@ -40,9 +40,9 @@ public interface ISystemRegisterRepository
     /// registering collided with an existing name.
     /// </summary>
     /// <param name="id">The human readable string Id</param>
-    /// <param name="newName">The new human readable string Id</param>
+    /// <param name="newSystemId">The new human readable string Id</param>
     /// <returns>True if renamed</returns>
-    Task<int> RenameRegisteredSystemByGuid(Guid id, string newName);
+    Task<int> RenameRegisteredSystemIdByGuid(Guid id, string newSystemId);
 
     /// <summary>
     /// Set's the product's is_deleted column to True.

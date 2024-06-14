@@ -41,8 +41,8 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                CustomSystemId = friendlyId,
+                SystemName = "Test",
+                SystemId = friendlyId,
                 SystemVendorOrgNumber = 991825827,
                 Rights = new List<Right>() 
                 { 
@@ -82,8 +82,8 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                CustomSystemId = friendlyId,
+                SystemName = "Test",
+                SystemId = friendlyId,
                 SystemVendorOrgNumber = 991825827
             },
             defaultRights);
@@ -93,8 +93,8 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId2 = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                CustomSystemId = friendlyId2,
+                SystemName = "Test",
+                SystemId = friendlyId2,
                 SystemVendorOrgNumber = 991825827
             },
             defaultRights);
@@ -117,8 +117,8 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                CustomSystemId = friendlyId,
+                SystemName = "Test",
+                SystemId = friendlyId,
                 SystemVendorOrgNumber = 991825827
             },
             defaultRights);
@@ -128,11 +128,11 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? guid = await Repository.RetrieveGuidFromStringId(friendlyId);
         Assert.True(guid is not null);
                 
-        var succeed = await Repository.RenameRegisteredSystemByGuid((Guid)guid, friendlyId2);
+        var succeed = await Repository.RenameRegisteredSystemIdByGuid((Guid)guid, friendlyId2);
         Assert.Equal(1, succeed);
 
         var there = await Repository.GetRegisteredSystemById(friendlyId2);        
-        Assert.Equal(friendlyId2, there?.CustomSystemId);         
+        Assert.Equal(friendlyId2, there?.SystemId);         
     }
 
     [Fact] 
@@ -144,8 +144,8 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                CustomSystemId = friendlyId,
+                SystemName = "Test",
+                SystemId = friendlyId,
                 SystemVendorOrgNumber = 991825827
             },
             defaultRights);
@@ -171,8 +171,8 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                CustomSystemId = friendlyId,
+                SystemName = "Test",
+                SystemId = friendlyId,
                 SystemVendorOrgNumber = 991825827,
                 Rights = new List<Right>()
                 {

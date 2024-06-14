@@ -48,13 +48,13 @@ public class SystemRegisterController : ControllerBase
     /// <summary>
     /// Retrieves a list of the predfined default rights for the Product type, if any
     /// </summary>
-    /// <param name="productId">The Id of the Product </param>
+    /// <param name="systemId">The Id of the Product </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    [HttpGet("product/{productId}")]
-    public async Task<ActionResult> GetRightsForRegisteredSystem(string productId, CancellationToken cancellationToken = default)
+    [HttpGet("system/{systemId}")]
+    public async Task<ActionResult> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
     {
-        List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(productId, cancellationToken);
+        List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
         if (lista is null || lista.Count == 0) 
         {
             return NoContent();
@@ -84,12 +84,12 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new Registered System ( Product) 
+    /// Create a new System 
     /// </summary>
     /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
-    [HttpPost("product")]
+    [HttpPost("system")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {

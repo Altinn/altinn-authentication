@@ -5,7 +5,10 @@ ALTER TABLE altinn_authentication_integration.system_register
 ADD COLUMN systemvendor_orgnumber integer;
 
 ALTER TABLE altinn_authentication_integration.system_register
-RENAME COLUMN registered_system_id TO custom_system_id;
+RENAME COLUMN registered_system_id TO system_id;
 
 ALTER TABLE altinn_authentication_integration.system_register
 RENAME COLUMN default_rights to rights;
+
+ALTER TABLE altinn_authentication_integration.system_register
+RENAME COLUMN friendly_product_name to system_name;

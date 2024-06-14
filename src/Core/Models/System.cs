@@ -22,7 +22,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// they should be aware of their own previous system names 
         /// when giving the new system it's id.
         /// </summary>
-        public string CustomSystemId { get; set; }
+        public string SystemId { get; set; }
 
         /// <summary>
         /// Which Vendor provides this product
@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// A short description of the product, used when filtering the dropdown menu.
         /// </summary>
-        public string FriendlyProductName { get; set; } = string.Empty;
+        public string SystemName { get; set; } = string.Empty;
 
         /// <summary>
         /// The array of Rights versus System Provider's Resources needed to use this Registered System

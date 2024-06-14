@@ -23,7 +23,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// when giving the new system it's id.
         /// </summary>
         [Required]
-        public string CustomSystemId { get; set; } = string.Empty;
+        public string SystemId { get; set; } = string.Empty;
 
         /// <summary>
         /// Organization number of the system Vendor that offers the product (system)
@@ -41,7 +41,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// A short name of the product, used when displaying to the user
         /// </summary>
         [Required]
-        public string FriendlyProductName { get; set; } = string.Empty;
+        public string SystemName { get; set; } = string.Empty;
 
         /// <summary>
         /// The array of Rights versus System Provider's Resources needed to use this Registered System
