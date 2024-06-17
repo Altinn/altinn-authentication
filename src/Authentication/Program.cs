@@ -429,7 +429,7 @@ void Configure()
     app.MapHealthChecks("/health");
 }
 
-void ConfigurePostgreSql()
+void ConfigurePostgreSql() 
 {
     if (builder.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
     {
