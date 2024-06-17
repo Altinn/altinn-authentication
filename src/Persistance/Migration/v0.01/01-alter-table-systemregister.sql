@@ -12,3 +12,4 @@ RENAME COLUMN default_rights to rights;
 
 ALTER TABLE altinn_authentication_integration.system_register
 RENAME COLUMN friendly_product_name to system_name;
+

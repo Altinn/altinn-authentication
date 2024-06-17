@@ -34,8 +34,8 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// In the db this field is required, but if we use this model as a DTO, we allow null
         /// </summary>
-        [JsonPropertyName("productName")]
-        public string ProductName { get; set; } = string.Empty;
+        [JsonPropertyName("systemName")]
+        public string SystemName { get; set; } = string.Empty;
 
         /// <summary>
         /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and

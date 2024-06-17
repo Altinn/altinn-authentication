@@ -14,15 +14,30 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
     public class RegisterSystemResponse
     {
         /// <summary>
-        /// The unique Id for this product, in human-readable string format.
-        /// The id is in the format of system_vendor_name_plus_name_chosen_by_them.
+        /// The primary key to store and edit the Registered System.
+        /// Used as a Foreign Key in the System User table.
         /// 
-        /// An Optimistic Concurrency pattern to create new System Ids is used,
-        /// where the Id of the product is prefixed with the SystemVendor to help with uniqueness.
+        /// The SystemInternalId never changes throughout the lifecycle 
+        /// of the entry.
+        /// </summary>
+        [Required]
+        public Guid SystemInternalId { get; set; } = Guid.Empty;
+
+        /// <summary>
+        /// A unique External Id for this System, in human-readable string format.
+        /// The id could be in the format of system_vendor_name_plus_name_chosen_by_them.
+        /// 
+        /// An Optimistic Concurrency pattern to create new System Ids could be used,
+        /// where the Id of the System is prefixed with the SystemVendor.
         /// 
         /// When the SystemVendor tries to register a new system (product), 
         /// they should be aware of their own previous system names 
         /// when giving the new system it's id.
+        /// 
+        /// The Registered Systems are stored using a unique system_internal_id
+        /// as the primary key, which allows System Vendors to reuse the SystemId 
+        /// if creating new systems to replace the existing one. The old system's
+        /// name should be changed prior to be reused, since it must be unique.
         /// </summary>
         [Required]
         public string SystemId { get; set; } = string.Empty;

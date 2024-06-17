@@ -63,11 +63,8 @@ internal class SystemUserRepository : ISystemUserRepository
                 SELECT 
                     system_user_integration_id,
 		            integration_title,
-		            product_name,
+		            system_internal_id,
 		            owned_by_party_id,
-		            supplier_name,
-		            supplier_org_no,
-		            is_deleted,
 		            created                    
                 FROM altinn_authentication_integration.system_user_integration sui 
 	            WHERE sui.owned_by_party_id = @owned_by_party_id	
@@ -97,11 +94,8 @@ internal class SystemUserRepository : ISystemUserRepository
             SELECT 
 	    	    system_user_integration_id,
 		        integration_title,
-		        product_name,
+		        system_internal_id,
 		        owned_by_party_id,
-		        supplier_name,
-		        supplier_org_no,
-		        is_deleted,
 		        created
 	        FROM altinn_authentication_integration.system_user_integration sui 
 	        WHERE sui.system_user_integration_id = @system_user_integration_id
@@ -125,21 +119,23 @@ internal class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<Guid> InsertSystemUser(SystemUser toBeInserted)
+    public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted)
     {
+        string? system_internal_id = await ResolveSystemInternalIdFromSystemName(toBeInserted.SystemName);
+        if (system_internal_id != null) 
+        {
+            return null;
+        }
+
         const string QUERY = /*strpsql*/@"            
                 INSERT INTO altinn_authentication_integration.system_user_integration(
                     integration_title,
-                    product_name,
-                    owned_by_party_id,
-                    supplier_name,
-                    supplier_org_no)
+                    system_internal_id,
+                    owned_by_party_id,)
                 VALUES(
                     @integration_title,
-                    @product_name,
-                    @owned_by_party_id,
-                    @supplier_name,
-                    @supplier_org_no)
+                    @system_internal_id,
+                    @owned_by_party_id)
                 RETURNING system_user_integration_id;";
 
         try
@@ -147,10 +143,8 @@ internal class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
-            command.Parameters.AddWithValue("product_name", toBeInserted.ProductName);
+            command.Parameters.AddWithValue("system_internal_id", system_internal_id);
             command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.OwnedByPartyId);
-            command.Parameters.AddWithValue("supplier_name", toBeInserted.SupplierName);
-            command.Parameters.AddWithValue("supplier_org_no", toBeInserted.SupplierOrgNo);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
@@ -159,6 +153,32 @@ internal class SystemUserRepository : ISystemUserRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // InsertSystemUser // Exception");
+            throw;
+        }
+    }
+
+    private async Task<string?> ResolveSystemInternalIdFromSystemName(string systemId)
+    {
+        const string QUERY = /*strspsql*/@"
+            SELECT
+              hidden_internal_id
+            FROM altinn_authentication_integration.system_register sr
+            WHERE sr.system_id = @systemId;
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("systemId", systemId);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToSystemId)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // ResolveSystemInternalIdFromSystemName // Exception");
             throw;
         }
     }
@@ -194,9 +214,9 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
     {
-        string? system_id = await ResolveSystemIdFromClientId(clientId);
+        string? system_internal_id = await ResolveSystemInternalIdFromClientId(clientId);
 
-        if (system_id == null)
+        if (system_internal_id == null)
         {
             return null;
         }
@@ -205,16 +225,13 @@ internal class SystemUserRepository : ISystemUserRepository
               SELECT 
 	    	    system_user_integration_id,
 		        integration_title,
-		        product_name,
+		        system_internal_id,
 		        owned_by_party_id,
-		        supplier_name,
-		        supplier_org_no,
-		        is_deleted,
 		        created
 	        FROM altinn_authentication_integration.system_user_integration sui 
 	        WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
 	            AND sui.is_deleted = false
-                AND sui.product_name = @product_name;
+                AND sui.hidden_internal_id = @hidden_internal_id;
             ";
 
         try
@@ -222,7 +239,7 @@ internal class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
-            command.Parameters.AddWithValue("product_name", system_id);
+            command.Parameters.AddWithValue("system_internal_id", system_internal_id);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)
@@ -235,11 +252,11 @@ internal class SystemUserRepository : ISystemUserRepository
         }
     }
 
-    private async Task<string?> ResolveSystemIdFromClientId(string clientId)
+    private async Task<string?> ResolveSystemInternalIdFromClientId(string clientId)
     {
         const string QUERY = /*strspsql*/@"
             SELECT
-              system_id
+              hidden_internal_id
             FROM altinn_authentication_integration.system_register sr
             WHERE @client_id = ANY (sr.client_id);
         ";
@@ -281,10 +298,8 @@ internal class SystemUserRepository : ISystemUserRepository
         return new ValueTask<SystemUser>(new SystemUser
         {
             Id = reader.GetFieldValue<Guid>("system_user_integration_id").ToString(),
-            ProductName = reader.GetFieldValue<string>("product_name"),
+            SystemName = reader.GetFieldValue<string>("system_internal_id"),
             OwnedByPartyId = reader.GetFieldValue<string>("owned_by_party_id"),
-            SupplierName = reader.GetFieldValue<string>("supplier_name"),
-            SupplierOrgNo = reader.GetFieldValue<string>("supplier_org_no"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created")
         });

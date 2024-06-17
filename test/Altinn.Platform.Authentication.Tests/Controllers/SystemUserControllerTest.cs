@@ -231,7 +231,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     Id = list[0].Id,
                     OwnedByPartyId = partyId.ToString(),                     
                     IntegrationTitle = list[0].IntegrationTitle, 
-                    ProductName = list[0].ProductName 
+                    ProductName = list[0].SystemName
                 };
 
             string para = $"{partyId}/{list[0].Id}";
@@ -249,7 +249,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUser shouldBeUpdated = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), _options);
 
             Assert.NotEqual(HttpStatusCode.Unauthorized, response2.StatusCode);
-            Assert.Equal("updated_product_name", shouldBeUpdated.ProductName);
+            Assert.Equal("updated_product_name", shouldBeUpdated!.SystemName);
         }
 
         [Fact]
@@ -313,7 +313,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string para = $"{partyId}/{id}";
             SystemUser newSystemUser = new SystemUser
             {
-                ProductName = "This is the new SystemUser!",
+                SystemName = "This is the new SystemUser!",
                 Id = "12334523456346"
             };
 

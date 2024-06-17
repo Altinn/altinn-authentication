@@ -51,7 +51,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         {
             IntegrationTitle = "InsertSystemUserTitle",
             OwnedByPartyId = "1",
-            ProductName = "Awesome_System",
+            SystemName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
         });
@@ -94,7 +94,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         {
             IntegrationTitle = "GetAllActiveSystemUsersForPartyTitle",
             OwnedByPartyId = "1",
-            ProductName = "Awesome_System",
+            SystemName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
         });
@@ -126,7 +126,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         {
             IntegrationTitle = "GetSystemUserByIdTitle",
             OwnedByPartyId = "1",
-            ProductName = "Awesome_System",
+            SystemName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
         });
@@ -158,7 +158,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         {
             IntegrationTitle = "GetSystemUserByIdTitle",
             OwnedByPartyId = "1",
-            ProductName = "Awesome_System",
+            SystemName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
         });

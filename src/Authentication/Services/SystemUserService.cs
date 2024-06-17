@@ -43,17 +43,20 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            Guid clientId = regSystem.ClientId[0];
-
             SystemUser newSystemUser = new()
             {                
                 IntegrationTitle = request.IntegrationTitle,
-                ProductName = request.ProductName,
+                SystemName = request.ProductName,
                 OwnedByPartyId = partyId.ToString()
             };
 
-            Guid insertedId = await _repository.InsertSystemUser(newSystemUser);            
-            SystemUser? inserted = await _repository.GetSystemUserById(insertedId);
+            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser);        
+            if (insertedId == null)
+            {
+                return null;
+            }
+
+            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
             return inserted;
         }
 
