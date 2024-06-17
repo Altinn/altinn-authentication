@@ -39,22 +39,20 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         string[] defaultRights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
-            new RegisteredSystem
+            new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                SystemTypeId = friendlyId,
-                SystemVendor = "Awesome",
-                DefaultRights = new List<DefaultRight>() 
+                SystemName = "Test",
+                SystemId = friendlyId,
+                SystemVendorOrgNumber = "991825827",
+                Rights = new List<Right>() 
                 { 
-                    new DefaultRight() 
+                    new Right() 
                     {
-                        ServiceProvider = "Nav",
-                        ActionRight = "Read",
                         Resources = new List<AttributePair>()
                         {
                             new AttributePair()
                             {
-                                Id = "nav,read,HR",
+                                Id = "urn:altinn:resource",
                                 Value = "Test"
                             }
                         }
@@ -65,9 +63,9 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
 
         Assert.NotEqual(Guid.Empty, registeredSystemId);
 
-        RegisteredSystem? isitthere = await Repository.GetRegisteredSystemById(friendlyId);
+        RegisterSystemResponse? isitthere = await Repository.GetRegisteredSystemById(friendlyId);
         Assert.True(isitthere is not null);
-        Assert.Equal("Awesome", isitthere.SystemVendor);
+        Assert.Equal("991825827", isitthere.SystemVendorOrgNumber);
     }
 
     /// <summary>
@@ -82,26 +80,26 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         string[] defaultRights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
-            new RegisteredSystem
+            new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                SystemTypeId = friendlyId,
-                SystemVendor = "Awesome"
+                SystemName = "Test",
+                SystemId = friendlyId,
+                SystemVendorOrgNumber = "991825827"
             },
             defaultRights);
 
         string friendlyId2 = "Second_Test_System_String_Human_Readable_Id";
 
         Guid? registeredSystemId2 = await Repository.CreateRegisteredSystem(
-            new RegisteredSystem
+            new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                SystemTypeId = friendlyId2,
-                SystemVendor = "Awesome"
+                SystemName = "Test",
+                SystemId = friendlyId2,
+                SystemVendorOrgNumber = "991825827"
             },
             defaultRights);
 
-        List<RegisteredSystem> res = await Repository.GetAllActiveSystems();
+        List<RegisterSystemResponse> res = await Repository.GetAllActiveSystems();
         Assert.NotEmpty(res);
     }
 
@@ -117,11 +115,11 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         string[] defaultRights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
-            new RegisteredSystem
+            new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                SystemTypeId = friendlyId,
-                SystemVendor = "Awesome"
+                SystemName = "Test",
+                SystemId = friendlyId,
+                SystemVendorOrgNumber = "991825827"
             },
             defaultRights);
 
@@ -130,11 +128,11 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         Guid? guid = await Repository.RetrieveGuidFromStringId(friendlyId);
         Assert.True(guid is not null);
                 
-        var succeed = await Repository.RenameRegisteredSystemByGuid((Guid)guid, friendlyId2);
+        var succeed = await Repository.RenameRegisteredSystemIdByGuid((Guid)guid, friendlyId2);
         Assert.Equal(1, succeed);
 
         var there = await Repository.GetRegisteredSystemById(friendlyId2);        
-        Assert.Equal(friendlyId2, there?.SystemTypeId);         
+        Assert.Equal(friendlyId2, there?.SystemId);         
     }
 
     [Fact] 
@@ -144,19 +142,19 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
         string[] defaultRights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
-            new RegisteredSystem
+            new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                SystemTypeId = friendlyId,
-                SystemVendor = "Awesome"
+                SystemName = "Test",
+                SystemId = friendlyId,
+                SystemVendorOrgNumber = "991825827"
             },
             defaultRights);
 
         Assert.NotEqual(Guid.Empty, registeredSystemId);
 
-        RegisteredSystem? isitthere = await Repository.GetRegisteredSystemById(friendlyId);
+        RegisterSystemResponse? isitthere = await Repository.GetRegisteredSystemById(friendlyId);
         Assert.True(isitthere is not null);
-        Assert.Equal("Awesome", isitthere.SystemVendor);
+        Assert.Equal("991825827", isitthere.SystemVendorOrgNumber);
 
         await Repository.SetDeleteRegisteredSystemById(friendlyId);
 
@@ -168,34 +166,32 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
     public async Task SystemRegister_GetDefaultRightsForRegisteredSystem()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
-        string[] defaultRights = [];
+        string[] rights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
-            new RegisteredSystem
+            new RegisterSystemRequest
             {
-                FriendlyProductName = "Test",
-                SystemTypeId = friendlyId,
-                SystemVendor = "Awesome",
-                DefaultRights = new List<DefaultRight>()
+                SystemName = "Test",
+                SystemId = friendlyId,
+                SystemVendorOrgNumber = "991825827",
+                Rights = new List<Right>()
                 {
-                    new DefaultRight()
+                    new Right()
                     {
-                        ServiceProvider = "Nav",
-                        ActionRight = "Read",
                         Resources = new List<AttributePair>()
                         {
                             new AttributePair()
                             {
-                                Id = "nav,read,HR",
+                                Id = "urn:altinn:resource",
                                 Value = "Test"
                             }
                         }
                     }
                 }
             },
-            defaultRights);
+            rights);
 
-        var defRight = Repository.GetDefaultRightsForRegisteredSystem(friendlyId);
+        var defRight = Repository.GetRightsForRegisteredSystem(friendlyId);
         Assert.NotNull(defRight);        
     }   
 }

@@ -12,50 +12,46 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
     [ExcludeFromCodeCoverage]
     public class SystemRegisterServiceMock : ISystemRegisterService
     {
-        private readonly List<RegisteredSystem> _registeredSystemsMockList;
+        private readonly List<RegisterSystemResponse> _registeredSystemsMockList;
 
         public SystemRegisterServiceMock()
         {
             _registeredSystemsMockList = MockDataHelper();
         }
 
-        public async Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default)
+        public async Task<List<RegisterSystemResponse>> GetListRegSys(CancellationToken cancellation = default)
         {
             await Task.Delay(50);
             return _registeredSystemsMockList;
         }
                 
-        private static List<RegisteredSystem> MockDataHelper() 
+        private static List<RegisterSystemResponse> MockDataHelper() 
         {
-            RegisteredSystem reg1 = new()
+            RegisterSystemResponse reg1 = new()
             {
-                SystemVendor = "Awesome",
-                SystemTypeId = "Awesome_Tax",
-                FriendlyProductName = "Awesome_Tax",
-                DefaultRights =
+                SystemVendorOrgName = "Test Org AS",
+                SystemId = "Awesome_Tax",
+                SystemName = "Awesome_Tax",
+                Rights =
                 [
                     new()
                     {
-                        ActionRight = "Read",
-                        ServiceProvider = "Skatteetaten",
                         Resources =
                         [
                             new AttributePair 
                             { 
-                                Id = "urn:altinn:app", 
+                                Id = "urn:altinn:resource", 
                                 Value = "mva"
                             }
                         ]
                     },
                     new()
                     {
-                        ActionRight = "Write",
-                        ServiceProvider = "Skatteetaten",
                         Resources =
                         [
                             new AttributePair
                             {
-                                Id = "urn:altinn:app",
+                                Id = "urn:altinn:resource",
                                 Value = "mva"
                             }
                         ]
@@ -63,35 +59,31 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            RegisteredSystem reg2 = new()
+            RegisterSystemResponse reg2 = new()
             {
-                SystemVendor = "Wonderful",
-                SystemTypeId = "Wonderful_Tax",
-                FriendlyProductName = "Wonderful_Tax",
-                DefaultRights =
+                SystemVendorOrgName = "Wonderful",
+                SystemId = "Wonderful_Tax",
+                SystemName = "Wonderful_Tax",
+                Rights =
                 [
                     new()
                     {
-                        ActionRight = "Read",
-                        ServiceProvider = "Skatteetaten",
                         Resources =
                         [
                             new AttributePair
                             {
-                                Id = "urn:altinn:app",
+                                Id = "urn:altinn:resource",
                                 Value = "mva"
                             }
                         ]
                     },
                     new()
                     {
-                        ActionRight = "Write",
-                        ServiceProvider = "Skatteetaten",
                         Resources =
                         [
                             new AttributePair
                             {
-                                Id = "urn:altinn:app",
+                                Id = "urn:altinn:resource",
                                 Value = "mva"
                             }
                         ]
@@ -99,35 +91,29 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            RegisteredSystem reg3 = new()
+            RegisterSystemResponse reg3 = new()
             {
-                SystemVendor = "Brilliant",
-                SystemTypeId = "Brilliant_HR",
-                FriendlyProductName = "Brilliant_HR",
-                DefaultRights =
+                SystemName = "Brilliant_HR",
+                Rights =
                 [
                     new()
                     {
-                        ActionRight = "Read",
-                        ServiceProvider = "Skatteetaten",
                         Resources =
                         [
                             new AttributePair
                             {
-                                Id = "urn:altinn:app",
+                                Id = "urn:altinn:resource",
                                 Value = "lonn"
                             }
                         ]
                     },
                     new()
                     {
-                        ActionRight = "Write",
-                        ServiceProvider = "Skatteetaten",
                         Resources =
                         [
                             new AttributePair
                             {
-                                Id = "urn:altinn:app",
+                                Id = "urn:altinn:resource",
                                 Value = "lonn"
                             }
                         ]
@@ -135,35 +121,29 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            RegisteredSystem reg4 = new()
+            RegisterSystemResponse reg4 = new()
             {
-                SystemVendor = "Fantastic",
-                SystemTypeId = "Fantastic_HR",
-                FriendlyProductName = "Fantastic_HR",
-                DefaultRights =
+                SystemName = "Fantastic_HR",
+                Rights =
                 [
                     new()
                     {
-                        ActionRight = "Read",
-                        ServiceProvider = "Skatteetaten",
                         Resources =
                         [
                             new AttributePair
                             {
-                                Id = "urn:altinn:app",
+                                Id = "urn:altinn:resource",
                                 Value = "lonn"
                             }
                         ]
                     },
                     new()
                     {
-                        ActionRight = "Write",
-                        ServiceProvider = "Skatteetaten",
                         Resources =
                         [
                             new AttributePair
                             {
-                                Id = "urn:altinn:app",
+                                Id = "urn:altinn:resource",
                                 Value = "lonn"
                             }
                         ]
@@ -171,7 +151,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            List<RegisteredSystem> list =
+            List<RegisterSystemResponse> list =
                 [
                     reg1, reg2, reg3, reg4
                 ];
@@ -179,14 +159,14 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return list;
         }
 
-        public async Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
+        public async Task<List<Right>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
         {
             await Task.Delay(50, cancellation);
              
-            var sys = _registeredSystemsMockList.Find(r => r.SystemTypeId.Equals(systemId));
+            var sys = _registeredSystemsMockList.Find(r => r.SystemId.Equals(systemId));
 
-            List<DefaultRight> list = [];
-            list.AddRange(sys.DefaultRights);
+            List<Right> list = [];
+            list.AddRange(sys.Rights);
 
             return list;
         }
@@ -203,7 +183,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
         {
             throw new NotImplementedException();
         }

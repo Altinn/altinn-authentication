@@ -26,15 +26,15 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default)
+        public Task<List<RegisterSystemResponse>> GetListRegSys(CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetAllActiveSystems();
         }
 
         /// <inheritdoc/>
-        public Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
+        public Task<List<Right>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.GetDefaultRightsForRegisteredSystem(systemId);
+            return _systemRegisterRepository.GetRightsForRegisteredSystem(systemId);
         }
 
         /// <inheritdoc/>
@@ -44,14 +44,14 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
         {
-            int count = system.DefaultRights.Count;
+            int count = system.Rights.Count;
             string[] defaultRights = new string[count];
             int i = 0;
-            if (system.DefaultRights != null)
+            if (system.Rights != null)
             {
-                foreach (DefaultRight defaultRight in system.DefaultRights)
+                foreach (Right defaultRight in system.Rights)
                 {
                     defaultRights[i] = ConvertDefaultRightsToString(defaultRight.Resources);
                     i++;
