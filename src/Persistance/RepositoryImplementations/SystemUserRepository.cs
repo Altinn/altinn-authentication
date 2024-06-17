@@ -194,7 +194,12 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
     {
-        string product_name = await ResolveProductNameFromClientId(clientId);
+        string? system_id = await ResolveSystemIdFromClientId(clientId);
+
+        if (system_id == null)
+        {
+            return null;
+        }
 
         const string QUERY = /*strspsql*/@"
               SELECT 
@@ -217,7 +222,7 @@ internal class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
-            command.Parameters.AddWithValue("product_name", product_name);
+            command.Parameters.AddWithValue("product_name", system_id);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)
@@ -230,9 +235,35 @@ internal class SystemUserRepository : ISystemUserRepository
         }
     }
 
-    private async Task<string> ResolveProductNameFromClientId(string clientId)
+    private async Task<string?> ResolveSystemIdFromClientId(string clientId)
     {
-        throw new NotImplementedException();
+        const string QUERY = /*strspsql*/@"
+            SELECT
+              system_id
+            FROM altinn_authentication_integration.system_register sr
+            WHERE @client_id = ANY (sr.client_id);
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("client_id", clientId);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToSystemId)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // ResolveProductNameFromClientId // Exception");
+            throw;
+        }
+    }
+
+    private ValueTask<string> ConvertFromReaderToSystemId(NpgsqlDataReader reader)
+    {
+        return new ValueTask<string>(reader.GetFieldValue<string>(0));
     }
 
     private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
