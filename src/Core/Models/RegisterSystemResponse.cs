@@ -1,5 +1,6 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
@@ -9,6 +10,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
     /// A Registered System is a product supplied by a System Vendor,
     /// it may need Rights to use or acccess Resources at a Service Provider.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class RegisterSystemResponse
     {
         /// <summary>
