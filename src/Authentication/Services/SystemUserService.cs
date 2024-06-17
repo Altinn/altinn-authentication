@@ -49,8 +49,7 @@ namespace Altinn.Platform.Authentication.Services
             {                
                 IntegrationTitle = request.IntegrationTitle,
                 ProductName = request.ProductName,
-                OwnedByPartyId = partyId.ToString(),
-                ClientId = clientId
+                OwnedByPartyId = partyId.ToString()
             };
 
             Guid insertedId = await _repository.InsertSystemUser(newSystemUser);            

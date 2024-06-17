@@ -53,8 +53,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
-            SupplierOrgNo = "123456789 MVA",
-            ClientId = guid
+            SupplierOrgNo = "123456789 MVA"
         });
 
         Assert.True(systemUserId is not null);
@@ -97,8 +96,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
-            SupplierOrgNo = "123456789 MVA",
-            ClientId = guid
+            SupplierOrgNo = "123456789 MVA"
         });
 
         var res = await Repository.GetAllActiveSystemUsersForParty(1);
@@ -130,8 +128,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
-            SupplierOrgNo = "123456789 MVA",
-            ClientId = guid
+            SupplierOrgNo = "123456789 MVA"
         });
 
         SystemUser? systemUser = await Repository.GetSystemUserById((Guid)systemUserId);
@@ -163,8 +160,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             OwnedByPartyId = "1",
             ProductName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
-            SupplierOrgNo = "123456789 MVA",
-            ClientId = guid
+            SupplierOrgNo = "123456789 MVA"
         });
 
         await Repository.SetDeleteSystemUserById((Guid)systemUserId);

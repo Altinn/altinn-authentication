@@ -73,12 +73,5 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// </summary>
         [JsonPropertyName("supplierOrgno")]
         public string SupplierOrgNo { get; set; } = string.Empty;
-
-        /// <summary>
-        /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
-        /// In these cases the SupplierName and SupplierOrgNo will be blank
-        /// </summary>
-        [JsonPropertyName("clientId")]
-        public Guid ClientId { get; set; } = Guid.Empty;
     }
 }

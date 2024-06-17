@@ -27,10 +27,6 @@
 	  <ProjectReference Include="..\Core\Altinn.Platform.Authentication.Core.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Migration\v0.01\" />
-	</ItemGroup>
-
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
 		<CodeAnalysisRuleSet>..\..\Altinn3.ruleset</CodeAnalysisRuleSet>
 	</PropertyGroup>

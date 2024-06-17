@@ -67,7 +67,6 @@ internal class SystemUserRepository : ISystemUserRepository
 		            owned_by_party_id,
 		            supplier_name,
 		            supplier_org_no,
-		            client_id,
 		            is_deleted,
 		            created                    
                 FROM altinn_authentication_integration.system_user_integration sui 
@@ -102,7 +101,6 @@ internal class SystemUserRepository : ISystemUserRepository
 		        owned_by_party_id,
 		        supplier_name,
 		        supplier_org_no,
-		        client_id,
 		        is_deleted,
 		        created
 	        FROM altinn_authentication_integration.system_user_integration sui 
@@ -135,15 +133,13 @@ internal class SystemUserRepository : ISystemUserRepository
                     product_name,
                     owned_by_party_id,
                     supplier_name,
-                    supplier_org_no,
-                    client_id)
+                    supplier_org_no)
                 VALUES(
                     @integration_title,
                     @product_name,
                     @owned_by_party_id,
                     @supplier_name,
-                    @supplier_org_no,
-                    @client_id)
+                    @supplier_org_no)
                 RETURNING system_user_integration_id;";
 
         try
@@ -155,7 +151,6 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.OwnedByPartyId);
             command.Parameters.AddWithValue("supplier_name", toBeInserted.SupplierName);
             command.Parameters.AddWithValue("supplier_org_no", toBeInserted.SupplierOrgNo);
-            command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
@@ -199,6 +194,8 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
     {
+        string product_name = await ResolveProductNameFromClientId(clientId);
+
         const string QUERY = /*strspsql*/@"
               SELECT 
 	    	    system_user_integration_id,
@@ -207,13 +204,12 @@ internal class SystemUserRepository : ISystemUserRepository
 		        owned_by_party_id,
 		        supplier_name,
 		        supplier_org_no,
-		        client_id,
 		        is_deleted,
 		        created
 	        FROM altinn_authentication_integration.system_user_integration sui 
 	        WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
 	            AND sui.is_deleted = false
-                AND sui.client_id = @clientId;
+                AND sui.product_name = @product_name;
             ";
 
         try
@@ -221,7 +217,7 @@ internal class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
-            command.Parameters.AddWithValue("clientId", Guid.Parse(clientId));
+            command.Parameters.AddWithValue("product_name", product_name);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)
@@ -232,6 +228,11 @@ internal class SystemUserRepository : ISystemUserRepository
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // CheckIfPartyHasIntegration // Exception");
             throw;
         }
+    }
+
+    private async Task<string> ResolveProductNameFromClientId(string clientId)
+    {
+        throw new NotImplementedException();
     }
 
     private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
@@ -253,7 +254,6 @@ internal class SystemUserRepository : ISystemUserRepository
             OwnedByPartyId = reader.GetFieldValue<string>("owned_by_party_id"),
             SupplierName = reader.GetFieldValue<string>("supplier_name"),
             SupplierOrgNo = reader.GetFieldValue<string>("supplier_org_no"),
-            ClientId = reader.GetFieldValue<Guid>("client_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created")
         });
