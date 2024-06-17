@@ -92,7 +92,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead );
-            List<RegisteredSystem> list = JsonSerializer.Deserialize<List<RegisteredSystem>>(await response.Content.ReadAsStringAsync(), _options);
+            List<RegisterSystemResponse> list = JsonSerializer.Deserialize<List<RegisterSystemResponse>>(await response.Content.ReadAsStringAsync(), _options);
             Assert.True(list.Count > 0);
         }
 
@@ -104,11 +104,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/product/{name}");
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{name}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<DefaultRight> list = JsonSerializer.Deserialize<List<DefaultRight>>(await response.Content.ReadAsStringAsync(), _options);
-            Assert.Equal("Skatteetaten", list[0].ServiceProvider);
-            Assert.Equal("Read", list[0].ActionRight);
+            List<Right> list = JsonSerializer.Deserialize<List<Right>>(await response.Content.ReadAsStringAsync(), _options);
             Assert.Equal("mva", list[0].Resources[0].Value);
         }
 

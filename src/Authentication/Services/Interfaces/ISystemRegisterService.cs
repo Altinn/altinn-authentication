@@ -18,7 +18,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="cancellation">The cancellation token</param>
         /// <returns></returns>
-        Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default);
+        Task<List<RegisterSystemResponse>> GetListRegSys(CancellationToken cancellation = default);
 
         /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider
@@ -27,7 +27,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System</param>
         /// <param name="cancellation">Cancellation token</param>
         /// <returns>List of Default Rights</returns>
-        Task<List<DefaultRight>> GetDefaultRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default);
+        Task<List<Right>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default);
 
         /// <summary>
         /// Inserts a new unique ClientId
@@ -40,9 +40,9 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <summary>
         /// Inserts a new Registered System
         /// </summary>
-        /// <param name="system">The descriptor DTO for a new Registered System</param>
+        /// <param name="system">The descriptor DTO for a new System</param>
         /// <param name="cancellation">The Cancelation token</param>
         /// <returns></returns>
-        Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default);
+        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default);
     }
 }
