@@ -38,10 +38,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_name,
                 is_deleted,
                 client_id,
-                rights
+                rights,
+                is_visible
             FROM altinn_authentication_integration.system_register sr
-            WHERE sr.is_deleted = FALSE;
-        ";
+            WHERE sr.is_deleted = FALSE;";
 
         try
         {
@@ -67,13 +67,15 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 systemvendor_orgnumber,
                 system_name,
                 rights,
-                client_id)
+                client_id,
+                is_visible)
             VALUES(
                 @system_id,
                 @systemvendor_orgnumber,
                 @system_name,
                 @rights,
-                @client_id)
+                @client_id,
+                @is_visible)
             RETURNING system_internal_id;";
 
         try
@@ -85,6 +87,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_name", toBeInserted.SystemName);
             command.Parameters.AddWithValue("rights", rights);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
+            command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -108,7 +111,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_name,
                 is_deleted,
                 client_id,
-                rights
+                rights,
+                is_visible
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.system_id = @system_id;
         ";
@@ -248,7 +252,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SystemName = reader.GetFieldValue<string>("system_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
             ClientId = clientIds,
-            Rights = ReadRightsFromDb(reader.GetFieldValue<string[]>("rights"))
+            Rights = ReadRightsFromDb(reader.GetFieldValue<string[]>("rights")),
+            IsVisible = reader.GetFieldValue<bool>("is_visible"),
         });
     }
 

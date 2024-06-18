@@ -39,8 +39,8 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     {
         Guid guid = Guid.NewGuid();
         string[] defaultRights = [];
-        List<Guid> clientId = new List<Guid>();
-        clientId.Add(guid);
+        List<string> clientId = new List<string>();
+        clientId.Add(guid.ToString());
 
         RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber = "991825827", SystemName = "Awesome System", ClientId = clientId, SoftDeleted = false };
 
@@ -68,8 +68,8 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
     {
         Guid guid = Guid.NewGuid();
         string[] defaultRights = [];
-        List<Guid> clientId = new List<Guid>();
-        clientId.Add(guid);
+        List<string> clientId = new List<string>();
+        clientId.Add(guid.ToString());
         List<Right> rights = new List<Right>()
                 {
                     new Right()
@@ -114,8 +114,8 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid guid = Guid.NewGuid();
         string[] defaultRights = [];
 
-        List<Guid> clientId = new List<Guid>();
-        clientId.Add(guid);
+        List<string> clientId = new List<string>();
+        clientId.Add(guid.ToString());
 
         RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber = "991825827", SystemName = "Awesome System", ClientId = clientId, SoftDeleted = false };
 
@@ -146,8 +146,8 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid guid = Guid.NewGuid();
         string[] defaultRights = [];
 
-        List<Guid> clientId = new List<Guid>();
-        clientId.Add(guid);
+        List<string> clientId = new List<string>();
+        clientId.Add(guid.ToString());
 
         RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber = "991825827", SystemName = "Awesome System", ClientId = clientId, SoftDeleted = false };
 
