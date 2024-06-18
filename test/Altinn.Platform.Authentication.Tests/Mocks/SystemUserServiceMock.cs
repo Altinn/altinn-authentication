@@ -39,7 +39,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 Id = Guid.NewGuid().ToString(),
                 IntegrationTitle = request.IntegrationTitle,
                 SystemName = request.SystemName,
-                OwnedByPartyId = partyId.ToString()
+                PartyId = partyId.ToString()
             };
             theMockList.Add(newSystemUser);
             return Task.FromResult(newSystemUser);
@@ -104,7 +104,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbd",
                 IntegrationTitle = "Vårt regnskapsystem",
                 SystemName = "supplier_name_cool_system",
-                OwnedByPartyId = "orgno:91235123",
+                PartyId = "orgno:91235123",
                 IsDeleted = false,
                 SupplierName = "Supplier1 Name",
                 SupplierOrgNo = "123456789"
@@ -115,7 +115,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbe",
                 IntegrationTitle = "Vårt andre regnskapsystem",
                 SystemName = "supplier2_product_name",
-                OwnedByPartyId = "orgno:91235124",
+                PartyId = "orgno:91235124",
                 IsDeleted = false,
                 SupplierName = "Supplier2 Name",
                 SupplierOrgNo = "123456789"
@@ -126,7 +126,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
                 SystemName = "supplier3_product_name",
-                OwnedByPartyId = "orgno:91235125",
+                PartyId = "orgno:91235125",
                 IsDeleted = false,
                 SupplierName = "Supplier3 Name",
                 SupplierOrgNo = "123456789"
@@ -148,7 +148,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
                 SystemName = "supplier3_product_name",
-                OwnedByPartyId = "orgno:" + systemOrg,
+                PartyId = "orgno:" + systemOrg,
                 IsDeleted = false,
                 SupplierName = "Supplier3 Name",
                 SupplierOrgNo = consumerId

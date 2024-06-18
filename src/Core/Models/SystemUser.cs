@@ -28,10 +28,16 @@ namespace Altinn.Platform.Authentication.Core.Models
 
         /// <summary>
         /// Identifier for off the shelf systems, registered in the SystemRegister db.
-        /// Should be human readable (instead of a GUID) and unique string without whitespace.        
+        /// Should be human readable (instead of a GUID) and unique string without whitespace.                
         /// </summary>
         [JsonPropertyName("systemName")]
         public string SystemName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The underlying identifier for the System for persistance in the db.        
+        /// </summary>
+        [JsonPropertyName("systemInternalId")]
+        public Guid SystemInternalId { get; set; } = Guid.Empty;
 
         /// <summary>
         /// The PartyID identifies the end-user Organisation, and is fetched from the login Context and

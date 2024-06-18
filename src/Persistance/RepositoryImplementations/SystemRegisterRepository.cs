@@ -74,7 +74,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 @system_name,
                 @rights,
                 @client_id)
-            RETURNING hidden_internal_id;";
+            RETURNING system_internal_id;";
 
         try
         {
@@ -135,7 +135,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         const string UPDATEQUERY = /*strpsql*/@"
                 UPDATE altinn_authentication_integration.system_register
 	            SET system_id = @systemId
-        	    WHERE altinn_authentication_integration.system_register.hidden_internal_id = @guid
+        	    WHERE altinn_authentication_integration.system_register.system_internal_id = @guid
                 ";
 
         try
@@ -304,7 +304,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     public async Task<Guid?> RetrieveGuidFromStringId(string id)
     {
         const string GUIDQUERY = /*strpsql*/@"
-                SELECT hidden_internal_id
+                SELECT system_internal_id
                 FROM altinn_authentication_integration.system_register
         	    WHERE altinn_authentication_integration.system_register.system_id = @system_id;
                 ";

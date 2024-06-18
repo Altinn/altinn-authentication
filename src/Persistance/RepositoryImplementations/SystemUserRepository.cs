@@ -144,7 +144,7 @@ internal class SystemUserRepository : ISystemUserRepository
 
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
             command.Parameters.AddWithValue("system_internal_id", system_internal_id);
-            command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.OwnedByPartyId);
+            command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.PartyId);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
@@ -161,7 +161,7 @@ internal class SystemUserRepository : ISystemUserRepository
     {
         const string QUERY = /*strspsql*/@"
             SELECT
-              hidden_internal_id
+              system_internal_id
             FROM altinn_authentication_integration.system_register sr
             WHERE sr.system_id = @systemId;
         ";
@@ -298,8 +298,8 @@ internal class SystemUserRepository : ISystemUserRepository
         return new ValueTask<SystemUser>(new SystemUser
         {
             Id = reader.GetFieldValue<Guid>("system_user_integration_id").ToString(),
-            SystemName = reader.GetFieldValue<string>("system_internal_id"),
-            OwnedByPartyId = reader.GetFieldValue<string>("owned_by_party_id"),
+            SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
+            PartyId = reader.GetFieldValue<string>("owned_by_party_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created")
         });

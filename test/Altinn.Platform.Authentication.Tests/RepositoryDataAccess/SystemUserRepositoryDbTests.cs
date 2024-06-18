@@ -50,7 +50,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser 
         {
             IntegrationTitle = "InsertSystemUserTitle",
-            OwnedByPartyId = "1",
+            PartyId = "1",
             SystemName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
@@ -85,7 +85,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
                     }
                 };
 
-        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber="991825827", SystemName="Awesome System", ClientId = clientId, SoftDeleted=false};
+        RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber="991825827", SystemName="Awesome System", ClientId = clientId, SoftDeleted = false };
 
         await RegisterRepository.CreateClient(guid.ToString());
         await RegisterRepository.CreateRegisteredSystem(registeredSystem, defaultRights);
@@ -93,7 +93,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
             IntegrationTitle = "GetAllActiveSystemUsersForPartyTitle",
-            OwnedByPartyId = "1",
+            PartyId = "1",
             SystemName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
@@ -125,7 +125,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
             IntegrationTitle = "GetSystemUserByIdTitle",
-            OwnedByPartyId = "1",
+            PartyId = "1",
             SystemName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
@@ -157,7 +157,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid? systemUserId = await Repository.InsertSystemUser(new Core.Models.SystemUser
         {
             IntegrationTitle = "GetSystemUserByIdTitle",
-            OwnedByPartyId = "1",
+            PartyId = "1",
             SystemName = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
