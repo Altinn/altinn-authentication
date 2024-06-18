@@ -14,6 +14,3 @@ DROP COLUMN supplier_name;
 ALTER TABLE altinn_authentication_integration.system_user_integration
 DROP COLUMN supplier_org_no;
 
---Table: altinn_authentication_intgration.system_register
-ALTER TABLE altinn_authentication_integration.system_register
-RENAME COLUMN hidden_internal_id to system_internal_id;
