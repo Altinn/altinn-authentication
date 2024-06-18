@@ -125,8 +125,8 @@ async Task SetConfigurationProviders(ConfigurationManager config)
 
     config.AddEnvironmentVariables();
 
-    //await ConnectToKeyVaultAndSetApplicationInsights(config);
-    //await ConnectToKeyVaultAndSetConfig(config);
+    await ConnectToKeyVaultAndSetApplicationInsights(config);
+    await ConnectToKeyVaultAndSetConfig(config);
 
     config.AddCommandLine(args);
 }
