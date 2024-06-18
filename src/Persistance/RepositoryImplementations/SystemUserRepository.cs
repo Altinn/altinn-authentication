@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -121,8 +122,8 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted)
     {
-        string? system_internal_id = await ResolveSystemInternalIdFromSystemName(toBeInserted.SystemName);
-        if (system_internal_id != null) 
+        Guid? system_internal_id = await ResolveSystemInternalIdFromSystemName(toBeInserted.SystemName);
+        if (system_internal_id == null) 
         {
             return null;
         }
@@ -157,7 +158,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
     }
 
-    private async Task<string?> ResolveSystemInternalIdFromSystemName(string systemId)
+    private async Task<Guid?> ResolveSystemInternalIdFromSystemName(string systemId)
     {
         const string QUERY = /*strspsql*/@"
             SELECT
@@ -173,8 +174,8 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("systemId", systemId);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemId)
-                .FirstOrDefaultAsync();
+                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
+                .SingleOrDefaultAsync();
         }
         catch (Exception ex)
         {
@@ -214,7 +215,7 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
     {
-        string? system_internal_id = await ResolveSystemInternalIdFromClientId(clientId);
+        Guid? system_internal_id = await ResolveSystemInternalIdFromClientId(clientId);
 
         if (system_internal_id == null)
         {
@@ -231,7 +232,7 @@ internal class SystemUserRepository : ISystemUserRepository
 	        FROM altinn_authentication_integration.system_user_integration sui 
 	        WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
 	            AND sui.is_deleted = false
-                AND sui.hidden_internal_id = @hidden_internal_id;
+                AND sui.system_internal_id = @system_internal_id;
             ";
 
         try
@@ -252,11 +253,11 @@ internal class SystemUserRepository : ISystemUserRepository
         }
     }
 
-    private async Task<string?> ResolveSystemInternalIdFromClientId(string clientId)
+    private async Task<Guid?> ResolveSystemInternalIdFromClientId(string clientId)
     {
         const string QUERY = /*strspsql*/@"
             SELECT
-              hidden_internal_id
+              system_internal_id
             FROM altinn_authentication_integration.system_register sr
             WHERE @client_id = ANY (sr.client_id);
         ";
@@ -268,7 +269,7 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("client_id", clientId);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemId)
+                .SelectAwait(ConvertFromReaderToSystemInternalId)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -278,9 +279,9 @@ internal class SystemUserRepository : ISystemUserRepository
         }
     }
 
-    private ValueTask<string> ConvertFromReaderToSystemId(NpgsqlDataReader reader)
+    private ValueTask<Guid> ConvertFromReaderToSystemInternalId(NpgsqlDataReader reader)
     {
-        return new ValueTask<string>(reader.GetFieldValue<string>(0));
+        return new ValueTask<Guid>(reader.GetFieldValue<Guid>(0));
     }
 
     private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)

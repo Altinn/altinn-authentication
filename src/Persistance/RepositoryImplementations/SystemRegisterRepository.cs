@@ -88,7 +88,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
-                .FirstOrDefaultAsync();
+                .SingleOrDefaultAsync();
         }
         catch (Exception ex)
         {
@@ -102,6 +102,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
+                system_internal_id,
                 system_id,
                 systemvendor_orgnumber, 
                 system_name,
@@ -241,6 +242,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         
         return new ValueTask<RegisterSystemResponse>(new RegisterSystemResponse
         {
+            SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             SystemVendorOrgNumber = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             SystemName = reader.GetFieldValue<string>("system_name"),
