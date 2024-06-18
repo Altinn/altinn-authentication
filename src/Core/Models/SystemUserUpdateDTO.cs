@@ -19,24 +19,24 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("Id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
         /// <summary>
-        /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and
+        /// The PartyId identifies the end-user Organisation, and is fetched from the login Context and
         /// user party serivces
         /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("OwnedByPartyId")]
-        public string OwnedByPartyId { get; set; }
+        [JsonPropertyName("partyId")]
+        public string PartyId { get; set; }
 
         /// <summary>
-        /// The Title and Description are strings set by the end-user in the Frontend.
+        /// The Title is set by the end-user in the Frontend, by default it is the same as the System's Display Name
         /// Even if this DTO allows null, the db field is of course still required     
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("IntegrationTitle")]
+        [JsonPropertyName("integrationTitle")]
         public string IntegrationTitle { get; set; }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("ProductName")]
-        public string ProductName { get; set; }
+        [JsonPropertyName("systemName")]
+        public string SystemName { get; set; }
     }
 }

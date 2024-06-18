@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.Models
     public class SystemUserRequestDto
     {
         [AllowNull]
-        [JsonPropertyName("PartyId")]
+        [JsonPropertyName("partyId")]
         /// <summary>
         /// PartyId is the owning Legal Entity, whether an organization or a privat person
         /// </summary>
@@ -23,7 +23,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The Title and Description are strings set by the end-user in the Frontend.
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("IntegrationTitle")]
+        [JsonPropertyName("integrationTitle")]
         public string IntegrationTitle { get; set; }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("ProductName")]
-        public string ProductName { get; set; }
+        [JsonPropertyName("systemName")]
+        public string SystemName { get; set; }
     }
 }
