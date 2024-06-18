@@ -33,6 +33,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
+                system_internal_id,
                 system_id,
                 systemvendor_orgnumber, 
                 system_name,

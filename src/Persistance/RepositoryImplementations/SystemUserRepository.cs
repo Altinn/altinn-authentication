@@ -122,17 +122,11 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted)
     {
-        Guid? system_internal_id = await ResolveSystemInternalIdFromSystemName(toBeInserted.SystemName);
-        if (system_internal_id == null) 
-        {
-            return null;
-        }
-
         const string QUERY = /*strpsql*/@"            
                 INSERT INTO altinn_authentication_integration.system_user_integration(
                     integration_title,
                     system_internal_id,
-                    owned_by_party_id,)
+                    owned_by_party_id)
                 VALUES(
                     @integration_title,
                     @system_internal_id,
@@ -144,7 +138,7 @@ internal class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
-            command.Parameters.AddWithValue("system_internal_id", system_internal_id);
+            command.Parameters.AddWithValue("system_internal_id", toBeInserted.SystemInternalId!);
             command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.PartyId);
 
             return await command.ExecuteEnumerableAsync()
@@ -154,32 +148,6 @@ internal class SystemUserRepository : ISystemUserRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // InsertSystemUser // Exception");
-            throw;
-        }
-    }
-
-    private async Task<Guid?> ResolveSystemInternalIdFromSystemName(string systemId)
-    {
-        const string QUERY = /*strspsql*/@"
-            SELECT
-              system_internal_id
-            FROM altinn_authentication_integration.system_register sr
-            WHERE sr.system_id = @systemId;
-        ";
-
-        try
-        {
-            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
-
-            command.Parameters.AddWithValue("systemId", systemId);
-
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
-                .SingleOrDefaultAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // ResolveSystemInternalIdFromSystemName // Exception");
             throw;
         }
     }

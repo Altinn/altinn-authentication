@@ -45,6 +45,7 @@ namespace Altinn.Platform.Authentication.Services
 
             SystemUser newSystemUser = new()
             {                
+                SystemInternalId = regSystem.SystemInternalId,
                 IntegrationTitle = request.IntegrationTitle,
                 SystemName = request.SystemName,
                 PartyId = partyId.ToString()

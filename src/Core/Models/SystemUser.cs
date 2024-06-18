@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The underlying identifier for the System for persistance in the db.        
         /// </summary>
         [JsonPropertyName("systemInternalId")]
-        public Guid SystemInternalId { get; set; } = Guid.Empty;
+        public Guid? SystemInternalId { get; set; }
 
         /// <summary>
         /// The PartyID identifies the end-user Organisation, and is fetched from the login Context and

@@ -6,6 +6,9 @@ ALTER TABLE altinn_authentication_integration.system_user_integration
 DROP COLUMN client_id; -- foreign key to client_id table 
 
 ALTER TABLE altinn_authentication_integration.system_user_integration
+DROP CONSTRAINT fk_integrations_registeredsystems;
+
+ALTER TABLE altinn_authentication_integration.system_user_integration
 RENAME COLUMN product_name TO system_internal_id; --foreign key to system_register table.system_internal_id
 
 ALTER TABLE altinn_authentication_integration.system_user_integration
