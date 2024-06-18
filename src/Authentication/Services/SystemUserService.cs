@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>The SystemUser created</returns>
         public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, int partyId)
         {
-            RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
+            RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemName);
             if (regSystem == null)
             {
                 return null;
@@ -46,7 +46,7 @@ namespace Altinn.Platform.Authentication.Services
             SystemUser newSystemUser = new()
             {                
                 IntegrationTitle = request.IntegrationTitle,
-                SystemName = request.ProductName,
+                SystemName = request.SystemName,
                 OwnedByPartyId = partyId.ToString()
             };
 
@@ -114,12 +114,12 @@ namespace Altinn.Platform.Authentication.Services
                 return 0;
             }
 
-            if (request.ProductName == null )
+            if (request.SystemName == null )
             {
                 return 0;
             }
 
-            return await _repository.UpdateProductName(Guid.Parse(request.Id), request.ProductName);
+            return await _repository.UpdateProductName(Guid.Parse(request.Id), request.SystemName);
         }
 
         /// <inheritdoc/>

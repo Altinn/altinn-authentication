@@ -38,7 +38,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = Guid.NewGuid().ToString(),
                 IntegrationTitle = request.IntegrationTitle,
-                SystemName = request.ProductName,
+                SystemName = request.SystemName,
                 OwnedByPartyId = partyId.ToString()
             };
             theMockList.Add(newSystemUser);
@@ -89,7 +89,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             int array = theMockList.FindIndex(su => su.Id == request.Id.ToString());
             theMockList[array].IntegrationTitle = request.IntegrationTitle;
-            theMockList[array].SystemName = request.ProductName;
+            theMockList[array].SystemName = request.SystemName;
             return Task.FromResult(1);
         }
 

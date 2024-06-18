@@ -20,7 +20,8 @@ namespace Altinn.Platform.Authentication.Core.Models
         public int PartyId { get; set; }
 
         /// <summary>
-        /// The Title and Description are strings set by the end-user in the Frontend.
+        /// The Title is set by the end-user in the Frontend, by default it is the same as the System's Display Name
+        /// Even if this DTO allows null, the db field is of course still required   
         /// </summary>
         [AllowNull]
         [JsonPropertyName("integrationTitle")]

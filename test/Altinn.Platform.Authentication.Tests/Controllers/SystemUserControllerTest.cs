@@ -229,14 +229,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserUpdateDto dto = new() 
                 {
                     Id = list[0].Id,
-                    OwnedByPartyId = partyId.ToString(),                     
+                    PartyId = partyId.ToString(),                     
                     IntegrationTitle = list[0].IntegrationTitle, 
-                    ProductName = list[0].SystemName
+                    SystemName = list[0].SystemName
                 };
 
             string para = $"{partyId}/{list[0].Id}";
             
-            dto.ProductName = "updated_product_name";
+            dto.SystemName = "updated_product_name";
 
             HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser");
             request2.Content = JsonContent.Create<SystemUserUpdateDto>(dto, new MediaTypeHeaderValue("application/json"));
@@ -286,7 +286,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 PartyId = partyId,
                 IntegrationTitle = "IntegrationTitleValue",
-                ProductName = "ProductNameValue"
+                SystemName = "ProductNameValue"
             };
 
             HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
