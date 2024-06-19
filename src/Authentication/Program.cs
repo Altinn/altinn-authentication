@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Authorization;
+using Altinn.Common.PEP.Clients;
+using Altinn.Common.PEP.Implementation;
+using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
@@ -33,6 +36,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -319,7 +323,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
              }
          });
 
-    services.AddSingleton(config);
+    services.AddSingleton(config); 
     services.AddHttpClient<ISblCookieDecryptionService, SblCookieDecryptionService>();
     services.AddHttpClient<IUserProfileService, UserProfileService>();
     services.AddHttpClient<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationService>();
@@ -337,7 +341,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IGuidService, GuidService>();
-    services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();
+    services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();    
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     {
@@ -381,11 +385,18 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         }
     });
 
-    services.AddAuthorization(options =>
-    {
-        options.AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy => policy
-            .RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN));
-    });
+    // Needed for the ResourceAccessHandler    
+    services.AddAuthorizationBuilder()
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy => 
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN))
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ, policy => 
+            policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))        
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy => 
+            policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")));
+    services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
+    services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+    services.AddSingleton<IPDP, PDPAppSI>();
+    services.AddHttpClient<AuthorizationApiClient>();
 
     services.AddFeatureManagement();
 }
