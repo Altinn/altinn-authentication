@@ -182,25 +182,20 @@ internal class SystemUserRepository : ISystemUserRepository
 
     /// <inheritdoc />
     public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
-    {
-        Guid? system_internal_id = await ResolveSystemInternalIdFromClientId(clientId);
-
-        if (system_internal_id == null)
-        {
-            return null;
-        }
-
+    {      
         const string QUERY = /*strspsql*/@"
-              SELECT 
-	    	    system_user_integration_id,
-		        integration_title,
-		        system_internal_id,
-		        owned_by_party_id,
-		        created
-	        FROM altinn_authentication_integration.system_user_integration sui 
-	        WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
-	            AND sui.is_deleted = false
-                AND sui.system_internal_id = @system_internal_id;
+            SELECT 
+                system_user_integration_id,
+                integration_title,
+                sui.system_internal_id,
+                owned_by_party_id,
+                sui.created
+            FROM altinn_authentication_integration.system_user_integration sui
+                JOIN altinn_authentication_integration.system_register sr  
+                ON   sui.system_internal_id = sr.system_internal_id
+            WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
+                AND sui.is_deleted = false
+                AND @client_id = ANY (sr.client_id);
             ";
 
         try
@@ -208,7 +203,7 @@ internal class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
-            command.Parameters.AddWithValue("system_internal_id", system_internal_id);
+            command.Parameters.AddWithValue("client_id", clientId);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)
@@ -219,38 +214,7 @@ internal class SystemUserRepository : ISystemUserRepository
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // CheckIfPartyHasIntegration // Exception");
             throw;
         }
-    }
-
-    private async Task<Guid?> ResolveSystemInternalIdFromClientId(string clientId)
-    {
-        const string QUERY = /*strspsql*/@"
-            SELECT
-              system_internal_id
-            FROM altinn_authentication_integration.system_register sr
-            WHERE @client_id = ANY (sr.client_id);
-        ";
-
-        try
-        {
-            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
-
-            command.Parameters.AddWithValue("client_id", clientId);
-
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemInternalId)
-                .FirstOrDefaultAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // ResolveProductNameFromClientId // Exception");
-            throw;
-        }
-    }
-
-    private ValueTask<Guid> ConvertFromReaderToSystemInternalId(NpgsqlDataReader reader)
-    {
-        return new ValueTask<Guid>(reader.GetFieldValue<Guid>(0));
-    }
+    }    
 
     private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
     {

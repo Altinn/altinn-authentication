@@ -192,8 +192,8 @@ async Task ConnectToKeyVaultAndSetConfig(ConfigurationManager config)
         Environment.SetEnvironmentVariable("AZURE_CLIENT_SECRET", keyVaultSettings.ClientSecret);
         Environment.SetEnvironmentVariable("AZURE_TENANT_ID", keyVaultSettings.TenantId);
 
-        await SetUpAzureInsights(keyVaultSettings, config);        
-        AddAzureKeyVault(keyVaultSettings, config);
+        //await SetUpAzureInsights(keyVaultSettings, config);        
+        //AddAzureKeyVault(keyVaultSettings, config);
 
         await SetUpPostgresConfigFromKeyVault(keyVaultSettings, config);
     }
@@ -387,16 +387,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
 
     // Needed for the ResourceAccessHandler    
     services.AddAuthorizationBuilder()
-        .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy => 
-            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN))
-        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ, policy => 
-            policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))        
-        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy => 
-            policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")));
-    services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
-    services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-    services.AddSingleton<IPDP, PDPAppSI>();
-    services.AddHttpClient<AuthorizationApiClient>();
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy =>
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN));
 
     services.AddFeatureManagement();
 }
