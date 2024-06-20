@@ -195,6 +195,7 @@ internal class SystemUserRepository : ISystemUserRepository
                 ON   sui.system_internal_id = sr.system_internal_id
             WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
                 AND sui.is_deleted = false
+                AND sr.is_deleted = false
                 AND @client_id = ANY (sr.client_id);
             ";
 
