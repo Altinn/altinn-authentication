@@ -51,6 +51,7 @@ public static class PersistanceDependencyInjection
             //    settings.AuthenticationDbPassword);
 
             var builder = new NpgsqlDataSourceBuilder(connectionString);
+            builder.EnableDynamicJson();
             builder.UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>());
             return builder.Build();
         });

@@ -1,11 +1,13 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 
@@ -66,16 +68,16 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_id,
                 systemvendor_orgnumber,
                 system_name,
-                rights,
                 client_id,
-                is_visible)
+                is_visible,
+                rights)
             VALUES(
                 @system_id,
                 @systemvendor_orgnumber,
                 @system_name,
-                @rights,
                 @client_id,
-                @is_visible)
+                @is_visible,
+                @rights)
             RETURNING system_internal_id;";
 
         try
@@ -85,9 +87,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_id", toBeInserted.SystemId);
             command.Parameters.AddWithValue("systemvendor_orgnumber", toBeInserted.SystemVendorOrgNumber);
             command.Parameters.AddWithValue("system_name", toBeInserted.SystemName);
-            command.Parameters.AddWithValue("rights", rights);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb | NpgsqlDbType.Array) { Value = new[] { toBeInserted.Rights } });
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -187,8 +189,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// <inheritdoc/> 
     public async Task<List<Right>> GetRightsForRegisteredSystem(string systemId)
     {
+        List<Right> rights = new List<Right>();
+
         const string QUERY = /*strpsql*/@"
-                SELECT unnest rights
+                SELECT rights
                 FROM altinn_authentication_integration.system_register
                 WHERE altinn_authentication_integration.system_register.system_id = @system_id;
                 ";
@@ -199,10 +203,14 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             command.Parameters.AddWithValue("system_id", systemId);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToRights)
-                .ToListAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                string[] rightsString = reader.GetFieldValue<string[]>(0);
+                rights = JsonSerializer.Deserialize<List<Right>>(rightsString[0]);
+            }
 
+            return rights;
         }
         catch (Exception ex)
         {
@@ -219,18 +227,17 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// each Right is always in the context of it's parent Service Provider anyway.
     /// The Right can either denote a single Right or a package of Rights; which is handled in Access Management.
     /// </summary>
-    private ValueTask<Right> ConvertFromReaderToRights(NpgsqlDataReader reader)
+    private ValueTask<List<Right>> ConvertFromReaderToRights(NpgsqlDataReader reader)
     {
-        string[] arrayElement = reader.GetFieldValue<string>("right").Split('_');
+        List<Right> rights = reader.GetFieldValue<List<Right>>("rights");
 
-        return new ValueTask<Right>(new Right
-        {
-        });
+        return new ValueTask<List<Right>>(rights);
     }
 
     private static ValueTask<RegisterSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         string[] stringGuids = reader.GetFieldValue<string[]>("client_id");
+        List<Right> rights = GetRights(reader.GetFieldValue<string[]>("rights"));
         List<Guid> clientIds = [];
 
         foreach (string str in stringGuids)
@@ -250,35 +257,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SystemName = reader.GetFieldValue<string>("system_name"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
             ClientId = clientIds,
-            Rights = ReadRightsFromDb(reader.GetFieldValue<string[]>("rights")),
+            Rights = rights,
             IsVisible = reader.GetFieldValue<bool>("is_visible"),
         });
-    }
-
-    private static List<Right> ReadRightsFromDb(string[] arrayRights)
-    {
-        var list = new List<Right>();
-
-        foreach (string arrayElement in arrayRights)
-        {
-            var subElement = arrayElement.Split("=");
-
-            Right def = new()
-                { 
-                    Resources =
-                    [
-                        new() 
-                        {
-                            Id = subElement[0],
-                            Value = subElement[1]
-                        }
-                    ]
-                 
-                };
-            list.Add(def);
-        }
-
-        return list;
     }
 
     /// <inheritdoc/> 
@@ -329,5 +310,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // RetrieveGuidFromStringId // Exception");
             throw;
         }
+    }
+
+    private static List<Right> GetRights(string[] rights)
+    {
+        return JsonSerializer.Deserialize<List<Right>>(rights[0]);
     }
 }
