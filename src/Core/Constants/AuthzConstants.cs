@@ -30,16 +30,5 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Claim for consumer prefixes from maskinporten token
         /// </summary>
         public const string CLAIM_MASKINPORTEN_CONSUMER_PREFIX = "consumer_prefix";
-
-        /// <summary>
-        /// Policy tag for reading access management information
-        /// </summary>
-        public const string POLICY_ACCESS_MANAGEMENT_READ = "AccessManagementRead";
-
-        /// <summary>
-        /// Policy tag for writing access management delegations
-        /// </summary>
-        public const string POLICY_ACCESS_MANAGEMENT_WRITE = "AccessManagementWrite";
     }
-
 }
