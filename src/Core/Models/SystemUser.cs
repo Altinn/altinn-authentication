@@ -47,6 +47,12 @@ namespace Altinn.Platform.Authentication.Core.Models
         public string PartyId { get; set; } = string.Empty;
 
         /// <summary>
+        /// The Organisation Number for the end-user as it is stored in ER Registry        
+        /// </summary>
+        [JsonPropertyName("partyOrgNo")]
+        public string PartyOrgNo { get; set; } = string.Empty;
+
+        /// <summary>
         /// Nice to have for debugging and logging.
         /// </summary>
         [JsonPropertyName("created")]

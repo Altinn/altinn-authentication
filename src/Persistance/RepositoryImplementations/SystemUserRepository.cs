@@ -126,11 +126,13 @@ internal class SystemUserRepository : ISystemUserRepository
                 INSERT INTO altinn_authentication_integration.system_user_integration(
                     integration_title,
                     system_internal_id,
-                    owned_by_party_id)
+                    owned_by_party_id,
+                    party_org_no)
                 VALUES(
                     @integration_title,
                     @system_internal_id,
-                    @owned_by_party_id)
+                    @owned_by_party_id,
+                    @party_org_no)
                 RETURNING system_user_integration_id;";
 
         try
@@ -140,6 +142,7 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
             command.Parameters.AddWithValue("system_internal_id", toBeInserted.SystemInternalId!);
             command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.PartyId);
+            command.Parameters.AddWithValue("party_org_no", toBeInserted.PartyOrgNo);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
