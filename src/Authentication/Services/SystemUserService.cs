@@ -116,12 +116,12 @@ namespace Altinn.Platform.Authentication.Services
                 return 0;
             }
 
-            if (request.SystemName == null )
+            if (request.SystemId == null )
             {
                 return 0;
             }
 
-            return await _repository.UpdateProductName(Guid.Parse(request.Id), request.SystemName);
+            return await _repository.UpdateProductName(Guid.Parse(request.Id), request.SystemId);
         }
 
         /// <inheritdoc/>

@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Returns the list of SystemUsers this PartyID has registered
         /// </summary>
         /// <returns></returns>
-        [Authorize]
+        //[Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{partyId}")]
@@ -57,7 +57,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
         /// <returns></returns>
-        [Authorize]
+        //[Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{partyId}/{systemUserId}")]
@@ -90,6 +90,9 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return NotFound();
             }
+
+            // Temporary fix until Maskinporten changes their integration
+            res.ProductName = res.SystemId;
 
             return Ok(res);
         }

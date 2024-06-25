@@ -231,12 +231,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     Id = list[0].Id,
                     PartyId = partyId.ToString(),                     
                     IntegrationTitle = list[0].IntegrationTitle, 
-                    SystemName = list[0].SystemName
+                    SystemId = list[0].SystemId
                 };
 
             string para = $"{partyId}/{list[0].Id}";
             
-            dto.SystemName = "updated_product_name";
+            dto.SystemId = "updated_product_name";
 
             HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser");
             request2.Content = JsonContent.Create<SystemUserUpdateDto>(dto, new MediaTypeHeaderValue("application/json"));
@@ -249,7 +249,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUser shouldBeUpdated = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), _options);
 
             Assert.NotEqual(HttpStatusCode.Unauthorized, response2.StatusCode);
-            Assert.Equal("updated_product_name", shouldBeUpdated!.SystemName);
+            Assert.Equal("updated_product_name", shouldBeUpdated!.SystemId);
         }
 
         [Fact]
@@ -286,7 +286,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 PartyId = partyId,
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemName = "ProductNameValue"
+                SystemId = "ProductNameValue"
             };
 
             HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -313,7 +313,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string para = $"{partyId}/{id}";
             SystemUser newSystemUser = new SystemUser
             {
-                SystemName = "This is the new SystemUser!",
+                SystemId = "This is the new SystemUser!",
                 Id = "12334523456346"
             };
 

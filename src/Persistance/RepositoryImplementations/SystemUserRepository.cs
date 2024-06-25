@@ -61,15 +61,20 @@ internal class SystemUserRepository : ISystemUserRepository
     public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId)
     {
         const string QUERY = /*strpsql*/@"
-                SELECT 
-                    system_user_integration_id,
-		            integration_title,
-		            system_internal_id,
-		            owned_by_party_id,
-		            created                    
-                FROM altinn_authentication_integration.system_user_integration sui 
-	            WHERE sui.owned_by_party_id = @owned_by_party_id	
-	                  AND sui.is_deleted = false;
+            SELECT 
+	    	    sui.system_user_integration_id,
+		        sui.integration_title,
+		        sui.system_internal_id,
+                sr.system_id,
+                sr.systemvendor_orgnumber,
+                sui.party_org_no,
+		        sui.owned_by_party_id,
+		        sui.created
+	        FROM altinn_authentication_integration.system_user_integration sui 
+                JOIN altinn_authentication_integration.system_register sr  
+                ON sui.system_internal_id = sr.system_internal_id
+	        WHERE sui.owned_by_party_id = @owned_by_party_id	
+	            AND sui.is_deleted = false;
                 ";
 
         try
@@ -93,12 +98,17 @@ internal class SystemUserRepository : ISystemUserRepository
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
-	    	    system_user_integration_id,
-		        integration_title,
-		        system_internal_id,
-		        owned_by_party_id,
-		        created
+	    	    sui.system_user_integration_id,
+		        sui.integration_title,
+		        sui.system_internal_id,
+                sr.system_id,
+                sr.systemvendor_orgnumber,
+                sui.party_org_no,
+		        sui.owned_by_party_id,
+		        sui.created
 	        FROM altinn_authentication_integration.system_user_integration sui 
+                JOIN altinn_authentication_integration.system_register sr  
+                ON sui.system_internal_id = sr.system_internal_id
 	        WHERE sui.system_user_integration_id = @system_user_integration_id
 	            AND sui.is_deleted = false;
             ";
@@ -190,6 +200,7 @@ internal class SystemUserRepository : ISystemUserRepository
             SELECT 
                 system_user_integration_id,
                 integration_title,
+                party_org_no,
                 sui.system_internal_id,
                 owned_by_party_id,
                 sui.created
@@ -236,9 +247,12 @@ internal class SystemUserRepository : ISystemUserRepository
         {
             Id = reader.GetFieldValue<Guid>("system_user_integration_id").ToString(),
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
+            SystemId = reader.GetFieldValue<string>("system_id"),
+            PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
             PartyId = reader.GetFieldValue<string>("owned_by_party_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
-            Created = reader.GetFieldValue<DateTime>("created")
+            Created = reader.GetFieldValue<DateTime>("created"),
+            SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber")
         });
     }
 }

@@ -38,7 +38,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = Guid.NewGuid().ToString(),
                 IntegrationTitle = request.IntegrationTitle,
-                SystemName = request.SystemName,
+                SystemId = request.SystemId,
                 PartyId = partyId.ToString()
             };
             theMockList.Add(newSystemUser);
@@ -89,7 +89,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             int array = theMockList.FindIndex(su => su.Id == request.Id.ToString());
             theMockList[array].IntegrationTitle = request.IntegrationTitle;
-            theMockList[array].SystemName = request.SystemName;
+            theMockList[array].SystemId = request.SystemId;
             return Task.FromResult(1);
         }
 
@@ -103,7 +103,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbd",
                 IntegrationTitle = "Vårt regnskapsystem",
-                SystemName = "supplier_name_cool_system",
+                SystemId = "supplier_name_cool_system",
                 PartyId = "orgno:91235123",
                 IsDeleted = false,
                 SupplierName = "Supplier1 Name",
@@ -114,7 +114,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbe",
                 IntegrationTitle = "Vårt andre regnskapsystem",
-                SystemName = "supplier2_product_name",
+                SystemId = "supplier2_product_name",
                 PartyId = "orgno:91235124",
                 IsDeleted = false,
                 SupplierName = "Supplier2 Name",
@@ -125,7 +125,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
-                SystemName = "supplier3_product_name",
+                SystemId = "supplier3_product_name",
                 PartyId = "orgno:91235125",
                 IsDeleted = false,
                 SupplierName = "Supplier3 Name",
@@ -147,7 +147,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
-                SystemName = "supplier3_product_name",
+                SystemId = "supplier3_product_name",
                 PartyId = "orgno:" + systemOrg,
                 IsDeleted = false,
                 SupplierName = "Supplier3 Name",

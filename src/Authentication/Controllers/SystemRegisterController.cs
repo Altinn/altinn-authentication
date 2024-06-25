@@ -14,7 +14,7 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for SystemRegister
 /// </summary>
-[Authorize]
+//[Authorize]
 [Route("authentication/api/v1/systemregister")]
 [ApiController]
 public class SystemRegisterController : ControllerBase
@@ -91,7 +91,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
     [HttpPost("system")]
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);

@@ -52,7 +52,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             SystemInternalId = createdSystemInternalId,
             IntegrationTitle = "InsertSystemUserTitle",
             PartyId = "1",
-            SystemName = "Awesome_System",
+            SystemId = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
         });
@@ -96,7 +96,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             SystemInternalId = createdSystemInternalId,
             IntegrationTitle = "GetAllActiveSystemUsersForPartyTitle",
             PartyId = "1",
-            SystemName = "Awesome_System",
+            SystemId = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
         });
@@ -129,7 +129,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             SystemInternalId = createdSystemInternalId,
             IntegrationTitle = "GetSystemUserByIdTitle",
             PartyId = "1",
-            SystemName = "Awesome_System",
+            SystemId = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
         });
@@ -162,7 +162,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             SystemInternalId = createdSystemInternalId,
             IntegrationTitle = "GetSystemUserByIdTitle",
             PartyId = "1",
-            SystemName = "Awesome_System",
+            SystemId = "Awesome_System",
             SupplierName = "Awesome Supplier AS",
             SupplierOrgNo = "123456789 MVA"
         });
