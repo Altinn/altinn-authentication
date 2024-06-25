@@ -32,14 +32,15 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, string partyOrgNo)
         {
             SystemUser newSystemUser = new()
             {
                 Id = Guid.NewGuid().ToString(),
                 IntegrationTitle = request.IntegrationTitle,
                 SystemId = request.SystemId,
-                PartyId = partyId.ToString()
+                PartyId = request.PartyId.ToString(),
+                PartyOrgNo = partyOrgNo
             };
             theMockList.Add(newSystemUser);
             return Task.FromResult(newSystemUser);
