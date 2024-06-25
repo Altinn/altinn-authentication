@@ -67,8 +67,8 @@ internal class SystemUserRepository : ISystemUserRepository
 		        sui.system_internal_id,
                 sr.system_id,
                 sr.systemvendor_orgnumber,
-                sui.party_org_no,
-		        sui.owned_by_party_id,
+                sui.reportee_org_no,
+		        sui.reportee_party_id,
 		        sui.created
 	        FROM altinn_authentication_integration.system_user_integration sui 
                 JOIN altinn_authentication_integration.system_register sr  
@@ -103,8 +103,8 @@ internal class SystemUserRepository : ISystemUserRepository
 		        sui.system_internal_id,
                 sr.system_id,
                 sr.systemvendor_orgnumber,
-                sui.party_org_no,
-		        sui.owned_by_party_id,
+                sui.reportee_org_no,
+		        sui.reportee_party_id,
 		        sui.created
 	        FROM altinn_authentication_integration.system_user_integration sui 
                 JOIN altinn_authentication_integration.system_register sr  
@@ -136,13 +136,13 @@ internal class SystemUserRepository : ISystemUserRepository
                 INSERT INTO altinn_authentication_integration.system_user_integration(
                     integration_title,
                     system_internal_id,
-                    owned_by_party_id,
-                    party_org_no)
+                    reportee_party_id,
+                    reportee_org_no)
                 VALUES(
                     @integration_title,
                     @system_internal_id,
-                    @owned_by_party_id,
-                    @party_org_no)
+                    @reportee_party_id,
+                    @reportee_org_no)
                 RETURNING system_user_integration_id;";
 
         try
@@ -151,8 +151,8 @@ internal class SystemUserRepository : ISystemUserRepository
 
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
             command.Parameters.AddWithValue("system_internal_id", toBeInserted.SystemInternalId!);
-            command.Parameters.AddWithValue("owned_by_party_id", toBeInserted.PartyId);
-            command.Parameters.AddWithValue("party_org_no", toBeInserted.PartyOrgNo);
+            command.Parameters.AddWithValue("reportee_party_id", toBeInserted.PartyId);
+            command.Parameters.AddWithValue("reportee_org_no", toBeInserted.ReporteeOrgNo);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
@@ -200,14 +200,14 @@ internal class SystemUserRepository : ISystemUserRepository
             SELECT 
                 system_user_integration_id,
                 integration_title,
-                party_org_no,
+                reportee_org_no,
                 sui.system_internal_id,
-                owned_by_party_id,
+                reportee_party_id,
                 sui.created
             FROM altinn_authentication_integration.system_user_integration sui
                 JOIN altinn_authentication_integration.system_register sr  
                 ON   sui.system_internal_id = sr.system_internal_id
-            WHERE sui.owned_by_party_id = @systemUserOwnerOrgNo
+            WHERE sui.reportee_party_id = @systemUserOwnerOrgNo
                 AND sui.is_deleted = false
                 AND sr.is_deleted = false
                 AND @client_id = ANY (sr.client_id);
@@ -248,8 +248,8 @@ internal class SystemUserRepository : ISystemUserRepository
             Id = reader.GetFieldValue<Guid>("system_user_integration_id").ToString(),
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
             SystemId = reader.GetFieldValue<string>("system_id"),
-            PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
-            PartyId = reader.GetFieldValue<string>("owned_by_party_id"),
+            ReporteeOrgNo = reader.GetFieldValue<string>("reportee_org_no"),
+            PartyId = reader.GetFieldValue<string>("reportee_party_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber")

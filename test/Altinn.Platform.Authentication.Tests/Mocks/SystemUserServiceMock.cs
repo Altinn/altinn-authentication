@@ -40,7 +40,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 IntegrationTitle = request.IntegrationTitle,
                 SystemId = request.SystemId,
                 PartyId = request.PartyId.ToString(),
-                PartyOrgNo = partyOrgNo
+                ReporteeOrgNo = partyOrgNo
             };
             theMockList.Add(newSystemUser);
             return Task.FromResult(newSystemUser);

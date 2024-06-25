@@ -22,8 +22,9 @@ ALTER TABLE altinn_authentication_integration.system_user_integration
 	ON DELETE NO ACTION;
 
 ALTER TABLE altinn_authentication_integration.system_user_integration
-ADD COLUMN IF NOT EXISTS party_org_no varchar(255) NOT NULL DEFAULT 'new_column';
+ADD COLUMN IF NOT EXISTS reportee_org_no varchar(255) NOT NULL DEFAULT 'new_column';
 
-
+ALTER TABLE altinn_authentication_integration.system_user_integration
+RENAME COLUMN owned_by_party_id TO reportee_party_id;
 
 
