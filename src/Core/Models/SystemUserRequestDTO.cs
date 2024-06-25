@@ -9,28 +9,24 @@ namespace Altinn.Platform.Authentication.Core.Models
     /// The BFF will provide a tailored DTO to the Frontend.
     /// </summary>
     [ExcludeFromCodeCoverage]
-#nullable enable
     public class SystemUserRequestDto
     {
-        [AllowNull]
         [JsonPropertyName("partyId")]
         /// <summary>
         /// PartyId is the owning Legal Entity, whether an organization or a privat person
         /// </summary>
         public int PartyId { get; set; }
 
-        [AllowNull]
         /// <summary>
         /// The Organisation Number for the end-user as it is stored in ER Registry        
         /// </summary>
         [JsonPropertyName("partyOrgNo")]
-        public string PartyOrgNo { get; set; } 
+        public string PartyOrgNo { get; set; }
 
         /// <summary>
         /// The Title is set by the end-user in the Frontend, by default it is the same as the System's Display Name
         /// Even if this DTO allows null, the db field is of course still required   
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("integrationTitle")]
         public string IntegrationTitle { get; set; }
 
@@ -40,7 +36,6 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The "real" Authentication Component should validate that the SystemName is unique
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// </summary>
-        [AllowNull]
         [JsonPropertyName("systemId")]
         public string SystemId { get; set; }
     }
