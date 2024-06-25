@@ -53,14 +53,28 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [HttpGet("system/{systemId}")]
+    public async Task<ActionResult> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
+    {
+        RegisterSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+        
+        return Ok(registeredSystem);
+    }
+
+    /// <summary>
+    /// Retrieves a list of the predfined default rights for the Product type, if any
+    /// </summary>
+    /// <param name="systemId">The Id of the Product </param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    [HttpGet("system/rights/{systemId}")]
     public async Task<ActionResult> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
     {
         List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
-        if (lista is null || lista.Count == 0) 
+        if (lista is null || lista.Count == 0)
         {
             return NoContent();
         }
-        
+
         return Ok(lista);
     }
 

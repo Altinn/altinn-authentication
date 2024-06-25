@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
@@ -27,6 +28,9 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 
         private static List<RegisterSystemResponse> MockDataHelper() 
         {
+            List<Guid> clientId = new List<Guid>();
+            clientId.Add(Guid.Parse("96ea3185-23cc-4df5-88f3-d43fbd995f34"));
+
             RegisterSystemResponse reg1 = new()
             {
                 SystemVendorOrgName = "Test Org AS",
@@ -93,7 +97,10 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             RegisterSystemResponse reg3 = new()
             {
-                SystemName = "Brilliant_HR",
+                SystemId = "Brilliant_HR",
+                SystemName = "Brilliant HR",
+                SystemVendorOrgNumber = "914286018",
+                ClientId = clientId,
                 Rights =
                 [
                     new()
@@ -103,7 +110,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                             new AttributePair
                             {
                                 Id = "urn:altinn:resource",
-                                Value = "lonn"
+                                Value = "kravogbetaling"
                             }
                         ]
                     },
@@ -123,7 +130,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             RegisterSystemResponse reg4 = new()
             {
-                SystemName = "Fantastic_HR",
+                SystemId = "Fantastic_HR",
+                SystemName = "Fantastic HR",
                 Rights =
                 [
                     new()
@@ -133,7 +141,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                             new AttributePair
                             {
                                 Id = "urn:altinn:resource",
-                                Value = "lonn"
+                                Value = "kravogbetaling"
                             }
                         ]
                     },
@@ -151,9 +159,31 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
+            RegisterSystemResponse reg5 = new()
+            {
+                SystemId = "business_next",
+                SystemName = "Business Next",
+                SystemVendorOrgNumber = "914286018",
+                ClientId = clientId,
+                Rights =
+                [
+                    new()
+                    {
+                        Resources =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:resource",
+                                Value = "kravogbetaling"
+                            }
+                        ]
+                    }
+                ]
+            };
+
             List<RegisterSystemResponse> list =
                 [
-                    reg1, reg2, reg3, reg4
+                    reg1, reg2, reg3, reg4, reg5
                 ];
 
             return list;
@@ -186,6 +216,15 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<RegisterSystemResponse> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
+        {
+            await Task.Delay(50, cancellation);
+
+            RegisterSystemResponse registeredSystem = _registeredSystemsMockList.Find(r => r.SystemId.Equals(systemId));
+
+            return registeredSystem;
         }
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -70,6 +70,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="MockData\SystemRegister.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="selfSignedEncryptionTestCertificate.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
