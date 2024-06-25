@@ -17,7 +17,7 @@ namespace Altinn.Platform.Authentication.Controllers
     /// <summary>
     /// CRUD API for the System User 
     /// </summary>
-    [Authorize]
+    //[Authorize]
     [FeatureGate(FeatureFlags.SystemUser)]
     [Route("authentication/api/v1/systemuser")]
     [ApiController]
@@ -121,7 +121,8 @@ namespace Altinn.Platform.Authentication.Controllers
         /// But the calling client may send a guid for the request of creating a new system user
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
-        /// <returns></returns>        
+        /// <returns></returns>    
+        //[Authorize]
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
