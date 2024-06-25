@@ -47,7 +47,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("systemName")]
-        public string SystemName { get; set; }
+        [JsonPropertyName("systemId")]
+        public string SystemId { get; set; }
     }
 }

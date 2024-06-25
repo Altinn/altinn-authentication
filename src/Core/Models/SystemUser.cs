@@ -30,8 +30,8 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Identifier for off the shelf systems, registered in the SystemRegister db.
         /// Should be human readable (instead of a GUID) and unique string without whitespace.                
         /// </summary>
-        [JsonPropertyName("systemName")]
-        public string SystemName { get; set; } = string.Empty;
+        [JsonPropertyName("systemId")]
+        public string SystemId { get; set; } = string.Empty;
 
         /// <summary>
         /// The underlying identifier for the System for persistance in the db.        

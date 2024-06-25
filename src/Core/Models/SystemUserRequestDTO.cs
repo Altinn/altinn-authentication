@@ -41,7 +41,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// </summary>
         [AllowNull]
-        [JsonPropertyName("systemName")]
-        public string SystemName { get; set; }
+        [JsonPropertyName("systemId")]
+        public string SystemId { get; set; }
     }
 }
