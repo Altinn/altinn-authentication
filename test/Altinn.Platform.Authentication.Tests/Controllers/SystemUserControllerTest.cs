@@ -286,7 +286,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 PartyId = partyId,
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "ProductNameValue"
+                SystemId = "ProductNameValue",
+                PartyOrgNo = "1234567890"
             };
 
             HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
