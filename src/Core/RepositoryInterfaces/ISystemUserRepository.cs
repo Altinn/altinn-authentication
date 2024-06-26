@@ -35,12 +35,12 @@ public interface ISystemUserRepository
     Task SetDeleteSystemUserById(Guid id);
 
     /// <summary>
-    /// Updates the Product Name on an Integration by Guid
+    /// Updates the IntegrationTitle (Display name) on a System User by Guid
     /// </summary>
     /// <param name="guid"></param>
-    /// <param name="productName"></param>
+    /// <param name="integrationTitle">The Display name used in the GUI, and in the Token read by Skatteetaten</param>
     /// <returns>Number of rows affected</returns>
-    Task<int> UpdateProductName(Guid guid, string productName);
+    Task<int> UpdateIntegrationTitle(Guid guid, string integrationTitle);
 
     /// <summary>
     /// Used by Maskinporten to verify a valid SystemUser during Lookup from a systemProvider

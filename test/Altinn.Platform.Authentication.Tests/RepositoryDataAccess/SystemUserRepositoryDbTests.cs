@@ -116,8 +116,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
         Guid guid = Guid.NewGuid();
         string[] defaultRights = [];
 
-        List<string> clientId = new List<string>();
-        clientId.Add(guid.ToString());
+        List<string> clientId = [guid.ToString()];
 
         RegisterSystemRequest registeredSystem = new() { SystemId = "Awesome_System", SystemVendorOrgNumber = "991825827", SystemName = "Awesome System", ClientId = clientId, SoftDeleted = false };
 
@@ -129,9 +128,8 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
             SystemInternalId = createdSystemInternalId,
             IntegrationTitle = "GetSystemUserByIdTitle",
             PartyId = "1",
-            SystemId = "Awesome_System",
-            SupplierName = "Awesome Supplier AS",
-            SupplierOrgNo = "123456789 MVA"
+            SystemId = "Awesome_System",            
+            SupplierOrgNo = "1234567890"
         });
 
         SystemUser? systemUser = await Repository.GetSystemUserById((Guid)systemUserId);

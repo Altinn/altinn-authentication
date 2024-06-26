@@ -35,16 +35,16 @@ internal class SystemUserRepository : ISystemUserRepository
     public async Task SetDeleteSystemUserById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
-                UPDATE altinn_authentication_integration.system_user_integration
+                UPDATE business_application.system_user_profile
 	            SET is_deleted = TRUE
-        	    WHERE altinn_authentication_integration.system_user_integration.system_user_integration_id = @system_user_integration_id;
+        	    WHERE business_application.system_user_profile.system_user_profile_id = @system_user_profile_id;
                 ";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_user_integration_id", id);
+            command.Parameters.AddWithValue("system_user_profile_id", id);
 
             await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)   
@@ -62,7 +62,7 @@ internal class SystemUserRepository : ISystemUserRepository
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
-	    	    sui.system_user_integration_id,
+	    	    sui.system_user_profile_id,
 		        sui.integration_title,
 		        sui.system_internal_id,
                 sr.system_id,
@@ -70,10 +70,10 @@ internal class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created
-	        FROM altinn_authentication_integration.system_user_integration sui 
-                JOIN altinn_authentication_integration.system_register sr  
+	        FROM business_application.system_user_profile sui 
+                JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
-	        WHERE sui.owned_by_party_id = @owned_by_party_id	
+	        WHERE sui.reportee_party_id = @reportee_party_id	
 	            AND sui.is_deleted = false;
                 ";
 
@@ -81,7 +81,7 @@ internal class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("owned_by_party_id", partyId.ToString());
+            command.Parameters.AddWithValue("reportee_party_id", partyId.ToString());
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
             return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
@@ -98,7 +98,7 @@ internal class SystemUserRepository : ISystemUserRepository
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
-	    	    sui.system_user_integration_id,
+	    	    sui.system_user_profile_id,
 		        sui.integration_title,
 		        sui.system_internal_id,
                 sr.system_id,
@@ -106,17 +106,17 @@ internal class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created
-	        FROM altinn_authentication_integration.system_user_integration sui 
-                JOIN altinn_authentication_integration.system_register sr  
+	        FROM business_application.system_user_profile sui 
+                JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
-	        WHERE sui.system_user_integration_id = @system_user_integration_id
+	        WHERE sui.system_user_profile_id = @system_user_profile_id
 	            AND sui.is_deleted = false;
             ";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
-            command.Parameters.AddWithValue("system_user_integration_id", id);
+            command.Parameters.AddWithValue("system_user_profile_id", id);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)
@@ -133,7 +133,7 @@ internal class SystemUserRepository : ISystemUserRepository
     public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted)
     {
         const string QUERY = /*strpsql*/@"            
-                INSERT INTO altinn_authentication_integration.system_user_integration(
+                INSERT INTO business_application.system_user_profile(
                     integration_title,
                     system_internal_id,
                     reportee_party_id,
@@ -143,7 +143,7 @@ internal class SystemUserRepository : ISystemUserRepository
                     @system_internal_id,
                     @reportee_party_id,
                     @reportee_org_no)
-                RETURNING system_user_integration_id;";
+                RETURNING system_user_profile_id;";
 
         try
         {
@@ -166,12 +166,12 @@ internal class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<int> UpdateProductName(Guid guid, string productName)
+    public async Task<int> UpdateIntegrationTitle(Guid guid, string integrationTitle)
     {
         const string QUERY = /*strspsql*/@"
-                UPDATE altinn_authentication_integration.system_user_integration
-                SET product_name = @product_name
-                WHERE system_user_integration_id = @id
+                UPDATE business_application.system_user_profile
+                SET integration_title = @integration_title
+                WHERE system_user_profile_id = @id
                 ";
 
         try
@@ -179,7 +179,7 @@ internal class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("id", guid);
-            command.Parameters.AddWithValue("product_name", productName);
+            command.Parameters.AddWithValue("integration_title", integrationTitle);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToInt)
@@ -198,14 +198,14 @@ internal class SystemUserRepository : ISystemUserRepository
     {      
         const string QUERY = /*strspsql*/@"
             SELECT 
-                system_user_integration_id,
+                system_user_profile_id,
                 integration_title,
                 reportee_org_no,
                 sui.system_internal_id,
                 reportee_party_id,
                 sui.created
-            FROM altinn_authentication_integration.system_user_integration sui
-                JOIN altinn_authentication_integration.system_register sr  
+            FROM business_application.system_user_profile sui
+                JOIN business_application.system_register sr  
                 ON   sui.system_internal_id = sr.system_internal_id
             WHERE sui.reportee_party_id = @systemUserOwnerOrgNo
                 AND sui.is_deleted = false
@@ -245,7 +245,7 @@ internal class SystemUserRepository : ISystemUserRepository
     {
         return new ValueTask<SystemUser>(new SystemUser
         {
-            Id = reader.GetFieldValue<Guid>("system_user_integration_id").ToString(),
+            Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             ReporteeOrgNo = reader.GetFieldValue<string>("reportee_org_no"),

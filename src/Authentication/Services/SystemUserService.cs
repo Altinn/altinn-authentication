@@ -121,7 +121,7 @@ namespace Altinn.Platform.Authentication.Services
                 return 0;
             }
 
-            return await _repository.UpdateProductName(Guid.Parse(request.Id), request.SystemId);
+            return await _repository.UpdateIntegrationTitle(Guid.Parse(request.Id), request.SystemId);
         }
 
         /// <inheritdoc/>

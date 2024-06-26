@@ -43,7 +43,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 client_id,
                 rights,
                 is_visible
-            FROM altinn_authentication_integration.system_register sr
+            FROM business_application.system_register sr
             WHERE sr.is_deleted = FALSE;";
 
         try
@@ -65,7 +65,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted, string[] rights)
     {
         const string QUERY = /*strpsql*/@"
-            INSERT INTO altinn_authentication_integration.system_register(
+            INSERT INTO business_application.system_register(
                 system_id,
                 systemvendor_orgnumber,
                 system_name,
@@ -116,7 +116,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 client_id,
                 rights,
                 is_visible
-            FROM altinn_authentication_integration.system_register sr
+            FROM business_application.system_register sr
             WHERE sr.system_id = @system_id;
         ";
 
@@ -141,9 +141,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     public async Task<int> RenameRegisteredSystemIdByGuid(Guid id, string systemId)
     {
         const string UPDATEQUERY = /*strpsql*/@"
-                UPDATE altinn_authentication_integration.system_register
+                UPDATE business_application.system_register
 	            SET system_id = @systemId
-        	    WHERE altinn_authentication_integration.system_register.system_internal_id = @guid
+        	    WHERE business_application.system_register.system_internal_id = @guid
                 ";
 
         try
@@ -166,9 +166,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     public async Task<bool> SetDeleteRegisteredSystemById(string id)
     {
         const string QUERY = /*strpsql*/@"
-                UPDATE altinn_authentication_integration.system_register
+                UPDATE business_application.system_register
 	            SET is_deleted = TRUE
-        	    WHERE altinn_authentication_integration.system_register.system_id = @system_id;
+        	    WHERE business_application.system_register.system_id = @system_id;
                 ";
 
         try
@@ -195,8 +195,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
         const string QUERY = /*strpsql*/@"
                 SELECT rights
-                FROM altinn_authentication_integration.system_register
-                WHERE altinn_authentication_integration.system_register.system_id = @system_id;
+                FROM business_application.system_register
+                WHERE business_application.system_register.system_id = @system_id;
                 ";
 
         try
@@ -271,7 +271,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         Guid insertedId = Guid.Parse(clientId);
 
         const string QUERY = /*strpsql*/@"
-            INSERT INTO altinn_authentication_integration.maskinporten_client(
+            INSERT INTO business_application.maskinporten_client(
             client_id)
             VALUES
             (@new_client_id)";
@@ -294,8 +294,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         const string GUIDQUERY = /*strpsql*/@"
                 SELECT system_internal_id
-                FROM altinn_authentication_integration.system_register
-        	    WHERE altinn_authentication_integration.system_register.system_id = @system_id;
+                FROM business_application.system_register
+        	    WHERE business_application.system_register.system_id = @system_id;
                 ";
     
         try
