@@ -261,7 +261,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             SystemUser doesNotExist = new() { Id = "123" };
 
-            HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser")
+            HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser/")
             {
                 Content = JsonContent.Create<SystemUser>(doesNotExist, new MediaTypeHeaderValue("application/json"), _options)
             };
@@ -289,7 +289,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 ProductName = "ProductNameValue"
             };
 
-            HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser");
+            HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
             request2.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
                          
