@@ -90,9 +90,8 @@ public class SystemRegisterController : ControllerBase
     /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
-    [HttpPost("system")]
-    
-    // [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [HttpPost("system")]    
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
