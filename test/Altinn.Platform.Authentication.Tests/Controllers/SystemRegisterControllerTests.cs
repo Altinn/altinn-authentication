@@ -125,7 +125,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/rights/{name}");
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{name}/rights");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<Right> list = JsonSerializer.Deserialize<List<Right>>(await response.Content.ReadAsStringAsync(), _options);
             Assert.Equal("mva", list[0].Resources[0].Value);

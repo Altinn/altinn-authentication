@@ -14,7 +14,7 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for SystemRegister
 /// </summary>
-[Authorize]
+////[Authorize]
 [Route("authentication/api/v1/systemregister")]
 [ApiController]
 public class SystemRegisterController : ControllerBase
@@ -66,7 +66,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The Id of the Product </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    [HttpGet("system/rights/{systemId}")]
+    [HttpGet("system/{systemId}/rights")]
     public async Task<ActionResult> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
     {
         List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
