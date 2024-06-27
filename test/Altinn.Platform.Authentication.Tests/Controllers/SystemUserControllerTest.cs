@@ -230,7 +230,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 {
                     Id = list[0].Id,
                     PartyId = partyId.ToString(),           
-                    PartyOrgNo = string.Empty,
+                    ReporteeOrgNo = string.Empty,
                     IntegrationTitle = list[0].IntegrationTitle, 
                     SystemId = list[0].SystemId
                 };
@@ -288,7 +288,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 PartyId = partyId,
                 IntegrationTitle = "IntegrationTitleValue",
                 SystemId = "ProductNameValue",
-                PartyOrgNo = "1234567890"
+                ReporteeOrgNo = "1234567890"
             };
 
             HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");

@@ -32,8 +32,8 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// <summary>
         /// The Organisation Number for the end-user as it is stored in ER Registry        
         /// </summary>
-        [JsonPropertyName("partyOrgNo")]
-        public string PartyOrgNo { get; set; }
+        [JsonPropertyName("reporteeOrgNo")]
+        public string ReporteeOrgNo { get; set; }
 
         /// <summary>
         /// The Title is set by the end-user in the Frontend, by default it is the same as the System's Display Name
