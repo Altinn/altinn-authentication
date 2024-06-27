@@ -28,6 +28,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="Migration\v0.00\v0.03\" />
 	  <Folder Include="Migration\v0.01\" />
 	</ItemGroup>
 

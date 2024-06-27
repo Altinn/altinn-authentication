@@ -97,6 +97,27 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Get()
+        {
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            string systemRegister = File.OpenText("MockData/SystemRegister.json").ReadToEnd();
+            RegisterSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(systemRegister, options);
+
+            string systemId = "business_next";
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{systemId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            RegisterSystemResponse actualRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(await response.Content.ReadAsStringAsync(), _options);
+            AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
+        }
+
+        [Fact]
         public async Task SystemRegister_Get_ProductDefaultRights()
         {
             string name = "Awesome_Tax";
@@ -104,7 +125,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{name}");
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{name}/rights");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<Right> list = JsonSerializer.Deserialize<List<Right>>(await response.Content.ReadAsStringAsync(), _options);
             Assert.Equal("mva", list[0].Resources[0].Value);
