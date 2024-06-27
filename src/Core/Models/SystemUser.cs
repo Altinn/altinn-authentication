@@ -21,7 +21,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         public string Id { get; set; } = string.Empty;
 
         /// <summary>
-        /// The Title is set by the end-user in the Frontend, by default it is the same as the System's Display Name
+        /// The Title is by default the same as the System's Display Name
         /// </summary>
         [JsonPropertyName("integrationTitle")]
         public string IntegrationTitle { get; set; } 

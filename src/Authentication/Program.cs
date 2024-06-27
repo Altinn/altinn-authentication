@@ -122,8 +122,11 @@ async Task SetConfigurationProviders(ConfigurationManager config)
 
     config.AddEnvironmentVariables();
 
-    await ConnectToKeyVaultAndSetApplicationInsights(config);
-    await ConnectToKeyVaultAndSetConfig(config);
+    if (!builder.Environment.IsDevelopment())
+    {
+        await ConnectToKeyVaultAndSetApplicationInsights(config);
+        await ConnectToKeyVaultAndSetConfig(config);
+    }
 
     config.AddCommandLine(args);
 }
@@ -185,8 +188,8 @@ async Task ConnectToKeyVaultAndSetConfig(ConfigurationManager config)
         Environment.SetEnvironmentVariable("AZURE_CLIENT_SECRET", keyVaultSettings.ClientSecret);
         Environment.SetEnvironmentVariable("AZURE_TENANT_ID", keyVaultSettings.TenantId);
 
-        //await SetUpAzureInsights(keyVaultSettings, config);        
-        //AddAzureKeyVault(keyVaultSettings, config);
+        await SetUpAzureInsights(keyVaultSettings, config);        
+        AddAzureKeyVault(keyVaultSettings, config);
 
         await SetUpPostgresConfigFromKeyVault(keyVaultSettings, config);
     }
@@ -378,7 +381,6 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         }
     });
 
-    // Needed for the ResourceAccessHandler    
     services.AddAuthorizationBuilder()
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN));
