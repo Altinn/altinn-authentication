@@ -47,9 +47,9 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves a list of the predfined default rights for the Product type, if any
+    /// Retrieves a Registered System for the systemId.
     /// </summary>
-    /// <param name="systemId">The Id of the Product </param>
+    /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [HttpGet("system/{systemId}")]
