@@ -18,25 +18,28 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// When the Frontend send a request for the creation of a new SystemUser the Id is null
         /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
-        [AllowNull]
-        [JsonPropertyName("Id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
         /// <summary>
-        /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and
+        /// The PartyId identifies the end-user Organisation, and is fetched from the login Context and
         /// user party serivces
         /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
-        [AllowNull]
-        [JsonPropertyName("OwnedByPartyId")]
-        public string OwnedByPartyId { get; set; }
+        [JsonPropertyName("partyId")]
+        public string PartyId { get; set; }
 
         /// <summary>
-        /// The Title and Description are strings set by the end-user in the Frontend.
+        /// The Organisation Number for the end-user as it is stored in ER Registry        
+        /// </summary>
+        [JsonPropertyName("reporteeOrgNo")]
+        public string ReporteeOrgNo { get; set; }
+
+        /// <summary>
+        /// The Title is set by the end-user in the Frontend, by default it is the same as the System's Display Name
         /// Even if this DTO allows null, the db field is of course still required     
         /// </summary>
-        [AllowNull]
-        [JsonPropertyName("IntegrationTitle")]
+        [JsonPropertyName("integrationTitle")]
         public string IntegrationTitle { get; set; }
 
         /// <summary>
@@ -46,8 +49,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
         /// Even if this DTO allows null, the db field is of course still required
         /// </summary>
-        [AllowNull]
-        [JsonPropertyName("ProductName")]
-        public string ProductName { get; set; }
+        [JsonPropertyName("systemId")]
+        public string SystemId { get; set; }
     }
 }

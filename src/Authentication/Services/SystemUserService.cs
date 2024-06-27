@@ -35,26 +35,30 @@ namespace Altinn.Platform.Authentication.Services
         /// The unique Id for the systemuser is handled by the db.
         /// </summary>
         /// <returns>The SystemUser created</returns>
-        public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, int partyId)
+        public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, string reporteeOrgNo)
         {
-            RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.ProductName);
+            RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem == null)
             {
                 return null;
             }
 
-            Guid clientId = regSystem.ClientId[0];
-
             SystemUser newSystemUser = new()
             {                
+                ReporteeOrgNo = reporteeOrgNo,
+                SystemInternalId = regSystem.SystemInternalId,
                 IntegrationTitle = request.IntegrationTitle,
-                ProductName = request.ProductName,
-                OwnedByPartyId = partyId.ToString(),
-                ClientId = clientId
+                SystemId = request.SystemId,
+                PartyId = request.PartyId.ToString()
             };
 
-            Guid insertedId = await _repository.InsertSystemUser(newSystemUser);            
-            SystemUser? inserted = await _repository.GetSystemUserById(insertedId);
+            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser);        
+            if (insertedId == null)
+            {
+                return null;
+            }
+
+            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
             return inserted;
         }
 
@@ -112,12 +116,12 @@ namespace Altinn.Platform.Authentication.Services
                 return 0;
             }
 
-            if (request.ProductName == null )
+            if (request.SystemId == null )
             {
                 return 0;
             }
 
-            return await _repository.UpdateProductName(Guid.Parse(request.Id), request.ProductName);
+            return await _repository.UpdateIntegrationTitle(Guid.Parse(request.Id), request.SystemId);
         }
 
         /// <inheritdoc/>

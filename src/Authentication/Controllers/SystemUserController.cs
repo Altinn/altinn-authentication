@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -90,6 +91,9 @@ namespace Altinn.Platform.Authentication.Controllers
                 return NotFound();
             }
 
+            // Temporary fix until Maskinporten changes their integration
+            res.ProductName = res.SystemId;
+
             return Ok(res);
         }
 
@@ -119,15 +123,15 @@ namespace Altinn.Platform.Authentication.Controllers
         /// But the calling client may send a guid for the request of creating a new system user
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
-        /// <returns></returns>        
+        /// <returns></returns>    
         [Authorize]
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
-        [HttpPost("{partyId}")]
-        public async Task<ActionResult<SystemUser>> CreateSystemUser(int partyId, [FromBody] SystemUserRequestDto request)
+        [HttpPost("{reporteeOrgNo}")]
+        public async Task<ActionResult<SystemUser>> CreateSystemUser(string reporteeOrgNo, [FromBody] SystemUserRequestDto request)
         {           
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, partyId);
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, reporteeOrgNo);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);

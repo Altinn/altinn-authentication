@@ -12,7 +12,7 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="toBeInserted">The desciptor of the new SystemUser to be inserted, has either a null ID, or an ID provided by the frontend, the db generate a UUID if none is provided.</param>
     /// <returns></returns>
-    Task<Guid> InsertSystemUser(SystemUser toBeInserted);
+    Task<Guid?> InsertSystemUser(SystemUser toBeInserted);
 
     /// <summary>
     /// Returns the list of all active system user integration for the given party id
@@ -35,12 +35,12 @@ public interface ISystemUserRepository
     Task SetDeleteSystemUserById(Guid id);
 
     /// <summary>
-    /// Updates the Product Name on an Integration by Guid
+    /// Updates the IntegrationTitle (Display name) on a System User by Guid
     /// </summary>
     /// <param name="guid"></param>
-    /// <param name="productName"></param>
+    /// <param name="integrationTitle">The Display name used in the GUI, and in the Token read by Skatteetaten</param>
     /// <returns>Number of rows affected</returns>
-    Task<int> UpdateProductName(Guid guid, string productName);
+    Task<int> UpdateIntegrationTitle(Guid guid, string integrationTitle);
 
     /// <summary>
     /// Used by Maskinporten to verify a valid SystemUser during Lookup from a systemProvider

@@ -215,7 +215,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task SystemUser_Update_ReturnsOk()
+        public async Task SystemUser_Update_IntegrationTitle_ReturnsOk()
         {
             HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
@@ -229,14 +229,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserUpdateDto dto = new() 
                 {
                     Id = list[0].Id,
-                    OwnedByPartyId = partyId.ToString(),                     
+                    PartyId = partyId.ToString(),           
+                    ReporteeOrgNo = string.Empty,
                     IntegrationTitle = list[0].IntegrationTitle, 
-                    ProductName = list[0].ProductName 
+                    SystemId = list[0].SystemId
                 };
 
             string para = $"{partyId}/{list[0].Id}";
             
-            dto.ProductName = "updated_product_name";
+            dto.IntegrationTitle = "updated_integration_title";
 
             HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser");
             request2.Content = JsonContent.Create<SystemUserUpdateDto>(dto, new MediaTypeHeaderValue("application/json"));
@@ -246,10 +247,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
             HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-            SystemUser shouldBeUpdated = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), _options);
+            SystemUser shouldBeUpdated = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), _options)!;
 
             Assert.NotEqual(HttpStatusCode.Unauthorized, response2.StatusCode);
-            Assert.Equal("updated_product_name", shouldBeUpdated.ProductName);
+            Assert.Equal("updated_integration_title", shouldBeUpdated!.IntegrationTitle);
         }
 
         [Fact]
@@ -286,7 +287,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 PartyId = partyId,
                 IntegrationTitle = "IntegrationTitleValue",
-                ProductName = "ProductNameValue"
+                SystemId = "ProductNameValue",
+                ReporteeOrgNo = "1234567890"
             };
 
             HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -313,7 +315,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string para = $"{partyId}/{id}";
             SystemUser newSystemUser = new SystemUser
             {
-                ProductName = "This is the new SystemUser!",
+                SystemId = "This is the new SystemUser!",
                 Id = "12334523456346"
             };
 

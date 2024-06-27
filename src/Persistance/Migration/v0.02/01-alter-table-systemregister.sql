@@ -1,5 +1,0 @@
-ALTER TABLE altinn_authentication_integration.system_register
-ADD COLUMN is_visible bool default true;
-
-ALTER TABLE altinn_authentication_integration.system_register
-RENAME COLUMN hidden_internal_id to system_internal_id;

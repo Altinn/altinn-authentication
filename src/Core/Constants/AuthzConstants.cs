@@ -31,5 +31,4 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// </summary>
         public const string CLAIM_MASKINPORTEN_CONSUMER_PREFIX = "consumer_prefix";
     }
-
 }

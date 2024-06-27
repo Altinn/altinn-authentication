@@ -21,29 +21,44 @@ namespace Altinn.Platform.Authentication.Core.Models
         public string Id { get; set; } = string.Empty;
 
         /// <summary>
-        /// The Title and Description are strings set by the end-user in the Frontend.
-        /// In the db this field is required.
+        /// The Title is by default the same as the System's Display Name
         /// </summary>
         [JsonPropertyName("integrationTitle")]
         public string IntegrationTitle { get; set; } 
 
         /// <summary>
-        /// For off the shelf systems.
-        /// Should probably be human readable (instead of a GUID) but unique string without whitespace
-        /// The "real" Authentication Component should validate that the SystemName is unique
-        /// Retrieved from the SystemRegister, the full CRUD Api is in a different service
-        /// In the db this field is required, but if we use this model as a DTO, we allow null
+        /// Identifier for off the shelf systems, registered in the SystemRegister db.
+        /// Should be human readable (instead of a GUID) and unique string without whitespace.                
+        /// </summary>
+        [JsonPropertyName("systemId")]
+        public string SystemId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Identifier for off the shelf systems, registered in the SystemRegister db.
+        /// Should be human readable (instead of a GUID) and unique string without whitespace.                
+        /// To be deprecated, use the systemId field going forward, it contains the same value.
         /// </summary>
         [JsonPropertyName("productName")]
         public string ProductName { get; set; } = string.Empty;
 
         /// <summary>
-        /// The OwnedBy identifies the end-user Organisation, and is fetched from the login Context and
-        /// user party serivces
-        /// In the db this field is required, but if we use this model as a DTO, we allow null
+        /// The underlying identifier for the System for persistance in the db.        
         /// </summary>
-        [JsonPropertyName("ownedByPartyId")]
-        public string OwnedByPartyId { get; set; } = string.Empty;
+        [JsonPropertyName("systemInternalId")]
+        public Guid? SystemInternalId { get; set; }
+
+        /// <summary>
+        /// The PartyID identifies the end-user Organisation, and is fetched from the login Context and
+        /// user party serivces
+        /// </summary>
+        [JsonPropertyName("partyId")]
+        public string PartyId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The Organisation Number for the end-user as it is stored in ER Registry        
+        /// </summary>
+        [JsonPropertyName("reporteeOrgNo")]
+        public string ReporteeOrgNo { get; set; } = string.Empty;
 
         /// <summary>
         /// Nice to have for debugging and logging.
@@ -73,12 +88,5 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// </summary>
         [JsonPropertyName("supplierOrgno")]
         public string SupplierOrgNo { get; set; } = string.Empty;
-
-        /// <summary>
-        /// For self-made systems, not delivered in the first Phase of the Project, and therefore not in the DTO
-        /// In these cases the SupplierName and SupplierOrgNo will be blank
-        /// </summary>
-        [JsonPropertyName("clientId")]
-        public Guid ClientId { get; set; } = Guid.Empty;
     }
 }
