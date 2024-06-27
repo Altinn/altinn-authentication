@@ -32,14 +32,15 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, int partyId)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, string partyOrgNo)
         {
             SystemUser newSystemUser = new()
             {
                 Id = Guid.NewGuid().ToString(),
                 IntegrationTitle = request.IntegrationTitle,
-                ProductName = request.ProductName,
-                OwnedByPartyId = partyId.ToString()
+                SystemId = request.SystemId,
+                PartyId = request.PartyId.ToString(),
+                ReporteeOrgNo = partyOrgNo
             };
             theMockList.Add(newSystemUser);
             return Task.FromResult(newSystemUser);
@@ -89,7 +90,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             int array = theMockList.FindIndex(su => su.Id == request.Id.ToString());
             theMockList[array].IntegrationTitle = request.IntegrationTitle;
-            theMockList[array].ProductName = request.ProductName;
+            theMockList[array].SystemId = request.SystemId;
             return Task.FromResult(1);
         }
 
@@ -103,10 +104,9 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbd",
                 IntegrationTitle = "Vårt regnskapsystem",
-                ProductName = "supplier_name_cool_system",
-                OwnedByPartyId = "orgno:91235123",
+                SystemId = "supplier_name_cool_system",
+                PartyId = "orgno:91235123",
                 IsDeleted = false,
-                ClientId = Guid.Empty,
                 SupplierName = "Supplier1 Name",
                 SupplierOrgNo = "123456789"
             };
@@ -115,10 +115,9 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbe",
                 IntegrationTitle = "Vårt andre regnskapsystem",
-                ProductName = "supplier2_product_name",
-                OwnedByPartyId = "orgno:91235124",
+                SystemId = "supplier2_product_name",
+                PartyId = "orgno:91235124",
                 IsDeleted = false,
-                ClientId = Guid.Empty,
                 SupplierName = "Supplier2 Name",
                 SupplierOrgNo = "123456789"
             };
@@ -127,10 +126,9 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
-                ProductName = "supplier3_product_name",
-                OwnedByPartyId = "orgno:91235125",
+                SystemId = "supplier3_product_name",
+                PartyId = "orgno:91235125",
                 IsDeleted = false,
-                ClientId = Guid.Empty,
                 SupplierName = "Supplier3 Name",
                 SupplierOrgNo = "123456789"
             };
@@ -150,10 +148,9 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
                 IntegrationTitle = "Et helt annet system",
-                ProductName = "supplier3_product_name",
-                OwnedByPartyId = "orgno:" + systemOrg,
+                SystemId = "supplier3_product_name",
+                PartyId = "orgno:" + systemOrg,
                 IsDeleted = false,
-                ClientId = Guid.Parse(clientId),
                 SupplierName = "Supplier3 Name",
                 SupplierOrgNo = consumerId
             });

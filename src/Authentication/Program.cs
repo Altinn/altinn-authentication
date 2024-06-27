@@ -11,7 +11,6 @@ using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
-using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
@@ -21,7 +20,6 @@ using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
-using AltinnCore.Authentication.Constants;
 using AltinnCore.Authentication.JwtCookie;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
@@ -29,7 +27,6 @@ using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -125,8 +122,11 @@ async Task SetConfigurationProviders(ConfigurationManager config)
 
     config.AddEnvironmentVariables();
 
-    await ConnectToKeyVaultAndSetApplicationInsights(config);
-    await ConnectToKeyVaultAndSetConfig(config);
+    if (!builder.Environment.IsDevelopment())
+    {
+        await ConnectToKeyVaultAndSetApplicationInsights(config);
+        await ConnectToKeyVaultAndSetConfig(config);
+    }
 
     config.AddCommandLine(args);
 }
@@ -319,7 +319,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
              }
          });
 
-    services.AddSingleton(config);
+    services.AddSingleton(config); 
     services.AddHttpClient<ISblCookieDecryptionService, SblCookieDecryptionService>();
     services.AddHttpClient<IUserProfileService, UserProfileService>();
     services.AddHttpClient<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationService>();
@@ -337,7 +337,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IGuidService, GuidService>();
-    services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();
+    services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();    
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     {
@@ -381,11 +381,9 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         }
     });
 
-    services.AddAuthorization(options =>
-    {
-        options.AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy => policy
-            .RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN));
-    });
+    services.AddAuthorizationBuilder()
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy =>
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN));
 
     services.AddFeatureManagement();
 }
@@ -429,7 +427,7 @@ void Configure()
     app.MapHealthChecks("/health");
 }
 
-void ConfigurePostgreSql()
+void ConfigurePostgreSql() 
 {
     if (builder.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
     {
