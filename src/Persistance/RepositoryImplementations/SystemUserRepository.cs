@@ -199,11 +199,13 @@ internal class SystemUserRepository : ISystemUserRepository
         const string QUERY = /*strspsql*/@"
             SELECT 
                 system_user_profile_id,
+                system_id,
                 integration_title,
                 reportee_org_no,
                 sui.system_internal_id,
                 reportee_party_id,
-                sui.created
+                sui.created,
+                systemvendor_orgnumber
             FROM business_application.system_user_profile sui
                 JOIN business_application.system_register sr  
                 ON   sui.system_internal_id = sr.system_internal_id
