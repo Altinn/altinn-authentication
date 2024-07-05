@@ -36,7 +36,6 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
     public async Task SystemRegister_InsertRegisteredSystem()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
-        string[] defaultRights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
@@ -58,8 +57,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
                         }
                     } 
                 }
-            }, 
-            defaultRights);
+            });
 
         Assert.NotEqual(Guid.Empty, registeredSystemId);
 
@@ -77,7 +75,6 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
     public async Task SystemRegister_GetAllActiveSystems()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
-        string[] defaultRights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
@@ -85,8 +82,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
                 SystemName = "Test",
                 SystemId = friendlyId,
                 SystemVendorOrgNumber = "991825827"
-            },
-            defaultRights);
+            });
 
         string friendlyId2 = "Second_Test_System_String_Human_Readable_Id";
 
@@ -96,8 +92,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
                 SystemName = "Test",
                 SystemId = friendlyId2,
                 SystemVendorOrgNumber = "991825827"
-            },
-            defaultRights);
+            });
 
         List<RegisterSystemResponse> res = await Repository.GetAllActiveSystems();
         Assert.NotEmpty(res);
@@ -112,7 +107,6 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
         string friendlyId2 = "Awesome_Test_System_String_Human_Readable_Id2";
-        string[] defaultRights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
@@ -120,8 +114,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
                 SystemName = "Test",
                 SystemId = friendlyId,
                 SystemVendorOrgNumber = "991825827"
-            },
-            defaultRights);
+            });
 
         Assert.NotEqual(Guid.Empty, registeredSystemId);
 
@@ -139,7 +132,6 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
     public async Task SystemRegister_SetDeleteRegisteredSystemById()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
-        string[] defaultRights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
@@ -147,8 +139,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
                 SystemName = "Test",
                 SystemId = friendlyId,
                 SystemVendorOrgNumber = "991825827"
-            },
-            defaultRights);
+            });
 
         Assert.NotEqual(Guid.Empty, registeredSystemId);
 
@@ -166,7 +157,6 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
     public async Task SystemRegister_GetDefaultRightsForRegisteredSystem()
     {
         string friendlyId = "Awesome_Test_System_String_Human_Readable_Id";
-        string[] rights = [];
 
         Guid? registeredSystemId = await Repository.CreateRegisteredSystem(
             new RegisterSystemRequest
@@ -188,8 +178,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
                         }
                     }
                 }
-            },
-            rights);
+            });
 
         var defRight = Repository.GetRightsForRegisteredSystem(friendlyId);
         Assert.NotNull(defRight);        

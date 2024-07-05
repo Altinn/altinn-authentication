@@ -38,39 +38,21 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> CreateClient(string clientId, CancellationToken cancellationToken)
+        public Task<bool> CreateClient(string clientId, Guid systemInteralId, CancellationToken cancellationToken)
         {
-            return _systemRegisterRepository.CreateClient(clientId);
+            return _systemRegisterRepository.CreateClient(clientId, systemInteralId);
+        }
+
+        /// <inheritdoc/>
+        public Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken)
+        {
+            return _systemRegisterRepository.DoesClientIdExists(clientId);
         }
 
         /// <inheritdoc/>
         public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
         {
-            int count = system.Rights.Count;
-            string[] defaultRights = new string[count];
-            int i = 0;
-            if (system.Rights != null)
-            {
-                foreach (Right defaultRight in system.Rights)
-                {
-                    defaultRights[i] = ConvertDefaultRightsToString(defaultRight.Resources);
-                    i++;
-                }
-            }
-
-            return _systemRegisterRepository.CreateRegisteredSystem(system, defaultRights);
-        }
-
-        private static string ConvertDefaultRightsToString(List<AttributePair> pairList)
-        {
-            string str = string.Empty;
-
-            foreach (AttributePair pair in pairList)
-            {
-                str += "{" + pair.Id + "=" + pair.Value + "}";
-            }
-
-            return str;
+            return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
 
         /// <summary>

@@ -28,8 +28,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 
         private static List<RegisterSystemResponse> MockDataHelper() 
         {
-            List<Guid> clientId = new List<Guid>();
-            clientId.Add(Guid.Parse("96ea3185-23cc-4df5-88f3-d43fbd995f34"));
+            List<string> clientId = new List<string>();
+            clientId.Add("96ea3185-23cc-4df5-88f3-d43fbd995f34");
 
             RegisterSystemResponse reg1 = new()
             {
@@ -205,9 +205,10 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// The ClientId list is maintained to ensure uniqueness
         /// </summary>
         /// <param name="clientId">A Guid inserted by Idporten</param>
+        /// <param name="system_internal_id">the system internal id</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns></returns>
-        public Task<bool> CreateClient(string clientId, CancellationToken cancellationToken)
+        public Task<bool> CreateClient(string clientId, Guid system_internal_id, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
         }
@@ -225,6 +226,12 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             RegisterSystemResponse registeredSystem = _registeredSystemsMockList.Find(r => r.SystemId.Equals(systemId));
 
             return registeredSystem;
+        }
+
+        public async Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken)
+        {
+            List<RegisterSystemResponse> result = _registeredSystemsMockList.FindAll(r => r.ClientId.Intersect(clientId).Any());
+            return result.Count() >= 1;
         }
     }
 }

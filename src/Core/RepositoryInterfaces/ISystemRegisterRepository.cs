@@ -24,7 +24,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="toBeInserted">The newly created Product to be inserted</param>
     /// <returns>Returns the hidden system Guid</returns>
-    Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted, string[] rights);
+    Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted);
 
     /// <summary>
     /// Returns a single RegisteredSystem, even if it was set to deleted.
@@ -59,7 +59,14 @@ public interface ISystemRegisterRepository
     /// <param name="systemId">The human readable string id</param>
     /// <returns>List of Default Rights</returns>
     Task<List<Right>> GetRightsForRegisteredSystem(string systemId);
-    Task<bool> CreateClient(string clientId);
+
+    /// <summary>
+    /// Adds a client id and the respective internal system id
+    /// </summary>
+    /// <param name="clientId">the client id from the maskinporten</param>
+    /// <param name="systemInternalId">the internal system idenficator for a system</param>
+    /// <returns></returns>
+    Task<bool> CreateClient(string clientId, Guid systemInternalId);
 
     /// <summary>
     /// Used for internal maintenance, the Guid is not part of any APIs
@@ -67,4 +74,11 @@ public interface ISystemRegisterRepository
     /// <param name="id">The external string ID</param>
     /// <returns></returns>
     Task<Guid?> RetrieveGuidFromStringId (string id);
+
+    /// <summary>
+    /// Checks if the client id exists
+    /// </summary>
+    /// <param name="id">array of client id</param>
+    /// <returns>true if one of the client id exists</returns>
+    Task<bool> DoesClientIdExists(List<string> id);
 }
