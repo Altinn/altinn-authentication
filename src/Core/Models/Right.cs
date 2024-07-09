@@ -6,7 +6,7 @@
     public class Right
     {
         /// <summary>
-        /// The list of resources at the Service Provider which the Right is for.
+        /// The list of attributes that identifes a resource part of a right.
         /// </summary>
         public List<AttributePair> Resource { get; set; } = [];
     }
