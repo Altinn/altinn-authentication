@@ -53,7 +53,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 foreach (Right defaultRight in system.Rights)
                 {
-                    defaultRights[i] = ConvertDefaultRightsToString(defaultRight.Resources);
+                    defaultRights[i] = ConvertDefaultRightsToString(defaultRight.Resource);
                     i++;
                 }
             }

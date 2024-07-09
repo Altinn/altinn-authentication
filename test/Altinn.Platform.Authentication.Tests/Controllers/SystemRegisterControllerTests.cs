@@ -128,7 +128,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{name}/rights");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<Right> list = JsonSerializer.Deserialize<List<Right>>(await response.Content.ReadAsStringAsync(), _options);
-            Assert.Equal("mva", list[0].Resources[0].Value);
+            Assert.Equal("mva", list[0].Resource[0].Value);
         }
 
         private void SetupDateTimeMock()

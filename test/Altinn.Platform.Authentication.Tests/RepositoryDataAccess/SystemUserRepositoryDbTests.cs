@@ -75,7 +75,7 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
                 {
                     new Right()
                     {
-                        Resources = new List<AttributePair>()
+                        Resource = new List<AttributePair>()
                         {
                             new AttributePair()
                             {
