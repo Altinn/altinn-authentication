@@ -48,7 +48,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
                 { 
                     new Right() 
                     {
-                        Resources = new List<AttributePair>()
+                        Resource = new List<AttributePair>()
                         {
                             new AttributePair()
                             {
@@ -178,7 +178,7 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
                 {
                     new Right()
                     {
-                        Resources = new List<AttributePair>()
+                        Resource = new List<AttributePair>()
                         {
                             new AttributePair()
                             {

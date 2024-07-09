@@ -40,7 +40,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 [
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair 
                             { 
@@ -51,7 +51,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     },
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair
                             {
@@ -72,7 +72,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 [
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair
                             {
@@ -83,7 +83,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     },
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair
                             {
@@ -105,7 +105,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 [
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair
                             {
@@ -116,7 +116,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     },
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair
                             {
@@ -136,7 +136,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 [
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair
                             {
@@ -147,7 +147,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     },
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair
                             {
@@ -169,7 +169,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 [
                     new()
                     {
-                        Resources =
+                        Resource =
                         [
                             new AttributePair
                             {
