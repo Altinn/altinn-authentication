@@ -1,18 +1,12 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0.301-alpine3.18 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 WORKDIR /app
 
-
-COPY src/Authentication/Altinn.Platform.Authentication.csproj ./src/Authentication/Altinn.Platform.Authentication.csproj
-COPY src/Core/Altinn.Platform.Authentication.Core.csproj ./src/Core/Altinn.Platform.Authentication.Core.csproj
-COPY src/Persistance/Altinn.Platform.Authentication.Persistance.csproj ./src/Persistance/Altinn.Platform.Authentication.Persistance.csproj
-
-RUN dotnet restore ./src/Authentication/Altinn.Platform.Authentication.csproj
-
-COPY src/ ./src
+# Copy everything and build
+COPY . .
 RUN dotnet build ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -o app_output \
     && dotnet publish ./src/Authentication/Altinn.Platform.Authentication.csproj -c Release -r linux-x64 -o app_output --no-self-contained
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0.6-alpine3.18 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 EXPOSE 5040 
 WORKDIR /app
 COPY --from=build /app/app_output .
