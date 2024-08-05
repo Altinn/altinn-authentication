@@ -43,6 +43,12 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
+            SystemUser? existsAlready = await _repository.CheckIfPartyHasIntegration(regSystem.ClientId[0].ToString(), regSystem.SystemVendorOrgNumber, reporteeOrgNo, default);
+            if (existsAlready is not null) 
+            {
+                return existsAlready;
+            }
+
             SystemUser newSystemUser = new()
             {                
                 ReporteeOrgNo = reporteeOrgNo,
@@ -70,7 +76,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (partyId < 1)
             {
-                return new List<SystemUser>(null);
+                return [];
             }
 
             return await _repository.GetAllActiveSystemUsersForParty(partyId);
