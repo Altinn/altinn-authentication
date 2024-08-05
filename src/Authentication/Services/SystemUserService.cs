@@ -43,10 +43,11 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            SystemUser? existsAlready = await _repository.CheckIfPartyHasIntegration(regSystem.ClientId[0].ToString(), regSystem.SystemVendorOrgNumber, reporteeOrgNo, default);
-            if (existsAlready is not null) 
+            List<SystemUser> validateNotExistsInList = await _repository.GetAllActiveSystemUsersForParty(int.Parse(reporteeOrgNo));
+            SystemUser? found = validateNotExistsInList.Find(s => s.SystemId == regSystem.SystemId);
+            if (found is not null) 
             {
-                return existsAlready;
+               return found;
             }
 
             SystemUser newSystemUser = new()
