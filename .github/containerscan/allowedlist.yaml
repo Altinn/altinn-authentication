@@ -1,3 +1,4 @@
 general:
   vulnerabilities:
     - CVE-2021-24112
+    - CVE-2019-0820
