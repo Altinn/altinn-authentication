@@ -38,7 +38,7 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, string reporteeOrgNo)
         {
             RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
-            if (regSystem == null)
+            if (regSystem == null || regSystem.SoftDeleted == true)
             {
                 return null;
             }
