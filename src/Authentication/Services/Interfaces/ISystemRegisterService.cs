@@ -53,5 +53,21 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellation">The Cancelation token</param>
         /// <returns></returns>
         Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default);
+
+        /// <summary>
+        /// Updates the rights on a registered system
+        /// </summary>
+        /// <param name="rights">A list of rights</param>
+        /// <param name="systemId">The human readable string id</param>
+        /// <returns>true if changed</returns>
+        Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
+
+        /// <summary>
+        /// Set's the product's is_deleted column to True.
+        /// This will break any existing integrations.
+        /// </summary>
+        /// <param name="id">The human readable string id</param>
+        /// <returns>True if set to deleted</returns>
+        Task<bool> SetDeleteRegisteredSystemById(string id);
     }
 }
