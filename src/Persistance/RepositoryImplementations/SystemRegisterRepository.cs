@@ -142,7 +142,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         const string UPDATEQUERY = /*strpsql*/@"
                 UPDATE business_application.system_register
-	            SET system_id = @systemId
+	            SET system_id = @systemId,
+                last_changed = CURRENT_TIMESTAMP
         	    WHERE business_application.system_register.system_internal_id = @guid
                 ";
 
@@ -167,7 +168,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         const string QUERY = /*strpsql*/@"
                 UPDATE business_application.system_register
-	            SET is_deleted = TRUE
+	            SET is_deleted = TRUE,
+                last_changed = CURRENT_TIMESTAMP
         	    WHERE business_application.system_register.system_id = @system_id;
                 ";
 
@@ -177,9 +179,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             command.Parameters.AddWithValue("system_id", id);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
-                .FirstOrDefaultAsync();
+            return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
         {
@@ -217,6 +217,32 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetRightsForRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/> 
+    public async Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
+    {
+        const string QUERY = /*strpsql*/@"
+            UPDATE business_application.system_register
+            SET rights = @rights,
+            last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.system_register.system_id = @system_id;
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb | NpgsqlDbType.Array) { Value = new[] { rights } });
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateRightsForRegisteredSystem // Exception");
             throw;
         }
     }

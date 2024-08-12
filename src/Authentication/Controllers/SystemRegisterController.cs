@@ -14,7 +14,7 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for SystemRegister
 /// </summary>
-[Authorize]
+//[Authorize]
 [Route("authentication/api/v1/systemregister")]
 [ApiController]
 public class SystemRegisterController : ControllerBase
@@ -115,5 +115,41 @@ public class SystemRegisterController : ControllerBase
         }
 
         return Ok(registeredSystemGuid);
+    }
+
+    /// <summary>
+    /// Updates the rights on a registered system
+    /// </summary>
+    /// <param name="rights">A list of rights</param>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>true if changed</returns>
+    [HttpPatch("system/{systemId}/rights")]
+    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    public async Task<ActionResult> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
+    {
+        bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);
+        if (!success)
+        {
+            return BadRequest();
+        }
+
+        return Ok(true);
+    }
+
+    /// <summary>
+    /// Set the registered system to be deleted.    
+    /// </summary>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>true if changed</returns>
+    [HttpDelete("system/{systemId}")]
+    public async Task<ActionResult> SetDeleteOnRegisteredSystem(string systemId)
+    {
+        bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
+        if (!deleted) 
+        { 
+            return BadRequest(); 
+        }
+
+        return Ok(deleted);
     }
 }
