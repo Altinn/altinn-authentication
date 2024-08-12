@@ -14,7 +14,7 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for SystemRegister
 /// </summary>
-//[Authorize]
+[Authorize]
 [Route("authentication/api/v1/systemregister")]
 [ApiController]
 public class SystemRegisterController : ControllerBase
@@ -37,7 +37,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
-    public async Task<ActionResult> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<RegisterSystemResponse>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
         List<RegisterSystemResponse> lista = [];
 
@@ -53,7 +53,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [HttpGet("system/{systemId}")]
-    public async Task<ActionResult> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RegisterSystemResponse>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
     {
         RegisterSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
         
@@ -67,7 +67,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [HttpGet("system/{systemId}/rights")]
-    public async Task<ActionResult> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<Right>>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
     {
         List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
         if (lista is null || lista.Count == 0)
@@ -87,7 +87,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
     [HttpPost("client/{clientId}")]
-    public async Task<ActionResult> CreateClient(string clientId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> CreateClient(string clientId, CancellationToken cancellationToken = default)
     {
         var okay = await _systemRegisterService.CreateClient(clientId, cancellationToken);
         if (!okay)
@@ -95,7 +95,7 @@ public class SystemRegisterController : ControllerBase
             return BadRequest();            
         }
 
-        return Ok(okay);
+        return Ok(new SystemRegisterUpdateResult(true));
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [HttpPost("system")]    
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
         if (registeredSystemGuid is null)
@@ -123,9 +123,9 @@ public class SystemRegisterController : ControllerBase
     /// <param name="rights">A list of rights</param>
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
-    [HttpPatch("system/{systemId}/rights")]
+    [HttpPut("system/{systemId}/rights")]
     //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
     {
         bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);
         if (!success)
@@ -133,7 +133,7 @@ public class SystemRegisterController : ControllerBase
             return BadRequest();
         }
 
-        return Ok(true);
+        return Ok(new SystemRegisterUpdateResult(true));
     }
 
     /// <summary>
@@ -142,7 +142,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
     [HttpDelete("system/{systemId}")]
-    public async Task<ActionResult> SetDeleteOnRegisteredSystem(string systemId)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
         if (!deleted) 
@@ -150,6 +150,6 @@ public class SystemRegisterController : ControllerBase
             return BadRequest(); 
         }
 
-        return Ok(deleted);
+        return Ok(new SystemRegisterUpdateResult(true));
     }
 }
