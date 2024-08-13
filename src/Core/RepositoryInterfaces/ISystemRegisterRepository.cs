@@ -59,12 +59,26 @@ public interface ISystemRegisterRepository
     /// <param name="systemId">The human readable string id</param>
     /// <returns>List of Default Rights</returns>
     Task<List<Right>> GetRightsForRegisteredSystem(string systemId);
+
+    /// <summary>
+    /// Creates an entry in the client_id table
+    /// </summary>
+    /// <param name="clientId">string client_id will be stored as UUID client_id</param>
+    /// <returns>true if okay</returns>
     Task<bool> CreateClient(string clientId);
 
     /// <summary>
     /// Used for internal maintenance, the Guid is not part of any APIs
     /// </summary>
     /// <param name="id">The external string ID</param>
-    /// <returns></returns>
+    /// <returns>UUID systemInternalId</returns>
     Task<Guid?> RetrieveGuidFromStringId (string id);
+
+    /// <summary>
+    /// Updates the rights on a registered system
+    /// </summary>
+    /// <param name="rights">A list of rights</param>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>true if changed</returns>
+    Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
 }
