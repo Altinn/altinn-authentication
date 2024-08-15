@@ -226,5 +226,15 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             return registeredSystem;
         }
+
+        public Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> SetDeleteRegisteredSystemById(string id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

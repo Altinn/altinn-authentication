@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Unicode;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -90,7 +91,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_name", toBeInserted.SystemName);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb | NpgsqlDbType.Array) { Value = new[] { toBeInserted.Rights } });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -191,7 +192,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// <inheritdoc/> 
     public async Task<List<Right>> GetRightsForRegisteredSystem(string systemId)
     {
-        List<Right> rights = new List<Right>();
+        List<Right> rights = [];
 
         const string QUERY = /*strpsql*/@"
                 SELECT rights
@@ -206,10 +207,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_id", systemId);
 
             await using var reader = await command.ExecuteReaderAsync();
+
             while (await reader.ReadAsync())
             {
-                string[] rightsString = reader.GetFieldValue<string[]>(0);
-                rights = JsonSerializer.Deserialize<List<Right>>(rightsString[0]);
+                rights = reader.GetFieldValue<List<Right>>(0);                                
             }
 
             return rights;
@@ -224,19 +225,19 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// <inheritdoc/> 
     public async Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
     {
-        const string QUERY = /*strpsql*/@"
+        const string QUERY = /*strpsql*/"""            
             UPDATE business_application.system_register
             SET rights = @rights,
             last_changed = CURRENT_TIMESTAMP
             WHERE business_application.system_register.system_id = @system_id;
-        ";
+            """;
 
         try
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("system_id", systemId);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb | NpgsqlDbType.Array) { Value = new[] { rights } });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = rights });
 
             return await command.ExecuteNonQueryAsync() > 0;
         }
