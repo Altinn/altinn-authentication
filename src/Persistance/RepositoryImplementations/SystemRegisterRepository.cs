@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -149,7 +148,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         const string UPDATEQUERY = /*strpsql*/@"
                 UPDATE business_application.system_register
-	            SET system_id = @systemId
+	            SET system_id = @systemId,
+                last_changed = CURRENT_TIMESTAMP
         	    WHERE business_application.system_register.system_internal_id = @guid
                 ";
 
@@ -174,7 +174,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         const string QUERY = /*strpsql*/@"
                 UPDATE business_application.system_register
-	            SET is_deleted = TRUE
+	            SET is_deleted = TRUE,
+                last_changed = CURRENT_TIMESTAMP
         	    WHERE business_application.system_register.system_id = @system_id;
                 ";
 
@@ -184,9 +185,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             command.Parameters.AddWithValue("system_id", id);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)
-                .FirstOrDefaultAsync();
+            return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
         {
@@ -228,30 +227,45 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    /// <inheritdoc/>  
-    public async Task<bool> DoesClientIdExists(List<string> id)
+    /// <inheritdoc/> 
+    public async Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
     {
         const string QUERY = /*strpsql*/@"
-            SELECT 
-            client_id
-            FROM business_application.maskinporten_client mc
-            WHERE mc.client_id = ANY(@client_id);
+            UPDATE business_application.system_register
+            SET rights = @rights,
+            last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.system_register.system_id = @system_id;
         ";
 
         try
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("client_id", id.ToArray());
+            command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb | NpgsqlDbType.Array) { Value = new[] { rights } });
 
-            return await command.ExecuteEnumerableAsync()
-                .CountAsync() >= 1;
+            return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetClientByClientId // Exception");
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateRightsForRegisteredSystem // Exception");
             throw;
         }
+    }
+
+    /// <summary>
+    /// The list of Right for each Registered System is stored as a text array in the db.
+    /// Each element in this Array Type is a concatenation of the Servive Provider ( NAV, Skatteetaten, etc ...)
+    /// and the Right joined with an underscore.
+    /// This is to avoid a two dimensional array in the db, this is safe and easier since
+    /// each Right is always in the context of it's parent Service Provider anyway.
+    /// The Right can either denote a single Right or a package of Rights; which is handled in Access Management.
+    /// </summary>
+    private ValueTask<List<Right>> ConvertFromReaderToRights(NpgsqlDataReader reader)
+    {
+        List<Right> rights = reader.GetFieldValue<List<Right>>("rights");
+
+        return new ValueTask<List<Right>>(rights);
     }
 
     private static ValueTask<RegisterSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
@@ -332,6 +346,32 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // RetrieveGuidFromStringId // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<bool> DoesClientIdExists(List<string> id)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+            client_id
+            FROM business_application.maskinporten_client mc
+            WHERE mc.client_id = ANY(@client_id);
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("client_id", id.ToArray());
+
+            return await command.ExecuteEnumerableAsync()
+                .CountAsync() >= 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetClientByClientId // Exception");
             throw;
         }
     }

@@ -72,8 +72,16 @@ public interface ISystemRegisterRepository
     /// Used for internal maintenance, the Guid is not part of any APIs
     /// </summary>
     /// <param name="id">The external string ID</param>
-    /// <returns></returns>
+    /// <returns>UUID systemInternalId</returns>
     Task<Guid?> RetrieveGuidFromStringId (string id);
+
+    /// <summary>
+    /// Updates the rights on a registered system
+    /// </summary>
+    /// <param name="rights">A list of rights</param>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>true if changed</returns>
+    Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
 
     /// <summary>
     /// Checks if the client id exists
