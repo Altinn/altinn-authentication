@@ -357,7 +357,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SELECT 
             client_id
             FROM business_application.maskinporten_client mc
-            WHERE mc.client_id = ANY(@client_id);
+            WHERE mc.client_id = ANY(array[@client_id]::uuid[]);
         ";
 
         try
