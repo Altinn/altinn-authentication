@@ -91,7 +91,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_name", toBeInserted.SystemName);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb ) { Value = toBeInserted.Rights });
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)

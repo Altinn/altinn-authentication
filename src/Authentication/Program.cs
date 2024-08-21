@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Authorization;
+using Altinn.Common.PEP.Clients;
+using Altinn.Common.PEP.Implementation;
+using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
@@ -30,6 +33,7 @@ using Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -324,6 +328,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IUserProfileService, UserProfileService>();
     services.AddHttpClient<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationService>();
     services.AddHttpClient<IOrganisationsService, OrganisationsService>();
+    services.AddHttpClient<AuthorizationApiClient>();
+
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
     services.AddSingleton<ISigningKeysRetriever, SigningKeysRetriever>();
     services.AddSingleton<IPublicSigningKeyProvider, PublicSigningKeyProvider>();
@@ -337,6 +343,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IGuidService, GuidService>();
+    services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+    services.AddSingleton<IPDP, PDPAppSI>();
     services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();
     services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
 
