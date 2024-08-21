@@ -63,7 +63,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted, string[] rights)
+    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.system_register(
@@ -91,11 +91,43 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_name", toBeInserted.SystemName);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb ) { Value = toBeInserted.Rights });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
                 .SingleOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem)
+    {
+        const string QUERY = /*strpsql*/"""
+            UPDATE business_application.system_register
+            SET system_name = @system_name,
+                is_visible = @is_visible,
+                is_deleted = @is_deleted,
+                rights = @rights
+                last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.system_register.system_id = @system_id
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", updatedSystem.SystemId);
+            command.Parameters.AddWithValue("systemvendor_orgnumber", updatedSystem.SystemVendorOrgNumber);
+            command.Parameters.AddWithValue("system_name", updatedSystem.SystemName);
+            command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
+
+            return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
         {

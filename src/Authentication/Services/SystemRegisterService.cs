@@ -46,31 +46,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
         {
-            int count = system.Rights.Count;
-            string[] defaultRights = new string[count];
-            int i = 0;
-            if (system.Rights != null)
-            {
-                foreach (Right defaultRight in system.Rights)
-                {
-                    defaultRights[i] = ConvertDefaultRightsToString(defaultRight.Resource);
-                    i++;
-                }
-            }
-
-            return _systemRegisterRepository.CreateRegisteredSystem(system, defaultRights);
-        }
-
-        private static string ConvertDefaultRightsToString(List<AttributePair> pairList)
-        {
-            string str = string.Empty;
-
-            foreach (AttributePair pair in pairList)
-            {
-                str += "{" + pair.Id + "=" + pair.Value + "}";
-            }
-
-            return str;
+            return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
 
         /// <summary>
@@ -94,6 +70,12 @@ namespace Altinn.Platform.Authentication.Services
         public Task<bool> SetDeleteRegisteredSystemById(string id)
         {
             return _systemRegisterRepository.SetDeleteRegisteredSystemById(id);
+        }
+
+        /// <inheritdoc/>
+        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

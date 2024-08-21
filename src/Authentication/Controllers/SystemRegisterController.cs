@@ -62,6 +62,27 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
+    /// Replaces the entire registered system
+    /// </summary>
+    /// <param name="updateSystem">The updated system model</param>
+    /// <param name="systemId">The Id of the Registered System </param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
+    [HttpPut("system/{systemId}")]
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    {
+        var success = await _systemRegisterService.UpdateWholeRegisteredSystem(updateSystem, systemId, cancellationToken);
+
+        if (!success)
+        {
+            return BadRequest();
+        }
+
+        return Ok(new SystemRegisterUpdateResult(true));
+    }
+
+    /// <summary>
     /// Retrieves a list of the predfined default rights for the Product type, if any
     /// </summary>
     /// <param name="systemId">The Id of the Product </param>
