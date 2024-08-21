@@ -242,7 +242,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             while (await reader.ReadAsync())
             {
-                rights = reader.GetFieldValue<List<Right>>(0);                                
+                rights = reader.GetFieldValue<List<Right>>("rights");                                
             }
 
             return rights;
@@ -298,7 +298,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     private static ValueTask<RegisterSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         string[] stringGuids = reader.GetFieldValue<string[]>("client_id");
-        List<Right> rights = GetRights(reader.GetFieldValue<string[]>("rights"));
+
+        // List<Right> rights = GetRights(reader.GetFieldValue<string[]>("rights"));
+        List<Right> rights = reader.GetFieldValue<List<Right>>("rights");
         List<Guid> clientIds = [];
 
         foreach (string str in stringGuids)

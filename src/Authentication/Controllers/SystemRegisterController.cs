@@ -52,7 +52,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
+    //[Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
     [HttpGet("system/{systemId}")]
     public async Task<ActionResult<RegisterSystemResponse>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
     {

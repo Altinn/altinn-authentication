@@ -75,7 +75,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
         }
     }
 }
