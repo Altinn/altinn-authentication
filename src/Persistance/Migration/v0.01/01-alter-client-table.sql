@@ -1,13 +1,7 @@
 -- Table: business_application.maskinporten_client
 
-DROP TABLE IF EXISTS business_application.maskinporten_client;
+ALTER TABLE IF EXISTS business_application.maskinporten_client 
+ADD COLUMN system_internal_id uuid;
 
-CREATE TABLE IF NOT EXISTS business_application.maskinporten_client
-(
-    client_id text PRIMARY KEY,    
-    system_internal_id uuid not null,
-    created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_deleted boolean DEFAULT false
-)
-
-TABLESPACE pg_default;
+ALTER TABLE IF EXISTS business_application.maskinporten_client 
+ADD CONSTRAINT fk_maskinporten_client_system_register FOREIGN KEY (system_internal_id) REFERENCES business_application.system_register (system_internal_id);
