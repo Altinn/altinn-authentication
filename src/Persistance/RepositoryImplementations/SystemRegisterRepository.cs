@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -62,7 +61,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted, string[] rights)
+    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.system_register(
@@ -92,9 +91,16 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb | NpgsqlDbType.Array) { Value = new[] { toBeInserted.Rights } });
 
-            return await command.ExecuteEnumerableAsync()
+            Guid systemInternalId = await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
                 .SingleOrDefaultAsync();
+            
+            foreach (string id in toBeInserted.ClientId)
+            {
+                await CreateClient(id, systemInternalId);
+            }
+
+            return systemInternalId;
         }
         catch (Exception ex)
         {
@@ -266,7 +272,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         string[] stringGuids = reader.GetFieldValue<string[]>("client_id");
         List<Right> rights = GetRights(reader.GetFieldValue<string[]>("rights"));
-        List<Guid> clientIds = [];
+        List<string> clientIds = [];
 
         foreach (string str in stringGuids)
         {
@@ -275,7 +281,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 continue;
             }                                        
 
-            clientIds.Add(Guid.Parse(str));
+            clientIds.Add(str);
         }
         
         return new ValueTask<RegisterSystemResponse>(new RegisterSystemResponse
@@ -292,20 +298,23 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public async Task<bool> CreateClient(string clientId)
+    public async Task<bool> CreateClient(string clientId, Guid systemInteralId)
     {
         Guid insertedId = Guid.Parse(clientId);
 
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.maskinporten_client(
-            client_id)
+            client_id,
+            system_internal_id)
             VALUES
-            (@new_client_id)";
+            (@new_client_id,
+             @system_internal_id)";
 
         try
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
             command.Parameters.AddWithValue("new_client_id", insertedId);
+            command.Parameters.AddWithValue("system_internal_id", systemInteralId);
             return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
@@ -337,6 +346,32 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // RetrieveGuidFromStringId // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<bool> DoesClientIdExists(List<string> id)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+            client_id
+            FROM business_application.maskinporten_client mc
+            WHERE mc.client_id = ANY(@client_id);
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("client_id", id.ToArray());
+
+            return await command.ExecuteEnumerableAsync()
+                .CountAsync() >= 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetClientByClientId // Exception");
             throw;
         }
     }

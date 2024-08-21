@@ -79,26 +79,6 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
-    /// Inserts a new unique Maskinporten-ClientId, these are maintained by Maskinporten, and are inserted to our db by them.
-    /// 
-    /// </summary>
-    /// <param name="clientId">The Client_Ids are maintained by Maskinporten, they are the key Maskinporten use
-    /// to uniquely identify a SystemVendor's Registered Systems.</param>
-    /// <param name="cancellationToken">The Cancellationtoken</param>
-    /// <returns></returns>
-    [HttpPost("client/{clientId}")]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> CreateClient(string clientId, CancellationToken cancellationToken = default)
-    {
-        var okay = await _systemRegisterService.CreateClient(clientId, cancellationToken);
-        if (!okay)
-        {
-            return BadRequest();            
-        }
-
-        return Ok(new SystemRegisterUpdateResult(true));
-    }
-
-    /// <summary>
     /// Create a new System 
     /// </summary>
     /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>
@@ -108,13 +88,30 @@ public class SystemRegisterController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
-        var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
-        if (registeredSystemGuid is null)
+        try
         {
-            return BadRequest();
-        }
+            if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
+            {
+                ModelState.AddModelError("ClientId", "One of the client id already tagged with an existing system");
+                return BadRequest(ModelState);
+            }
+            else
+            {
+                var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
+                if (registeredSystemGuid is null)
+                {
+                    return BadRequest();
+                }
 
-        return Ok(registeredSystemGuid);
+                return Ok(registeredSystemGuid);
+            }
+        }
+        catch (Exception e)
+        {
+            return e.Message.Contains("duplicate key value violates unique constraint")
+                ? Conflict($"The System already exist: {registerNewSystem.SystemId}")
+                : StatusCode(500, e.Message);
+        }
     }
 
     /// <summary>
@@ -124,7 +121,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
     [HttpPut("system/{systemId}/rights")]
-    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    ///[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
     {
         bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);
