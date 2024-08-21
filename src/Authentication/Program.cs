@@ -337,7 +337,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IGuidService, GuidService>();
-    services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();    
+    services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();
+    services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     {
@@ -383,7 +384,11 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
 
     services.AddAuthorizationBuilder()
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy =>
-            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN));
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN))
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ, policy => 
+            policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy => 
+            policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management"))); 
 
     services.AddFeatureManagement();
 }
