@@ -38,9 +38,15 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> CreateClient(string clientId, CancellationToken cancellationToken)
+        public Task<bool> CreateClient(string clientId, Guid systemInteralId, CancellationToken cancellationToken)
         {
-            return _systemRegisterRepository.CreateClient(clientId);
+            return _systemRegisterRepository.CreateClient(clientId, systemInteralId);
+        }
+
+        /// <inheritdoc/>
+        public Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken)
+        {
+            return _systemRegisterRepository.DoesClientIdExists(clientId);
         }
 
         /// <inheritdoc/>
@@ -58,19 +64,7 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            return _systemRegisterRepository.CreateRegisteredSystem(system, defaultRights);
-        }
-
-        private static string ConvertDefaultRightsToString(List<AttributePair> pairList)
-        {
-            string str = string.Empty;
-
-            foreach (AttributePair pair in pairList)
-            {
-                str += "{" + pair.Id + "=" + pair.Value + "}";
-            }
-
-            return str;
+            return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
 
         /// <summary>
@@ -94,6 +88,18 @@ namespace Altinn.Platform.Authentication.Services
         public Task<bool> SetDeleteRegisteredSystemById(string id)
         {
             return _systemRegisterRepository.SetDeleteRegisteredSystemById(id);
+        }
+
+        private static string ConvertDefaultRightsToString(List<AttributePair> pairList)
+        {
+            string str = string.Empty;
+
+            foreach (AttributePair pair in pairList)
+            {
+                str += "{" + pair.Id + "=" + pair.Value + "}";
+            }
+
+            return str;
         }
     }
 }
