@@ -297,9 +297,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     private static ValueTask<RegisterSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
-        string[] stringGuids = reader.GetFieldValue<string[]>("client_id");
-
-        // List<Right> rights = GetRights(reader.GetFieldValue<string[]>("rights"));
+        string[] stringGuids = reader.GetFieldValue<string[]>("client_id");                
         List<Right> rights = reader.GetFieldValue<List<Right>>("rights");
         List<Guid> clientIds = [];
 
