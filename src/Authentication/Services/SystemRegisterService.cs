@@ -78,7 +78,6 @@ namespace Altinn.Platform.Authentication.Services
             return _systemRegisterRepository.SetDeleteRegisteredSystemById(id);
         }
 
-
         /// <inheritdoc/>
         public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
         {

@@ -305,7 +305,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         string[] stringGuids = reader.GetFieldValue<string[]>("client_id");                
         List<Right> rights = reader.GetFieldValue<List<Right>>("rights");
-        List<Guid> clientIds = [];
+        List<string> clientIds = [];
 
         foreach (string str in stringGuids)
         {
