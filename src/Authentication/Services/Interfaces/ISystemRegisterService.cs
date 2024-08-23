@@ -42,9 +42,10 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Inserts a new unique ClientId
         /// </summary>
         /// <param name="clientId">The Client_Ids are maintained by Maskinporten, but we need to reference them in the db</param>
+        /// <param name="systemInteralId">the internal system idenficator for a system</param>
         /// <param name="cancellationToken">The Cancellationtoken</param>
         /// <returns></returns>
-        Task<bool> CreateClient(string clientId, CancellationToken cancellationToken);
+        Task<bool> CreateClient(string clientId, Guid systemInteralId, CancellationToken cancellationToken);
 
         /// <summary>
         /// Inserts a new Registered System
@@ -78,5 +79,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns></returns>
         Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken);
+
+        /// Checks if one of the clientid exists
+        /// </summary>
+        /// <param name="clientId">the maskinporten client id</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns>true when one of the client id already exists</returns>
+        Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken);
+
     }
 }

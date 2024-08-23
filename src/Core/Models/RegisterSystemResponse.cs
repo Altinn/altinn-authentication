@@ -74,7 +74,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// The client Id
         /// </summary>
         [Required]
-        public List<Guid> ClientId { get; set; } = [];
+        public List<string> ClientId { get; set; } = [];
 
         /// <summary>
         /// Registered systems can be set to false to hide it from the user interface.

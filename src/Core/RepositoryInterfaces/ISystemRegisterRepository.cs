@@ -61,11 +61,12 @@ public interface ISystemRegisterRepository
     Task<List<Right>> GetRightsForRegisteredSystem(string systemId);
 
     /// <summary>
-    /// Creates an entry in the client_id table
+    /// Adds a client id and the respective internal system id
     /// </summary>
-    /// <param name="clientId">string client_id will be stored as UUID client_id</param>
-    /// <returns>true if okay</returns>
-    Task<bool> CreateClient(string clientId);
+    /// <param name="clientId">the client id from the maskinporten</param>
+    /// <param name="systemInternalId">the internal system idenficator for a system</param>
+    /// <returns></returns>
+    Task<bool> CreateClient(string clientId, Guid systemInternalId);
 
     /// <summary>
     /// Used for internal maintenance, the Guid is not part of any APIs
@@ -89,4 +90,10 @@ public interface ISystemRegisterRepository
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
     Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem);
+
+    /// Checks if the client id exists
+    /// </summary>
+    /// <param name="id">array of client id</param>
+    /// <returns>true if one of the client id exists</returns>
+    Task<bool> DoesClientIdExists(List<string> id);
 }
