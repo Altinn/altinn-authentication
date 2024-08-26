@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +15,6 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for SystemRegister
 /// </summary>
-[Authorize]
 [Route("authentication/api/v1/systemregister")]
 [ApiController]
 public class SystemRegisterController : ControllerBase
@@ -52,12 +52,34 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
     [HttpGet("system/{systemId}")]
     public async Task<ActionResult<RegisterSystemResponse>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
     {
         RegisterSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
         
         return Ok(registeredSystem);
+    }
+
+    /// <summary>
+    /// Replaces the entire registered system
+    /// </summary>
+    /// <param name="updateSystem">The updated system model</param>
+    /// <param name="systemId">The Id of the Registered System </param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
+    [HttpPut("system/{systemId}")]
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    {
+        var success = await _systemRegisterService.UpdateWholeRegisteredSystem(updateSystem, systemId, cancellationToken);
+
+        if (!success)
+        {
+            return BadRequest();
+        }
+
+        return Ok(new SystemRegisterUpdateResult(true));
     }
 
     /// <summary>
@@ -72,7 +94,7 @@ public class SystemRegisterController : ControllerBase
         List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
         if (lista is null || lista.Count == 0)
         {
-            return NoContent();
+            return NotFound();
         }
 
         return Ok(lista);
@@ -85,7 +107,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
     [HttpPost("system")]    
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
     public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
@@ -121,7 +143,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
     [HttpPut("system/{systemId}/rights")]
-    ///[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
     {
         bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);
@@ -139,6 +161,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
     [HttpDelete("system/{systemId}")]
+    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
