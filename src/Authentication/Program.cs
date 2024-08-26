@@ -8,6 +8,7 @@ using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Authorization;
 using Altinn.Common.PEP.Clients;
+using Altinn.Common.PEP.Configuration;
 using Altinn.Common.PEP.Implementation;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients;
@@ -291,7 +292,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHealthChecks().AddCheck<HealthCheck>("authentication_health_check");
 
     services.AddSingleton(config);
-    services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
+    services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));     
+    services.Configure<Altinn.Common.PEP.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
     services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
     services.Configure<PostgreSQLSettings>(config.GetSection("PostgreSQLSettings"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
