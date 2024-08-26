@@ -212,7 +212,8 @@ internal class SystemUserRepository : ISystemUserRepository
             WHERE sui.reportee_org_no = @systemUserOwnerOrgNo
                 AND sui.is_deleted = false
                 AND sr.is_deleted = false
-                AND @client_id = ANY (sr.client_id);
+                AND @client_id = ANY (sr.client_id)
+                AND systemvendor_orgnumber = @systemVendorOrgno;
             ";
 
         try
@@ -221,6 +222,7 @@ internal class SystemUserRepository : ISystemUserRepository
 
             command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
             command.Parameters.AddWithValue("client_id", clientId);
+            command.Parameters.AddWithValue("systemVendorOrgno", systemProviderOrgNo);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)

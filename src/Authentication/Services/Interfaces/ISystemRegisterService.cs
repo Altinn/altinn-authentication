@@ -72,11 +72,20 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<bool> SetDeleteRegisteredSystemById(string id);
 
         /// <summary>
+        /// Replaces the entire registered system
+        /// </summary>
+        /// <param name="updateSystem">The updated system model</param>
+        /// <param name="systemId">The Id of the Registered System </param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns></returns>
+        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken);
+
         /// Checks if one of the clientid exists
         /// </summary>
         /// <param name="clientId">the maskinporten client id</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>true when one of the client id already exists</returns>
         Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken);
+
     }
 }

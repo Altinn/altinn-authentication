@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Text.Json;
+using System.Text.Unicode;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -89,7 +90,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_name", toBeInserted.SystemName);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb | NpgsqlDbType.Array) { Value = new[] { toBeInserted.Rights } });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
 
             Guid systemInternalId = await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -101,6 +102,38 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             }
 
             return systemInternalId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem)
+    {
+        const string QUERY = /*strpsql*/"""
+            UPDATE business_application.system_register
+            SET system_name = @system_name,
+                is_visible = @is_visible,
+                is_deleted = @is_deleted,
+                rights = @rights
+                last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.system_register.system_id = @system_id
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", updatedSystem.SystemId);
+            command.Parameters.AddWithValue("systemvendor_orgnumber", updatedSystem.SystemVendorOrgNumber);
+            command.Parameters.AddWithValue("system_name", updatedSystem.SystemName);
+            command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
+
+            return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
         {
@@ -197,7 +230,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// <inheritdoc/> 
     public async Task<List<Right>> GetRightsForRegisteredSystem(string systemId)
     {
-        List<Right> rights = new List<Right>();
+        List<Right> rights = [];
 
         const string QUERY = /*strpsql*/@"
                 SELECT rights
@@ -212,10 +245,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("system_id", systemId);
 
             await using var reader = await command.ExecuteReaderAsync();
+
             while (await reader.ReadAsync())
             {
-                string[] rightsString = reader.GetFieldValue<string[]>(0);
-                rights = JsonSerializer.Deserialize<List<Right>>(rightsString[0]);
+                rights = reader.GetFieldValue<List<Right>>("rights");                                
             }
 
             return rights;
@@ -230,19 +263,19 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// <inheritdoc/> 
     public async Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
     {
-        const string QUERY = /*strpsql*/@"
+        const string QUERY = /*strpsql*/"""            
             UPDATE business_application.system_register
             SET rights = @rights,
             last_changed = CURRENT_TIMESTAMP
             WHERE business_application.system_register.system_id = @system_id;
-        ";
+            """;
 
         try
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("system_id", systemId);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb | NpgsqlDbType.Array) { Value = new[] { rights } });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = rights });
 
             return await command.ExecuteNonQueryAsync() > 0;
         }
@@ -270,8 +303,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     private static ValueTask<RegisterSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
-        string[] stringGuids = reader.GetFieldValue<string[]>("client_id");
-        List<Right> rights = GetRights(reader.GetFieldValue<string[]>("rights"));
+        string[] stringGuids = reader.GetFieldValue<string[]>("client_id");                
+        List<Right> rights = reader.GetFieldValue<List<Right>>("rights");
         List<string> clientIds = [];
 
         foreach (string str in stringGuids)

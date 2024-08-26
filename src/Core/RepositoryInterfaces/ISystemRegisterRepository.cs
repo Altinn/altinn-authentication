@@ -84,6 +84,13 @@ public interface ISystemRegisterRepository
     Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
 
     /// <summary>
+    /// Updates the whole registered system,
+    /// except internal_id, system_id, orgnr and client_id.    
+    /// </summary>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>true if changed</returns>
+    Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem);
+
     /// Checks if the client id exists
     /// </summary>
     /// <param name="id">array of client id</param>
