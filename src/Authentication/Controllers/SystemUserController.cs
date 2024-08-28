@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{party}/{systemUserId}")]
-        public async Task<ActionResult> GetSingleSystemUserById(int partyId, Guid systemUserId)
+        public async Task<ActionResult> GetSingleSystemUserById(int party, Guid systemUserId)
         {
             SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
             if (systemUser is not null)
@@ -131,7 +131,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpPost("{party}")]
         public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
         {           
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, party);
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);
