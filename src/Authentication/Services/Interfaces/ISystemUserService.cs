@@ -39,9 +39,8 @@ public interface ISystemUserService
     /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
     /// </summary>
     /// <param name="request">The DTO describing the Product the Caller wants to create.</param> 
-    /// <param name="reporteeOrgNo">The organisation number for the Legal Entity the Caller represent.</param> 
     /// <returns></returns> 
-    Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request, string reporteeOrgNo);
+    Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the update 
