@@ -40,10 +40,10 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("{partyId}")]
-        public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
+        [HttpGet("{party}")]
+        public async Task<ActionResult> GetListOfSystemUsersPartyHas(int party)
         {
-            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(partyId);
+            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(party);
 
             if (theList is not null && theList.Count > 0)
             {
@@ -60,8 +60,8 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("{partyId}/{systemUserId}")]
-        public async Task<ActionResult> GetSingleSystemUserById(int partyId, Guid systemUserId)
+        [HttpGet("{party}/{systemUserId}")]
+        public async Task<ActionResult> GetSingleSystemUserById(int party, Guid systemUserId)
         {
             SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
             if (systemUser is not null)
@@ -104,7 +104,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpDelete("{partyId}/{systemUserId}")]
+        [HttpDelete("{party}/{systemUserId}")]
         public async Task<ActionResult> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
             SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
@@ -124,14 +124,14 @@ namespace Altinn.Platform.Authentication.Controllers
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>    
-        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]        
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
-        [HttpPost("{reporteeOrgNo}")]
-        public async Task<ActionResult<SystemUser>> CreateSystemUser(string reporteeOrgNo, [FromBody] SystemUserRequestDto request)
+        [HttpPost("{party}")]
+        public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
         {           
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request, reporteeOrgNo);
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);
