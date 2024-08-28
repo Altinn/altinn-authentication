@@ -40,10 +40,10 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("{partyId}")]
-        public async Task<ActionResult> GetListOfSystemUsersPartyHas(int partyId)
+        [HttpGet("{party}")]
+        public async Task<ActionResult> GetListOfSystemUsersPartyHas(int party)
         {
-            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(partyId);
+            List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(party);
 
             if (theList is not null && theList.Count > 0)
             {
@@ -60,7 +60,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpGet("{partyId}/{systemUserId}")]
+        [HttpGet("{party}/{systemUserId}")]
         public async Task<ActionResult> GetSingleSystemUserById(int partyId, Guid systemUserId)
         {
             SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
@@ -104,7 +104,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HttpDelete("{partyId}/{systemUserId}")]
+        [HttpDelete("{party}/{systemUserId}")]
         public async Task<ActionResult> SetDeleteFlagOnSystemUser(Guid systemUserId)
         {
             SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
