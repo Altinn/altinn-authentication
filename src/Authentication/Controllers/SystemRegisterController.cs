@@ -52,7 +52,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("system/{systemId}")]
     public async Task<ActionResult<RegisterSystemResponse>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
     {
@@ -68,7 +68,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("system/{systemId}")]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
@@ -107,7 +107,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
     [HttpPost("system")]    
-    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
@@ -143,7 +143,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
     [HttpPut("system/{systemId}/rights")]
-    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
     {
         bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);
@@ -161,7 +161,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
     [HttpDelete("system/{systemId}")]
-    [Authorize(Policy = AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
