@@ -155,5 +155,10 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SupplierOrgNo = consumerId
             });
         }
+
+        public Task<SystemUser> CreateSystemUser(string party, SystemUserRequestDto request)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
