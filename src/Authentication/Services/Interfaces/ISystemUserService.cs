@@ -38,9 +38,10 @@ public interface ISystemUserService
     /// But the calling client may send a guid for the request of creating a new system user
     /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
     /// </summary>
+    /// <param name="party">The partyId for the reportee</param>
     /// <param name="request">The DTO describing the Product the Caller wants to create.</param> 
     /// <returns></returns> 
-    Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request);
+    Task<SystemUser?> CreateSystemUser(string party, SystemUserRequestDto request);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the update 

@@ -124,14 +124,14 @@ namespace Altinn.Platform.Authentication.Controllers
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>    
-        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]        
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]                
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
         [HttpPost("{party}")]
         public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
         {           
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request);
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(party, request);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);
