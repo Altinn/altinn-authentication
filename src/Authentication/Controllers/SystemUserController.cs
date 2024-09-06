@@ -10,6 +10,7 @@ using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.Mvc;
 
 namespace Altinn.Platform.Authentication.Controllers
@@ -33,10 +34,10 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="generalSettings">The appsettings needed </param>
         public SystemUserController(
             ISystemUserService systemUserService, 
-            GeneralSettings generalSettings)
+            IOptions<GeneralSettings> generalSettings)
         {
             _systemUserService = systemUserService;
-            _generalSettings = generalSettings;
+            _generalSettings = generalSettings.Value;
         }
 
         /// <summary>

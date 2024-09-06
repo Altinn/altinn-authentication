@@ -333,6 +333,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationService>();
     services.AddHttpClient<IOrganisationsService, OrganisationsService>();
     services.AddHttpClient<AuthorizationApiClient>();
+    services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
 
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
     services.AddSingleton<ISigningKeysRetriever, SigningKeysRetriever>();
