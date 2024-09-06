@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
-
+#nullable enable
 /// <summary>
 /// The service that supports the System User CRUD APIcontroller
 /// </summary>
@@ -39,9 +39,10 @@ public interface ISystemUserService
     /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
     /// </summary>
     /// <param name="party">The partyId for the reportee</param>
-    /// <param name="request">The DTO describing the Product the Caller wants to create.</param> 
+    /// <param name="request">The DTO describing the Product the Caller wants to create.</param>
+    /// <param name="token">The authorization bearer token from the calling client</param> 
     /// <returns></returns> 
-    Task<SystemUser?> CreateSystemUser(string party, SystemUserRequestDto request);
+    Task<SystemUser?> CreateSystemUser(string party, SystemUserRequestDto request, string token);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the update 

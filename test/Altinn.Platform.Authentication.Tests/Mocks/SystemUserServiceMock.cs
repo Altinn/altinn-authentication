@@ -156,7 +156,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             });
         }
 
-        public Task<SystemUser> CreateSystemUser(string party, SystemUserRequestDto request)
+        public Task<SystemUser> CreateSystemUser(string party, SystemUserRequestDto request, string token)
         {
             throw new NotImplementedException();
         }

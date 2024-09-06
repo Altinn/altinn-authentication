@@ -6,6 +6,7 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,14 +24,19 @@ namespace Altinn.Platform.Authentication.Controllers
     public class SystemUserController : ControllerBase
     {
         private readonly ISystemUserService _systemUserService;
+        private readonly GeneralSettings _generalSettings;
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="systemUserService">The SystemUserService supports this API specifically.</param>
-        public SystemUserController(ISystemUserService systemUserService)
+        /// <param name="generalSettings">The appsettings needed </param>
+        public SystemUserController(
+            ISystemUserService systemUserService, 
+            GeneralSettings generalSettings)
         {
             _systemUserService = systemUserService;
+            _generalSettings = generalSettings;
         }
 
         /// <summary>
@@ -130,8 +136,10 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
         [HttpPost("{party}")]
         public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
-        {           
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(party, request);
+        {
+            string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName!)!;
+
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(party, request, token);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);
