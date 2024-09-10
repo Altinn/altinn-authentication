@@ -52,7 +52,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // SetDeleteSystemUserById // Exception");            
+            _logger.LogError(ex, "Authentication // SystemUserRepository // SetDeleteSystemUserById // Exception");            
         }
     }
 
@@ -87,7 +87,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetAllActiveSystemUsersForParty // Exception");
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllActiveSystemUsersForParty // Exception");
             throw;
         }
     }
@@ -123,7 +123,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetSystemUserById // Exception");
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetSystemUserById // Exception");
             throw;
         }
     }
@@ -159,7 +159,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // InsertSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // SystemUserRepository // InsertSystemUser // Exception");
             throw;
         }
     }
@@ -186,7 +186,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateProductName // Exception");
+            _logger.LogError(ex, "Authentication // SystemUserRepository // UpdateProductName // Exception");
 
             throw;
         }
@@ -229,7 +229,7 @@ internal class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CheckIfPartyHasIntegration // Exception");
+            _logger.LogError(ex, "Authentication // SystemUserRepository // CheckIfPartyHasIntegration // Exception");
             throw;
         }
     }    
