@@ -1,0 +1,20 @@
+{
+  "systemId": "the_matrix_01",
+  "systemVendorOrgNumber": "991825827",
+  "systemName": "The Matrix 001",
+  "rights": [
+    {
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "ske_krav-og-betaling"
+        }
+      ]
+    }
+  ],
+  "softDeleted": false,
+  "clientId": [
+    "32ef65ac-6e62-498d-880f-76c85c2052ae"
+  ],
+  "isVisible": true
+}

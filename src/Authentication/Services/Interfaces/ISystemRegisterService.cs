@@ -80,6 +80,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <returns></returns>
         Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken);
 
+        /// <summary>
         /// Checks if one of the clientid exists
         /// </summary>
         /// <param name="clientId">the maskinporten client id</param>
