@@ -6,6 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Altinn.Authorization.ProblemDetails" Version="3.0.0" />
+		<PackageReference Include="Altinn.Platform.Models" Version="1.6.1" />
+	</ItemGroup>
+	
   <ItemGroup>
     <Compile Remove="Clients\**" />
     <EmbeddedResource Remove="Clients\**" />
@@ -14,6 +23,8 @@
 
   <ItemGroup>
     <Folder Include="Configuration\" />
+    <Folder Include="Models\SystemUser\" />
+    <Folder Include="Models\Party\" />
     <Folder Include="Services\Interfaces\" />
   </ItemGroup>
 
