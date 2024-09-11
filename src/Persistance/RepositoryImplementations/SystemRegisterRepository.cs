@@ -118,7 +118,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SET system_name = @system_name,
                 is_visible = @is_visible,
                 is_deleted = @is_deleted,
-                rights = @rights
+                rights = @rights,
                 last_changed = CURRENT_TIMESTAMP
             WHERE business_application.system_register.system_id = @system_id
             """;
@@ -131,6 +131,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("systemvendor_orgnumber", updatedSystem.SystemVendorOrgNumber);
             command.Parameters.AddWithValue("system_name", updatedSystem.SystemName);
             command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
+            command.Parameters.AddWithValue("is_deleted", updatedSystem.SoftDeleted);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
 
             return await command.ExecuteNonQueryAsync() > 0;
