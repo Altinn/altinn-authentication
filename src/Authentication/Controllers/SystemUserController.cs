@@ -6,9 +6,11 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.Mvc;
 
 namespace Altinn.Platform.Authentication.Controllers
@@ -23,14 +25,19 @@ namespace Altinn.Platform.Authentication.Controllers
     public class SystemUserController : ControllerBase
     {
         private readonly ISystemUserService _systemUserService;
+        private readonly GeneralSettings _generalSettings;
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="systemUserService">The SystemUserService supports this API specifically.</param>
-        public SystemUserController(ISystemUserService systemUserService)
+        /// <param name="generalSettings">The appsettings needed </param>
+        public SystemUserController(
+            ISystemUserService systemUserService, 
+            IOptions<GeneralSettings> generalSettings)
         {
             _systemUserService = systemUserService;
+            _generalSettings = generalSettings.Value;
         }
 
         /// <summary>
@@ -124,14 +131,16 @@ namespace Altinn.Platform.Authentication.Controllers
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>    
-        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]        
+        [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]                
         [Produces("application/json")]
         [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
         [HttpPost("{party}")]
         public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
-        {           
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(request);
+        {
+            string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName!)!;
+
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(party, request, token);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);
