@@ -1,6 +1,7 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
@@ -73,7 +74,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// The client Id
         /// </summary>
-        [Required]
+        [JsonIgnore]
         public List<string> ClientId { get; set; } = [];
 
         /// <summary>

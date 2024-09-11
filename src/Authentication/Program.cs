@@ -18,6 +18,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -294,6 +295,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton(config);
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));     
     services.Configure<Altinn.Common.PEP.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
+    services.Configure<AccessManagementSettings>(config.GetSection("AccessManagementSettings"));
     services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
     services.Configure<PostgreSQLSettings>(config.GetSection("PostgreSQLSettings"));
     services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
@@ -331,6 +333,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationService>();
     services.AddHttpClient<IOrganisationsService, OrganisationsService>();
     services.AddHttpClient<AuthorizationApiClient>();
+    services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
 
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
     services.AddSingleton<ISigningKeysRetriever, SigningKeysRetriever>();
