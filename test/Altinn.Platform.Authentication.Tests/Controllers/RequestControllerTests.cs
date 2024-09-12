@@ -91,11 +91,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string[] prefixes = { "altinn", "digdir" };
             string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            JsonSerializerOptions options = new JsonSerializerOptions()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
             string endpoint = $"/authentication/api/v1/request";
 
             // Arrange
@@ -111,6 +106,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(System.Net.HttpStatusCode.OK, message.StatusCode);       
             CreateRequestSystemUserResponse res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
             Assert.Equal(req.ExternalRef, res.ExternalRef);
+        }
+
+        [Fact]
+        public async Task Request_Create_UnAuthorized()
+        {
+            HttpClient client = CreateClient();
+            string endpoint = $"/authentication/api/v1/request";
+
+            // Arrange
+            CreateRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "systemId",
+                PartyOrgNo = "1234567",
+                Rights = []
+            };
+
+            HttpResponseMessage message = await client.PostAsync(string.Empty, endpoint, JsonContent.Create(req));
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, message.StatusCode);
         }
 
         private void SetupDateTimeMock()
