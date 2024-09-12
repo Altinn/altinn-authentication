@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 #nullable enable
@@ -15,45 +15,50 @@ namespace Altinn.Platform.Authentication.Services
     /// <summary>
     /// The service that supports the SystemUser CRUD APIcontroller
     /// </summary>
+    /// <remarks>
+    /// The Constructor
+    /// </remarks>
     [ExcludeFromCodeCoverage]
-    public class SystemUserService : ISystemUserService
+    public class SystemUserService(
+        ISystemUserRepository systemUserRepository,
+        ISystemRegisterRepository systemRegisterRepository,
+        IAccessManagementClient accessManagementClient) : ISystemUserService
     {
-        private readonly ISystemUserRepository _repository;
-        private readonly ISystemRegisterRepository _registerRepository;
-
-        /// <summary>
-        /// The Constructor
-        /// </summary>
-        public SystemUserService(ISystemUserRepository systemUserRepository, ISystemRegisterRepository systemRegisterRepository)
-        {            
-            _repository = systemUserRepository;
-            _registerRepository = systemRegisterRepository;
-        }
+        private readonly ISystemUserRepository _repository = systemUserRepository;
+        private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
+        private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
 
         /// <summary>
         /// Creates a new SystemUser
         /// The unique Id for the systemuser is handled by the db.
         /// </summary>
         /// <returns>The SystemUser created</returns>
-        public async Task<SystemUser?> CreateSystemUser(SystemUserRequestDto request)
+        public async Task<SystemUser?> CreateSystemUser(string partyId, SystemUserRequestDto request, string token)
         {
             RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
-            if (regSystem == null)
+            if (regSystem is null)
+            {
+                return null;
+            }
+
+            AuthorizedPartyExternal? party = await _accessManagementClient.GetPartyFromReporteeListIfExists(int.Parse(partyId), token);
+
+            if (party is null)
             {
                 return null;
             }
 
             SystemUser newSystemUser = new()
             {                
-                ReporteeOrgNo = request.ReporteeOrgNo,
+                ReporteeOrgNo = party.OrganizationNumber,
                 SystemInternalId = regSystem.SystemInternalId,
                 IntegrationTitle = request.IntegrationTitle,
                 SystemId = request.SystemId,
-                PartyId = request.PartyId.ToString()
+                PartyId = partyId
             };
 
             Guid? insertedId = await _repository.InsertSystemUser(newSystemUser);        
-            if (insertedId == null)
+            if (insertedId is null)
             {
                 return null;
             }
@@ -70,7 +75,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (partyId < 1)
             {
-                return new List<SystemUser>(null);
+                return [];
             }
 
             return await _repository.GetAllActiveSystemUsersForParty(partyId);
@@ -80,9 +85,9 @@ namespace Altinn.Platform.Authentication.Services
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
         /// <returns>SystemUser</returns>
-        public async Task<SystemUser> GetSingleSystemUserById(Guid systemUserId)
+        public async Task<SystemUser?> GetSingleSystemUserById(Guid systemUserId)
         {
-            SystemUser search = await _repository.GetSystemUserById(systemUserId);
+            SystemUser? search = await _repository.GetSystemUserById(systemUserId);
             
             return search;
         }
@@ -92,16 +97,10 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
         public async Task<bool> SetDeleteFlagOnSystemUser(Guid systemUserId)
-
         {
-            SystemUser toBeDeleted = await _repository.GetSystemUserById(systemUserId);
-            if (toBeDeleted != null) 
-            {
-                await _repository.SetDeleteSystemUserById(systemUserId);
-                return true;
-            }
+            await _repository.SetDeleteSystemUserById(systemUserId);            
 
-            return false;
+            return true; // if it can't be found, there is no need to delete it.
         }
 
         /// <summary>

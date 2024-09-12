@@ -243,5 +243,10 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             throw new NotImplementedException();
         }
+
+        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

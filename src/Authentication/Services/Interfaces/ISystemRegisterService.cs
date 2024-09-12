@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces
 {
@@ -80,12 +79,12 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <returns></returns>
         Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken);
 
+        /// <summary>
         /// Checks if one of the clientid exists
         /// </summary>
         /// <param name="clientId">the maskinporten client id</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>true when one of the client id already exists</returns>
         Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken);
-
     }
 }
