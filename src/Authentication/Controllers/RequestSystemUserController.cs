@@ -32,7 +32,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="createRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    // [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPost]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
