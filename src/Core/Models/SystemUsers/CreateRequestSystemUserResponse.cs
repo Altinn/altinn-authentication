@@ -11,7 +11,7 @@
 /// <param name="Status">Initially the request is "new", and unless there are problems, the customer "accepted" it. </param>
 /// <param name="RedirectURL">Optional redirect URL to navigate to after the customer has accepted/denied the Request</param>
 /// <param name="SystemUserId">Initially this is null, but after an "accepted" request will be the Guid for the SystemUser created</param>
-public sealed record CreateRequestSystemUserResponse()    
+public class CreateRequestSystemUserResponse()    
 {
     public Guid Id { get; set; }
     public string ExternalRef { get; set; }
