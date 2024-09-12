@@ -13,14 +13,16 @@ public class RequestSystemUserService : IRequestSystemUser
     {
         await Task.Delay(65);
 
-        return new CreateRequestSystemUserResponse(
-            createRequest.Id,
-            createRequest.ExternalRef,
-            createRequest.SystemId,
-            createRequest.PartyOrgNo,
-            createRequest.Rights,
-            RequestStatus.New.ToString(),
-            createRequest.RedirectURL,
-            Guid.NewGuid().ToString());
+        return new CreateRequestSystemUserResponse()
+        {
+            Id = Guid.NewGuid(),
+            ExternalRef = createRequest.ExternalRef,
+            SystemId = createRequest.SystemId,
+            PartyOrgNo = createRequest.PartyOrgNo,
+            Rights = createRequest.Rights,
+            Status = RequestStatus.New.ToString(),
+            RedirectURL = createRequest.RedirectURL,
+            SystemUserId = Guid.NewGuid().ToString()
+        };
     }
 }

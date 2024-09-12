@@ -104,17 +104,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string endpoint = $"/authentication/api/v1/request";
 
             // Arrange
-            CreateRequestSystemUser req = new(
-                Guid.NewGuid(),
-                "external",
-                "systemId",
-                "1234567",
-                []);
+            CreateRequestSystemUser req = new() 
+            {
+                ExternalRef = "external",
+                SystemId = "systemId",
+                PartyOrgNo = "1234567",
+                Rights = []
+            };
              
             HttpResponseMessage message = await client.PostAsync(token, endpoint, JsonContent.Create(req));
             Assert.Equal(System.Net.HttpStatusCode.OK, message.StatusCode);       
             CreateRequestSystemUserResponse res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
-            Assert.Equal(req.Id, res.Id);
+            Assert.Equal(req.ExternalRef, res.ExternalRef);
         }
 
         private void SetupDateTimeMock()
