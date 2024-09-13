@@ -10,6 +10,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.AccessManagement.Tests.Mocks;
+using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Tests.Mocks;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -93,6 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
+            services.AddSingleton<IPartiesClient, PartiesClientMock>();
             SetupDateTimeMock();
             SetupGuidMock();
         }

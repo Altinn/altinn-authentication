@@ -73,6 +73,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Data\Parties\parties.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\Roles\user_1337\party_500000\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
