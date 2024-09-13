@@ -62,40 +62,43 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.system_register(
                 system_id,
-                systemvendor_orgnumber,
-                system_name,
+                systemvendor_orgnumber,               
                 client_id,
                 is_visible,
-                rights)
+                rights,
+                name,
+                description)
             VALUES(
                 @system_id,
-                @systemvendor_orgnumber,
-                @system_name,
+                @systemvendor_orgnumber,                
                 @client_id,
                 @is_visible,
-                @rights)
+                @rights,
+                @name,
+                @description)
             RETURNING system_internal_id;";
 
         try
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_id", toBeInserted.SystemId);
-            command.Parameters.AddWithValue("systemvendor_orgnumber", toBeInserted.SystemVendorOrgNumber);
-            command.Parameters.AddWithValue("system_name", toBeInserted.SystemName);
+            command.Parameters.AddWithValue("system_id", toBeInserted.Id);
+            command.Parameters.AddWithValue("systemvendor_orgnumber", GetOrgNumber(toBeInserted.Vendor));
+            command.Parameters.AddWithValue("name", toBeInserted.Name);
+            command.Parameters.AddWithValue("description", toBeInserted.Description);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.SingleRights });
 
             Guid systemInternalId = await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
                 .SingleOrDefaultAsync();
-            
+
             foreach (string id in toBeInserted.ClientId)
             {
                 await CreateClient(id, systemInternalId);
@@ -334,8 +337,6 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     /// <inheritdoc/> 
     public async Task<bool> CreateClient(string clientId, Guid systemInteralId)
     {
-        Guid insertedId = Guid.Parse(clientId);
-
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.maskinporten_client(
             client_id,
@@ -347,7 +348,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         try
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
-            command.Parameters.AddWithValue("new_client_id", insertedId);
+            command.Parameters.AddWithValue("new_client_id", clientId);
             command.Parameters.AddWithValue("system_internal_id", systemInteralId);
             return await command.ExecuteNonQueryAsync() > 0;
         }
@@ -391,7 +392,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SELECT 
             client_id
             FROM business_application.maskinporten_client mc
-            WHERE mc.client_id = ANY(array[@client_id]::uuid[]);
+            WHERE mc.client_id = ANY(array[@client_id]::text[]);
         ";
 
         try
@@ -413,5 +414,22 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     private static List<Right> GetRights(string[] rights)
     {
         return JsonSerializer.Deserialize<List<Right>>(rights[0]);
+    }
+
+    private static string? GetOrgNumber(IDictionary<string, string> vendor)
+    {
+        vendor.TryGetValue("ID", out string? authority);
+        if (!string.IsNullOrEmpty(authority))
+        {
+            string[] identityParts = authority.Split(':');
+            if (identityParts.Length > 0 && identityParts[0] != "0192")
+            {
+                throw new ArgumentException("Invalid authority for the org number, unexpected ISO6523 identifier");
+            }
+
+            return identityParts[1];
+        }
+
+        return null;
     }
 }

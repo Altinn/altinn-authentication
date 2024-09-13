@@ -213,12 +213,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return Task.FromResult(true);
         }
 
-        /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<RegisterSystemResponse> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
             await Task.Delay(50, cancellation);
@@ -245,6 +239,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest system, CancellationToken cancellation = default)
         {
             throw new NotImplementedException();
         }

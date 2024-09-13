@@ -52,7 +52,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="system">The descriptor DTO for a new System</param>
         /// <param name="cancellation">The Cancelation token</param>
         /// <returns></returns>
-        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default);
+        Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest system, CancellationToken cancellation = default);
 
         /// <summary>
         /// Updates the rights on a registered system

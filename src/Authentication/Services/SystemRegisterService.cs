@@ -50,7 +50,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest system, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
