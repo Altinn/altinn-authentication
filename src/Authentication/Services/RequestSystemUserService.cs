@@ -16,8 +16,8 @@ public class RequestSystemUserService : IRequestSystemUser
         // Validate the PartyOrgNo for the Customer
         // Valiate that the Vendor's OrgNo owns the chosen SystemId ( retrieved from token)
         // Validate that the combination of System and External ref does not currently exist (not soft-deleted)
-
-
+        // Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
+        // Set an empty ExternalRef to be equal to the PartyOrgNo
         return new CreateRequestSystemUserResponse()
         {
             Id = Guid.NewGuid(),
