@@ -13,6 +13,11 @@ public class RequestSystemUserService : IRequestSystemUser
     {
         await Task.Delay(65);
 
+        // Validate the PartyOrgNo for the Customer
+        // Valiate that the Vendor's OrgNo owns the chosen SystemId ( retrieved from token)
+        // Validate that the combination of System and External ref does not currently exist (not soft-deleted)
+
+
         return new CreateRequestSystemUserResponse()
         {
             Id = Guid.NewGuid(),
