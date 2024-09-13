@@ -138,9 +138,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpPost("{party}")]
         public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
         {
-            string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName!)!;
-
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(party, request, token);
+            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(party, request);
             if (toBeCreated is not null)
             {
                 return Ok(toBeCreated);

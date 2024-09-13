@@ -9,7 +9,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Common.AccessToken.Services;
+using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Controllers;
@@ -23,6 +25,7 @@ using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
+using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -89,8 +92,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-            services.AddSingleton<ISystemUserService, SystemUserServiceMock>();
-            services.AddSingleton<ISystemRegisterService, SystemRegisterServiceMock>();
+            services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
             SetupDateTimeMock();
             SetupGuidMock();
         }
@@ -275,20 +277,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemUser_Create_ReturnsOk()
         {
-            HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
-            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-            int partyId = 1;
+            HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",  PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
             Guid id = Guid.NewGuid();
 
             string para = $"{partyId}/{id}";
             SystemUserRequestDto newSystemUser = new()
             {
-                PartyId = partyId,
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "ProductNameValue",
-                ReporteeOrgNo = "1234567890"
+                SystemId = "the_matrix",
             };
 
             HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -391,6 +394,28 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private void SetupGuidMock()
         {
             guidService.Setup(q => q.NewGuid()).Returns("eaec330c-1e2d-4acb-8975-5f3eba12b2fb");
-        }              
+        }
+
+        private async Task<HttpResponseMessage> CreateSystemRegister(string dataFileName)
+        {
+            HttpClient client = CreateClient();
+            string[] prefixes = { "altinn", "digdir" };
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            Stream dataStream = File.OpenRead(dataFileName);
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/system/");
+            request.Content = content;
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            return response;
+        }
+
     }
 }
