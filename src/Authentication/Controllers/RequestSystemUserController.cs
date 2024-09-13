@@ -36,7 +36,7 @@ public class RequestSystemUserController : ControllerBase
     /// <summary>
     /// Route for the Created URI
     /// </summary>
-    public const string CREATEDURIMIDSECTION = $"authentication/api/v1/systemuser/request";
+    public const string CREATEDURIMIDSECTION = $"authentication/api/v1/systemuser/request/";
 
     /// <summary>
     /// Creates a new Request based on a SystemId for a SystemUser.

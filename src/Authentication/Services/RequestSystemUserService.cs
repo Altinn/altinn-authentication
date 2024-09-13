@@ -27,7 +27,7 @@ public class RequestSystemUserService : IRequestSystemUser
     }
 
     /// <inheritdoc/>
-    public async  Task<CreateRequestSystemUserResponse> GetRequestByExternalRef(string systemId, string externalRef1)
+    public async Task<CreateRequestSystemUserResponse> GetRequestByExternalRef(string systemId, string externalRef1)
     {
         await Task.Delay(65);
 
