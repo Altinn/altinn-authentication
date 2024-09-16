@@ -39,10 +39,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_id,
                 systemvendor_orgnumber, 
                 system_name,
+                name,
+                description,
                 is_deleted,
                 client_id,
                 rights,
-                is_visible
+                is_visible,
+                allowedredirecturls
             FROM business_application.system_register sr
             WHERE sr.is_deleted = FALSE;";
 
@@ -72,7 +75,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 is_visible,
                 rights,
                 name,
-                description)
+                description,
+                allowedredirecturls)
             VALUES(
                 @system_id,
                 @systemvendor_orgnumber,                
@@ -80,7 +84,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 @is_visible,
                 @rights,
                 @name,
-                @description)
+                @description,
+                @allowedredirecturls)
             RETURNING system_internal_id;";
 
         try
@@ -93,6 +98,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("description", toBeInserted.Description);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
+            command.Parameters.AddWithValue("allowedredirecturls", toBeInserted.AllowedRedirectUrls.ConvertAll<string>(delegate (Uri u) { return u.ToString(); }));
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.SingleRights });
 
             Guid systemInternalId = await command.ExecuteEnumerableAsync()
@@ -114,15 +120,18 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem)
+    public async Task<bool> UpdateRegisteredSystem(SystemRegisterRequest updatedSystem)
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.system_register
-            SET system_name = @system_name,
+            SET systemvendor_orgnumber = @systemvendor_orgnumber,
+                name = @name,
+                description = @description,
                 is_visible = @is_visible,
                 is_deleted = @is_deleted,
                 rights = @rights,
-                last_changed = CURRENT_TIMESTAMP
+                last_changed = CURRENT_TIMESTAMP,
+                allowedredirecturls = @allowedredirecturls
             WHERE business_application.system_register.system_id = @system_id
             """;
 
@@ -130,12 +139,14 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_id", updatedSystem.SystemId);
-            command.Parameters.AddWithValue("systemvendor_orgnumber", updatedSystem.SystemVendorOrgNumber);
-            command.Parameters.AddWithValue("system_name", updatedSystem.SystemName);
+            command.Parameters.AddWithValue("system_id", updatedSystem.Id);
+            command.Parameters.AddWithValue("systemvendor_orgnumber", GetOrgNumber(updatedSystem.Vendor));
+            command.Parameters.AddWithValue("name", updatedSystem.Name);
+            command.Parameters.AddWithValue("description", updatedSystem.Description);
             command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
-            command.Parameters.AddWithValue("is_deleted", updatedSystem.SoftDeleted);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
+            command.Parameters.AddWithValue("is_deleted", updatedSystem.IsDeleted);
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.SingleRights });
+            command.Parameters.AddWithValue("allowedredirecturls", updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
 
             return await command.ExecuteNonQueryAsync() > 0;
         }
@@ -155,10 +166,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_id,
                 systemvendor_orgnumber, 
                 system_name,
+                name,
+                description,
                 is_deleted,
                 client_id,
                 rights,
-                is_visible
+                is_visible,
+                allowedredirecturls
             FROM business_application.system_register sr
             WHERE sr.system_id = @system_id;
         ";
@@ -320,17 +334,19 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             clientIds.Add(str);
         }
-        
+
         return new ValueTask<RegisterSystemResponse>(new RegisterSystemResponse
         {
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             SystemVendorOrgNumber = reader.GetFieldValue<string>("systemvendor_orgnumber"),
-            SystemName = reader.GetFieldValue<string>("system_name"),
+            Name = reader.GetFieldValue<IDictionary<string, string>>("name"),
+            Description = reader.GetFieldValue<IDictionary<string, string>>("description"),
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
             ClientId = clientIds,
             Rights = rights,
             IsVisible = reader.GetFieldValue<bool>("is_visible"),
+            AllowedRedirectUrls = reader.GetFieldValue<List<string>>("allowedredirecturls").ConvertAll<Uri>(delegate (string u) { return new Uri(u); })
         });
     }
 

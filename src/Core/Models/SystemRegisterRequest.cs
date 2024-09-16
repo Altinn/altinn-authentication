@@ -66,6 +66,6 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// White listing of redirect urls
         /// </summary>
-        public Uri[] AllowedRedirectUrls { get; set; } = [];
+        public List<Uri> AllowedRedirectUrls { get; set; } = [];
     }
 }

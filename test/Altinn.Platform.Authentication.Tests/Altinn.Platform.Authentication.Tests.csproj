@@ -71,10 +71,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Data\SystemRegister\Json\SystemRegisterResponse.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterUpdateInvalid.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Data\SystemRegister\Json\SystemRegisterUpdate.json">
+    <None Update="Data\SystemRegister\Json\SystemRegisterUpdateResponse.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterUpdateRequest.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterWithoutRight.json">
