@@ -8,6 +8,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 namespace Altinn.Platform.Authentication.Services;
+#nullable enable
 
 /// <inheritdoc/>
 public class RequestSystemUserService
@@ -21,7 +22,7 @@ public class RequestSystemUserService
         // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
         ExternalRequestId externalRequestId = new()
         {
-            ExternalRef = createRequest.ExternalRef,
+            ExternalRef = createRequest.ExternalRef ?? createRequest.PartyOrgNo,
             OrgNo = createRequest.PartyOrgNo,
             SystemId = createRequest.SystemId,
         };
@@ -44,11 +45,14 @@ public class RequestSystemUserService
             return valCust.Problem;
         }
         
-        var valRedirect = await ValidateRedirectUrl(createRequest.RedirectUrl);
-        if (valRedirect.IsProblem)
+        if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty) 
         {
-            return valRedirect.Problem;
-        }
+            var valRedirect = await ValidateRedirectUrl(createRequest.RedirectUrl);
+            if (valRedirect.IsProblem)
+            {
+                return valRedirect.Problem;
+            }
+        }        
 
         var valRights = await ValidateRights(createRequest.Rights);
         if (valRights.IsProblem)
@@ -158,36 +162,56 @@ public class RequestSystemUserService
     }
 
     /// <inheritdoc/>
-    public async Task<CreateRequestSystemUserResponse> GetRequestByExternalRef(ExternalRequestId externalRequestId)
+    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId)
     {
-        var id = Guid.NewGuid();
+        var res = _mockList[externalRequestId];
+
+        if (res is null)
+        {
+            return Problem.RequestNotFound;
+        }
 
         return new CreateRequestSystemUserResponse()
         {
-            Id = id,
-            ExternalRef = externalRequestId.ExternalRef,
-            SystemId = externalRequestId.SystemId,
-            PartyOrgNo = externalRequestId.OrgNo,
-            Rights = [],
-            Status = RequestStatus.New.ToString(),
-            RedirectUrl = null,
-            SystemUserId = id
+            Id = res.Id,
+            ExternalRef = res.ExternalRef,
+            SystemId = res.SystemId,
+            PartyOrgNo = res.PartyOrgNo,
+            Rights = res.Rights,
+            Status = res.Status,
+            RedirectUrl = res.RedirectUrl,
+            SystemUserId = res.SystemUserId
         };
     }
 
     /// <inheritdoc/>
-    public async Task<CreateRequestSystemUserResponse> GetRequestByGuid(Guid requestId)
+    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId)
     {
+        CreateRequestSystemUserResponse? res = null;
+
+        foreach (CreateRequestSystemUserResponse search in _mockList.Values)
+        {
+            if (search.Id == requestId)
+            {
+                res = search;
+            }
+        }
+
+        if (res is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
         return new CreateRequestSystemUserResponse()
         {
-            Id = requestId,
-            ExternalRef = "1234567",
-            SystemId = "1234567_cool_system",
-            PartyOrgNo = "1234567",
-            Rights = [],
-            Status = RequestStatus.New.ToString(),
-            RedirectUrl = null,
-            SystemUserId = requestId
+            Id = res.Id,
+            ExternalRef = res.ExternalRef,
+            SystemId = res.SystemId,
+            PartyOrgNo = res.PartyOrgNo,
+            Rights = res.Rights,
+            Status = res.Status,
+            RedirectUrl = res.RedirectUrl,
+            SystemUserId = res.SystemUserId
         };
     }
 }

@@ -70,4 +70,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor ExternalRequestIdRejected { get; }
         = _factory.Create(9, HttpStatusCode.BadRequest, "The combination of External Ids refer to a Rejected Request, please delete and renew the Request.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RequestNotFound { get; }
+        = _factory.Create(9, HttpStatusCode.BadRequest, "The Id does not refer to a Request in our system.");
 }
