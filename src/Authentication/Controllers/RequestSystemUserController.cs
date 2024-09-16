@@ -66,7 +66,7 @@ public class RequestSystemUserController : ControllerBase
         };
 
         // Check to see if the Request already exists
-        CreateRequestSystemUserResponse? response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        CreateRequestSystemUserResponse? response = (await _requestSystemUser.GetRequestByExternalRef(externalRequestId)).Value;
         if (response is not null)
         {
             return Ok(response);
@@ -111,7 +111,7 @@ public class RequestSystemUserController : ControllerBase
     [HttpGet("{requestId}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
-        CreateRequestSystemUserResponse? response = await _requestSystemUser.GetRequestByGuid(requestId);
+        CreateRequestSystemUserResponse? response = (await _requestSystemUser.GetRequestByGuid(requestId)).Value;
         if (response is not null)
         {
             return Ok(response);
@@ -141,7 +141,7 @@ public class RequestSystemUserController : ControllerBase
             SystemId = systemId,
         };
 
-        CreateRequestSystemUserResponse? response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        CreateRequestSystemUserResponse? response = (await _requestSystemUser.GetRequestByExternalRef(externalRequestId)).Value;
         if (response is not null)
         {
             return Ok(response);
