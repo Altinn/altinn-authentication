@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -66,19 +67,25 @@ public class RequestSystemUserController : ControllerBase
         };
 
         // Check to see if the Request already exists
-        CreateRequestSystemUserResponse? response = (await _requestSystemUser.GetRequestByExternalRef(externalRequestId)).Value;
-        if (response is not null)
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+
+        if (response.IsProblem)
         {
-            return Ok(response);
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
         }
 
         // This is a new Request
-        response = (await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo)).Value;
+        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
         
-        if (response is not null)
+        if (response.IsSuccess)
         {
-            string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Id;
-            return Created(fullCreatedUri, response);
+            string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
+            return Created(fullCreatedUri, response.Value);
         }
 
         return BadRequest();
@@ -111,10 +118,15 @@ public class RequestSystemUserController : ControllerBase
     [HttpGet("{requestId}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
-        CreateRequestSystemUserResponse? response = (await _requestSystemUser.GetRequestByGuid(requestId)).Value;
-        if (response is not null)
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByGuid(requestId);
+        if (response.IsProblem)
         {
-            return Ok(response);
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
         }
 
         return NotFound();
@@ -141,12 +153,18 @@ public class RequestSystemUserController : ControllerBase
             SystemId = systemId,
         };
 
-        CreateRequestSystemUserResponse? response = (await _requestSystemUser.GetRequestByExternalRef(externalRequestId)).Value;
-        if (response is not null)
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        
+        if (response.IsProblem)
         {
-            return Ok(response);
+            return response.Problem.ToActionResult();
         }
 
-        return NotFound();
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return BadRequest();
     }
 }

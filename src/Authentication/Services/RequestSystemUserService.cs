@@ -115,7 +115,14 @@ public class RequestSystemUserService
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateExternalRequestId(ExternalRequestId externalRequestId)
     {
-        var res = _mockList[externalRequestId];
+        CreateRequestSystemUserResponse? res = null;
+        try
+        {
+            res = _mockList[externalRequestId];
+        }
+        catch (Exception)
+        {
+        }
 
         if (res is not null && res.Status == RequestStatus.Accepted.ToString())
         {
@@ -164,7 +171,13 @@ public class RequestSystemUserService
     /// <inheritdoc/>
     public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId)
     {
-        var res = _mockList[externalRequestId];
+        CreateRequestSystemUserResponse? res = null;
+
+        try
+        {
+            res = _mockList[externalRequestId];
+        }
+        catch (Exception ex) { }
 
         if (res is null)
         {
