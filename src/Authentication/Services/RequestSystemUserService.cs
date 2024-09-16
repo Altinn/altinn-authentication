@@ -11,7 +11,8 @@ namespace Altinn.Platform.Authentication.Services;
 #nullable enable
 
 /// <inheritdoc/>
-public class RequestSystemUserService
+public class RequestSystemUserService(
+    ISystemRegisterService systemRegisterService)
     : IRequestSystemUser
 {
     private readonly Dictionary<ExternalRequestId, CreateRequestSystemUserResponse> _mockList = [];
@@ -155,7 +156,23 @@ public class RequestSystemUserService
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateVendorOrgNo(string vendorOrgNo, string systemId)
     {
-        return true;
+        var sys = await systemRegisterService.GetRegisteredSystemInfo(systemId);
+        if (sys is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        if (sys is not null && sys.SystemVendorOrgNumber != vendorOrgNo)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        if (sys is not null && sys.SystemVendorOrgNumber == vendorOrgNo)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>

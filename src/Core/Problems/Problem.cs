@@ -75,5 +75,11 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor RequestNotFound { get; }
-        = _factory.Create(9, HttpStatusCode.NotFound, "The Id does not refer to a Request in our system.");
+        = _factory.Create(10, HttpStatusCode.NotFound, "The Id does not refer to a Request in our system.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemIdNotFound { get; }
+        = _factory.Create(11, HttpStatusCode.NotFound, "The Id does not refer to a Registered System.");
 }

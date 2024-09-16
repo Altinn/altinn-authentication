@@ -10,6 +10,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -53,10 +54,10 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<CreateRequestSystemUserResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
-        string? vendorOrgNo = "123456789";//RetrieveOrgNoFromToken();
+        string? vendorOrgNo = "1234567899";//RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == string.Empty) 
         {
-            return BadRequest();
+            return Unauthorized();
         }
 
         ExternalRequestId externalRequestId = new()
@@ -68,12 +69,6 @@ public class RequestSystemUserController : ControllerBase
 
         // Check to see if the Request already exists
         Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
-
-        if (response.IsProblem)
-        {
-            return response.Problem.ToActionResult();
-        }
-
         if (response.IsSuccess)
         {
             return Ok(response.Value);
@@ -98,7 +93,7 @@ public class RequestSystemUserController : ControllerBase
         foreach (Claim claim in jwtSecurityToken.Claims)
         {
             // ID-porten specific claims
-            if (claim.Type.Equals("pid"))
+            if (claim.Type.Equals("consumer"))
             {
                 return claim.Value;
             }
