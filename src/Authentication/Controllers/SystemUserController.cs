@@ -133,15 +133,15 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns></returns>    
         [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]                
         [Produces("application/json")]
-        [ProducesResponseType(typeof(SystemUser), StatusCodes.Status200OK)]        
+        [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
         [ProducesResponseType(StatusCodes.Status404NotFound)]        
         [HttpPost("{party}")]
         public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
         {
-            SystemUser? toBeCreated = await _systemUserService.CreateSystemUser(party, request);
-            if (toBeCreated is not null)
+            SystemUser? createdSystemUser = await _systemUserService.CreateSystemUser(party, request);
+            if (createdSystemUser is not null)
             {
-                return Ok(toBeCreated);
+                return Created($"/authentication/api/v1/systemuser/{createdSystemUser.PartyId}/{createdSystemUser.Id}", createdSystemUser);
             }
 
             return NotFound();

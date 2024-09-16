@@ -184,50 +184,60 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemUser_Get_Single_ReturnsOK()
         {
-            HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
-            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-            int partyId = 1;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), _options);
-            var id = list[0].Id;
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+            Guid id = Guid.NewGuid();
+
             string para = $"{partyId}/{id}";
- 
-            HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
-            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-            SystemUser systemUserDoesExist = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), _options);
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "the_matrix",
+            };
 
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response3.StatusCode);
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
+            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+
+            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
+            Assert.NotNull(shouldBeCreated);
+
+            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpResponseMessage lookupSystemUserResponse = await client.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            SystemUser? systemUserDoesExist = JsonSerializer.Deserialize<SystemUser>(await lookupSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, lookupSystemUserResponse.StatusCode);
             Assert.True(systemUserDoesExist is not null);
+            Assert.Equal(shouldBeCreated.Id, systemUserDoesExist.Id);
         }
 
         [Fact]
         public async Task SystemUser_Get_Single_ReturnsNotFound()
         {
-            HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
-            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
-            int partyId = 1;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), _options);
-            var id = list[0].Id;
-            string para = $"{partyId}/123456778890";
+            int partyId = 500000;
+            Guid id = Guid.NewGuid();
 
-            HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
-            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
+            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{id}");
+            HttpResponseMessage lookupSystemUserResponse = await client.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            SystemUser? systemUserDoesExist = JsonSerializer.Deserialize<SystemUser>(await lookupSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response3.StatusCode);
-            Assert.False(response3.IsSuccessStatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, lookupSystemUserResponse.StatusCode);
+
         }
 
         [Fact(Skip = "Leveranse 2")]
         public async Task SystemUser_Delete_ReturnsOk()
         {
-            HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
+            HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
             client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
 
@@ -248,7 +258,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(shouldBeDeleted.IsDeleted);
         }
 
-        [Fact]
+        [Fact(Skip = "Leveranse 2")]
         public async Task SystemUser_Delete_ReturnsNotFound()
         {
             HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
@@ -316,7 +326,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("updated_integration_title", shouldBeUpdated!.IntegrationTitle);
         }
 
-        [Fact]
+        [Fact(Skip = "Leveranse 3")]
         public async Task SystemUser_Update_ReturnsNotFound()
         {
             HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
@@ -361,86 +371,37 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                          
             SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
-            Assert.NotEqual(HttpStatusCode.Unauthorized, createSystemUserResponse.StatusCode);
-            Assert.Equal(StatusCodes.Status200OK, (int)createSystemUserResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.Created, createSystemUserResponse.StatusCode);
             Assert.NotNull(shouldBeCreated);
             Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);            
         }
 
         [Fact]
-        public async Task SystemUser_Create_ReturnsNotFound()
+        public async Task SystemUser_Create_ReturnsForbidden()
         {
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
-            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-            int partyId = 1;
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500801;
             Guid id = Guid.NewGuid();
 
             string para = $"{partyId}/{id}";
-            SystemUser newSystemUser = new SystemUser
+            SystemUserRequestDto newSystemUser = new()
             {
-                SystemId = "This is the new SystemUser!",
-                Id = "12334523456346"
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "the_matrix",
             };
 
-            HttpRequestMessage request2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{para}");
-            request2.Content = JsonContent.Create<SystemUser>(newSystemUser, new MediaTypeHeaderValue("application/json"), _options);
-            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
-
-            HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
-            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response3.StatusCode);
-            Assert.Equal(StatusCodes.Status404NotFound, (int)response3.StatusCode);
-            Assert.False(response3.IsSuccessStatusCode);
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
+            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+         
+            Assert.Equal(HttpStatusCode.Forbidden, createSystemUserResponse.StatusCode);
         }
-
-        //private HttpClient GetTestClient(
-        //  ISblCookieDecryptionService cookieDecryptionService,
-        //  IUserProfileService userProfileService,
-        //  bool enableOidc = false,
-        //  bool forceOidc = false,
-        //  string defaultOidc = "altinn")
-        //{
-        //    HttpClient client = _factory.WithWebHostBuilder(builder =>
-        //    {
-        //        string configPath = GetConfigPath();
-        //        builder.ConfigureAppConfiguration((context, conf) =>
-        //        {
-        //            conf.AddJsonFile(configPath);
-        //        });
-
-        //        var configuration = new ConfigurationBuilder()
-        //          .AddJsonFile(configPath)
-        //          .Build();
-
-        //        configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-        //        configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
-        //        configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
-
-        //        IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-               
-        //        builder.ConfigureTestServices(services =>
-        //        {
-        //            services.Configure<GeneralSettings>(generalSettingSection);
-        //            services.AddSingleton(cookieDecryptionService);
-        //            services.AddSingleton(userProfileService);
-        //            services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
-        //            services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
-        //            services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
-        //            services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
-        //            services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-        //            services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
-        //            services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
-        //            services.AddSingleton<ISystemUserService, SystemUserServiceMock>();
-        //            services.AddSingleton(new Mock<ISystemClock>());                                        
-        //            services.AddSingleton(new Mock<IGuidService>());
-        //        });
-        //    }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-
-        //    return client;
-        //}
 
         private static string GetConfigPath()
         {

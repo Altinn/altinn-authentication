@@ -4,6 +4,8 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Integration.Clients;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Authorization;
@@ -335,6 +337,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IOrganisationsService, OrganisationsService>();
     services.AddHttpClient<AuthorizationApiClient>();
     services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
+    services.AddHttpClient<IPartiesClient, PartiesClient>();
 
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
     services.AddSingleton<ISigningKeysRetriever, SigningKeysRetriever>();
