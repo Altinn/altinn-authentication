@@ -11,8 +11,6 @@ public class RequestSystemUserService : IRequestSystemUser
     /// <inheritdoc/>
     public async Task<CreateRequestSystemUserResponse> CreateRequest(CreateRequestSystemUser createRequest)
     {
-        await Task.Delay(65);
-
         // Validate the PartyOrgNo for the Customer
         // Valiate that the Vendor's OrgNo owns the chosen SystemId ( retrieved from token)
         // Validate that the combination of System and External ref does not currently exist (not soft-deleted)
@@ -34,8 +32,6 @@ public class RequestSystemUserService : IRequestSystemUser
     /// <inheritdoc/>
     public async Task<CreateRequestSystemUserResponse> GetRequestByExternalRef(string systemId, string externalRef1)
     {
-        await Task.Delay(65);
-
         return new CreateRequestSystemUserResponse()
         {
             Id = Guid.NewGuid(),
@@ -52,8 +48,6 @@ public class RequestSystemUserService : IRequestSystemUser
     /// <inheritdoc/>
     public async Task<CreateRequestSystemUserResponse> GetRequestByGuid(Guid requestId)
     {
-        await Task.Delay(65);
-
         return new CreateRequestSystemUserResponse()
         {
             Id = requestId,
