@@ -128,18 +128,56 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(list.Count == 1);
         }
 
+        /// <summary>
+        /// Scenario where user is not authorized to view list of system users
+        /// </summary>
+        /// <returns></returns>
         [Fact]
-        public async Task SystemUser_Get_ListForPartyId_ReturnsNotFound()
+        public async Task SystemUser_Get_ListForPartyId_ReturnsForbidden()
         {
-            HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
-            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
-            int partyId = 0;
+            int partyId = 500801;
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            Assert.False(response.IsSuccessStatusCode);
+        }
+
+        /// <summary>
+        /// Scenario where user does not have a valid token
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task SystemUser_Get_ListForPartyId_ReturnsUnathorized()
+        {
+            HttpClient client = CreateClient();
+           
+            int partyId = 500801;
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.False(response.IsSuccessStatusCode);
+        }
+
+        /// <summary>
+        /// Scenario where user does not have a valid token
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task SystemUser_Get_ListForPartyId_ReturnsNotFound()
+        {
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             Assert.False(response.IsSuccessStatusCode);
         }
 
