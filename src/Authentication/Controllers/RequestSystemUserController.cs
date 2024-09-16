@@ -87,7 +87,7 @@ public class RequestSystemUserController : ControllerBase
     private string? RetrieveOrgNoFromToken()
     {
         string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName);
-        JwtSecurityToken jwtSecurityToken = new JwtSecurityToken(token);
+        JwtSecurityToken jwtSecurityToken = new(token);
         foreach (Claim claim in jwtSecurityToken.Claims)
         {
             // ID-porten specific claims
