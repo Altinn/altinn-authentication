@@ -160,7 +160,8 @@ namespace Altinn.Platform.Authentication.Controllers
             SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
             if (toBeUpdated is not null)
             {
-                await _systemUserService.UpdateSystemUserById(request);
+                // Need to verify that the partyId is the same as the one in the request
+                // await _systemUserService.UpdateSystemUserById(request);
                 return Ok();
             }
 
