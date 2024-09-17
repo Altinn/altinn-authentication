@@ -139,7 +139,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    [HttpGet("{systemId}/{orgNo}/{externalRef}")]
+    [HttpGet("byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
         ExternalRequestId externalRequestId = new()

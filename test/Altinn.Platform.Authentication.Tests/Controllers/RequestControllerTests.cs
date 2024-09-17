@@ -212,17 +212,17 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
             Content = JsonContent.Create(req)
         };
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
         CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
+        //Get by Guid
         Guid testId = res.Id;
         string endpoint2 = $"/authentication/api/v1/systemuser/request/{testId}";
 
-        HttpResponseMessage message2 = await client.GetAsync(token, endpoint);
+        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         CreateRequestSystemUserResponse? res2 = await message2.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
         Assert.True(res2 is not null);
@@ -232,35 +232,54 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     [Fact]
     public async Task Get_Request_ByExternalRef_Ok()
     {
-        HttpClient client = CreateClient();
-        string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        string testSystem = "Test_System";
-        string orgno = "123456789";
-        string testExternalRef = "Test_ExternalRef";
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-        // Create a new Request
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request";
 
-        CreateRequestSystemUser req = new()
+        Right right = new()
         {
-            ExternalRef = testExternalRef,
-            SystemId = testSystem,
-            PartyOrgNo = orgno,
-            Rights = []
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
         };
 
-        _ = await client.PostAsync(token, endpoint, JsonContent.Create(req));
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "the_matrix",
+            PartyOrgNo = "1234567",
+            Rights = [right]
+        };
 
-        // Get the Request
-        endpoint = $"/authentication/api/v1/systemuser/request/{testSystem}/{orgno}/{testExternalRef}";
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-        HttpResponseMessage message = await client.GetAsync(token, endpoint);
-        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
         CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
-        Assert.True(res is not null);
-        Assert.Equal(testSystem + testExternalRef, res.SystemId + res.ExternalRef);
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+        
+        // Get the Request
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/byexternalref/{req.SystemId}/{req.PartyOrgNo}/{req.ExternalRef}";
+
+        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        CreateRequestSystemUserResponse? res2 = await message2.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        Assert.True(res2 is not null);
+        Assert.Equal(req.SystemId + req.PartyOrgNo + req.ExternalRef, res2.SystemId + res2.PartyOrgNo + res2.ExternalRef);
     }
 
     private void SetupDateTimeMock()
