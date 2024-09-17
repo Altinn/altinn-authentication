@@ -90,9 +90,12 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     [Fact]
     public async Task Request_Create_Success()
     {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
         HttpClient client = CreateClient();
         string token = AddTestTokenToClient(client);
-        _ = await CreateSystemRegister(client, token);
 
         string endpoint = $"/authentication/api/v1/systemuser/request";
 
@@ -213,5 +216,26 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn.authentication/systemregister.admin", prefixes);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
+    }
+
+    private async Task<HttpResponseMessage> CreateSystemRegister(string dataFileName)
+    {
+        HttpClient client = CreateClient();
+        string[] prefixes = { "altinn", "digdir" };
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        JsonSerializerOptions options = new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        Stream dataStream = File.OpenRead(dataFileName);
+        StreamContent content = new StreamContent(dataStream);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+        HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/system/");
+        request.Content = content;
+        HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        return response;
     }
 }
