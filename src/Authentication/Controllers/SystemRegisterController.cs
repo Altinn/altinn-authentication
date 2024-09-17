@@ -68,9 +68,9 @@ public class SystemRegisterController : ControllerBase
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    /// [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("system/{systemId}")]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
         var success = await _systemRegisterService.UpdateWholeRegisteredSystem(updateSystem, systemId, cancellationToken);
 
@@ -107,11 +107,17 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
     [HttpPost("system")]    
-    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
+    ///[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] SystemRegisterRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
         {
+            if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor))
+            {
+                ModelState.AddModelError("Vendor", "the org number identifier is not valid ISO6523 identifier");
+                return BadRequest(ModelState);
+            }
+            
             if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
             {
                 ModelState.AddModelError("ClientId", "One of the client id already tagged with an existing system");
@@ -131,7 +137,7 @@ public class SystemRegisterController : ControllerBase
         catch (Exception e)
         {
             return e.Message.Contains("duplicate key value violates unique constraint")
-                ? Conflict($"The System already exist: {registerNewSystem.SystemId}")
+                ? Conflict($"The System already exist: {registerNewSystem.Id}")
                 : StatusCode(500, e.Message);
         }
     }
@@ -167,7 +173,7 @@ public class SystemRegisterController : ControllerBase
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
         if (!deleted) 
         { 
-            return BadRequest(); 
+            return BadRequest();
         }
 
         return Ok(new SystemRegisterUpdateResult(true));

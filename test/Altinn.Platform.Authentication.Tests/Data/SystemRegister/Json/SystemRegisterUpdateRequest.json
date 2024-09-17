@@ -10,11 +10,11 @@
     "nn": "The Matrix"
   },
   "description": {
-    "nb": "Test system",
-    "en": "Test system",
-    "nn": "Test system"
+    "nb": "The Matrix",
+    "en": "The Matrix",
+    "nn": "The Matrix"
   },
-  "singlerights": [
+  "singleRights": [
     {
       "resource": [
         {
@@ -28,9 +28,8 @@
   "clientId": [
     "32ef65ac-6e62-498d-880f-76c85c2052ae"
   ],
+  "isVisible": false,
   "allowedredirecturls": [
-    "https://vg.no",
-    "https://nrk.no"
-  ],
-  "isVisible": true
+    "https://vg.no"
+  ]
 }

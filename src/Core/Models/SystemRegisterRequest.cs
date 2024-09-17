@@ -30,7 +30,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// Organization number of the system Vendor that offers the product (system)
         /// </summary>
-        public required List<AttributePair> Vendor { get; set; }
+        public required IDictionary<string, string> Vendor { get; set; }
 
         /// <summary>
         /// A short name of the product, used when displaying to the user
@@ -66,6 +66,6 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// White listing of redirect urls
         /// </summary>
-        public Uri[] AllowedRedirectUrls { get; set; } = [];
+        public List<Uri> AllowedRedirectUrls { get; set; } = [];
     }
 }
