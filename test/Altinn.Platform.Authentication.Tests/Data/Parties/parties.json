@@ -1,0 +1,33 @@
+[
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
+    "OrgNumber": "910493353",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "910493353",
+      "Name": "LEPSØY OG TONSTAD",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 500000,
+    "PartyUuid": "00000000-0000-0000-0005-000000000000",
+    "UnitType": "AS",
+    "Name": "LEPSØY OG TONSTAD",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
+  }
+  
+]

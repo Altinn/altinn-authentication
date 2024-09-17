@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Services
@@ -22,18 +24,20 @@ namespace Altinn.Platform.Authentication.Services
     public class SystemUserService(
         ISystemUserRepository systemUserRepository,
         ISystemRegisterRepository systemRegisterRepository,
-        IAccessManagementClient accessManagementClient) : ISystemUserService
+        IAccessManagementClient accessManagementClient,
+        IPartiesClient partiesClient) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
         private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
+        private readonly IPartiesClient _partiesClient = partiesClient;
 
         /// <summary>
         /// Creates a new SystemUser
         /// The unique Id for the systemuser is handled by the db.
         /// </summary>
         /// <returns>The SystemUser created</returns>
-        public async Task<SystemUser?> CreateSystemUser(string partyId, SystemUserRequestDto request, string token)
+        public async Task<SystemUser?> CreateSystemUser(string partyId, SystemUserRequestDto request)
         {
             RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
@@ -41,8 +45,8 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            AuthorizedPartyExternal? party = await _accessManagementClient.GetPartyFromReporteeListIfExists(int.Parse(partyId), token);
-
+            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
+           
             if (party is null)
             {
                 return null;
@@ -50,7 +54,7 @@ namespace Altinn.Platform.Authentication.Services
 
             SystemUser newSystemUser = new()
             {                
-                ReporteeOrgNo = party.OrganizationNumber,
+                ReporteeOrgNo = party.OrgNumber,
                 SystemInternalId = regSystem.SystemInternalId,
                 IntegrationTitle = request.IntegrationTitle,
                 SystemId = request.SystemId,

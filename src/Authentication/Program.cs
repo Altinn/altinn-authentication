@@ -4,8 +4,11 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Integration.Clients;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
+using Altinn.Common.AccessTokenClient.Services;
 using Altinn.Common.PEP.Authorization;
 using Altinn.Common.PEP.Clients;
 using Altinn.Common.PEP.Configuration;
@@ -295,6 +298,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton(config);
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));     
     services.Configure<Altinn.Common.PEP.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
+    services.Configure<Altinn.Authentication.Integration.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
     services.Configure<AccessManagementSettings>(config.GetSection("AccessManagementSettings"));
     services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
     services.Configure<PostgreSQLSettings>(config.GetSection("PostgreSQLSettings"));
@@ -334,7 +338,9 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IOrganisationsService, OrganisationsService>();
     services.AddHttpClient<AuthorizationApiClient>();
     services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
-
+    services.AddHttpClient<IPartiesClient, PartiesClient>();
+    services.AddSingleton<IAccessTokenGenerator, AccessTokenGenerator>();
+    services.AddTransient<ISigningCredentialsResolver, SigningCredentialsResolver>();
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
     services.AddSingleton<ISigningKeysRetriever, SigningKeysRetriever>();
     services.AddSingleton<IPublicSigningKeyProvider, PublicSigningKeyProvider>();
