@@ -1,14 +1,15 @@
-﻿using System.Text.Json;
+﻿namespace Altinn.Platform.Authentication.Core.Models.Parties;
 
-namespace Altinn.Platform.Authentication.Core.Models.Parties;
-
+/// <summary>
+/// Used to compare OrgNo in the format used by MaskinPorten
+/// </summary>
 public record OrganisationNumber()
 {    
     public string Authority { get; private set; } = string.Empty;
 
     public string ID { get; private set; } = string.Empty;
 
-    public static OrganisationNumber CreateFromIdPortenJson(string data)
+    public static OrganisationNumber CreateFromMaskinPortenToken(string data)
     {
         OrganisationNumber org = new();
         string cleanData = RemoveSpecialCharacters(data);        

@@ -96,7 +96,7 @@ public class RequestSystemUserController : ControllerBase
             // ID-porten specific claims
             if (claim.Type.Equals("consumer"))
             {
-                return OrganisationNumber.CreateFromIdPortenJson(claim.Value);
+                return OrganisationNumber.CreateFromMaskinPortenToken(claim.Value);
             }
         }
 
