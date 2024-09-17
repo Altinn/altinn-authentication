@@ -35,7 +35,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
-                status,
+                request_status,
                 redirect_urls)
             VALUES(
                 @id,
@@ -77,7 +77,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
-                status,
+                request_status,
                 redirect_urls
             FROM business_application.request r
             WHERE r.external_ref = @external_ref
@@ -113,7 +113,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
-                status,
+                request_status,
                 redirect_urls
             FROM business_application.request r
             WHERE r.id = @request_id;
