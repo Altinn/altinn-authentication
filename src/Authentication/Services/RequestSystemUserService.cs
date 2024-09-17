@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Pipes;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
@@ -30,20 +31,26 @@ public class RequestSystemUserService(
             OrgNo = createRequest.PartyOrgNo,
             SystemId = createRequest.SystemId,
         };
-                
-        var valRef = await ValidateExternalRequestId(externalRequestId);
+
+        RegisterSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId);
+        if (systemInfo is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
         if (valRef.IsProblem)
         {
             return valRef.Problem;
         }
-                
-        var valVendor = await ValidateVendorOrgNo(vendorOrgNo, createRequest.SystemId);      
+
+        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);      
         if (valVendor.IsProblem)
         {
             return valVendor.Problem;
         }
-                
-        var valCust = await ValidateCustomerOrgNo(createRequest.PartyOrgNo);
+
+        Result<bool> valCust = await ValidateCustomerOrgNo(createRequest.PartyOrgNo);
         if (valCust.IsProblem)
         {
             return valCust.Problem;
@@ -51,14 +58,14 @@ public class RequestSystemUserService(
         
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty) 
         {
-            var valRedirect = await ValidateRedirectUrl(createRequest.RedirectUrl);
+            var valRedirect = await ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
             }
-        }        
+        }
 
-        var valRights = await ValidateRights(createRequest.Rights);
+        Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
         if (valRights.IsProblem)
         {
             return valRights.Problem;
@@ -93,9 +100,59 @@ public class RequestSystemUserService(
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
     /// <returns>Result or Problem</returns>
-    private async Task<Result<bool>> ValidateRights(List<Right> rights)
+    private Result<bool> ValidateRights(List<Right> rights, RegisterSystemResponse systemInfo)
     {
+        if (rights.Count == 0 || systemInfo.Rights.Count == 0)
+        {
+            return false;
+        }
+
+        if (rights.Count > systemInfo.Rights.Count)
+        {
+            return false;
+        }
+
+        bool[] validate = new bool[rights.Count];
+        int i = 0;
+        foreach (var rightRequest in rights)
+        {                        
+            foreach (var resource in rightRequest.Resource)
+            {
+              if (FindOneAttributePair(resource, systemInfo.Rights))
+                {
+                    validate[i] = true;
+                    break;
+                }
+            }
+
+            i++;
+        }   
+
+        foreach (bool right in validate)
+        {
+            if (!right) 
+            {
+                return false;
+            }
+        }
+
         return true;
+    }
+
+    private static bool FindOneAttributePair(AttributePair pair, List<Right> list)
+    {
+        foreach (Right l in list)
+        {
+            foreach (AttributePair p in l.Resource)
+            {
+                if (pair.Id == p.Id && pair.Value == p.Value)
+                {
+                    return true;
+                }
+            }            
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -103,7 +160,7 @@ public class RequestSystemUserService(
     /// </summary>
     /// <param name="redirectURL">the RedirectUrl chosen</param>
     /// <returns>Result or Problem</returns>
-    private async Task<Result<bool>> ValidateRedirectUrl(string redirectURL)
+    private async Task<Result<bool>> ValidateRedirectUrl(string redirectURL, RegisterSystemResponse systemInfo)
     {
         return true;
     }
@@ -154,16 +211,10 @@ public class RequestSystemUserService(
     /// Validate that the Vendor's OrgNo owns the chosen SystemId (which was retrieved from the token in the controller)
     /// </summary>
     /// <param name="vendorOrgNo">Vendor's OrgNo</param>
-    /// <param name="systemId">the chosen SystemId </param>
+    /// <param name="sys">The chosen System Info</param>
     /// <returns>Result or Problem</returns>
-    private async Task<Result<bool>> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, string systemId)
+    private Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisterSystemResponse sys)
     {
-        RegisterSystemResponse? sys = await systemRegisterService.GetRegisteredSystemInfo(systemId);
-        if (sys is null)
-        {
-            return Problem.SystemIdNotFound;
-        }
-
         OrganisationNumber? systemOrgNo = null;
 
         if (sys is not null) 

@@ -37,7 +37,10 @@ public record OrganisationNumber()
             org.Authority = keyValuePairs["authority"];
             org.ID = keyValuePairs["ID"];
         }
-        catch { }
+        catch 
+        {
+        
+        }
 
         return org;
     }

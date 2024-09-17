@@ -10,6 +10,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Extensions;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -99,13 +100,25 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         string endpoint = $"/authentication/api/v1/systemuser/request";
 
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ] 
+        };
+
         // Arrange
         CreateRequestSystemUser req = new() 
         {
             ExternalRef = "external",
             SystemId = "the_matrix",
             PartyOrgNo = "1234567",
-            Rights = []
+            Rights = [right]
         };
          
         HttpResponseMessage message = await client.PostAsync(token, endpoint, JsonContent.Create(req));
