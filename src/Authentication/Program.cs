@@ -8,6 +8,7 @@ using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Clients;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
+using Altinn.Common.AccessTokenClient.Services;
 using Altinn.Common.PEP.Authorization;
 using Altinn.Common.PEP.Clients;
 using Altinn.Common.PEP.Configuration;
@@ -338,7 +339,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<AuthorizationApiClient>();
     services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
     services.AddHttpClient<IPartiesClient, PartiesClient>();
-
+    services.AddSingleton<IAccessTokenGenerator, AccessTokenGenerator>();
+    services.AddTransient<ISigningCredentialsResolver, SigningCredentialsResolver>();
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
     services.AddSingleton<ISigningKeysRetriever, SigningKeysRetriever>();
     services.AddSingleton<IPublicSigningKeyProvider, PublicSigningKeyProvider>();
