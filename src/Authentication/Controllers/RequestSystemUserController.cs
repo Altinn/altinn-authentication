@@ -50,7 +50,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="createRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
-    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]    
     [HttpPost]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
@@ -110,7 +110,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="requestId">The UUID for the Request</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("{requestId}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -138,7 +138,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="orgNo">The organisation number for the customer</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
