@@ -7,8 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Register\**" />
+    <EmbeddedResource Remove="Register\**" />
+    <None Remove="Register\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="ResourceRegistry\" />
-    <Folder Include="Register\" />
   </ItemGroup>
 
   <ItemGroup>

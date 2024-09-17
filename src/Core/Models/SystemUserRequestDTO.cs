@@ -11,18 +11,6 @@ namespace Altinn.Platform.Authentication.Core.Models
     [ExcludeFromCodeCoverage]
     public class SystemUserRequestDto
     {
-        [JsonPropertyName("partyId")]
-        /// <summary>
-        /// PartyId is the owning Legal Entity, whether an organization or a privat person
-        /// </summary>
-        public int PartyId { get; set; }
-
-        /// <summary>
-        /// The Organisation Number for the end-user as it is stored in ER Registry        
-        /// </summary>
-        [JsonPropertyName("reporteeOrgNo")]
-        public string ReporteeOrgNo { get; set; }
-
         /// <summary>
         /// The Title is set by the end-user in the Frontend, by default it is the same as the System's Display Name
         /// Even if this DTO allows null, the db field is of course still required   

@@ -49,35 +49,36 @@ public static Task<HttpResponseMessage> PutAsync(this HttpClient httpClient, str
     return httpClient.SendAsync(request, CancellationToken.None);
 }
 
-/// <summary>
-/// Extension that add authorization header to request.
-/// </summary>
-/// <param name="httpClient">The HttpClient.</param>
-/// <param name="authorizationToken">the authorization token (jwt).</param>
-/// <param name="requestUri">The request Uri.</param>
-/// <param name="platformAccessToken">The platformAccess tokens.</param>
-/// <returns>A HttpResponseMessage.</returns>
-public static Task<HttpResponseMessage> GetAsync(this HttpClient httpClient, string authorizationToken, string requestUri, string platformAccessToken = null)
-{
-    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-    request.Headers.Add("Authorization", "Bearer " + authorizationToken);
-    if (!string.IsNullOrEmpty(platformAccessToken))
+    /// <summary>
+    /// Extension that add authorization header to request
+    /// </summary>
+    /// <param name="httpClient">The HttpClient</param>
+    /// <param name="authorizationToken">the authorization token (jwt)</param>
+    /// <param name="requestUri">The request Uri</param>
+    /// <param name="platformAccessToken">The platformAccess tokens</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/></param>
+    /// <returns>A HttpResponseMessage</returns>
+    public static Task<HttpResponseMessage> GetAsync(this HttpClient httpClient, string authorizationToken, string requestUri, string? platformAccessToken = null, CancellationToken cancellationToken = default)
     {
-        request.Headers.Add("PlatformAccessToken", platformAccessToken);
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        if (!string.IsNullOrEmpty(platformAccessToken))
+        {
+            request.Headers.Add("PlatformAccessToken", platformAccessToken);
+        }
+
+        return httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
     }
 
-    return httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, CancellationToken.None);
-}
-
-/// <summary>
-/// Extension that add authorization header to request.
-/// </summary>
-/// <param name="httpClient">The HttpClient.</param>
-/// <param name="authorizationToken">the authorization token (jwt).</param>
-/// <param name="requestUri">The request Uri.</param>
-/// <param name="platformAccessToken">The platformAccess tokens.</param>
-/// <returns>A HttpResponseMessage.</returns>
-public static Task<HttpResponseMessage> DeleteAsync(this HttpClient httpClient, string authorizationToken, string requestUri, string platformAccessToken = null)
+    /// <summary>
+    /// Extension that add authorization header to request.
+    /// </summary>
+    /// <param name="httpClient">The HttpClient.</param>
+    /// <param name="authorizationToken">the authorization token (jwt).</param>
+    /// <param name="requestUri">The request Uri.</param>
+    /// <param name="platformAccessToken">The platformAccess tokens.</param>
+    /// <returns>A HttpResponseMessage.</returns>
+    public static Task<HttpResponseMessage> DeleteAsync(this HttpClient httpClient, string authorizationToken, string requestUri, string platformAccessToken = null)
 {
     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
     request.Headers.Add("Authorization", "Bearer " + authorizationToken);
@@ -87,5 +88,5 @@ public static Task<HttpResponseMessage> DeleteAsync(this HttpClient httpClient, 
     }
 
     return httpClient.SendAsync(request, CancellationToken.None);
-}
+    }
 }
