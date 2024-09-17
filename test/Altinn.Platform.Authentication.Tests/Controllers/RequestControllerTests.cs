@@ -23,6 +23,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers;
@@ -90,23 +91,25 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     public async Task Request_Create_Success()
     {
         HttpClient client = CreateClient();
-        string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        string token = AddTestTokenToClient(client);
+        _ = await CreateSystemRegister(client, token);
+
         string endpoint = $"/authentication/api/v1/systemuser/request";
 
         // Arrange
         CreateRequestSystemUser req = new() 
         {
             ExternalRef = "external",
-            SystemId = "systemId",
+            SystemId = "the_matrix",
             PartyOrgNo = "1234567",
             Rights = []
         };
          
         HttpResponseMessage message = await client.PostAsync(token, endpoint, JsonContent.Create(req));
         Assert.Equal(HttpStatusCode.OK, message.StatusCode);       
-        CreateRequestSystemUserResponse res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        
+        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
 
@@ -120,7 +123,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
-            SystemId = "systemId",
+            SystemId = "simen_test",
             PartyOrgNo = "1234567",
             Rights = []
         };
@@ -154,8 +157,24 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         string testSystem = "Test_System";
+        string orgno = "123456789";
         string testExternalRef = "Test_ExternalRef";
-        string endpoint = $"/authentication/api/v1/systemuser/request/{testSystem}/{testExternalRef}";
+
+        // Create a new Request
+        string endpoint = $"/authentication/api/v1/systemuser/request";
+
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = testExternalRef,
+            SystemId = testSystem,
+            PartyOrgNo = orgno,
+            Rights = []
+        };
+
+        _ = await client.PostAsync(token, endpoint, JsonContent.Create(req));
+
+        // Get the Request
+        endpoint = $"/authentication/api/v1/systemuser/request/{testSystem}/{orgno}/{testExternalRef}";
 
         HttpResponseMessage message = await client.GetAsync(token, endpoint);
         Assert.Equal(HttpStatusCode.OK, message.StatusCode);
@@ -178,5 +197,21 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     {
         string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
         return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+    }
+
+    private async Task<HttpResponseMessage> CreateSystemRegister(HttpClient client, string token)
+    {
+        string data = File.ReadAllText("Data/SystemRegister/Json/SystemRegister.json");
+        JsonContent content = JsonContent.Create(data);
+        var res = await client.PostAsync(token, $"/authentication/api/v1/systemregister/system/", content);
+        return res;
+    }
+
+    private static string AddTestTokenToClient(HttpClient client)
+    {
+        string[] prefixes = ["altinn", "digdir"];
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn.authentication/systemregister.admin", prefixes);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        return token;
     }
 }

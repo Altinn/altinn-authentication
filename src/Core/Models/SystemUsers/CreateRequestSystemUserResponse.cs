@@ -61,10 +61,4 @@ public class CreateRequestSystemUserResponse()
     /// </summary>    
     [JsonPropertyName("redirectUrl")]
     public string? RedirectUrl { get; set; }
-
-    /// <summary>
-    /// To make the connection between a Request and a SystemUser easier, we reuse the same Guid for the SystemUser created upon approval.
-    /// </summary>    
-    [JsonPropertyName("systemUserId")]
-    public Guid SystemUserId { get; set; } 
 }

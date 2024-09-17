@@ -77,8 +77,7 @@ public class RequestSystemUserService(
             PartyOrgNo = createRequest.PartyOrgNo,
             Rights = createRequest.Rights,
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createRequest.RedirectUrl,
-            SystemUserId = newId
+            RedirectUrl = createRequest.RedirectUrl
         };
 
         _mockList.Add(externalRequestId, created);
@@ -194,7 +193,9 @@ public class RequestSystemUserService(
         {
             res = _mockList[externalRequestId];
         }
-        catch (Exception ex) { }
+        catch (Exception ex) 
+        {
+        }
 
         if (res is null)
         {
@@ -209,8 +210,7 @@ public class RequestSystemUserService(
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl,
-            SystemUserId = res.SystemUserId
+            RedirectUrl = res.RedirectUrl
         };
     }
 
@@ -240,8 +240,7 @@ public class RequestSystemUserService(
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl,
-            SystemUserId = res.SystemUserId
+            RedirectUrl = res.RedirectUrl
         };
     }
 }
