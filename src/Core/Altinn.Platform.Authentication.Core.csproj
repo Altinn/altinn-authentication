@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <Folder Include="Configuration\" />
-    <Folder Include="Models\Party\" />
     <Folder Include="Models\SystemRegisters\" />
     <Folder Include="Services\Interfaces\" />
   </ItemGroup>

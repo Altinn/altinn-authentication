@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -18,7 +21,7 @@ public class RequestSystemUserService(
     private readonly Dictionary<ExternalRequestId, CreateRequestSystemUserResponse> _mockList = [];
 
     /// <inheritdoc/>
-    public async Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, string vendorOrgNo)
+    public async Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
         // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
         ExternalRequestId externalRequestId = new()
@@ -153,20 +156,27 @@ public class RequestSystemUserService(
     /// <param name="vendorOrgNo">Vendor's OrgNo</param>
     /// <param name="systemId">the chosen SystemId </param>
     /// <returns>Result or Problem</returns>
-    private async Task<Result<bool>> ValidateVendorOrgNo(string vendorOrgNo, string systemId)
+    private async Task<Result<bool>> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, string systemId)
     {
-        var sys = await systemRegisterService.GetRegisteredSystemInfo(systemId);
+        RegisterSystemResponse? sys = await systemRegisterService.GetRegisteredSystemInfo(systemId);
         if (sys is null)
         {
             return Problem.SystemIdNotFound;
         }
 
-        if (sys is not null && sys.SystemVendorOrgNumber != vendorOrgNo)
+        OrganisationNumber? systemOrgNo = null;
+
+        if (sys is not null) 
+        {
+            systemOrgNo = OrganisationNumber.CreateFromStringOrgNo(sys.SystemVendorOrgNumber);
+        }
+
+        if (vendorOrgNo != systemOrgNo)
         {
             return Problem.SystemIdNotFound;
         }
 
-        if (sys is not null && sys.SystemVendorOrgNumber == vendorOrgNo)
+        if (sys is not null && systemOrgNo == vendorOrgNo)
         {
             return true;
         }

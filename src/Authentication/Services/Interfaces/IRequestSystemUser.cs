@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
@@ -17,7 +18,7 @@ public interface IRequestSystemUser
     /// <param name="createRequest">The model describing a new Request for a SystemUser</param>
     /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
     /// <returns>Result of Response model or Problem description</returns>
-    Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, string vendorOrgNo);
+    Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo);
 
     /// <summary>
     /// Gets the status based on the External Request Id 

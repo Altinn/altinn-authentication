@@ -109,7 +109,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         };
          
         HttpResponseMessage message = await client.PostAsync(token, endpoint, JsonContent.Create(req));
-        Assert.Equal(HttpStatusCode.OK, message.StatusCode);       
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);       
         
         CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
         Assert.NotNull(res);

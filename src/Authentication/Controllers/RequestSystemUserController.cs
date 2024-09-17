@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.Utils;
@@ -54,8 +55,8 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<CreateRequestSystemUserResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
-        string? vendorOrgNo = "1234567899";//RetrieveOrgNoFromToken();
-        if (vendorOrgNo is null || vendorOrgNo == string.Empty) 
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty()) 
         {
             return Unauthorized();
         }
@@ -86,7 +87,7 @@ public class RequestSystemUserController : ControllerBase
         return BadRequest();
     }
 
-    private string? RetrieveOrgNoFromToken()
+    private OrganisationNumber? RetrieveOrgNoFromToken()
     {
         string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName);
         JwtSecurityToken jwtSecurityToken = new(token);
@@ -95,7 +96,7 @@ public class RequestSystemUserController : ControllerBase
             // ID-porten specific claims
             if (claim.Type.Equals("consumer"))
             {
-                return claim.Value;
+                return OrganisationNumber.CreateFromIdPortenJson(claim.Value);
             }
         }
 
