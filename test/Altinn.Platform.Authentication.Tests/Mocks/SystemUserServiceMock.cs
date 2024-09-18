@@ -39,7 +39,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 Id = Guid.NewGuid().ToString(),
                 IntegrationTitle = request.IntegrationTitle,
                 SystemId = request.SystemId,
-                PartyId = request.PartyId.ToString(),
                 ReporteeOrgNo = partyOrgNo
             };
             theMockList.Add(newSystemUser);
@@ -156,7 +155,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             });
         }
 
-        public Task<SystemUser> CreateSystemUser(string party, SystemUserRequestDto request, string token)
+        public Task<SystemUser> CreateSystemUser(string party, SystemUserRequestDto request)
         {
             throw new NotImplementedException();
         }
