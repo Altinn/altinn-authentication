@@ -191,6 +191,6 @@ public class RequestSystemUserController : ControllerBase
             return res.Problem.ToActionResult();
         }
 
-        return Ok(res);
+        return Ok(res.Value);
     }
 }
