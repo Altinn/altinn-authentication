@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
@@ -9,6 +10,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
 
 namespace Altinn.Platform.Authentication.Services;
 #nullable enable
@@ -16,7 +18,8 @@ namespace Altinn.Platform.Authentication.Services;
 /// <inheritdoc/>
 public class RequestSystemUserService(
     ISystemRegisterService systemRegisterService,
-    IRequestRepository requestRepository)
+    IRequestRepository requestRepository,
+    IPartiesClient partiesClient)
     : IRequestSystemUser
 {
     /// <inheritdoc/>
@@ -42,7 +45,7 @@ public class RequestSystemUserService(
             return valRef.Problem;
         }
 
-        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);      
+        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
         if (valVendor.IsProblem)
         {
             return valVendor.Problem;
@@ -53,8 +56,8 @@ public class RequestSystemUserService(
         {
             return valCust.Problem;
         }
-        
-        if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty) 
+
+        if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
             var valRedirect = await ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
             if (valRedirect.IsProblem)
@@ -117,10 +120,10 @@ public class RequestSystemUserService(
         bool[] validate = new bool[rights.Count];
         int i = 0;
         foreach (var rightRequest in rights)
-        {                        
+        {
             foreach (var resource in rightRequest.Resource)
             {
-              if (FindOneAttributePair(resource, systemInfo.Rights))
+                if (FindOneAttributePair(resource, systemInfo.Rights))
                 {
                     validate[i] = true;
                     break;
@@ -128,11 +131,11 @@ public class RequestSystemUserService(
             }
 
             i++;
-        }   
+        }
 
         foreach (bool right in validate)
         {
-            if (!right) 
+            if (!right)
             {
                 return false;
             }
@@ -151,7 +154,7 @@ public class RequestSystemUserService(
                 {
                     return true;
                 }
-            }            
+            }
         }
 
         return false;
@@ -177,7 +180,7 @@ public class RequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateExternalRequestId(ExternalRequestId externalRequestId)
     {
-        CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);        
+        CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
 
         if (res is not null && res.Status == RequestStatus.Accepted.ToString())
         {
@@ -212,7 +215,7 @@ public class RequestSystemUserService(
     {
         OrganisationNumber? systemOrgNo = null;
 
-        if (sys is not null) 
+        if (sys is not null)
         {
             systemOrgNo = OrganisationNumber.CreateFromStringOrgNo(sys.SystemVendorOrgNumber);
         }
@@ -241,13 +244,19 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId)
+    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
     {
         CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
 
         if (res is null)
         {
             return Problem.RequestNotFound;
+        }
+
+        Result<bool> check = await RetrieveChosenSystemInfoAndValidateVendorOrgNo(externalRequestId.SystemId, vendorOrgNo);
+        if (check.IsProblem)
+        {
+            return check.Problem;
         }
 
         return new CreateRequestSystemUserResponse()
@@ -263,14 +272,19 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId)
+    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
     {
         CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByInternalId(requestId);
-
         if (res is null)
         {
             return Problem.RequestNotFound;
         }
+
+        Result<bool> check = await RetrieveChosenSystemInfoAndValidateVendorOrgNo(res.SystemId, vendorOrgNo);
+        if (check.IsProblem)
+        {
+            return check.Problem;
+        }                
 
         return new CreateRequestSystemUserResponse()
         {
@@ -282,5 +296,56 @@ public class RequestSystemUserService(
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
+    }
+
+    private async Task<Result<bool>> RetrieveChosenSystemInfoAndValidateVendorOrgNo(string systemId, OrganisationNumber vendorOrgNo)
+    {
+        RegisterSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
+        if (systemInfo is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
+        if (valVendor.IsProblem)
+        {
+            return valVendor.Problem;
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
+    {
+        Party party = await partiesClient.GetPartyAsync(partyId);
+        if (party is null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        CreateRequestSystemUserResponse? find = await requestRepository.GetRequestByInternalId(requestId);
+        if (find is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (party.OrgNumber != find.PartyOrgNo)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        var request = new CreateRequestSystemUserResponse
+        {
+            Id = find.Id,
+            SystemId = find.SystemId,
+            ExternalRef = find.ExternalRef,
+            Rights = find.Rights,
+            PartyOrgNo = find.PartyOrgNo,
+            Status = find.Status,
+            RedirectUrl = find.RedirectUrl
+        };
+
+        return request;
     }
 }

@@ -9,6 +9,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
 using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -51,7 +52,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]    
-    [HttpPost]
+    [HttpPost("vendor")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
@@ -69,7 +70,7 @@ public class RequestSystemUserController : ControllerBase
         };
 
         // Check to see if the Request already exists
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
         {
             return Ok(response.Value);
@@ -111,10 +112,16 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    [HttpGet("{requestId}")]
+    [HttpGet("vendor/{requestId}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByGuid(requestId);
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByGuid(requestId, vendorOrgNo);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -139,9 +146,15 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    [HttpGet("byexternalref/{systemId}/{orgNo}/{externalRef}")]
+    [HttpGet("vendor/byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
         ExternalRequestId externalRequestId = new()
         {
             ExternalRef = externalRef,
@@ -149,7 +162,7 @@ public class RequestSystemUserController : ControllerBase
             SystemId = systemId,
         };
 
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         
         if (response.IsProblem)
         {
@@ -162,5 +175,22 @@ public class RequestSystemUserController : ControllerBase
         }
 
         return BadRequest();
+    }
+
+    /// <summary>
+    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [HttpGet("{party}/{requestId}")]
+    public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
+    {
+        Result<CreateRequestSystemUserResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(party, requestId);
+        if (res.IsProblem)
+        {
+            return res.Problem.ToActionResult();
+        }
+
+        return Ok(res.Value);
     }
 }
