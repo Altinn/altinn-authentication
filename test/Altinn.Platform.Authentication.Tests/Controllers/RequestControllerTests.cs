@@ -223,6 +223,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         string endpoint2 = $"/authentication/api/v1/systemuser/request/{testId}";
 
         HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         CreateRequestSystemUserResponse? res2 = await message2.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
         Assert.True(res2 is not null);

@@ -25,14 +25,16 @@ public interface IRequestSystemUser
     /// 
     /// </summary>
     /// <param name="externalRequestId">The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers. </param>
+    /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
     /// <returns>The Status Response model</returns>
-    Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId);
+    Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo);
 
     /// <summary>
     /// Get the status by UUID Request Id
     /// 
     /// </summary>
     /// <param name="requestId">The Request Id as a UUID</param>
+    /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
     /// <returns>The Status Response model</returns>
-    Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId);
+    Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo);
 }

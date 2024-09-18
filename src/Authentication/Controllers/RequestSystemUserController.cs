@@ -69,7 +69,7 @@ public class RequestSystemUserController : ControllerBase
         };
 
         // Check to see if the Request already exists
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
         {
             return Ok(response.Value);
@@ -114,7 +114,13 @@ public class RequestSystemUserController : ControllerBase
     [HttpGet("{requestId}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByGuid(requestId);
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByGuid(requestId, vendorOrgNo);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -142,6 +148,12 @@ public class RequestSystemUserController : ControllerBase
     [HttpGet("byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
         ExternalRequestId externalRequestId = new()
         {
             ExternalRef = externalRef,
@@ -149,7 +161,7 @@ public class RequestSystemUserController : ControllerBase
             SystemId = systemId,
         };
 
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         
         if (response.IsProblem)
         {
