@@ -50,7 +50,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest system, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
@@ -79,9 +79,15 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        public Task<bool> UpdateWholeRegisteredSystem(SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
+        }
+
+        /// <inheritdoc/>
+        public Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken)
+        {
+            return _systemRegisterRepository.GetMaskinportenClients(clientId);
         }
     }
 }

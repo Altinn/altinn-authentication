@@ -22,7 +22,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
         public static void AssertRegisteredSystem(RegisterSystemResponse expected, RegisterSystemResponse actual)
         {
-            Assert.Equal(expected.SystemName, actual.SystemName);
+            Assert.Equal(expected.Name, actual.Name);
+            Assert.Equal(expected.Description, actual.Description);
             Assert.Equal(expected.SystemId, actual.SystemId);
             Assert.Equal(expected.SystemVendorOrgName, actual.SystemVendorOrgName);
             Assert.Equal(expected.SystemVendorOrgNumber, actual.SystemVendorOrgNumber);            
@@ -30,6 +31,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(expected.IsVisible, actual.IsVisible);
             Assert.Equal(expected.SoftDeleted, actual.SoftDeleted);
             Assert.Equal(expected.Rights.Count, actual.Rights.Count);
+            Assert.Equal(expected.AllowedRedirectUrls, actual.AllowedRedirectUrls);
         }
     }
 }

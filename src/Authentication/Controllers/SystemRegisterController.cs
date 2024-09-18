@@ -7,6 +7,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Azure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -70,8 +71,20 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("system/{systemId}")]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
+        List<MaskinPortenClientInfo> maskinPortenClients = await _systemRegisterService.GetMaskinportenClients(updateSystem.ClientId, cancellationToken);
+        RegisterSystemResponse systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        foreach (string clientId in updateSystem.ClientId)
+        {
+            bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.SystemInternalId).Count > 0;
+            if (clientExistsForAnotherSystem)
+            {
+                ModelState.AddModelError("ClientId",$"ClientId {clientId} already tagged with another system");
+                return BadRequest(ModelState);
+            }
+        }
+
         var success = await _systemRegisterService.UpdateWholeRegisteredSystem(updateSystem, systemId, cancellationToken);
 
         if (!success)
@@ -108,10 +121,16 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [HttpPost("system")]    
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] SystemRegisterRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
         {
+            if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor))
+            {
+                ModelState.AddModelError("Vendor", "the org number identifier is not valid ISO6523 identifier");
+                return BadRequest(ModelState);
+            }
+            
             if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
             {
                 ModelState.AddModelError("ClientId", "One of the client id already tagged with an existing system");
@@ -131,7 +150,7 @@ public class SystemRegisterController : ControllerBase
         catch (Exception e)
         {
             return e.Message.Contains("duplicate key value violates unique constraint")
-                ? Conflict($"The System already exist: {registerNewSystem.SystemId}")
+                ? Conflict($"The System already exist: {registerNewSystem.Id}")
                 : StatusCode(500, e.Message);
         }
     }
@@ -167,7 +186,7 @@ public class SystemRegisterController : ControllerBase
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
         if (!deleted) 
         { 
-            return BadRequest(); 
+            return BadRequest();
         }
 
         return Ok(new SystemRegisterUpdateResult(true));
