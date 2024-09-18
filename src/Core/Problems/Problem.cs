@@ -82,4 +82,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemIdNotFound { get; }
         = _factory.Create(11, HttpStatusCode.NotFound, "The Id does not refer to a Registered System.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RequestCouldNotBeStored { get; }
+        = _factory.Create(12, HttpStatusCode.NotFound, "An error occured when storing the Request.");
 }

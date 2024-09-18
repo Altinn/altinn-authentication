@@ -1,6 +1,5 @@
 ﻿using System.Data;
 using System.Text.Json;
-using System.Text.Unicode;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;

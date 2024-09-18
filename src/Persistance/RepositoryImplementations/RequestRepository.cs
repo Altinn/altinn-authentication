@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -26,7 +27,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<CreateRequestSystemUserResponse> CreateRequest(CreateRequestSystemUserResponse createRequest)
+    public async Task<Result<bool>> CreateRequest(CreateRequestSystemUserResponse createRequest)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.request(
@@ -57,14 +58,14 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("rights", createRequest.Rights);
             command.Parameters.AddWithValue("status", createRequest.Status);
             command.Parameters.AddWithValue("redirect_urls", createRequest.RedirectUrl!);
+
+            return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
             throw;
         }
-
-        return createRequest;
     }
 
     /// <inheritdoc/>

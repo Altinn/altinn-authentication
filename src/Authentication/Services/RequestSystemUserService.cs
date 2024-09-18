@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.Pipes;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
@@ -16,7 +15,8 @@ namespace Altinn.Platform.Authentication.Services;
 
 /// <inheritdoc/>
 public class RequestSystemUserService(
-    ISystemRegisterService systemRegisterService)
+    ISystemRegisterService systemRegisterService,
+    IRequestRepository requestRepository)
     : IRequestSystemUser
 {
     private readonly Dictionary<ExternalRequestId, CreateRequestSystemUserResponse> _mockList = [];
@@ -90,7 +90,11 @@ public class RequestSystemUserService(
             RedirectUrl = createRequest.RedirectUrl
         };
 
-        _mockList.Add(externalRequestId, created);
+        Result<bool> res = await requestRepository.CreateRequest(created);
+        if (res.IsProblem)
+        {
+            return Problem.RequestCouldNotBeStored;
+        }
 
         return created;
     }

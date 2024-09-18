@@ -2,7 +2,7 @@
 
 -- DROP TABLE IF EXISTS business_application.request
 
-CREATE TABLE IF NOT EXISTS business_application.request
+CREATE TABLE IF NOT EXISTS business_application.request(
     id uuid PRIMARY KEY,
     external_ref varchar(255) NOT NULL,
     system_id varchar(255) NOT NULL,
