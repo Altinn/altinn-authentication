@@ -86,5 +86,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>true when one of the client id already exists</returns>
         Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Checks if one of the clientid exists
+        /// </summary>
+        /// <param name="clientId">the maskinporten client id</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns>true when one of the client id already exists</returns>
+        Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken);
     }
 }
