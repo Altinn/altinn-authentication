@@ -340,7 +340,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             SystemId = reader.GetFieldValue<string>("system_id"),
             SystemVendorOrgNumber = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             Name = reader.GetFieldValue<IDictionary<string, string>>("name"),
-            Description = reader.GetFieldValue<IDictionary<string, string>>("description"),
+            Description = reader.GetFieldValue<IDictionary<string, string>>("description"),            
             SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
             ClientId = clientIds,
             Rights = rights,
