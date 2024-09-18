@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
@@ -17,7 +18,8 @@ namespace Altinn.Platform.Authentication.Services;
 /// <inheritdoc/>
 public class RequestSystemUserService(
     ISystemRegisterService systemRegisterService,
-    IRequestRepository requestRepository)
+    IRequestRepository requestRepository,
+    IPartiesClient partiesClient)
     : IRequestSystemUser
 {
     /// <inheritdoc/>
@@ -314,8 +316,36 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public Task<Result<CreateRequestSystemUserResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
+    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
+        Party party = await partiesClient.GetPartyAsync(partyId);
+        if (party is null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        CreateRequestSystemUserResponse? find = await requestRepository.GetRequestByInternalId(requestId);
+        if (find is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (party.OrgNumber != find.PartyOrgNo)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        var request = new CreateRequestSystemUserResponse
+        {
+            Id = find.Id,
+            SystemId = find.SystemId,
+            ExternalRef = find.ExternalRef,
+            Rights = find.Rights,
+            PartyOrgNo = find.PartyOrgNo,
+            Status = find.Status,
+            RedirectUrl = find.RedirectUrl
+        };
+
+        return request;
     }
 }
