@@ -1,11 +1,17 @@
 ﻿using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -44,28 +50,57 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="createRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]    
     [HttpPost]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
-
-        CreateRequestSystemUserResponse? response = await _requestSystemUser.GetRequestByExternalRef(createRequest.SystemId, createRequest.ExternalRef);
-        if (response is not null)
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty()) 
         {
-            return Ok(response);
+            return Unauthorized();
         }
 
-        response = await _requestSystemUser.CreateRequest(createRequest);
-
-        string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Id;
-
-        if (response is not null)
+        ExternalRequestId externalRequestId = new()
         {
-            return Created(fullCreatedUri, response);
+            ExternalRef = createRequest.ExternalRef ?? createRequest.PartyOrgNo,
+            OrgNo = createRequest.PartyOrgNo,
+            SystemId = createRequest.SystemId,
+        };
+
+        // Check to see if the Request already exists
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        // This is a new Request
+        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
+        
+        if (response.IsSuccess)
+        {
+            string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
+            return Created(fullCreatedUri, response.Value);
         }
 
         return BadRequest();
+    }
+
+    private OrganisationNumber? RetrieveOrgNoFromToken()
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName);
+        JwtSecurityToken jwtSecurityToken = new(token);
+        foreach (Claim claim in jwtSecurityToken.Claims)
+        {
+            // ID-porten specific claims
+            if (claim.Type.Equals("consumer"))
+            {
+                return OrganisationNumber.CreateFromMaskinPortenToken(claim.Value);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -79,10 +114,15 @@ public class RequestSystemUserController : ControllerBase
     [HttpGet("{requestId}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
-        CreateRequestSystemUserResponse? response = await _requestSystemUser.GetRequestByGuid(requestId);
-        if (response is not null)
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByGuid(requestId);
+        if (response.IsProblem)
         {
-            return Ok(response);
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
         }
 
         return NotFound();
@@ -90,23 +130,37 @@ public class RequestSystemUserController : ControllerBase
 
     /// <summary>
     /// Retrieves the Status (Response model) for a Request
-    /// based both on the SystemId and the ExternalRef 
+    /// based on the SystemId, OrgNo and the ExternalRef 
     /// ( which is enforced as a unique combination )
     /// </summary>
     /// <param name="systemId">The Id for the chosen Registered System.</param>
     /// <param name="externalRef">The chosen external ref the Vendor sent in to the Create Request</param>
+    /// <param name="orgNo">The organisation number for the customer</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    [HttpGet("{systemId}/{externalRef}")]
-    public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByExsternalRef(string systemId, string externalRef, CancellationToken cancellationToken = default)
+    [HttpGet("byexternalref/{systemId}/{orgNo}/{externalRef}")]
+    public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
-        CreateRequestSystemUserResponse? response = await _requestSystemUser.GetRequestByExternalRef(systemId, externalRef);
-        if (response is not null)
+        ExternalRequestId externalRequestId = new()
         {
-            return Ok(response);
+            ExternalRef = externalRef,
+            OrgNo = orgNo,
+            SystemId = systemId,
+        };
+
+        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId);
+        
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
         }
 
-        return NotFound();
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return BadRequest();
     }
 }

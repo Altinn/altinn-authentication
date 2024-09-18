@@ -10,6 +10,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Extensions;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -23,6 +24,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers;
@@ -89,79 +91,195 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     [Fact]
     public async Task Request_Create_Success()
     {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
         HttpClient client = CreateClient();
-        string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        string token = AddTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ] 
+        };
 
         // Arrange
         CreateRequestSystemUser req = new() 
         {
             ExternalRef = "external",
-            SystemId = "systemId",
+            SystemId = "the_matrix",
             PartyOrgNo = "1234567",
-            Rights = []
+            Rights = [right]
         };
-         
-        HttpResponseMessage message = await client.PostAsync(token, endpoint, JsonContent.Create(req));
-        Assert.Equal(HttpStatusCode.OK, message.StatusCode);       
-        CreateRequestSystemUserResponse res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);       
+        
+        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
 
     [Fact]
     public async Task Request_Create_UnAuthorized()
     {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
         HttpClient client = CreateClient();
+
+        // string token = AddTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
 
         // Arrange
         CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
-            SystemId = "systemId",
+            SystemId = "the_matrix",
             PartyOrgNo = "1234567",
-            Rights = []
+            Rights = [right]
         };
 
-        HttpResponseMessage message = await client.PostAsync(string.Empty, endpoint, JsonContent.Create(req));
-        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, message.StatusCode);
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, message.StatusCode);
     }
 
     [Fact]
     public async Task Get_Request_ByGuid_Ok()
     {
-        HttpClient client = CreateClient();
-        string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        Guid testId = Guid.NewGuid();
-        string endpoint = $"/authentication/api/v1/systemuser/request/{testId}";
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-        HttpResponseMessage message = await client.GetAsync(token, endpoint);
-        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "the_matrix",
+            PartyOrgNo = "1234567",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
         CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
-        Assert.True(res is not null);
-        Assert.Equal(testId, res.Id);
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        //Get by Guid
+        Guid testId = res.Id;
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/{testId}";
+
+        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        CreateRequestSystemUserResponse? res2 = await message2.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        Assert.True(res2 is not null);
+        Assert.Equal(testId, res2.Id);
     }
 
     [Fact]
     public async Task Get_Request_ByExternalRef_Ok()
     {
-        HttpClient client = CreateClient();
-        string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        string testSystem = "Test_System";
-        string testExternalRef = "Test_ExternalRef";
-        string endpoint = $"/authentication/api/v1/systemuser/request/{testSystem}/{testExternalRef}";
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-        HttpResponseMessage message = await client.GetAsync(token, endpoint);
-        Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "the_matrix",
+            PartyOrgNo = "1234567",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
         CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
-        Assert.True(res is not null);
-        Assert.Equal(testSystem + testExternalRef, res.SystemId + res.ExternalRef);
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+        
+        // Get the Request
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/byexternalref/{req.SystemId}/{req.PartyOrgNo}/{req.ExternalRef}";
+
+        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        CreateRequestSystemUserResponse? res2 = await message2.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        Assert.True(res2 is not null);
+        Assert.Equal(req.SystemId + req.PartyOrgNo + req.ExternalRef, res2.SystemId + res2.PartyOrgNo + res2.ExternalRef);
     }
 
     private void SetupDateTimeMock()
@@ -178,5 +296,42 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     {
         string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
         return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+    }
+
+    private async Task<HttpResponseMessage> CreateSystemRegister(HttpClient client, string token)
+    {
+        string data = File.ReadAllText("Data/SystemRegister/Json/SystemRegister.json");
+        JsonContent content = JsonContent.Create(data);
+        var res = await client.PostAsync(token, $"/authentication/api/v1/systemregister/system/", content);
+        return res;
+    }
+
+    private static string AddTestTokenToClient(HttpClient client)
+    {
+        string[] prefixes = ["altinn", "digdir"];
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        return token;
+    }
+
+    private async Task<HttpResponseMessage> CreateSystemRegister(string dataFileName)
+    {
+        HttpClient client = CreateClient();
+        string[] prefixes = { "altinn", "digdir" };
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        JsonSerializerOptions options = new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        Stream dataStream = File.OpenRead(dataFileName);
+        StreamContent content = new StreamContent(dataStream);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+        HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/system/");
+        request.Content = content;
+        HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        return response;
     }
 }

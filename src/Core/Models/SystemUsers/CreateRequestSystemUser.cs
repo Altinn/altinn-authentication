@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
@@ -13,6 +14,7 @@ public class CreateRequestSystemUser()
     /// the Vendor has control over themselves to ensure uniqueness.
     /// A null ExternalRef will default to the PartyOrgNo.
     /// </summary>
+    [JsonPropertyName("externalRef")]
     public string? ExternalRef { get; set; }
 
     /// <summary>
@@ -20,6 +22,7 @@ public class CreateRequestSystemUser()
     /// Must be owned by the Vendor that creates the Request.
     /// </summary>
     [Required]
+    [JsonPropertyName("systemId")]
     public string SystemId { get; set; }
 
     /// <summary>
@@ -27,6 +30,7 @@ public class CreateRequestSystemUser()
     /// ( the customer that delegates rights to the systemuser) 
     /// </summary>
     [Required]
+    [JsonPropertyName("partyOrgNo")]
     public string PartyOrgNo { get; set; }
 
     /// <summary>
@@ -35,10 +39,12 @@ public class CreateRequestSystemUser()
     /// An empty list will throw an error.
     /// </summary>
     [Required]
+    [JsonPropertyName("rights")]
     public List<Right> Rights { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request
     /// </summary>
-    public string? RedirectURL { get; set; }
+    [JsonPropertyName("redirectUrl")]
+    public string? RedirectUrl { get; set; }
 }

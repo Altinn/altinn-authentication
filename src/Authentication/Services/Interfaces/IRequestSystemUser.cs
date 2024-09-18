@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
@@ -14,17 +16,17 @@ public interface IRequestSystemUser
     /// 
     /// </summary>
     /// <param name="createRequest">The model describing a new Request for a SystemUser</param>
-    /// <returns>Response model</returns>
-    Task<CreateRequestSystemUserResponse> CreateRequest(CreateRequestSystemUser createRequest);
+    /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
+    /// <returns>Result of Response model or Problem description</returns>
+    Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo);
 
     /// <summary>
-    /// Gets the status based on both externalref and systemid
+    /// Gets the status based on the External Request Id 
     /// 
     /// </summary>
-    /// <param name="systemId">The system</param>
-    /// <param name="externalRef1">The Vendor's chosen external ref ( or orgno by default) </param>
+    /// <param name="externalRequestId">The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers. </param>
     /// <returns>The Status Response model</returns>
-    Task<CreateRequestSystemUserResponse> GetRequestByExternalRef(string systemId, string externalRef1);
+    Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId);
 
     /// <summary>
     /// Get the status by UUID Request Id
@@ -32,5 +34,5 @@ public interface IRequestSystemUser
     /// </summary>
     /// <param name="requestId">The Request Id as a UUID</param>
     /// <returns>The Status Response model</returns>
-    Task<CreateRequestSystemUserResponse> GetRequestByGuid(Guid requestId);
+    Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId);
 }

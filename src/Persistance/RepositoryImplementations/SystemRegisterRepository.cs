@@ -196,6 +196,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemRegister)
                 .FirstOrDefaultAsync();
+                        
         }
         catch (Exception ex)
         {
