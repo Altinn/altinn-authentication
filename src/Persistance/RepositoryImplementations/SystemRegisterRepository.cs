@@ -193,9 +193,11 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             command.Parameters.AddWithValue("system_id", id);
 
-            return await command.ExecuteEnumerableAsync()
+            var res = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemRegister)
                 .FirstOrDefaultAsync();
+
+            return res;
         }
         catch (Exception ex)
         {

@@ -7,8 +7,9 @@ CREATE TABLE IF NOT EXISTS business_application.request(
     external_ref varchar(255) NOT NULL,
     system_id varchar(255) NOT NULL,
     party_org_no varchar(255) NOT NULL, 
-    rights jsonb[],
+    rights jsonb,
     request_status varchar(255) NOT NULL,
+    redirect_urls varchar(255),
     created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_changed timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,    
     is_deleted bool DEFAULT false   

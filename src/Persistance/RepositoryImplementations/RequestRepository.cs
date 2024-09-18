@@ -6,6 +6,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 
@@ -55,9 +56,17 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("external_ref", createRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
-            command.Parameters.AddWithValue("rights", createRequest.Rights);
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = createRequest.Rights });
             command.Parameters.AddWithValue("status", createRequest.Status);
-            command.Parameters.AddWithValue("redirect_urls", createRequest.RedirectUrl!);
+
+            if (createRequest.RedirectUrl is not null)
+            {
+                command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = createRequest.RedirectUrl });
+            }
+            else
+            {
+                command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
+            }            
 
             return await command.ExecuteNonQueryAsync() > 0;
         }
@@ -89,7 +98,7 @@ public class RequestRepository : IRequestRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("request_id", externalRequestId.ExternalRef);
+            command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
 
@@ -139,16 +148,23 @@ public class RequestRepository : IRequestRepository
 
     private static ValueTask<CreateRequestSystemUserResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
     {
+        string? redirect_url = null;
+
+        if (!reader.IsDBNull("redirect_urls"))
+        {
+            redirect_url = reader.GetFieldValue<string?>("redirect_urls");
+        }
+
         return new ValueTask<CreateRequestSystemUserResponse>(
             new CreateRequestSystemUserResponse()
             {
-                Id = reader.GetFieldValue<Guid>("request_id"),
+                Id = reader.GetFieldValue<Guid>("id"),
                 ExternalRef = reader.GetFieldValue<string>("external_ref"),
                 SystemId = reader.GetFieldValue<string>("system_id"),
                 PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
                 Rights = reader.GetFieldValue<List<Right>>("rights"),
-                Status = reader.GetFieldValue<string>("status"),
-                RedirectUrl = reader.GetFieldValue<string>("redirect_urls")
+                Status = reader.GetFieldValue<string>("request_status"),
+                RedirectUrl = redirect_url
             });        
     }
 }

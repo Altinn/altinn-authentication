@@ -19,7 +19,6 @@ public class RequestSystemUserService(
     IRequestRepository requestRepository)
     : IRequestSystemUser
 {
-    private readonly Dictionary<ExternalRequestId, CreateRequestSystemUserResponse> _mockList = [];
 
     /// <inheritdoc/>
     public async Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
@@ -179,14 +178,7 @@ public class RequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateExternalRequestId(ExternalRequestId externalRequestId)
     {
-        CreateRequestSystemUserResponse? res = null;
-        try
-        {
-            res = _mockList[externalRequestId];
-        }
-        catch (Exception)
-        {
-        }
+        CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);        
 
         if (res is not null && res.Status == RequestStatus.Accepted.ToString())
         {
@@ -252,15 +244,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId)
     {
-        CreateRequestSystemUserResponse? res = null;
-
-        try
-        {
-            res = _mockList[externalRequestId];
-        }
-        catch (Exception ex) 
-        {
-        }
+        CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
 
         if (res is null)
         {
@@ -282,15 +266,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId)
     {
-        CreateRequestSystemUserResponse? res = null;
-
-        foreach (CreateRequestSystemUserResponse search in _mockList.Values)
-        {
-            if (search.Id == requestId)
-            {
-                res = search;
-            }
-        }
+        CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByInternalId(requestId);
 
         if (res is null)
         {
