@@ -19,7 +19,6 @@ public class RequestSystemUserService(
     IRequestRepository requestRepository)
     : IRequestSystemUser
 {
-
     /// <inheritdoc/>
     public async Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
