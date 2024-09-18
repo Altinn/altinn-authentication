@@ -73,7 +73,37 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Data\SystemRegister\Json\SystemRegisterResponse.json">
+    <None Update="Data\Parties\parties.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500000\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500001\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500002\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500003\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500600\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500700\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500800\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500801\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500802\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_501337\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterUpdateInvalid.json">
@@ -103,6 +133,9 @@
     <None Update="Data\SystemRegister\Json\SystemRegister.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\Xacml\3.0\ResourceRegistry\altinn_access_mangement\policy.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="MockData\SystemRegister.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -118,6 +151,11 @@
     <None Update="studio-org.pfx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\Roles\" />
+    <Folder Include="Data\UserProfile\" />
   </ItemGroup>
 
 </Project>
