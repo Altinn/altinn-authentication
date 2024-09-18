@@ -62,6 +62,16 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         public string SystemName { get; set; } = string.Empty;
 
         /// <summary>
+        /// A short name of the product, used when displaying to the user
+        /// </summary>
+        public required IDictionary<string, string> Name { get; set; }
+
+        /// <summary>
+        /// A short description of the product, used when displaying to the user
+        /// </summary>
+        public required IDictionary<string, string> Description { get; set; }
+
+        /// <summary>
         /// The array of Rights versus System Provider's Resources needed to use this Registered System
         /// </summary>
         public List<Right> Rights { get; set; } = [];
@@ -82,5 +92,10 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// This is used when the vendor does not want the user to create system users for specific systems
         /// </summary>
         public bool IsVisible { get; set; } = true;
+
+        /// <summary>
+        /// White listing of redirect urls
+        /// </summary>
+        public List<Uri> AllowedRedirectUrls { get; set; } = [];
     }
 }

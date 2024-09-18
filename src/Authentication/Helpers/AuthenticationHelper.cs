@@ -163,5 +163,22 @@ namespace Altinn.Platform.Authentication.Helpers
 
             return Enum.AuthenticationMethod.NotDefined;
         }
+
+        /// <summary>
+        /// Checks if the identifier of the org number is valid
+        /// </summary>
+        /// <param name="vendor">the org number information of the vendor</param>
+        /// <returns>true if the org number identifier is valid</returns>
+        public static bool IsValidOrgIdentifier(IDictionary<string, string> vendor)
+        {
+            vendor.TryGetValue("ID", out string authority);
+            string[] identityParts = authority.Split(':');
+            if (identityParts[0] != "0192")
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }
