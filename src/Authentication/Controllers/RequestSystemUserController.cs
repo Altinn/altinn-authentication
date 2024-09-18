@@ -9,6 +9,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
 using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -174,5 +175,22 @@ public class RequestSystemUserController : ControllerBase
         }
 
         return BadRequest();
+    }
+
+    /// <summary>
+    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [HttpGet("{party}/{requestId}")]
+    public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
+    {
+        Result<CreateRequestSystemUserResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(party, requestId);
+        if (res.IsProblem)
+        {
+            return res.Problem.ToActionResult();
+        }
+
+        return Ok(res);
     }
 }

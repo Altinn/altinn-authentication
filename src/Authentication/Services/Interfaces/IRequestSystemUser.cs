@@ -37,4 +37,12 @@ public interface IRequestSystemUser
     /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
     /// <returns>The Status Response model</returns>
     Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo);
+    
+    /// <summary>
+    /// Get the Request response DTO for display in the FrontEnd
+    /// </summary>
+    /// <param name="party">The partyId for the end user</param>
+    /// <param name="requestId">The Guid Id for the Request</param>
+    /// <returns>The Request model</returns>
+    Task<Result<CreateRequestSystemUserResponse>> GetRequestByPartyAndRequestId(int party, Guid requestId);
 }

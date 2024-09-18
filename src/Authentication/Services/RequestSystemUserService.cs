@@ -9,6 +9,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
 
 namespace Altinn.Platform.Authentication.Services;
 #nullable enable
@@ -310,5 +311,11 @@ public class RequestSystemUserService(
         }
 
         return true;
+    }
+
+    /// <inheritdoc/>
+    public Task<Result<CreateRequestSystemUserResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
+    {
+        Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
     }
 }
