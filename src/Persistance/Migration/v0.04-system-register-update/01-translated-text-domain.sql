@@ -1,0 +1,2 @@
+-- Domain: system_register.translated_text
+CREATE DOMAIN business_application.translated_text AS hstore CONSTRAINT translated_text_contains_en CHECK (value ? 'en') CONSTRAINT translated_text_contains_nb CHECK (value ? 'nb') CONSTRAINT translated_text_contains_nn CHECK (value ? 'nn');

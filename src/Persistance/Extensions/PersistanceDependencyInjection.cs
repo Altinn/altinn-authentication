@@ -28,8 +28,14 @@ public static class PersistanceDependencyInjection
         AddPostgreSqlDatabase(services);
         AddSystemUserRepository(services);        
         AddSystemRegisterRepository(services);
+        AddRequestRepository(services);
 
         return services;
+    }
+
+    private static void AddRequestRepository(this IServiceCollection services)
+    {
+        services.TryAddTransient<IRequestRepository, RequestRepository>();
     }
 
     /// <summary>

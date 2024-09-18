@@ -353,6 +353,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.TryAddSingleton(TimeProvider.System);
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
+    services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
     services.AddSingleton<IGuidService, GuidService>();
     services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
     services.AddSingleton<IPDP, PDPAppSI>();

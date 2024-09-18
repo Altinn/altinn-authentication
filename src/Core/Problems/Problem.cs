@@ -47,4 +47,45 @@ public static class Problem
     public static ProblemDescriptor Generic_EndOfMethod { get; }
         = _factory.Create(5, HttpStatusCode.BadRequest, "Default error at the end of logic chain. Not supposed to appear.");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor ExternalRequestIdAlreadyAccepted { get; }
+        = _factory.Create(6, HttpStatusCode.BadRequest, "The combination of External Ids refer to an already Accepted SystemUser.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor ExternalRequestIdPending { get; }
+        = _factory.Create(7, HttpStatusCode.BadRequest, "The combination of External Ids refer to a Pending Request, please reuse or delete.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor ExternalRequestIdDenied { get; }
+        = _factory.Create(8, HttpStatusCode.BadRequest, "The combination of External Ids refer to a Denied Request, please delete and renew the Request.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor ExternalRequestIdRejected { get; }
+        = _factory.Create(9, HttpStatusCode.BadRequest, "The combination of External Ids refer to a Rejected Request, please delete and renew the Request.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RequestNotFound { get; }
+        = _factory.Create(10, HttpStatusCode.NotFound, "The Id does not refer to a Request in our system.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemIdNotFound { get; }
+        = _factory.Create(11, HttpStatusCode.NotFound, "The Id does not refer to a Registered System.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RequestCouldNotBeStored { get; }
+        = _factory.Create(12, HttpStatusCode.NotFound, "An error occured when storing the Request.");
 }

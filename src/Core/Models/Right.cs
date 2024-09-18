@@ -3,7 +3,7 @@
     /// <summary>
     /// DTO for a Default Right on a Registered System
     /// </summary>
-    public class Right
+    public record Right
     {
 
         /// <summary>
