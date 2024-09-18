@@ -97,7 +97,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         HttpClient client = CreateClient();
         string token = AddTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
         {
@@ -143,7 +143,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpClient client = CreateClient();
 
         // string token = AddTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
         {
@@ -184,7 +184,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         HttpClient client = CreateClient();
         string token = AddTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
         {
@@ -220,7 +220,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         //Get by Guid
         Guid testId = res.Id;
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/{testId}";
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
 
         HttpResponseMessage message2 = await client.GetAsync(endpoint2);
         string debug = "pause_here";
@@ -239,7 +239,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         HttpClient client = CreateClient();
         string token = AddTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
         {
@@ -274,7 +274,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         Assert.Equal(req.ExternalRef, res.ExternalRef);
         
         // Get the Request
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/byexternalref/{req.SystemId}/{req.PartyOrgNo}/{req.ExternalRef}";
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/byexternalref/{req.SystemId}/{req.PartyOrgNo}/{req.ExternalRef}";
 
         HttpResponseMessage message2 = await client.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);

@@ -51,7 +51,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]    
-    [HttpPost]
+    [HttpPost("vendor")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
@@ -111,7 +111,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    [HttpGet("{requestId}")]
+    [HttpGet("vendor/{requestId}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
@@ -145,7 +145,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    [HttpGet("byexternalref/{systemId}/{orgNo}/{externalRef}")]
+    [HttpGet("vendor/byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
