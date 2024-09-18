@@ -89,11 +89,17 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
-    Task<bool> UpdateRegisteredSystem(SystemRegisterRequest updatedSystem);
+    Task<bool> UpdateRegisteredSystem(SystemRegisterRequest updatedSystem, CancellationToken cancellationToken = default);
 
     /// Checks if the client id exists
     /// </summary>
     /// <param name="id">array of client id</param>
     /// <returns>true if one of the client id exists</returns>
     Task<bool> DoesClientIdExists(List<string> id);
+
+    /// Gets the maskinporten clients
+    /// </summary>
+    /// <param name="id">array of client id</param>
+    /// <returns>true if one of the client id exists</returns>
+    Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> id);
 }

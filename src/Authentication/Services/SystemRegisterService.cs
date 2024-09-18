@@ -83,5 +83,11 @@ namespace Altinn.Platform.Authentication.Services
         {
             return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
         }
+
+        /// <inheritdoc/>
+        public Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken)
+        {
+            return _systemRegisterRepository.GetMaskinportenClients(clientId);
+        }
     }
 }

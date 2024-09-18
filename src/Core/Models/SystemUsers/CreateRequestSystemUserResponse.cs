@@ -61,4 +61,5 @@ public class CreateRequestSystemUserResponse()
     /// </summary>    
     [JsonPropertyName("redirectUrl")]
     public string? RedirectUrl { get; set; }
+
 }
