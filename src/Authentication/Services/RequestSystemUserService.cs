@@ -6,9 +6,11 @@ using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Azure.Core;
 
@@ -19,11 +21,10 @@ namespace Altinn.Platform.Authentication.Services;
 public class RequestSystemUserService(
     ISystemRegisterService systemRegisterService,
     ISystemRegisterRepository systemRegisterRepository,
+    IAccessManagementClient accessManagementClient,
     IRequestRepository requestRepository)
     : IRequestSystemUser
 {
-    private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
-
     /// <inheritdoc/>
     public async Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
@@ -293,26 +294,82 @@ public class RequestSystemUserService(
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken)
     {
         CreateRequestSystemUserResponse systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
-        SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, partyId); 
+        RegisterSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+
+        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.SystemId, cancellationToken);
+        if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
+        { 
+            return Problem.Rights_NotFound_Or_NotDelegable; 
+        }
+
         bool isApproved = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, cancellationToken);
+
+        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted, delegationCheckFinalResult.RightResponses);
+        if (delegationSucceeded.IsProblem) 
+        { 
+            return delegationSucceeded.Problem; 
+        }
+
         return isApproved;
     }
 
-    private async Task<SystemUser> MapSystemUserRequestToSystemUser(CreateRequestSystemUserResponse systemUserRequest, int partyId)
+    private async Task<SystemUser> MapSystemUserRequestToSystemUser(CreateRequestSystemUserResponse systemUserRequest, RegisterSystemResponse regSystem, int partyId)
     {
         SystemUser toBeInserted = null;
         if (systemUserRequest != null)
-        {
-            RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
-
+        {            
             toBeInserted = new SystemUser();
             toBeInserted.SystemId = systemUserRequest.SystemId;
             toBeInserted.IntegrationTitle = regSystem.SystemName;
-            toBeInserted.SystemInternalId = regSystem.SystemInternalId;
+            toBeInserted.SystemInternalId = regSystem?.SystemInternalId;
             toBeInserted.PartyId = partyId.ToString();
             toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;          
         }
 
         return toBeInserted;
+    }
+
+    private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, CancellationToken cancellationToken = default)
+    {
+        List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+        List<RightResponses> rightResponsesList = [];
+
+        foreach (Right right in rights)
+        {
+            DelegationCheckRequest request = new()
+            {
+                Resource = right.Resource
+            };
+
+            List<DelegationResponseData>? rightResponses = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), request);
+
+            if (rightResponses is null) 
+            { 
+                return new DelegationCheckResult(false, null); 
+            }
+
+            if (!ResolveIfHasAccess(rightResponses)) 
+            { 
+                return new DelegationCheckResult(false, null); 
+            }
+
+            rightResponsesList.Add(new RightResponses(rightResponses));
+        }
+
+        return new DelegationCheckResult(true, rightResponsesList);
+    }
+
+    private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
+    {
+        foreach (var data in rightResponse)
+        {
+            if (data.Status != "Delegable")
+            { 
+                return false; 
+            }
+        }
+
+        return true;
     }
 }

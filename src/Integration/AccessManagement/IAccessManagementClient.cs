@@ -25,8 +25,7 @@ public interface IAccessManagementClient
     /// Verifies that the rights can be delegated, and gets the correct model to use in the Delegate step
     /// </summary>
     /// <param name="partyId">The party id</param>
-    /// <param name="token">The authorization header bearer token</param>
-    Task<List<DelegationResponseData>?> CheckDelegationAccess(string partyId, DelegationCheckRequest request, string token);
+    Task<List<DelegationResponseData>?> CheckDelegationAccess(string partyId, DelegationCheckRequest request);
 
     /// <summary>
     /// Delegates the rights to the systemuser
@@ -35,5 +34,5 @@ public interface IAccessManagementClient
     /// <param name="token">The authorization header bearer token</param>
     /// <param name="rights">The Rights to be delegated to the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser to receive the rights</param>
-    Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> rights, string token);
+    Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> rights);
 }
