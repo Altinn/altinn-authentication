@@ -88,7 +88,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud/" + CONFIRMURL + response.Value.Id;
+            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud" + CONFIRMURL + response.Value.Id;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -136,7 +136,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud/" + CONFIRMURL + response.Value.Id;
+            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud" + CONFIRMURL + response.Value.Id;
             return Ok(response.Value);
         }
 
@@ -179,7 +179,7 @@ public class RequestSystemUserController : ControllerBase
         
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud/" + CONFIRMURL + response.Value.Id;
+            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud" + CONFIRMURL + response.Value.Id;
             return Ok(response.Value);
         }
 
