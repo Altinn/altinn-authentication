@@ -442,7 +442,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     private static string AddTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister", prefixes);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
