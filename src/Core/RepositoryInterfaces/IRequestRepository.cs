@@ -1,4 +1,5 @@
 ﻿using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -24,4 +25,6 @@ public interface IRequestRepository
     /// <param name="externalRequestId">Struct containing the three external references</param>
     /// <returns>Create Request model</returns>
     Task<CreateRequestSystemUserResponse?> GetRequestByExternalReferences(ExternalRequestId externalRequestId);
+
+    Task<bool> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken);
 }
