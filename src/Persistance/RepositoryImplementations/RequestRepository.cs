@@ -156,7 +156,7 @@ public class RequestRepository : IRequestRepository
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.request
-            SET request_status = @request_status
+            SET request_status = @request_status,
                 last_changed = CURRENT_TIMESTAMP
             WHERE business_application.request.id = @requestId
             """;
