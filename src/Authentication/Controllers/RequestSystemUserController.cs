@@ -163,4 +163,29 @@ public class RequestSystemUserController : ControllerBase
 
         return BadRequest();
     }
+
+    /// <summary>
+    /// Approves the systemuser requet and creates a system user
+    /// </summary>
+    /// <param name="requestId">The UUID of the request to be approved</param>
+    /// <param name="party">the partyId</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("{requestId}/{party}/approve")]
+    public async Task<ActionResult<CreateRequestSystemUserResponse>> ApproveSystemUserRequest(Guid requestId, int party, CancellationToken cancellationToken = default)
+    {
+        Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
 }

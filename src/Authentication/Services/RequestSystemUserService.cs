@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
@@ -9,6 +10,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Azure.Core;
 
 namespace Altinn.Platform.Authentication.Services;
 #nullable enable
@@ -16,9 +18,12 @@ namespace Altinn.Platform.Authentication.Services;
 /// <inheritdoc/>
 public class RequestSystemUserService(
     ISystemRegisterService systemRegisterService,
+    ISystemRegisterRepository systemRegisterRepository,
     IRequestRepository requestRepository)
     : IRequestSystemUser
 {
+    private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
+
     /// <inheritdoc/>
     public async Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
@@ -282,5 +287,32 @@ public class RequestSystemUserService(
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken)
+    {
+        CreateRequestSystemUserResponse systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, partyId); 
+        bool isApproved = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, cancellationToken);
+        return isApproved;
+    }
+
+    private async Task<SystemUser> MapSystemUserRequestToSystemUser(CreateRequestSystemUserResponse systemUserRequest, int partyId)
+    {
+        SystemUser toBeInserted = null;
+        if (systemUserRequest != null)
+        {
+            RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+
+            toBeInserted = new SystemUser();
+            toBeInserted.SystemId = systemUserRequest.SystemId;
+            toBeInserted.IntegrationTitle = regSystem.SystemName;
+            toBeInserted.SystemInternalId = regSystem.SystemInternalId;
+            toBeInserted.PartyId = partyId.ToString();
+            toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;          
+        }
+
+        return toBeInserted;
     }
 }
