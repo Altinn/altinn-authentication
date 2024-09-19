@@ -22,7 +22,7 @@ namespace Altinn.Platform.Authentication.Services;
 /// <inheritdoc/>
 public class RequestSystemUserService(
     ISystemRegisterService systemRegisterService,
-    IPartiesClient partiesClient)
+    IPartiesClient partiesClient,
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IRequestRepository requestRepository)
@@ -382,11 +382,12 @@ public class RequestSystemUserService(
     private async Task<SystemUser> MapSystemUserRequestToSystemUser(CreateRequestSystemUserResponse systemUserRequest, RegisterSystemResponse regSystem, int partyId)
     {
         SystemUser toBeInserted = null;
+        regSystem.Name.TryGetValue("nb", out string systemName);
         if (systemUserRequest != null)
         {            
             toBeInserted = new SystemUser();
             toBeInserted.SystemId = systemUserRequest.SystemId;
-            toBeInserted.IntegrationTitle = regSystem.SystemName;
+            toBeInserted.IntegrationTitle = systemName;
             toBeInserted.SystemInternalId = regSystem?.SystemInternalId;
             toBeInserted.PartyId = partyId.ToString();
             toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;          

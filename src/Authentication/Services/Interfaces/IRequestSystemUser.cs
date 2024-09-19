@@ -46,7 +46,6 @@ public interface IRequestSystemUser
     /// <param name="requestId">The Guid Id for the Request</param>
     /// <returns>The Request model</returns>
     Task<Result<CreateRequestSystemUserResponse>> GetRequestByPartyAndRequestId(int party, Guid requestId);
-    Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId);
 
     /// <summary>
     /// Approves the request and 
