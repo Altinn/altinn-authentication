@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Authentication.Controllers;
 #nullable enable
@@ -44,6 +45,11 @@ public class RequestSystemUserController : ControllerBase
     /// Route for the Created URI
     /// </summary>
     public const string CREATEDURIMIDSECTION = $"authentication/api/v1/systemuser/request/";
+
+    /// <summary>
+    /// Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
+    /// </summary>
+    public const string CONFIRMURL = "/authfront/ui/auth/vendorrequest?id=";
 
     /// <summary>
     /// Creates a new Request based on a SystemId for a SystemUser.
@@ -82,6 +88,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
+            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud/" + CONFIRMURL + response.Value.Id;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -129,6 +136,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
+            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud/" + CONFIRMURL + response.Value.Id;
             return Ok(response.Value);
         }
 
@@ -168,9 +176,10 @@ public class RequestSystemUserController : ControllerBase
         {
             return response.Problem.ToActionResult();
         }
-
+        
         if (response.IsSuccess)
         {
+            response.Value.ConfirmUrl = "https://authn.ui.at22.altinn.cloud/" + CONFIRMURL + response.Value.Id;
             return Ok(response.Value);
         }
 
