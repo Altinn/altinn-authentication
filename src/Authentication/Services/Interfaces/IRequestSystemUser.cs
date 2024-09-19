@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models.Parties;
@@ -45,4 +46,11 @@ public interface IRequestSystemUser
     /// <param name="requestId">The Guid Id for the Request</param>
     /// <returns>The Request model</returns>
     Task<Result<CreateRequestSystemUserResponse>> GetRequestByPartyAndRequestId(int party, Guid requestId);
+
+    /// <summary>
+    /// Approves the request and 
+    /// </summary>
+    /// <param name="requestId">the id of the request to be approved</param>
+    /// <returns></returns>
+    Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken);
 }

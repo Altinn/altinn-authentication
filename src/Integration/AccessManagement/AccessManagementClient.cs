@@ -12,6 +12,8 @@ using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Microsoft.Extensions.Primitives;
+using Altinn.AccessManagement.Core.Helpers;
+using Altinn.Authentication.Integration.Configuration;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -26,6 +28,7 @@ public class AccessManagementClient : IAccessManagementClient
     private readonly HttpClient _client;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly AccessManagementSettings _accessManagementSettings;
+    private readonly PlatformSettings _platformSettings;
     private readonly JsonSerializerOptions _serializerOptions =
         new() { PropertyNameCaseInsensitive = true };
 
@@ -40,11 +43,13 @@ public class AccessManagementClient : IAccessManagementClient
         HttpClient httpClient,
         ILogger<AccessManagementClient> logger,
         IHttpContextAccessor httpContextAccessor,
-        IOptions<AccessManagementSettings> platformSettings)
+        IOptions<AccessManagementSettings> accessManagementSettings,
+        IOptions<PlatformSettings> platformSettings)
     {
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
-        _accessManagementSettings = platformSettings.Value;
+        _accessManagementSettings = accessManagementSettings.Value;
+        _platformSettings = platformSettings.Value;
         httpClient.BaseAddress = new Uri(_accessManagementSettings.ApiAccessManagementEndpoint!);
         _client = httpClient;
         _serializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -99,11 +104,12 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<List<DelegationResponseData>?> CheckDelegationAccess(string partyId, DelegationCheckRequest request, string token)
+    public async Task<List<DelegationResponseData>?> CheckDelegationAccess(string partyId, DelegationCheckRequest request)
     {
         try
         {
-            string endpointUrl = $"internal/{partyId}/rights/delegation/delegationcheck";            
+            string endpointUrl = $"internal/{partyId}/rights/delegation/delegationcheck";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             string content = JsonSerializer.Serialize(request, _serializerOptions);
             StringContent requestBody = new(content, Encoding.UTF8, "application/json");
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody);
@@ -119,12 +125,12 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> responseData, string token)
+    public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> responseData)
     {
 
         foreach (RightResponses rightResponse in responseData)
         {
-            if (! await DelegateSingleRightToSystemUser(partyId, systemUser, rightResponse, token) )
+            if (! await DelegateSingleRightToSystemUser(partyId, systemUser, rightResponse) )
             {
                 return Problem.Rights_FailedToDelegate;
             };
@@ -133,7 +139,7 @@ public class AccessManagementClient : IAccessManagementClient
         return true;
     }
 
-    private async Task<bool> DelegateSingleRightToSystemUser(string partyId, SystemUser systemUser, RightResponses rightResponses, string token)
+    private async Task<bool> DelegateSingleRightToSystemUser(string partyId, SystemUser systemUser, RightResponses rightResponses)
     {
         List<Right> rights = [];
 
@@ -165,7 +171,7 @@ public class AccessManagementClient : IAccessManagementClient
         try
         {
             string endpointUrl = $"internal/{partyId}/rights/delegation/offered";
-            
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(rightsDelegationRequest));
 
             response.EnsureSuccessStatusCode();

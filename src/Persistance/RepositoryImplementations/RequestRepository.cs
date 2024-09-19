@@ -1,8 +1,10 @@
 ﻿using System.Data;
+using System.Data.Common;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -14,6 +16,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 public class RequestRepository : IRequestRepository
 {
     private readonly NpgsqlDataSource _dataSource;
+    private readonly ISystemUserRepository _systemUserRepository;
     private readonly ILogger _logger;
 
     /// <summary>
@@ -21,9 +24,11 @@ public class RequestRepository : IRequestRepository
     /// </summary>
     public RequestRepository(
         NpgsqlDataSource npgsqlDataSource,
+        ISystemUserRepository systemUserRepository,
         ILogger<RequestRepository> logger)
     {
         _dataSource = npgsqlDataSource;
+        _systemUserRepository = systemUserRepository;   
         _logger = logger;
     }
 
@@ -142,6 +147,41 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<bool> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken = default)
+    {
+        const string QUERY = /*strpsql*/"""
+            UPDATE business_application.request
+            SET request_status = @request_status
+                last_changed = CURRENT_TIMESTAMP,
+            WHERE business_application.request.id = @requestId
+            """;
+        await using NpgsqlConnection conn = await _dataSource.OpenConnectionAsync(cancellationToken);
+        await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken);
+
+        try
+        {
+            await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn, transaction);
+
+            command.Parameters.AddWithValue("requestId", requestId);
+            command.Parameters.AddWithValue("request_status", RequestStatus.Accepted.ToString());
+
+            bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
+
+            _systemUserRepository.InsertSystemUser(toBeInserted);
+
+            await transaction.CommitAsync();
+
+            return isUpdated;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
             throw;
         }
     }
