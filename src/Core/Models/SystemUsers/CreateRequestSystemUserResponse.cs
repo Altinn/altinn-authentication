@@ -62,4 +62,11 @@ public class CreateRequestSystemUserResponse()
     [JsonPropertyName("redirectUrl")]
     public string? RedirectUrl { get; set; }
 
+    /// <summary>
+    /// The URL the Vendor can direct their customer to in the Authn.UI to Approve or Reject the Request for the new SystemUser
+    /// Contains the base url for the Authn.UI + the Request.Id
+    /// </summary>
+    [JsonPropertyName("confirmUrl")]
+    public string ConfirmUrl { get; set; }
+
 }
