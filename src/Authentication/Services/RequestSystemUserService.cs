@@ -368,7 +368,8 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable; 
         }
 
-        bool isApproved = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, cancellationToken);
+        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, cancellationToken);
+        toBeInserted.Id = systemUserId?.ToString();
 
         Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted, delegationCheckFinalResult.RightResponses);
         if (delegationSucceeded.IsProblem) 
@@ -376,7 +377,7 @@ public class RequestSystemUserService(
             return delegationSucceeded.Problem; 
         }
 
-        return isApproved;
+        return true;
     }
 
     private async Task<SystemUser> MapSystemUserRequestToSystemUser(CreateRequestSystemUserResponse systemUserRequest, RegisterSystemResponse regSystem, int partyId)

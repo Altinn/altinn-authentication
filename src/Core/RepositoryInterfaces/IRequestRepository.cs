@@ -26,5 +26,5 @@ public interface IRequestRepository
     /// <returns>Create Request model</returns>
     Task<CreateRequestSystemUserResponse?> GetRequestByExternalReferences(ExternalRequestId externalRequestId);
 
-    Task<bool> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken);
+    Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken);
 }
