@@ -236,7 +236,7 @@ public class RequestRepository : IRequestRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllRequestsBySystem // Exception");
             throw;
         }
     }
