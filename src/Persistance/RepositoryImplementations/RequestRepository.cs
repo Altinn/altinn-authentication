@@ -152,7 +152,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken = default)
+    public async Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.request
@@ -172,11 +172,11 @@ public class RequestRepository : IRequestRepository
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
 
-            _systemUserRepository.InsertSystemUser(toBeInserted);
+            Guid? systemUserId = await _systemUserRepository.InsertSystemUser(toBeInserted);
 
             await transaction.CommitAsync();
 
-            return isUpdated;
+            return systemUserId;
         }
         catch (Exception ex)
         {
