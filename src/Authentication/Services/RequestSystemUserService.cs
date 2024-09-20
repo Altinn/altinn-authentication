@@ -29,7 +29,7 @@ public class RequestSystemUserService(
     : IRequestSystemUser
 {
     /// <inheritdoc/>
-    public async Task<Result<CreateRequestSystemUserResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
+    public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
         // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
         ExternalRequestId externalRequestId = new()
@@ -86,7 +86,7 @@ public class RequestSystemUserService(
 
         Guid newId = Guid.NewGuid();
 
-        var created = new CreateRequestSystemUserResponse()
+        var created = new RequestSystemResponse()
         {
             Id = newId,
             ExternalRef = createRequest.ExternalRef,
@@ -186,7 +186,7 @@ public class RequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateExternalRequestId(ExternalRequestId externalRequestId)
     {
-        CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
+        RequestSystemResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
 
         if (res is not null && res.Status == RequestStatus.Accepted.ToString())
         {
@@ -250,9 +250,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+    public async Task<Result<RequestSystemResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
     {
-        CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
+        RequestSystemResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
 
         if (res is null)
         {
@@ -265,7 +265,7 @@ public class RequestSystemUserService(
             return check.Problem;
         }
 
-        return new CreateRequestSystemUserResponse()
+        return new RequestSystemResponse()
         {
             Id = res.Id,
             ExternalRef = res.ExternalRef,
@@ -278,9 +278,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
+    public async Task<Result<RequestSystemResponse>> GetRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
     {
-        CreateRequestSystemUserResponse? res = await requestRepository.GetRequestByInternalId(requestId);
+        RequestSystemResponse? res = await requestRepository.GetRequestByInternalId(requestId);
         if (res is null)
         {
             return Problem.RequestNotFound;
@@ -292,7 +292,7 @@ public class RequestSystemUserService(
             return check.Problem;
         }                
 
-        return new CreateRequestSystemUserResponse()
+        return new RequestSystemResponse()
         {
             Id = res.Id,
             ExternalRef = res.ExternalRef,
@@ -322,7 +322,7 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<CreateRequestSystemUserResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
+    public async Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
         Party party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
@@ -330,7 +330,7 @@ public class RequestSystemUserService(
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        CreateRequestSystemUserResponse? find = await requestRepository.GetRequestByInternalId(requestId);
+        RequestSystemResponse? find = await requestRepository.GetRequestByInternalId(requestId);
         if (find is null)
         {
             return Problem.RequestNotFound;
@@ -341,7 +341,7 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
-        var request = new CreateRequestSystemUserResponse
+        var request = new RequestSystemResponse
         {
             Id = find.Id,
             SystemId = find.SystemId,
@@ -358,7 +358,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken)
     {
-        CreateRequestSystemUserResponse systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        RequestSystemResponse systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
         RegisterSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
         SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
 
@@ -380,7 +380,7 @@ public class RequestSystemUserService(
         return true;
     }
 
-    private async Task<SystemUser> MapSystemUserRequestToSystemUser(CreateRequestSystemUserResponse systemUserRequest, RegisterSystemResponse regSystem, int partyId)
+    private async Task<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisterSystemResponse regSystem, int partyId)
     {
         SystemUser toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string systemName);
@@ -441,7 +441,7 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<List<CreateRequestSystemUserResponse>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken)
+    public async Task<Result<List<RequestSystemResponse>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken)
     {
         RegisterSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
         if (system is null)
@@ -455,7 +455,7 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
         
-        List<CreateRequestSystemUserResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
+        List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
         return theList;
