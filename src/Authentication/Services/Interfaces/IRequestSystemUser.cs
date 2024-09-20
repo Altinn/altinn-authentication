@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
@@ -53,4 +54,13 @@ public interface IRequestSystemUser
     /// <param name="requestId">the id of the request to be approved</param>
     /// <returns></returns>
     Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
+    /// </summary>
+    /// <param name="vendorOrgNo">The Vendor's organisation number, retrieved from the token</param>
+    /// <param name="systemId">The registered system this listing is for, must be owned by the Vendor</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    Task<Result<List<CreateRequestSystemUserResponse>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken);
 }

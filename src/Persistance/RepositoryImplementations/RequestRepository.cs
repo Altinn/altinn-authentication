@@ -2,6 +2,7 @@
 using System.Data.Common;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -206,5 +207,37 @@ public class RequestRepository : IRequestRepository
                 Status = reader.GetFieldValue<string>("request_status"),
                 RedirectUrl = redirect_url
             });        
+    }
+
+    /// <inheritdoc/>  
+    public async Task<List<CreateRequestSystemUserResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                rights,
+                request_status,
+                redirect_urls
+            FROM business_application.request r
+            WHERE r.system_id = @system_id;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToRequest)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            throw;
+        }
     }
 }

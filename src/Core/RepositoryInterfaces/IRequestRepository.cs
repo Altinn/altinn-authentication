@@ -1,5 +1,6 @@
 ﻿using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -26,5 +27,14 @@ public interface IRequestRepository
     /// <returns>Create Request model</returns>
     Task<CreateRequestSystemUserResponse?> GetRequestByExternalReferences(ExternalRequestId externalRequestId);
 
+
     Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
+    /// </summary>    
+    /// <param name="systemId">The chosen system</param>
+    /// <param name="cancellationToken">The cancellationToken</param>
+    /// <returns></returns>
+    Task<List<CreateRequestSystemUserResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken);
 }

@@ -439,4 +439,24 @@ public class RequestSystemUserService(
 
         return true;
     }
+
+    /// <inheritdoc/>
+    public async Task<Result<List<CreateRequestSystemUserResponse>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken)
+    {
+        RegisterSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        if (system is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        // Verify that the orgno from the logged on token owns this system
+        if (OrganisationNumber.CreateFromStringOrgNo(system.SystemVendorOrgNumber) != vendorOrgNo)
+        {
+            return Problem.SystemIdNotFound;
+        }
+        
+        List<CreateRequestSystemUserResponse> theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
+
+        return theList;
+    }
 }

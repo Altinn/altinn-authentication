@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading;
@@ -215,6 +216,36 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<CreateRequestSystemUserResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves a list of Status-Response-model for all Requests that the Vendor has for a given system they own.
+    /// </summary>
+    /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [HttpGet("vendor/bysystem/{systemId}")]
+    public async Task<ActionResult<CreateRequestSystemUserResponse>> GetAllRequestsForVendor(string systemId, CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Result<List<CreateRequestSystemUserResponse>> response = await _requestSystemUser.GetAllRequestsForVendor(vendorOrgNo, systemId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
