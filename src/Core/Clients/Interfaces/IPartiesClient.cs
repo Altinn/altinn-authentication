@@ -8,6 +8,14 @@ namespace Altinn.Authentication.Core.Clients.Interfaces;
 public interface IPartiesClient
 {
     /// <summary>
+    /// Returns an Organisation based on the input Orgno from the Register
+    /// </summary>
+    /// <param name="partyOrgNo"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<Organization> GetOrganizationAsync(string partyOrgNo, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns partyInfo
     /// </summary>
     /// <param name="partyId">The party ID to lookup</param>
