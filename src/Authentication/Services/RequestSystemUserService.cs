@@ -455,7 +455,8 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
         
-        List<CreateRequestSystemUserResponse> theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
+        List<CreateRequestSystemUserResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
+        theList ??= [];
 
         return theList;
     }
