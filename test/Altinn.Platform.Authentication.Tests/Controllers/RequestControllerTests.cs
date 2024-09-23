@@ -16,6 +16,7 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
@@ -24,6 +25,7 @@ using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -90,6 +92,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         services.AddSingleton<ISystemUserService, SystemUserServiceMock>();    
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
         services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
+        services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
         SetupDateTimeMock();
         SetupGuidMock();
     }
@@ -352,7 +355,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     }
 
     [Fact]
-    public async Task Apptove_Request_By_RequestId()
+    public async Task Approve_Request_By_RequestId_Success()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -409,10 +412,142 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         CreateRequestSystemUserResponse? requestGet = JsonSerializer.Deserialize<CreateRequestSystemUserResponse>(await partyResponse.Content.ReadAsStringAsync());
 
-        //string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
-        //HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
-        //HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
-        //Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+    }
+
+    [Fact]
+    public async Task Approve_Request_By_RequestId_Fail()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "the_matrix",
+            PartyOrgNo = "910493354",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        // Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        int partyId = 500004;
+
+        string partyEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}";
+
+        HttpRequestMessage partyReqMessage = new(HttpMethod.Get, partyEndpoint);
+        HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
+
+        CreateRequestSystemUserResponse? requestGet = JsonSerializer.Deserialize<CreateRequestSystemUserResponse>(await partyResponse.Content.ReadAsStringAsync());
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
+        ProblemDetails problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("One or more Right not found or not delegable.", problem.Detail);
+    }
+
+    [Fact]
+    public async Task Approve_Request_By_RequestId_NotDelegated()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "the_matrix",
+            PartyOrgNo = "910493355",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        // Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        int partyId = 500005;
+
+        string partyEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}";
+
+        HttpRequestMessage partyReqMessage = new(HttpMethod.Get, partyEndpoint);
+        HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
+
+        CreateRequestSystemUserResponse? requestGet = JsonSerializer.Deserialize<CreateRequestSystemUserResponse>(await partyResponse.Content.ReadAsStringAsync());
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
+        ProblemDetails problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("The Delegation failed.", problem.Detail);
     }
 
     private void SetupDateTimeMock()
