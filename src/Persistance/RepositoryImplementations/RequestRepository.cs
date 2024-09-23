@@ -2,6 +2,7 @@
 using System.Data.Common;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -33,7 +34,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> CreateRequest(CreateRequestSystemUserResponse createRequest)
+    public async Task<Result<bool>> CreateRequest(RequestSystemResponse createRequest)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.request(
@@ -83,7 +84,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<CreateRequestSystemUserResponse?> GetRequestByExternalReferences(ExternalRequestId externalRequestId)
+    public async Task<RequestSystemResponse?> GetRequestByExternalReferences(ExternalRequestId externalRequestId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -119,7 +120,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<CreateRequestSystemUserResponse?> GetRequestByInternalId(Guid internalId)
+    public async Task<RequestSystemResponse?> GetRequestByInternalId(Guid internalId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -186,7 +187,7 @@ public class RequestRepository : IRequestRepository
         }
     }
 
-    private static ValueTask<CreateRequestSystemUserResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
+    private static ValueTask<RequestSystemResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
 
@@ -195,8 +196,8 @@ public class RequestRepository : IRequestRepository
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
-        return new ValueTask<CreateRequestSystemUserResponse>(
-            new CreateRequestSystemUserResponse()
+        return new ValueTask<RequestSystemResponse>(
+            new RequestSystemResponse()
             {
                 Id = reader.GetFieldValue<Guid>("id"),
                 ExternalRef = reader.GetFieldValue<string>("external_ref"),
@@ -206,5 +207,37 @@ public class RequestRepository : IRequestRepository
                 Status = reader.GetFieldValue<string>("request_status"),
                 RedirectUrl = redirect_url
             });        
+    }
+
+    /// <inheritdoc/>  
+    public async Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                rights,
+                request_status,
+                redirect_urls
+            FROM business_application.request r
+            WHERE r.system_id = @system_id;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToRequest)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllRequestsBySystem // Exception");
+            throw;
+        }
     }
 }

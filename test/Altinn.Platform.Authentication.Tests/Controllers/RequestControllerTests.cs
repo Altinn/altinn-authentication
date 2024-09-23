@@ -137,7 +137,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);       
         
-        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
@@ -223,7 +223,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
-        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
@@ -234,7 +234,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage message2 = await client.GetAsync(endpoint2);
         string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        CreateRequestSystemUserResponse? res2 = await message2.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
     }
@@ -278,7 +278,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
-        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
         
@@ -287,7 +287,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         HttpResponseMessage message2 = await client.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        CreateRequestSystemUserResponse? res2 = await message2.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.True(res2 is not null);
         Assert.Equal(req.SystemId + req.PartyOrgNo + req.ExternalRef, res2.SystemId + res2.PartyOrgNo + res2.ExternalRef);
     }
@@ -332,7 +332,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
-        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
@@ -348,7 +348,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
 
-        CreateRequestSystemUserResponse? requestGet = JsonSerializer.Deserialize<CreateRequestSystemUserResponse>(await partyResponse.Content.ReadAsStringAsync());
+        RequestSystemResponse? requestGet = JsonSerializer.Deserialize<RequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
         Assert.NotNull(requestGet);
 
         Assert.Equal(res.Id, requestGet.Id);
@@ -394,7 +394,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
-        CreateRequestSystemUserResponse? res = await message.Content.ReadFromJsonAsync<CreateRequestSystemUserResponse>();
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
@@ -410,7 +410,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
 
-        CreateRequestSystemUserResponse? requestGet = JsonSerializer.Deserialize<CreateRequestSystemUserResponse>(await partyResponse.Content.ReadAsStringAsync());
+        RequestSystemResponse? requestGet = JsonSerializer.Deserialize<RequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
 
         string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
