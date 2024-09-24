@@ -130,7 +130,12 @@ public class SystemRegisterController : ControllerBase
                 ModelState.AddModelError("Vendor", "the org number identifier is not valid ISO6523 identifier");
                 return BadRequest(ModelState);
             }
-            
+
+            if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor), User))
+            {
+                return Forbid();
+            }
+
             if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
             {
                 ModelState.AddModelError("ClientId", "One of the client id already tagged with an existing system");
