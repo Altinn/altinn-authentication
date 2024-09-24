@@ -61,8 +61,8 @@ jobs:
         if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
         shell: bash
         run: |
-           mkdir -p ./.sonar/scanner
-           dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+          mkdir -p ./.sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
       - name: Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
@@ -70,13 +70,9 @@ jobs:
         shell: bash
         run: |
           dotnet tool install --global dotnet-coverage
-          .\.sonar\scanner\dotnet-sonarscanner begin /k:"Altinn_altinn-authentication" /o:"altinn" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vstest.reportsPaths="**/*.trx" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" /d:sonar.cpd.exclusions="**/Swagger/*Filter.cs"
+          ./.sonar/scanner/dotnet-sonarscanner begin /k:"Altinn_altinn-authentication" /o:"altinn" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vstest.reportsPaths="**/*.trx" /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/coverage.xml"
 
-          dotnet build Altinn.Platform.Authentication.sln
-          dotnet test Altinn.Platform.Authentication.sln `
-          --no-build `
-          --results-directory TestResults/ `
-          --collect:"XPlat Code Coverage" `
-          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          dotnet build --no-incremental
+          dotnet coverage collect 'dotnet test --no-build --results-directory TestResults/' -f xml -o 'TestResults/coverage.xml'
 
-          .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
