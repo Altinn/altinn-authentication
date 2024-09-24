@@ -70,7 +70,14 @@ jobs:
         shell: bash
         run: |
           dotnet tool install --global dotnet-coverage
-          ./.sonar/scanner/dotnet-sonarscanner begin /k:"Altinn_altinn-authentication" /o:"altinn" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vstest.reportsPaths="**/*.trx" /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/coverage.xml"
+          ./.sonar/scanner/dotnet-sonarscanner begin \
+            /k:"Altinn_altinn-authentication" \
+            /o:"altinn" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.vstest.reportsPaths="**/*.trx" \
+            /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/coverage.xml" \
+            /d:sonar.cpd.exclusions="**/Swagger/*Filter.cs"
 
           dotnet build --no-incremental
           dotnet coverage collect 'dotnet test --no-build --results-directory TestResults/' -f xml -o 'TestResults/coverage.xml'
