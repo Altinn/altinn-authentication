@@ -1,0 +1,13 @@
+[
+  {
+    "rightKey": "ske-krav-og-betalinger:ScopeAccess",
+    "resource": [
+      {
+        "id": "urn:altinn:resource",
+        "value": "ske-krav-og-betalinger"
+      }
+    ],
+    "action": "ScopeAccess",
+    "status": "Delegable"
+  }
+]

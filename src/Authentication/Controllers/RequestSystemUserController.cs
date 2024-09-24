@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading;
@@ -59,7 +60,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]    
     [HttpPost("vendor")]
-    public async Task<ActionResult<CreateRequestSystemUserResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RequestSystemResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
@@ -76,7 +77,7 @@ public class RequestSystemUserController : ControllerBase
         };
 
         // Check to see if the Request already exists
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
+        Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
         {
             return Ok(response.Value);
@@ -120,7 +121,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("vendor/{requestId}")]
-    public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RequestSystemResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
@@ -128,7 +129,7 @@ public class RequestSystemUserController : ControllerBase
             return Unauthorized();
         }
 
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByGuid(requestId, vendorOrgNo);
+        Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByGuid(requestId, vendorOrgNo);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -155,7 +156,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("vendor/byexternalref/{systemId}/{orgNo}/{externalRef}")]
-    public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RequestSystemResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
@@ -170,7 +171,7 @@ public class RequestSystemUserController : ControllerBase
             SystemId = systemId,
         };
 
-        Result<CreateRequestSystemUserResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
+        Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         
         if (response.IsProblem)
         {
@@ -192,9 +193,9 @@ public class RequestSystemUserController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [HttpGet("{party}/{requestId}")]
-    public async Task<ActionResult<CreateRequestSystemUserResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
+    public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
     {
-        Result<CreateRequestSystemUserResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(party, requestId);
+        Result<RequestSystemResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(party, requestId);
         if (res.IsProblem)
         {
             return res.Problem.ToActionResult();
@@ -212,9 +213,39 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/approve")]
-    public async Task<ActionResult<CreateRequestSystemUserResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RequestSystemResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves a list of Status-Response-model for all Requests that the Vendor has for a given system they own.
+    /// </summary>
+    /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [HttpGet("vendor/bysystem/{systemId}")]
+    public async Task<ActionResult<RequestSystemResponse>> GetAllRequestsForVendor(string systemId, CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Result<List<RequestSystemResponse>> response = await _requestSystemUser.GetAllRequestsForVendor(vendorOrgNo, systemId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

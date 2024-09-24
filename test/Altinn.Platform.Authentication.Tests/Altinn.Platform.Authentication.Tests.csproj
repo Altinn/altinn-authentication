@@ -73,7 +73,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Data\Delegation\DelegationAccessResponse_NotDelegable.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Delegation\DelegationAccessResponse.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\Parties\parties.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500005\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Roles\user_1337\party_500004\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\Roles\user_1337\party_500000\roles.json">
@@ -157,7 +169,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Data\Roles\" />
+    <Folder Include="Data\Delegation\NewFolder\" />
     <Folder Include="Data\UserProfile\" />
   </ItemGroup>
 
