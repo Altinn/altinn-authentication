@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Azure.Core;
 
 namespace Altinn.Platform.Authentication.Tests.Mocks
 {
@@ -158,6 +160,25 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         public Task<SystemUser> CreateSystemUser(string party, SystemUserRequestDto request)
         {
             throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<List<SystemUser>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken)
+        {
+            List<SystemUser> theList = [];
+
+            theList.Add(new SystemUser
+            {
+                Id = "37ce1792-3b35-4d50-a07d-636017aa7dbf",
+                IntegrationTitle = "Et helt annet system",
+                SystemId = systemId,
+                PartyId = "orgno:123456789",
+                IsDeleted = false,
+                SupplierName = "Supplier3 Name",
+                SupplierOrgNo = vendorOrgNo.ID
+            });
+
+            return theList;
         }
     }
 }
