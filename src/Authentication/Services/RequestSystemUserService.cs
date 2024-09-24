@@ -380,6 +380,12 @@ public class RequestSystemUserService(
         return true;
     }
 
+    /// <inheritdoc/>
+    public async Task<Result<bool>> RejectSystemUser(Guid requestId, CancellationToken cancellationToken)
+    {
+        return await requestRepository.RejectSystemUser(requestId, cancellationToken);
+    }
+
     private async Task<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisterSystemResponse regSystem, int partyId)
     {
         SystemUser toBeInserted = null;
