@@ -52,4 +52,14 @@ public class PartiesClientMock : IPartiesClient
         string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
         return Path.Combine(unitTestFolder, "Data", "KeyRoleUnits", $"{userId}", "keyroleunits.json");
     }
+
+    public Task<Organization> GetOrganizationAsync(string partyOrgNo, CancellationToken cancellationToken = default)
+    {
+        Organization organization = new()
+        {
+            OrgNumber = partyOrgNo,
+        };
+
+        return Task.FromResult<Organization>(organization);
+    }
 }
