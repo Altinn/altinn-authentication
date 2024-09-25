@@ -187,6 +187,32 @@ public class RequestRepository : IRequestRepository
         }
     }
 
+    /// <inheritdoc/>  
+    public async Task<bool> RejectSystemUser(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        const string QUERY = /*strpsql*/"""
+            UPDATE business_application.request
+            SET request_status = @request_status,
+                last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.request.id = @requestId
+            """;       
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("requestId", requestId);
+            command.Parameters.AddWithValue("request_status", RequestStatus.Rejected.ToString());
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // Reject System user request // Exception");
+            throw;
+        }
+    }
+
     private static ValueTask<RequestSystemResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;

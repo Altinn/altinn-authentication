@@ -49,7 +49,7 @@ public interface IRequestSystemUser
     Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int party, Guid requestId);
 
     /// <summary>
-    /// Approves the request and 
+    /// Approves the request and creates a system user
     /// </summary>
     /// <param name="requestId">the id of the request to be approved</param>
     /// <returns></returns>
@@ -63,4 +63,11 @@ public interface IRequestSystemUser
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     Task<Result<List<RequestSystemResponse>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Rejects the request 
+    /// </summary>
+    /// <param name="requestId">the id of the request to be rejected</param>
+    /// <returns>true if the request is rejected</returns>
+    Task<Result<bool>> RejectSystemUser(Guid requestId, CancellationToken cancellationToken);
 }
