@@ -275,7 +275,7 @@ internal class SystemUserRepository : ISystemUserRepository
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
-	        WHEREsr.system_internal_id = @system_id
+	        WHERE sr.system_id = @system_id
 	            AND sui.is_deleted = false;
             ";
 

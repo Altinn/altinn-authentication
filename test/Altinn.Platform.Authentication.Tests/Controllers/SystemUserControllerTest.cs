@@ -403,6 +403,53 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.Forbidden, createSystemUserResponse.StatusCode);
         }
 
+        [Fact]
+        public async Task SystemUser_ListByVendorsSystem_ReturnsOk()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+            Guid id = Guid.NewGuid();
+
+            string para = $"{partyId}/{id}";
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "the_matrix",
+            };
+
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
+            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+
+            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.Created, createSystemUserResponse.StatusCode);
+            Assert.NotNull(shouldBeCreated);
+            Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);
+
+
+            HttpClient vendorClient = CreateClient();
+            string[] prefixes = { "altinn", "digdir" };
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            vendorClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            string vendorEndpoint = $"/authentication/api/v1/systemuser/vendor/bysystem/{newSystemUser.SystemId}";
+
+            HttpRequestMessage vendorMessage = new(HttpMethod.Get, vendorEndpoint);
+            HttpResponseMessage vendorResponse = await vendorClient.SendAsync(vendorMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, vendorResponse.StatusCode);
+            List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await vendorResponse.Content.ReadAsStringAsync(), _options);
+            Assert.NotNull(list);
+            Assert.NotEmpty(list);
+        }
+
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(SystemUserControllerTest).Assembly.Location).LocalPath);
