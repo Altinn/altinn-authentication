@@ -27,7 +27,13 @@ public interface IRequestRepository
     /// <returns>Create Request model</returns>
     Task<RequestSystemResponse?> GetRequestByExternalReferences(ExternalRequestId externalRequestId);
 
-
+    /// <summary>
+    /// Approves a system user request and creates a new system user
+    /// </summary>
+    /// <param name="requestId">the id of the request to be accepted</param>
+    /// <param name="toBeInserted">the system user to be created</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns>returns the system user id</returns>
     Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken);
 
     /// <summary>
@@ -37,4 +43,12 @@ public interface IRequestRepository
     /// <param name="cancellationToken">The cancellationToken</param>
     /// <returns></returns>
     Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Rejects the system user request
+    /// </summary>
+    /// <param name="requestId">the id of the request to be rejected</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>true if the system user request is updated as rejected</returns>
+    Task<bool> RejectSystemUser(Guid requestId, CancellationToken cancellationToken);
 }
