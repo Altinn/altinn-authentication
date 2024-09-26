@@ -79,4 +79,34 @@ public class PartiesClient : IPartiesClient
             throw;
         }
     }
+
+    // register/api/v1/organizations/{orgNr}
+    /// <inheritdoc/>
+    public async Task<Organization?> GetOrganizationAsync (string orgNo, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string endpointUrl = $"register/api/v1/organizations/{orgNo}";
+
+            HttpRequestMessage request = new(HttpMethod.Get, endpointUrl);
+            request.Headers.Add("PlatformAccessToken", _accessTokenGenerator.GenerateAccessToken("platform", "authentication"));
+
+            HttpResponseMessage response = await _client.GetAsync(endpointUrl, cancellationToken);
+
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                return JsonSerializer.Deserialize<Organization>(responseContent, _serializerOptions);
+            }
+
+            _logger.LogError("AccessManagement // PartiesClient // GetOrganizationAsync // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AccessManagement // PartiesClient // GetOrganizationAsync // Exception");
+            throw;
+        }
+    }
 }

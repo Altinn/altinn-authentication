@@ -65,7 +65,7 @@ public class RequestSystemUserService(
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = await ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
+            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
@@ -171,8 +171,19 @@ public class RequestSystemUserService(
     /// </summary>
     /// <param name="redirectURL">the RedirectUrl chosen</param>
     /// <returns>Result or Problem</returns>
-    private async Task<Result<bool>> ValidateRedirectUrl(string redirectURL, RegisterSystemResponse systemInfo)
+    private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisterSystemResponse systemInfo)
     {
+        List<Uri> redirectUrlsInSystem = systemInfo.AllowedRedirectUrls;
+        Uri chosenUri = new(redirectURL);
+
+        foreach (var uri in redirectUrlsInSystem)
+        {
+            if (uri.AbsoluteUri == chosenUri.AbsoluteUri)
+            {
+                return true;
+            }
+        }
+
         return true;
     }
 
@@ -245,7 +256,18 @@ public class RequestSystemUserService(
     /// <param name="partyOrgNo">the PartyOrgNo for the Customer</param>
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateCustomerOrgNo(string partyOrgNo)
-    {
+    {        
+        if (partyOrgNo == null) 
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        Organization? org = await partiesClient.GetOrganizationAsync(partyOrgNo);
+        if (org is null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
         return true;
     }
 
