@@ -81,6 +81,7 @@ public class PartiesClient : IPartiesClient
     }
 
     // register/api/v1/organizations/{orgNr}
+    /// <inheritdoc/>
     public async Task<Organization?> GetOrganizationAsync (string orgNo, CancellationToken cancellationToken = default)
     {
         try
