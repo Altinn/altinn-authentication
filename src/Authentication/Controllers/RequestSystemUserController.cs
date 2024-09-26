@@ -260,10 +260,10 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Approves the systemuser requet and creates a system user
+    /// Rejects the systemuser request
     /// </summary>
     /// <param name="party">the partyId</param>
-    /// <param name="requestId">The UUID of the request to be approved</param>
+    /// <param name="requestId">The UUID of the request to be rejected</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
