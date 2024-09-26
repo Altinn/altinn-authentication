@@ -86,10 +86,12 @@ public class PartiesClient : IPartiesClient
         try
         {
             string endpointUrl = $"register/api/v1/organizations/{orgNo}";
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
-            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, accessToken, cancellationToken);
+            HttpRequestMessage request = new(HttpMethod.Get, endpointUrl);
+            request.Headers.Add("PlatformAccessToken", _accessTokenGenerator.GenerateAccessToken("platform", "authentication"));
+
+            HttpResponseMessage response = await _client.GetAsync(endpointUrl, cancellationToken);
+
             string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.OK)
