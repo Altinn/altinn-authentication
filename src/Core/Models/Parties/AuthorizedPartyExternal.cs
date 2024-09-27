@@ -1,6 +1,9 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models;
 
 #nullable enable
+[ExcludeFromCodeCoverage]
 public  class AuthorizedPartyExternal
 {
     /// <summary>
