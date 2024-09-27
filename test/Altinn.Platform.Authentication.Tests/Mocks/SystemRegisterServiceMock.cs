@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
@@ -20,10 +22,26 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             _registeredSystemsMockList = MockDataHelper();
         }
 
-        public async Task<List<RegisterSystemResponse>> GetListRegSys(CancellationToken cancellation = default)
+        public async Task<List<SystemRegisterDTO>> GetListRegSys(CancellationToken cancellation = default)
         {
             await Task.Delay(50);
-            return _registeredSystemsMockList;
+
+            List<SystemRegisterDTO> listDTO = [];
+
+            foreach (var sys in _registeredSystemsMockList)
+            {
+                listDTO.Add(
+                    new()
+                    {
+                        Description = sys.Description,
+                        Name = sys.Name,
+                        Rights = sys.Rights,
+                        SystemId = sys.SystemId,
+                        SystemVendorOrgNumber = sys.SystemVendorOrgNumber
+                    });
+            }
+
+            return listDTO;
         }
                 
         private static List<RegisterSystemResponse> MockDataHelper() 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces
@@ -17,7 +18,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="cancellation">The cancellation token</param>
         /// <returns></returns>
-        Task<List<RegisterSystemResponse>> GetListRegSys(CancellationToken cancellation = default);
+        Task<List<SystemRegisterDTO>> GetListRegSys(CancellationToken cancellation = default);
 
         /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider

@@ -41,7 +41,7 @@ public class SystemRegisterController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<SystemRegisterDTO>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
-        List<RegisterSystemResponse> lista = [];
+        List<SystemRegisterDTO> lista = [];
 
         lista.AddRange(await _systemRegisterService.GetListRegSys(cancellationToken));
 

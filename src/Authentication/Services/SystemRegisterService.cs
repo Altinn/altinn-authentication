@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -16,19 +17,49 @@ namespace Altinn.Platform.Authentication.Services
     public class SystemRegisterService : ISystemRegisterService
     {
         private readonly ISystemRegisterRepository _systemRegisterRepository;
+        private readonly IPartiesClient _partiesClient;
 
         /// <summary>
         /// The constructor
         /// </summary>
-        public SystemRegisterService(ISystemRegisterRepository systemRegisterRepository)
+        public SystemRegisterService(
+            ISystemRegisterRepository systemRegisterRepository,
+            IPartiesClient partiesClient)
         {
             _systemRegisterRepository = systemRegisterRepository;
+            _partiesClient = partiesClient;
         }
 
         /// <inheritdoc/>
-        public Task<List<RegisterSystemResponse>> GetListRegSys(CancellationToken cancellation = default)
+        public async Task<List<SystemRegisterDTO>> GetListRegSys(CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.GetAllActiveSystems();
+            List<SystemRegisterDTO> listDTO = [];
+
+            var dbList = await _systemRegisterRepository.GetAllActiveSystems();
+            foreach (var sys in dbList) 
+            {
+                listDTO.Add(
+                    new()
+                    {
+                        Description = sys.Description,
+                        Name = sys.Name,
+                        Rights = sys.Rights,
+                        SystemId = sys.SystemId,                        
+                        SystemVendorOrgNumber = sys.SystemVendorOrgNumber
+                    });
+            }
+
+            foreach (var dto in listDTO)
+            {
+                dto.SystemVendorOrgName = await EnrichSystemVendorOrgName(dto.SystemVendorOrgNumber);
+            }
+
+            return listDTO;
+        }
+
+        private async Task<string> EnrichSystemVendorOrgName(string orgno)
+        {
+            return string.Empty;
         }
 
         /// <inheritdoc/>
