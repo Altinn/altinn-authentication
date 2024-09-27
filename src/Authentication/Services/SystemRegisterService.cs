@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Core.Problems;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -120,6 +123,26 @@ namespace Altinn.Platform.Authentication.Services
         public Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.GetMaskinportenClients(clientId);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<SystemRegisterDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken)
+        {            
+            var model = await _systemRegisterRepository.GetRegisteredSystemById(systemId);
+            if (model is null)
+            {
+                return Problem.SystemIdNotFound;
+            }                
+
+            return new SystemRegisterDTO
+            {
+                Description = model.Description,
+                Name = model.Name,
+                Rights = model.Rights,
+                SystemId = model.SystemId,
+                SystemVendorOrgName = model.SystemVendorOrgName,
+                SystemVendorOrgNumber = model.SystemVendorOrgNumber,
+            };
         }
     }
 }

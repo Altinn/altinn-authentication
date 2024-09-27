@@ -49,7 +49,22 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves a Registered System for the systemId.
+    /// Retrieves a Registered System frontend DTO for the systemId.
+    /// </summary>
+    /// <param name="systemId">The Id of the Registered System </param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    [HttpGet("{systemId}")]
+    public async Task<ActionResult<SystemRegisterDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
+    {
+        SystemRegisterDTO registeredSystem = await _systemRegisterService.GetRegisteredSystemDto(systemId, cancellationToken);
+
+        return Ok(registeredSystem);
+    }
+
+    /// <summary>
+    /// Retrieves a full model Registered System for the systemId.
+    /// Used by Vendors with scope
     /// </summary>
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
