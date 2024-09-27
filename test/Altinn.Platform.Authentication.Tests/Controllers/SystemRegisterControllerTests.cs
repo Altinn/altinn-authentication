@@ -10,6 +10,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -180,7 +181,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
                 HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                List<RegisterSystemResponse> list = JsonSerializer.Deserialize<List<RegisterSystemResponse>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
+                List<SystemRegisterDTO> list = JsonSerializer.Deserialize<List<SystemRegisterDTO>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
                 Assert.True(list.Count > 1);
             }
         }
@@ -193,12 +194,37 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
             HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<RegisterSystemResponse> list = JsonSerializer.Deserialize<List<RegisterSystemResponse>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
+            List<SystemRegisterDTO> list = JsonSerializer.Deserialize<List<SystemRegisterDTO>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
             Assert.True(list.Count == 0);
         }
 
         [Fact]
-        public async Task SystemRegister_Get()
+        public async Task SystemRegister_FrontEnd_Get_SystemRegisterDTO ()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                HttpClient client = CreateClient();
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterResponse.json").ReadToEnd();
+                SystemRegisterDTO expectedRegisteredSystem = JsonSerializer.Deserialize<SystemRegisterDTO>(systemRegister, options);
+
+                string systemId = "the_matrix";
+                HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{systemId}");
+                HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                SystemRegisterDTO actualRegisteredSystem = JsonSerializer.Deserialize<SystemRegisterDTO>(await getResponse.Content.ReadAsStringAsync(), _options);
+                AssertionUtil.AssertRegisteredSystemDto(expectedRegisteredSystem, actualRegisteredSystem);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Vendor_Get_SystemRegister()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
@@ -226,7 +252,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task SystemRegister_Get_NotFound()
+        public async Task SystemRegister_Vendor_Get_SystemRegister_NotFound()
         {
             HttpClient client = CreateClient();
             string[] prefixes = { "altinn", "digdir" };
