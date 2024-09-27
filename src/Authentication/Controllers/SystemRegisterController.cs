@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
@@ -57,9 +58,14 @@ public class SystemRegisterController : ControllerBase
     [HttpGet("{systemId}")]
     public async Task<ActionResult<SystemRegisterDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
     {
-        SystemRegisterDTO registeredSystem = await _systemRegisterService.GetRegisteredSystemDto(systemId, cancellationToken);
+        Result<SystemRegisterDTO> registeredSystem = await _systemRegisterService.GetRegisteredSystemDto(systemId, cancellationToken);
 
-        return Ok(registeredSystem);
+        if (registeredSystem.IsProblem) 
+        { 
+            return registeredSystem.Problem.ToActionResult();
+        }
+
+        return Ok(registeredSystem.Value);
     }
 
     /// <summary>
