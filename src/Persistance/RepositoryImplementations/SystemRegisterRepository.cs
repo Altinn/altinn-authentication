@@ -1,7 +1,5 @@
 ﻿using System.Data;
 using System.Text.Json;
-using System.Text.Unicode;
-using System.Threading;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -39,7 +37,6 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_internal_id,
                 system_id,
                 systemvendor_orgnumber, 
-                system_name,
                 name,
                 description,
                 is_deleted,
@@ -175,7 +172,6 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 system_internal_id,
                 system_id,
                 systemvendor_orgnumber, 
-                system_name,
                 name,
                 description,
                 is_deleted,

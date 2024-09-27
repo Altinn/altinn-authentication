@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -38,7 +39,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
-    public async Task<ActionResult<List<RegisterSystemResponse>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<SystemRegisterDTO>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
         List<RegisterSystemResponse> lista = [];
 

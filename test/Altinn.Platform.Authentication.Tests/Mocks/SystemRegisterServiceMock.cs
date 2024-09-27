@@ -35,7 +35,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 SystemVendorOrgName = "Test Org AS",
                 SystemId = "Awesome_Tax",
-                SystemName = "Awesome_Tax",
                 Name = null,
                 Description = null,
                 Rights =
@@ -69,7 +68,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             {
                 SystemVendorOrgName = "Wonderful",
                 SystemId = "Wonderful_Tax",
-                SystemName = "Wonderful_Tax",
                 Name = null,
                 Description = null,
                 Rights =
@@ -102,7 +100,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             RegisterSystemResponse reg3 = new()
             {
                 SystemId = "Brilliant_HR",
-                SystemName = "Brilliant HR",
                 Name = null,
                 Description = null,
                 SystemVendorOrgNumber = "914286018",
@@ -137,7 +134,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             RegisterSystemResponse reg4 = new()
             {
                 SystemId = "Fantastic_HR",
-                SystemName = "Fantastic HR",
                 Name = null,
                 Description = null,
                 Rights =
@@ -170,7 +166,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             RegisterSystemResponse reg5 = new()
             {
                 SystemId = "business_next",
-                SystemName = "Business Next",
                 Name = null,
                 Description = null,
                 SystemVendorOrgNumber = "914286018",
