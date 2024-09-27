@@ -59,7 +59,8 @@ namespace Altinn.Platform.Authentication.Services
 
         private async Task<string> EnrichSystemVendorOrgName(string orgno)
         {
-            return string.Empty;
+            Register.Models.Organization org = await _partiesClient.GetOrganizationAsync(orgno);
+            return org.Name;
         }
 
         /// <inheritdoc/>
