@@ -200,7 +200,7 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
         RegisterSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
-        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
+        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse?.SystemVendorOrgNumber, User))
         {
             return Forbid();
         }
