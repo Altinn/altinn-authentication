@@ -9,8 +9,10 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Altinn.ResourceRegistry.Models;
 using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -233,11 +235,15 @@ public class RequestSystemUserController : ControllerBase
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has for a given system they own.
     /// </summary>
     /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="token">Optional continuation token</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("vendor/bysystem/{systemId}")]
-    public async Task<ActionResult<RequestSystemResponse>> GetAllRequestsForVendor(string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Paginated<RequestSystemResponse>>> GetAllRequestsForVendor(
+        string systemId,
+        [FromQuery(Name = "token")] Opaque<string>? token = null,
+        CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
