@@ -11,7 +11,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
     /// it may need Rights to use or acccess Resources at a Service Provider.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public class RegisteredSystemRequest
+    public class RegisterSystemRequest
     {
         /// <summary>
         /// The unique Id for this product, in human-readable string format.

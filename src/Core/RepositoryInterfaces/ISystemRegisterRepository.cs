@@ -24,7 +24,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="toBeInserted">The newly created Product to be inserted</param>
     /// <returns>Returns the hidden system Guid</returns>
-    Task<Guid?> CreateRegisteredSystem(RegisteredSystemRequest toBeInserted);
+    Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted);
 
     /// <summary>
     /// Returns a single RegisteredSystem, even if it was set to deleted.
@@ -89,7 +89,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
-    Task<bool> UpdateRegisteredSystem(RegisteredSystemRequest updatedSystem, CancellationToken cancellationToken = default);
+    Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default);
 
     /// Checks if the client id exists
     /// </summary>

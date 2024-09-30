@@ -85,7 +85,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(RegisteredSystemRequest system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
@@ -114,7 +114,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateWholeRegisteredSystem(RegisteredSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
         }

@@ -93,7 +93,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("system/{systemId}")]
-    public async Task<ActionResult<RegisteredSystemUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisteredSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RegisteredSystemUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
         List<MaskinPortenClientInfo> maskinPortenClients = await _systemRegisterService.GetMaskinportenClients(updateSystem.ClientId, cancellationToken);
         RegisteredSystem systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
@@ -143,7 +143,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [HttpPost("system")]    
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisteredSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
         {

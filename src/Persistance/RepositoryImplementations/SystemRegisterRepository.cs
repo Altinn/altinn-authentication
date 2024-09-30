@@ -63,7 +63,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystemRequest toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.system_register(
@@ -118,7 +118,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> UpdateRegisteredSystem(RegisteredSystemRequest updatedSystem, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.system_register
