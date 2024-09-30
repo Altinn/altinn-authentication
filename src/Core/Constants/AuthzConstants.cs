@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// <summary>
         /// Policy tag for authorizing write scope.
         /// </summary>
-        public const string POLICY_SCOPE_SYSTEMREGISTER_WRITE = "altinn:authentication/systemregister";
+        public const string POLICY_SCOPE_SYSTEMREGISTER_WRITE = "altinn:authentication/systemregister.write";
 
         /// <summary>
         /// Scope for system user admin access
