@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 
 [ExcludeFromCodeCoverage]
-public record class SystemRegisterDTO
+public record class RegisteredSystemDTO
 {
     /// <summary>
     /// A unique External Id for this System, in human-readable string format.    

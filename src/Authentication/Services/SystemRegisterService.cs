@@ -34,9 +34,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<List<SystemRegisterDTO>> GetListRegSys(CancellationToken cancellation = default)
+        public async Task<List<RegisteredSystemDTO>> GetListRegSys(CancellationToken cancellation = default)
         {
-            List<SystemRegisterDTO> listDTO = [];
+            List<RegisteredSystemDTO> listDTO = [];
 
             var dbList = await _systemRegisterRepository.GetAllActiveSystems();
             foreach (var sys in dbList) 
@@ -85,7 +85,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(RegisteredSystemRequest system, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
@@ -96,7 +96,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="systemId">the system id</param>
         /// <param name="cancellation">the cancellation token</param>
         /// <returns></returns>
-        public Task<RegisterSystemResponse> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
+        public Task<RegisteredSystem> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetRegisteredSystemById(systemId);
         }
@@ -114,7 +114,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateWholeRegisteredSystem(SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        public Task<bool> UpdateWholeRegisteredSystem(RegisteredSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
         }
@@ -126,7 +126,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<SystemRegisterDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken)
+        public async Task<Result<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken)
         {            
             var model = await _systemRegisterRepository.GetRegisteredSystemById(systemId);
             if (model is null)
@@ -134,7 +134,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }                
 
-            return new SystemRegisterDTO
+            return new RegisteredSystemDTO
             {
                 Description = model.Description,
                 Name = model.Name,

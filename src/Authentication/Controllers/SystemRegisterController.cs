@@ -40,9 +40,9 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
-    public async Task<ActionResult<List<SystemRegisterDTO>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<RegisteredSystemDTO>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
-        List<SystemRegisterDTO> lista = [];
+        List<RegisteredSystemDTO> lista = [];
 
         lista.AddRange(await _systemRegisterService.GetListRegSys(cancellationToken));
 
@@ -56,9 +56,9 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [HttpGet("{systemId}")]
-    public async Task<ActionResult<SystemRegisterDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
     {
-        Result<SystemRegisterDTO> registeredSystem = await _systemRegisterService.GetRegisteredSystemDto(systemId, cancellationToken);
+        Result<RegisteredSystemDTO> registeredSystem = await _systemRegisterService.GetRegisteredSystemDto(systemId, cancellationToken);
 
         if (registeredSystem.IsProblem) 
         { 
@@ -77,9 +77,9 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("system/{systemId}")]
-    public async Task<ActionResult<RegisterSystemResponse>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RegisteredSystem>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
     {
-        RegisterSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+        RegisteredSystem registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
         
         return Ok(registeredSystem);
     }
@@ -93,10 +93,10 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("system/{systemId}")]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RegisteredSystemUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisteredSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
         List<MaskinPortenClientInfo> maskinPortenClients = await _systemRegisterService.GetMaskinportenClients(updateSystem.ClientId, cancellationToken);
-        RegisterSystemResponse systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        RegisteredSystem systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
         foreach (string clientId in updateSystem.ClientId)
         {
             bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.SystemInternalId).Count > 0;
@@ -114,7 +114,7 @@ public class SystemRegisterController : ControllerBase
             return BadRequest();
         }
 
-        return Ok(new SystemRegisterUpdateResult(true));
+        return Ok(new RegisteredSystemUpdateResult(true));
     }
 
     /// <summary>
@@ -143,7 +143,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [HttpPost("system")]    
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] SystemRegisterRequest registerNewSystem, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisteredSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -185,7 +185,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns>true if changed</returns>
     [HttpPut("system/{systemId}/rights")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
+    public async Task<ActionResult<RegisteredSystemUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
     {
         bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);
         if (!success)
@@ -193,7 +193,7 @@ public class SystemRegisterController : ControllerBase
             return BadRequest();
         }
 
-        return Ok(new SystemRegisterUpdateResult(true));
+        return Ok(new RegisteredSystemUpdateResult(true));
     }
 
     /// <summary>
@@ -203,7 +203,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns>true if changed</returns>
     [HttpDelete("system/{systemId}")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
+    public async Task<ActionResult<RegisteredSystemUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
         if (!deleted) 
@@ -211,6 +211,6 @@ public class SystemRegisterController : ControllerBase
             return BadRequest();
         }
 
-        return Ok(new SystemRegisterUpdateResult(true));
+        return Ok(new RegisteredSystemUpdateResult(true));
     }
 }

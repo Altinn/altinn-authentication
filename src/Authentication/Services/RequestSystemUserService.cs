@@ -39,7 +39,7 @@ public class RequestSystemUserService(
             SystemId = createRequest.SystemId,
         };
 
-        RegisterSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId);
+        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -111,7 +111,7 @@ public class RequestSystemUserService(
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
     /// <returns>Result or Problem</returns>
-    private Result<bool> ValidateRights(List<Right> rights, RegisterSystemResponse systemInfo)
+    private Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
     {
         if (rights.Count == 0 || systemInfo.Rights.Count == 0)
         {
@@ -171,7 +171,7 @@ public class RequestSystemUserService(
     /// </summary>
     /// <param name="redirectURL">the RedirectUrl chosen</param>
     /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisterSystemResponse systemInfo)
+    private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystem systemInfo)
     {
         List<Uri> redirectUrlsInSystem = systemInfo.AllowedRedirectUrls;
         Uri chosenUri = new(redirectURL);
@@ -228,7 +228,7 @@ public class RequestSystemUserService(
     /// <param name="vendorOrgNo">Vendor's OrgNo</param>
     /// <param name="sys">The chosen System Info</param>
     /// <returns>Result or Problem</returns>
-    private Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisterSystemResponse sys)
+    private Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisteredSystem sys)
     {
         OrganisationNumber? systemOrgNo = null;
 
@@ -328,7 +328,7 @@ public class RequestSystemUserService(
 
     private async Task<Result<bool>> RetrieveChosenSystemInfoAndValidateVendorOrgNo(string systemId, OrganisationNumber vendorOrgNo)
     {
-        RegisterSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
+        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -381,7 +381,7 @@ public class RequestSystemUserService(
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken)
     {
         RequestSystemResponse systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
-        RegisterSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
         SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
 
         DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.SystemId, cancellationToken);
@@ -408,7 +408,7 @@ public class RequestSystemUserService(
         return await requestRepository.RejectSystemUser(requestId, cancellationToken);
     }
 
-    private async Task<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisterSystemResponse regSystem, int partyId)
+    private async Task<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
     {
         SystemUser toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string systemName);
@@ -471,7 +471,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<List<RequestSystemResponse>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken)
     {
-        RegisterSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystem? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
         if (system is null)
         {
             return Problem.SystemIdNotFound;
