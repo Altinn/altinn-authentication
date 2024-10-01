@@ -416,6 +416,72 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             }
         }
 
+        [Fact]
+        public async Task SystemRegister_Create_WrongScope_Forbidden()
+        {
+            HttpClient client = CreateClient();
+            string token = PrincipalUtil.GetOrgToken("skd", "974761076", "altinn:authentication/systemregister");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            Stream dataStream = File.OpenRead(dataFileName);
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/system/");
+            request.Content = content;
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_WriteScope_OrgMismatch_Forbidden()
+        {
+            HttpClient client = CreateClient();
+            string token = PrincipalUtil.GetOrgToken("skd", "974761076", "altinn:authentication/systemregister.write");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            Stream dataStream = File.OpenRead(dataFileName);
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/system/");
+            request.Content = content;
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_WriteScope_SystemOwner_Success()
+        {
+            HttpClient client = CreateClient();
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            Stream dataStream = File.OpenRead(dataFileName);
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/system/");
+            request.Content = content;
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
         private void SetupDateTimeMock()
         {
             timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));

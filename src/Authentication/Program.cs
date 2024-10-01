@@ -404,7 +404,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
 
     services.AddAuthorizationBuilder()
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE, policy =>
-            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN, AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE))
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN, AuthzConstants.SCOPE_SYSTEMREGISTER_WRITE))
         .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ, policy =>
             policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))
         .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy =>

@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
+using Newtonsoft.Json;
 
 namespace Altinn.Platform.Authentication.Helpers
 {
@@ -179,6 +181,135 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Checks if authenticated user has write access
+        /// </summary>
+        /// <param name="systemOwner">the organisation number that owns the system</param>
+        /// <param name="user">the authenticated user claim</param>
+        /// <returns></returns>
+        public static bool HasWriteAccess(string systemOwner, ClaimsPrincipal user)
+        {
+            if (!HasAdminAccess(user) && !IsOwnerOfSystem(systemOwner, user))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Checks if the authenticated user has admin scope
+        /// </summary>
+        /// <returns>true/false</returns>
+        public static bool HasAdminAccess(ClaimsPrincipal user)
+        {
+            List<string> requiredScopes = new List<string>();
+            requiredScopes.Add(AuthzConstants.SCOPE_SYSTEMREGISTER_ADMIN);
+            if (ContainsRequiredScope(requiredScopes, user))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if system owner organisation matches organisation in claim
+        /// </summary>
+        /// <param name="systemOwner">the organisation number that owns the system</param>
+        /// <param name="organisation">the authenticated organisation claim</param>
+        /// <returns></returns>
+        public static bool IsOwnerOfSystem(string systemOwner, ClaimsPrincipal organisation)
+        {
+            Console.WriteLine($"AuthorizationUtil // IsOwnerOfSystem // Checking organisation number in claims.");
+
+            string orgClaim = organisation?.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
+
+            string orgNumber = GetOrganizationNumberFromClaim(orgClaim);
+
+            Console.WriteLine($"AuthorizationUtil // IsOwnerOfSystem // Org claim: {orgClaim}.");
+
+            if (systemOwner.Equals(orgNumber, StringComparison.CurrentCultureIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Verifies a scope claim based on claimsprincipal.
+        /// </summary>
+        /// <param name="requiredScope">Requiered scope.</param>
+        /// <param name="user">Claim principal from http context.</param>
+        /// <returns>true if the given ClaimsPrincipal or on of its identities have contains the given scope.</returns>
+        public static bool ContainsRequiredScope(List<string> requiredScope, ClaimsPrincipal user)
+        {
+            string contextScope = user.Identities?
+               .FirstOrDefault(i => i.AuthenticationType != null && i.AuthenticationType.Equals("AuthenticationTypes.Federation"))
+               ?.Claims
+               .Where(c => c.Type.Equals("urn:altinn:scope"))
+               ?.Select(c => c.Value).FirstOrDefault();
+
+            contextScope ??= user.Claims.Where(c => c.Type.Equals("scope")).Select(c => c.Value).FirstOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(contextScope))
+            {
+                return requiredScope.Any(scope => contextScope.Contains(scope, StringComparison.InvariantCultureIgnoreCase));
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the organization number from the dictionary
+        /// </summary>
+        /// <param name="vendor">the vendor information</param>
+        /// <returns>the organization number</returns>
+        /// <exception cref="ArgumentException">invalid organization identifier</exception>
+        public static string? GetOrgNumber(IDictionary<string, string> vendor)
+        {
+            vendor.TryGetValue("ID", out string? authority);
+            if (!string.IsNullOrEmpty(authority))
+            {
+                string[] identityParts = authority.Split(':');
+                if (identityParts.Length > 0 && identityParts[0] != "0192")
+                {
+                    throw new ArgumentException("Invalid authority for the org number, unexpected ISO6523 identifier");
+                }
+
+                return identityParts[1];
+            }
+
+            return null;
+        }
+
+        private static string GetOrganizationNumberFromClaim(string claim)
+        {
+            ConsumerClaim consumerClaim;
+            try
+            {
+                consumerClaim = JsonConvert.DeserializeObject<ConsumerClaim>(claim);
+            }
+            catch (JsonReaderException)
+            {
+                throw new ArgumentException("Invalid consumer claim: invalid JSON");
+            }
+
+            if (consumerClaim.Authority != "iso6523-actorid-upis")
+            {
+                throw new ArgumentException("Invalid consumer claim: unexpected authority");
+            }
+
+            string[] identityParts = consumerClaim.Id.Split(':');
+            if (identityParts[0] != "0192")
+            {
+                throw new ArgumentException("Invalid consumer claim: unexpected ISO6523 identifier");
+            }
+
+            return identityParts[1];
         }
     }
 }
