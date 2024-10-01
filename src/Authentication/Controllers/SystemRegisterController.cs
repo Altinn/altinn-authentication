@@ -73,7 +73,7 @@ public class SystemRegisterController : ControllerBase
     [HttpPut("system/{systemId}")]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor), User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor.ID), User))
         {
             return Forbid();
         }
@@ -130,13 +130,13 @@ public class SystemRegisterController : ControllerBase
     {
         try
         {
-            if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor))
+            if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor.ID))
             {
                 ModelState.AddModelError("Vendor", "the org number identifier is not valid ISO6523 identifier");
                 return BadRequest(ModelState);
             }
 
-            if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor), User))
+            if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor.ID), User))
             {
                 return Forbid();
             }
