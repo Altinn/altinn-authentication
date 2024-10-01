@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Model;
@@ -53,6 +55,12 @@ public class RequestSystemUserController : ControllerBase
     /// Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
     public const string CONFIRMURL = "/authfront/ui/auth/vendorrequest?id=";
+
+    /// <summary>
+    /// Route for the Get System by Vendor endpoint
+    /// which uses pagination.
+    /// </summary>
+    public const string ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM = "vendor/bysystem";
 
     /// <summary>
     /// Creates a new Request based on a SystemId for a SystemUser.
@@ -239,10 +247,10 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    [HttpGet("vendor/bysystem/{systemId}")]
+    [HttpGet("vendor/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM)]
     public async Task<ActionResult<Paginated<RequestSystemResponse>>> GetAllRequestsForVendor(
         string systemId,
-        [FromQuery(Name = "token")] Opaque<string>? token = null,
+        [FromQuery(Name = "token")] Opaque<Guid>? token = null,
         CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
@@ -251,15 +259,30 @@ public class RequestSystemUserController : ControllerBase
             return Unauthorized();
         }
 
-        Result<List<RequestSystemResponse>> response = await _requestSystemUser.GetAllRequestsForVendor(vendorOrgNo, systemId, cancellationToken);
-        if (response.IsProblem)
+        Page<Guid>.Request continueFrom = null!;
+        if (token?.Value is not null)
         {
-            return response.Problem.ToActionResult();
+             continueFrom = Page.ContinueFrom(token!.Value);
         }
 
-        if (response.IsSuccess)
+        Result<Page<RequestSystemResponse, Guid>> pageResult = 
+          await _requestSystemUser.GetAllRequestsForVendor(vendorOrgNo, systemId, continueFrom, cancellationToken);
+        if (pageResult.IsProblem)
         {
-            return Ok(response.Value);
+            return pageResult.Problem.ToActionResult(); 
+        }
+
+        var nextLink = pageResult.Value.ContinuationToken.HasValue
+            ? Url.Link(ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM, new
+            {
+                systemId,
+                token = Opaque.Create(pageResult.Value.ContinuationToken.Value)
+            })
+            : null;
+
+        if (pageResult.IsSuccess)
+        {
+            return Paginated.Create(pageResult.Value.Items.ToList(), nextLink);
         }
 
         return NotFound();
