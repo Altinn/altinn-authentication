@@ -139,7 +139,11 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<SystemUser>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken)
+        public async Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(
+            OrganisationNumber vendorOrgNo, 
+            string systemId, 
+            Page<string>.Request continueRequest, 
+            CancellationToken cancellationToken)
         {
             RegisterSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
             if (system is null)
@@ -156,7 +160,7 @@ namespace Altinn.Platform.Authentication.Services
             List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, cancellationToken);
             theList ??= [];
 
-            return theList;
+            return Page.Create(theList, 3, static theList => theList.Id);
         }
     }
 }

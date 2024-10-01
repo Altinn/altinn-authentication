@@ -10,6 +10,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
@@ -177,11 +178,15 @@ public class SystemUserController : ControllerBase
     /// Retrieves a list of SystemUsers the Vendor has for a given system they own.
     /// </summary>
     /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="token">Optional continuation token</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    [HttpGet("vendor/bysystem/{systemId}")]
-    public async Task<ActionResult<RequestSystemResponse>> GetAllSystemUsersByVendorSystem(string systemId, CancellationToken cancellationToken = default)
+    [HttpGet("vendor/bysystem/{systemId}", Name = "vendor/systemusers/bysystem")]
+    public async Task<ActionResult<Paginated<RequestSystemResponse>>> GetAllSystemUsersByVendorSystem(
+        string systemId,
+        [FromQuery(Name = "token")] Opaque<string>? token = null,
+        CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
@@ -189,15 +194,30 @@ public class SystemUserController : ControllerBase
             return Unauthorized();
         }
 
-        Result<List<SystemUser>> response = await _systemUserService.GetAllSystemUsersByVendorSystem(vendorOrgNo, systemId, cancellationToken);
-        if (response.IsProblem)
+        Page<string>.Request continueFrom = null!;
+        if (token?.Value is not null)
         {
-            return response.Problem.ToActionResult();
+            continueFrom = Page.ContinueFrom(token!.Value);
         }
 
-        if (response.IsSuccess)
+        Result<Page<SystemUser, string>> pageResult = await _systemUserService.GetAllSystemUsersByVendorSystem(
+            vendorOrgNo, systemId, continueFrom, cancellationToken);
+        if (pageResult.IsProblem)
         {
-            return Ok(response.Value);
+            return pageResult.Problem.ToActionResult();
+        }
+
+        var nextLink = pageResult.Value.ContinuationToken.HasValue
+            ? Url.Link("vendor/systemusers/bysystem", new
+            {
+                systemId,
+                token = Opaque.Create(pageResult.Value.ContinuationToken.Value)
+            })
+            : null;
+
+        if (pageResult.IsSuccess)
+        {
+            return Ok(pageResult.Value);
         }
 
         return NotFound();

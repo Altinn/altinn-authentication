@@ -265,7 +265,8 @@ public class RequestSystemUserController : ControllerBase
         }
 
         Result<Page<RequestSystemResponse, Guid>> pageResult =
-          await _requestSystemUser.GetAllRequestsForVendor(vendorOrgNo, systemId, continueFrom, cancellationToken);
+          await _requestSystemUser.GetAllRequestsForVendor(
+              vendorOrgNo, systemId, continueFrom, cancellationToken);
         if (pageResult.IsProblem)
         {
             return pageResult.Problem.ToActionResult();
