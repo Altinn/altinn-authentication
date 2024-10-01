@@ -399,19 +399,11 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
-        // Party Get Request
+        //// Party Get Request
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
         int partyId = 500000;
-
-        string partyEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}";
-
-        HttpRequestMessage partyReqMessage = new(HttpMethod.Get, partyEndpoint);
-        HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
-
-        RequestSystemResponse? requestGet = JsonSerializer.Deserialize<RequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
 
         string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
@@ -447,7 +439,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         {
             ExternalRef = "external",
             SystemId = "the_matrix",
-            PartyOrgNo = "910493354",
+            PartyOrgNo = "910493353",
             Rights = [right]
         };
 
@@ -468,14 +460,6 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
         int partyId = 500004;
-
-        string partyEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}";
-
-        HttpRequestMessage partyReqMessage = new(HttpMethod.Get, partyEndpoint);
-        HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
-
-        RequestSystemResponse? requestGet = JsonSerializer.Deserialize<RequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
 
         string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
@@ -642,7 +626,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     private static string AddTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }

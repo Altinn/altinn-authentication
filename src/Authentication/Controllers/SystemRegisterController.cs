@@ -73,6 +73,11 @@ public class SystemRegisterController : ControllerBase
     [HttpPut("system/{systemId}")]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor), User))
+        {
+            return Forbid();
+        }
+
         List<MaskinPortenClientInfo> maskinPortenClients = await _systemRegisterService.GetMaskinportenClients(updateSystem.ClientId, cancellationToken);
         RegisterSystemResponse systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
         foreach (string clientId in updateSystem.ClientId)
@@ -130,7 +135,12 @@ public class SystemRegisterController : ControllerBase
                 ModelState.AddModelError("Vendor", "the org number identifier is not valid ISO6523 identifier");
                 return BadRequest(ModelState);
             }
-            
+
+            if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor), User))
+            {
+                return Forbid();
+            }
+
             if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
             {
                 ModelState.AddModelError("ClientId", "One of the client id already tagged with an existing system");
@@ -165,6 +175,12 @@ public class SystemRegisterController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
     {
+        RegisterSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
+        {
+            return Forbid();
+        }
+
         bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);
         if (!success)
         {
@@ -183,6 +199,12 @@ public class SystemRegisterController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
+        RegisterSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse?.SystemVendorOrgNumber, User))
+        {
+            return Forbid();
+        }
+
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
         if (!deleted) 
         { 
