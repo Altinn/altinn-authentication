@@ -30,7 +30,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// Organization number of the system Vendor that offers the product (system)
         /// </summary>
-        public required OrgClaim Vendor { get; set; }
+        public required VendorInfo Vendor { get; set; }
 
         /// <summary>
         /// A short name of the product, used when displaying to the user

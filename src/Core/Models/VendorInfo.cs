@@ -10,7 +10,7 @@ namespace Altinn.Platform.Authentication.Core.Models
     /// summary
     /// Organization claim matching structure from maskinporten
     /// /summary
-    public class OrgClaim
+    public class VendorInfo
     {
         /// summary
         /// The authority that defines organization numbers. 
