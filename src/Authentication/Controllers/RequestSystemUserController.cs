@@ -56,6 +56,12 @@ public class RequestSystemUserController : ControllerBase
     public const string CONFIRMURL = "/authfront/ui/auth/vendorrequest?id=";
 
     /// <summary>
+    /// Route for the Get System by Vendor endpoint
+    /// which uses pagination.
+    /// </summary>
+    public const string ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM = "vendor/bysystem";
+
+    /// <summary>
     /// Creates a new Request based on a SystemId for a SystemUser.
     /// </summary>
     /// <param name="createRequest">The request model</param>
