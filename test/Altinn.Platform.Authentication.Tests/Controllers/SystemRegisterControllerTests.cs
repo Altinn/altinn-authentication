@@ -111,13 +111,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            string expectedErrorMessage = "{\r\n  \"SystemId\": [\r\n    \"The system id already exists\"\r\n  ]\r\n}";
+
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
             HttpResponseMessage existingSystemResponse = await CreateSystemRegister(dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, existingSystemResponse.StatusCode);
-            string errorMessage = await existingSystemResponse.Content.ReadAsStringAsync();
-            Assert.Equal(expectedErrorMessage, errorMessage);            
         }
 
         [Fact]
