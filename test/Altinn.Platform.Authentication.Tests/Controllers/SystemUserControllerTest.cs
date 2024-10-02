@@ -444,6 +444,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage vendorResponse = await vendorClient.SendAsync(vendorMessage, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.OK, vendorResponse.StatusCode);
+
             List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await vendorResponse.Content.ReadAsStringAsync(), _options);
             Assert.NotNull(list);
             Assert.NotEmpty(list);

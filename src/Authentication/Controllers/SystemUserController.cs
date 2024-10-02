@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -183,7 +184,7 @@ public class SystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("vendor/bysystem/{systemId}", Name = "vendor/systemusers/bysystem")]
-    public async Task<ActionResult<Paginated<RequestSystemResponse>>> GetAllSystemUsersByVendorSystem(
+    public async Task<ActionResult<Paginated<SystemUser>>> GetAllSystemUsersByVendorSystem(
         string systemId,
         [FromQuery(Name = "token")] Opaque<string>? token = null,
         CancellationToken cancellationToken = default)
@@ -217,7 +218,7 @@ public class SystemUserController : ControllerBase
 
         if (pageResult.IsSuccess)
         {
-            return Ok(pageResult.Value);
+            return Paginated.Create(pageResult.Value.Items.ToList(), nextLink);
         }
 
         return NotFound();
