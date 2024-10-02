@@ -141,6 +141,12 @@ public class SystemRegisterController : ControllerBase
                 return Forbid();
             }
 
+            if (await _systemRegisterService.GetRegisteredSystemInfo(registerNewSystem.Id, cancellationToken) != null)
+            {
+                ModelState.AddModelError("SystemId", "The system id already exists");
+                return BadRequest(ModelState);
+            }
+
             if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
             {
                 ModelState.AddModelError("ClientId", "One of the client id already tagged with an existing system");
