@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.Parties;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
 #nullable enable
@@ -62,4 +64,14 @@ public interface ISystemUserService
     /// <param name="cancellationToken">Cancellationtoken</param>/// 
     /// <returns>The SystemUserIntegration model API DTO</returns>
     Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves a list of SystemUsers the Vendor has for a given system they own.
+    /// </summary>
+    /// <param name="vendorOrgNo">The logged in vendor</param>
+    /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="continueRequest">The Guid denoting from where to continue with Pagination</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<string>.Request continueRequest, CancellationToken cancellationToken);
 }

@@ -258,4 +258,40 @@ internal class SystemUserRepository : ISystemUserRepository
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber")
         });
     }
+
+    /// <inheritdoc />
+    public async Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+	    	    sui.system_user_profile_id,
+		        sui.integration_title,
+		        sui.system_internal_id,
+                sr.system_id,
+                sr.systemvendor_orgnumber,
+                sui.reportee_org_no,
+		        sui.reportee_party_id,
+		        sui.created
+	        FROM business_application.system_user_profile sui 
+                JOIN business_application.system_register sr  
+                ON sui.system_internal_id = sr.system_internal_id
+	        WHERE sr.system_id = @system_id
+	            AND sui.is_deleted = false;
+            ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+            command.Parameters.AddWithValue("system_id", systemId);
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToSystemUser)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllSystemUsersByVendorSystem // Exception");
+            throw;
+        }
+    }
 }

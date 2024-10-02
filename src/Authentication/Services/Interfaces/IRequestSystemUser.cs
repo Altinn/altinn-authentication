@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
@@ -60,9 +61,10 @@ public interface IRequestSystemUser
     /// </summary>
     /// <param name="vendorOrgNo">The Vendor's organisation number, retrieved from the token</param>
     /// <param name="systemId">The registered system this listing is for, must be owned by the Vendor</param>
+    /// <param name="continueRequest">The Guid denoting from where to continue with Pagination</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    Task<Result<List<RequestSystemResponse>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken);
+    Task<Result<Page<RequestSystemResponse, Guid>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, Page<Guid>.Request continueRequest, CancellationToken cancellationToken);
 
     /// <summary>
     /// Rejects the request 

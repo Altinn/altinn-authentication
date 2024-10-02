@@ -469,7 +469,11 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<List<RequestSystemResponse>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken)
+    public async Task<Result<Page<RequestSystemResponse, Guid>>> GetAllRequestsForVendor(
+        OrganisationNumber vendorOrgNo,
+        string systemId,
+        Page<Guid>.Request continueRequest,
+        CancellationToken cancellationToken)
     {
         RegisterSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
         if (system is null)
@@ -486,6 +490,6 @@ public class RequestSystemUserService(
         List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
-        return theList;
+        return Page.Create(theList, 3, static theList => theList.Id); 
     }
 }

@@ -51,4 +51,12 @@ public interface ISystemUserRepository
     /// <param name="cancellationToken">Cancellationtoken</param>
     /// <returns></returns>
     Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves a list of SystemUsers the Vendor has for a given system they own.
+    /// </summary>
+    /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, CancellationToken cancellationToken);
 }

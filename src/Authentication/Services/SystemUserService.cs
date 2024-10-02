@@ -4,10 +4,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Core.Problems;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
+using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 
@@ -131,6 +136,31 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
         {
             return await _repository.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(
+            OrganisationNumber vendorOrgNo, 
+            string systemId, 
+            Page<string>.Request continueRequest, 
+            CancellationToken cancellationToken)
+        {
+            RegisterSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+            if (system is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            // Verify that the orgno from the logged on token owns this system
+            if (OrganisationNumber.CreateFromStringOrgNo(system.SystemVendorOrgNumber) != vendorOrgNo)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, cancellationToken);
+            theList ??= [];
+
+            return Page.Create(theList, 3, static theList => theList.Id);
         }
     }
 }
