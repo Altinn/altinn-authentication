@@ -22,6 +22,7 @@ using App.IntegrationTests.Utils;
 using Azure;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -103,6 +104,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_DuplicateSystem_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+            HttpResponseMessage existingSystemResponse = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, existingSystemResponse.StatusCode);
         }
 
         [Fact]
