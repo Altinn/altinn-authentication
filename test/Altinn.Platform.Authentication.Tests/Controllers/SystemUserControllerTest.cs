@@ -451,7 +451,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(result);
             var list = result.Items.ToList();
             
-            //List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await vendorResponse.Content.ReadAsStringAsync(), _options);
             Assert.NotNull(list);
             Assert.NotEmpty(list);
             Assert.Equal(list[0].IntegrationTitle, newSystemUser.IntegrationTitle);
