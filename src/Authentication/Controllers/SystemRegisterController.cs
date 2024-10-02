@@ -141,6 +141,12 @@ public class SystemRegisterController : ControllerBase
                 return Forbid();
             }
 
+            if (!AuthenticationHelper.DoesSystemIdStartWithOrgnumber(registerNewSystem))
+            {
+                ModelState.AddModelError("SystemId", "The system id does not match the format orgnumber_xxxx...");
+                return BadRequest(ModelState);
+            }
+
             if (await _systemRegisterService.GetRegisteredSystemInfo(registerNewSystem.Id, cancellationToken) != null)
             {
                 ModelState.AddModelError("SystemId", "The system id already exists");

@@ -110,7 +110,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
+                SystemId = "991825827_the_matrix",
             };
 
             HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -198,7 +198,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
+                SystemId = "991825827_the_matrix",
             };
 
             HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -362,7 +362,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
+                SystemId = "991825827_the_matrix",
             };
 
             HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");

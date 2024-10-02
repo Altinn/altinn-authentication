@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
@@ -282,6 +283,18 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Checks if the system id starts with the orgnumber of the owner
+        /// </summary>
+        /// <returns>true if the systemid starts with the orgnumber of the owner of the system</returns>
+        public static bool DoesSystemIdStartWithOrgnumber(SystemRegisterRequest newSystem)
+        {
+            string vendorOrgNumber = GetOrgNumber(newSystem.Vendor.ID);
+            string orgnumberInSystemId = newSystem.Id.Split("_")[0];
+            bool doesSystemStartWithOrg = orgnumberInSystemId == vendorOrgNumber;
+            return doesSystemStartWithOrg;
         }
 
         private static string GetOrganizationNumberFromClaim(string claim)
