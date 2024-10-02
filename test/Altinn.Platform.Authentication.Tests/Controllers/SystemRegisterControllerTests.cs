@@ -119,6 +119,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Create_InvalidSystemIdFormat_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidSystemIdFormat.json";
+
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
         public async Task SystemRegister_Update_Success()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -140,7 +150,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 StreamContent content = new StreamContent(dataStream);
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-                string systemID = "the_matrix";
+                string systemID = "991825827_the_matrix";
                 HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/system/{systemID}/rights");
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -170,7 +180,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 StreamContent content = new StreamContent(dataStream);
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-                string systemID = "the_matrix";
+                string systemID = "991825827_the_matrix";
                 HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/system/{systemID}/rights");
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -230,7 +240,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterResponse.json").ReadToEnd();
                 RegisterSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(systemRegister, options);
 
-                string systemId = "the_matrix";
+                string systemId = "991825827_the_matrix";
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{systemId}");
                 HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 RegisterSystemResponse actualRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(await getResponse.Content.ReadAsStringAsync(), _options);
@@ -253,7 +263,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegister.json").ReadToEnd();
             RegisterSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(systemRegister, options);
 
-            string systemId = "the_matrix";
+            string systemId = "991825827_the_matrix";
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{systemId}");
             HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.NoContent, getResponse.StatusCode);
@@ -267,7 +277,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                string name = "the_matrix";
+                string name = "991825827_the_matrix";
                 HttpClient client = CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
 
@@ -287,7 +297,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                string name = "the_matrix";
+                string name = "991825827_the_matrix";
                 HttpClient client = CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
 
@@ -305,7 +315,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                string name = "the_matrix";
+                string name = "991825827_the_matrix";
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
                 string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
@@ -325,7 +335,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                string name = "the_matrixx";
+                string name = "991825827_the_matrixx";
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
                 string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
@@ -350,7 +360,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                string systemId = "the_matrix";
+                string systemId = "991825827_the_matrix";
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
                 string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
@@ -386,7 +396,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                string systemId = "the_matrix";
+                string systemId = "991825827_the_matrix";
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
                 string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
