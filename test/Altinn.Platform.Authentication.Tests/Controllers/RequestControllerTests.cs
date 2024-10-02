@@ -628,7 +628,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
-            SystemId = "the_matrix",
+            SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
             Rights = [right]
         };
