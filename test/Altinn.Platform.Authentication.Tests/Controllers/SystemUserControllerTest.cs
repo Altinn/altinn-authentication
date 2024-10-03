@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -16,6 +17,7 @@ using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
@@ -110,7 +112,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
+                SystemId = "991825827_the_matrix",
             };
 
             HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -198,7 +200,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
+                SystemId = "991825827_the_matrix",
             };
 
             HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -362,7 +364,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
+                SystemId = "991825827_the_matrix",
             };
 
             HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -420,7 +422,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
+                SystemId = "991825827_the_matrix",
             };
 
             HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
@@ -444,9 +446,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage vendorResponse = await vendorClient.SendAsync(vendorMessage, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.OK, vendorResponse.StatusCode);
-            List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await vendorResponse.Content.ReadAsStringAsync(), _options);
+
+            var result = await vendorResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
+            Assert.NotNull(result);
+            var list = result.Items.ToList();
+            
             Assert.NotNull(list);
             Assert.NotEmpty(list);
+            Assert.Equal(list[0].IntegrationTitle, newSystemUser.IntegrationTitle);
         }
 
         private static string GetConfigPath()

@@ -95,7 +95,7 @@ public class SystemRegisterController : ControllerBase
     [HttpPut("system/{systemId}")]
     public async Task<ActionResult<RegisteredSystemUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor), User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor.ID), User))
         {
             return Forbid();
         }
@@ -152,15 +152,27 @@ public class SystemRegisterController : ControllerBase
     {
         try
         {
-            if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor))
+            if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor.ID))
             {
                 ModelState.AddModelError("Vendor", "the org number identifier is not valid ISO6523 identifier");
                 return BadRequest(ModelState);
             }
 
-            if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor), User))
+            if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor.ID), User))
             {
                 return Forbid();
+            }
+
+            if (!AuthenticationHelper.DoesSystemIdStartWithOrgnumber(registerNewSystem))
+            {
+                ModelState.AddModelError("SystemId", "The system id does not match the format orgnumber_xxxx...");
+                return BadRequest(ModelState);
+            }
+
+            if (await _systemRegisterService.GetRegisteredSystemInfo(registerNewSystem.Id, cancellationToken) != null)
+            {
+                ModelState.AddModelError("SystemId", "The system id already exists");
+                return BadRequest(ModelState);
             }
 
             if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))

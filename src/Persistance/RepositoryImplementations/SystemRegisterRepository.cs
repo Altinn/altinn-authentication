@@ -91,7 +91,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("system_id", toBeInserted.Id);
-            command.Parameters.AddWithValue("systemvendor_orgnumber", GetOrgNumber(toBeInserted.Vendor));
+            command.Parameters.AddWithValue("systemvendor_orgnumber", GetOrgNumber(toBeInserted.Vendor.ID));
             command.Parameters.AddWithValue("name", toBeInserted.Name);
             command.Parameters.AddWithValue("description", toBeInserted.Description);
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
@@ -140,7 +140,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn, transaction);
 
             command.Parameters.AddWithValue("system_id", updatedSystem.Id);
-            command.Parameters.AddWithValue("systemvendor_orgnumber", GetOrgNumber(updatedSystem.Vendor));
+            command.Parameters.AddWithValue("systemvendor_orgnumber", GetOrgNumber(updatedSystem.Vendor.ID));
             command.Parameters.AddWithValue("name", updatedSystem.Name);
             command.Parameters.AddWithValue("description", updatedSystem.Description);
             command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
@@ -547,12 +547,11 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         return JsonSerializer.Deserialize<List<Right>>(rights[0]);
     }
 
-    private static string? GetOrgNumber(IDictionary<string, string> vendor)
+    private static string? GetOrgNumber(string vendorId)
     {
-        vendor.TryGetValue("ID", out string? authority);
-        if (!string.IsNullOrEmpty(authority))
+        if (!string.IsNullOrEmpty(vendorId))
         {
-            string[] identityParts = authority.Split(':');
+            string[] identityParts = vendorId.Split(':');
             if (identityParts.Length > 0 && identityParts[0] != "0192")
             {
                 throw new ArgumentException("Invalid authority for the org number, unexpected ISO6523 identifier");

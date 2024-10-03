@@ -5,7 +5,7 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Annotations;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Altinn.ResourceRegistry.Models;
+namespace Altinn.Platform.Authentication.Model;
 
 /// <summary>
 /// A paginated <see cref="ListObject{T}"/>.

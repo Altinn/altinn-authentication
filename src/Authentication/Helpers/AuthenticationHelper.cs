@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
@@ -169,12 +170,11 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <summary>
         /// Checks if the identifier of the org number is valid
         /// </summary>
-        /// <param name="vendor">the org number information of the vendor</param>
+        /// <param name="id">the org number information of the vendor</param>
         /// <returns>true if the org number identifier is valid</returns>
-        public static bool IsValidOrgIdentifier(IDictionary<string, string> vendor)
+        public static bool IsValidOrgIdentifier(string id)
         {
-            vendor.TryGetValue("ID", out string authority);
-            string[] identityParts = authority.Split(':');
+            string[] identityParts = id.Split(':');
             if (identityParts[0] != "0192")
             {
                 return false;
@@ -266,15 +266,14 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <summary>
         /// Gets the organization number from the dictionary
         /// </summary>
-        /// <param name="vendor">the vendor information</param>
+        /// <param name="vendorId">the vendor information</param>
         /// <returns>the organization number</returns>
         /// <exception cref="ArgumentException">invalid organization identifier</exception>
-        public static string? GetOrgNumber(IDictionary<string, string> vendor)
+        public static string? GetOrgNumber(string vendorId)
         {
-            vendor.TryGetValue("ID", out string? authority);
-            if (!string.IsNullOrEmpty(authority))
+            if (!string.IsNullOrEmpty(vendorId))
             {
-                string[] identityParts = authority.Split(':');
+                string[] identityParts = vendorId.Split(':');
                 if (identityParts.Length > 0 && identityParts[0] != "0192")
                 {
                     throw new ArgumentException("Invalid authority for the org number, unexpected ISO6523 identifier");
@@ -284,6 +283,18 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Checks if the system id starts with the orgnumber of the owner
+        /// </summary>
+        /// <returns>true if the systemid starts with the orgnumber of the owner of the system</returns>
+        public static bool DoesSystemIdStartWithOrgnumber(SystemRegisterRequest newSystem)
+        {
+            string vendorOrgNumber = GetOrgNumber(newSystem.Vendor.ID);
+            string orgnumberInSystemId = newSystem.Id.Split("_")[0];
+            bool doesSystemStartWithOrg = orgnumberInSystemId == vendorOrgNumber;
+            return doesSystemStartWithOrg;
         }
 
         private static string GetOrganizationNumberFromClaim(string claim)

@@ -262,14 +262,15 @@ public class RequestSystemUserController : ControllerBase
         Page<Guid>.Request continueFrom = null!;
         if (token?.Value is not null)
         {
-             continueFrom = Page.ContinueFrom(token!.Value);
+            continueFrom = Page.ContinueFrom(token!.Value);
         }
 
-        Result<Page<RequestSystemResponse, Guid>> pageResult = 
-          await _requestSystemUser.GetAllRequestsForVendor(vendorOrgNo, systemId, continueFrom, cancellationToken);
+        Result<Page<RequestSystemResponse, Guid>> pageResult =
+          await _requestSystemUser.GetAllRequestsForVendor(
+              vendorOrgNo, systemId, continueFrom, cancellationToken);
         if (pageResult.IsProblem)
         {
-            return pageResult.Problem.ToActionResult(); 
+            return pageResult.Problem.ToActionResult();
         }
 
         var nextLink = pageResult.Value.ContinuationToken.HasValue

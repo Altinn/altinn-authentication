@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Altinn.Platform.Authentication.Helpers;
 using CommunityToolkit.Diagnostics;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Annotations;

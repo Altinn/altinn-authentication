@@ -470,7 +470,7 @@ public class RequestSystemUserService(
 
     /// <inheritdoc/>
     public async Task<Result<Page<RequestSystemResponse, Guid>>> GetAllRequestsForVendor(
-        OrganisationNumber vendorOrgNo, 
+        OrganisationNumber vendorOrgNo,
         string systemId,
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
@@ -490,6 +490,6 @@ public class RequestSystemUserService(
         List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
-        return Page.Create(theList, 20, static theList => theList.Id);
+        return Page.Create(theList, 3, static theList => theList.Id); 
     }
 }

@@ -1,6 +1,9 @@
 {
-  "systemId": "991825827_the_matrix",
-  "systemVendorOrgNumber": "991825827",
+  "id": "the_matrix",
+  "vendor": {
+    "authority": "iso6523-actorid-upis",
+    "ID": "0192:991825827"
+  },
   "name": {
     "nb": "The Matrix",
     "en": "The Matrix",
@@ -11,7 +14,7 @@
     "en": "Test system",
     "nn": "Test system"
   },
-  "rights": [
+  "singlerights": [
     {
       "resource": [
         {
@@ -25,7 +28,7 @@
   "clientId": [
     "32ef65ac-6e62-498d-880f-76c85c2052ae"
   ],
-  "allowedRedirectUrls": [
+  "allowedredirecturls": [
     "https://vg.no",
     "https://nrk.no"
   ],

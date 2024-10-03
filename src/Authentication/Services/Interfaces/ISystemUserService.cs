@@ -70,7 +70,8 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="vendorOrgNo">The logged in vendor</param>
     /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="continueRequest">The Guid denoting from where to continue with Pagination</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    Task<Result<List<SystemUser>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken);
+    Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<string>.Request continueRequest, CancellationToken cancellationToken);
 }

@@ -163,7 +163,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<SystemUser>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, CancellationToken cancellationToken)
+        public async Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<string>.Request cont, CancellationToken cancellationToken)
         {
             List<SystemUser> theList = [];
 
@@ -178,7 +178,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 SupplierOrgNo = vendorOrgNo.ID
             });
 
-            return theList;
+            return Page.Create<SystemUser,string>(theList, 2, static theList => theList.Id);
         }
     }
 }
