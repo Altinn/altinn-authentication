@@ -84,7 +84,6 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// The client Id
         /// </summary>
-        [JsonIgnore]
         public List<string> ClientId { get; set; } = [];
 
         /// <summary>
