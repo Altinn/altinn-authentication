@@ -20,7 +20,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             eventQueue.Verify(e => e.EnqueueAuthenticationEvent(It.Is<string>(q => q == serializedAuthenticationEvent)), numberOfTimes);
         }
 
-        public static void AssertRegisteredSystem(RegisterSystemResponse expected, RegisterSystemResponse actual)
+        public static void AssertRegisteredSystem(RegisteredSystem expected, RegisteredSystem actual)
         {
             Assert.Equal(expected.Name, actual.Name);
             Assert.Equal(expected.Description, actual.Description);

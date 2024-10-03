@@ -203,7 +203,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
                 HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                List<RegisterSystemResponse> list = JsonSerializer.Deserialize<List<RegisterSystemResponse>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
+                List<RegisteredSystem> list = JsonSerializer.Deserialize<List<RegisteredSystem>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
                 Assert.True(list.Count > 1);
             }
         }
@@ -216,7 +216,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
             HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<RegisterSystemResponse> list = JsonSerializer.Deserialize<List<RegisterSystemResponse>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
+            List<RegisteredSystem> list = JsonSerializer.Deserialize<List<RegisteredSystem>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
             Assert.True(list.Count == 0);
         }
 
@@ -238,12 +238,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 };
 
                 string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterResponse.json").ReadToEnd();
-                RegisterSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(systemRegister, options);
+                RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
 
                 string systemId = "991825827_the_matrix";
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{systemId}");
                 HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                RegisterSystemResponse actualRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(await getResponse.Content.ReadAsStringAsync(), _options);
+                RegisteredSystem actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(await getResponse.Content.ReadAsStringAsync(), _options);
                 AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
             }
         }
@@ -261,7 +261,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             };
 
             string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegister.json").ReadToEnd();
-            RegisterSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(systemRegister, options);
+            RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
 
             string systemId = "991825827_the_matrix";
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/system/{systemId}");
@@ -375,9 +375,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
                 HttpResponseMessage getResponse = await GetSystemRegister(systemId);
-                RegisterSystemResponse actualRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(await getResponse.Content.ReadAsStringAsync(), _options);
-                string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.json").ReadToEnd();
-                RegisterSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisterSystemResponse>(systemRegister, options);
+                RegisteredSystem actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(await getResponse.Content.ReadAsStringAsync(), _options);
+                string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.Rejson").ReadToEnd();
+                RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
                 AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
                 Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
             }

@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -13,25 +14,25 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
     [ExcludeFromCodeCoverage]
     public class SystemRegisterServiceMock : ISystemRegisterService
     {
-        private readonly List<RegisterSystemResponse> _registeredSystemsMockList;
+        private readonly List<RegisteredSystem> _registeredSystemsMockList;
 
         public SystemRegisterServiceMock()
         {
             _registeredSystemsMockList = MockDataHelper();
         }
 
-        public async Task<List<RegisterSystemResponse>> GetListRegSys(CancellationToken cancellation = default)
+        public async Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default)
         {
             await Task.Delay(50);
             return _registeredSystemsMockList;
         }
                 
-        private static List<RegisterSystemResponse> MockDataHelper() 
+        private static List<RegisteredSystem> MockDataHelper() 
         {
             List<string> clientId = new List<string>();
             clientId.Add("96ea3185-23cc-4df5-88f3-d43fbd995f34");
 
-            RegisterSystemResponse reg1 = new()
+            RegisteredSystem reg1 = new()
             {
                 SystemVendorOrgName = "Test Org AS",
                 SystemId = "Awesome_Tax",
@@ -65,7 +66,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            RegisterSystemResponse reg2 = new()
+            RegisteredSystem reg2 = new()
             {
                 SystemVendorOrgName = "Wonderful",
                 SystemId = "Wonderful_Tax",
@@ -99,7 +100,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            RegisterSystemResponse reg3 = new()
+            RegisteredSystem reg3 = new()
             {
                 SystemId = "Brilliant_HR",
                 SystemName = "Brilliant HR",
@@ -134,7 +135,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            RegisterSystemResponse reg4 = new()
+            RegisteredSystem reg4 = new()
             {
                 SystemId = "Fantastic_HR",
                 SystemName = "Fantastic HR",
@@ -167,7 +168,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            RegisterSystemResponse reg5 = new()
+            RegisteredSystem reg5 = new()
             {
                 SystemId = "business_next",
                 SystemName = "Business Next",
@@ -191,7 +192,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 ]
             };
 
-            List<RegisterSystemResponse> list =
+            List<RegisteredSystem> list =
                 [
                     reg1, reg2, reg3, reg4, reg5
                 ];
@@ -223,18 +224,18 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return Task.FromResult(true);
         }
 
-        public async Task<RegisterSystemResponse> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
+        public async Task<RegisteredSystem> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
             await Task.Delay(50, cancellation);
 
-            RegisterSystemResponse registeredSystem = _registeredSystemsMockList.Find(r => r.SystemId.Equals(systemId));
+            RegisteredSystem registeredSystem = _registeredSystemsMockList.Find(r => r.SystemId.Equals(systemId));
 
             return registeredSystem;
         }
 
         public async Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken)
         {
-            List<RegisterSystemResponse> result = _registeredSystemsMockList.FindAll(r => r.ClientId.Intersect(clientId).Any());
+            List<RegisteredSystem> result = _registeredSystemsMockList.FindAll(r => r.ClientId.Intersect(clientId).Any());
             return result.Count() >= 1;
         }
 
@@ -248,17 +249,22 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<bool> UpdateWholeRegisteredSystem(SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
         {
             throw new NotImplementedException();
         }
 
         public Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
