@@ -656,6 +656,102 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         Assert.Equal(req.SystemId, list[0].SystemId);
     }
 
+    [Fact]
+    public async Task Get_All_Requests_By_System_Paginated_Several()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
+        
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        await CreateRequest(client, req);
+
+        req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493354",
+            Rights = [right]
+        };
+
+        await CreateRequest(client, req);
+
+        req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493355",
+            Rights = [right]
+        };
+
+        await CreateRequest(client, req);
+
+        req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493356",
+            Rights = [right]
+        };
+
+        await CreateRequest(client, req);
+
+        // Get the Request
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{req.SystemId}";
+
+        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res2 is not null);
+        var list = res2.Items.ToList();
+        Assert.NotEmpty(list);
+        Assert.Equal(3, list.Count);
+        Assert.Contains(list, x => x.PartyOrgNo == "910493353");
+        Assert.NotNull(res2.Links.Next);
+
+        HttpResponseMessage message3 = await client.GetAsync(res2.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
+        Paginated<RequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res3 is not null);
+    }
+
+    private async Task CreateRequest(HttpClient client, CreateRequestSystemUser req)
+    {
+        HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/request/vendor")
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+    }
+
     private void SetupDateTimeMock()
     {
         timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
