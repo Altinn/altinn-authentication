@@ -72,4 +72,10 @@ public interface IRequestSystemUser
     /// <param name="requestId">the id of the request to be rejected</param>
     /// <returns>true if the request is rejected</returns>
     Task<Result<bool>> RejectSystemUser(Guid requestId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Used by the Vendors to delete the chosen Request by guid
+    /// </summary>
+    /// <returns></returns>
+    Task<Result<bool>> DeleteRequestByRequestId(Guid requestId);
 }

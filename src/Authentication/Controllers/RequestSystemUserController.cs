@@ -312,4 +312,21 @@ public class RequestSystemUserController : ControllerBase
 
         return NotFound();
     }
+
+    /// <summary>
+    /// Used by the Vendors to delete the chosen Request by guid
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [HttpDelete("vendor/{requestId}")]
+    public async Task<ActionResult<RequestSystemResponse>> DeleteRequestByRequestId(Guid requestId)
+    {
+        Result<bool> res = await _requestSystemUser.DeleteRequestByRequestId(requestId);
+        if (res.IsProblem)
+        {
+            return Forbid();
+        }
+
+        return Accepted();
+    }
 }

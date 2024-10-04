@@ -51,4 +51,10 @@ public interface IRequestRepository
     /// <param name="cancellationToken"></param>
     /// <returns>true if the system user request is updated as rejected</returns>
     Task<bool> RejectSystemUser(Guid requestId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Used by the Vendors to delete the chosen Request by guid
+    /// </summary>
+    /// <returns></returns>
+    Task<bool> DeleteRequestByRequestId(Guid requestId);
 }
