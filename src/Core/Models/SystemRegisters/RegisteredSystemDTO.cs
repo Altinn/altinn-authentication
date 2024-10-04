@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Core.Models;
 
@@ -9,19 +8,16 @@ public record class RegisteredSystemDTO
     /// <summary>
     /// A unique External Id for this System, in human-readable string format.    
     /// </summary>
-    [Required]
-    public string SystemId { get; set; } = string.Empty;
+    public required string SystemId { get; set; } = string.Empty;
 
     /// <summary>
     /// Organization number of the system Vendor that offers the product (system)
     /// </summary>
-    [Required]
-    public string SystemVendorOrgNumber { get; set; }
+    public required string SystemVendorOrgNumber { get; set; }
 
     /// <summary>
     /// Organization number of the system Vendor that offers the product (system)
     /// </summary>
-    [Required]
     public string SystemVendorOrgName { get; set; } = string.Empty;
 
     /// <summary>
