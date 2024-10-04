@@ -698,7 +698,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Delete_Request_ByGuid_Ok()
+    public async Task Delete_Request_ByGuid_Accepted()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -755,6 +755,21 @@ public class RequestControllerTests(
         HttpResponseMessage message3 = await client.DeleteAsync(endpoint3);
         string debug = "pause_here";
         Assert.Equal(HttpStatusCode.Accepted, message3.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_Request_ByGuid_Forbid()
+    {
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
+
+        Guid testId = Guid.NewGuid();
+
+        //Delete by Guid
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+        HttpResponseMessage message = await client.DeleteAsync(endpoint);
+        string debug = "pause_here";
+        Assert.Equal(HttpStatusCode.Forbidden, message.StatusCode);
     }
 
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
