@@ -8,7 +8,6 @@ using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
-using static Altinn.Platform.Authentication.Core.Models.Page<TToken>;
 
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 
@@ -269,7 +268,7 @@ public class RequestRepository : IRequestRepository
     /// <inheritdoc/>  
     public async Task<bool> DeleteRequestByRequestId(Guid requestId)
     {
-        const string QUERY = /*strpsql*/@"""          
+        const string QUERY = /*strpsql*/"""          
             UPDATE business_application.request
             SET is_deleted = true,
                 last_changed = CURRENT_TIMESTAMP
