@@ -27,13 +27,13 @@ public class RequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IRequestRepository requestRepository,
-    IOptions<PaginationOptions> _paginationSizeOption)
+    IOptions<PaginationOptions> _paginationOption)
     : IRequestSystemUser
 {
     /// <summary>
     /// Used to limit the number of items returned in a paginated list
     /// </summary>
-    private int _paginationSize = _paginationSizeOption.Value.Size;
+    private int _paginationSize = _paginationOption.Value.Size;
     
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
