@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Clients.Interfaces;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Model;
 using Moq;
@@ -32,6 +33,16 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(expected.SoftDeleted, actual.SoftDeleted);
             Assert.Equal(expected.Rights.Count, actual.Rights.Count);
             Assert.Equal(expected.AllowedRedirectUrls, actual.AllowedRedirectUrls);
+        }
+
+        public static void AssertRegisteredSystemDTO(RegisteredSystem expected, RegisteredSystemDTO actual)
+        {
+            Assert.Equal(expected.Name, actual.Name);
+            Assert.Equal(expected.Description, actual.Description);
+            Assert.Equal(expected.SystemId, actual.SystemId);
+            Assert.Equal(expected.SystemVendorOrgName, actual.SystemVendorOrgName);
+            Assert.Equal(expected.SystemVendorOrgNumber, actual.SystemVendorOrgNumber);
+            Assert.Equal(expected.Rights.Count, actual.Rights.Count);
         }
     }
 }

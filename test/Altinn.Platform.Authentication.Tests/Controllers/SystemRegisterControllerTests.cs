@@ -272,7 +272,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{systemId}");
                 HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 RegisteredSystemDTO actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemDTO>(await getResponse.Content.ReadAsStringAsync(), _options);
-                Assert.Equal(systemId, actualRegisteredSystem.SystemId);
+                AssertionUtil.AssertRegisteredSystemDTO(expectedRegisteredSystem, actualRegisteredSystem);
             }
         }
 
