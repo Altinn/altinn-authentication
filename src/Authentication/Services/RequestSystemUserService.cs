@@ -14,7 +14,6 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
-using Azure.Core;
 
 namespace Altinn.Platform.Authentication.Services;
 #nullable enable
@@ -31,7 +30,7 @@ public class RequestSystemUserService(
     /// <summary>
     /// Used to limit the number of items returned in a paginated list
     /// </summary>
-    public int PaginationSize { get; set; } = 200;
+    public int PaginationSize { get; set; } = 3;
 
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
