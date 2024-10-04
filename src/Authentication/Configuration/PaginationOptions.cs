@@ -3,7 +3,7 @@
 /// <summary>
 /// The pagination size option
 /// </summary>
-public class PaginationSizeOption
+public class PaginationOptions
 {
     /// <summary>
     /// The pagination size

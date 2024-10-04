@@ -27,7 +27,7 @@ public class RequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IRequestRepository requestRepository,
-    IOptions<PaginationSizeOption> _paginationSizeOption)
+    IOptions<PaginationOptions> _paginationSizeOption)
     : IRequestSystemUser
 {
     /// <summary>

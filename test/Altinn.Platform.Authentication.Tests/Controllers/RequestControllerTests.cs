@@ -82,7 +82,7 @@ public class RequestControllerTests(
         IConfigurationSection paginationSettingSection = configuration.GetSection("PaginationSize");
 
         services.Configure<GeneralSettings>(generalSettingSection);        
-        services.Configure<PaginationSizeOption>(paginationSettingSection);
+        services.Configure<PaginationOptions>(paginationSettingSection);
         _paginationSize = configuration.GetValue<int>("PaginationSize:Size");
         services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
         services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
