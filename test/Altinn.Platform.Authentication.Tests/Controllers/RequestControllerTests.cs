@@ -39,7 +39,9 @@ using Xunit;
 namespace Altinn.Platform.Authentication.Tests.Controllers;
 #nullable enable
 
-public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
+public class RequestControllerTests(
+    DbFixture dbFixture, 
+    WebApplicationFixture webApplicationFixture)
     : WebApplicationTests(dbFixture, webApplicationFixture)
 {
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
@@ -50,6 +52,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     private readonly Mock<TimeProvider> timeProviderMock = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
+    private int _paginationSize;
 
     protected override void ConfigureServices(IServiceCollection services)
     {
@@ -76,8 +79,11 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
         IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-        
-        services.Configure<GeneralSettings>(generalSettingSection);
+        IConfigurationSection paginationSettingSection = configuration.GetSection("PaginationSize");
+
+        services.Configure<GeneralSettings>(generalSettingSection);        
+        services.Configure<PaginationSizeOption>(paginationSettingSection);
+        _paginationSize = configuration.GetValue<int>("PaginationSize:Size");
         services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
         services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
         services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
@@ -668,8 +674,8 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         // Arrange
         string systemId = "991825827_the_matrix";
-        var paginationSize = new PaginationSizeOption();
-        await CreateSeveralRequest(client, paginationSize.Size, systemId);
+        
+        await CreateSeveralRequest(client, _paginationSize, systemId);
 
         // Get the Request
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
@@ -680,7 +686,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         Assert.True(res2 is not null);
         var list = res2.Items.ToList();
         Assert.NotEmpty(list);
-        Assert.Equal(3, list.Count);
+        Assert.Equal(_paginationSize, list.Count);
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
         Assert.NotNull(res2.Links.Next);
 
@@ -690,7 +696,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         Assert.True(res3 is not null);
     }
 
-    private async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
+    private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
         for (int i = 0; i < paginationSize + 1; i++)
         {
@@ -698,7 +704,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         }
     }
 
-    private async Task CreateRequest(HttpClient client, int externalRef, string systemId)
+    private static async Task CreateRequest(HttpClient client, int externalRef, string systemId)
     {
         Right right = new()
         {

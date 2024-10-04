@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
@@ -25,14 +26,15 @@ public class RequestSystemUserService(
     IPartiesClient partiesClient,
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
-    IRequestRepository requestRepository)
+    IRequestRepository requestRepository,
+    IOptions<PaginationSizeOption> _paginationSizeOption)
     : IRequestSystemUser
 {
     /// <summary>
     /// Used to limit the number of items returned in a paginated list
     /// </summary>
-    public int PaginationSize { get; set; } = 3;
-
+    private int _paginationSize = _paginationSizeOption.Value.Size;
+    
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
@@ -495,6 +497,6 @@ public class RequestSystemUserService(
         List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
-        return Page.Create(theList, PaginationSize, static theList => theList.Id); 
+        return Page.Create(theList, _paginationSize, static theList => theList.Id); 
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Altinn.Platform.Authentication.Model;
+﻿namespace Altinn.Platform.Authentication.Configuration;
 
 /// <summary>
 /// The pagination size option
@@ -8,5 +8,5 @@ public class PaginationSizeOption
     /// <summary>
     /// The pagination size
     /// </summary>
-    public int Size { get; set; } = 3;        
+    public int Size { get; set; }
 }
