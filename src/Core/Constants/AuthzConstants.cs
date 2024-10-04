@@ -45,5 +45,25 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Policy tag for writing access management delegations
         /// </summary>
         public const string POLICY_ACCESS_MANAGEMENT_WRITE = "AccessManagementWrite";
+
+        /// <summary>
+        /// Policy tag for authorizing write scope for system user request
+        /// </summary>
+        public const string POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE = "ScopeSystemUserRequestWrite";
+
+        /// <summary>
+        /// Scope for system user write scope.
+        /// </summary>
+        public const string SCOPE_SYSTEMUSER_REQUEST_WRITE = "altinn:authentication/systemuser.request.write";
+
+        /// <summary>
+        /// Policy tag for authorizing read scope for system user request
+        /// </summary>
+        public const string POLICY_SCOPE_SYSTEMUSERREQUEST_READ = "ScopeSystemUserRequestRead";
+
+        /// <summary>
+        /// Scope for system user read scope.
+        /// </summary>
+        public const string SCOPE_SYSTEMUSER_REQUEST_READ = "altinn:authentication/systemuser.request.read";
     }
 }

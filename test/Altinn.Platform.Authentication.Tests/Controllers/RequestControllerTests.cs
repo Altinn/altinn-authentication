@@ -108,7 +108,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -154,7 +154,6 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         HttpClient client = CreateClient();
 
-        // string token = AddTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -195,7 +194,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -231,10 +230,12 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
         //Get by Guid
+        HttpClient client2 = CreateClient();
+        AddSystemUserRequesReadTestTokenToClient(client2);
         Guid testId = res.Id;
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
 
-        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
@@ -250,7 +251,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -284,11 +285,13 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
-        
+
         // Get the Request
+        HttpClient client2 = CreateClient();
+        AddSystemUserRequesReadTestTokenToClient(client2);
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/byexternalref/{req.SystemId}/{req.PartyOrgNo}/{req.ExternalRef}";
 
-        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.True(res2 is not null);
@@ -303,7 +306,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -365,7 +368,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -421,7 +424,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -479,7 +482,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -545,7 +548,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -609,7 +612,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
         Right right = new()
@@ -645,9 +648,11 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
         // Get the Request
+        HttpClient client2 = CreateClient();
+        string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{req.SystemId}";
 
-        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
         Assert.True(res2 is not null);
@@ -684,6 +689,22 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     {
         string[] prefixes = ["altinn", "digdir"];
         string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        return token;
+    }
+
+    private static string AddSystemUserRequestWriteTestTokenToClient(HttpClient client)
+    {
+        string[] prefixes = ["altinn", "digdir"];
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        return token;
+    }
+
+    private static string AddSystemUserRequesReadTestTokenToClient(HttpClient client)
+    {
+        string[] prefixes = ["altinn", "digdir"];
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
