@@ -8,7 +8,6 @@ using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
-using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -44,7 +43,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>The SystemUser created</returns>
         public async Task<SystemUser?> CreateSystemUser(string partyId, SystemUserRequestDto request)
         {
-            RegisterSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
+            RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
             {
                 return null;
@@ -145,7 +144,7 @@ namespace Altinn.Platform.Authentication.Services
             Page<string>.Request continueRequest, 
             CancellationToken cancellationToken)
         {
-            RegisterSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+            RegisteredSystem? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
             if (system is null)
             {
                 return Problem.SystemIdNotFound;

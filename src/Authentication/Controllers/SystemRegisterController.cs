@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Azure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -38,13 +38,48 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
-    public async Task<ActionResult<List<RegisterSystemResponse>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<RegisteredSystemDTO>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
-        List<RegisterSystemResponse> lista = [];
+        List<RegisteredSystem> lista = [];
 
         lista.AddRange(await _systemRegisterService.GetListRegSys(cancellationToken));
 
+        List<RegisteredSystemDTO> registeredSystemDTOs = [];
+
+        foreach (RegisteredSystem system in lista)
+        {
+            registeredSystemDTOs.Add(
+                new RegisteredSystemDTO 
+                { 
+                    Description = system.Description,
+                    Name = system.Name,
+                    Rights = system.Rights,
+                    SystemId = system.SystemId,
+                    SystemVendorOrgName = system.SystemVendorOrgName,
+                    SystemVendorOrgNumber = system.SystemVendorOrgNumber
+                });
+        }
+
         return Ok(lista);
+    }
+
+    /// <summary>
+    /// Retrieves a Registered System frontend DTO for the systemId.
+    /// </summary>
+    /// <param name="systemId">The Id of the Registered System </param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    [HttpGet("{systemId}")]
+    public async Task<ActionResult<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
+    {
+        Result<RegisteredSystemDTO> registeredSystem = await _systemRegisterService.GetRegisteredSystemDto(systemId, cancellationToken);
+
+        if (registeredSystem.IsProblem)
+        {
+            return registeredSystem.Problem.ToActionResult();
+        }
+
+        return Ok(registeredSystem.Value);
     }
 
     /// <summary>
@@ -55,9 +90,9 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("system/{systemId}")]
-    public async Task<ActionResult<RegisterSystemResponse>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RegisteredSystem>> GetRegisteredSystemInfo(string systemId, CancellationToken cancellationToken = default)
     {
-        RegisterSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+        RegisteredSystem registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
         
         return Ok(registeredSystem);
     }
@@ -71,7 +106,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("system/{systemId}")]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
         if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor.ID), User))
         {
@@ -79,7 +114,7 @@ public class SystemRegisterController : ControllerBase
         }
 
         List<MaskinPortenClientInfo> maskinPortenClients = await _systemRegisterService.GetMaskinportenClients(updateSystem.ClientId, cancellationToken);
-        RegisterSystemResponse systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        RegisteredSystem systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
         foreach (string clientId in updateSystem.ClientId)
         {
             bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.SystemInternalId).Count > 0;
@@ -126,7 +161,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [HttpPost("system")]    
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] SystemRegisterRequest registerNewSystem, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -187,7 +222,7 @@ public class SystemRegisterController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
     {
-        RegisterSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
         if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
         {
             return Forbid();
@@ -211,7 +246,7 @@ public class SystemRegisterController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
-        RegisterSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
         if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse?.SystemVendorOrgNumber, User))
         {
             return Forbid();

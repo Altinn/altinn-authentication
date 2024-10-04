@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
@@ -17,7 +18,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="cancellation">The cancellation token</param>
         /// <returns></returns>
-        Task<List<RegisterSystemResponse>> GetListRegSys(CancellationToken cancellation = default);
+        Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default);
 
         /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider
@@ -35,7 +36,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System</param>
         /// <param name="cancellation">Cancellation token</param>
         /// <returns>List of Default Rights</returns>
-        Task<RegisterSystemResponse> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
+        Task<RegisteredSystem> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
 
         /// <summary>
         /// Inserts a new unique ClientId
@@ -52,7 +53,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="system">The descriptor DTO for a new System</param>
         /// <param name="cancellation">The Cancelation token</param>
         /// <returns></returns>
-        Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest system, CancellationToken cancellation = default);
+        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default);
 
         /// <summary>
         /// Updates the rights on a registered system
@@ -77,7 +78,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System </param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns></returns>
-        Task<bool> UpdateWholeRegisteredSystem(SystemRegisterRequest updateSystem, string systemId, CancellationToken cancellationToken);
+        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if one of the clientid exists
@@ -94,5 +95,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>true when one of the client id already exists</returns>
         Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Retrieves a single DTO of a Registered System
+        /// </summary>
+        /// <param name="systemId">The systemId</param>
+        /// <param name="cancellationToken">the Cancellation token</param>
+        /// <returns></returns>
+        Task<Result<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken);
     }
 }

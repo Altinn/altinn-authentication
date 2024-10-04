@@ -32,7 +32,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>    
-    public async Task<List<RegisterSystemResponse>> GetAllActiveSystems()
+    public async Task<List<RegisteredSystem>> GetAllActiveSystems()
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -66,7 +66,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(SystemRegisterRequest toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.system_register(
@@ -121,7 +121,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> UpdateRegisteredSystem(SystemRegisterRequest updatedSystem, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.system_register
@@ -168,7 +168,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<RegisterSystemResponse?> GetRegisteredSystemById(string id)
+    public async Task<RegisteredSystem?> GetRegisteredSystemById(string id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -330,7 +330,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         return new ValueTask<List<Right>>(rights);
     }
 
-    private static ValueTask<RegisterSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
+    private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         string[] stringGuids = reader.GetFieldValue<string[]>("client_id");                
         List<Right> rights = reader.GetFieldValue<List<Right>>("rights");
@@ -346,7 +346,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             clientIds.Add(str);
         }
 
-        return new ValueTask<RegisterSystemResponse>(new RegisterSystemResponse
+        return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
             SystemId = reader.GetFieldValue<string>("system_id"),
@@ -425,7 +425,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         try
         {
-            RegisterSystemResponse? systemInfo = await GetRegisteredSystemById(systemId);
+            RegisteredSystem? systemInfo = await GetRegisteredSystemById(systemId);
 
             List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo.SystemInternalId);
 
