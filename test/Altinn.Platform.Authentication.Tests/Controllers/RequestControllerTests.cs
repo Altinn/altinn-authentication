@@ -665,62 +665,13 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         HttpClient client = CreateClient();
         string token = AddTestTokenToClient(client);
-        
-        Right right = new()
-        {
-            Resource =
-            [
-                new AttributePair()
-                {
-                    Id = "urn:altinn:resource",
-                    Value = "ske-krav-og-betalinger"
-                }
-            ]
-        };
 
         // Arrange
-        CreateRequestSystemUser req = new()
-        {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
-            Rights = [right]
-        };
-
-        await CreateRequest(client, req);
-
-        req = new()
-        {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493354",
-            Rights = [right]
-        };
-
-        await CreateRequest(client, req);
-
-        req = new()
-        {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493355",
-            Rights = [right]
-        };
-
-        await CreateRequest(client, req);
-
-        req = new()
-        {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493356",
-            Rights = [right]
-        };
-
-        await CreateRequest(client, req);
+        string systemId = "991825827_the_matrix";
+        await CreateSeveralRequest(client, 3, systemId);
 
         // Get the Request
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{req.SystemId}";
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
 
         HttpResponseMessage message2 = await client.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
@@ -738,8 +689,36 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         Assert.True(res3 is not null);
     }
 
-    private async Task CreateRequest(HttpClient client, CreateRequestSystemUser req)
+    private async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
+        for (int i = 0; i < paginationSize + 1; i++)
+        {
+            await CreateRequest(client, i, systemId);
+        }
+    }
+
+    private async Task CreateRequest(HttpClient client, int externalRef, string systemId)
+    {
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                        {
+                            Id = "urn:altinn:resource",
+                            Value = "ske-krav-og-betalinger"
+                        }
+            ]
+        };
+
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = externalRef.ToString(),
+            SystemId = systemId,
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        }; 
+
         HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/request/vendor")
         {
             Content = JsonContent.Create(req)

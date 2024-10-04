@@ -28,6 +28,11 @@ public class RequestSystemUserService(
     IRequestRepository requestRepository)
     : IRequestSystemUser
 {
+    /// <summary>
+    /// Used to limit the number of items returned in a paginated list
+    /// </summary>
+    public int PaginationSize { get; set; } = 200;
+
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
@@ -490,6 +495,6 @@ public class RequestSystemUserService(
         List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
-        return Page.Create(theList, 3, static theList => theList.Id); 
+        return Page.Create(theList, PaginationSize, static theList => theList.Id); 
     }
 }
