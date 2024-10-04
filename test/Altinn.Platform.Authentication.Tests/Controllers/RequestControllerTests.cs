@@ -79,11 +79,11 @@ public class RequestControllerTests(
         configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
         IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-        IConfigurationSection paginationSettingSection = configuration.GetSection("PaginationSize");
+        IConfigurationSection paginationSettingSection = configuration.GetSection("PaginationOptions");
 
         services.Configure<GeneralSettings>(generalSettingSection);        
         services.Configure<PaginationOptions>(paginationSettingSection);
-        _paginationSize = configuration.GetValue<int>("PaginationSize:Size");
+        _paginationSize = configuration.GetValue<int>("PaginationOptions:Size");
         services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
         services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
         services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();

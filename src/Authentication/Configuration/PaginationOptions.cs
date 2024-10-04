@@ -1,7 +1,7 @@
 ﻿namespace Altinn.Platform.Authentication.Configuration;
 
 /// <summary>
-/// The pagination size option
+/// The pagination options
 /// </summary>
 public class PaginationOptions
 {
