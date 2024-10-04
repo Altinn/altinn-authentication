@@ -668,7 +668,8 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
 
         // Arrange
         string systemId = "991825827_the_matrix";
-        await CreateSeveralRequest(client, 3, systemId);
+        var paginationSize = new PaginationSizeOption();
+        await CreateSeveralRequest(client, paginationSize.Size, systemId);
 
         // Get the Request
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";

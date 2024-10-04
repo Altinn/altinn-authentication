@@ -14,6 +14,7 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
 #nullable enable
