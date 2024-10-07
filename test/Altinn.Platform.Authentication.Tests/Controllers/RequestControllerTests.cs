@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -675,7 +676,7 @@ public class RequestControllerTests(
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
-        string token = AddTestTokenToClient(client);
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
 
         // Arrange
         string systemId = "991825827_the_matrix";
@@ -683,9 +684,11 @@ public class RequestControllerTests(
         await CreateSeveralRequest(client, _paginationSize, systemId);
 
         // Get the Request
+        HttpClient client2 = CreateClient();
+        string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
 
-        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
         Assert.True(res2 is not null);
@@ -695,10 +698,101 @@ public class RequestControllerTests(
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
         Assert.NotNull(res2.Links.Next);
 
-        HttpResponseMessage message3 = await client.GetAsync(res2.Links.Next);
+        HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
         Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
         Paginated<RequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
         Assert.True(res3 is not null);
+    }
+
+    [Fact]
+    public async Task Delete_Request_ByGuid_Accepted()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        //Get by Guid
+        Guid testId = res.Id;
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+        HttpClient client2 = CreateClient();
+        string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);        
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.True(res2 is not null);
+        Assert.Equal(testId, res2.Id);
+
+        //Delete by Guid
+        string endpoint3 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+        HttpResponseMessage message3 = await client.DeleteAsync(endpoint3);
+        string debug = "pause_here";
+        Assert.Equal(HttpStatusCode.Accepted, message3.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_Request_ByGuid_Forbid()
+    {
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
+
+        Guid testId = Guid.NewGuid();
+
+        //Delete by Guid
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+        HttpResponseMessage message = await client.DeleteAsync(endpoint);
+        string debug = "pause_here";
+        Assert.Equal(HttpStatusCode.Forbidden, message.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_Request_ByGuid_NotFound()
+    {
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+
+        Guid testId = Guid.NewGuid();
+
+        //Delete by Guid
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+        HttpResponseMessage message = await client.DeleteAsync(endpoint);
+        string debug = "pause_here";
+        Assert.Equal(HttpStatusCode.NotFound, message.StatusCode);
     }
 
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)

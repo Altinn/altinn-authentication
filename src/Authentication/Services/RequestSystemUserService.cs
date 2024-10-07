@@ -387,8 +387,18 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken)
     {
-        RequestSystemResponse systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        if (systemUserRequest is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
         RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        if (regSystem is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
         SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
 
         DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.SystemId, cancellationToken);
@@ -398,7 +408,13 @@ public class RequestSystemUserService(
         }
 
         Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, cancellationToken);
-        toBeInserted.Id = systemUserId?.ToString();
+
+        if (systemUserId is null)
+        {
+            return Problem.SystemUser_FailedToCreate;
+        }
+
+        toBeInserted.Id = systemUserId.ToString()!;
 
         Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted, delegationCheckFinalResult.RightResponses);
         if (delegationSucceeded.IsProblem) 
@@ -498,5 +514,17 @@ public class RequestSystemUserService(
         theList ??= [];
 
         return Page.Create(theList, _paginationSize, static theList => theList.Id); 
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> DeleteRequestByRequestId(Guid requestId)
+    {
+        var result = await requestRepository.DeleteRequestByRequestId(requestId);
+        if (result)
+        {
+            return true;
+        }
+
+        return Problem.RequestNotFound;
     }
 }

@@ -1,11 +1,9 @@
 ﻿using System.Data;
-using System.Data.Common;
+using System.Threading;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
-using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
-using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -263,6 +261,31 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // GetAllRequestsBySystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<bool> DeleteRequestByRequestId(Guid requestId)
+    {
+        const string QUERY = /*strpsql*/"""          
+            UPDATE business_application.request
+            SET is_deleted = true,
+                last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.request.id = @requestId
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("requestId", requestId);
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // DeleteRequestByRequestId // Exception");
             throw;
         }
     }
