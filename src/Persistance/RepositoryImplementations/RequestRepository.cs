@@ -98,7 +98,8 @@ public class RequestRepository : IRequestRepository
             FROM business_application.request r
             WHERE r.external_ref = @external_ref
                 and r.system_id = @system_id
-                and r.party_org_no = @party_org_no;";
+                and r.party_org_no = @party_org_no
+                and r.is_deleted = false;";
 
         try
         {
@@ -134,7 +135,8 @@ public class RequestRepository : IRequestRepository
                 redirect_urls,
                 created 
             FROM business_application.request r
-            WHERE r.id = @request_id;
+            WHERE r.id = @request_id
+                and r.is_deleted = false;
         ";
 
         try
@@ -259,7 +261,8 @@ public class RequestRepository : IRequestRepository
                 redirect_urls,
                 created
             FROM business_application.request r
-            WHERE r.system_id = @system_id;";
+            WHERE r.system_id = @system_id
+                and r.is_deleted = false;";
 
         try
         {
@@ -287,6 +290,7 @@ public class RequestRepository : IRequestRepository
             SET is_deleted = true,
                 last_changed = CURRENT_TIMESTAMP
             WHERE business_application.request.id = @requestId
+                and business_application.request.is_deleted = false
             """;
 
         try
