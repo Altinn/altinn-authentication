@@ -780,6 +780,21 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.Forbidden, message.StatusCode);
     }
 
+    [Fact]
+    public async Task Delete_Request_ByGuid_NotFound()
+    {
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+
+        Guid testId = Guid.NewGuid();
+
+        //Delete by Guid
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+        HttpResponseMessage message = await client.DeleteAsync(endpoint);
+        string debug = "pause_here";
+        Assert.Equal(HttpStatusCode.NotFound, message.StatusCode);
+    }
+
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
         for (int i = 0; i < paginationSize + 1; i++)
