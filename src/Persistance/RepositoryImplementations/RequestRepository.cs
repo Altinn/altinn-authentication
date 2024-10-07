@@ -109,6 +109,7 @@ public class RequestRepository : IRequestRepository
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
+                .WhereAwait(FilterTimedOut)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -143,11 +144,12 @@ public class RequestRepository : IRequestRepository
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
+                .WhereAwait(FilterTimedOut)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception"); 
             throw;
         }
     }
@@ -234,30 +236,12 @@ public class RequestRepository : IRequestRepository
             RedirectUrl = redirect_url
         };
 
-        if (CheckValidTimeout(response))
-        {
-            return new ValueTask<RequestSystemResponse>(response);
-        }
-
-        RequestSystemResponse timedout = new() { Status = RequestStatus.Timedout.ToString() };
-
-        return new ValueTask<RequestSystemResponse>(timedout);
-    }
-
-    private static bool CheckValidTimeout(RequestSystemResponse response)
-    {
-        if (response.Status == RequestStatus.Timedout.ToString())
-        {
-            return false;
-        }
-
         if (response.Created < DateTime.UtcNow.AddDays(-30))
         {
             response.Status = RequestStatus.Timedout.ToString();
-            return false;
         }
 
-        return true;
+        return new ValueTask<RequestSystemResponse>(response);
     }
 
     /// <inheritdoc/>  
@@ -284,6 +268,7 @@ public class RequestRepository : IRequestRepository
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToRequest)
+                .WhereAwait(FilterTimedOut)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -316,5 +301,15 @@ public class RequestRepository : IRequestRepository
             _logger.LogError(ex, "Authentication // RequestRepository // DeleteRequestByRequestId // Exception");
             throw;
         }
+    }
+
+    private ValueTask<bool> FilterTimedOut(RequestSystemResponse response)
+    {
+        if (response.Status == RequestStatus.Timedout.ToString())
+        {
+            return new ValueTask<bool>(false);
+        }
+
+        return new ValueTask<bool>(true);
     }
 }
