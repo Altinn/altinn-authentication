@@ -236,48 +236,66 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         }
 
-        [Fact(Skip = "Leveranse 2")]
+        [Fact]
         public async Task SystemUser_Delete_ReturnsOk()
         {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            _ = await CreateSystemRegister(dataFileName);
+
             HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
-            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
-            int partyId = 1;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), _options);
-            var id = list[0].Id;
-            string para = $"{partyId}/{id}";
-            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{para}");
+            int partyId = 500000;
+
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix",
+            };
+
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}")
+            {
+                Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
+            };
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.Created, createSystemUserResponse.StatusCode);
+            SystemUser? shouldBeCreated = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
+            Assert.NotNull(shouldBeCreated);
+
+            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpResponseMessage lookupSystemUserResponse = await client.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            SystemUser? systemUserDoesExist = await lookupSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
+
+            Assert.Equal(HttpStatusCode.OK, lookupSystemUserResponse.StatusCode);
+            Assert.NotNull(systemUserDoesExist);
+            Assert.Equal(shouldBeCreated.Id, systemUserDoesExist.Id);
+
+            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.Accepted, response2.StatusCode);
 
-            HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
+            HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
             HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-            SystemUser shouldBeDeleted = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), _options);
-
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response2.StatusCode);
-            Assert.True(shouldBeDeleted.IsDeleted);
+            SystemUser? shouldBeDeleted = await response3.Content.ReadFromJsonAsync<SystemUser>();            
+            Assert.Equal(HttpStatusCode.NotFound, response3.StatusCode);
         }
 
-        [Fact(Skip = "Leveranse 2")]
+        [Fact]
         public async Task SystemUser_Delete_ReturnsNotFound()
         {
-            HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
-            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            _ = await CreateSystemRegister(dataFileName);
 
-            int partyId = 1;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<SystemUser> list = JsonSerializer.Deserialize<List<SystemUser>>(await response.Content.ReadAsStringAsync(), _options);
-            var id = list[0].Id;
-            string para = $"{partyId}/{id}";
-            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/1/1234567890");
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+
+            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{Guid.NewGuid()}");
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
-
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response2.StatusCode);
-            Assert.False(response2.IsSuccessStatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, response2.StatusCode);
         }
 
         [Fact(Skip = "Leveranse 3")]
