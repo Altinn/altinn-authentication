@@ -17,6 +17,7 @@ public class RequestRepository : IRequestRepository
     private readonly NpgsqlDataSource _dataSource;
     private readonly ISystemUserRepository _systemUserRepository;
     private readonly ILogger _logger;
+    private const int REQUEST_TIMEOUT_DAYS = 30;
 
     /// <summary>
     /// Constructor
@@ -236,7 +237,7 @@ public class RequestRepository : IRequestRepository
             RedirectUrl = redirect_url
         };
 
-        if (response.Created < DateTime.UtcNow.AddDays(-30))
+        if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
             response.Status = RequestStatus.Timedout.ToString();
         }
