@@ -409,7 +409,11 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ, policy =>
             policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_access_management")))
         .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE, policy =>
-            policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")));
+            policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")))
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE, policy =>
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_WRITE))
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ, policy =>
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ));
 
     services.AddFeatureManagement();
 }

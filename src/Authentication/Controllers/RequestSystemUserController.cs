@@ -67,7 +67,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="createRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]    
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]    
     [HttpPost("vendor")]
     public async Task<ActionResult<RequestSystemResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
@@ -128,7 +128,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="requestId">The UUID for the Request</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/{requestId}")]
     public async Task<ActionResult<RequestSystemResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -163,7 +163,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="orgNo">The organisation number for the customer</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<RequestSystemResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
@@ -245,7 +245,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="token">Optional continuation token</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM)]
     public async Task<ActionResult<Paginated<RequestSystemResponse>>> GetAllRequestsForVendor(
         string systemId,
