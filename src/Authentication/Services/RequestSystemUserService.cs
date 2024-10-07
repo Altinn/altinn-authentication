@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
@@ -14,7 +15,7 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
-using Azure.Core;
+using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
 #nullable enable
@@ -25,9 +26,15 @@ public class RequestSystemUserService(
     IPartiesClient partiesClient,
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
-    IRequestRepository requestRepository)
+    IRequestRepository requestRepository,
+    IOptions<PaginationOptions> _paginationOption)
     : IRequestSystemUser
 {
+    /// <summary>
+    /// Used to limit the number of items returned in a paginated list
+    /// </summary>
+    private int _paginationSize = _paginationOption.Value.Size;
+    
     /// <inheritdoc/>
     public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
@@ -490,6 +497,6 @@ public class RequestSystemUserService(
         List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
-        return Page.Create(theList, 3, static theList => theList.Id); 
+        return Page.Create(theList, _paginationSize, static theList => theList.Id); 
     }
 }

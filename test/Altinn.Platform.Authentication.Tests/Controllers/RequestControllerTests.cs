@@ -39,7 +39,9 @@ using Xunit;
 namespace Altinn.Platform.Authentication.Tests.Controllers;
 #nullable enable
 
-public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
+public class RequestControllerTests(
+    DbFixture dbFixture, 
+    WebApplicationFixture webApplicationFixture)
     : WebApplicationTests(dbFixture, webApplicationFixture)
 {
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
@@ -50,6 +52,7 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
     private readonly Mock<TimeProvider> timeProviderMock = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
+    private int _paginationSize;
 
     protected override void ConfigureServices(IServiceCollection services)
     {
@@ -76,8 +79,11 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
         IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-        
-        services.Configure<GeneralSettings>(generalSettingSection);
+        IConfigurationSection paginationSettingSection = configuration.GetSection("PaginationOptions");
+
+        services.Configure<GeneralSettings>(generalSettingSection);        
+        services.Configure<PaginationOptions>(paginationSettingSection);
+        _paginationSize = configuration.GetValue<int>("PaginationOptions:Size");
         services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
         services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
         services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
@@ -659,6 +665,82 @@ public class RequestControllerTests(DbFixture dbFixture, WebApplicationFixture w
         var list = res2.Items.ToList();
         Assert.NotEmpty(list);
         Assert.Equal(req.SystemId, list[0].SystemId);
+    }
+
+    [Fact]
+    public async Task Get_All_Requests_By_System_Paginated_Several()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddTestTokenToClient(client);
+
+        // Arrange
+        string systemId = "991825827_the_matrix";
+        
+        await CreateSeveralRequest(client, _paginationSize, systemId);
+
+        // Get the Request
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
+
+        HttpResponseMessage message2 = await client.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res2 is not null);
+        var list = res2.Items.ToList();
+        Assert.NotEmpty(list);
+        Assert.Equal(_paginationSize, list.Count);
+        Assert.Contains(list, x => x.PartyOrgNo == "910493353");
+        Assert.NotNull(res2.Links.Next);
+
+        HttpResponseMessage message3 = await client.GetAsync(res2.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
+        Paginated<RequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res3 is not null);
+    }
+
+    private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
+    {
+        for (int i = 0; i < paginationSize + 1; i++)
+        {
+            await CreateRequest(client, i, systemId);
+        }
+    }
+
+    private static async Task CreateRequest(HttpClient client, int externalRef, string systemId)
+    {
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                        {
+                            Id = "urn:altinn:resource",
+                            Value = "ske-krav-og-betalinger"
+                        }
+            ]
+        };
+
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = externalRef.ToString(),
+            SystemId = systemId,
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        }; 
+
+        HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/request/vendor")
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
 
     private void SetupDateTimeMock()

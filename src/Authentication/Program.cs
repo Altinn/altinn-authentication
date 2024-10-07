@@ -296,7 +296,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHealthChecks().AddCheck<HealthCheck>("authentication_health_check");
 
     services.AddSingleton(config);
-    services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));     
+    services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
+    services.Configure<PaginationOptions>(config.GetSection("PaginationOptions"));
     services.Configure<Altinn.Common.PEP.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
     services.Configure<Altinn.Authentication.Integration.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
     services.Configure<AccessManagementSettings>(config.GetSection("AccessManagementSettings"));
