@@ -317,7 +317,7 @@ public class RequestSystemUserController : ControllerBase
     /// Used by the Vendors to delete the chosen Request by guid
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpDelete("vendor/{requestId}")]
     public async Task<ActionResult<RequestSystemResponse>> DeleteRequestByRequestId(Guid requestId)
     {
