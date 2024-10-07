@@ -308,6 +308,32 @@ public class RequestRepository : IRequestRepository
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<int> DeleteTimedoutRequests()
+    {
+        const string QUERY = /*strpsql*/"""
+            UPDATE business_application.request
+            SET is_deleted = true,
+                last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.request.status < @timeout
+                and business_application.request.is_deleted = false
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("timeout", DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS));
+
+            return await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // DeleteAndArchiveTimedoutRequests // Exception");
+            throw;
+        }
+    }
+
     private ValueTask<bool> FilterTimedOut(RequestSystemResponse response)
     {
         if (response.Status == RequestStatus.Timedout.ToString())

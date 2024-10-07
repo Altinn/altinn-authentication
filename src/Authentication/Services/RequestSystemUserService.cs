@@ -104,6 +104,9 @@ public class RequestSystemUserService(
             RedirectUrl = createRequest.RedirectUrl
         };
 
+        // Delete timed out requests before creating a new one, in case the new one is a renewal
+        _ = await requestRepository.DeleteTimedoutRequests();
+
         Result<bool> res = await requestRepository.CreateRequest(created);
         if (res.IsProblem)
         {

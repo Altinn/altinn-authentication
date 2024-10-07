@@ -57,4 +57,10 @@ public interface IRequestRepository
     /// </summary>
     /// <returns></returns>
     Task<bool> DeleteRequestByRequestId(Guid requestId);
+
+    /// <summary>
+    /// Deletes all requests older than the configured timeout
+    /// </summary>
+    /// <returns></returns>
+    Task<int> DeleteTimedoutRequests();
 }
