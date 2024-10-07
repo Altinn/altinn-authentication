@@ -125,7 +125,7 @@ public class SystemUserController : ControllerBase
         if (toBeDeleted is not null)
         {
             await _systemUserService.SetDeleteFlagOnSystemUser(systemUserId);
-            return Ok(1);
+            return Accepted(1);
         }
 
         return NotFound(0);            
