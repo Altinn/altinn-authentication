@@ -92,7 +92,8 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
-                redirect_urls
+                redirect_urls,
+                created
             FROM business_application.request r
             WHERE r.external_ref = @external_ref
                 and r.system_id = @system_id
@@ -128,7 +129,8 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
-                redirect_urls
+                redirect_urls,
+                created 
             FROM business_application.request r
             WHERE r.id = @request_id;
         ";
@@ -220,17 +222,42 @@ public class RequestRepository : IRequestRepository
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
-        return new ValueTask<RequestSystemResponse>(
-            new RequestSystemResponse()
-            {
-                Id = reader.GetFieldValue<Guid>("id"),
-                ExternalRef = reader.GetFieldValue<string>("external_ref"),
-                SystemId = reader.GetFieldValue<string>("system_id"),
-                PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
-                Rights = reader.GetFieldValue<List<Right>>("rights"),
-                Status = reader.GetFieldValue<string>("request_status"),
-                RedirectUrl = redirect_url
-            });        
+        RequestSystemResponse response = new()
+        {
+            Id = reader.GetFieldValue<Guid>("id"),
+            ExternalRef = reader.GetFieldValue<string>("external_ref"),
+            SystemId = reader.GetFieldValue<string>("system_id"),
+            PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
+            Rights = reader.GetFieldValue<List<Right>>("rights"),
+            Status = reader.GetFieldValue<string>("request_status"),
+            Created = reader.GetFieldValue<DateTime>("created"),
+            RedirectUrl = redirect_url
+        };
+
+        if (CheckValidTimeout(response))
+        {
+            return new ValueTask<RequestSystemResponse>(response);
+        }
+
+        RequestSystemResponse timedout = new() { Status = RequestStatus.Timedout.ToString() };
+
+        return new ValueTask<RequestSystemResponse>(timedout);
+    }
+
+    private static bool CheckValidTimeout(RequestSystemResponse response)
+    {
+        if (response.Status == RequestStatus.Timedout.ToString())
+        {
+            return false;
+        }
+
+        if (response.Created < DateTime.UtcNow.AddDays(-30))
+        {
+            response.Status = RequestStatus.Timedout.ToString();
+            return false;
+        }
+
+        return true;
     }
 
     /// <inheritdoc/>  
@@ -244,7 +271,8 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
-                redirect_urls
+                redirect_urls,
+                created
             FROM business_application.request r
             WHERE r.system_id = @system_id;";
 

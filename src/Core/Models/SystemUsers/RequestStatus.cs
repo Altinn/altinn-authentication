@@ -9,5 +9,6 @@ public enum RequestStatus
     New,
     Accepted,
     Rejected,
-    Denied
+    Denied,
+    Timedout
 }
