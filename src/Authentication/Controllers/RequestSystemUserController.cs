@@ -324,7 +324,7 @@ public class RequestSystemUserController : ControllerBase
         Result<bool> res = await _requestSystemUser.DeleteRequestByRequestId(requestId);
         if (res.IsProblem)
         {
-            return Forbid();
+            return res.Problem.ToActionResult();
         }
 
         return Accepted();
