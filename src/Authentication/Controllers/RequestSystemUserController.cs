@@ -89,7 +89,14 @@ public class RequestSystemUserController : ControllerBase
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
         {
-            return Ok(response.Value);
+            if (response.Value.Status == RequestStatus.New.ToString())
+            {
+                return Ok(response.Value);
+            }
+
+            // The Request already exists and is not in a New state
+            // Possible states are: Accepted, Rejected, Denied, Timedout
+            return Conflict(response.Value);
         }
 
         // This is a new Request
