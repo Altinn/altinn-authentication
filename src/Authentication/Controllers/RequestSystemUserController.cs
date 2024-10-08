@@ -53,7 +53,7 @@ public class RequestSystemUserController : ControllerBase
     /// <summary>
     /// First part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL1 = "https://authn.ui/";
+    public const string CONFIRMURL1 = "https://authn.ui.";
 
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
