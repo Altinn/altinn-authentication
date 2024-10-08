@@ -543,4 +543,16 @@ public class RequestSystemUserService(
 
         return Problem.RequestNotFound;
     }
+
+    /// <inheritdoc/>
+    public async Task<Result<string>> GetRedirectByRequestId(Guid requestId)
+    {
+        RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        if (systemUserRequest is null || systemUserRequest.RedirectUrl is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        return systemUserRequest.RedirectUrl;
+    }
 }
