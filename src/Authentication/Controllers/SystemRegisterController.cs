@@ -188,6 +188,12 @@ public class SystemRegisterController : ControllerBase
                 return BadRequest(ModelState);
             }
 
+            if (!await _systemRegisterService.DoesResourceIdExists(registerNewSystem.Rights, cancellationToken))
+            {
+                ModelState.AddModelError("Rights", "One or all the resources in rights is not found in altinn's resource register");
+                return BadRequest(ModelState);
+            }
+
             if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
             {
                 ModelState.AddModelError("ClientId", "One of the client id already tagged with an existing system");

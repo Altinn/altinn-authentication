@@ -5,8 +5,11 @@ using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
+using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 namespace Altinn.Platform.Authentication.Services
@@ -17,13 +20,17 @@ namespace Altinn.Platform.Authentication.Services
     public class SystemRegisterService : ISystemRegisterService
     {
         private readonly ISystemRegisterRepository _systemRegisterRepository;
+        private readonly IResourceRegistryClient _resourceRegistryClient;
 
         /// <summary>
         /// The constructor
         /// </summary>
-        public SystemRegisterService(ISystemRegisterRepository systemRegisterRepository)
+        public SystemRegisterService(
+            ISystemRegisterRepository systemRegisterRepository,
+            IResourceRegistryClient resourceRegistryClient)
         {
             _systemRegisterRepository = systemRegisterRepository;
+            _resourceRegistryClient = resourceRegistryClient;   
         }
 
         /// <inheritdoc/>
@@ -108,6 +115,25 @@ namespace Altinn.Platform.Authentication.Services
                 SystemId = result.SystemId,
                 SystemVendorOrgNumber = result.SystemVendorOrgNumber
             };
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken)
+        {
+            ServiceResource? resource = null;
+            foreach (Right right in rights)
+            {
+                foreach (AttributePair resourceId in right.Resource)
+                {
+                    resource = await _resourceRegistryClient.GetResource(resourceId.Value);
+                    if (resource == null)
+                    {
+                        return false;
+                    }
+                }                
+            }
+
+            return true;
         }
     }
 }

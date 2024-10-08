@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
@@ -84,6 +85,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<ISystemUserService, SystemUserServiceMock>();    
             services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
+            services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
             SetupDateTimeMock();
             SetupGuidMock();
         }
@@ -123,6 +125,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidSystemIdFormat.json";
+
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_InvalidResourceId_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidResource.json";
 
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
