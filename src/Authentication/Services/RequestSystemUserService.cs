@@ -393,6 +393,11 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
+        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        {
+            return Problem.RequestStatusNotNew;
+        }
+
         RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
         if (regSystem is null)
         {
@@ -428,6 +433,17 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> RejectSystemUser(Guid requestId, CancellationToken cancellationToken)
     {
+        RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        if (systemUserRequest is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        {
+            return Problem.RequestStatusNotNew;
+        }
+
         return await requestRepository.RejectSystemUser(requestId, cancellationToken);
     }
 
