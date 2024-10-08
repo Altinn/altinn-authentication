@@ -100,7 +100,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
             command.Parameters.AddWithValue("allowedredirecturls", toBeInserted.AllowedRedirectUrls.ConvertAll<string>(delegate (Uri u) { return u.ToString(); }));
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.SingleRights });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
 
             Guid systemInternalId = await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -148,7 +148,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("description", updatedSystem.Description);
             command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
             command.Parameters.AddWithValue("is_deleted", updatedSystem.IsDeleted);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.SingleRights });
+            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
             command.Parameters.AddWithValue("allowedredirecturls", updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;

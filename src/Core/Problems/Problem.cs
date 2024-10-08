@@ -88,4 +88,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor RequestCouldNotBeStored { get; }
         = _factory.Create(12, HttpStatusCode.NotFound, "An error occured when storing the Request.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RequestStatusNotNew { get; }
+        = _factory.Create(13, HttpStatusCode.NotFound, "The Status of the Request is not New.");
 }

@@ -747,7 +747,7 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
-        //Get by Guid
+        // Get by Guid
         Guid testId = res.Id;
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
         HttpClient client2 = CreateClient();
@@ -758,11 +758,15 @@ public class RequestControllerTests(
         Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
 
-        //Delete by Guid
+        // Delete by Guid
         string endpoint3 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
         HttpResponseMessage message3 = await client.DeleteAsync(endpoint3);
         string debug = "pause_here";
         Assert.Equal(HttpStatusCode.Accepted, message3.StatusCode);
+
+        // Get by Guid after delete return NotFound
+        HttpResponseMessage message4 = await client2.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.NotFound, message4.StatusCode);
     }
 
     [Fact]
@@ -783,16 +787,66 @@ public class RequestControllerTests(
     [Fact]
     public async Task Delete_Request_ByGuid_NotFound()
     {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
 
-        Guid testId = Guid.NewGuid();
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
 
-        //Delete by Guid
-        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
-        HttpResponseMessage message = await client.DeleteAsync(endpoint);
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        // Get by Guid
+        Guid testId = res.Id;
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+        HttpClient client2 = CreateClient();
+        string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.True(res2 is not null);
+        Assert.Equal(testId, res2.Id);
+
+        // Delete by Guid
+        string endpoint3 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+        HttpResponseMessage message3 = await client.DeleteAsync(endpoint3);
+        Assert.Equal(HttpStatusCode.Accepted, message3.StatusCode);
+
+        // Delete by Guid Again
+        HttpResponseMessage message4 = await client.DeleteAsync(endpoint3);
         string debug = "pause_here";
-        Assert.Equal(HttpStatusCode.NotFound, message.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, message4.StatusCode);
     }
 
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
@@ -857,7 +911,7 @@ public class RequestControllerTests(
     {
         string data = File.ReadAllText("Data/SystemRegister/Json/SystemRegister.json");
         JsonContent content = JsonContent.Create(data);
-        var res = await client.PostAsync(token, $"/authentication/api/v1/systemregister/system/", content);
+        var res = await client.PostAsync(token, $"/authentication/api/v1/systemregister/vendor/", content);
         return res;
     }
 
@@ -900,7 +954,7 @@ public class RequestControllerTests(
         StreamContent content = new StreamContent(dataStream);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-        HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/system/");
+        HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/vendor/");
         request.Content = content;
         HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         return response;

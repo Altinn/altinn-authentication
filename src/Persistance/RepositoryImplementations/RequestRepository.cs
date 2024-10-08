@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Threading;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -17,6 +16,8 @@ public class RequestRepository : IRequestRepository
     private readonly NpgsqlDataSource _dataSource;
     private readonly ISystemUserRepository _systemUserRepository;
     private readonly ILogger _logger;
+    private const int REQUEST_TIMEOUT_DAYS = 10;
+    private const int ARCHIVE_TIMEOUT_DAYS = 60;
 
     /// <summary>
     /// Constructor
@@ -92,11 +93,13 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
-                redirect_urls
+                redirect_urls,
+                created
             FROM business_application.request r
             WHERE r.external_ref = @external_ref
                 and r.system_id = @system_id
-                and r.party_org_no = @party_org_no;";
+                and r.party_org_no = @party_org_no
+                and r.is_deleted = false;";
 
         try
         {
@@ -128,9 +131,11 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
-                redirect_urls
+                redirect_urls,
+                created 
             FROM business_application.request r
-            WHERE r.id = @request_id;
+            WHERE r.id = @request_id
+                and r.is_deleted = false;
         ";
 
         try
@@ -145,7 +150,7 @@ public class RequestRepository : IRequestRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception"); 
             throw;
         }
     }
@@ -220,17 +225,24 @@ public class RequestRepository : IRequestRepository
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
-        return new ValueTask<RequestSystemResponse>(
-            new RequestSystemResponse()
-            {
-                Id = reader.GetFieldValue<Guid>("id"),
-                ExternalRef = reader.GetFieldValue<string>("external_ref"),
-                SystemId = reader.GetFieldValue<string>("system_id"),
-                PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
-                Rights = reader.GetFieldValue<List<Right>>("rights"),
-                Status = reader.GetFieldValue<string>("request_status"),
-                RedirectUrl = redirect_url
-            });        
+        RequestSystemResponse response = new()
+        {
+            Id = reader.GetFieldValue<Guid>("id"),
+            ExternalRef = reader.GetFieldValue<string>("external_ref"),
+            SystemId = reader.GetFieldValue<string>("system_id"),
+            PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
+            Rights = reader.GetFieldValue<List<Right>>("rights"),
+            Status = reader.GetFieldValue<string>("request_status"),
+            Created = reader.GetFieldValue<DateTime>("created"),
+            RedirectUrl = redirect_url
+        };
+
+        if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
+        {
+            response.Status = RequestStatus.Timedout.ToString();
+        }
+
+        return new ValueTask<RequestSystemResponse>(response);
     }
 
     /// <inheritdoc/>  
@@ -244,9 +256,11 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
-                redirect_urls
+                redirect_urls,
+                created
             FROM business_application.request r
-            WHERE r.system_id = @system_id;";
+            WHERE r.system_id = @system_id
+                and r.is_deleted = false;";
 
         try
         {
@@ -273,6 +287,7 @@ public class RequestRepository : IRequestRepository
             SET is_deleted = true,
                 last_changed = CURRENT_TIMESTAMP
             WHERE business_application.request.id = @requestId
+                and business_application.request.is_deleted = false
             """;
 
         try
@@ -288,5 +303,41 @@ public class RequestRepository : IRequestRepository
             _logger.LogError(ex, "Authentication // RequestRepository // DeleteRequestByRequestId // Exception");
             throw;
         }
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> DeleteTimedoutRequests()
+    {
+        const string QUERY = /*strpsql*/"""
+            UPDATE business_application.request
+            SET is_deleted = true,
+                last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.request.created < @archive_timeout
+                and business_application.request.is_deleted = false
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-ARCHIVE_TIMEOUT_DAYS));
+
+            return await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // DeleteTimedoutRequests // Exception");
+            throw;
+        }
+    }
+
+    private ValueTask<bool> FilterTimedOut(RequestSystemResponse response)
+    {
+        if (response.Status == RequestStatus.Timedout.ToString())
+        {
+            return new ValueTask<bool>(false);
+        }
+
+        return new ValueTask<bool>(true);
     }
 }
