@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Threading;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -18,7 +17,7 @@ public class RequestRepository : IRequestRepository
     private readonly ISystemUserRepository _systemUserRepository;
     private readonly ILogger _logger;
     private const int REQUEST_TIMEOUT_DAYS = 10;
-    private const int ARCHIVE_TIMEOUT_DAYS = 30;
+    private const int ARCHIVE_TIMEOUT_DAYS = 60;
 
     /// <summary>
     /// Constructor
@@ -112,7 +111,6 @@ public class RequestRepository : IRequestRepository
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
-                .WhereAwait(FilterTimedOut)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -148,7 +146,6 @@ public class RequestRepository : IRequestRepository
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
-                .WhereAwait(FilterTimedOut)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -273,7 +270,6 @@ public class RequestRepository : IRequestRepository
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToRequest)
-                .WhereAwait(FilterTimedOut)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -316,7 +312,7 @@ public class RequestRepository : IRequestRepository
             UPDATE business_application.request
             SET is_deleted = true,
                 last_changed = CURRENT_TIMESTAMP
-            WHERE business_application.request.status < @timeout
+            WHERE business_application.request.created < @archive_timeout
                 and business_application.request.is_deleted = false
             """;
 
@@ -324,13 +320,13 @@ public class RequestRepository : IRequestRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("timeout", DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS));
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-ARCHIVE_TIMEOUT_DAYS));
 
             return await command.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // DeleteAndArchiveTimedoutRequests // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // DeleteTimedoutRequests // Exception");
             throw;
         }
     }
