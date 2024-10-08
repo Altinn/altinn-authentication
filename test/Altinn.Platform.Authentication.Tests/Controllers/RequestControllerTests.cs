@@ -911,7 +911,7 @@ public class RequestControllerTests(
     {
         string data = File.ReadAllText("Data/SystemRegister/Json/SystemRegister.json");
         JsonContent content = JsonContent.Create(data);
-        var res = await client.PostAsync(token, $"/authentication/api/v1/systemregister/system/", content);
+        var res = await client.PostAsync(token, $"/authentication/api/v1/systemregister/vendor/", content);
         return res;
     }
 
@@ -954,7 +954,7 @@ public class RequestControllerTests(
         StreamContent content = new StreamContent(dataStream);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-        HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/system/");
+        HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/vendor/");
         request.Content = content;
         HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         return response;
