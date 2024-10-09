@@ -8,6 +8,7 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
 namespace Altinn.Platform.Authentication.Helpers
@@ -321,6 +322,22 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return identityParts[1];
+        }
+
+        /// <summary>
+        /// Gets the users id
+        /// </summary>
+        /// <param name="context">the http context</param>
+        /// <returns>the logged in users id</returns>
+        public static int GetUserId(HttpContext context)
+        {
+            var claim = context.User?.Claims.FirstOrDefault(c => c.Type.Equals(AltinnCoreClaimTypes.UserId));
+            if (claim != null && int.TryParse(claim.Value, out int userId))
+            {
+                return userId;
+            }
+
+            return 0;
         }
     }
 }

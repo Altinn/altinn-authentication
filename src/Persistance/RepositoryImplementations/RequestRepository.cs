@@ -156,12 +156,15 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken = default)
+    public async Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken = default)
     {
+        string changed_by = "userId:" + userId.ToString();
+
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.request
             SET request_status = @request_status,
-                last_changed = CURRENT_TIMESTAMP
+                last_changed = CURRENT_TIMESTAMP,
+                changed_by = @changed_by
             WHERE business_application.request.id = @requestId
             """;
         await using NpgsqlConnection conn = await _dataSource.OpenConnectionAsync(cancellationToken);
@@ -173,10 +176,11 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("requestId", requestId);
             command.Parameters.AddWithValue("request_status", RequestStatus.Accepted.ToString());
+            command.Parameters.AddWithValue("changed_by", changed_by);
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
 
-            Guid? systemUserId = await _systemUserRepository.InsertSystemUser(toBeInserted);
+            Guid? systemUserId = await _systemUserRepository.InsertSystemUser(toBeInserted, userId);
 
             await transaction.CommitAsync();
 
@@ -191,12 +195,15 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> RejectSystemUser(Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<bool> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken = default)
     {
+        string changed_by = "userId:" + userId.ToString();
+
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.request
             SET request_status = @request_status,
-                last_changed = CURRENT_TIMESTAMP
+                last_changed = CURRENT_TIMESTAMP,
+                changed_by = @changed_by
             WHERE business_application.request.id = @requestId
             """;       
 
@@ -206,6 +213,7 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("requestId", requestId);
             command.Parameters.AddWithValue("request_status", RequestStatus.Rejected.ToString());
+            command.Parameters.AddWithValue("changed_by", changed_by);
 
             return await command.ExecuteNonQueryAsync() > 0;
         }

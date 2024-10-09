@@ -53,8 +53,11 @@ public interface IRequestSystemUser
     /// Approves the request and creates a system user
     /// </summary>
     /// <param name="requestId">the id of the request to be approved</param>
+    /// <param name="partyId">The partyId</param>
+    /// <param name="userId">The logged in user</param>
+    /// <param name="cancellationToken">The Cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken);
+    Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
@@ -70,12 +73,21 @@ public interface IRequestSystemUser
     /// Rejects the request 
     /// </summary>
     /// <param name="requestId">the id of the request to be rejected</param>
+    /// <param name="userId">The logged in user</param>
+    /// <param name="cancellationToken">The cancelleation token</param>
     /// <returns>true if the request is rejected</returns>
-    Task<Result<bool>> RejectSystemUser(Guid requestId, CancellationToken cancellationToken);
+    Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Used by the Vendors to delete the chosen Request by guid
     /// </summary>
     /// <returns></returns>
     Task<Result<bool>> DeleteRequestByRequestId(Guid requestId);
+
+    /// <summary>
+    /// Returns only the RedirectUrl for the Request
+    /// </summary>
+    /// <param name="requestId">The Request id</param>
+    /// <returns></returns>
+    Task<Result<string>> GetRedirectByRequestId(Guid requestId);
 }

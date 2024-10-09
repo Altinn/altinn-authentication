@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
@@ -107,7 +108,7 @@ public class RequestSystemUserController : ControllerBase
             return Created(fullCreatedUri, response.Value);
         }
 
-        return BadRequest();
+        return response.Problem.ToActionResult();
     }
 
     private OrganisationNumber? RetrieveOrgNoFromToken()
@@ -153,6 +154,30 @@ public class RequestSystemUserController : ControllerBase
         {
             response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
             return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves the RedirectURL for the Authn.UI to redirect the user to the correct page
+    /// based only on the Request.Id GUID
+    /// </summary>
+    /// <param name="requestId">The UUID for the Request</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [HttpGet("redirect/{requestId}")]
+    public async Task<ActionResult<RedirectUrl>> GetRedirectByRequestId(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        Result<string> response = await _requestSystemUser.GetRedirectByRequestId(requestId);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {            
+            return Ok(new RedirectUrl() { Url = response.Value });
         }
 
         return NotFound();
@@ -229,7 +254,8 @@ public class RequestSystemUserController : ControllerBase
     [HttpPost("{party}/{requestId}/approve")]
     public async Task<ActionResult<RequestSystemResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
-        Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, cancellationToken);
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -304,7 +330,8 @@ public class RequestSystemUserController : ControllerBase
     [HttpPost("{party}/{requestId}/reject")]
     public async Task<ActionResult<RequestSystemResponse>> RejectSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
-        Result<bool> response = await _requestSystemUser.RejectSystemUser(requestId, cancellationToken);
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.RejectSystemUser(requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
