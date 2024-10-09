@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.ResourceRegistry.Core.Errors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -165,10 +168,13 @@ public class SystemRegisterController : ControllerBase
     {
         try
         {
+            ValidationErrorBuilder errors = default;
+
             if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor.ID))
             {
-                ModelState.AddModelError("Vendor", "the org number identifier is not valid ISO6523 identifier");
-                return BadRequest(ModelState);
+                errors.Add(ValidationErrors.SystemRegister_Valid_Org_Identifier, [
+                    "/registersystemrequest/vendor/id"
+                ]);
             }
 
             if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor.ID), User))
@@ -178,37 +184,52 @@ public class SystemRegisterController : ControllerBase
 
             if (!AuthenticationHelper.DoesSystemIdStartWithOrgnumber(registerNewSystem))
             {
-                ModelState.AddModelError("SystemId", "The system id does not match the format orgnumber_xxxx...");
-                return BadRequest(ModelState);
+                errors.Add(ValidationErrors.SystemRegister_Invalid_SystemId_Format, [
+                    "/registersystemrequest/systemid"
+                ]);
             }
 
             if (await _systemRegisterService.GetRegisteredSystemInfo(registerNewSystem.Id, cancellationToken) != null)
             {
-                ModelState.AddModelError("SystemId", "The system id already exists");
-                return BadRequest(ModelState);
+                errors.Add(ValidationErrors.SystemRegister_SystemId_Exists, [
+                    "/registersystemrequest/systemid"
+                ]);
             }
 
             if (!await _systemRegisterService.DoesResourceIdExists(registerNewSystem.Rights, cancellationToken))
             {
-                ModelState.AddModelError("Rights", "One or all the resources in rights is not found in altinn's resource register");
-                return BadRequest(ModelState);
+                errors.Add(ValidationErrors.SystemRegister_ResourceId_Exists, [
+                    "/registersystemrequest/rights/resource"
+                ]);
+            }
+
+            if (!AuthenticationHelper.IsValidRedirectUrl(registerNewSystem.AllowedRedirectUrls))
+            {
+                errors.Add(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat, [
+                    "/registersystemrequest/allowedredirecturls"
+                ]);
             }
 
             if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
             {
-                ModelState.AddModelError("ClientId", "One of the client id already tagged with an existing system");
-                return BadRequest(ModelState);
+                errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [
+                    "/registersystemrequest/clientid"
+                ]);
             }
-            else
-            {
-                var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
-                if (registeredSystemGuid is null)
-                {
-                    return BadRequest();
-                }
 
-                return Ok(registeredSystemGuid);
+            if (errors.TryToActionResult(out var errorResult))
+            {
+                return errorResult;
             }
+            
+            var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
+            if (registeredSystemGuid is null)
+            {
+                return BadRequest();
+            }
+
+            return Ok(registeredSystemGuid);
+            
         }
         catch (Exception e)
         {

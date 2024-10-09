@@ -33,6 +33,7 @@ namespace Altinn.Platform.Authentication.Integration.ResourceRegister
         {
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _platformSettings = platformSettings.Value;
             httpClient.BaseAddress = new Uri(_platformSettings.ApiResourceRegistryEndpoint!);
             _httpClient = httpClient;
             _serializerOptions.Converters.Add(new JsonStringEnumConverter());
