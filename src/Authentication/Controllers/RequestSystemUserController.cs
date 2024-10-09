@@ -166,7 +166,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [HttpGet("redirect/{requestId}")]
-    public async Task<ActionResult<string>> GetRedirectByRequestId(Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RedirectUrl>> GetRedirectByRequestId(Guid requestId, CancellationToken cancellationToken = default)
     {    
         Result<string> response = await _requestSystemUser.GetRedirectByRequestId(requestId);
         if (response.IsProblem)
@@ -176,7 +176,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {            
-            return Ok(response.Value);
+            return Ok(new RedirectUrl() { Url = response.Value });
         }
 
         return NotFound();
