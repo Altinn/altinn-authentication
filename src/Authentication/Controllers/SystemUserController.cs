@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.Utils;
@@ -145,7 +146,8 @@ public class SystemUserController : ControllerBase
     [HttpPost("{party}")]
     public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
     {
-        SystemUser? createdSystemUser = await _systemUserService.CreateSystemUser(party, request);
+        var userId = AuthenticationHelper.GetUserId(HttpContext);
+        SystemUser? createdSystemUser = await _systemUserService.CreateSystemUser(party, request, userId);
         if (createdSystemUser is not null)
         {
             return Created($"/authentication/api/v1/systemuser/{createdSystemUser.PartyId}/{createdSystemUser.Id}", createdSystemUser);

@@ -11,8 +11,9 @@ public interface ISystemUserRepository
     /// Insert the descriptor of the new SystemUser, returns the persisted SystemUser with a db generated Entity ID
     /// </summary>
     /// <param name="toBeInserted">The desciptor of the new SystemUser to be inserted, has either a null ID, or an ID provided by the frontend, the db generate a UUID if none is provided.</param>
+    /// <param name="userId">The id of the user who is logged in</param>
     /// <returns></returns>
-    Task<Guid?> InsertSystemUser(SystemUser toBeInserted);
+    Task<Guid?> InsertSystemUser(SystemUser toBeInserted, int userId);
 
     /// <summary>
     /// Returns the list of all active system user integration for the given party id

@@ -32,9 +32,10 @@ public interface IRequestRepository
     /// </summary>
     /// <param name="requestId">the id of the request to be accepted</param>
     /// <param name="toBeInserted">the system user to be created</param>
+    /// <param name="userId">the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>returns the system user id</returns>
-    Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, CancellationToken cancellationToken);
+    Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
@@ -48,9 +49,10 @@ public interface IRequestRepository
     /// Rejects the system user request
     /// </summary>
     /// <param name="requestId">the id of the request to be rejected</param>
+    /// <param name="userId">the logged in user</param>
     /// <param name="cancellationToken"></param>
     /// <returns>true if the system user request is updated as rejected</returns>
-    Task<bool> RejectSystemUser(Guid requestId, CancellationToken cancellationToken);
+    Task<bool> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Used by the Vendors to delete the chosen Request by guid
