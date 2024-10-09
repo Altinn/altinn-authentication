@@ -107,7 +107,7 @@ public class RequestSystemUserController : ControllerBase
             return Created(fullCreatedUri, response.Value);
         }
 
-        return BadRequest();
+        return response.Problem.ToActionResult();
     }
 
     private OrganisationNumber? RetrieveOrgNoFromToken()
