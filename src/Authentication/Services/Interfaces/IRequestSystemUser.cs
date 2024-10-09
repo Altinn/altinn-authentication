@@ -78,4 +78,11 @@ public interface IRequestSystemUser
     /// </summary>
     /// <returns></returns>
     Task<Result<bool>> DeleteRequestByRequestId(Guid requestId);
+
+    /// <summary>
+    /// Returns only the RedirectUrl for the Request
+    /// </summary>
+    /// <param name="requestId">The Request id</param>
+    /// <returns></returns>
+    Task<Result<string>> GetRedirectByRequestId(Guid requestId);
 }
