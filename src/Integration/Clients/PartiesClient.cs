@@ -86,7 +86,7 @@ public class PartiesClient : IPartiesClient
     {
         try
         {
-            string endpointUrl = $"register/api/v1/organizations/{orgNo}";
+            string endpointUrl = $"organizations/{orgNo}";
 
             HttpRequestMessage request = new(HttpMethod.Get, endpointUrl);
             request.Headers.Add("PlatformAccessToken", _accessTokenGenerator.GenerateAccessToken("platform", "authentication"));
