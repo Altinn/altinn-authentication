@@ -172,9 +172,14 @@ public class SystemRegisterController : ControllerBase
 
             if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor.ID))
             {
-                errors.Add(ValidationErrors.SystemRegister_Valid_Org_Identifier, [
+                errors.Add(ValidationErrors.SystemRegister_InValid_Org_Identifier, [
                     "/registersystemrequest/vendor/id"
                 ]);
+
+                if (errors.TryToActionResult(out var orgIdentifierErrorResult))
+                {
+                    return orgIdentifierErrorResult;
+                }
             }
 
             if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor.ID), User))

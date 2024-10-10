@@ -15,7 +15,7 @@ public static class ValidationErrors
     /// <summary>
     /// Gets a validation error descriptor for org identifier
     /// </summary>
-    public static ValidationErrorDescriptor SystemRegister_Valid_Org_Identifier { get; }
+    public static ValidationErrorDescriptor SystemRegister_InValid_Org_Identifier { get; }
         = _factory.Create(0, "the org number identifier is not valid ISO6523 identifier");
 
     /// <summary>
