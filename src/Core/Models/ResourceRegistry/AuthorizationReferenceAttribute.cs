@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
     /// <summary>
     /// The reference
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class AuthorizationReferenceAttribute
     {
         /// <summary>

@@ -1,4 +1,5 @@
 ﻿#nullable enable
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 
@@ -7,6 +8,7 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
     /// <summary>
     /// Model describing a complete resource from the resrouce registry
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class ServiceResource
     {
         /// <summary>

@@ -6,9 +6,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Altinn.Authentication.Integration.Configuration;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Integration.ResourceRegister
 {
+    /// <summary>
+    /// Client implementation for integration with the Resource Registry
+    /// </summary>
+    [ExcludeFromCodeCoverage]
     public class ResourceRegistryClient : IResourceRegistryClient
     {
         private readonly HttpClient _httpClient;
