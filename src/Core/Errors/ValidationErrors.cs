@@ -31,9 +31,9 @@ public static class ValidationErrors
         = _factory.Create(2, "The system id already exists");
 
     /// <summary>
-    /// Gets a validation error descriptor for existing resource(rights) id
+    /// Gets a validation error descriptor for non existing resource(rights) id
     /// </summary>
-    public static ValidationErrorDescriptor SystemRegister_ResourceId_Exists { get; }
+    public static ValidationErrorDescriptor SystemRegister_ResourceId_DoesNotExist { get; }
         = _factory.Create(3, "One or all the resources in rights is not found in altinn's resource register");
 
     /// <summary>

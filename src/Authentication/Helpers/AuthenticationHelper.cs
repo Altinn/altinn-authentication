@@ -306,7 +306,8 @@ namespace Altinn.Platform.Authentication.Helpers
         public static bool IsValidRedirectUrl(List<Uri> redirectUrls)
         {
             string pattern = @"^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$";
-            Regex expression = new Regex(pattern, RegexOptions.Compiled);
+            Regex expression = new Regex(pattern, RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+
             foreach (Uri redirectUri in redirectUrls)
             {
                 if (!redirectUri.IsWellFormedOriginalString() || !expression.IsMatch(redirectUri.OriginalString))

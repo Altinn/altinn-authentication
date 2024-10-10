@@ -123,7 +123,7 @@ public class SystemRegisterController : ControllerBase
             bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.SystemInternalId).Count > 0;
             if (clientExistsForAnotherSystem)
             {
-                ModelState.AddModelError("ClientId",$"ClientId {clientId} already tagged with another system");
+                ModelState.AddModelError("ClientId", $"ClientId {clientId} already tagged with another system");
                 return BadRequest(ModelState);
             }
         }
@@ -198,7 +198,7 @@ public class SystemRegisterController : ControllerBase
 
             if (!await _systemRegisterService.DoesResourceIdExists(registerNewSystem.Rights, cancellationToken))
             {
-                errors.Add(ValidationErrors.SystemRegister_ResourceId_Exists, [
+                errors.Add(ValidationErrors.SystemRegister_ResourceId_DoesNotExist, [
                     "/registersystemrequest/rights/resource"
                 ]);
             }
