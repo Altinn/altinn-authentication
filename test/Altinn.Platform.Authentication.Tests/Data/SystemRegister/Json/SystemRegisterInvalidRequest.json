@@ -7,7 +7,7 @@
       "resource": [
         {
           "id": "urn:altinn:resource",
-          "value": "ske_krav-og-betaling"
+          "value": "ske-krav-og-betalinger"
         }
       ]
     }

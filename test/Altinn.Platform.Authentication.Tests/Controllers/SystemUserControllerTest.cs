@@ -17,6 +17,7 @@ using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -91,6 +92,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
             services.AddSingleton<IPartiesClient, PartiesClientMock>();
+            services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
             SetupDateTimeMock();
             SetupGuidMock();
         }

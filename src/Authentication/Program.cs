@@ -22,6 +22,7 @@ using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
+using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -339,6 +340,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IOrganisationsService, OrganisationsService>();
     services.AddHttpClient<AuthorizationApiClient>();
     services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
+    services.AddHttpClient<IResourceRegistryClient, ResourceRegistryClient>();
     services.AddHttpClient<IPartiesClient, PartiesClient>();
     services.AddSingleton<IAccessTokenGenerator, AccessTokenGenerator>();
     services.AddTransient<ISigningCredentialsResolver, SigningCredentialsResolver>();

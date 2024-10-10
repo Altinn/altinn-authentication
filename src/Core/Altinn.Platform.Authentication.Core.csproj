@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Folder Include="Configuration\" />
+    <Folder Include="Errors\" />
     <Folder Include="Services\Interfaces\" />
   </ItemGroup>
 

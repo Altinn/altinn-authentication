@@ -18,6 +18,7 @@ using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
+using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -103,6 +104,7 @@ public class RequestControllerTests(
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
         services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
         services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
+        services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
         SetupDateTimeMock();
         SetupGuidMock();
     }
