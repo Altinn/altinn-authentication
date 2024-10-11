@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
@@ -253,7 +254,8 @@ public class RequestSystemUserController : ControllerBase
     [HttpPost("{party}/{requestId}/approve")]
     public async Task<ActionResult<RequestSystemResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
-        Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, cancellationToken);
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -328,7 +330,8 @@ public class RequestSystemUserController : ControllerBase
     [HttpPost("{party}/{requestId}/reject")]
     public async Task<ActionResult<RequestSystemResponse>> RejectSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
-        Result<bool> response = await _requestSystemUser.RejectSystemUser(requestId, cancellationToken);
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.RejectSystemUser(requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

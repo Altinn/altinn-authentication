@@ -34,7 +34,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
         /// </summary>
         /// <returns></returns>
-        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, string partyOrgNo)
+        public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, string partyOrgNo, int userId)
         {
             SystemUser newSystemUser = new()
             {
@@ -157,7 +157,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             });
         }
 
-        public Task<SystemUser> CreateSystemUser(string party, SystemUserRequestDto request)
+        public Task<SystemUser> CreateSystemUser(string party, SystemUserRequestDto request, int userId)
         {
             throw new NotImplementedException();
         }

@@ -129,20 +129,24 @@ internal class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted)
+    public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted, int userId)
     {
         const string QUERY = /*strpsql*/@"            
                 INSERT INTO business_application.system_user_profile(
                     integration_title,
                     system_internal_id,
                     reportee_party_id,
-                    reportee_org_no)
+                    reportee_org_no,
+                    created_by)
                 VALUES(
                     @integration_title,
                     @system_internal_id,
                     @reportee_party_id,
-                    @reportee_org_no)
+                    @reportee_org_no,
+                    @created_by)
                 RETURNING system_user_profile_id;";
+
+        string createdBy = "user_id:" + userId.ToString();
 
         try
         {
@@ -152,6 +156,7 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_internal_id", toBeInserted.SystemInternalId!);
             command.Parameters.AddWithValue("reportee_party_id", toBeInserted.PartyId);
             command.Parameters.AddWithValue("reportee_org_no", toBeInserted.ReporteeOrgNo);
+            command.Parameters.AddWithValue("created_by", createdBy);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)

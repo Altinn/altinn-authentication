@@ -385,7 +385,7 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
         RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
         if (systemUserRequest is null)
@@ -412,7 +412,7 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable; 
         }
 
-        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, cancellationToken);
+        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, userId, cancellationToken);
 
         if (systemUserId is null)
         {
@@ -431,7 +431,7 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> RejectSystemUser(Guid requestId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
     {
         RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
         if (systemUserRequest is null)
@@ -444,7 +444,7 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        return await requestRepository.RejectSystemUser(requestId, cancellationToken);
+        return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
     }
 
     private async Task<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
