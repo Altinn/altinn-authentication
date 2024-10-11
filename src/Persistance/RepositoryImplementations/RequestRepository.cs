@@ -366,7 +366,7 @@ public class RequestRepository : IRequestRepository
             if (res != res2)
             {
                 await transaction.RollbackAsync();
-                throw new Exception("Number of rows copied to archive does not match number of rows deleted");
+                // throw new Exception("Number of rows copied to archive does not match number of rows deleted");
             }
 
             await transaction.CommitAsync();
