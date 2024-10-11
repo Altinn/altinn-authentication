@@ -348,7 +348,7 @@ public class RequestRepository : IRequestRepository
             SELECT *
             FROM business_application.request
             WHERE business_application.request.created < @archive_timeout
-                and business_application.request.is_deleted = true
+                and business_application.request.is_deleted = true;
             """;
         await using NpgsqlConnection conn = await _dataSource.OpenConnectionAsync();
         await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(IsolationLevel.RepeatableRead);

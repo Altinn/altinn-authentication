@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS business_application.request_archive(
     redirect_urls varchar(255),
     created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_changed timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,    
-    changed_by character varying(255),
-    is_deleted bool DEFAULT false   
+    is_deleted bool DEFAULT false,
+    changed_by character varying(255)       
 )
 
 TABLESPACE pg_default;
