@@ -103,5 +103,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the Cancellation token</param>
         /// <returns></returns>
         Task<Result<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Checks if the resourceids are found in resource register
+        /// </summary>
+        /// <param name="rights">the maskinporten client id</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns>false when one of the resource idnot found</returns>
+        Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken);
     }
 }

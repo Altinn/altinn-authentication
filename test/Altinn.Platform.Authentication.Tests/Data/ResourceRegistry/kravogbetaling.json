@@ -1,0 +1,26 @@
+{
+  "identifier": "ske_krav_og_betalinger",
+  "description": {
+    "nb": "Krav og Betalinger skd"
+  },
+  "title": {
+    "nb": "krav og betaling skd"
+  },
+  "hasCompetentAuthority": {
+    "organization": "974761076",
+    "orgcode": "skd"
+  },
+  "contactpoint": [
+    {
+      "phone": "1231324",
+      "email": "online@digdir.no"
+    }
+  ],
+  "isPartOf": "altiinnportal",
+  "hasPart": "delegationrequests",
+  "homepage": "www.altinn.no",
+  "status": "Completed",
+  "thematicArea": "http://publications.europa.eu/resource/authority/eurovoc/2468",
+  "type": [],
+  "sector": []
+}
