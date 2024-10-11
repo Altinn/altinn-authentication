@@ -88,10 +88,9 @@ public class PartiesClient : IPartiesClient
         {
             string endpointUrl = $"organizations/{orgNo}";
 
-            HttpRequestMessage request = new(HttpMethod.Get, endpointUrl);
-            request.Headers.Add("PlatformAccessToken", _accessTokenGenerator.GenerateAccessToken("platform", "authentication"));
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 
-            HttpResponseMessage response = await _client.GetAsync(endpointUrl, cancellationToken);
+            HttpResponseMessage response = await _client.GetAsync(null, endpointUrl, accessToken, cancellationToken);
 
             string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 

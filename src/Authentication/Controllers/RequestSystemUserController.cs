@@ -168,7 +168,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [HttpGet("redirect/{requestId}")]
     public async Task<ActionResult<RedirectUrl>> GetRedirectByRequestId(Guid requestId, CancellationToken cancellationToken = default)
-    {
+    {    
         Result<string> response = await _requestSystemUser.GetRedirectByRequestId(requestId);
         if (response.IsProblem)
         {
