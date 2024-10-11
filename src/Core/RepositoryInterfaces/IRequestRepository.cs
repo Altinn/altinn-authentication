@@ -61,8 +61,20 @@ public interface IRequestRepository
     Task<bool> DeleteRequestByRequestId(Guid requestId);
 
     /// <summary>
-    /// Deletes all requests older than the configured timeout
+    /// Soft deletes all requests older than the configured timeout in the main table
     /// </summary>
     /// <returns></returns>
-    Task<int> SetDeleteTimedoutRequests();
+    Task<int> SetDeleteTimedoutRequests(int days);
+
+    /// <summary>
+    /// Copies all requests older than the configured timeout to the archive table
+    /// </summary>
+    /// <returns></returns>
+    Task<int> CopyOldRequestsToArchive(int days);
+
+    /// <summary>
+    /// Hard deletes all archived and soft-deleted requests from the main table
+    /// </summary>
+    /// <returns></returns>
+    Task<int> DeleteArchivedAndDeleted(int days);
 }
