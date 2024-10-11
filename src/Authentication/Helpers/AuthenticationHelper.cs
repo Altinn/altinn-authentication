@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
@@ -296,6 +297,27 @@ namespace Altinn.Platform.Authentication.Helpers
             string orgnumberInSystemId = newSystem.Id.Split("_")[0];
             bool doesSystemStartWithOrg = orgnumberInSystemId == vendorOrgNumber;
             return doesSystemStartWithOrg;
+        }
+
+        /// <summary>
+        /// Checks if the redirecturl matches the expected url pattern
+        /// </summary>
+        /// <param name="redirectUrls">the redirect url for a system</param>
+        /// <returns>true if the url matches the expression</returns>
+        public static bool IsValidRedirectUrl(List<Uri> redirectUrls)
+        {
+            string pattern = @"^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$";
+            Regex expression = new Regex(pattern, RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+
+            foreach (Uri redirectUri in redirectUrls)
+            {
+                if (!redirectUri.IsWellFormedOriginalString() || !expression.IsMatch(redirectUri.OriginalString))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static string GetOrganizationNumberFromClaim(string claim)
