@@ -314,7 +314,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<int> DeleteTimedoutRequests()
+    public async Task<int> SetDeleteTimedoutRequests()
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.request
@@ -335,6 +335,56 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // DeleteTimedoutRequests // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> CopyOldRequestsToArchive()
+    {
+        const string QUERY = /*strpsql*/"""
+            INSERT INTO business_application.request_archive
+            SELECT *
+            FROM business_application.request
+            WHERE business_application.request.created < @archive_timeout
+                and business_application.request.is_deleted = true
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-ARCHIVE_TIMEOUT_DAYS));
+
+            return await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // MoveToArchive // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> DeleteArchivedAndDeleted()
+    {
+        const string QUERY = /*strpsql*/"""
+            DELETE FROM business_application.request
+            WHERE business_application.request.is_deleted = true
+                and business_application.request.created < @archive_timeout
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-ARCHIVE_TIMEOUT_DAYS));
+
+            return await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // DeleteArchivedAndDeleted // Exception");
             throw;
         }
     }

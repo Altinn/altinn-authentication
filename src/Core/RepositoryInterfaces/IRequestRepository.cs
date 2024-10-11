@@ -64,5 +64,5 @@ public interface IRequestRepository
     /// Deletes all requests older than the configured timeout
     /// </summary>
     /// <returns></returns>
-    Task<int> DeleteTimedoutRequests();
+    Task<int> SetDeleteTimedoutRequests();
 }
