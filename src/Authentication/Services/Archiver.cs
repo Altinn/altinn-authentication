@@ -4,7 +4,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Altinn.Platform.Authentication.Services;
+namespace ArchiverService;
 
 /// <summary>
 /// IHost Service Worker to archive old data regurlarly
