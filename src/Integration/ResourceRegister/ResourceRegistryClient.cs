@@ -7,6 +7,8 @@ using System.Text.Json.Serialization;
 using Altinn.Authentication.Integration.Configuration;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 using System.Diagnostics.CodeAnalysis;
+using System.Web;
+using System.Security.Policy;
 
 namespace Altinn.Platform.Authentication.Integration.ResourceRegister
 {
@@ -51,7 +53,7 @@ namespace Altinn.Platform.Authentication.Integration.ResourceRegister
             try
             {
                 // It's not possible to filter on AltinnApp or Altinn2Service for this endpoint
-                string endpointUrl = $"resource/{resourceId}";
+                string endpointUrl = $"resource/{HttpUtility.UrlEncode(resourceId)}";
 
                 HttpResponseMessage response = await _httpClient.GetAsync(endpointUrl);
                 if (response.StatusCode == HttpStatusCode.OK)
