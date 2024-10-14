@@ -122,7 +122,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateRegisteredSystem(RegisteredSystem updatedSystem, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.system_register
@@ -162,7 +162,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
             throw;
         }

@@ -17,6 +17,7 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
@@ -25,6 +26,7 @@ using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
+using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Hosting;
@@ -112,9 +114,29 @@ public class RequestControllerTests(
     [Fact]
     public async Task Request_Create_Success()
     {
-        // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            HttpClient sysclient = CreateClient();
+            string[] prefixes = { "altinn", "digdir" };
+            string systoken = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            sysclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", systoken);
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterResponse.json").ReadToEnd();
+            RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
+
+            string systemId = "991825827_the_matrix";
+            HttpRequestMessage sysrequest = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
+            HttpResponseMessage getResponse = await sysclient.SendAsync(sysrequest, HttpCompletionOption.ResponseContentRead);
+            RegisteredSystem actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(await getResponse.Content.ReadAsStringAsync(), _options);
+            AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
+        }
 
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);

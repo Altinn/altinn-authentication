@@ -89,7 +89,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
-    Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default);
+    Task<bool> UpdateRegisteredSystem(RegisteredSystem updatedSystem, CancellationToken cancellationToken = default);
 
     /// Checks if the client id exists
     /// </summary>
