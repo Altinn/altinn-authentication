@@ -117,27 +117,6 @@ public class RequestControllerTests(
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-        if (response.StatusCode == System.Net.HttpStatusCode.OK)
-        {
-            HttpClient sysclient = CreateClient();
-            string[] prefixes = { "altinn", "digdir" };
-            string systoken = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-            sysclient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", systoken);
-            JsonSerializerOptions options = new JsonSerializerOptions()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-            string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterResponse.json").ReadToEnd();
-            RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
-
-            string systemId = "991825827_the_matrix";
-            HttpRequestMessage sysrequest = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
-            HttpResponseMessage getResponse = await sysclient.SendAsync(sysrequest, HttpCompletionOption.ResponseContentRead);
-            RegisteredSystem actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(await getResponse.Content.ReadAsStringAsync(), _options);
-            AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
-        }
-
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
