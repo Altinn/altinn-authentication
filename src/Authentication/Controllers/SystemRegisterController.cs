@@ -57,7 +57,7 @@ public class SystemRegisterController : ControllerBase
                     Description = system.Description,
                     Name = system.Name,
                     Rights = system.Rights,
-                    SystemId = system.SystemId,
+                    SystemId = system.Id,
                     SystemVendorOrgName = system.SystemVendorOrgName,
                     SystemVendorOrgNumber = system.SystemVendorOrgNumber
                 });
@@ -120,7 +120,7 @@ public class SystemRegisterController : ControllerBase
         RegisteredSystem systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
         foreach (string clientId in updateSystem.ClientId)
         {
-            bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.SystemInternalId).Count > 0;
+            bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.InternalId).Count > 0;
             if (clientExistsForAnotherSystem)
             {
                 ModelState.AddModelError("ClientId", $"ClientId {clientId} already tagged with another system");
@@ -164,7 +164,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns></returns>
     [HttpPost("vendor")]    
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisteredSystem registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
         {

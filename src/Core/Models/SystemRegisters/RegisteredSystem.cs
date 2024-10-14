@@ -15,45 +15,52 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
     public class RegisteredSystem
     {
         /// <summary>
-        /// The primary key to store and edit the Registered System.
-        /// Used as a Foreign Key in the System User table.
-        /// 
-        /// The SystemInternalId never changes throughout the lifecycle 
-        /// of the entry.
-        /// </summary>
-        [Required]
-        public Guid SystemInternalId { get; set; } = Guid.Empty;
-
-        /// <summary>
-        /// A unique External Id for this System, in human-readable string format.
-        /// The id could be in the format of system_vendor_name_plus_name_chosen_by_them.
+        /// The System Id is a unique External Id for this System, in human-readable string format. (SLUG)
+        /// The id could be in the format of system_vendor_orgno_plus_name_chosen_by_them.
         /// 
         /// An Optimistic Concurrency pattern to create new System Ids could be used,
-        /// where the Id of the System is prefixed with the SystemVendor.
+        /// where the Id of the System is prefixed with the SystemVendor's orgno.
         /// 
         /// When the SystemVendor tries to register a new system (product), 
         /// they should be aware of their own previous system names 
         /// when giving the new system it's id.
         /// 
-        /// The Registered Systems are stored using a unique system_internal_id
-        /// as the primary key, which allows System Vendors to reuse the SystemId 
+        /// The Registered Systems are stored using a unique internal_id
+        /// as the primary key, which allows System Vendors to reuse the external System's Id 
         /// if creating new systems to replace the existing one. The old system's
         /// name should be changed prior to be reused, since it must be unique.
+        /// </summary>        
+        public required string Id { get; set; } 
+
+        /// <summary>
+        /// The primary key to store and edit the Registered System.
+        /// Used as a Foreign Key in the System User table.
+        /// 
+        /// Created by our system, and is not visible to the System Vendor.
+        /// 
+        /// The InternalId never changes throughout the lifecycle 
+        /// of the entry.
         /// </summary>
-        [Required]
-        public string SystemId { get; set; } = string.Empty;
+        [JsonIgnore]
+        public Guid InternalId { get; set; } = Guid.Empty;
 
         /// <summary>
         /// Organization number of the system Vendor that offers the product (system)
         /// </summary>
-        [Required]
-        public string SystemVendorOrgNumber { get; set; }
+        public required VendorInfo Vendor { get; set; }
+
 
         /// <summary>
         /// Organization number of the system Vendor that offers the product (system)
         /// </summary>
-        [Required]
-        public string SystemVendorOrgName { get; set; } = string.Empty;
+        [JsonIgnore]
+        public string SystemVendorOrgNumber => Vendor.ID;
+
+        /// <summary>
+        /// Organization number of the system Vendor that offers the product (system)
+        /// </summary>        
+        [JsonIgnore]
+        public string SystemVendorOrgName { get; } = string.Empty;
 
         /// <summary>
         /// A short name of the product, used when displaying to the user
@@ -79,7 +86,8 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// Registered Systems can be set to Soft Deleted
         /// </summary>
-        public bool SoftDeleted { get; set; } = false;
+        [JsonIgnore]
+        public bool IsDeleted { get; set; } = false;
 
         /// <summary>
         /// The client Id
