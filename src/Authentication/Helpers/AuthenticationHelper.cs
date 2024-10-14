@@ -291,7 +291,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// Checks if the system id starts with the orgnumber of the owner
         /// </summary>
         /// <returns>true if the systemid starts with the orgnumber of the owner of the system</returns>
-        public static bool DoesSystemIdStartWithOrgnumber(RegisterSystemRequest newSystem)
+        public static bool DoesSystemIdStartWithOrgnumber(RegisteredSystem newSystem)
         {
             string vendorOrgNumber = GetOrgNumber(newSystem.Vendor.ID);
             string orgnumberInSystemId = newSystem.Id.Split("_")[0];
