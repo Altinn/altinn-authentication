@@ -299,4 +299,10 @@ internal class SystemUserRepository : ISystemUserRepository
             throw;
         }
     }
+
+    /// <inheritdoc />
+    public Task<Guid?> ChangeSystemUser(SystemUser toBeChanged, int userId)
+    {
+        throw new NotImplementedException();
+    }
 }

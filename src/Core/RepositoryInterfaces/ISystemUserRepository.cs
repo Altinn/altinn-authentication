@@ -60,4 +60,12 @@ public interface ISystemUserRepository
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Replaces the values for the existing system user with those from the ChangeRequest
+    /// </summary>
+    /// <param name="toBeChanged">SystemUser to be changed</param>
+    /// <param name="userId">the user id of the reporter approving the change</param>
+    /// <returns>The id (UUID) of the SystemUser</returns>
+    Task<Guid?> ChangeSystemUser(SystemUser toBeChanged, int userId);
 }
