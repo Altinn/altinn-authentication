@@ -403,6 +403,45 @@ public class RequestRepository : IRequestRepository
         }
     }
 
+    /// <summary>
+    /// Not reachable from the API
+    /// </summary>
+    /// <param name="internalId">The guid as it was in the main tabble</param>
+    /// <returns></returns>
+    public async Task<RequestSystemResponse?> GetArchivedRequestByInternalId(Guid internalId)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                rights,
+                request_status,
+                redirect_urls,
+                created 
+            FROM business_application.request_archive r
+            WHERE r.id = @request_id
+                and r.is_deleted = true;
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("request_id", internalId);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToRequest)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            throw;
+        }
+    }
+
     private ValueTask<bool> FilterTimedOut(RequestSystemResponse response)
     {
         if (response.Status == RequestStatus.Timedout.ToString())

@@ -77,4 +77,11 @@ public interface IRequestRepository
     /// </summary>
     /// <returns></returns>
     Task<int> DeleteArchivedAndDeleted(int days);
+
+    /// <summary>
+    /// Not reachable from the API
+    /// </summary>
+    /// <param name="internalId">The guid as it was in the main tabble</param>
+    /// <returns></returns>
+    Task<RequestSystemResponse?> GetArchivedRequestByInternalId(Guid internalId);
 }
