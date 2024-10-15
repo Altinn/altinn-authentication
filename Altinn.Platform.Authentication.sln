@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Altinn.Platform.Authenticat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Altinn.Platform.Authentication.Core", "src\Core\Altinn.Platform.Authentication.Core.csproj", "{67A2F8EE-5492-4F13-9E9B-8E71B5AF95DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altinn.Platform.Authentication.Integration", "src\Integration\Altinn.Platform.Authentication.Integration.csproj", "{A367652C-B409-40DE-8ACA-C65FF1107E78}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Altinn.Platform.Authentication.Integration", "src\Integration\Altinn.Platform.Authentication.Integration.csproj", "{A367652C-B409-40DE-8ACA-C65FF1107E78}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
