@@ -34,7 +34,7 @@ public interface IChangeRequestRepository
     /// <param name="userId">the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>returns the system user id</returns>
-    Task<Guid?> ApproveAndDelegateOnSystemUser(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken);
+    Task<bool> ApproveAndDelegateOnSystemUser(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all ChangeRequests that the Vendor has

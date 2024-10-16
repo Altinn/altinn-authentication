@@ -27,6 +27,7 @@ public class ChangeRequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IChangeRequestRepository changeRequestRepository,
+    ISystemUserRepository systemUserRepository,
     IOptions<PaginationOptions> _paginationOption)
     : IChangeRequestSystemUser
 {
@@ -387,24 +388,28 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
-        if (systemUserRequest is null)
+        ChangeRequestResponse? systemUserChangeRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        if (systemUserChangeRequest is null)
         {
             return Problem.RequestNotFound;
         }
 
-        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        if (systemUserChangeRequest.Status != RequestStatus.New.ToString())
         {
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserChangeRequest.SystemId);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
         }
 
-        SystemUser toBeInserted = await MapSystemUserChangeRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        SystemUser? toBeChanged = await systemUserRepository.GetSystemUserById(systemUserChangeRequest.SystemUserId);
+        if (toBeChanged is null)
+        {
+            return Problem.SystemUserNotFound;
+        }
 
         DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
@@ -412,16 +417,14 @@ public class ChangeRequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable; 
         }
 
-        Guid? systemUserId = await changeRequestRepository.ApproveAndDelegateOnSystemUser(requestId, toBeInserted, userId, cancellationToken);
+        var changed = await changeRequestRepository.ApproveAndDelegateOnSystemUser(requestId, toBeChanged, userId, cancellationToken);
 
-        if (systemUserId is null)
+        if (!changed)
         {
             return Problem.SystemUser_FailedToCreate;
         }
 
-        toBeInserted.Id = systemUserId.ToString()!;
-
-        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted, delegationCheckFinalResult.RightResponses);
+        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
         if (delegationSucceeded.IsProblem) 
         { 
             return delegationSucceeded.Problem; 

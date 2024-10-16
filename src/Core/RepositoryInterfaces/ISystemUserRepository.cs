@@ -67,5 +67,5 @@ public interface ISystemUserRepository
     /// <param name="toBeChanged">SystemUser to be changed</param>
     /// <param name="userId">the user id of the reporter approving the change</param>
     /// <returns>The id (UUID) of the SystemUser</returns>
-    Task<Guid?> ChangeSystemUser(SystemUser toBeChanged, int userId);
+    Task<bool> ChangeSystemUser(SystemUser toBeChanged, int userId);
 }

@@ -172,7 +172,7 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<int> UpdateIntegrationTitle(Guid guid, string integrationTitle)
     {
-        const string QUERY = /*strspsql*/@"
+        const string QUERY = /*strpsql*/@"
                 UPDATE business_application.system_user_profile
                 SET integration_title = @integration_title
                 WHERE system_user_profile_id = @id
@@ -200,7 +200,7 @@ internal class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
     {      
-        const string QUERY = /*strspsql*/@"
+        const string QUERY = /*strpsql*/@"
             SELECT 
                 system_user_profile_id,
                 system_id,
@@ -301,8 +301,27 @@ internal class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public Task<Guid?> ChangeSystemUser(SystemUser toBeChanged, int userId)
+    public async Task<bool> ChangeSystemUser(SystemUser toBeChanged, int userId)
     {
-        throw new NotImplementedException();
+        const string QUERY = /*strpsql*/@"
+                UPDATE business_application.system_user_profile
+	            SET changed_by = @user_id
+        	    WHERE business_application.system_user_profile.system_user_profile_id = @system_user_profile_id;
+                ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_user_profile_id", toBeChanged.Id);
+            command.Parameters.AddWithValue("user_id", "user_id:" + userId.ToString());
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // SetDeleteSystemUserById // Exception");
+            throw;
+        }
     }
 }

@@ -73,7 +73,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<Guid?> ApproveAndDelegateOnSystemUser(Guid requestId, SystemUser toBeChanged, int userId, CancellationToken cancellationToken)
+    public async Task<bool> ApproveAndDelegateOnSystemUser(Guid requestId, SystemUser toBeChanged, int userId, CancellationToken cancellationToken)
     {
         string changed_by = "userId:" + userId.ToString();
 
@@ -97,11 +97,11 @@ public class ChangeRequestRepository(
 
             bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
 
-            Guid? systemUserId = await systemUserRepository.ChangeSystemUser(toBeChanged, userId);
+            var changed = await systemUserRepository.ChangeSystemUser(toBeChanged, userId);
 
             await transaction.CommitAsync(cancellationToken);
 
-            return systemUserId;
+            return changed;
         }
         catch (Exception ex)
         {

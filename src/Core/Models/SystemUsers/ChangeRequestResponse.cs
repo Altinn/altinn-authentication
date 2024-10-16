@@ -33,6 +33,10 @@ public class ChangeRequestResponse()
     [JsonPropertyName("systemId")]
     public string SystemId { get; set; }
 
+    [Required]
+    [JsonPropertyName("systemUserId")]
+    public Guid SystemUserId { get; set; }
+
     /// <summary>
     /// The organisation number for the SystemUser's Party ( the customer that delegates rights to the systemuser).
     /// Is one of the three parts of the External Request Id.
