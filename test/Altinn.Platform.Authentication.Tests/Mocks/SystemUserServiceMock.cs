@@ -180,5 +180,10 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             return Page.Create<SystemUser,string>(theList, 2, static theList => theList.Id);
         }
+
+        public Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

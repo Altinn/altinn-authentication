@@ -480,18 +480,18 @@ public class RequestSystemUserService(
 
             if (rightResponses is null) 
             { 
-                return new DelegationCheckResult(false, null); 
+                return new DelegationCheckResult(false, null, null); 
             }
 
             if (!ResolveIfHasAccess(rightResponses)) 
             { 
-                return new DelegationCheckResult(false, null); 
+                return new DelegationCheckResult(false, null, null); 
             }
 
             rightResponsesList.Add(new RightResponses(rightResponses));
         }
 
-        return new DelegationCheckResult(true, rightResponsesList);
+        return new DelegationCheckResult(true, rightResponsesList, null);
     }
 
     private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)

@@ -1,4 +1,6 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
+﻿using System.Text.Json.Serialization;
+
+namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
 /// <summary>
 ///  Represents the response of the backend for Delegation access check response
@@ -24,4 +26,10 @@ public class DelegationResponseData
     /// The status of the response.
     /// </summary>
     public string? Status { get; set; }
+
+    /// <summary>
+    /// Gets or sets a list of details describing why or why not the right is valid in the current user and reportee party context
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public List<DetailExternal> Details { get; set; }
 }

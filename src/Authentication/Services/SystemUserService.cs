@@ -8,8 +8,10 @@ using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -29,6 +31,7 @@ namespace Altinn.Platform.Authentication.Services
         ISystemUserRepository systemUserRepository,
         ISystemRegisterRepository systemRegisterRepository,
         IAccessManagementClient accessManagementClient,
+        DelegationHelper delegationHelper,
         IPartiesClient partiesClient) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
@@ -160,6 +163,59 @@ namespace Altinn.Platform.Authentication.Services
             theList ??= [];
 
             return Page.Create(theList, 3, static theList => theList.Id);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
+        {
+            RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+
+            if (party is null)
+            {
+                return Problem.Reportee_Orgno_NotFound;
+            }
+                        
+            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.SystemId, cancellationToken);
+            if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+
+            SystemUser newSystemUser = new()
+            {
+                ReporteeOrgNo = party.OrgNumber,
+                SystemInternalId = regSystem.SystemInternalId,
+                IntegrationTitle = request.IntegrationTitle,
+                SystemId = request.SystemId,
+                PartyId = partyId
+            };
+
+            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
+            if (insertedId is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+            if (inserted is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses);
+            if (delegationSucceeded.IsProblem)
+            {
+                await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                return delegationSucceeded.Problem;
+            }
+
+            return inserted;
         }
     }
 }
