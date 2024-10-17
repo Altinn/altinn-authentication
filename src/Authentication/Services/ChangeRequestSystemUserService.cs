@@ -21,22 +21,23 @@ namespace Altinn.Platform.Authentication.Services;
 #nullable enable
 
 /// <inheritdoc/>
-public class RequestSystemUserService(
+public class ChangeRequestSystemUserService(
     ISystemRegisterService systemRegisterService,
     IPartiesClient partiesClient,
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
-    IRequestRepository requestRepository,
+    IChangeRequestRepository changeRequestRepository,
+    ISystemUserRepository systemUserRepository,
     IOptions<PaginationOptions> _paginationOption)
-    : IRequestSystemUser
+    : IChangeRequestSystemUser
 {
     /// <summary>
     /// Used to limit the number of items returned in a paginated list
     /// </summary>
     private int _paginationSize = _paginationOption.Value.Size;
-    
+
     /// <inheritdoc/>
-    public async Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
+    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
         // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
         ExternalRequestId externalRequestId = new()
@@ -93,7 +94,7 @@ public class RequestSystemUserService(
 
         Guid newId = Guid.NewGuid();
 
-        var created = new RequestSystemResponse()
+        var created = new ChangeRequestResponse()
         {
             Id = newId,
             ExternalRef = createRequest.ExternalRef,
@@ -104,7 +105,7 @@ public class RequestSystemUserService(
             RedirectUrl = createRequest.RedirectUrl
         };
 
-        Result<bool> res = await requestRepository.CreateRequest(created);
+        Result<bool> res = await changeRequestRepository.CreateChangeRequest(created);
         if (res.IsProblem)
         {
             return Problem.RequestCouldNotBeStored;
@@ -204,7 +205,7 @@ public class RequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateExternalRequestId(ExternalRequestId externalRequestId)
     {
-        RequestSystemResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByExternalReferences(externalRequestId);
 
         if (res is not null && res.Status == RequestStatus.Accepted.ToString())
         {
@@ -279,9 +280,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<RequestSystemResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+    public async Task<Result<ChangeRequestResponse>> GetChangeRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
     {
-        RequestSystemResponse? res = await requestRepository.GetRequestByExternalReferences(externalRequestId);
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByExternalReferences(externalRequestId);
 
         if (res is null)
         {
@@ -294,7 +295,7 @@ public class RequestSystemUserService(
             return check.Problem;
         }
 
-        return new RequestSystemResponse()
+        return new ChangeRequestResponse()
         {
             Id = res.Id,
             ExternalRef = res.ExternalRef,
@@ -307,9 +308,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<RequestSystemResponse>> GetRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
+    public async Task<Result<ChangeRequestResponse>> GetChangeRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
     {
-        RequestSystemResponse? res = await requestRepository.GetRequestByInternalId(requestId);
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
         if (res is null)
         {
             return Problem.RequestNotFound;
@@ -321,7 +322,7 @@ public class RequestSystemUserService(
             return check.Problem;
         }                
 
-        return new RequestSystemResponse()
+        return new ChangeRequestResponse()
         {
             Id = res.Id,
             ExternalRef = res.ExternalRef,
@@ -351,7 +352,7 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int partyId, Guid requestId)
+    public async Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
         Party party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
@@ -359,7 +360,7 @@ public class RequestSystemUserService(
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        RequestSystemResponse? find = await requestRepository.GetRequestByInternalId(requestId);
+        ChangeRequestResponse? find = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
         if (find is null)
         {
             return Problem.RequestNotFound;
@@ -370,7 +371,7 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
-        var request = new RequestSystemResponse
+        var request = new ChangeRequestResponse
         {
             Id = find.Id,
             SystemId = find.SystemId,
@@ -385,26 +386,30 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
-        if (systemUserRequest is null)
+        ChangeRequestResponse? systemUserChangeRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        if (systemUserChangeRequest is null)
         {
             return Problem.RequestNotFound;
         }
 
-        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        if (systemUserChangeRequest.Status != RequestStatus.New.ToString())
         {
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserChangeRequest.SystemId);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
         }
 
-        SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        SystemUser? toBeChanged = await systemUserRepository.GetSystemUserById(systemUserChangeRequest.SystemUserId);
+        if (toBeChanged is null)
+        {
+            return Problem.SystemUserNotFound;
+        }
 
         DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
@@ -412,16 +417,14 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable; 
         }
 
-        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, userId, cancellationToken);
+        var changed = await changeRequestRepository.ApproveAndDelegateOnSystemUser(requestId, toBeChanged, userId, cancellationToken);
 
-        if (systemUserId is null)
+        if (!changed)
         {
             return Problem.SystemUser_FailedToCreate;
         }
 
-        toBeInserted.Id = systemUserId.ToString()!;
-
-        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted, delegationCheckFinalResult.RightResponses);
+        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
         if (delegationSucceeded.IsProblem) 
         { 
             return delegationSucceeded.Problem; 
@@ -431,9 +434,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
     {
-        RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
             return Problem.RequestNotFound;
@@ -444,10 +447,10 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
+        return await changeRequestRepository.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
     }
 
-    private async Task<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
+    private async Task<SystemUser> MapSystemUserChangeRequestToSystemUser(ChangeRequestResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
     {
         SystemUser toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string systemName);
@@ -508,7 +511,7 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<Page<RequestSystemResponse, Guid>>> GetAllRequestsForVendor(
+    public async Task<Result<Page<ChangeRequestResponse, Guid>>> GetAllChangeRequestsForVendor(
         OrganisationNumber vendorOrgNo,
         string systemId,
         Page<Guid>.Request continueRequest,
@@ -526,16 +529,16 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
         
-        List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
+        List<ChangeRequestResponse>? theList = await changeRequestRepository.GetAllChangeRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
         return Page.Create(theList, _paginationSize, static theList => theList.Id); 
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> DeleteRequestByRequestId(Guid requestId)
+    public async Task<Result<bool>> DeleteChangeRequestByRequestId(Guid requestId)
     {
-        var result = await requestRepository.DeleteRequestByRequestId(requestId);
+        var result = await changeRequestRepository.DeleteChangeRequestByRequestId(requestId);
         if (result)
         {
             return true;
@@ -545,9 +548,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<string>> GetRedirectByRequestId(Guid requestId)
+    public async Task<Result<string>> GetRedirectByChangeRequestId(Guid requestId)
     {
-        RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
         if (systemUserRequest is null || systemUserRequest.RedirectUrl is null)
         {
             return Problem.RequestNotFound;
@@ -555,4 +558,5 @@ public class RequestSystemUserService(
 
         return systemUserRequest.RedirectUrl;
     }
+           
 }
