@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Azure.Core;
 
@@ -182,6 +183,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         public Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<Result<CreateSystemUserResponse>> ISystemUserService.CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

@@ -9,6 +9,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
@@ -147,7 +148,7 @@ namespace Altinn.Platform.Authentication.Services
             Page<string>.Request continueRequest, 
             CancellationToken cancellationToken)
         {
-            RegisteredSystem? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+            RegisteredSystem? system = await _registerRepository.GetRegisteredSystemById(systemId);
             if (system is null)
             {
                 return Problem.SystemIdNotFound;
@@ -166,7 +167,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<CreateSystemUserResponse>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
             RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
@@ -182,9 +183,21 @@ namespace Altinn.Platform.Authentication.Services
             }
                         
             DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, cancellationToken);
-            if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
+            if (delegationCheckFinalResult.RightResponses is null)
             {
-                return Problem.Rights_NotFound_Or_NotDelegable;
+                // This represents some problem with doing the delegation check beyond the rights not being delegable.
+                return Problem.UnableToDoDelegationCheck;
+            }
+
+            if (!delegationCheckFinalResult.CanDelegate)
+            {
+                // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
+                return new CreateSystemUserResponse
+                {
+                    IsSuccess = false,
+                    SystemUser = null,
+                    Problem = MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors)
+                };
             }
 
             SystemUser newSystemUser = new()
@@ -208,14 +221,53 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToCreate;
             }
 
-            Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses);
+            Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses);
             if (delegationSucceeded.IsProblem)
             {
                 await _repository.SetDeleteSystemUserById((Guid)insertedId);
-                return delegationSucceeded.Problem;
+                return new CreateSystemUserResponse
+                {
+                    IsSuccess = false,
+                    SystemUser = null,
+                    Problem = delegationSucceeded.Problem
+                };
             }
 
-            return inserted;
+            return new CreateSystemUserResponse
+            {
+                IsSuccess = true,
+                SystemUser = inserted
+            };
+        }
+
+        private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
+        {
+            if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
+            {
+                return Problem.UnableToDoDelegationCheck;
+            }
+
+            if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
+            {
+                return Problem.DelegationRightMissingRoleAccess;
+            }
+
+            if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
+            {
+                return Problem.DelegationRightMissingDelegationAccess;
+            }
+
+            if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
+            {
+                return Problem.DelegationRightMissingSrrRightAccess;
+            }
+
+            if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
+            {
+                return Problem.DelegationRightInsufficientAuthenticationLevel;
+            }
+
+            return Problem.UnableToDoDelegationCheck;
         }
     }
 }
