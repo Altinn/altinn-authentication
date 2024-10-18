@@ -181,7 +181,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.Reportee_Orgno_NotFound;
             }
                         
-            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.SystemId, cancellationToken);
+            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, cancellationToken);
             if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
             {
                 return Problem.Rights_NotFound_Or_NotDelegable;
@@ -190,7 +190,7 @@ namespace Altinn.Platform.Authentication.Services
             SystemUser newSystemUser = new()
             {
                 ReporteeOrgNo = party.OrgNumber,
-                SystemInternalId = regSystem.SystemInternalId,
+                SystemInternalId = regSystem.InternalId,
                 IntegrationTitle = request.IntegrationTitle,
                 SystemId = request.SystemId,
                 PartyId = partyId
