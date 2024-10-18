@@ -258,7 +258,7 @@ public class SystemUserController : ControllerBase
         Result<CreateSystemUserResponse> createdSystemUser = await _systemUserService.CreateAndDelegateSystemUser(party, request, userId, cancellationToken);
         if (createdSystemUser.IsSuccess)
         {
-            return createdSystemUser.Value;
+            return Ok(createdSystemUser.Value);
         }
 
         return createdSystemUser.Problem.ToActionResult();
