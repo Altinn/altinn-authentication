@@ -133,12 +133,11 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new SystemUser
-    /// The unique Id for the systemuser is handled by the db.
-    /// But the calling client may send a guid for the request of creating a new system user
-    /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
+    /// Creates a new SystemUser.
     /// </summary>
-    /// <returns></returns>    
+    /// <param name="party">The partyId for the reportee</param>
+    /// <param name="request">The DTO describing the Product the Caller wants to create.</param>
+    /// <returns>A SystemUser model</returns>    
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]                
     [Produces("application/json")]
     [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
@@ -157,8 +156,9 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Replaces the values for the existing system user with those from the update 
+    /// Replaces the values for the existing system user with those from the update. 
     /// </summary>
+    /// <param name="request">The DTO describing the updateed SystemUser.</param>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -240,5 +240,27 @@ public class SystemUserController : ControllerBase
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Creates a new SystemUser.
+    /// </summary>
+    /// <returns>SystemUser response model</returns>    
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpPost("{party}/bff")]
+    public async Task<ActionResult<CreateSystemUserResponse>> CreateAndDelegateSystemUser(string party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
+    {
+        var userId = AuthenticationHelper.GetUserId(HttpContext);
+
+        Result<CreateSystemUserResponse> createdSystemUser = await _systemUserService.CreateAndDelegateSystemUser(party, request, userId, cancellationToken);
+        if (createdSystemUser.IsSuccess)
+        {
+            return Ok(createdSystemUser.Value);
+        }
+
+        return createdSystemUser.Problem.ToActionResult();
     }
 }    

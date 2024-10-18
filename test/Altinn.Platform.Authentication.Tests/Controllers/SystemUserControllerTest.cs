@@ -17,6 +17,8 @@ using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
@@ -93,6 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
             services.AddSingleton<IPartiesClient, PartiesClientMock>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
+            services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
             SetupDateTimeMock();
             SetupGuidMock();
         }
@@ -474,6 +477,39 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(list);
             Assert.NotEmpty(list);
             Assert.Equal(list[0].IntegrationTitle, newSystemUser.IntegrationTitle);
+        }
+
+        [Fact]
+        public async Task SystemUser_CreateAndDelegate_ReturnsOk()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+  
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix",
+            };
+
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/bff")
+            {
+                Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
+            };
+
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+
+            var result = await createSystemUserResponse.Content.ReadFromJsonAsync<CreateSystemUserResponse>();
+            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
+            SystemUser? shouldBeCreated = result?.SystemUser;
+            Assert.NotNull(shouldBeCreated);
+            Assert.Equal(newSystemUser.SystemId, shouldBeCreated.SystemId);
+            Assert.Equal(newSystemUser.IntegrationTitle, shouldBeCreated.IntegrationTitle);
         }
 
         private static string GetConfigPath()
