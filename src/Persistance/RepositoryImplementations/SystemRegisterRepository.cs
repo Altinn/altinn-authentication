@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Numerics;
 using System.Text.Json;
 using System.Text.Unicode;
 using System.Threading;
@@ -66,7 +67,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.system_register(
@@ -121,7 +122,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateRegisteredSystem(RegisteredSystem updatedSystem, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.system_register
@@ -161,7 +162,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
             throw;
         }
@@ -346,14 +347,20 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             clientIds.Add(str);
         }
 
+        VendorInfo vendor = new() 
+        {
+            ID = "0192:" + reader.GetFieldValue<string>("systemvendor_orgnumber"),
+            Authority = "iso6523-actorid-upis"
+        };
+
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
-            SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
-            SystemId = reader.GetFieldValue<string>("system_id"),
-            SystemVendorOrgNumber = reader.GetFieldValue<string>("systemvendor_orgnumber"),
+            InternalId = reader.GetFieldValue<Guid>("system_internal_id"),
+            Id = reader.GetFieldValue<string>("system_id"),
+            Vendor = vendor,
             Name = reader.GetFieldValue<IDictionary<string, string>>("name"),
             Description = reader.GetFieldValue<IDictionary<string, string>>("description"),
-            SoftDeleted = reader.GetFieldValue<bool>("is_deleted"),
+            IsDeleted = reader.GetFieldValue<bool>("is_deleted"),
             ClientId = clientIds,
             Rights = rights,
             IsVisible = reader.GetFieldValue<bool>("is_visible"),
@@ -427,7 +434,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             RegisteredSystem? systemInfo = await GetRegisteredSystemById(systemId);
 
-            List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo.SystemInternalId);
+            List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo.InternalId);
 
             if (existingClients != null)
             {
@@ -436,7 +443,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                     bool clientFoundAlready = existingClients.FindAll(c => c.ClientId == id).Count() > 0;
                     if (!clientFoundAlready)
                     {
-                        await CreateClient(id, systemInfo.SystemInternalId);
+                        await CreateClient(id, systemInfo.InternalId);
                     }
                 }
             }

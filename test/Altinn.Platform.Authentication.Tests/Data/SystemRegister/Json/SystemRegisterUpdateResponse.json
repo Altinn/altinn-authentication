@@ -1,6 +1,9 @@
 {
-  "systemId": "991825827_the_matrix",
-  "systemVendorOrgNumber": "991825827",
+  "id": "991825827_the_matrix",
+  "vendor": {
+    "authority": "iso6523-actorid-upis",
+    "ID": "0192:991825827"
+  },
   "name": {
     "nb": "The Matrix",
     "en": "The Matrix",
