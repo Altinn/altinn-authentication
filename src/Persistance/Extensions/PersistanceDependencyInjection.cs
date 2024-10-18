@@ -29,6 +29,7 @@ public static class PersistanceDependencyInjection
         AddSystemUserRepository(services);        
         AddSystemRegisterRepository(services);
         AddRequestRepository(services);
+        AddChangeRequestRepository(services);
 
         return services;
     }
@@ -36,6 +37,11 @@ public static class PersistanceDependencyInjection
     private static void AddRequestRepository(this IServiceCollection services)
     {
         services.TryAddTransient<IRequestRepository, RequestRepository>();
+    }
+
+    private static void AddChangeRequestRepository(this IServiceCollection services)
+    {
+        services.TryAddTransient<IChangeRequestRepository, ChangeRequestRepository>();
     }
 
     /// <summary>

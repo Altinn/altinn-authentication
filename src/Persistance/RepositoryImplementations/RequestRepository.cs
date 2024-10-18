@@ -189,7 +189,7 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // ApproveAndCreateSystemUser // Exception");
             throw;
         }
     }
