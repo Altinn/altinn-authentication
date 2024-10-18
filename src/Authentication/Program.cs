@@ -309,7 +309,13 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
 
     services.Configure<AccessTokenSettings>(config.GetSection("AccessTokenSettings"));
+
+    // Configure OIDC providers used by JwtCookieHandler
+    services.Configure<OidcProviderSettings>(config.GetSection("OidcProviders"));
+
+    // Configure OIDC providers used by authentication
     services.ConfigureOidcProviders(config.GetSection("OidcProviders"));
+
     services.ConfigureDataProtection(builder.Environment.IsDevelopment(), config.GetSection("AzureStorageConfiguration").Get<AzureStorageConfiguration>());
     services.AddAuthentication(JwtCookieDefaults.AuthenticationScheme)
          .AddJwtCookie(JwtCookieDefaults.AuthenticationScheme, options =>
