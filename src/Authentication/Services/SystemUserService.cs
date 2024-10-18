@@ -62,7 +62,7 @@ namespace Altinn.Platform.Authentication.Services
             SystemUser newSystemUser = new()
             {                
                 ReporteeOrgNo = party.OrgNumber,
-                SystemInternalId = regSystem.SystemInternalId,
+                SystemInternalId = regSystem.InternalId,
                 IntegrationTitle = request.IntegrationTitle,
                 SystemId = request.SystemId,
                 PartyId = partyId

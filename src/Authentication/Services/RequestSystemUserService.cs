@@ -406,7 +406,7 @@ public class RequestSystemUserService(
 
         SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
 
-        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.SystemId, cancellationToken);
+        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
         { 
             return Problem.Rights_NotFound_Or_NotDelegable; 
@@ -456,7 +456,7 @@ public class RequestSystemUserService(
             toBeInserted = new SystemUser();
             toBeInserted.SystemId = systemUserRequest.SystemId;
             toBeInserted.IntegrationTitle = systemName;
-            toBeInserted.SystemInternalId = regSystem?.SystemInternalId;
+            toBeInserted.SystemInternalId = regSystem?.InternalId;
             toBeInserted.PartyId = partyId.ToString();
             toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;          
         }
