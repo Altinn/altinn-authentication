@@ -63,7 +63,7 @@ public class SystemRegisterController : ControllerBase
                 });
         }
 
-        return Ok(lista);
+        return Ok(registeredSystemDTOs);
     }
 
     /// <summary>
