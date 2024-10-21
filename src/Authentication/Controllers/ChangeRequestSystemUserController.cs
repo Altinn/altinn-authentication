@@ -87,6 +87,24 @@ public class ChangeRequestSystemUserController : ControllerBase
             SystemId = createRequest.SystemId,
         };
 
+        // Check to see if both the Required and Unwanted Rights are empty
+        if (createRequest.RequiredRights.Count == 0 && createRequest.UnwantedRights.Count == 0)
+        {
+            ChangeRequestResponse emptyResponse = new() 
+            {
+                Id = Guid.Empty,
+                ExternalRef = createRequest.ExternalRef ?? createRequest.PartyOrgNo,
+                SystemId = createRequest.SystemId,
+                SystemUserId = Guid.Empty,
+                PartyOrgNo = createRequest.PartyOrgNo,
+                RequiredRights = [],
+                UnwantedRights = [],
+                Status = "new",
+                RedirectUrl = createRequest.RedirectUrl
+            };
+            return Ok(emptyResponse);
+        }
+
         // Check to see if the Request already exists
         Result<ChangeRequestResponse> response = await _changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
@@ -132,7 +150,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/{requestId}")]
-    public async Task<ActionResult<RequestSystemResponse>> GetRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ChangeRequestResponse>> GetChangeRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
@@ -191,7 +209,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/byexternalref/{systemId}/{orgNo}/{externalRef}")]
-    public async Task<ActionResult<ChangeRequestResponse>> GetRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ChangeRequestResponse>> GetChangeRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
@@ -248,7 +266,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/approve")]
-    public async Task<ActionResult<ChangeRequestResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ChangeRequestResponse>> ApproveSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _changeRequestService.ApproveAndDelegateChangeOnSystemUser(requestId, party, userId, cancellationToken);
@@ -324,7 +342,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/reject")]
-    public async Task<ActionResult<ChangeRequestResponse>> RejectSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ChangeRequestResponse>> RejectSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _changeRequestService.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
@@ -347,7 +365,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpDelete("vendor/{requestId}")]
-    public async Task<ActionResult<ChangeRequestResponse>> DeleteRequestByRequestId(Guid requestId)
+    public async Task<ActionResult<ChangeRequestResponse>> DeleteChangeRequestByRequestId(Guid requestId)
     {
         Result<bool> res = await _changeRequestService.DeleteChangeRequestByRequestId(requestId);
         if (res.IsProblem)

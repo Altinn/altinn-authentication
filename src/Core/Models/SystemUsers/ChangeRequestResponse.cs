@@ -46,12 +46,25 @@ public class ChangeRequestResponse()
     public string PartyOrgNo { get; set; }
 
     /// <summary>
-    /// The set of Rights requested for this system user. Must be equal to or less than the set defined in the Registered System.
-    /// Must be a minimum of 1 selected Right.
+    /// The set of Rights requested as Required for this system user. 
+    /// If already delegated, no change is needed; idempotent.
+    /// If not currently delegated, they will be delegated.
+    /// Must be equal to or less than the set defined in the Registered System - see SystemId.
+    /// An empty list is allowed.
     /// </summary>
     [Required]
-    [JsonPropertyName("rights")]
-    public List<Right> Rights { get; set; }
+    [JsonPropertyName("requiredRights")]
+    public List<Right> RequiredRights { get; set; } = [];
+
+    /// <summary>
+    /// The set of Rights to be ensured are not delegeted to this system user. 
+    /// If currently delegated, they will be revoked.
+    /// If already not delegated, no change is needed; idempotent.
+    /// An empty list is allowed.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("unwantedRights")]
+    public List<Right> UnwantedRights { get; set; } = [];
 
     /// <summary>
     /// Initially the request is "new", 
