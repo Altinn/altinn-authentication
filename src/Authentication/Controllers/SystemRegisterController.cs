@@ -59,11 +59,11 @@ public class SystemRegisterController : ControllerBase
                     Rights = system.Rights,
                     SystemId = system.Id,
                     SystemVendorOrgName = system.SystemVendorOrgName,
-                    SystemVendorOrgNumber = system.SystemVendorOrgNumber
+                    SystemVendorOrgNumber = AuthenticationHelper.GetOrgNumber(system.SystemVendorOrgNumber)
                 });
         }
 
-        return Ok(lista);
+        return Ok(registeredSystemDTOs);
     }
 
     /// <summary>

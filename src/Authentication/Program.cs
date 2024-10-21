@@ -30,6 +30,7 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
 using AltinnCore.Authentication.JwtCookie;
+using ArchiverService;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
@@ -87,6 +88,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 builder.Services.AddPersistanceLayer();
+builder.Services.AddHostedService<Archiver>();
 
 var app = builder.Build();
 
@@ -309,7 +311,13 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
 
     services.Configure<AccessTokenSettings>(config.GetSection("AccessTokenSettings"));
+
+    // Configure OIDC providers used by JwtCookieHandler
+    services.Configure<Altinn.Common.Authentication.Configuration.OidcProviderSettings>(config.GetSection("OidcProviders"));
+
+    // Configure OIDC providers used by authentication
     services.ConfigureOidcProviders(config.GetSection("OidcProviders"));
+
     services.ConfigureDataProtection(builder.Environment.IsDevelopment(), config.GetSection("AzureStorageConfiguration").Get<AzureStorageConfiguration>());
     services.AddAuthentication(JwtCookieDefaults.AuthenticationScheme)
          .AddJwtCookie(JwtCookieDefaults.AuthenticationScheme, options =>
