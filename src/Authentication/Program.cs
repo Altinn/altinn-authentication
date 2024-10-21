@@ -311,7 +311,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.Configure<AccessTokenSettings>(config.GetSection("AccessTokenSettings"));
 
     // Configure OIDC providers used by JwtCookieHandler
-    services.Configure<OidcProviderSettings>(config.GetSection("OidcProviders"));
+    services.Configure<Altinn.Common.Authentication.Configuration.OidcProviderSettings>(config.GetSection("OidcProviders"));
 
     // Configure OIDC providers used by authentication
     services.ConfigureOidcProviders(config.GetSection("OidcProviders"));
