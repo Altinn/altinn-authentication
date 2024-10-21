@@ -68,6 +68,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Core\Altinn.Platform.Authentication.Core.csproj" />
     <ProjectReference Include="..\Integration\Altinn.Platform.Authentication.Integration.csproj" />
+    <ProjectReference Include="..\jwtcookie\Authentication\Altinn.Common.Authentication.csproj" />
     <ProjectReference Include="..\Persistance\Altinn.Platform.Authentication.Persistance.csproj" />
   </ItemGroup>
 </Project>

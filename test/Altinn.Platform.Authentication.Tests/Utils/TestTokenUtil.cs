@@ -28,7 +28,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim("consumer", JsonSerializer.Serialize(iso6523Consumer)));
             claims.Add(new Claim("client_orgno", orgNr));
             claims.Add(new Claim("scope", "altinn:instances.write altinn:instances.read"));
-            claims.Add(new Claim("iss", "https://ver2.maskinporten.no/"));
+            claims.Add(new Claim("iss", "https://mock.maskinporten.no/"));
             claims.Add(new Claim("jti", "fe155387-c5f2-42e9-943a-811789db663a"));
 
             ClaimsIdentity identity = new(OrganisationIdentity);
