@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -17,10 +18,12 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
@@ -107,6 +110,7 @@ public class RequestControllerTests(
         services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
         services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
         services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
+        services.AddSingleton<IRequestRepository, RequestRepository>();
         SetupDateTimeMock();
         SetupGuidMock();
     }
@@ -848,16 +852,19 @@ public class RequestControllerTests(
 
         // Delete by Guid Again
         HttpResponseMessage message4 = await client.DeleteAsync(endpoint3);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.NotFound, message4.StatusCode);
     }
 
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
-        for (int i = 0; i < paginationSize + 1; i++)
+        List<Task> tasks = [];
+
+        Parallel.ForEach(Enumerable.Range(0, paginationSize + 1), async i =>
         {
-            await CreateRequest(client, i, systemId);
-        }
+            tasks.Add(CreateRequest(client, i, systemId));
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     private static async Task CreateRequest(HttpClient client, int externalRef, string systemId)

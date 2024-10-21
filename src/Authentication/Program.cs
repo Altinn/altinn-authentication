@@ -30,6 +30,7 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
 using AltinnCore.Authentication.JwtCookie;
+using ArchiverService;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
@@ -87,6 +88,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 builder.Services.AddPersistanceLayer();
+builder.Services.AddHostedService<Archiver>();
 
 var app = builder.Build();
 
