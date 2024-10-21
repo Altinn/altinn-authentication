@@ -53,7 +53,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="system">The descriptor DTO for a new System</param>
         /// <param name="cancellation">The Cancelation token</param>
         /// <returns></returns>
-        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default);
+        Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default);
 
         /// <summary>
         /// Updates the rights on a registered system
@@ -78,7 +78,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System </param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns></returns>
-        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken);
+        Task<bool> UpdateWholeRegisteredSystem(RegisteredSystem updateSystem, string systemId, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if one of the clientid exists

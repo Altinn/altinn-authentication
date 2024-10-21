@@ -48,10 +48,17 @@ public record OrganisationNumber()
 
     public static OrganisationNumber CreateFromStringOrgNo ( string orgno)
     {
+        var prefix = "0192:";
+
+        if (orgno.StartsWith("0192:"))
+        {
+            prefix = "";
+        }
+
         return new OrganisationNumber()
         {
             Authority = "iso6523-actorid-upis",
-            ID = "0192:" + orgno
+            ID = prefix + orgno
         };
     }
 
