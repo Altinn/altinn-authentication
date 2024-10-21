@@ -9,17 +9,12 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
     public enum ResourceType
     {
         Default = 0,
-
-        Systemresource = 1,
-
-        Altinn2 = 2,
-
-        Altinn3 = 3,
-
-        Apischema = 4,
-
-        Api = 5,
-
-        MaskinportenSchema = 6,
+        Systemresource = 1 << 0,
+        MaskinportenSchema = 1 << 1,
+        Altinn2Service = 1 << 2,
+        AltinnApp = 1 << 3,
+        GenericAccessResource = 1 << 4,
+        BrokerService = 1 << 5,
+        CorrespondenceService = 1 << 6
     }
 }
