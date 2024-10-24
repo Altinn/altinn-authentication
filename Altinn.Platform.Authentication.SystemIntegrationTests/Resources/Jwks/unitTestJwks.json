@@ -1,14 +1,17 @@
 {
-  "p": "_Pasldkalsødkasd",
-  "kty": "RSA",
-  "q": "ALKSdløaskdløasd",
-  "d": "h5u_77Q",
-  "e": "AQAB",
-  "use": "sig",
-  "kid": "SystembrukerForSpesifikkOrgVegard",
-  "qi": "NxdzozNmkgIWIUFoRldlT1mVdE_H-8aJHdl4pUgI1J4iZanGhPgwGiOiFrHb3YLFQL0",
-  "dp": "2BJcrDuPJSL4kmi8epxNhRP-I0Kx78FwQWZ8",
   "alg": "RS256",
-  "dq": "b_CE3QmIMsksEIVF178Ah2MqbJbPk",
-  "n": "NzYiQSN_RNk-LSCqoMjPXCUv7g-Q"
+  "d": "d",
+  "dp": "samplevaluedp",
+  "dq": "samplevaluedq",
+  "e": "AQAB",
+  "key_ops": [],
+  "kid": "authentication-systemintegration-tests-TEST.2024-10-23",
+  "kty": "RSA",
+  "n": "samplevaluen",
+  "oth": [],
+  "p": "samplevaluep",
+  "q": "samplevalueq",
+  "qi": "samplevalueqi",
+  "use": "samplevaluesig",
+  "x5c": []
 }

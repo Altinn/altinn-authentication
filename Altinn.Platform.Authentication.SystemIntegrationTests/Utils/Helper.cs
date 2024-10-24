@@ -1,8 +1,9 @@
 using System.Text.Json;
+using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Altinn.AccessManagement.SystemIntegrationTests.Utils;
+namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 /// <summary>
 /// helper class for file utils and test data generation purposes etc

@@ -2,7 +2,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
-using Altinn.AccessManagement.SystemIntegrationTests.Domain;
 using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Microsoft.IdentityModel.Tokens;
@@ -33,17 +32,11 @@ public class MaskinPortenTokenGenerator
         return base64;
     }
 
-    public async Task<string> GenerateJwt()
+    public Task<string> GenerateJwt(Jwk jwk, EnvironmentHelper.MaskinportenClient client)
     {
         const string audience = "https://test.maskinporten.no/token";
-        //string audience = "https://at22.altinn.cloud/maskinporten-api/";
-        const string iss = "89708189-bb7f-475b-b0ac-0219f3271318"; // Replace with your client ID
+        var iss = client.MaskinportenClientId;
         const string scope = "altinn:authentication/systemregister.write";
-
-
-        var jwksJson = await Helper.ReadFile("Resources/Jwks/jwks.json");
-        var jwks =
-            JsonSerializer.Deserialize<Jwk>(jwksJson);
 
         // Set the current time and expiration time for the token
         var now = DateTimeOffset.UtcNow;
@@ -56,20 +49,20 @@ public class MaskinPortenTokenGenerator
         rsa.ImportParameters(new RSAParameters
         {
             Modulus = Convert.FromBase64String(ToStandardBase64(
-                jwks?.n)), // n
+                jwk.n)), // n
             Exponent = Convert.FromBase64String("AQAB"), // e
             D = Convert.FromBase64String(ToStandardBase64(
-                jwks?.d)), // d
+                jwk.d)), // d
             P = Convert.FromBase64String(ToStandardBase64(
-                jwks?.p)), // p
+                jwk.p)), // p
             Q = Convert.FromBase64String(ToStandardBase64(
-                jwks?.q)), // q
+                jwk.q)), // q
             DP = Convert.FromBase64String(ToStandardBase64(
-                jwks?.dp)), // dp
+                jwk.dp)), // dp
             DQ = Convert.FromBase64String(ToStandardBase64(
-                jwks?.dq)), // dq
+                jwk.dq)), // dq
             InverseQ = Convert.FromBase64String(ToStandardBase64(
-                jwks?.qi)) // qi
+                jwk.qi)) // qi
         });
 
         var signingCredentials = new SigningCredentials(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
@@ -86,7 +79,7 @@ public class MaskinPortenTokenGenerator
 
         var header = new JwtHeader(signingCredentials)
         {
-            { "kid", "SystembrukerForSpesifikkOrgVegard" } // Ensure 'kid' is added here
+            { "kid", jwk?.kid }
         };
 
         var payload = new JwtPayload(claims);
@@ -96,7 +89,7 @@ public class MaskinPortenTokenGenerator
         var tokenHandler = new JwtSecurityTokenHandler();
 
         // Write and return the JWT
-        return tokenHandler.WriteToken(token);
+        return Task.FromResult(tokenHandler.WriteToken(token));
     }
 
     /// <summary>
@@ -129,11 +122,16 @@ public class MaskinPortenTokenGenerator
     /// <summary>
     /// This fetches a bearer token from Maskinporten
     /// </summary>
+    /// <param name="maskinportenClient"></param>
     /// <returns></returns>
     /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
-    public async Task<string> GetMaskinportenBearerToken()
+    public async Task<string> GetMaskinportenBearerToken(EnvironmentHelper.MaskinportenClient maskinportenClient)
     {
-        var jwt = await GenerateJwt();
+        var jsonString = await Helper.ReadFile(maskinportenClient.PathToJwks);
+
+        var jwk =
+            JsonSerializer.Deserialize<Jwk>(jsonString);
+        var jwt = await GenerateJwt(jwk!, maskinportenClient);
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;

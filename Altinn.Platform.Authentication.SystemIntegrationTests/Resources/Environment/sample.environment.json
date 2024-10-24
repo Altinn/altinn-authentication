@@ -1,5 +1,12 @@
 {
   "Testenvironment": "at22",
+  "MaskinportenClients": [
+    {
+      "MaskinportenClientId": "clientId1",
+      "Name": "Test User 1",
+      "PathToJwks": "/path/to/jwks1"
+    }
+  ],
   "TestCredentials": {
     "username": "sampleuser",
     "password": "samplepassword"

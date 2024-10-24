@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Altinn.AccessManagement.SystemIntegrationTests.Domain;
 using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
@@ -15,8 +14,8 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 public class GetMaskinportenTokenTest
 {
     private readonly ITestOutputHelper _testOutputHelper;
-    private readonly MaskinPortenTokenGenerator _maskinPortenTokenGenerator = new();
     private readonly PlatformAuthenticationClient _platformAuthenticationClient;
+    private readonly EnvironmentHelper _environmentHelper;
 
     /// <summary>
     /// Test machine porten functionality
@@ -24,9 +23,10 @@ public class GetMaskinportenTokenTest
     public GetMaskinportenTokenTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
+        _environmentHelper = Helper.LoadEnvironment("Resources/Environment/environment.json") ??
+                             throw new Exception("Unable to read environment file");
         _platformAuthenticationClient = new PlatformAuthenticationClient();
     }
-
 
     /// <summary>
     /// Test that we're able to read from jwks folder
@@ -35,37 +35,22 @@ public class GetMaskinportenTokenTest
     public async Task ReadJwkFile()
     {
         var jsonString = await Helper.ReadFile("Resources/Jwks/unitTestJwks.json");
-        _testOutputHelper.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
 
-        var test =
+        var jwk =
             JsonSerializer.Deserialize<Jwk>(jsonString);
 
-        Assert.Equal("RSA", test?.kty);
-        Assert.Equal("_Pasldkalsødkasd", test?.p);
-        Assert.Equal("ALKSdløaskdløasd", test?.q);
-        Assert.Equal("h5u_77Q", test?.d);
-        Assert.Equal("AQAB", test?.e);
-        Assert.Equal("sig", test?.use);
-        Assert.Equal("SystembrukerForSpesifikkOrgVegard", test?.kid);
-        Assert.Equal("NxdzozNmkgIWIUFoRldlT1mVdE_H-8aJHdl4pUgI1J4iZanGhPgwGiOiFrHb3YLFQL0", test?.qi);
-        Assert.Equal("2BJcrDuPJSL4kmi8epxNhRP-I0Kx78FwQWZ8", test?.dp);
-        Assert.Equal("RS256", test?.alg);
-        Assert.Equal("b_CE3QmIMsksEIVF178Ah2MqbJbPk", test?.dq);
-        Assert.Equal("NzYiQSN_RNk-LSCqoMjPXCUv7g-Q", test?.n);
-    }
-
-    /// <summary>
-    /// Test that we're able to get a Machineporten token on behalf of an organization
-    /// </summary>
-    [Fact]
-    public async Task GetTokenAsOrganization()
-    {
-        var token = await _maskinPortenTokenGenerator.GenerateJwt();
-        Assert.NotEmpty(token);
-
-        var maskinportenToken = await _maskinPortenTokenGenerator.RequestToken(token);
-        Assert.Contains("systemregister.write", maskinportenToken);
-        Assert.Contains("access_token", maskinportenToken);
+        Assert.Equal("RSA", jwk?.kty);
+        Assert.Equal("samplevaluep", jwk?.p);
+        Assert.Equal("samplevalueq", jwk?.q);
+        Assert.Equal("d", jwk?.d);
+        Assert.Equal("AQAB", jwk?.e);
+        Assert.Equal("samplevaluesig", jwk?.use);
+        Assert.Equal("authentication-systemintegration-tests-TEST.2024-10-23", jwk?.kid);
+        Assert.Equal("samplevalueqi", jwk?.qi);
+        Assert.Equal("samplevaluedp", jwk?.dp);
+        Assert.Equal("RS256", jwk?.alg);
+        Assert.Equal("samplevaluedq", jwk?.dq);
+        Assert.Equal("samplevaluen", jwk?.n);
     }
 
     /// <summary>
@@ -74,25 +59,25 @@ public class GetMaskinportenTokenTest
     [Fact]
     public async Task GetExchangeToken()
     {
-        var token = await _maskinPortenTokenGenerator.GenerateJwt();
-        Assert.NotEmpty(token);
+        var maskinportenClient = _environmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
+        var token =
+            await _platformAuthenticationClient._maskinPortenTokenGenerator.GetMaskinportenBearerToken(
+                maskinportenClient);
 
-        var maskinportenTokenResponse = await _maskinPortenTokenGenerator.RequestToken(token);
-        var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
-        var root = jsonDoc.RootElement;
-
-        var accessToken = root.GetProperty("access_token").GetString();
-        Assert.NotNull(accessToken);
-
-        var altinnToken = await _platformAuthenticationClient.GetExchangeToken(accessToken);
+        var altinnToken = await _platformAuthenticationClient.GetExchangeToken(token);
         Assert.NotEmpty(altinnToken);
     }
 
     [Fact]
     public async Task GetBearerToken()
     {
-        var token = await _maskinPortenTokenGenerator.GetMaskinportenBearerToken();
+        var maskinportenClient = _environmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
+        var token =
+            await _platformAuthenticationClient._maskinPortenTokenGenerator.GetMaskinportenBearerToken(
+                maskinportenClient);
+
         Assert.NotNull(token);
         Assert.NotEmpty(token);
     }
+
 }

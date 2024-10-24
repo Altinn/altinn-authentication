@@ -38,7 +38,10 @@ public class SystemUserTests
     public async Task CreateSystemUser()
     {
         // Prepare
-        var maskinportenToken = await _maskinPortenTokenGenerator.GetMaskinportenBearerToken();
+        var maskinportenToken = await _maskinPortenTokenGenerator
+            .GetMaskinportenBearerToken(
+                _platformAuthenticationClient.EnvironmentHelper.GetMaskinportenClientByName("SystemRegisterClient")
+            );
 
         // the vendor of the system, could be visma
         const string vendorId = "312605031";
@@ -137,9 +140,9 @@ public class SystemUserTests
     public async Task<HttpResponseMessage> CreateSystemUserTestdata(string party, AltinnUser user)
     {
         // Prepare
-        // Prepare
-        var maskinportenToken = await _maskinPortenTokenGenerator.GetMaskinportenBearerToken();
-
+        var maskinportenClient =
+            _platformAuthenticationClient.EnvironmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
+        var maskinportenToken = await _maskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
         // the vendor of the system, could be visma
         const string vendorId = "312605031";
         var randomName = Helper.GenerateRandomString(15);

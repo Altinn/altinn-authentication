@@ -11,12 +11,24 @@ public class EnvironmentHelper
     /// Environment. Eg: AT22
     /// </summary>
     public required string Testenvironment { get; set; }
-    
+
     /// <summary>
     /// 
     /// </summary>
     [JsonPropertyName("TestCredentials")]
     public required TestCredentials testCredentials { get; set; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    [JsonPropertyName("MaskinportenClients")]
+    public required List<MaskinportenClient> MaskinportenClients { get; set; }
+
+    public MaskinportenClient GetMaskinportenClientByName(string name)
+    {
+        return MaskinportenClients.Find(user => user.Name == name)
+               ?? throw new Exception($"Maskinporten client with name '{name}' not found");
+    }
 
     /// <summary>
     /// Credentials for test api
@@ -32,5 +44,14 @@ public class EnvironmentHelper
         /// password for test api
         /// </summary>
         public required string password { get; set; }
+    }
+
+    public class MaskinportenClient
+    {
+        public string MaskinportenClientId { get; set; }
+        public string Name { get; set; }
+
+        public string PathToJwks { get; set; }
+        // Constructor to set the values
     }
 }

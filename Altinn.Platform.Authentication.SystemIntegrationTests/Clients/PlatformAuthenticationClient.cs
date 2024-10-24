@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using Altinn.AccessManagement.SystemIntegrationTests.Domain;
 using Altinn.AccessManagement.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 
@@ -10,6 +11,8 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
+    public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
+    public SystemRegisterClient _systemRegisterClient { get; set; }
 
     /// <summary>
     /// baseUrl for api
@@ -24,6 +27,7 @@ public class PlatformAuthenticationClient
         EnvironmentHelper = Helper.LoadEnvironment("Resources/Environment/environment.json") ??
                             throw new Exception("Unable to read environment file");
         BaseUrl = $"https://platform.{EnvironmentHelper.Testenvironment}.altinn.cloud";
+        _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator();
     }
 
     /// <summary>
@@ -38,9 +42,9 @@ public class PlatformAuthenticationClient
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
- 
+
         HttpContent content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
- 
+
         var response = await client.PostAsync($"{BaseUrl}/{endpoint}", content);
         return response;
     }
@@ -74,7 +78,7 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetAsync($"{BaseUrl}/{endpoint}");
     }
-    
+
     /// <summary>
     /// Delete
     /// </summary>
