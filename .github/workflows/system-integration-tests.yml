@@ -23,10 +23,10 @@ jobs:
             8.0.x
 
       - name: Install dependencies
-        run: dotnet restore Altinn.Platform.Authentication.SystemIntegrationTests.csproj
+        run: dotnet restore src/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj
 
       - name: Build
-        run: dotnet build Altinn.Platform.Authentication.SystemIntegrationTests.csproj --configuration Release --no-restore
+        run: dotnet build src/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --verbosity normal
+        run: dotnet test src/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --verbosity normal
