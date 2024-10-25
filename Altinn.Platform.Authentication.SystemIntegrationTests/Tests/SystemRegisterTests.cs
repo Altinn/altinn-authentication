@@ -54,12 +54,7 @@ public class SystemRegisterTests
     [Fact]
     public async Task CreateNewSystemReturns200Ok()
     {
-        var maskinportenClient =
-            _platformAuthenticationClient.EnvironmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
-
-        var token =
-            await _platformAuthenticationClient._maskinPortenTokenGenerator.GetMaskinportenBearerToken(
-                maskinportenClient);
+        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
         // Act
         var response = await CreateNewSystem(token);
@@ -75,11 +70,7 @@ public class SystemRegisterTests
     [Fact]
     public async Task GetSystemRegisterReturns200Ok()
     {
-        var maskinportenClient =
-            _platformAuthenticationClient.EnvironmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
-        var token =
-            await _platformAuthenticationClient._maskinPortenTokenGenerator.GetMaskinportenBearerToken(
-                maskinportenClient);
+        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
         // Act
         var response =
@@ -95,11 +86,7 @@ public class SystemRegisterTests
     public async Task ValidateRights()
     {
         // Prepare
-        var maskinportenClient =
-            _platformAuthenticationClient.EnvironmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
-        var token =
-            await _platformAuthenticationClient._maskinPortenTokenGenerator.GetMaskinportenBearerToken(
-                maskinportenClient);
+        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
         // the vendor of the system, could be visma
         const string vendorId = "312605031";
@@ -113,7 +100,7 @@ public class SystemRegisterTests
             .Replace("{clientId}", Guid.NewGuid().ToString());
 
         var systemRequest = JsonSerializer.Deserialize<RegisterSystemRequest>(testfile);
-        await _systemRegisterClient.CreateNewSystem(systemRequest, token, randomName, vendorId);
+        await _systemRegisterClient.CreateNewSystem(systemRequest!, token, vendorId);
 
         // Act
         var response =
@@ -129,15 +116,11 @@ public class SystemRegisterTests
     /// <summary>
     /// Verify registered system gets deleted
     /// </summary>
-    [Fact] //Todo: This currently fails
+    [Fact]
     public async Task DeleteRegisteredSystemReturns200Ok()
     {
         // Prepare
-        var maskinportenClient =
-            _platformAuthenticationClient.EnvironmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
-        var token =
-            await _platformAuthenticationClient._maskinPortenTokenGenerator.GetMaskinportenBearerToken(
-                maskinportenClient);
+        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
         // the vendor of the system, could be visma
         const string vendorId = "312605031";
@@ -151,7 +134,7 @@ public class SystemRegisterTests
             .Replace("{clientId}", Guid.NewGuid().ToString());
 
         var systemRequest = JsonSerializer.Deserialize<RegisterSystemRequest>(testfile);
-        await _systemRegisterClient.CreateNewSystem(systemRequest!, token, randomName, vendorId);
+        await _systemRegisterClient.CreateNewSystem(systemRequest!, token, vendorId);
 
         // Act
         var respons = await _platformAuthenticationClient.Delete(

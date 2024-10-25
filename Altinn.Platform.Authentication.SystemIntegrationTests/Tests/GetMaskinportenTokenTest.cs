@@ -15,7 +15,6 @@ public class GetMaskinportenTokenTest
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly PlatformAuthenticationClient _platformAuthenticationClient;
-    private readonly EnvironmentHelper _environmentHelper;
 
     /// <summary>
     /// Test machine porten functionality
@@ -23,8 +22,6 @@ public class GetMaskinportenTokenTest
     public GetMaskinportenTokenTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _environmentHelper = Helper.LoadEnvironment("Resources/Environment/environment.json") ??
-                             throw new Exception("Unable to read environment file");
         _platformAuthenticationClient = new PlatformAuthenticationClient();
     }
 
@@ -59,25 +56,18 @@ public class GetMaskinportenTokenTest
     [Fact]
     public async Task GetExchangeToken()
     {
-        var maskinportenClient = _environmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
-        var token =
-            await _platformAuthenticationClient._maskinPortenTokenGenerator.GetMaskinportenBearerToken(
-                maskinportenClient);
+        var maskinportenToken = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
-        var altinnToken = await _platformAuthenticationClient.GetExchangeToken(token);
+        var altinnToken = await _platformAuthenticationClient.GetExchangeToken(maskinportenToken);
         Assert.NotEmpty(altinnToken);
     }
 
     [Fact]
     public async Task GetBearerToken()
     {
-        var maskinportenClient = _environmentHelper.GetMaskinportenClientByName("SystemRegisterClient");
-        var token =
-            await _platformAuthenticationClient._maskinPortenTokenGenerator.GetMaskinportenBearerToken(
-                maskinportenClient);
+        var maskinportenToken = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
-        Assert.NotNull(token);
-        Assert.NotEmpty(token);
+        Assert.NotNull(maskinportenToken);
+        Assert.NotEmpty(maskinportenToken);
     }
-
 }

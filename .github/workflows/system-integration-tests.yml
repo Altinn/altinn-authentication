@@ -27,3 +27,6 @@ jobs:
 
       - name: Test
         run: dotnet test Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --logger:"console;verbosity=detailed"
+        env:
+          SYSTEMINTEGRATIONTEST_JSON: ${{ secrets.SYSTEMINTEGRATIONTEST_JSON }}
+          JWKS_JSON: ${{ secrets.JWKS_JSON }}

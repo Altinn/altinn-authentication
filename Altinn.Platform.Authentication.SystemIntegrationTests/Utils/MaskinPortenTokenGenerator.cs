@@ -79,7 +79,7 @@ public class MaskinPortenTokenGenerator
 
         var header = new JwtHeader(signingCredentials)
         {
-            { "kid", jwk?.kid }
+            { "kid", jwk.kid }
         };
 
         var payload = new JwtPayload(claims);
@@ -127,15 +127,15 @@ public class MaskinPortenTokenGenerator
     /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
     public async Task<string> GetMaskinportenBearerToken(EnvironmentHelper.MaskinportenClient maskinportenClient)
     {
-        var jsonString = await Helper.ReadFile(maskinportenClient.PathToJwks);
+        //This is hardcoded for now
+        var jwk = JwkLoader.LoadJwk(maskinportenClient.PathToJwks);
 
-        var jwk =
-            JsonSerializer.Deserialize<Jwk>(jsonString);
-        var jwt = await GenerateJwt(jwk!, maskinportenClient);
+        var jwt = await GenerateJwt(jwk, maskinportenClient);
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;
-        return root.GetProperty("access_token").GetString() ??
-               throw new Exception("Unable to get access token from jsonDoc");
+    
+        return root.GetProperty("access_token").GetString() ?? 
+               throw new Exception("Unable to get access token from response.");
     }
 }

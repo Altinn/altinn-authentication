@@ -28,18 +28,23 @@ public class SystemRegisterClient : PlatformAuthenticationClient
     /// <summary>
     /// Creates a new system in Systmeregister. Requires Bearer token from Maskinporten
     /// </summary>
+    /// <param name="system"></param>
     /// <param name="token">A maskinporten token</param>
-    /// <param name="name">Name</param>
     /// <param name="vendorId">The vendor creating the system. Defaults to a user created in Selvbetjeningsportalen</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> CreateNewSystem(RegisterSystemRequest system, string token, string name, string vendorId = "312605031")
+    public async Task<HttpResponseMessage> CreateNewSystem(RegisterSystemRequest system, string token,
+        string vendorId = "312605031")
     {
         const string endpoint = "authentication/api/v1/systemregister/vendor";
-        //Assert 
-        //return await PostAsync(endpoint, testfile, token);
-        // mob here
+
+        HttpContent content = new StringContent(
+            JsonSerializer.Serialize(system,
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                }), System.Text.Encoding.UTF8, "application/json");
         
-        HttpContent content = new StringContent(JsonSerializer.Serialize(system, new JsonSerializerOptions() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }), System.Text.Encoding.UTF8, "application/json");
         var response = await PostAsync(endpoint, token, content);
         Assert.NotNull(response);
         Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Xunit;
 using Xunit.Abstractions;
@@ -23,21 +22,6 @@ public class Helper
     public Helper(ITestOutputHelper output)
     {
         Output = output;
-    }
-
-    /// <summary>
-    /// Loads test environment and other settings
-    /// </summary>
-    /// <param name="path">File path for environment file</param>
-    /// <returns></returns>
-    public static EnvironmentHelper LoadEnvironment(string path)
-    {
-        var basePath = Directory.GetCurrentDirectory();
-        var filePath = Path.Combine(basePath, path);
-        var environmentFile = File.ReadAllText(filePath);
-        var env = JsonSerializer.Deserialize<EnvironmentHelper>(environmentFile);
-        Assert.True(env != null, $"Environment file {filePath} not found");
-        return env;
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text.Json;
 using Altinn.AccessManagement.SystemIntegrationTests.Domain;
 using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
@@ -24,14 +25,13 @@ public class PlatformAuthenticationClient
     /// </summary>
     public PlatformAuthenticationClient()
     {
-        EnvironmentHelper = Helper.LoadEnvironment("Resources/Environment/environment.json") ??
-                            throw new Exception("Unable to read environment file");
+        EnvironmentHelper = LoadEnvironment("SYSTEMINTEGRATIONTEST_JSON");
         BaseUrl = $"https://platform.{EnvironmentHelper.Testenvironment}.altinn.cloud";
         _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator();
     }
 
     /// <summary>
-    /// Post a request 
+    /// Post a request  
     /// </summary>
     /// <param name="endpoint">Endpoint for api</param>
     /// <param name="body">Request body, see Swagger documentation for reference</param>
@@ -161,5 +161,27 @@ public class PlatformAuthenticationClient
         }
 
         throw new InvalidOperationException("Unable to get Altinn token");
+    }
+    
+    private EnvironmentHelper LoadEnvironment(string environmentVariableName)
+    {
+        const string localFilePath = "Resources/Environment/environment.json";
+        var envJson = Environment.GetEnvironmentVariable(environmentVariableName);
+
+        if (!string.IsNullOrEmpty(envJson))
+        {
+            return JsonSerializer.Deserialize<EnvironmentHelper>(envJson)
+                   ?? throw new Exception($"Unable to deserialize environment from {environmentVariableName}.");
+        }
+
+        var jsonString = Helper.ReadFile(localFilePath).Result; // Assuming synchronous file read
+        return JsonSerializer.Deserialize<EnvironmentHelper>(jsonString)
+               ?? throw new Exception($"Unable to read environment from {localFilePath}.");
+    }
+    
+    public async Task<string> GetTokenForClient(string clientName)
+    {
+        var maskinportenClient = EnvironmentHelper.GetMaskinportenClientByName(clientName);
+        return await _maskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
     }
 }

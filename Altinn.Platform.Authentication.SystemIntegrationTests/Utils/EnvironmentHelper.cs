@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Altinn.AccessManagement.SystemIntegrationTests.Utils;
+namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 /// <summary>
 /// Used for deserialization of environment file
@@ -19,7 +19,7 @@ public class EnvironmentHelper
     public required TestCredentials testCredentials { get; set; }
 
     /// <summary>
-    /// 
+    /// Find client names in environment.json
     /// </summary>
     [JsonPropertyName("MaskinportenClients")]
     public required List<MaskinportenClient> MaskinportenClients { get; set; }
