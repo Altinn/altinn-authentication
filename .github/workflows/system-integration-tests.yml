@@ -1,0 +1,32 @@
+name: build and test
+
+on:
+  push:
+    paths:
+      - '**.cs'
+      - '**Altinn.Platform.Authentication.SystemIntegrationTests.csproj'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  build-and-test:
+
+    name: Run system integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+
+      - name: Install dependencies
+        run: dotnet restore Altinn.Platform.Authentication.SystemIntegrationTests.csproj
+
+      - name: Build
+        run: dotnet build Altinn.Platform.Authentication.SystemIntegrationTests.csproj --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --verbosity normal
