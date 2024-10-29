@@ -64,16 +64,15 @@ public class ChangeRequestSystemUserController : ControllerBase
     public const string ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM = "vendor/changerequest/bysystem";
 
     /// <summary>
-    /// Validates if the given set(s) of required and/or unwanted rights are delegated for the given systemId and user.
+    /// Verifies if the given set(s) of required and/or unwanted rights are delegated for the given systemId and user.
     /// </summary>
     /// <param name="validateSet">The model containing the set(s) of required and/or unwanted rights</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
-    [HttpPost("vendor/validate")]
-    public async Task<ActionResult<ChangeRequestResponse>> ValidateSetOfRights([FromBody] ChangeRequestSystemUser validateSet, CancellationToken cancellationToken = default)
+    [HttpPost("vendor/verify")]
+    public async Task<ActionResult<ChangeRequestResponse>> VerifySetOfRights([FromBody] ChangeRequestSystemUser validateSet, CancellationToken cancellationToken = default)
     {
-        string platform = _generalSettings.PlatformEndpoint;
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
         {
@@ -88,7 +87,7 @@ public class ChangeRequestSystemUserController : ControllerBase
         }
 
         // Calls the PDP endpoint to validate the set of rights
-        Result<ChangeRequestResponse> response = await _changeRequestService.ValidateSetOfRights(validateSet, vendorOrgNo);
+        Result<ChangeRequestResponse> response = await _changeRequestService.VerifySetOfRights(validateSet, vendorOrgNo);
         if (response.IsSuccess)
         {
             return Ok(response.Value);

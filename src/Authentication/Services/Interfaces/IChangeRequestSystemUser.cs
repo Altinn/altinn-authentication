@@ -89,5 +89,12 @@ public interface IChangeRequestSystemUser
     /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
     /// <returns>Result of Response model or Problem description</returns>
     Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo);
-    Task<Result<ChangeRequestResponse>> ValidateSetOfRights(ChangeRequestSystemUser validateSet, OrganisationNumber vendorOrgNo);
+
+    /// <summary>
+    /// Verifies the sets of rights in the ChangeRequest against the PDP
+    /// </summary>
+    /// <param name="validateSet">the input model</param>
+    /// <param name="vendorOrgNo">the vendors's org no</param>
+    /// <returns>A response model with the validated rights</returns>
+    Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestSystemUser validateSet, OrganisationNumber vendorOrgNo);
 }

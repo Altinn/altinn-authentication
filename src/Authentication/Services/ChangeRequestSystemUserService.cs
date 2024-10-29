@@ -120,7 +120,7 @@ public class ChangeRequestSystemUserService(
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
     /// <returns>Result or Problem</returns>
-    private Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
+    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
     {
         if (rights.Count == 0 || systemInfo.Rights.Count == 0)
         {
@@ -562,5 +562,56 @@ public class ChangeRequestSystemUserService(
 
         return systemUserRequest.RedirectUrl;
     }
-           
+
+    /// <inheritdoc/>
+    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestSystemUser validateSet, OrganisationNumber vendorOrgNo)
+    {
+        // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
+        ExternalRequestId externalRequestId = new()
+        {
+            ExternalRef = validateSet.ExternalRef ?? validateSet.PartyOrgNo,
+            OrgNo = validateSet.PartyOrgNo,
+            SystemId = validateSet.SystemId,
+        };
+
+        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
+        if (systemInfo is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        // Ensure that the Required Rights are a subset of the rights on the System
+        Result<bool> valRights = ValidateRights(validateSet.RequiredRights, systemInfo);
+        if (valRights.IsProblem)
+        {
+            return valRights.Problem;
+        }
+
+        // Set an empty ExternalRef to be equal to the PartyOrgNo
+        if (validateSet.ExternalRef is null || validateSet.ExternalRef == string.Empty)
+        {
+            validateSet.ExternalRef = validateSet.PartyOrgNo;
+        }
+
+        Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
+        if (valRef.IsProblem)
+        {
+            return valRef.Problem;
+        }
+
+        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
+        if (valVendor.IsProblem)
+        {
+            return valVendor.Problem;
+        }
+
+        Result<bool> valCust = await ValidateCustomerOrgNo(validateSet.PartyOrgNo);
+        if (valCust.IsProblem)
+        {
+            return valCust.Problem;
+        }
+
+        // Call the PDP client to verify which of the Rights in the two sets are currently delegated.
+        return new Result<ChangeRequestResponse> { };
+    }
 }
