@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 
 namespace Altinn.Platform.Authentication.Tests.Mocks
@@ -19,6 +21,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             }
 
             return null;
+        }
+
+        public Task<List<PolicyRightsDTO>> GetRights(string resourceId)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

@@ -9,6 +9,8 @@ using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 using System.Diagnostics.CodeAnalysis;
 using System.Web;
 using System.Security.Policy;
+using Altinn.Platform.Authentication.Core.Models.Rights;
+using System.Net.Http.Json;
 
 namespace Altinn.Platform.Authentication.Integration.ResourceRegister
 {
@@ -73,6 +75,30 @@ namespace Altinn.Platform.Authentication.Integration.ResourceRegister
             }
 
             return resource;
+        }
+
+        public async Task<List<PolicyRightsDTO>> GetRights(string resourceId)
+        {
+            try
+            {
+                string endpointUrl = $"resource/{HttpUtility.UrlEncode(resourceId)}/policy/rights";
+
+                HttpResponseMessage response = await _httpClient.GetAsync(endpointUrl);
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    var policyRightsDTOs = await response.Content.ReadFromJsonAsync<List<PolicyRightsDTO>>(_serializerOptions);
+                    if (policyRightsDTOs is not null)
+                    {
+                        return policyRightsDTOs;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Authentication // ResourceRegistryClient // GetRights // Exception");
+                throw;
+            }
+            return [];
         }
     }
 }

@@ -13,6 +13,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
+using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Microsoft.Extensions.Options;
@@ -28,6 +29,7 @@ public class ChangeRequestSystemUserService(
     IAccessManagementClient accessManagementClient,
     IChangeRequestRepository changeRequestRepository,
     ISystemUserRepository systemUserRepository,
+    IResourceRegistryClient resourceRegistryClient,
     IOptions<PaginationOptions> _paginationOption)
     : IChangeRequestSystemUser
 {
@@ -611,7 +613,20 @@ public class ChangeRequestSystemUserService(
             return valCust.Problem;
         }
 
-        // Call the PDP client to verify which of the Rights in the two sets are currently delegated.
+        List<PolicyRightsDTO> requiredPolicyRights = [];
+
+        // Call the Resource Registry to get a flat list of Rights in the PDP format from the list of ResourceIds.
+        foreach (var right in validateSet.RequiredRights)
+        {
+            foreach (var resource in right.Resource) 
+            {
+                var flatPolicyRight = await resourceRegistryClient.GetRights(resource.Value); 
+                requiredPolicyRights.AddRange(flatPolicyRight);
+            }
+        }        
+
+        // Call the PDP client to verify which of the Required Rights are currently delegated.
+        // The Unwanted rights verification is currently not supported.
         return new Result<ChangeRequestResponse> { };
     }
 }
