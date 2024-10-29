@@ -80,7 +80,7 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
+        Result<bool> valRights = ValidateRights(createRequest.RequiredRights, systemInfo);
         if (valRights.IsProblem)
         {
             return valRights.Problem;
@@ -100,7 +100,8 @@ public class ChangeRequestSystemUserService(
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
-            Rights = createRequest.Rights,
+            RequiredRights = createRequest.RequiredRights,
+            UnwantedRights = createRequest.UnwantedRights,
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createRequest.RedirectUrl
         };
@@ -301,7 +302,8 @@ public class ChangeRequestSystemUserService(
             ExternalRef = res.ExternalRef,
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
-            Rights = res.Rights,
+            RequiredRights = res.RequiredRights,
+            UnwantedRights = res.UnwantedRights,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
@@ -328,7 +330,8 @@ public class ChangeRequestSystemUserService(
             ExternalRef = res.ExternalRef,
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
-            Rights = res.Rights,
+            RequiredRights = res.RequiredRights,
+            UnwantedRights = res.UnwantedRights,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
@@ -376,7 +379,8 @@ public class ChangeRequestSystemUserService(
             Id = find.Id,
             SystemId = find.SystemId,
             ExternalRef = find.ExternalRef,
-            Rights = find.Rights,
+            RequiredRights = find.RequiredRights,
+            UnwantedRights = find.UnwantedRights,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
             RedirectUrl = find.RedirectUrl

@@ -30,7 +30,8 @@ public class ChangeRequestRepository(
                 external_ref,
                 system_id,
                 party_org_no,
-                rights,
+                required_rights,
+                unwanted_rights,
                 request_status,
                 redirect_urls)
             VALUES(
@@ -38,7 +39,8 @@ public class ChangeRequestRepository(
                 @external_ref,
                 @system_id,
                 @party_org_no,
-                @rights,
+                @required_rights,
+                @unwanted_rights,
                 @status,
                 @redirect_urls);"
         ;
@@ -51,7 +53,8 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("external_ref", createRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = createRequest.Rights });
+            command.Parameters.Add(new("required_rights", NpgsqlDbType.Jsonb) { Value = createRequest.RequiredRights });
+            command.Parameters.Add(new("unwanted_rights", NpgsqlDbType.Jsonb) { Value = createRequest.UnwantedRights });
             command.Parameters.AddWithValue("status", createRequest.Status);
 
             if (createRequest.RedirectUrl is not null)
@@ -172,7 +175,8 @@ public class ChangeRequestRepository(
                 external_ref,
                 system_id,
                 party_org_no,
-                rights,
+                required_rights,
+                unwanted_rights,
                 request_status,
                 redirect_urls,
                 created
@@ -206,7 +210,8 @@ public class ChangeRequestRepository(
                 external_ref,
                 system_id,
                 party_org_no,
-                rights,
+                required_rights,
+                unwanted_rights,
                 request_status,
                 redirect_urls,
                 created
@@ -244,7 +249,8 @@ public class ChangeRequestRepository(
                 external_ref,
                 system_id,
                 party_org_no,
-                rights,
+                required_rights,
+                unwanted_rights,
                 request_status,
                 redirect_urls,
                 created 
@@ -315,7 +321,8 @@ public class ChangeRequestRepository(
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
-            Rights = reader.GetFieldValue<List<Right>>("rights"),
+            RequiredRights = reader.GetFieldValue<List<Right>>("required_rights"),
+            UnwantedRights = reader.GetFieldValue<List<Right>>("unwanted_rights"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
