@@ -64,6 +64,40 @@ public class ChangeRequestSystemUserController : ControllerBase
     public const string ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM = "vendor/changerequest/bysystem";
 
     /// <summary>
+    /// Validates if the given set(s) of required and/or unwanted rights are delegated for the given systemId and user.
+    /// </summary>
+    /// <param name="validateSet">The model containing the set(s) of required and/or unwanted rights</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Response model of CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [HttpPost("vendor/validate")]
+    public async Task<ActionResult<ChangeRequestResponse>> ValidateSetOfRights([FromBody] ChangeRequestSystemUser validateSet, CancellationToken cancellationToken = default)
+    {
+        string platform = _generalSettings.PlatformEndpoint;
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        // Check to see if both the Required and Unwanted Rights are empty
+        var emptyResponse = EmptySetsReturnEmptyResponse(validateSet);
+        if (emptyResponse is not null)
+        {
+            return Ok(emptyResponse);
+        }
+
+        // Calls the PDP endpoint to validate the set of rights
+        Result<ChangeRequestResponse> response = await _changeRequestService.ValidateSetOfRights(validateSet, vendorOrgNo);
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return response.Problem.ToActionResult();
+    }
+
+    /// <summary>
     /// Creates a new Request based on a SystemId for a SystemUser.
     /// </summary>
     /// <param name="createRequest">The request model</param>
@@ -88,20 +122,9 @@ public class ChangeRequestSystemUserController : ControllerBase
         };
 
         // Check to see if both the Required and Unwanted Rights are empty
-        if (createRequest.RequiredRights.Count == 0 && createRequest.UnwantedRights.Count == 0)
+        var emptyResponse = EmptySetsReturnEmptyResponse(createRequest);
+        if (emptyResponse is not null)
         {
-            ChangeRequestResponse emptyResponse = new() 
-            {
-                Id = Guid.Empty,
-                ExternalRef = createRequest.ExternalRef ?? createRequest.PartyOrgNo,
-                SystemId = createRequest.SystemId,
-                SystemUserId = Guid.Empty,
-                PartyOrgNo = createRequest.PartyOrgNo,
-                RequiredRights = [],
-                UnwantedRights = [],
-                Status = "new",
-                RedirectUrl = createRequest.RedirectUrl
-            };
             return Ok(emptyResponse);
         }
 
@@ -123,6 +146,27 @@ public class ChangeRequestSystemUserController : ControllerBase
         }
 
         return response.Problem.ToActionResult();
+    }
+
+    private static ChangeRequestResponse? EmptySetsReturnEmptyResponse(ChangeRequestSystemUser createRequest)
+    {
+        if (createRequest.RequiredRights.Count == 0 && createRequest.UnwantedRights.Count == 0)
+        {
+            return new ChangeRequestResponse
+            {
+                Id = Guid.Empty,
+                ExternalRef = createRequest.ExternalRef ?? createRequest.PartyOrgNo,
+                SystemId = createRequest.SystemId,
+                SystemUserId = Guid.Empty,
+                PartyOrgNo = createRequest.PartyOrgNo,
+                RequiredRights = [],
+                UnwantedRights = [],
+                Status = "new",
+                RedirectUrl = createRequest.RedirectUrl
+            };
+        }
+
+        return null;
     }
 
     private OrganisationNumber? RetrieveOrgNoFromToken()

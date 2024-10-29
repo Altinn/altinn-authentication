@@ -89,4 +89,5 @@ public interface IChangeRequestSystemUser
     /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
     /// <returns>Result of Response model or Problem description</returns>
     Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo);
+    Task<Result<ChangeRequestResponse>> ValidateSetOfRights(ChangeRequestSystemUser validateSet, OrganisationNumber vendorOrgNo);
 }
