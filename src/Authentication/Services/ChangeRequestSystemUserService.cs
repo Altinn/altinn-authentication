@@ -4,7 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
+using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
@@ -16,6 +18,8 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Altinn.Urn;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -30,6 +34,7 @@ public class ChangeRequestSystemUserService(
     IChangeRequestRepository changeRequestRepository,
     ISystemUserRepository systemUserRepository,
     IResourceRegistryClient resourceRegistryClient,
+    IPDP PDPClient,
     IOptions<PaginationOptions> _paginationOption)
     : IChangeRequestSystemUser
 {
@@ -267,8 +272,8 @@ public class ChangeRequestSystemUserService(
     /// <param name="partyOrgNo">the PartyOrgNo for the Customer</param>
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateCustomerOrgNo(string partyOrgNo)
-    {        
-        if (partyOrgNo == null) 
+    {
+        if (partyOrgNo == null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -324,7 +329,7 @@ public class ChangeRequestSystemUserService(
         if (check.IsProblem)
         {
             return check.Problem;
-        }                
+        }
 
         return new ChangeRequestResponse()
         {
@@ -418,9 +423,9 @@ public class ChangeRequestSystemUserService(
         }
 
         DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
-        if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
-        { 
-            return Problem.Rights_NotFound_Or_NotDelegable; 
+        if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
         var changed = await changeRequestRepository.ApproveAndDelegateOnSystemUser(requestId, toBeChanged, userId, cancellationToken);
@@ -431,9 +436,9 @@ public class ChangeRequestSystemUserService(
         }
 
         Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
-        if (delegationSucceeded.IsProblem) 
-        { 
-            return delegationSucceeded.Problem; 
+        if (delegationSucceeded.IsProblem)
+        {
+            return delegationSucceeded.Problem;
         }
 
         return true;
@@ -461,13 +466,13 @@ public class ChangeRequestSystemUserService(
         SystemUser toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string systemName);
         if (systemUserRequest != null)
-        {            
+        {
             toBeInserted = new SystemUser();
             toBeInserted.SystemId = systemUserRequest.SystemId;
             toBeInserted.IntegrationTitle = systemName;
             toBeInserted.SystemInternalId = regSystem?.InternalId;
             toBeInserted.PartyId = partyId.ToString();
-            toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;          
+            toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;
         }
 
         return toBeInserted;
@@ -487,14 +492,14 @@ public class ChangeRequestSystemUserService(
 
             List<DelegationResponseData>? rightResponses = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), request);
 
-            if (rightResponses is null) 
-            { 
-                return new DelegationCheckResult(false, null); 
+            if (rightResponses is null)
+            {
+                return new DelegationCheckResult(false, null);
             }
 
-            if (!ResolveIfHasAccess(rightResponses)) 
-            { 
-                return new DelegationCheckResult(false, null); 
+            if (!ResolveIfHasAccess(rightResponses))
+            {
+                return new DelegationCheckResult(false, null);
             }
 
             rightResponsesList.Add(new RightResponses(rightResponses));
@@ -508,8 +513,8 @@ public class ChangeRequestSystemUserService(
         foreach (var data in rightResponse)
         {
             if (data.Status != "Delegable")
-            { 
-                return false; 
+            {
+                return false;
             }
         }
 
@@ -534,11 +539,11 @@ public class ChangeRequestSystemUserService(
         {
             return Problem.SystemIdNotFound;
         }
-        
+
         List<ChangeRequestResponse>? theList = await changeRequestRepository.GetAllChangeRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
-        return Page.Create(theList, _paginationSize, static theList => theList.Id); 
+        return Page.Create(theList, _paginationSize, static theList => theList.Id);
     }
 
     /// <inheritdoc/>
@@ -618,15 +623,63 @@ public class ChangeRequestSystemUserService(
         // Call the Resource Registry to get a flat list of Rights in the PDP format from the list of ResourceIds.
         foreach (var right in validateSet.RequiredRights)
         {
-            foreach (var resource in right.Resource) 
+            foreach (var resource in right.Resource)
             {
-                var flatPolicyRight = await resourceRegistryClient.GetRights(resource.Value); 
+                var flatPolicyRight = await resourceRegistryClient.GetRights(resource.Value);
                 requiredPolicyRights.AddRange(flatPolicyRight);
             }
-        }        
+        }
 
         // Call the PDP client to verify which of the Required Rights are currently delegated.
         // The Unwanted rights verification is currently not supported.
-        return new Result<ChangeRequestResponse> { };
+        var res = await MultipleDecisionRequestToPDP(requiredPolicyRights);
+        if (res.IsProblem) 
+        {
+            return res.Problem;
+        }
+
+        var req = MapPDPResponse(res.Value);
+
+        return new ChangeRequestResponse()
+        {
+            Id = Guid.NewGuid(),
+            ExternalRef = validateSet.ExternalRef,
+            SystemId = validateSet.SystemId,
+            PartyOrgNo = validateSet.PartyOrgNo,
+            RequiredRights = validateSet.RequiredRights,
+            UnwantedRights = validateSet.UnwantedRights,
+            Status = RequestStatus.New.ToString(),
+            RedirectUrl = validateSet.RedirectUrl
+        };
+    }
+
+    private object MapPDPResponse(XacmlJsonResponse res)
+    {
+        throw new NotImplementedException();
+    }
+
+    private async Task<Result<XacmlJsonResponse>> MultipleDecisionRequestToPDP(List<PolicyRightsDTO> rights)
+    {
+        List<XacmlJsonRequestReference> multiRequests = [];
+
+        foreach (PolicyRightsDTO right in rights) 
+        {
+            var reqref = new XacmlJsonRequestReference
+            {
+                ReferenceId = [right.RightKey]
+            };
+
+            multiRequests.Add(reqref); 
+        }
+
+        XacmlJsonRequestRoot request = new()
+        {
+            Request = new XacmlJsonRequest
+            {
+                MultiRequests = new() { RequestReference = multiRequests }
+            }
+        };
+
+        return await PDPClient.GetDecisionForRequest(request);
     }
 }
