@@ -78,6 +78,17 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetAsync($"{BaseUrl}/{endpoint}");
     }
+    
+    public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string token)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        
+        HttpContent content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
+
+        return await client.PutAsync($"{BaseUrl}/{path}", content);
+    }
 
     /// <summary>
     /// Delete
@@ -184,4 +195,5 @@ public class PlatformAuthenticationClient
         var maskinportenClient = EnvironmentHelper.GetMaskinportenClientByName(clientName);
         return await _maskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
     }
+    
 }

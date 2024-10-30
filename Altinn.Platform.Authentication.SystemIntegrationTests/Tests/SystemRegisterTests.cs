@@ -32,32 +32,28 @@ public class SystemRegisterTests
         _platformAuthenticationClient = new PlatformAuthenticationClient();
     }
 
-    private async Task<HttpResponseMessage> CreateNewSystem(string token, string vendorId = "312605031")
+    private async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState, string filePath)
     {
-        const string endpoint = "authentication/api/v1/systemregister/vendor";
-        _teststate.vendorId = vendorId;
-
-        var randomName = Helper.GenerateRandomString(10);
-        var testfile = await Helper.ReadFile("Resources/Testdata/Systemregister/CreateNewSystem.json");
-
-        testfile = testfile
-            .Replace("{vendorId}", vendorId)
-            .Replace("{randomName}", randomName)
-            .Replace("{clientId}", Guid.NewGuid().ToString());
-
-        return await _platformAuthenticationClient.PostAsync(endpoint, testfile, token);
+        var fileContent = await Helper.ReadFile(filePath);
+        return fileContent
+            .Replace("{vendorId}", systemRegisterState.VendorId)
+            .Replace("{Name}", systemRegisterState.Name)
+            .Replace("{clientId}", systemRegisterState.ClientId);
     }
 
-    /// <summary>
-    /// AK1 - Opprett system i systemregisteret
-    /// </summary>
     [Fact]
     public async Task CreateNewSystemReturns200Ok()
     {
+        // Prepare
+        const string filePath = "Resources/Testdata/Systemregister/CreateNewSystem.json";
+        const string endpoint = "authentication/api/v1/systemregister/vendor";
         var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
+        var testState = new SystemRegisterState("312605031", Guid.NewGuid().ToString());
+        var requestBody = await GetRequestBodyWithReplacements(testState, filePath);
+
         // Act
-        var response = await CreateNewSystem(token);
+        var response = await _platformAuthenticationClient.PostAsync(endpoint, requestBody, token);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -81,36 +77,23 @@ public class SystemRegisterTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    /// Verify that the correct number of rights are returned ffrom the defined system
+    /// Verify that the correct number of rights are returned from the defined system
     [Fact]
     public async Task ValidateRights()
     {
         // Prepare
         var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
-
-        // the vendor of the system, could be visma
-        const string vendorId = "312605031";
-        var randomName = Helper.GenerateRandomString(15);
-
-        var testfile = await Helper.ReadFile("Resources/Testdata/Systemregister/CreateNewSystem.json");
-
-        testfile = testfile
-            .Replace("{vendorId}", vendorId)
-            .Replace("{randomName}", randomName)
-            .Replace("{clientId}", Guid.NewGuid().ToString());
-
-        var systemRequest = JsonSerializer.Deserialize<RegisterSystemRequest>(testfile);
-        await _systemRegisterClient.CreateNewSystem(systemRequest!, token, vendorId);
+        var teststate = await PostSystem(token);
 
         // Act
         var response =
             await _platformAuthenticationClient.GetAsync(
-                $"/authentication/api/v1/systemregister/{vendorId}_{randomName}/rights", token);
+                $"/authentication/api/v1/systemregister/{teststate.SystemId}/rights", token);
         var rights = await response.Content.ReadFromJsonAsync<List<Right>>();
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(systemRequest.Rights.First().Resource.First().Value, rights!.First().Resource.First().Value);
+        Assert.Equal(teststate.Rights.First().Resource.First().Value, rights!.First().Resource.First().Value);
     }
 
     /// <summary>
@@ -122,26 +105,57 @@ public class SystemRegisterTests
         // Prepare
         var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
-        // the vendor of the system, could be visma
-        const string vendorId = "312605031";
-        var randomName = Helper.GenerateRandomString(15);
-
-        var testfile = await Helper.ReadFile("Resources/Testdata/Systemregister/CreateNewSystem.json");
-
-        testfile = testfile
-            .Replace("{vendorId}", vendorId)
-            .Replace("{randomName}", randomName)
-            .Replace("{clientId}", Guid.NewGuid().ToString());
-
-        var systemRequest = JsonSerializer.Deserialize<RegisterSystemRequest>(testfile);
-        await _systemRegisterClient.CreateNewSystem(systemRequest!, token, vendorId);
+        //post system to Systemregister
+        var testState = await PostSystem(token);
 
         // Act
         var respons = await _platformAuthenticationClient.Delete(
-            $"/authentication/api/v1/systemregister/vendor/{vendorId}_{randomName}",
-            token);
+            $"/authentication/api/v1/systemregister/vendor/{testState.SystemId}", token);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
+    }
+
+    private async Task<SystemRegisterState> PostSystem(string token)
+    {
+        // Prepare
+        const string filePath = "Resources/Testdata/Systemregister/CreateNewSystem.json";
+        const string endpoint = "authentication/api/v1/systemregister/vendor";
+
+        var testState = new SystemRegisterState("312605031", Guid.NewGuid().ToString());
+        var requestBody = await GetRequestBodyWithReplacements(testState, filePath);
+
+        var response = await _platformAuthenticationClient.PostAsync(endpoint, requestBody, token);
+
+        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return testState;
+    }
+
+    [Fact]
+    public async Task UpdateRegisteredSystemReturns200Ok()
+    {
+        // Prepare
+        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
+
+        //post system to Systemregister
+        var testState = await PostSystem(token);
+        var requestBody =
+            await GetRequestBodyWithReplacements(testState, "Resources/Testdata/Systemregister/UnitTestfilePut.json");
+
+        // Act
+        var response =
+            await _platformAuthenticationClient.PutAsync(
+                $"/authentication/api/v1/systemregister/vendor/{testState.SystemId}",
+                requestBody, token);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var get =
+            await _platformAuthenticationClient.GetAsync($"/authentication/api/v1/systemregister/{testState.SystemId}",
+                token);
+
+        _outputHelper.WriteLine($"updated system  {await get.Content.ReadAsStringAsync()}");
     }
 }
