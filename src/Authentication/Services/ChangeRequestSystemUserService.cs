@@ -581,7 +581,9 @@ public class ChangeRequestSystemUserService(
             SystemId = validateSet.SystemId,
         };
 
-        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
+        var systemUser = await changeRequestRepository.GetChangeRequestByExternalReferences(externalRequestId);
+
+        RegisteredSystem ? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -626,7 +628,8 @@ public class ChangeRequestSystemUserService(
             foreach (var resource in right.Resource)
             {
                 var flatPolicyRight = await resourceRegistryClient.GetRights(resource.Value);
-                requiredPolicyRights.AddRange(flatPolicyRight);
+                var filteredRights = FilterFlatPolicyRight(flatPolicyRight);
+                requiredPolicyRights.AddRange(filteredRights);
             }
         }
 
@@ -653,6 +656,16 @@ public class ChangeRequestSystemUserService(
         };
     }
 
+    /// <summary>
+    /// Ensures that only Roles SubjecTypes are kept in the list of PolicyRightsDTO
+    /// </summary>
+    /// <param name="flatPolicyRight">list</param>
+    /// <returns></returns>
+    private List<PolicyRightsDTO> FilterFlatPolicyRight(List<PolicyRightsDTO> flatPolicyRight)
+    {
+        return flatPolicyRight;
+    }
+
     private object MapPDPResponse(XacmlJsonResponse res)
     {
         throw new NotImplementedException();
@@ -676,7 +689,7 @@ public class ChangeRequestSystemUserService(
         {
             Request = new XacmlJsonRequest
             {
-                MultiRequests = new() { RequestReference = multiRequests }
+                MultiRequests = []
             }
         };
 

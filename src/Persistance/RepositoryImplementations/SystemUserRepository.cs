@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
@@ -68,7 +69,8 @@ internal class SystemUserRepository : ISystemUserRepository
                 sr.systemvendor_orgnumber,
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
-		        sui.created
+		        sui.created,
+                sui.external_ref
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -104,7 +106,8 @@ internal class SystemUserRepository : ISystemUserRepository
                 sr.systemvendor_orgnumber,
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
-		        sui.created
+		        sui.created,
+                sui.external_ref
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -129,6 +132,48 @@ internal class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
+    public async Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
+    {
+        const string QUERY = /*strpsql*/"""
+            SELECT 
+                sui.system_user_profile_id,
+                sui.integration_title,
+                sui.system_internal_id,
+                sr.system_id,
+                sr.systemvendor_orgnumber,
+                sui.reportee_org_no,
+                sui.reportee_party_id,
+                sui.created,
+                sui.external_ref
+            FROM business_application.system_user_profile sui 
+                JOIN business_application.system_register sr  
+                ON sui.system_internal_id = sr.system_internal_id
+            WHERE sui.external_ref = @external_ref
+                and sui.system_id = @system_id
+                and sui.party_org_no = @party_org_no
+                and sui.is_deleted = false; 
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
+            command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
+            command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToSystemUser)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetSystemUserById // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted, int userId)
     {
         const string QUERY = /*strpsql*/@"            
@@ -137,13 +182,15 @@ internal class SystemUserRepository : ISystemUserRepository
                     system_internal_id,
                     reportee_party_id,
                     reportee_org_no,
-                    created_by)
+                    created_by,
+                    external_ref)
                 VALUES(
                     @integration_title,
                     @system_internal_id,
                     @reportee_party_id,
                     @reportee_org_no,
-                    @created_by)
+                    @created_by,
+                    @external_ref)
                 RETURNING system_user_profile_id;";
 
         string createdBy = "user_id:" + userId.ToString();
@@ -157,6 +204,7 @@ internal class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("reportee_party_id", toBeInserted.PartyId);
             command.Parameters.AddWithValue("reportee_org_no", toBeInserted.ReporteeOrgNo);
             command.Parameters.AddWithValue("created_by", createdBy);
+            command.Parameters.AddWithValue("external_ref", toBeInserted.ExternalRef);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
@@ -209,7 +257,8 @@ internal class SystemUserRepository : ISystemUserRepository
                 sui.system_internal_id,
                 reportee_party_id,
                 sui.created,
-                systemvendor_orgnumber
+                systemvendor_orgnumber,
+                external_ref
             FROM business_application.system_user_profile sui
                 JOIN business_application.system_register sr  
                 ON   sui.system_internal_id = sr.system_internal_id
@@ -261,6 +310,7 @@ internal class SystemUserRepository : ISystemUserRepository
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber")
+            ExternalRef = reader.GetFieldValue<string>("external_ref")
         });
     }
 
@@ -276,7 +326,8 @@ internal class SystemUserRepository : ISystemUserRepository
                 sr.systemvendor_orgnumber,
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
-		        sui.created
+		        sui.created,
+                sui.external_ref
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id

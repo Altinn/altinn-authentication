@@ -88,5 +88,11 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// </summary>
         [JsonPropertyName("supplierOrgno")]
         public string SupplierOrgNo { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The External Reference is provided by the Vendor, and is used to identify their Customer in the Vendor's system.
+        /// </summary>
+        [JsonPropertyName("externalRef")]
+        public string ExternalRef { get; set; } = string.Empty;
     }
 }
