@@ -2,7 +2,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
-using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
@@ -32,7 +31,7 @@ public class MaskinPortenTokenGenerator
         return base64;
     }
 
-    public Task<string> GenerateJwt(Jwk jwk, EnvironmentHelper.MaskinportenClient client)
+    public static Task<string> GenerateJwt(Jwk jwk, EnvironmentHelper.MaskinportenClient client)
     {
         const string audience = "https://test.maskinporten.no/token";
         var iss = client.MaskinportenClientId;

@@ -42,4 +42,8 @@
       </None>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Utils\TestUsers\" />
+    </ItemGroup>
+
 </Project>

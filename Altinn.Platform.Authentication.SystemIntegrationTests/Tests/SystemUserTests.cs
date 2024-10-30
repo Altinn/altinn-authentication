@@ -1,6 +1,6 @@
 using System.Net;
-using Altinn.AccessManagement.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Newtonsoft.Json.Linq;
 using Xunit;

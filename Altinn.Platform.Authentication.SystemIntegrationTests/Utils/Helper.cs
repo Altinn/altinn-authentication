@@ -1,4 +1,3 @@
-using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Xunit;
 using Xunit.Abstractions;
 

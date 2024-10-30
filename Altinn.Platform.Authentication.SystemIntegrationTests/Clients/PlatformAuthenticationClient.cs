@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
-using Altinn.AccessManagement.SystemIntegrationTests.Domain;
-using Altinn.AccessManagement.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
@@ -173,7 +172,7 @@ public class PlatformAuthenticationClient
         throw new InvalidOperationException("Unable to get Altinn token");
     }
 
-    private EnvironmentHelper LoadEnvironment(string environmentVariableName)
+    private static EnvironmentHelper LoadEnvironment(string environmentVariableName)
     {
         const string localFilePath = "Resources/Environment/environment.json";
         var envJson = Environment.GetEnvironmentVariable(environmentVariableName);
