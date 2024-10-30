@@ -1,9 +1,6 @@
 using System.Net;
-using System.Text.Json;
 using Altinn.AccessManagement.SystemIntegrationTests.Domain;
-using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -14,6 +11,8 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 /// <summary>
 /// Class containing system user tests
 /// </summary>
+
+[Trait("Category", "IntegrationTest")]
 public class SystemUserTests
 {
     private readonly ITestOutputHelper _outputHelper;
@@ -22,6 +21,8 @@ public class SystemUserTests
     /// <summary>
     /// Testing System user endpoints
     /// </summary>
+    /// 
+
     public SystemUserTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;

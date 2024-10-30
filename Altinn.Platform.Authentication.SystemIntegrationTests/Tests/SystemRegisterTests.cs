@@ -10,6 +10,8 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 /// <summary>
 /// Tests relevant for "Systemregister": https://github.com/Altinn/altinn-authentication/issues/575
 /// </summary>
+
+[Trait("Category", "IntegrationTest")]
 public class SystemRegisterTests
 {
     private readonly ITestOutputHelper _outputHelper;

@@ -11,6 +11,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 /// <summary>
 /// Test that we're able to get a Machineporten token
 /// </summary>
+[Trait("Category", "IntegrationTest")]
 public class GetMaskinportenTokenTest
 {
     private readonly ITestOutputHelper _testOutputHelper;
