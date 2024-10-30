@@ -24,7 +24,7 @@ public class SystemRegisterState
         return this;
     }
 
-    public SystemRegisterState WithToken(string token)
+    public SystemRegisterState WithToken(string? token)
     {
         Token = token;
         return this;

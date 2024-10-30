@@ -35,7 +35,7 @@ public class PlatformAuthenticationClient
     /// <param name="body">Request body, see Swagger documentation for reference</param>
     /// <param name="token">Bearer token</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> PostAsync(string endpoint, string body, string token)
+    public async Task<HttpResponseMessage> PostAsync(string endpoint, string body, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -69,7 +69,7 @@ public class PlatformAuthenticationClient
     /// <param name="endpoint">path to api endpoint</param>
     /// <param name="token">Token used</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> GetAsync(string endpoint, string token)
+    public async Task<HttpResponseMessage> GetAsync(string endpoint, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -77,7 +77,7 @@ public class PlatformAuthenticationClient
         return await client.GetAsync($"{BaseUrl}/{endpoint}");
     }
 
-    public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string token)
+    public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -94,7 +94,7 @@ public class PlatformAuthenticationClient
     /// <param name="endpoint"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> Delete(string endpoint, string token)
+    public async Task<HttpResponseMessage> Delete(string endpoint, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -108,7 +108,7 @@ public class PlatformAuthenticationClient
     /// <param name="token">Bearer token from Maskinporten</param>
     /// <returns></returns>
     /// <exception cref="Exception">Throws exception if no token is returned</exception>
-    public async Task<string> GetExchangeToken(string token)
+    public async Task<string> GetExchangeToken(string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -129,7 +129,7 @@ public class PlatformAuthenticationClient
     /// </summary>
     /// <param name="user"></param>
     /// <returns></returns>
-    public async Task<string> GetPersonalAltinnToken(AltinnUser user)
+    public async Task<string?> GetPersonalAltinnToken(AltinnUser user)
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env={EnvironmentHelper.Testenvironment}" +
@@ -147,7 +147,7 @@ public class PlatformAuthenticationClient
     /// Add header values to Http client needed for altinn test api
     /// </summary>
     /// <returns></returns>
-    private async Task<string> GetAltinnToken(string url)
+    private async Task<string?> GetAltinnToken(string url)
     {
         var client = new HttpClient();
         var username = EnvironmentHelper.testCredentials.username;
@@ -174,7 +174,7 @@ public class PlatformAuthenticationClient
 
     private static EnvironmentHelper LoadEnvironment(string environmentVariableName)
     {
-        const string localFilePath = "Resources/Environment/environment.json";
+        const string? localFilePath = "Resources/Environment/environment.json";
         var envJson = Environment.GetEnvironmentVariable(environmentVariableName);
 
         if (!string.IsNullOrEmpty(envJson))
@@ -188,7 +188,7 @@ public class PlatformAuthenticationClient
                ?? throw new Exception($"Unable to read environment from {localFilePath}.");
     }
 
-    public async Task<string> GetTokenForClient(string clientName)
+    public async Task<string?> GetTokenForClient(string clientName)
     {
         var maskinportenClient = EnvironmentHelper.GetMaskinportenClientByName(clientName);
         return await _maskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);

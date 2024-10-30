@@ -5,7 +5,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 public static class JwkLoader
 {
-    public static Jwk LoadJwk(string localFilePath)
+    public static Jwk LoadJwk(string? localFilePath)
     {
         // Try loading from environment variable (Github actions)
         var jwkJson = Environment.GetEnvironmentVariable("JWKS_JSON");

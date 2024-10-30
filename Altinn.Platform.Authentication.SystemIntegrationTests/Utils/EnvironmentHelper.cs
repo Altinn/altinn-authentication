@@ -48,10 +48,10 @@ public class EnvironmentHelper
 
     public class MaskinportenClient
     {
-        public string MaskinportenClientId { get; set; }
-        public string Name { get; set; }
+        public string? MaskinportenClientId { get; set; }
+        public string? Name { get; set; }
 
-        public string PathToJwks { get; set; }
+        public string? PathToJwks { get; set; }
         // Constructor to set the values
     }
 }

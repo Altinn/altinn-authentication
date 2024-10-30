@@ -32,7 +32,7 @@ public class SystemRegisterTests
     }
 
     public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState,
-        string filePath)
+        string? filePath)
     {
         var fileContent = await Helper.ReadFile(filePath);
         return fileContent
@@ -99,7 +99,7 @@ public class SystemRegisterTests
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(teststate.Rights.First().Resource.First().Value, rights!.First().Resource.First().Value);
+        Assert.Equal(teststate.Rights.First().Resource!.First().Value, rights!.First().Resource!.First().Value);
     }
 
     /// <summary>

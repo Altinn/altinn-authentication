@@ -35,6 +35,9 @@ public class MaskinPortenTokenGenerator
     {
         const string audience = "https://test.maskinporten.no/token";
         var iss = client.MaskinportenClientId;
+
+        Assert.NotNull(iss);
+
         const string scope = "altinn:authentication/systemregister.write";
 
         // Set the current time and expiration time for the token
@@ -97,7 +100,7 @@ public class MaskinPortenTokenGenerator
     /// <param name="jwt">The generated jwt needed for the assertion parameter</param>
     /// <returns></returns>
     /// <exception cref="Exception">Throws a failure if unable to retrieve token</exception>
-    public async Task<string> RequestToken(string jwt)
+    public static async Task<string> RequestToken(string jwt)
     {
         using var client = new HttpClient();
         var requestContent = new FormUrlEncodedContent([
@@ -124,7 +127,7 @@ public class MaskinPortenTokenGenerator
     /// <param name="maskinportenClient"></param>
     /// <returns></returns>
     /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
-    public async Task<string> GetMaskinportenBearerToken(EnvironmentHelper.MaskinportenClient maskinportenClient)
+    public async Task<string?> GetMaskinportenBearerToken(EnvironmentHelper.MaskinportenClient maskinportenClient)
     {
         var jwk = JwkLoader.LoadJwk(maskinportenClient.PathToJwks);
 
@@ -132,8 +135,8 @@ public class MaskinPortenTokenGenerator
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;
-    
-        return root.GetProperty("access_token").GetString() ?? 
+
+        return root.GetProperty("access_token").GetString() ??
                throw new Exception("Unable to get access token from response.");
     }
 }
