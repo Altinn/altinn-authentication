@@ -17,7 +17,6 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 public class SystemUserTests
 {
     private readonly ITestOutputHelper _outputHelper;
-    private readonly SystemRegisterClient _systemRegisterClient;
     private readonly PlatformAuthenticationClient _platformAuthenticationClient;
 
     /// <summary>
@@ -26,8 +25,20 @@ public class SystemUserTests
     public SystemUserTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
-        _systemRegisterClient = new SystemRegisterClient(_outputHelper);
         _platformAuthenticationClient = new PlatformAuthenticationClient();
+    }
+
+    public async Task<SystemRegisterState> CreateSystemRegisterUser()
+    {
+        // Prerequisite-step
+        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
+
+        var teststate = new SystemRegisterState()
+            .WithVendor("312605031")
+            .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
+            .WithToken(token);
+
+        return teststate;
     }
 
     /// <summary>
@@ -36,33 +47,15 @@ public class SystemUserTests
     [Fact]
     public async Task CreateSystemUser()
     {
+        // Prerequisite
+        var teststate = await CreateSystemRegisterUser();
+
         // Prepare
-        var maskinportenToken = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
-
-        // the vendor of the system, could be visma
-        const string vendorId = "312605031";
-        var randomName = Helper.GenerateRandomString(15);
-
-        var testfile = await Helper.ReadFile("Resources/Testdata/Systemregister/CreateNewSystem.json");
-
-        testfile = testfile
-            .Replace("{vendorId}", vendorId)
-            .Replace("{randomName}", randomName)
-            .Replace("{clientId}", Guid.NewGuid().ToString());
-
-        RegisterSystemRequest? systemRequest =
-            JsonSerializer.Deserialize<RegisterSystemRequest>(testfile);
-        await _systemRegisterClient.CreateNewSystem(systemRequest!, maskinportenToken, vendorId);
-
-        var response =
-            await _platformAuthenticationClient.GetAsync(
-                $"/authentication/api/v1/systemregister/{vendorId}_{randomName}/", maskinportenToken);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
         var requestBody = await Helper.ReadFile("Resources/Testdata/SystemUser/RequestSystemUser.json");
+
         requestBody = requestBody
-            .Replace("{systemId}", $"{vendorId}_{randomName}")
-            .Replace("{randomIntegrationTitle}", $"{randomName}");
+            .Replace("{systemId}", $"{teststate.SystemId}")
+            .Replace("{randomIntegrationTitle}", $"{teststate.Name}");
 
         var manager = new AltinnUser
         {
@@ -133,40 +126,20 @@ public class SystemUserTests
         Assert.Equal(HttpStatusCode.Accepted, respons.StatusCode);
     }
 
-    public async Task<HttpResponseMessage> CreateSystemUserTestdata(string party, AltinnUser user)
+    private async Task<HttpResponseMessage> CreateSystemUserTestdata(string party, AltinnUser user)
     {
-        // Prepare
-        var maskinportenToken = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
-        
-        // the vendor of the system, could be visma
-        const string vendorId = "312605031";
-        var randomName = Helper.GenerateRandomString(15);
-
-        var testfile = await Helper.ReadFile("Resources/Testdata/Systemregister/CreateNewSystem.json");
-
-        testfile = testfile
-            .Replace("{vendorId}", vendorId)
-            .Replace("{randomName}", randomName)
-            .Replace("{clientId}", Guid.NewGuid().ToString());
-
-        var systemRequest =
-            JsonSerializer.Deserialize<RegisterSystemRequest>(testfile);
-        await _systemRegisterClient.CreateNewSystem(systemRequest!, maskinportenToken, vendorId);
-
-        var response =
-            await _platformAuthenticationClient.GetAsync(
-                $"/authentication/api/v1/systemregister/{vendorId}_{randomName}/", maskinportenToken);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var teststate = await CreateSystemRegisterUser();
 
         var requestBody = await Helper.ReadFile("Resources/Testdata/SystemUser/RequestSystemUser.json");
+
         requestBody = requestBody
-            .Replace("{systemId}", $"{vendorId}_{randomName}")
-            .Replace("{randomIntegrationTitle}", $"{randomName}");
+            .Replace("{systemId}", $"{teststate.SystemId}")
+            .Replace("{randomIntegrationTitle}", $"{teststate.Name}");
 
         var endpoint = "authentication/api/v1/systemuser/" + party;
 
         var token = await _platformAuthenticationClient.GetPersonalAltinnToken(user);
-        //Act
+
         var respons = await _platformAuthenticationClient.PostAsync(endpoint, requestBody, token);
         return respons;
     }
