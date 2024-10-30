@@ -1,7 +1,7 @@
-name: build and test
+name: Run systemintegration tests - Authentication
 
 on:
-  push:
+  workflow_dispatch:
 
 env:
   DOTNET_VERSION: '8.0.x'

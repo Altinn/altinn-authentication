@@ -13,7 +13,10 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 public class SystemRegisterTests
 {
     private readonly ITestOutputHelper _outputHelper;
-    private readonly PlatformAuthenticationClient _platformAuthenticationClient;
+    private readonly SystemRegisterClient _systemRegisterClient;
+
+    // Forbedringer
+    // - Unngå å skrive til systemregisteret hver gang
 
     /// <summary>
     /// Systemregister tests
@@ -22,7 +25,7 @@ public class SystemRegisterTests
     public SystemRegisterTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
-        _platformAuthenticationClient = new PlatformAuthenticationClient();
+        _systemRegisterClient = new SystemRegisterClient();
     }
 
     public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState,
@@ -39,7 +42,7 @@ public class SystemRegisterTests
     public async Task CreateNewSystemReturns200Ok()
     {
         // Prepare
-        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
+        var token = await _systemRegisterClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
             .WithVendor("312605031")
@@ -47,7 +50,7 @@ public class SystemRegisterTests
             .WithToken(token);
 
         // Act
-        var response = await _platformAuthenticationClient._systemRegisterClient.PostSystem(teststate);
+        var response = await _systemRegisterClient.PostSystem(teststate);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -60,11 +63,11 @@ public class SystemRegisterTests
     [Fact]
     public async Task GetSystemRegisterReturns200Ok()
     {
-        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
+        var token = await _systemRegisterClient.GetTokenForClient("SystemRegisterClient");
 
         // Act
         var response =
-            await _platformAuthenticationClient.GetAsync("/authentication/api/v1/systemregister", token);
+            await _systemRegisterClient.GetAsync("/authentication/api/v1/systemregister", token);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -76,18 +79,18 @@ public class SystemRegisterTests
     public async Task ValidateRights()
     {
         // Prepare
-        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
+        var token = await _systemRegisterClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
             .WithToken(token);
 
-        await _platformAuthenticationClient._systemRegisterClient.PostSystem(teststate);
+        await _systemRegisterClient.PostSystem(teststate);
 
         // Act
         var response =
-            await _platformAuthenticationClient.GetAsync(
+            await _systemRegisterClient.GetAsync(
                 $"/authentication/api/v1/systemregister/{teststate.SystemId}/rights", token);
         var rights = await response.Content.ReadFromJsonAsync<List<Right>>();
 
@@ -103,7 +106,7 @@ public class SystemRegisterTests
     public async Task DeleteRegisteredSystemReturns200Ok()
     {
         // Prepare
-        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
+        var token = await _systemRegisterClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
             .WithVendor("312605031")
@@ -111,11 +114,10 @@ public class SystemRegisterTests
             .WithToken(token);
 
         //post system to Systemregister
-        await _platformAuthenticationClient._systemRegisterClient.PostSystem(teststate);
-
+        await _systemRegisterClient.PostSystem(teststate);
 
         // Act
-        var respons = await _platformAuthenticationClient.Delete(
+        var respons = await _systemRegisterClient.Delete(
             $"/authentication/api/v1/systemregister/vendor/{teststate.SystemId}", token);
 
         // Assert
@@ -126,7 +128,7 @@ public class SystemRegisterTests
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prerequisite-step
-        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
+        var token = await _systemRegisterClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
             .WithVendor("312605031")
@@ -134,7 +136,7 @@ public class SystemRegisterTests
             .WithToken(token);
 
         //post system to Systemregister
-        await _platformAuthenticationClient._systemRegisterClient.PostSystem(teststate);
+        await _systemRegisterClient.PostSystem(teststate);
 
         //Prepare 
         var requestBody =
@@ -142,18 +144,17 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformAuthenticationClient.PutAsync(
-                $"/authentication/api/v1/systemregister/vendor/{teststate.SystemId}",
+            await _systemRegisterClient.PutAsync($"/authentication/api/v1/systemregister/vendor/{teststate.SystemId}",
                 requestBody, token);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var get =
-            await _platformAuthenticationClient.GetAsync($"/authentication/api/v1/systemregister/{teststate.SystemId}",
+            await _systemRegisterClient.GetAsync($"/authentication/api/v1/systemregister/{teststate.SystemId}",
                 token);
 
-        _outputHelper.WriteLine($"updated system  {await get.Content.ReadAsStringAsync()}");
+        //More asserts should be added, but there are known bugs right now regarding validation of rights 
         Assert.Equal(HttpStatusCode.OK, get.StatusCode);
     }
 }

@@ -11,16 +11,11 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 /// </summary>
 public class SystemRegisterClient : PlatformAuthenticationClient
 {
-    private Helper Helper { get; set; }
-    private ITestOutputHelper Output { get; set; }
-
     /// <summary>
     /// For specific Sytem Register Requests
     /// </summary>
-    public SystemRegisterClient(ITestOutputHelper output)
+    public SystemRegisterClient()
     {
-        Output = output;
-        Helper = new Helper(Output);
     }
 
     /// <summary>
@@ -35,7 +30,7 @@ public class SystemRegisterClient : PlatformAuthenticationClient
 
         var response = await PostAsync("authentication/api/v1/systemregister/vendor", requestBody, state.Token);
 
-        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         return response;

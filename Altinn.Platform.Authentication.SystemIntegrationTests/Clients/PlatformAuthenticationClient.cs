@@ -13,7 +13,6 @@ public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
     public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
-    public SystemRegisterClient _systemRegisterClient { get; set; }
 
     /// <summary>
     /// baseUrl for api
@@ -78,13 +77,13 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetAsync($"{BaseUrl}/{endpoint}");
     }
-    
+
     public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
-        
+
         HttpContent content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
 
         return await client.PutAsync($"{BaseUrl}/{path}", content);
@@ -173,7 +172,7 @@ public class PlatformAuthenticationClient
 
         throw new InvalidOperationException("Unable to get Altinn token");
     }
-    
+
     private EnvironmentHelper LoadEnvironment(string environmentVariableName)
     {
         const string localFilePath = "Resources/Environment/environment.json";
@@ -185,15 +184,14 @@ public class PlatformAuthenticationClient
                    ?? throw new Exception($"Unable to deserialize environment from {environmentVariableName}.");
         }
 
-        var jsonString = Helper.ReadFile(localFilePath).Result; // Assuming synchronous file read
+        var jsonString = Helper.ReadFile(localFilePath).Result;
         return JsonSerializer.Deserialize<EnvironmentHelper>(jsonString)
                ?? throw new Exception($"Unable to read environment from {localFilePath}.");
     }
-    
+
     public async Task<string> GetTokenForClient(string clientName)
     {
         var maskinportenClient = EnvironmentHelper.GetMaskinportenClientByName(clientName);
         return await _maskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
     }
-    
 }

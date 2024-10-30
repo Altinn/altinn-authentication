@@ -12,17 +12,7 @@ public class Helper
     /// <summary>
     /// For loggin
     /// </summary>
-    public ITestOutputHelper Output { get; }
-
-    /// <summary>
-    /// Helper class that loads environment and creates platform client
-    /// </summary>
-    /// <param name="output">for logging</param>
-    /// <exception cref="Exception">Throws exception if unable to set environment</exception>
-    public Helper(ITestOutputHelper output)
-    {
-        Output = output;
-    }
+    
 
     /// <summary>
     /// For test data generation purposes

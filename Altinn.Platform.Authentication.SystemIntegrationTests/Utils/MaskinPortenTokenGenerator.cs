@@ -127,7 +127,6 @@ public class MaskinPortenTokenGenerator
     /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
     public async Task<string> GetMaskinportenBearerToken(EnvironmentHelper.MaskinportenClient maskinportenClient)
     {
-        //This is hardcoded for now
         var jwk = JwkLoader.LoadJwk(maskinportenClient.PathToJwks);
 
         var jwt = await GenerateJwt(jwk, maskinportenClient);

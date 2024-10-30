@@ -9,8 +9,7 @@ public class SystemRegisterState
     public string ClientId { get; set; }
     public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomName
 
-    public List<Right> Rights { get; set; }
-
+    public List<Right> Rights { get; set; } = [];
 
     public SystemRegisterState()
     {
@@ -33,13 +32,15 @@ public class SystemRegisterState
     public SystemRegisterState WithResource(string value, string id)
     {
         var resource = new Resource { Value = value, Id = id };
-
+        
         if (Rights.Count == 0)
         {
-            Rights.Add(new Right { Resource = [resource] });
+            // Initialize Rights with a new Right that has an initialized Resource list
+            Rights.Add(new Right { Resource = new List<Resource> { resource } });
         }
         else
         {
+            // Add to the existing Resource list in the first Right
             Rights.First().Resource.Add(resource);
         }
 

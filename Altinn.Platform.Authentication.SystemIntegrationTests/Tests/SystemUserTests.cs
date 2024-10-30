@@ -17,7 +17,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 public class SystemUserTests
 {
     private readonly ITestOutputHelper _outputHelper;
-    private readonly PlatformAuthenticationClient _platformAuthenticationClient;
+    private readonly SystemRegisterClient _systemRegisterClient;
 
     /// <summary>
     /// Testing System user endpoints
@@ -25,18 +25,20 @@ public class SystemUserTests
     public SystemUserTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
-        _platformAuthenticationClient = new PlatformAuthenticationClient();
+        _systemRegisterClient = new SystemRegisterClient();
     }
 
-    public async Task<SystemRegisterState> CreateSystemRegisterUser()
+    private async Task<SystemRegisterState> CreateSystemRegisterUser()
     {
         // Prerequisite-step
-        var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
+        var token = await _systemRegisterClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
             .WithToken(token);
+
+        await _systemRegisterClient.PostSystem(teststate);
 
         return teststate;
     }
@@ -62,11 +64,11 @@ public class SystemUserTests
             userId = "20012772", partyId = "51670464", pid = "64837001585",
             scopes = "altinn:authentication/systemuser.request.read"
         };
-        var token = await _platformAuthenticationClient.GetPersonalAltinnToken(manager);
+        var token = await _systemRegisterClient.GetPersonalAltinnToken(manager);
 
         //Act
         var respons =
-            await _platformAuthenticationClient.PostAsync("authentication/api/v1/systemuser/50692553", requestBody,
+            await _systemRegisterClient.PostAsync("authentication/api/v1/systemuser/50692553", requestBody,
                 token);
 
         //Assert
@@ -88,12 +90,12 @@ public class SystemUserTests
             scopes = "altinn:authentication" //What use does this even have
         };
 
-        var token = await _platformAuthenticationClient.GetPersonalAltinnToken(manager);
+        var token = await _systemRegisterClient.GetPersonalAltinnToken(manager);
 
         const string party = "50692553";
         const string endpoint = "authentication/api/v1/systemuser/" + party;
 
-        var respons = await _platformAuthenticationClient.GetAsync(endpoint, token);
+        var respons = await _systemRegisterClient.GetAsync(endpoint, token);
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
     }
 
@@ -118,11 +120,11 @@ public class SystemUserTests
             id = jsonObject[
                 "id"]; //SystemId -//Todo: Why is "id" the same as systemuserid in Swagger? Confusing to mix with "systemid"
 
-        var token = await _platformAuthenticationClient.GetPersonalAltinnToken(manager);
+        var token = await _systemRegisterClient.GetPersonalAltinnToken(manager);
 
         // Act
         var respons =
-            await _platformAuthenticationClient.Delete($"authentication/api/v1/systemuser/{party}/{id}", token);
+            await _systemRegisterClient.Delete($"authentication/api/v1/systemuser/{party}/{id}", token);
         Assert.Equal(HttpStatusCode.Accepted, respons.StatusCode);
     }
 
@@ -138,9 +140,9 @@ public class SystemUserTests
 
         var endpoint = "authentication/api/v1/systemuser/" + party;
 
-        var token = await _platformAuthenticationClient.GetPersonalAltinnToken(user);
+        var token = await _systemRegisterClient.GetPersonalAltinnToken(user);
 
-        var respons = await _platformAuthenticationClient.PostAsync(endpoint, requestBody, token);
+        var respons = await _systemRegisterClient.PostAsync(endpoint, requestBody, token);
         return respons;
     }
 }
