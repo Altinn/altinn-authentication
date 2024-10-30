@@ -16,9 +16,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 public class SystemRegisterTests
 {
     private readonly ITestOutputHelper _outputHelper;
-    private readonly Teststate _teststate;
     private readonly PlatformAuthenticationClient _platformAuthenticationClient;
-    private readonly SystemRegisterClient _systemRegisterClient;
 
     /// <summary>
     /// Systemregister tests
@@ -27,12 +25,10 @@ public class SystemRegisterTests
     public SystemRegisterTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
-        _systemRegisterClient = new SystemRegisterClient(_outputHelper);
-        _teststate = new Teststate();
         _platformAuthenticationClient = new PlatformAuthenticationClient();
     }
 
-    private async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState, string filePath)
+    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState, string filePath)
     {
         var fileContent = await Helper.ReadFile(filePath);
         return fileContent
@@ -46,14 +42,15 @@ public class SystemRegisterTests
     {
         // Prepare
         const string filePath = "Resources/Testdata/Systemregister/CreateNewSystem.json";
-        const string endpoint = "authentication/api/v1/systemregister/vendor";
         var token = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
 
         var testState = new SystemRegisterState("312605031", Guid.NewGuid().ToString());
         var requestBody = await GetRequestBodyWithReplacements(testState, filePath);
 
         // Act
-        var response = await _platformAuthenticationClient.PostAsync(endpoint, requestBody, token);
+        var response =
+            await _platformAuthenticationClient.PostAsync("authentication/api/v1/systemregister/vendor", requestBody,
+                token);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -119,14 +116,11 @@ public class SystemRegisterTests
     private async Task<SystemRegisterState> PostSystem(string token)
     {
         // Prepare
-        const string filePath = "Resources/Testdata/Systemregister/CreateNewSystem.json";
-        const string endpoint = "authentication/api/v1/systemregister/vendor";
-
         var testState = new SystemRegisterState("312605031", Guid.NewGuid().ToString());
-        var requestBody = await GetRequestBodyWithReplacements(testState, filePath);
-
-        var response = await _platformAuthenticationClient.PostAsync(endpoint, requestBody, token);
-
+        var requestBody = await GetRequestBodyWithReplacements(testState, "Resources/Testdata/Systemregister/CreateNewSystem.json");
+        
+        var response = await _platformAuthenticationClient.PostAsync("authentication/api/v1/systemregister/vendor", requestBody, token);
+        
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return testState;

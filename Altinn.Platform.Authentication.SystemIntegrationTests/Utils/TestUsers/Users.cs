@@ -1,6 +1,6 @@
 using Altinn.AccessManagement.SystemIntegrationTests.Domain;
 
-namespace Altinn.AccessManagement.SystemIntegrationTests.Utils.TestUsers;
+namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestUsers;
 
 public class Users
 {

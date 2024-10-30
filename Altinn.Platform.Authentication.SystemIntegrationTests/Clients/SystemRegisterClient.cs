@@ -1,6 +1,7 @@
+using System.Net;
 using System.Text.Json;
-using Altinn.AccessManagement.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
 using Xunit.Abstractions;
@@ -36,7 +37,7 @@ public class SystemRegisterClient : PlatformAuthenticationClient
         string vendorId = "312605031")
     {
         const string endpoint = "authentication/api/v1/systemregister/vendor";
-
+    
         HttpContent content = new StringContent(
             JsonSerializer.Serialize(system,
                 new JsonSerializerOptions
@@ -49,5 +50,18 @@ public class SystemRegisterClient : PlatformAuthenticationClient
         Assert.NotNull(response);
         Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         return response;
+    }
+    
+    private async Task<SystemRegisterState> PostSystem(string token)
+    {
+        // Prepare
+        var testState = new SystemRegisterState("312605031", Guid.NewGuid().ToString());
+        var requestBody = await SystemRegisterTests.GetRequestBodyWithReplacements(testState, "Resources/Testdata/Systemregister/CreateNewSystem.json");
+        
+        var response = await PostAsync("authentication/api/v1/systemregister/vendor", requestBody, token);
+        
+        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return testState;
     }
 }

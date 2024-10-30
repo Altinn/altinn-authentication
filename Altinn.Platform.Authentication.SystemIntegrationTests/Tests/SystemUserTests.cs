@@ -19,7 +19,6 @@ public class SystemUserTests
     private readonly ITestOutputHelper _outputHelper;
     private readonly SystemRegisterClient _systemRegisterClient;
     private readonly PlatformAuthenticationClient _platformAuthenticationClient;
-    private readonly MaskinPortenTokenGenerator _maskinPortenTokenGenerator;
 
     /// <summary>
     /// Testing System user endpoints
@@ -29,7 +28,6 @@ public class SystemUserTests
         _outputHelper = outputHelper;
         _systemRegisterClient = new SystemRegisterClient(_outputHelper);
         _platformAuthenticationClient = new PlatformAuthenticationClient();
-        _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator();
     }
 
     /// <summary>
@@ -53,7 +51,7 @@ public class SystemUserTests
             .Replace("{clientId}", Guid.NewGuid().ToString());
 
         RegisterSystemRequest? systemRequest =
-            System.Text.Json.JsonSerializer.Deserialize<RegisterSystemRequest>(testfile);
+            JsonSerializer.Deserialize<RegisterSystemRequest>(testfile);
         await _systemRegisterClient.CreateNewSystem(systemRequest!, maskinportenToken, vendorId);
 
         var response =
