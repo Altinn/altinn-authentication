@@ -191,6 +191,6 @@ public class PlatformAuthenticationClient
     public async Task<string?> GetTokenForClient(string clientName)
     {
         var maskinportenClient = EnvironmentHelper.GetMaskinportenClientByName(clientName);
-        return await _maskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
+        return await MaskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
     }
 }

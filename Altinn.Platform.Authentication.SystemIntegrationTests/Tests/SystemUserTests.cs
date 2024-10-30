@@ -11,7 +11,6 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 /// <summary>
 /// Class containing system user tests
 /// </summary>
-
 [Trait("Category", "IntegrationTest")]
 public class SystemUserTests
 {
@@ -22,7 +21,6 @@ public class SystemUserTests
     /// Testing System user endpoints
     /// </summary>
     /// 
-
     public SystemUserTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
@@ -97,6 +95,8 @@ public class SystemUserTests
         const string endpoint = "authentication/api/v1/systemuser/" + party;
 
         var respons = await _systemRegisterClient.GetAsync(endpoint, token);
+
+        _outputHelper.WriteLine(await respons.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
     }
 
