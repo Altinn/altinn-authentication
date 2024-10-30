@@ -309,7 +309,7 @@ internal class SystemUserRepository : ISystemUserRepository
             PartyId = reader.GetFieldValue<string>("reportee_party_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
-            SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber")
+            SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             ExternalRef = reader.GetFieldValue<string>("external_ref")
         });
     }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -19,6 +21,7 @@ using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Altinn.Urn;
+using Altinn.Urn.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
@@ -581,7 +584,11 @@ public class ChangeRequestSystemUserService(
             SystemId = validateSet.SystemId,
         };
 
-        var systemUser = await changeRequestRepository.GetChangeRequestByExternalReferences(externalRequestId);
+        SystemUser? systemUser = await systemUserRepository.GetSystemUserByExternalRequestId(externalRequestId);
+        if (systemUser is null) 
+        {
+            return Problem.SystemUserNotFound;
+        }
 
         RegisteredSystem ? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
         if (systemInfo is null)
@@ -635,14 +642,30 @@ public class ChangeRequestSystemUserService(
 
         // Call the PDP client to verify which of the Required Rights are currently delegated.
         // The Unwanted rights verification is currently not supported.
-        var res = await MultipleDecisionRequestToPDP(requiredPolicyRights);
+        var res = await MultipleDecisionRequestToPDP(requiredPolicyRights, systemUser);
         if (res.IsProblem) 
         {
             return res.Problem;
         }
 
-        var req = MapPDPResponse(res.Value);
+        bool allRequiredRightsAreDelegated = MapPDPResponse(res.Value);
 
+        if (allRequiredRightsAreDelegated)
+        {
+            return new ChangeRequestResponse()
+            {
+                Id = Guid.NewGuid(),
+                ExternalRef = validateSet.ExternalRef,
+                SystemId = validateSet.SystemId,
+                PartyOrgNo = validateSet.PartyOrgNo,
+                RequiredRights = [],
+                UnwantedRights = validateSet.UnwantedRights,
+                Status = ChangeRequestStatus.NoChangeNeeded.ToString(),
+                RedirectUrl = validateSet.RedirectUrl
+            };
+        }
+
+        // The Rights are not all delegated, so we need to create a new ChangeRequest
         return new ChangeRequestResponse()
         {
             Id = Guid.NewGuid(),
@@ -651,45 +674,149 @@ public class ChangeRequestSystemUserService(
             PartyOrgNo = validateSet.PartyOrgNo,
             RequiredRights = validateSet.RequiredRights,
             UnwantedRights = validateSet.UnwantedRights,
-            Status = RequestStatus.New.ToString(),
+            Status = ChangeRequestStatus.New.ToString(),
             RedirectUrl = validateSet.RedirectUrl
         };
     }
 
     /// <summary>
-    /// Ensures that only Roles SubjecTypes are kept in the list of PolicyRightsDTO
+    /// Removes the rights which only have "urn:altinn:org" as a subject type.
     /// </summary>
     /// <param name="flatPolicyRight">list</param>
-    /// <returns></returns>
-    private List<PolicyRightsDTO> FilterFlatPolicyRight(List<PolicyRightsDTO> flatPolicyRight)
+    /// <returns>filtered list of PolicyRightsDTO</returns>
+    private static List<PolicyRightsDTO> FilterFlatPolicyRight(List<PolicyRightsDTO> flatPolicyRight)
     {
+        List<PolicyRightsDTO> filteredList = [];
+
+        foreach (PolicyRightsDTO right in flatPolicyRight)
+        {
+            bool hasOtherSubjectTypeThanOrg = false;
+            foreach (string subjectType in right.SubjectTypes)
+            {
+                if (subjectType != "urn:altinn:org")
+                {
+                    hasOtherSubjectTypeThanOrg = true;
+                    break;
+                }
+            }
+
+            if (hasOtherSubjectTypeThanOrg)
+            {
+                filteredList.Add(right);
+            }
+        }
+
         return flatPolicyRight;
     }
 
-    private object MapPDPResponse(XacmlJsonResponse res)
+    /// <summary>
+    /// Returns True if all the Rights in the PDP call where Permit,
+    /// a False will be returned if any of the Rights where not Permit.
+    /// This means that the ChangeRequest should be submitted to the API, 
+    /// since it is not already delegated, and the PDP API is idempotent,
+    /// it does not matter if one or more of the Rights are already delegated.
+    /// </summary>
+    /// <param name="res">The response from the PDP</param>
+    /// <returns>Boolean True if all Rights where Permit</returns>    
+    private static bool MapPDPResponse(XacmlJsonResponse res)
     {
-        throw new NotImplementedException();
+        bool allRequiredRightsAreDelegated = true;
+
+        foreach (XacmlJsonResult result in res.Response) 
+        {
+            if (result.Decision != XacmlContextDecision.Permit.ToString())
+            {
+                allRequiredRightsAreDelegated = false;
+            }           
+        }
+
+        return allRequiredRightsAreDelegated;
     }
 
-    private async Task<Result<XacmlJsonResponse>> MultipleDecisionRequestToPDP(List<PolicyRightsDTO> rights)
+    private async Task<Result<XacmlJsonResponse>> MultipleDecisionRequestToPDP(List<PolicyRightsDTO> rights, SystemUser systemUser)
     {
+        XacmlJsonCategory xacmlUser = new()
+        {
+            Id = "s1",
+            Attribute = 
+            [
+                new XacmlJsonAttribute
+                {
+                    AttributeId = "urn:altinn:systemuser:uuid",
+                    Value = systemUser.Id
+                }
+            ] 
+        };
+
+        List<XacmlJsonCategory> accessSubject = [xacmlUser];
+
         List<XacmlJsonRequestReference> multiRequests = [];
 
+        List<XacmlJsonCategory> actionList = [];
+
+        List<XacmlJsonCategory> resourceList = [];
+
+        int counter = 0;
         foreach (PolicyRightsDTO right in rights) 
         {
-            var reqref = new XacmlJsonRequestReference
+            counter++;
+            XacmlJsonCategory xamlAction = new()
             {
-                ReferenceId = [right.RightKey]
+                Id = $"a{counter}",
+                Attribute =
+                [
+                    new XacmlJsonAttribute
+                    {
+                        AttributeId = "urn:oasis:names:tc:xacml:1.0:action:action-id",
+                        Value = right.Action.Value.ToString()
+                    }
+                ]
             };
 
-            multiRequests.Add(reqref); 
+            actionList.Add(xamlAction);
+                        
+            List<XacmlJsonAttribute> resourceAttributes = [];
+
+            foreach (var res in right.Resource)
+            {
+                var newres = new XacmlJsonAttribute
+                {
+                    AttributeId = "urn:altinn:resource:resource",
+                    Value = res.Value.ToString()
+                };
+
+                resourceAttributes.Add(newres); 
+            }
+
+            XacmlJsonCategory xamlResource = new()
+            {
+                Id = $"r{counter}",
+                Attribute = resourceAttributes
+            };
+
+            resourceList.Add(xamlResource);
+
+            var reqref = new XacmlJsonRequestReference
+            {
+                ReferenceId = [xacmlUser.Id, xamlAction.Id, xamlResource.Id]
+            };
+
+            multiRequests.Add(reqref);            
         }
 
         XacmlJsonRequestRoot request = new()
         {
             Request = new XacmlJsonRequest
             {
-                MultiRequests = []
+                ReturnPolicyIdList = true,
+                AccessSubject = accessSubject,
+                Action = actionList,
+                Resource = resourceList,   
+
+                MultiRequests = new XacmlJsonMultiRequests()
+                {
+                    RequestReference = multiRequests
+                }
             }
         };
 
