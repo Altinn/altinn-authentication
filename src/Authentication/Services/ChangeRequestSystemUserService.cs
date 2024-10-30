@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
+using Altinn.Authorization.ABAC.Xacml;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.PEP.Interfaces;
@@ -781,7 +782,7 @@ public class ChangeRequestSystemUserService(
             {
                 var newres = new XacmlJsonAttribute
                 {
-                    AttributeId = "urn:altinn:resource:resource",
+                    AttributeId = "urn:altinn:resource",
                     Value = res.Value.ToString()
                 };
 
