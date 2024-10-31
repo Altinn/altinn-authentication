@@ -36,6 +36,7 @@ public class ChangeRequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IChangeRequestRepository changeRequestRepository,
+    IRequestRepository requestRepository,
     ISystemUserRepository systemUserRepository,
     IResourceRegistryClient resourceRegistryClient,
     IPDP PDPClient,
@@ -64,7 +65,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
+        Result<bool> valRef = await ValidateExternalChangeRequestId(externalRequestId);
         if (valRef.IsProblem)
         {
             return valRef.Problem;
@@ -215,7 +216,7 @@ public class ChangeRequestSystemUserService(
     /// </summary>
     /// <param name="externalRequestId">Combination of SystemId, PartyOrg and External Ref</param>
     /// <returns>Result or Problem</returns>
-    private async Task<Result<bool>> ValidateExternalRequestId(ExternalRequestId externalRequestId)
+    private async Task<Result<bool>> ValidateExternalChangeRequestId(ExternalRequestId externalRequestId)
     {
         ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByExternalReferences(externalRequestId);
 
@@ -586,9 +587,10 @@ public class ChangeRequestSystemUserService(
         };
 
         SystemUser? systemUser = await systemUserRepository.GetSystemUserByExternalRequestId(externalRequestId);
-        if (systemUser is null) 
+        var debug = " ";
+        if (systemUser is null)
         {
-            return Problem.SystemUserNotFound;
+            return Problem.SystemUserNotFound;  
         }
 
         RegisteredSystem ? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
@@ -610,7 +612,7 @@ public class ChangeRequestSystemUserService(
             validateSet.ExternalRef = validateSet.PartyOrgNo;
         }
 
-        Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
+        Result<bool> valRef = await ValidateExternalChangeRequestId(externalRequestId);
         if (valRef.IsProblem)
         {
             return valRef.Problem;
@@ -636,6 +638,7 @@ public class ChangeRequestSystemUserService(
             foreach (var resource in right.Resource)
             {
                 var flatPolicyRight = await resourceRegistryClient.GetRights(resource.Value);
+                debug = "stop here";
                 var filteredRights = FilterFlatPolicyRight(flatPolicyRight);
                 requiredPolicyRights.AddRange(filteredRights);
             }

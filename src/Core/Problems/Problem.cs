@@ -100,4 +100,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemUserNotFound { get; }
         = _factory.Create(14, HttpStatusCode.NotFound, "The SystemUser was not found.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemNameNotFound { get; }
+        = _factory.Create(15, HttpStatusCode.NotFound, "The SystemName was not found.");
 }

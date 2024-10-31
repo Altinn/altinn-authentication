@@ -15,12 +15,12 @@ public class PolicyRightsDTO
         /// <summary>
         /// The Resource attributes that identy one unique resource 
         /// </summary>
-        public required IReadOnlyList<UrnJsonTypeValue> Resource { get; init; }
+        public required List<UrnJsonTypeValue> Resource { get; init; }
 
         /// <summary>
         /// List of subjects that is allowed to perform the action on the resource
         /// </summary>
-        public required IEnumerable<PolicySubjectDTO> Subjects { get; init; }
+        public required List<PolicySubjectDTO> Subjects { get; init; }
 
         /// <summary>
         /// Returns the right key for the right part of policy resource action
@@ -31,5 +31,5 @@ public class PolicyRightsDTO
         /// Returns a list of subject types that is allowed to perform the action on the resource
         /// IS used for filtering the 
         /// </summary>
-        public IReadOnlySet<string> SubjectTypes { get; init; }
+        public List<string> SubjectTypes { get; init; }
 }

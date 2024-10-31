@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 /// SystemUser Repository.
 /// </summary>
 [ExcludeFromCodeCoverage]
-internal class SystemUserRepository : ISystemUserRepository
+public class SystemUserRepository : ISystemUserRepository
 {
     private readonly NpgsqlDataSource _dataSource;
     private readonly ILogger _logger;
@@ -149,8 +149,8 @@ internal class SystemUserRepository : ISystemUserRepository
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
             WHERE sui.external_ref = @external_ref
-                and sui.system_id = @system_id
-                and sui.party_org_no = @party_org_no
+                and sr.system_id = @system_id
+                and sui.reportee_org_no = @reportee_org_no
                 and sui.is_deleted = false; 
             """;
 
@@ -160,7 +160,7 @@ internal class SystemUserRepository : ISystemUserRepository
 
             command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
-            command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
+            command.Parameters.AddWithValue("reportee_org_no", externalRequestId.OrgNo);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)

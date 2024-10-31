@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -23,9 +24,29 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return null;
         }
 
-        public Task<List<PolicyRightsDTO>> GetRights(string resourceId)
+        public async Task<List<PolicyRightsDTO>> GetRights(string resourceId)
         {
-            throw new System.NotImplementedException();
+            string dataFileName = string.Empty;
+            if (resourceId == "ske-krav-og-betalinger")
+            {
+                List<PolicyRightsDTO> res = [];
+                dataFileName = "Data/ResourceRegistry/policyrightDTO-kravogbetaling.json";
+                string content = string.Empty;
+                try
+                {
+                    content = File.ReadAllText(dataFileName);
+                    res = (List<PolicyRightsDTO>) JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+                catch (Exception ex)
+                {
+                    string message = $"Error reading file {dataFileName}";
+                    throw;
+                }                
+                                
+                return res;
+            }
+
+            return null;
         }
     }
 }

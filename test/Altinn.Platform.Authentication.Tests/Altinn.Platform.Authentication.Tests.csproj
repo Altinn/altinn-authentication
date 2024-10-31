@@ -85,6 +85,9 @@
     <None Update="Data\ResourceRegistry\kravogbetaling.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\ResourceRegistry\policyrightDTO-kravogbetaling.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\Roles\user_1337\party_500005\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

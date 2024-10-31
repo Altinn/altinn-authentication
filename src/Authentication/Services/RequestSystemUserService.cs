@@ -404,7 +404,11 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        Result<SystemUser> toBeInserted = MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        if (toBeInserted.IsProblem)
+        {
+            return toBeInserted.Problem;
+        }
 
         DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
@@ -412,16 +416,16 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable; 
         }
 
-        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, userId, cancellationToken);
+        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted.Value, userId, cancellationToken);
 
         if (systemUserId is null)
         {
             return Problem.SystemUser_FailedToCreate;
         }
 
-        toBeInserted.Id = systemUserId.ToString()!;
+        toBeInserted.Value.Id = systemUserId.ToString()!;
 
-        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted, delegationCheckFinalResult.RightResponses);
+        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted.Value, delegationCheckFinalResult.RightResponses);
         if (delegationSucceeded.IsProblem) 
         { 
             return delegationSucceeded.Problem; 
@@ -447,21 +451,29 @@ public class RequestSystemUserService(
         return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
     }
 
-    private async Task<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
+    private static Result<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
     {
-        SystemUser toBeInserted = null;
-        regSystem.Name.TryGetValue("nb", out string systemName);
-        if (systemUserRequest != null)
-        {            
-            toBeInserted = new SystemUser();
-            toBeInserted.SystemId = systemUserRequest.SystemId;
-            toBeInserted.IntegrationTitle = systemName;
-            toBeInserted.SystemInternalId = regSystem?.InternalId;
-            toBeInserted.PartyId = partyId.ToString();
-            toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;          
+        SystemUser? toBeInserted = null;
+        regSystem.Name.TryGetValue("nb", out string? systemName);
+        if (systemName is null) 
+        {
+            return Problem.SystemNameNotFound;
         }
 
-        return toBeInserted;
+        if (systemUserRequest != null)
+        {
+            toBeInserted = new SystemUser
+            {
+                SystemId = systemUserRequest.SystemId,
+                IntegrationTitle = systemName,
+                SystemInternalId = regSystem?.InternalId,
+                PartyId = partyId.ToString(),
+                ReporteeOrgNo = systemUserRequest.PartyOrgNo,
+                ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo
+            };
+        }
+
+        return toBeInserted!;
     }
 
     private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, CancellationToken cancellationToken = default)

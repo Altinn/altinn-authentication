@@ -110,9 +110,10 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
 
-            return await command.ExecuteEnumerableAsync()
+            var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
                 .FirstOrDefaultAsync();
+            return dbres;
         }
         catch (Exception ex)
         {
