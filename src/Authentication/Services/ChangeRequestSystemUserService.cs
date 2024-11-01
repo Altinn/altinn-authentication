@@ -786,7 +786,7 @@ public class ChangeRequestSystemUserService(
                 var newres = new XacmlJsonAttribute
                 {
                     AttributeId = "urn:altinn:resource",
-                    Value = res.Value.ToString()
+                    Value = res.Value.ValueSpan.ToString()
                 };
 
                 resourceAttributes.Add(newres); 
