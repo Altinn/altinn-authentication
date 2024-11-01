@@ -792,6 +792,15 @@ public class ChangeRequestSystemUserService(
                 resourceAttributes.Add(newres); 
             }
 
+            // Add the resource owner, that in this case will be the partyId for the user
+            XacmlJsonAttribute resourcePartyAttribute = new()
+            {
+                AttributeId = "urn:altinn:partyid",
+                Value = systemUser.PartyId
+            };
+
+            resourceAttributes.Add(resourcePartyAttribute);
+
             XacmlJsonCategory xamlResource = new()
             {
                 Id = $"r{counter}",

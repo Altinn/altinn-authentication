@@ -88,6 +88,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 builder.Services.AddPersistanceLayer();
+
 // builder.Services.AddHostedService<Archiver>();
 
 var app = builder.Build();
