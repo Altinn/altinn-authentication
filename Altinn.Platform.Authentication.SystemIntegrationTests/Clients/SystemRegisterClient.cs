@@ -28,6 +28,8 @@ public class SystemRegisterClient : PlatformAuthenticationClient
             await SystemRegisterTests.GetRequestBodyWithReplacements(state,
                 "Resources/Testdata/Systemregister/CreateNewSystem.json");
 
+        Assert.True(state.Token != null, "Token should not be empty");
+
         var response = await PostAsync("authentication/api/v1/systemregister/vendor", requestBody, state.Token);
 
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());

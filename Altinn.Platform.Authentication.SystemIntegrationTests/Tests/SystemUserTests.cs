@@ -61,7 +61,7 @@ public class SystemUserTests
         var manager = new AltinnUser
         {
             userId = "20012772", partyId = "51670464", pid = "64837001585",
-            scopes = "altinn:authentication/systemuser.request.read"
+            //scopes = "altinn:authentication/systemuser.request.read"
         };
         var token = await _systemRegisterClient.GetPersonalAltinnToken(manager);
 

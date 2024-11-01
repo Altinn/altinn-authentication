@@ -35,7 +35,7 @@ public class PlatformAuthenticationClient
     /// <param name="body">Request body, see Swagger documentation for reference</param>
     /// <param name="token">Bearer token</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> PostAsync(string endpoint, string body, string? token)
+    public async Task<HttpResponseMessage> PostAsync(string endpoint, string body, string token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =

@@ -41,6 +41,11 @@ public class SystemRegisterTests
             .Replace("{clientId}", systemRegisterState.ClientId);
     }
 
+    /// <summary>
+    /// Verify that you can post and create a system in Systemregister:
+    /// https://github.com/Altinn/altinn-authentication/issues/575
+    /// Requires Maskinporten token and valid vendor / organization id
+    /// </summary>
     [Fact]
     public async Task CreateNewSystemReturns200Ok()
     {
