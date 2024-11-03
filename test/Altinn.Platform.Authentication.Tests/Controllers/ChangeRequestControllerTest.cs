@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -9,6 +10,8 @@ using System.Threading.Tasks;
 using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Tests.Mocks;
+using Altinn.Authorization.ABAC.Xacml;
+using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -51,6 +54,7 @@ public class ChangeRequestControllerTest(
     private readonly Mock<TimeProvider> timeProviderMock = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
+    private readonly Mock<IPDP> _pdpMock = new();
     private int _paginationSize;
 
     protected override void ConfigureServices(IServiceCollection services)
@@ -95,7 +99,7 @@ public class ChangeRequestControllerTest(
         services.AddSingleton(guidService.Object);
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
         services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-        services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
+        services.AddSingleton(_pdpMock.Object);
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
         services.AddSingleton<ISystemUserService, SystemUserServiceMock>();
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
@@ -113,6 +117,53 @@ public class ChangeRequestControllerTest(
     [Fact]
     public async Task VerifyChangeRequest_AllRightsPermit_ReturnEmptySet()
     {
+        List<XacmlJsonResult> xacmlJsonResults = new()
+        {
+            new XacmlJsonResult
+            {
+                Decision = XacmlContextDecision.Permit.ToString(),
+                Category = new List<XacmlJsonCategory>
+                {
+                    new XacmlJsonCategory
+                    {
+                        Id = "urn:altinn:resource:resourceparty",
+                        Attribute = new List<XacmlJsonAttribute>
+                        {
+                            new XacmlJsonAttribute
+                            {
+                                AttributeId = "urn:altinn:resource:resourceparty:partyid",
+                                Value = "500000"
+                            }
+                        }
+                    }
+                }
+            },
+            new XacmlJsonResult
+            {
+                Decision = XacmlContextDecision.Permit.ToString(),
+                Category = new List<XacmlJsonCategory>
+                {
+                    new XacmlJsonCategory
+                    {
+                        Id = "urn:altinn:resource:resourceparty",
+                        Attribute = new List<XacmlJsonAttribute>
+                        {
+                            new XacmlJsonAttribute
+                            {
+                                AttributeId = "urn:altinn:resource:resourceparty:partyid",
+                                Value = "500000"
+                            }
+                        }
+                    }
+                }
+            }
+        };  
+
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+             Response = xacmlJsonResults
+        });
+
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
@@ -183,7 +234,7 @@ public class ChangeRequestControllerTest(
             Content = JsonContent.Create(change)
         };
         HttpResponseMessage verifyResponseMessage = await client.SendAsync(verifyChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
-         Assert.Equal(HttpStatusCode.OK, verifyResponseMessage.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, verifyResponseMessage.StatusCode);
 
         ChangeRequestResponse? verifyResponse = await verifyResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(verifyResponse);
