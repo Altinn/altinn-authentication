@@ -361,7 +361,7 @@ public class RequestRepository : IRequestRepository
 
             int res = await command.ExecuteNonQueryAsync();   
             
-            int res2 = await DeleteArchivedAndDeleted(days);
+            int res2 = await DeleteArchivedAndDeleted(-days);
 
             if (res != res2)
             {
