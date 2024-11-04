@@ -329,7 +329,7 @@ public class RequestRepository : IRequestRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(days));
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-days));
 
             return await command.ExecuteNonQueryAsync();
         }
@@ -357,11 +357,11 @@ public class RequestRepository : IRequestRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);        
 
-            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(days));
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-days));
 
             int res = await command.ExecuteNonQueryAsync();   
             
-            int res2 = await DeleteArchivedAndDeleted(days);
+            int res2 = await DeleteArchivedAndDeleted(-days);
 
             if (res != res2)
             {
@@ -392,7 +392,7 @@ public class RequestRepository : IRequestRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(days));
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-days));
 
             return await command.ExecuteNonQueryAsync();
         }
