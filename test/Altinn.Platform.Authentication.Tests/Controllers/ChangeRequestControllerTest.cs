@@ -37,7 +37,7 @@ using Moq;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers;
-
+#nullable enable
 /// <summary>
 /// Test class for the ChangeRequestController
 /// </summary>
@@ -151,7 +151,6 @@ public class ChangeRequestControllerTest(
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
             Rights = [right]
-
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -245,7 +244,6 @@ public class ChangeRequestControllerTest(
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
             Rights = [right]
-
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -302,7 +300,7 @@ public class ChangeRequestControllerTest(
         Assert.NotEmpty(verifyResponse.RequiredRights);
     }
 
-    private List<XacmlJsonResult> GetDecisionResultListNotAllPermit()
+    private static List<XacmlJsonResult> GetDecisionResultListNotAllPermit()
     {
         return
         [
