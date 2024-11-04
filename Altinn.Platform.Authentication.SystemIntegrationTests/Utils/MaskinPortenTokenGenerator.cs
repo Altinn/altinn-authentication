@@ -36,13 +36,14 @@ public class MaskinPortenTokenGenerator
         const string audience = "https://test.maskinporten.no/token";
         var iss = client.MaskinportenClientId;
 
-        Assert.NotNull(iss);
+        Assert.True(iss != null, "iss is null somehow, check it");
 
-        const string scope = "altinn:authentication/systemregister.write";
+        const string scope = "altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write";
+        //const string scope = "altinn:authentication/systemregister.write";
 
         // Set the current time and expiration time for the token
         var now = DateTimeOffset.UtcNow;
-        var exp = now.AddMinutes(1).ToUnixTimeSeconds(); // Token valid for 10 minutes
+        var exp = now.AddMinutes(1).ToUnixTimeSeconds();
         var iat = now.ToUnixTimeSeconds();
         var jti = Guid.NewGuid().ToString(); // Unique ID for the JWT   
 
@@ -127,7 +128,7 @@ public class MaskinPortenTokenGenerator
     /// <param name="maskinportenClient"></param>
     /// <returns></returns>
     /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
-    public static async Task<string?> GetMaskinportenBearerToken(EnvironmentHelper.MaskinportenClient maskinportenClient)
+    public static async Task<string> GetMaskinportenBearerToken(EnvironmentHelper.MaskinportenClient maskinportenClient)
     {
         var jwk = JwkLoader.LoadJwk(maskinportenClient.PathToJwks);
 

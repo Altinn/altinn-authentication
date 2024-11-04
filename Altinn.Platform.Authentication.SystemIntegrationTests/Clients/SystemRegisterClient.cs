@@ -9,32 +9,32 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 /// <summary>
 /// For specific requests needed for System Register tests or test data generation purposes
 /// </summary>
-public class SystemRegisterClient : PlatformAuthenticationClient
+public class SystemRegisterClient
 {
-    /// <summary>
-    /// For specific Sytem Register Requests
-    /// </summary>
-    public SystemRegisterClient()
+    
+    private readonly PlatformAuthenticationClient _platformClient;
+
+    public SystemRegisterClient(PlatformAuthenticationClient platformClient)
     {
+        _platformClient = platformClient;
     }
 
     /// <summary>
-    /// Creates a new system in Systmeregister. Requires Bearer token from Maskinporten
+    /// Creates a new system in Systemregister. Requires Bearer token from Maskinporten
     /// </summary>
     public async Task<HttpResponseMessage> PostSystem(SystemRegisterState state)
     {
         // Prepare
-        var requestBody =
-            await SystemRegisterTests.GetRequestBodyWithReplacements(state,
-                "Resources/Testdata/Systemregister/CreateNewSystem.json");
+        var requestBody = await SystemRegisterTests.GetRequestBodyWithReplacements(
+            state, "Resources/Testdata/Systemregister/CreateNewSystem.json");
 
         Assert.True(state.Token != null, "Token should not be empty");
 
-        var response = await PostAsync("authentication/api/v1/systemregister/vendor", requestBody, state.Token);
+        // Use the shared PlatformClient instance to perform the POST request
+        var response = await _platformClient.PostAsync(
+            "authentication/api/v1/systemregister/vendor", requestBody, state.Token);
 
-        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
         return response;
     }
 }

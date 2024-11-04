@@ -40,6 +40,9 @@
       <None Update="Resources\Testdata\Systemregister\UnitTestFilePut.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Resources\Testdata\SystemUser\CreateRequest.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>

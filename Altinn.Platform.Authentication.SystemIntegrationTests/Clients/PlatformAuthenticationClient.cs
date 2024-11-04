@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 
@@ -129,7 +130,7 @@ public class PlatformAuthenticationClient
     /// </summary>
     /// <param name="user"></param>
     /// <returns></returns>
-    public async Task<string?> GetPersonalAltinnToken(AltinnUser user)
+    public async Task<string> GetPersonalAltinnToken(AltinnUser user)
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env={EnvironmentHelper.Testenvironment}" +
@@ -139,8 +140,9 @@ public class PlatformAuthenticationClient
             $"&partyid={user.partyId}" +
             $"&authLvl=3&ttl=3000";
 
-        var token = GetAltinnToken(url);
-        return await token;
+        var token = await GetAltinnToken(url);
+        Assert.True(token != null, "Token retrieval failed for Altinn token");
+        return token;
     }
 
     /// <summary>
@@ -174,7 +176,7 @@ public class PlatformAuthenticationClient
 
     private static EnvironmentHelper LoadEnvironment(string environmentVariableName)
     {
-        const string? localFilePath = "Resources/Environment/environment.json";
+        const string localFilePath = "Resources/Environment/environment.json";
         var envJson = Environment.GetEnvironmentVariable(environmentVariableName);
 
         if (!string.IsNullOrEmpty(envJson))
@@ -188,9 +190,11 @@ public class PlatformAuthenticationClient
                ?? throw new Exception($"Unable to read environment from {localFilePath}.");
     }
 
-    public async Task<string?> GetTokenForClient(string clientName)
+    public async Task<string> GetTokenForClient(string clientName)
     {
         var maskinportenClient = EnvironmentHelper.GetMaskinportenClientByName(clientName);
-        return await MaskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
+        var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
+        Assert.True(null != token, "Unable to retrieve maskinporten token");
+        return token;
     }
 }
