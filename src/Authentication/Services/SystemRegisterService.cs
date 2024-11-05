@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Authentication.Core.Problems;
-using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -96,25 +94,6 @@ namespace Altinn.Platform.Authentication.Services
         public Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.GetMaskinportenClients(clientId);
-        }
-
-        /// <inheritdoc/>
-        public async Task<Result<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken)
-        {
-            var result = await _systemRegisterRepository.GetRegisteredSystemById(systemId);
-            if (result is null)
-            {
-                return Problem.SystemIdNotFound;
-            }
-
-            return new RegisteredSystemDTO()
-            {
-                Description = result.Description,
-                Name = result.Name,
-                Rights = result.Rights,
-                SystemId = result.Id,
-                SystemVendorOrgNumber = result.SystemVendorOrgNumber
-            };
         }
 
         /// <inheritdoc/>
