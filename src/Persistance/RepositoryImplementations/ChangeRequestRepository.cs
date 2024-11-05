@@ -124,7 +124,7 @@ public class ChangeRequestRepository(
             UPDATE business_application.change_request
             SET is_deleted = true,
                 last_changed = CURRENT_TIMESTAMP
-            WHERE business_application.request.id = @requestId
+            WHERE business_application.change_request.id = @requestId
                 and business_application.change_request.is_deleted = false
             """;
 
