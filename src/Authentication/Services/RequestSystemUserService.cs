@@ -191,7 +191,7 @@ public class RequestSystemUserService(
             }
         }
 
-        return false;
+        return Problem.RedirectUriNotFound;
     }
 
     /// <summary>

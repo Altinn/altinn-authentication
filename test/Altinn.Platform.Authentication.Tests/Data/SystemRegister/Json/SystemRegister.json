@@ -30,7 +30,8 @@
   ],
   "allowedredirecturls": [
     "https://vg.no",
-    "https://nrk.no"
+    "https://nrk.no",
+    "https://altinn.no"
   ],
   "isVisible": true
 }

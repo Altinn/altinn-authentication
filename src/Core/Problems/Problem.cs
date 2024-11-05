@@ -106,4 +106,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemNameNotFound { get; }
         = _factory.Create(15, HttpStatusCode.NotFound, "The SystemName was not found.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RedirectUriNotFound { get; }
+        = _factory.Create(16, HttpStatusCode.BadRequest, "The RedirectUri was not found or not valid.");
 }

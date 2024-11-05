@@ -22,6 +22,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -865,7 +866,7 @@ public class ChangeRequestControllerTest(
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
             RequiredRights = [right],
-            UnwantedRights = []
+            UnwantedRights = []            
         };
 
         HttpRequestMessage createChangeRequestMessage = new(HttpMethod.Post, createChangeRequestEndpoint)
@@ -899,6 +900,127 @@ public class ChangeRequestControllerTest(
         ChangeRequestResponse statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(statusResponse);
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
+    }
+
+    /// <summary>
+    /// After having verified that the ChangeRequest is needed, create a ChangeRequest, then approve it
+    /// </summary>
+    [Fact]
+    public async Task ChangeRequest_FrontEnd_GetRedirect_ReturnOk()
+    {
+        List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
+
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            RedirectUrl = "https://altinn.no"
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        // Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        int partyId = 500000;
+
+        // Approve the SystemUser
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+        xacmlJsonResults = GetDecisionResultList();
+
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        // ChangeRequest create
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+
+        ChangeRequestSystemUser change = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            RequiredRights = [right],
+            UnwantedRights = [],
+            RedirectUrl = "https://altinn.no"
+        };
+
+        HttpRequestMessage createChangeRequestMessage = new(HttpMethod.Post, createChangeRequestEndpoint)
+        {
+            Content = JsonContent.Create(change)
+        };
+        HttpResponseMessage createdResponseMessage = await client.SendAsync(createChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, createdResponseMessage.StatusCode);
+
+        ChangeRequestResponse? createdResponse = await createdResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
+        Assert.NotNull(createdResponse);
+        Assert.NotEmpty(createdResponse.RequiredRights);
+        Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
+
+        // works up to here
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        // Reject the Change Request
+        string requestId = createdResponse.Id.ToString();
+        HttpClient client3 = CreateClient();
+        
+        string statusChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/redirect/{requestId}";
+        HttpRequestMessage statusChangeRequestMessage = new(HttpMethod.Get, statusChangeRequestEndpoint);
+        HttpResponseMessage statusChangeResponseMessage = await client3.SendAsync(statusChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, statusChangeResponseMessage.StatusCode);
+
+        Assert.NotNull(statusChangeResponseMessage.Content);
+        RedirectUrl redirectUrlDTO = await statusChangeResponseMessage.Content.ReadFromJsonAsync<RedirectUrl>();
+        Assert.NotNull(redirectUrlDTO);
+        Assert.Equal(change.RedirectUrl, redirectUrlDTO.Url);
     }
 
     private static List<XacmlJsonResult> GetDecisionResultListNotAllPermit()

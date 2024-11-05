@@ -170,7 +170,7 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        return true;
+        return Problem.RedirectUriNotFound;
     }
 
     /// <summary>
