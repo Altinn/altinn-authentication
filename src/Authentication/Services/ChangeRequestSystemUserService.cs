@@ -51,71 +51,29 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
     {
-        // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
-        ExternalRequestId externalRequestId = new()
+        Result<ChangeRequestValidationSet> validationSet = await ValidateChangeRequest(createRequest, vendorOrgNo);
+        if (validationSet.IsProblem)
         {
-            ExternalRef = createRequest.ExternalRef ?? createRequest.PartyOrgNo,
-            OrgNo = createRequest.PartyOrgNo,
-            SystemId = createRequest.SystemId,
-        };
-
-        SystemUser? systemUser = await systemUserRepository.GetSystemUserByExternalRequestId(externalRequestId);
-        if (systemUser is null)
-        {
-            return Problem.SystemUserNotFound;
+            return validationSet.Problem;
         }
 
-        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId);
-        if (systemInfo is null)
-        {
-            return Problem.SystemIdNotFound;
-        }
-
-        Result<bool> valRef = await ValidateExternalChangeRequestId(externalRequestId);
-        if (valRef.IsProblem)
-        {
-            return valRef.Problem;
-        }
-
-        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
-        if (valVendor.IsProblem)
-        {
-            return valVendor.Problem;
-        }
-
-        Result<bool> valCust = await ValidateCustomerOrgNo(createRequest.PartyOrgNo);
-        if (valCust.IsProblem)
-        {
-            return valCust.Problem;
-        }
+        var verified = await VerifySetOfRights(createRequest, vendorOrgNo);
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
+            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, validationSet.Value.RegisteredSystem);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
             }
-        }
-
-        Result<bool> valRights = ValidateRights(createRequest.RequiredRights, systemInfo);
-        if (valRights.IsProblem)
-        {
-            return valRights.Problem;
-        }
-
-        // Set an empty ExternalRef to be equal to the PartyOrgNo
-        if (createRequest.ExternalRef is null || createRequest.ExternalRef == string.Empty)
-        {
-            createRequest.ExternalRef = createRequest.PartyOrgNo;
-        }
+        }     
 
         Guid newId = Guid.NewGuid();
 
         var created = new ChangeRequestResponse()
         {
             Id = newId,
-            SystemUserId = Guid.Parse(systemUser.Id),
+            SystemUserId = Guid.Parse(validationSet.Value.SystemUser.Id),
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
@@ -473,23 +431,6 @@ public class ChangeRequestSystemUserService(
         return await changeRequestRepository.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
     }
 
-    private async Task<SystemUser> MapSystemUserChangeRequestToSystemUser(ChangeRequestResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
-    {
-        SystemUser toBeInserted = null;
-        regSystem.Name.TryGetValue("nb", out string systemName);
-        if (systemUserRequest != null)
-        {
-            toBeInserted = new SystemUser();
-            toBeInserted.SystemId = systemUserRequest.SystemId;
-            toBeInserted.IntegrationTitle = systemName;
-            toBeInserted.SystemInternalId = regSystem?.InternalId;
-            toBeInserted.PartyId = partyId.ToString();
-            toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;
-        }
-
-        return toBeInserted;
-    }
-
     private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, CancellationToken cancellationToken = default)
     {
         List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
@@ -582,9 +523,14 @@ public class ChangeRequestSystemUserService(
         return systemUserRequest.RedirectUrl;
     }
 
-    /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestSystemUser validateSet, OrganisationNumber vendorOrgNo)
+    private async Task<Result<ChangeRequestValidationSet>> ValidateChangeRequest(ChangeRequestSystemUser validateSet, OrganisationNumber vendorOrgNo)
     {
+        // Set an empty ExternalRef to be equal to the PartyOrgNo
+        if (validateSet.ExternalRef is null || validateSet.ExternalRef == string.Empty)
+        {
+            validateSet.ExternalRef = validateSet.PartyOrgNo;
+        }
+
         // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
         ExternalRequestId externalRequestId = new()
         {
@@ -597,26 +543,19 @@ public class ChangeRequestSystemUserService(
         var debug = " ";
         if (systemUser is null)
         {
-            return Problem.SystemUserNotFound;  
+            return Problem.SystemUserNotFound;
         }
 
-        RegisteredSystem ? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
+        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
         }
 
-        // Ensure that the Required Rights are a subset of the rights on the System
         Result<bool> valRights = ValidateRights(validateSet.RequiredRights, systemInfo);
         if (valRights.IsProblem)
         {
             return valRights.Problem;
-        }
-
-        // Set an empty ExternalRef to be equal to the PartyOrgNo
-        if (validateSet.ExternalRef is null || validateSet.ExternalRef == string.Empty)
-        {
-            validateSet.ExternalRef = validateSet.PartyOrgNo;
         }
 
         Result<bool> valRef = await ValidateExternalChangeRequestId(externalRequestId);
@@ -637,15 +576,31 @@ public class ChangeRequestSystemUserService(
             return valCust.Problem;
         }
 
+        return new ChangeRequestValidationSet()
+        {
+            ExternalRequestId = externalRequestId,
+            SystemUser = systemUser,
+            RegisteredSystem = systemInfo
+        };
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestSystemUser verifyRequest, OrganisationNumber vendorOrgNo)
+    {
+        Result<ChangeRequestValidationSet> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo);
+        if (valSet.IsProblem)
+        {
+            return valSet.Problem;
+        }
+
         List<PolicyRightsDTO> requiredPolicyRights = [];
 
         // Call the Resource Registry to get a flat list of Rights in the PDP format from the list of ResourceIds.
-        foreach (var right in validateSet.RequiredRights)
+        foreach (var right in verifyRequest.RequiredRights)
         {
             foreach (var resource in right.Resource)
             {
                 var flatPolicyRight = await resourceRegistryClient.GetRights(resource.Value);
-                debug = "stop here";
                 var filteredRights = FilterFlatPolicyRight(flatPolicyRight);
                 requiredPolicyRights.AddRange(filteredRights);
             }
@@ -653,7 +608,7 @@ public class ChangeRequestSystemUserService(
 
         // Call the PDP client to verify which of the Required Rights are currently delegated.
         // The Unwanted rights verification is currently not supported.
-        var res = await MultipleDecisionRequestToPDP(requiredPolicyRights, systemUser);
+        var res = await MultipleDecisionRequestToPDP(requiredPolicyRights, valSet.Value.SystemUser);
         if (res.IsProblem) 
         {
             return res.Problem;
@@ -666,13 +621,13 @@ public class ChangeRequestSystemUserService(
             return new ChangeRequestResponse()
             {
                 Id = Guid.NewGuid(),
-                ExternalRef = validateSet.ExternalRef,
-                SystemId = validateSet.SystemId,
-                PartyOrgNo = validateSet.PartyOrgNo,
+                ExternalRef = verifyRequest.ExternalRef,
+                SystemId = verifyRequest.SystemId,
+                PartyOrgNo = verifyRequest.PartyOrgNo,
                 RequiredRights = [],
-                UnwantedRights = validateSet.UnwantedRights,
+                UnwantedRights = verifyRequest.UnwantedRights,
                 Status = ChangeRequestStatus.NoChangeNeeded.ToString(),
-                RedirectUrl = validateSet.RedirectUrl
+                RedirectUrl = verifyRequest.RedirectUrl
             };
         }
 
@@ -680,13 +635,14 @@ public class ChangeRequestSystemUserService(
         return new ChangeRequestResponse()
         {
             Id = Guid.NewGuid(),
-            ExternalRef = validateSet.ExternalRef,
-            SystemId = validateSet.SystemId,
-            PartyOrgNo = validateSet.PartyOrgNo,
-            RequiredRights = validateSet.RequiredRights,
-            UnwantedRights = validateSet.UnwantedRights,
+            ExternalRef = verifyRequest.ExternalRef,
+            SystemId = verifyRequest.SystemId,
+            SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
+            PartyOrgNo = verifyRequest.PartyOrgNo,
+            RequiredRights = verifyRequest.RequiredRights,
+            UnwantedRights = verifyRequest.UnwantedRights,
             Status = ChangeRequestStatus.New.ToString(),
-            RedirectUrl = validateSet.RedirectUrl
+            RedirectUrl = verifyRequest.RedirectUrl
         };
     }
 
