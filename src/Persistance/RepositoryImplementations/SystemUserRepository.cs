@@ -364,7 +364,7 @@ public class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_user_profile_id", toBeChanged.Id);
+            command.Parameters.AddWithValue("system_user_profile_id", Guid.Parse(toBeChanged.Id));
             command.Parameters.AddWithValue("user_id", "user_id:" + userId.ToString());
 
             return await command.ExecuteNonQueryAsync() > 0;

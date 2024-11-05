@@ -29,6 +29,7 @@ public class ChangeRequestRepository(
                 id,
                 external_ref,
                 system_id,
+                system_user_id,
                 party_org_no,
                 required_rights,
                 unwanted_rights,
@@ -38,6 +39,7 @@ public class ChangeRequestRepository(
                 @id,
                 @external_ref,
                 @system_id,
+                @system_user_id,
                 @party_org_no,
                 @required_rights,
                 @unwanted_rights,
@@ -52,6 +54,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("id", createRequest.Id);
             command.Parameters.AddWithValue("external_ref", createRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createRequest.SystemId);
+            command.Parameters.AddWithValue("system_user_id", createRequest.SystemUserId);
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
             command.Parameters.Add(new("required_rights", NpgsqlDbType.Jsonb) { Value = createRequest.RequiredRights });
             command.Parameters.Add(new("unwanted_rights", NpgsqlDbType.Jsonb) { Value = createRequest.UnwantedRights });
@@ -85,7 +88,7 @@ public class ChangeRequestRepository(
             SET request_status = @request_status,
                 last_changed = CURRENT_TIMESTAMP,
                 changed_by = @changed_by
-            WHERE business_application.request.id = @requestId
+            WHERE business_application.change_request.id = @requestId
             """;
         await using NpgsqlConnection conn = await dataSource.OpenConnectionAsync(cancellationToken);
         await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken);
@@ -122,7 +125,7 @@ public class ChangeRequestRepository(
             SET is_deleted = true,
                 last_changed = CURRENT_TIMESTAMP
             WHERE business_application.request.id = @requestId
-                and business_application.request.is_deleted = false
+                and business_application.change_request.is_deleted = false
             """;
 
         try
@@ -148,7 +151,7 @@ public class ChangeRequestRepository(
             SET is_deleted = true,
                 last_changed = CURRENT_TIMESTAMP
             WHERE business_application.request.created < @archive_timeout
-                and business_application.request.is_deleted = false
+                and business_application.change_request.is_deleted = false
             """;
 
         try
@@ -174,6 +177,7 @@ public class ChangeRequestRepository(
                 id,
                 external_ref,
                 system_id,
+                system_user_id,
                 party_org_no,
                 required_rights,
                 unwanted_rights,
@@ -209,6 +213,7 @@ public class ChangeRequestRepository(
                 id,
                 external_ref,
                 system_id,
+                system_user_id,
                 party_org_no,
                 required_rights,
                 unwanted_rights,
@@ -249,6 +254,7 @@ public class ChangeRequestRepository(
                 id,
                 external_ref,
                 system_id,
+                system_user_id,
                 party_org_no,
                 required_rights,
                 unwanted_rights,
@@ -266,9 +272,54 @@ public class ChangeRequestRepository(
 
             command.Parameters.AddWithValue("request_id", internalId);
 
-            return await command.ExecuteEnumerableAsync()
+            var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
+
+            string debug = "stop here";
+
+            return dbres;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // ChangeRequestRepository // GetChangeRequestByInternalId // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<ChangeRequestResponse?> GetChangeRequestBySystemUserId(Guid systemUserId)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                system_user_id,
+                party_org_no,
+                required_rights,
+                unwanted_rights,
+                request_status,
+                redirect_urls,
+                created 
+            FROM business_application.change_request r
+            WHERE r.system_user_id = @system_user_id
+                and r.is_deleted = false;
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_user_id", systemUserId);
+
+            var dbres = await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .FirstOrDefaultAsync();
+
+            string debug = "stop here";
+
+            return dbres;
         }
         catch (Exception ex)
         {
@@ -287,7 +338,7 @@ public class ChangeRequestRepository(
             SET request_status = @request_status,
                 last_changed = CURRENT_TIMESTAMP,
                 changed_by = @changed_by
-            WHERE business_application.request.id = @requestId
+            WHERE business_application.change_request.id = @requestId
             """;
 
         try
@@ -321,6 +372,7 @@ public class ChangeRequestRepository(
             Id = reader.GetFieldValue<Guid>("id"),
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
+            SystemUserId = reader.GetFieldValue<Guid>("system_user_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
             RequiredRights = reader.GetFieldValue<List<Right>>("required_rights"),
             UnwantedRights = reader.GetFieldValue<List<Right>>("unwanted_rights"),

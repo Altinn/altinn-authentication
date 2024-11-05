@@ -59,6 +59,12 @@ public class ChangeRequestSystemUserService(
             SystemId = createRequest.SystemId,
         };
 
+        SystemUser? systemUser = await systemUserRepository.GetSystemUserByExternalRequestId(externalRequestId);
+        if (systemUser is null)
+        {
+            return Problem.SystemUserNotFound;
+        }
+
         RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId);
         if (systemInfo is null)
         {
@@ -109,6 +115,7 @@ public class ChangeRequestSystemUserService(
         var created = new ChangeRequestResponse()
         {
             Id = newId,
+            SystemUserId = Guid.Parse(systemUser.Id),
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,

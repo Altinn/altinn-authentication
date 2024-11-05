@@ -64,4 +64,11 @@ public interface IChangeRequestRepository
     /// </summary>
     /// <returns></returns>
     Task<int> DeleteTimedoutChangeRequests();
+
+    /// <summary>
+    /// Gets a ChangeRequest model by the SystemUserId
+    /// </summary>
+    /// <param name="systemUserId"></param>
+    /// <returns></returns>
+    Task<ChangeRequestResponse?> GetChangeRequestBySystemUserId(Guid systemUserId);
 }

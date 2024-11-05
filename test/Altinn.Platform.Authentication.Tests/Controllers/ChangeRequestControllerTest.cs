@@ -311,11 +311,21 @@ public class ChangeRequestControllerTest(
         Assert.NotEmpty(createdResponse.RequiredRights);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
 
+        // works up to here
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
         // Approve the Change Request
         string requestId = createdResponse.Id.ToString();
+        HttpClient client3 = CreateClient();
+        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
         string approveChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}/approve";
         HttpRequestMessage approveChangeRequestMessage = new(HttpMethod.Post, approveChangeRequestEndpoint);
-        HttpResponseMessage approveChangeResponseMessage = await client.SendAsync(approveChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        HttpResponseMessage approveChangeResponseMessage = await client3.SendAsync(approveChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveChangeResponseMessage.StatusCode);
     }
 
@@ -544,8 +554,6 @@ public class ChangeRequestControllerTest(
         Assert.NotEmpty(verifyResponse.RequiredRights);
         Assert.True(DeepCompare(verifyResponse.RequiredRights, change.RequiredRights));
     }
-
-    [Fact]
 
     private static List<XacmlJsonResult> GetDecisionResultListNotAllPermit()
     {
