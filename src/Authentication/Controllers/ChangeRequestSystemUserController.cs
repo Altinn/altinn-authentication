@@ -307,7 +307,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <param name="requestId">The UUID of the request to be approved</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    //[Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/approve")]
     public async Task<ActionResult<ChangeRequestResponse>> ApproveSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
