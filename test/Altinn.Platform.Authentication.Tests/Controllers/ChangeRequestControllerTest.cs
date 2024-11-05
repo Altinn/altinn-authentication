@@ -557,7 +557,6 @@ public class ChangeRequestControllerTest(
         Assert.Equal(HttpStatusCode.Accepted, approveChangeResponseMessage.StatusCode);
     }
 
-
     private static bool DeepCompare(List<Right> requiredRights1, List<Right> requiredRights2)
     {
         bool result = true;
