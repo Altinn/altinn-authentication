@@ -779,7 +779,7 @@ public class ChangeRequestSystemUserService(
                     new XacmlJsonAttribute
                     {
                         AttributeId = "urn:oasis:names:tc:xacml:1.0:action:action-id",
-                        Value = right.Action.Value.ToString()
+                        Value = right.Action.Value.ValueSpan.ToString()
                     }
                 ]
             };
