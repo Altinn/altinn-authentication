@@ -118,16 +118,16 @@ public class RequestSystemUserService(
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
     /// <returns>Result or Problem</returns>
-    private Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
+    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
     {
         if (rights.Count == 0 || systemInfo.Rights.Count == 0)
         {
-            return false;
+            return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
         if (rights.Count > systemInfo.Rights.Count)
         {
-            return false;
+            return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
         bool[] validate = new bool[rights.Count];
@@ -150,7 +150,7 @@ public class RequestSystemUserService(
         {
             if (!right)
             {
-                return false;
+                return Problem.Rights_NotFound_Or_NotDelegable;
             }
         }
 
