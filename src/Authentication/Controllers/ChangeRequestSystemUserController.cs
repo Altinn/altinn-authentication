@@ -333,7 +333,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <param name="token">Optional continuation token</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM)]
     public async Task<ActionResult<Paginated<ChangeRequestResponse>>> GetAllChangeRequestsForVendor(
         string systemId,
