@@ -14,13 +14,18 @@ public class SystemRegisterState
 
     public SystemRegisterState()
     {
-        ClientId = Guid.NewGuid().ToString();
         Name = Guid.NewGuid().ToString();
     }
 
     public SystemRegisterState WithVendor(string vendorId)
     {
         VendorId = vendorId;
+        return this;
+    }
+
+    public SystemRegisterState WithClientId(string clientId)
+    {
+        ClientId = clientId;
         return this;
     }
 

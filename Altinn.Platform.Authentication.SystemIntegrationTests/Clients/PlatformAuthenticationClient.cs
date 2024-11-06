@@ -190,11 +190,16 @@ public class PlatformAuthenticationClient
                ?? throw new Exception($"Unable to read environment from {localFilePath}.");
     }
 
-    public async Task<string> GetTokenForClient(string clientName)
+    public async Task<MaskinportenClientResult> GetTokenForClient(string clientName)
     {
         var maskinportenClient = EnvironmentHelper.GetMaskinportenClientByName(clientName);
         var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
         Assert.True(null != token, "Unable to retrieve maskinporten token");
-        return token;
+        Assert.True(null != maskinportenClient.MaskinportenClientId, "Unable to retrieve maskinporten client id");
+        return new MaskinportenClientResult
+        {
+            Token = token,
+            ClientId = maskinportenClient.MaskinportenClientId
+        };
     }
 }

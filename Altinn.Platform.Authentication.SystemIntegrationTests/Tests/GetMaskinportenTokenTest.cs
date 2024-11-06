@@ -57,8 +57,7 @@ public class GetMaskinportenTokenTest
     public async Task GetExchangeToken()
     {
         var maskinportenToken = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
-
-        var altinnToken = await _platformAuthenticationClient.GetExchangeToken(maskinportenToken);
+        var altinnToken = await _platformAuthenticationClient.GetExchangeToken(maskinportenToken.Token);
         Assert.NotEmpty(altinnToken);
     }
 
@@ -66,8 +65,8 @@ public class GetMaskinportenTokenTest
     public async Task GetBearerToken()
     {
         var maskinportenToken = await _platformAuthenticationClient.GetTokenForClient("SystemRegisterClient");
-
         Assert.NotNull(maskinportenToken);
-        Assert.NotEmpty(maskinportenToken);
+        Assert.NotEmpty(maskinportenToken.Token);
+        Assert.NotNull(maskinportenToken.ClientId);
     }
 }

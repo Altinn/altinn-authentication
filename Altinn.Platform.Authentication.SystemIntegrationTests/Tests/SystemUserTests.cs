@@ -16,7 +16,7 @@ public class SystemUserTests
 {
     private readonly ITestOutputHelper _outputHelper;
     private readonly SystemRegisterClient _systemRegisterClient;
-    private readonly PlatformAuthenticationClient _platformAuthentication;
+    private readonly PlatformAuthenticationClient _platformClient;
 
     /// <summary>
     /// Testing System user endpoints
@@ -25,19 +25,20 @@ public class SystemUserTests
     public SystemUserTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
-        _platformAuthentication = new PlatformAuthenticationClient();
-        _systemRegisterClient = new SystemRegisterClient(_platformAuthentication);
+        _platformClient = new PlatformAuthenticationClient();
+        _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
     private async Task<SystemRegisterState> CreateSystemRegisterUser()
     {
         // Prerequisite-step
-        var token = await _platformAuthentication.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
-            .WithToken(token);
+            .WithToken(maskinportenClientResult.Token);
 
         await _systemRegisterClient.PostSystem(teststate);
 
@@ -65,11 +66,11 @@ public class SystemUserTests
             userId = "20012772", partyId = "51670464", pid = "64837001585",
             //scopes = "altinn:authentication/systemuser.request.read"
         };
-        var token = await _platformAuthentication.GetPersonalAltinnToken(manager);
+        var token = await _platformClient.GetPersonalAltinnToken(manager);
 
         //Act
         var respons =
-            await _platformAuthentication.PostAsync("authentication/api/v1/systemuser/50692553", requestBody,
+            await _platformClient.PostAsync("authentication/api/v1/systemuser/50692553", requestBody,
                 token);
 
         //Assert
@@ -91,12 +92,12 @@ public class SystemUserTests
             scopes = "altinn:authentication" //What use does this even have
         };
 
-        var token = await _platformAuthentication.GetPersonalAltinnToken(manager);
+        var token = await _platformClient.GetPersonalAltinnToken(manager);
 
         const string party = "50692553";
         const string endpoint = "authentication/api/v1/systemuser/" + party;
 
-        var respons = await _platformAuthentication.GetAsync(endpoint, token);
+        var respons = await _platformClient.GetAsync(endpoint, token);
 
         _outputHelper.WriteLine(await respons.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
@@ -123,11 +124,11 @@ public class SystemUserTests
             id = jsonObject[
                 "id"]; //SystemId -//Todo: Why is "id" the same as systemuserid in Swagger? Confusing to mix with "systemid"
 
-        var token = await _platformAuthentication.GetPersonalAltinnToken(manager);
+        var token = await _platformClient.GetPersonalAltinnToken(manager);
 
         // Act
         var respons =
-            await _platformAuthentication.Delete($"authentication/api/v1/systemuser/{party}/{id}", token);
+            await _platformClient.Delete($"authentication/api/v1/systemuser/{party}/{id}", token);
         Assert.Equal(HttpStatusCode.Accepted, respons.StatusCode);
     }
 
@@ -138,14 +139,15 @@ public class SystemUserTests
     [Fact]
     public async Task PostRequestSystemUser()
     {
-        var token = await _platformAuthentication.GetTokenForClient("SystemRegisterClient");
+        // Prerequisite-step
+        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
 
-        //Create system in System register
         var teststate = new SystemRegisterState()
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
-            .WithToken(token);
-        
+            .WithToken(maskinportenClientResult.Token);
+
         var response = await _systemRegisterClient.PostSystem(teststate);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
 
@@ -155,12 +157,24 @@ public class SystemUserTests
 
         // Act
         var respons =
-            await _platformAuthentication.PostAsync("authentication/api/v1/systemuser/request/vendor", body, token);
+            await _platformClient.PostAsync("authentication/api/v1/systemuser/request/vendor", body,
+                maskinportenClientResult.Token);
 
         _outputHelper.WriteLine(await respons.Content.ReadAsStringAsync());
 
         var content = await respons.Content.ReadAsStringAsync();
-        Assert.True(HttpStatusCode.Created == respons.StatusCode, $"Status code was not OK, but: {respons.StatusCode} -  {content}");
+        Assert.True(HttpStatusCode.Created == respons.StatusCode,
+            $"Status code was not Created, but: {respons.StatusCode} -  {content}");
+    }
+    
+    /// <summary>
+    /// https://docs.altinn.studio/nb/authentication/guides/systemauthentication-for-systemproviders/
+    /// Du trenger ikke angi system user
+    /// </summary>
+    [Fact]
+    public async Task UseSystemUser()
+    {
+        //Bruk jwt og hent maskinporten-token direkte - todo: implement
     }
 
     private async Task<HttpResponseMessage> CreateSystemUserTestdata(string party, AltinnUser user)
@@ -175,9 +189,9 @@ public class SystemUserTests
 
         var endpoint = "authentication/api/v1/systemuser/" + party;
 
-        var token = await _platformAuthentication.GetPersonalAltinnToken(user);
+        var token = await _platformClient.GetPersonalAltinnToken(user);
 
-        var respons = await _platformAuthentication.PostAsync(endpoint, requestBody, token);
+        var respons = await _platformClient.PostAsync(endpoint, requestBody, token);
         return respons;
     }
 }

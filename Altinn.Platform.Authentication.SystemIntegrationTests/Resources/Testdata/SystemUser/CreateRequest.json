@@ -1,5 +1,4 @@
 {
-  "externalRef": "testvalue",
   "systemId": "{systemId}",
   "partyOrgNo": "312605031",
   "rights": [
@@ -12,5 +11,5 @@
       ]
     }
   ],
-  "redirectUrl": "http://testurl.com"
+  "redirectUrl": "https://ikkeeksisterendeurl.com"
 }

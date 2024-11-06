@@ -11,7 +11,6 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 /// </summary>
 public class SystemRegisterClient
 {
-    
     private readonly PlatformAuthenticationClient _platformClient;
 
     public SystemRegisterClient(PlatformAuthenticationClient platformClient)
@@ -30,11 +29,13 @@ public class SystemRegisterClient
 
         Assert.True(state.Token != null, "Token should not be empty");
 
-        // Use the shared PlatformClient instance to perform the POST request
         var response = await _platformClient.PostAsync(
             "authentication/api/v1/systemregister/vendor", requestBody, state.Token);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        Assert.True(HttpStatusCode.OK == response.StatusCode,
+            $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+
         return response;
     }
 }
