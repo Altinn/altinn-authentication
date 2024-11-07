@@ -1,0 +1,25 @@
+{
+  "systemId": "991825827_the_matrix",
+  "systemVendorOrgNumber": "991825827",
+  "systemVendorOrgName": "",
+  "name": {
+    "nb": "The Matrix",
+    "en": "The Matrix",
+    "nn": "The Matrix"
+  },
+  "description": {
+    "nb": "Test system",
+    "en": "Test system",
+    "nn": "Test system"
+  },
+  "rights": [
+    {
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "ske-krav-og-betalinger"
+        }
+      ]
+    }
+  ]
+}
