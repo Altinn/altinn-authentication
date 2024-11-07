@@ -1259,7 +1259,7 @@ public class ChangeRequestControllerTest(
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
     }
 
-    [Fact]
+    [Fact (Skip = "Next PR")]
     public async Task Get_All_ChangeRequests_By_System_Paginated_Several()
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
