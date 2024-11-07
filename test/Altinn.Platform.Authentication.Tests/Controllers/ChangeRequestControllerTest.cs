@@ -1259,7 +1259,7 @@ public class ChangeRequestControllerTest(
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
     }
 
-    [Fact (Skip = "Next PR")]
+    [Fact]
     public async Task Get_All_ChangeRequests_By_System_Paginated_Several()
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
@@ -1286,6 +1286,11 @@ public class ChangeRequestControllerTest(
         string token2 = AddSystemUserRequestReadTestTokenToClient(client2);
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
 
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         Paginated<RequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
@@ -1295,6 +1300,11 @@ public class ChangeRequestControllerTest(
         Assert.Equal(_paginationSize, list.Count);
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
         Assert.NotNull(res2.Links.Next);
+
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
 
         HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
         Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
@@ -1313,6 +1323,7 @@ public class ChangeRequestControllerTest(
 
     private async Task CreateChangeRequest(int externalRef, string systemId)
     {
+        List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
@@ -1356,13 +1367,16 @@ public class ChangeRequestControllerTest(
 
         int partyId = 500000;
 
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
         // Approve the SystemUser
         string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
-
-        List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultList();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
