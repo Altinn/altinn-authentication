@@ -857,12 +857,9 @@ public class RequestControllerTests(
 
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
-        List<Task> tasks = [];
-
-        Parallel.ForEach(Enumerable.Range(0, paginationSize + 1), async i =>
-        {
-            tasks.Add(CreateRequest(client, i, systemId));
-        });
+        var tasks = Enumerable.Range(0, paginationSize + 1)
+                              .Select(i => CreateRequest(client, i, systemId))
+                              .ToList();
 
         await Task.WhenAll(tasks);
     }
