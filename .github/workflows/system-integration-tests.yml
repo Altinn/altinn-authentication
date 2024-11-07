@@ -1,7 +1,10 @@
 name: Run systemintegration tests - Authentication
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - 807-legge-til-sttte-for-systemintegrasjonstester-og-ende-til-ende-tester-i-authentication
+  workflow_dispatch:  # Keeps the option to manually run the workflow from GitHub Actions UI
 
 env:
   DOTNET_VERSION: '8.0.x'
@@ -20,13 +23,13 @@ jobs:
             8.0.x
 
       - name: Install dependencies
-        run: dotnet restore Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj
+        run: dotnet restore test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj
 
       - name: Build
-        run: dotnet build Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --configuration Release --no-restore
+        run: dotnet build test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --logger:"console;verbosity=detailed"
+        run: dotnet test test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --logger:"console;verbosity=detailed"
         env:
           SYSTEMINTEGRATIONTEST_JSON: ${{ secrets.SYSTEMINTEGRATIONTEST_JSON }}
           JWKS_JSON: ${{ secrets.JWKS_JSON }}
