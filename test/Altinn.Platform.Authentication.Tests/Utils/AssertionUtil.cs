@@ -36,11 +36,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(expected.AllowedRedirectUrls, actual.AllowedRedirectUrls);
         }
 
-        public static void AssertRegisteredSystemDTO(RegisteredSystem expected, RegisteredSystemDTO actual)
+        public static void AssertRegisteredSystemDTO(RegisteredSystemDTO expected, RegisteredSystemDTO actual)
         {
             Assert.Equal(expected.Name, actual.Name);
             Assert.Equal(expected.Description, actual.Description);
-            Assert.Equal(expected.Id, actual.SystemId);
+            Assert.Equal(expected.SystemId, actual.SystemId);
             Assert.Equal(expected.SystemVendorOrgName, actual.SystemVendorOrgName);
             Assert.Equal(expected.SystemVendorOrgNumber, actual.SystemVendorOrgNumber);
             Assert.Equal(expected.Rights.Count, actual.Rights.Count);
