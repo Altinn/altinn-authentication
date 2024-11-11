@@ -1,4 +1,5 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 
@@ -60,4 +61,19 @@ public interface ISystemUserRepository
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Replaces the values for the existing system user with those from the ChangeRequest
+    /// </summary>
+    /// <param name="toBeChanged">SystemUser to be changed</param>
+    /// <param name="userId">the user id of the reporter approving the change</param>
+    /// <returns>The id (UUID) of the SystemUser</returns>
+    Task<bool> ChangeSystemUser(SystemUser toBeChanged, int userId);
+
+    /// <summary>
+    /// Fetches a SystemUser by the ExternalRequestId    /// 
+    /// </summary>
+    /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
+    /// <returns>A SystemUser, if one is active.</returns>
+    Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
 }

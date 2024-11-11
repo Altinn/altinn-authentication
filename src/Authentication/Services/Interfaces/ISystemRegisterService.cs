@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
@@ -95,14 +94,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>true when one of the client id already exists</returns>
         Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Retrieves a single DTO of a Registered System
-        /// </summary>
-        /// <param name="systemId">The systemId</param>
-        /// <param name="cancellationToken">the Cancellation token</param>
-        /// <returns></returns>
-        Task<Result<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if the resourceids are found in resource register

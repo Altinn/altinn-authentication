@@ -88,7 +88,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 builder.Services.AddPersistanceLayer();
-builder.Services.AddHostedService<Archiver>();
+
+// builder.Services.AddHostedService<Archiver>();
 
 var app = builder.Build();
 
@@ -365,6 +366,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
+    services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserService>();
     services.AddSingleton<IGuidService, GuidService>();
     services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
     services.AddSingleton<IPDP, PDPAppSI>();

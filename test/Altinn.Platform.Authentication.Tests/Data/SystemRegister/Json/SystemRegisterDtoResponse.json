@@ -1,9 +1,7 @@
 {
-  "id": "991825827_the_matrix",
-  "vendor": {
-    "authority": "iso6523-actorid-upis",
-    "ID": "0192:991825827"
-  },
+  "systemId": "991825827_the_matrix",
+  "systemVendorOrgNumber": "991825827",
+  "systemVendorOrgName": "",
   "name": {
     "nb": "The Matrix",
     "en": "The Matrix",
@@ -23,15 +21,5 @@
         }
       ]
     }
-  ],
-  "softDeleted": false,
-  "clientId": [
-    "32ef65ac-6e62-498d-880f-76c85c2052ae"
-  ],
-  "allowedRedirectUrls": [
-    "https://vg.no",
-    "https://nrk.no",
-    "https://altinn.no"
-  ],
-  "isVisible": true
+  ]
 }
