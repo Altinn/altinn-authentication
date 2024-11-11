@@ -35,7 +35,8 @@ public class SystemUserTests
         var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
-            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithClientId(Guid.NewGuid()
+                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
             .WithToken(maskinportenClientResult.Token);
@@ -99,8 +100,8 @@ public class SystemUserTests
 
         var respons = await _platformClient.GetAsync(endpoint, token);
 
-        _outputHelper.WriteLine(await respons.Content.ReadAsStringAsync());
-        Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
+        Assert.True(HttpStatusCode.OK == respons.StatusCode,
+            $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
     }
 
     /// <summary>
@@ -143,9 +144,11 @@ public class SystemUserTests
         var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
-            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithClientId(Guid.NewGuid()
+                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
+            .WithRedirectUrl("https://altinn.no")
             .WithToken(maskinportenClientResult.Token);
 
         var response = await _systemRegisterClient.PostSystem(teststate);
@@ -153,20 +156,43 @@ public class SystemUserTests
 
         // Prepare
         var body = await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json");
-        body = body.Replace("{systemId}", teststate.SystemId);
+        body = body
+            .Replace("{systemId}", teststate.SystemId)
+            .Replace("{redirectUrl}", teststate.RedirectUrl);
 
         // Act
         var respons =
             await _platformClient.PostAsync("authentication/api/v1/systemuser/request/vendor", body,
                 maskinportenClientResult.Token);
 
-        _outputHelper.WriteLine(await respons.Content.ReadAsStringAsync());
-
         var content = await respons.Content.ReadAsStringAsync();
+        _outputHelper.WriteLine(content);
         Assert.True(HttpStatusCode.Created == respons.StatusCode,
             $"Status code was not Created, but: {respons.StatusCode} -  {content}");
     }
-    
+
+    /// <summary>
+    /// https://github.com/Altinn/altinn-authentication/issues/576
+    /// </summary>
+    [Fact]
+    public async Task GetRequestSystemUserStatus()
+    {
+        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        const string url = "/authentication/api/v1/systemuser/request/vendor/96034ac3-fc2d-4e72-887a-c72092e790b8";
+
+        var resp = await _platformClient.GetAsync(url, maskinportenClientResult.Token);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    /// <summary>
+    /// Todo: Implement
+    /// </summary>
+    [Fact]
+    public async Task ApproveSystemUser()
+    {
+        var url = "/authentication/api/v1/systemuser/request/{party}/{requestId}/approve";
+    }
+
     /// <summary>
     /// https://docs.altinn.studio/nb/authentication/guides/systemauthentication-for-systemproviders/
     /// Du trenger ikke angi system user

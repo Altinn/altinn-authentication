@@ -17,14 +17,14 @@
     {
       "Resource": [
         {
-          "value": "kravogbetaling",
-          "id": "urn:altinn:resource"
+          "id": "urn:altinn:resource",
+          "value": "kravogbetaling"
         }
       ]
     }
   ],
   "allowedRedirectUrls": [
-    "http://testurl.com"
+    "https://altinn.no"
   ],
   "ClientId": [
     "{clientId}"

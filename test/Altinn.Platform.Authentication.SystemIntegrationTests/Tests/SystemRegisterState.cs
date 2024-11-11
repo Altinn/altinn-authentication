@@ -8,7 +8,8 @@ public class SystemRegisterState
     public string? VendorId { get; set; }
     public string? Name { get; set; }
     public string? ClientId { get; set; }
-    public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomName
+    public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
+    public string RedirectUrl { get; set; }
 
     public List<Right> Rights { get; set; } = [];
 
@@ -35,6 +36,12 @@ public class SystemRegisterState
         return this;
     }
 
+    public SystemRegisterState WithRedirectUrl(string redirectUrl)
+    {
+        RedirectUrl = redirectUrl;
+        return this;
+    }
+    
     public SystemRegisterState WithResource(string value, string id)
     {
         var resource = new Resource { Value = value, Id = id };

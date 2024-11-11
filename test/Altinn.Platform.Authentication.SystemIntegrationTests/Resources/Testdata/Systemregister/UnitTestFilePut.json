@@ -33,6 +33,6 @@
   ],
   "isVisible": false,
   "allowedredirecturls": [
-    "https://vg.no"
+    "{redirectUrl}"
   ]
 }

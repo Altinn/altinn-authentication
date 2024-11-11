@@ -32,14 +32,14 @@ public class SystemRegisterTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState,
-        string filePath)
+    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState, string filePath)
     {
         var fileContent = await Helper.ReadFile(filePath);
         return fileContent
             .Replace("{vendorId}", systemRegisterState.VendorId)
             .Replace("{Name}", systemRegisterState.Name)
-            .Replace("{clientId}", systemRegisterState.ClientId);
+            .Replace("{clientId}", systemRegisterState.ClientId)
+            .Replace("{redirectUrl}", systemRegisterState.RedirectUrl);
     }
 
     /// <summary>
@@ -96,6 +96,7 @@ public class SystemRegisterTests
         var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
+            .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
@@ -126,6 +127,7 @@ public class SystemRegisterTests
         var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
+            .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
@@ -150,6 +152,7 @@ public class SystemRegisterTests
         var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
 
         var teststate = new SystemRegisterState()
+            .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
@@ -160,7 +163,7 @@ public class SystemRegisterTests
 
         //Prepare 
         var requestBody =
-            await GetRequestBodyWithReplacements(teststate, "Resources/Testdata/Systemregister/UnitTestfilePut.json");
+            await GetRequestBodyWithReplacements(teststate, "Resources/Testdata/Systemregister/UnitTestFilePut.json");
 
         // Act
         var response =

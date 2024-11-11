@@ -24,7 +24,8 @@ public class PlatformAuthenticationClient
     /// </summary>
     public PlatformAuthenticationClient()
     {
-        EnvironmentHelper = LoadEnvironment("SYSTEMINTEGRATIONTEST_JSON");
+        //Todo - fix - unngå hardkoding og gjør sjekk på github secret
+        EnvironmentHelper = LoadEnvironment();
         BaseUrl = $"https://platform.{EnvironmentHelper.Testenvironment}.altinn.cloud";
         _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator();
     }
@@ -138,6 +139,7 @@ public class PlatformAuthenticationClient
             $"&pid={user.pid}" +
             $"&userid={user.userId}" +
             $"&partyid={user.partyId}" +
+            
             $"&authLvl=3&ttl=3000";
 
         var token = await GetAltinnToken(url);
@@ -174,15 +176,17 @@ public class PlatformAuthenticationClient
         throw new InvalidOperationException("Unable to get Altinn token");
     }
 
-    private static EnvironmentHelper LoadEnvironment(string environmentVariableName)
+    private static EnvironmentHelper LoadEnvironment()
     {
+        //Add more explicit checks to verify github etc.
+        const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
         const string localFilePath = "Resources/Environment/environment.json";
-        var envJson = Environment.GetEnvironmentVariable(environmentVariableName);
+        var envJson = Environment.GetEnvironmentVariable(githubVariable);
 
         if (!string.IsNullOrEmpty(envJson))
         {
             return JsonSerializer.Deserialize<EnvironmentHelper>(envJson)
-                   ?? throw new Exception($"Unable to deserialize environment from {environmentVariableName}.");
+                   ?? throw new Exception($"Unable to deserialize environment from {githubVariable}.");
         }
 
         var jsonString = Helper.ReadFile(localFilePath).Result;

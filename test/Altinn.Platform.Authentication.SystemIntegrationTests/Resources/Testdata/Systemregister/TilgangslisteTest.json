@@ -24,7 +24,7 @@
     }
   ],
   "allowedRedirectUrls": [
-    "http://testurl.com"
+    "http://altinn.no"
   ],
   "ClientId": [
     "{clientId}"

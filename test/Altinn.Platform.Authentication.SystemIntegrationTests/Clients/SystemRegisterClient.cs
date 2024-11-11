@@ -32,7 +32,6 @@ public class SystemRegisterClient
         var response = await _platformClient.PostAsync(
             "authentication/api/v1/systemregister/vendor", requestBody, state.Token);
 
-
         Assert.True(HttpStatusCode.OK == response.StatusCode,
             $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
