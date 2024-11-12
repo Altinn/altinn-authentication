@@ -89,6 +89,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
+            services.AddSingleton<IRequestSystemUser, RequestSystemUserServiceMock>();
             services.AddSingleton(_featureManager.Object);
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(_timeProviderMock.Object);
@@ -262,6 +263,49 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 Assert.Equal(".ASPXAUTH=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.First());
                 Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Last());
+            }
+        }
+
+        [Fact]
+        public async Task Logout_HandleLoggedOut_RedirectToRedirectUrl()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/handleloggedout");
+            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo" + "=" + "SystemuserRequestId=c0970300-005c-4784-aea6-5e7bac61b9b1");
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
+
+            IEnumerable<string> values;
+            if (response.Headers.TryGetValues("location", out values))
+            {
+                Assert.Equal("https://smartcloudaltinn.azurewebsites.net/", values.First());
+            }
+        }
+
+        [Fact]
+        public async Task Logout_HandleLoggedOut_RedirectToSBL()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/handleloggedout");
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
+
+            IEnumerable<string> values;
+            if (response.Headers.TryGetValues("location", out values))
+            {
+                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
             }
         }
 
