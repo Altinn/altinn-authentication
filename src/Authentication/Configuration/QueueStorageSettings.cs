@@ -20,6 +20,6 @@ namespace Altinn.Platform.Authentication.Configuration
         /// <summary>
         /// Number of days the queue message stored in the queue
         /// </summary>
-        public int TimeToLive { get; set; }
+        public int TimeToLive { get; set; } = 90;
     }
 }
