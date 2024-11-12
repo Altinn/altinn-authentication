@@ -104,18 +104,15 @@ namespace Altinn.Platform.Authentication.Controllers
             Response.Cookies.Delete(_generalSettings.AltinnLogoutInfoCookieName, opt);
 
             // create Dictionary of cookie values
-            Dictionary<string, string> cookieValues = logoutInfoCookie.Split('?')
+            Dictionary<string, string> cookieValues = logoutInfoCookie?.Split('?')
                 .Select(x => x.Split('='))
                 .ToDictionary(x => x[0], x => x[1]);
 
             // check if cookie contains key SystemuserRequestId
-            if (cookieValues.TryGetValue("SystemuserRequestId", out string requestId))
+            if (cookieValues != null && cookieValues.TryGetValue("SystemuserRequestId", out string requestId) && Guid.TryParse(requestId, out Guid requestGuid))
             {
-                if (Guid.TryParse(requestId, out Guid requestGuid))
-                {
-                    Result<string> redirectUrl = await _requestSystemUser.GetRedirectByRequestId(requestGuid);
-                    return Redirect(redirectUrl.Value);
-                }
+                Result<string> redirectUrl = await _requestSystemUser.GetRedirectByRequestId(requestGuid);
+                return Redirect(redirectUrl.Value);
             }
 
             return Redirect(_generalSettings.SBLLogoutEndpoint);
