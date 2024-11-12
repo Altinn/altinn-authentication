@@ -15,6 +15,7 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -114,9 +115,11 @@ public class RequestSystemUserService(
     }
 
     /// <summary>
-    /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected
+    /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected.
+    /// Also ensure that if any of the new Rights have sub-resources, that the sub-resources are equal to the registered Rights.
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
+    /// <param name="systemInfo">The Vendor's Registered System</param>
     /// <returns>Result or Problem</returns>
     private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
     {
@@ -131,19 +134,23 @@ public class RequestSystemUserService(
         }
 
         bool[] validate = new bool[rights.Count];
-        int i = 0;
-        foreach (var rightRequest in rights)
+        foreach (var requestRight in rights)
         {
-            foreach (var resource in rightRequest.Resource)
+            // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
+            List<Right> topMatchesInSystem = FindListOfMatchingRightsOnTopAttribute(requestRight.Resource[0], systemInfo.Rights);
+            if (topMatchesInSystem.Count == 0)
             {
-                if (FindOneAttributePair(resource, systemInfo.Rights))
-                {
-                    validate[i] = true;
-                    break;
-                }
+                return Problem.Rights_NotFound_Or_NotDelegable;
             }
 
-            i++;
+            // Locate one full match, the first we find might not be the correct
+            foreach (var systemRight in topMatchesInSystem)
+            {
+                if (IsFullMatch(systemRight, requestRight))
+                {
+                    validate[rights.IndexOf(requestRight)] = true;
+                }
+            }    
         }
 
         foreach (bool right in validate)
@@ -157,20 +164,55 @@ public class RequestSystemUserService(
         return true;
     }
 
-    private static bool FindOneAttributePair(AttributePair pair, List<Right> list)
+    private static bool IsFullMatch(Right systemRight, Right requestRight)
     {
-        foreach (Right l in list)
+        if (requestRight.Resource.Count != systemRight.Resource.Count)
         {
-            foreach (AttributePair p in l.Resource)
+            return false;
+        }
+
+        foreach (var systemPair in systemRight.Resource)
+        {
+            if (!VerifySubResource(systemPair, requestRight))
             {
-                if (pair.Id == p.Id && pair.Value == p.Value)
-                {
-                    return true;
-                }
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Ensure that the system's sub-resource is present in the request's list of sub-resources
+    private static bool VerifySubResource(AttributePair system, Right request)
+    {
+        foreach (var resource in request.Resource)
+        {
+            if (system.Id == resource.Id && system.Value == resource.Value)
+            {
+                return true;
             }
         }
 
         return false;
+    }
+
+    // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
+    private static List<Right> FindListOfMatchingRightsOnTopAttribute(AttributePair newpair, List<Right> systemlist)
+    {
+        List<Right> list = [];
+
+        foreach (Right systemRight in systemlist)
+        {
+            foreach (AttributePair p in systemRight.Resource)
+            {
+                if (newpair.Id == p.Id && newpair.Value == p.Value)
+                {
+                    list.Add(systemRight);
+                }
+            }
+        }
+
+        return list;
     }
 
     /// <summary>
