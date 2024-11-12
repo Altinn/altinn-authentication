@@ -81,9 +81,7 @@ public class SystemRegisterTests
         // Act
         var response =
             await _platformClient.GetAsync("/authentication/api/v1/systemregister", maskinportenToken);
-
-        _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
-
+        
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -110,7 +108,6 @@ public class SystemRegisterTests
             await _platformClient.GetAsync(
                 $"/authentication/api/v1/systemregister/{teststate.SystemId}/rights", maskinportenToken);
 
-        _outputHelper.WriteLine("systemid " + teststate.SystemId);
         var rights = await response.Content.ReadFromJsonAsync<List<Right>>();
 
         // Assert
