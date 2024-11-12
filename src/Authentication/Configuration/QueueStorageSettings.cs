@@ -16,5 +16,10 @@ namespace Altinn.Platform.Authentication.Configuration
         /// Name of the queue to push authentication event, before persisting to db.
         /// </summary>
         public string AuthenticationEventQueueName { get; set; }
+
+        /// <summary>
+        /// Number of days the queue message stored in the queue
+        /// </summary>
+        public int TimeToLive { get; set; }
     }
 }
