@@ -1,7 +1,7 @@
 {
   "Testenvironment": "at22",
   "MaskinportenClientId": "test",
-  "Orgnummer": "312605031",
+  "Vendor": "312605031",
   "TestCredentials": {
     "username": "dummy",
     "password": "dummy"
