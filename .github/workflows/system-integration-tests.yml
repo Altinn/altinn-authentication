@@ -1,7 +1,6 @@
 name: Run systemintegration tests - Authentication
 
-on:
-  workflow_dispatch:  # Keeps the option to manually run the workflow from GitHub Actions UI
+on: workflow_dispatch
 
 env:
   DOTNET_VERSION: '8.0.x'
@@ -9,7 +8,7 @@ env:
 jobs:
   build-and-test:
 
-    name: Run system integration tests
+    name: System integration tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,5 +27,4 @@ jobs:
       - name: Test
         run: dotnet test test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --logger:"console;verbosity=detailed"
         env:
-          SYSTEMINTEGRATIONTEST_JSON: ${{ secrets.SYSTEMINTEGRATIONTEST_JSON }}
-          JWKS_JSON: ${{ secrets.JWKS_JSON }}
+          SYSTEMINTEGRATIONTEST_JSON: ${{ secrets.SYSTEMINTEGRATIONTEST_JSON }}        

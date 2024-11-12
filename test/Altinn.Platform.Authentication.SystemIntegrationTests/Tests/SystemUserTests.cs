@@ -66,7 +66,6 @@ public class SystemUserTests
         var manager = new AltinnUser
         {
             userId = "20012772", partyId = "51670464", pid = "64837001585",
-            //scopes = "altinn:authentication/systemuser.request.read"
         };
         var token = await _platformClient.GetPersonalAltinnToken(manager);
 
@@ -82,7 +81,7 @@ public class SystemUserTests
     /// <summary>
     /// Test Get endpoint for System User
     /// Github: #765
-    /// Report bug for this one (and ignore for now)
+    /// Reported bug: https://github.com/Altinn/altinn-authentication/issues/848
     /// </summary>
     // [Fact]
     public async Task GetCreatedSystemUser()
@@ -198,7 +197,6 @@ public class SystemUserTests
 
     /// <summary>
     /// https://docs.altinn.studio/nb/authentication/guides/systemauthentication-for-systemproviders/
-    /// Du trenger ikke angi system user
     /// </summary>
     //[Fact]
     public async Task UseSystemUser()

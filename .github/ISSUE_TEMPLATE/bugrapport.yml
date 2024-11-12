@@ -1,0 +1,53 @@
+name: Bugrapport
+description: Legg inn bug-rapport
+labels: ["bug", "type: Bug"]
+assignees:
+  - Nyeng
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Takk for at du rapporterer en feil! Vennligst oppgi så mye informasjon som mulig for å hjelpe oss med å løse problemet.
+
+  - type: textarea
+    id: reproduksjonssteg_generell_info
+    attributes:
+      label: Reproduksjonssteg og Generell Info
+      description: Oppgi generell informasjon og hvordan problemet kan gjenskapes
+      placeholder: |
+        1. Endepunkt: POST /authentication/api/v1/systemregister/vendor/{SystemId}
+        2. Request method: POST
+        3. Request Body:
+           {
+             "key": "value"
+           }
+
+  - type: textarea
+    id: forventet_oppforsel
+    attributes:
+      label: Forventet oppførsel
+      description: Hva forventet du skulle skje?
+      placeholder: f.eks. API-et skal returnere en 201 Created status med systemdetaljer.
+
+  - type: textarea
+    id: faktisk_oppforsel
+    attributes:
+      label: Faktisk oppførsel
+      description: Hva skjedde? Inkluder responsstatuskode og responsebody hvis relevant.
+      placeholder: f.eks. Mottok 500 Internal Server Error med responsebody {}
+
+  - type: textarea
+    id: logger
+    attributes:
+      label: Logger og/eller direkte lenke til Application Insights
+      description: Oppgi eventuelle relevante serverlogger, feilmeldinger eller stack traces.
+      render: shell
+      placeholder: |
+        2024-11-12T10:15:45Z ERROR [SystemUserService]: NullReferenceException ved ValidateSystem
+
+  - type: input
+    id: miljo
+    attributes:
+      label: Testmiljø
+      description: Spesifiser hvilket miljø problemet ble oppdaget i (f.eks., AT22, TT02, PROD).
+      placeholder: AT22

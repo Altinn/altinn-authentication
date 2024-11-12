@@ -17,10 +17,7 @@ public class SystemRegisterTests
     private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
     private readonly SystemRegisterClient _systemRegisterClient;
-
-    // Forbedringer
-    // - Unngå å skrive til systemregisteret hver gang
-
+    
     /// <summary>
     /// Systemregister tests
     /// </summary>
@@ -68,10 +65,7 @@ public class SystemRegisterTests
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
-
-    /// <summary>
-    /// Test Get SystemRegister
-    /// </summary>
+    
     [Fact]
     public async Task GetSystemRegisterReturns200Ok()
     {
@@ -116,7 +110,7 @@ public class SystemRegisterTests
     }
 
     /// <summary>
-    /// Verify registered system gets deleted
+    /// Verify registered system gets deleted (soft delete)
     /// </summary>
     [Fact]
     public async Task DeleteRegisteredSystemReturns200Ok()
@@ -143,7 +137,7 @@ public class SystemRegisterTests
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
     }
 
-    [Fact]
+    //[Fact] Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares

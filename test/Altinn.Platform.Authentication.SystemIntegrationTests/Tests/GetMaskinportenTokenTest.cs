@@ -1,7 +1,4 @@
-using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
 using Xunit.Abstractions;
 
