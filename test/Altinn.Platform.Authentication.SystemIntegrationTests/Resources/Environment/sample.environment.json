@@ -1,0 +1,26 @@
+{
+  "Testenvironment": "at22",
+  "MaskinportenClientId": "test",
+  "Vendor": "312605031",
+  "TestCredentials": {
+    "username": "dummy",
+    "password": "dummy"
+  },
+  "jwks": {
+    "alg": "RS256",
+    "d": "asd",
+    "dp": "test",
+    "dq": "test",
+    "e": "test",
+    "key_ops": [],
+    "kid": "authentication-systemintegration-tests-TEST.2024-10-23",
+    "kty": "RSA",
+    "n": "test",
+    "oth": [],
+    "p": "test",
+    "q": "test",
+    "qi": "test",
+    "use": "sig",
+    "x5c": []
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "systemId": "{systemId}",
+  "partyOrgNo": "312605031",
+  "rights": [
+    {
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "kravogbetaling"
+        }
+      ]
+    }
+  ],
+  "redirectUrl": "{redirectUrl}"
+}
