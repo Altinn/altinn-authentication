@@ -1,6 +1,7 @@
 name: Run systemintegration tests - Authentication
 
-workflow_dispatch:  # Keeps the option to manually run the workflow from GitHub Actions UI
+on:
+  workflow_dispatch:  # Keeps the option to manually run the workflow from GitHub Actions UI
 
 env:
   DOTNET_VERSION: '8.0.x'
