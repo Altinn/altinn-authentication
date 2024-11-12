@@ -179,16 +179,13 @@ public class PlatformAuthenticationClient
         const string localFilePath = "Resources/Environment/environment.json";
         var jsonString = Helper.ReadFile(localFilePath).Result;
         return JsonSerializer.Deserialize<EnvironmentHelper>(jsonString)
-               ?? throw new Exception($"Unable to read environment from {localFilePath}.");
+               ?? throw new Exception($"Unable to read environment from local file path: {localFilePath}.");
     }
 
-    public async Task<MaskinportenClientResult> GetToken()
+    public async Task<string> GetToken()
     {
         var token = await _maskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
-        return new MaskinportenClientResult
-        {
-            Token = token
-        };
+        return token;
     }
 }

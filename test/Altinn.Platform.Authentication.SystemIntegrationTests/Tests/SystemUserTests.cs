@@ -20,6 +20,7 @@ public class SystemUserTests
 
     /// <summary>
     /// Testing System user endpoints
+    /// To find relevant api endpoints: https://docs.altinn.studio/nb/api/authentication/spec/#/RequestSystemUser
     /// </summary>
     /// 
     public SystemUserTests(ITestOutputHelper outputHelper)
@@ -32,14 +33,14 @@ public class SystemUserTests
     private async Task<SystemRegisterState> CreateSystemRegisterUser()
     {
         // Prerequisite-step
-        var maskinportenClientResult = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
-            .WithToken(maskinportenClientResult.Token);
+            .WithToken(maskinportenToken);
 
         await _systemRegisterClient.PostSystem(teststate);
 
@@ -50,7 +51,7 @@ public class SystemUserTests
     /// Verify that system is created
     /// </summary>
     [Fact]
-    public async Task CreateSystemUser()
+    public async Task CreateSystemUserBff()
     {
         // Prerequisite
         var teststate = await CreateSystemRegisterUser();
@@ -116,7 +117,6 @@ public class SystemUserTests
         var manager = new AltinnUser
         {
             userId = "20012772", partyId = "51670464", pid = "64837001585",
-            scopes = "altinn:authentication/systemuser.request.read"
         };
 
         var jsonObject =
@@ -141,7 +141,7 @@ public class SystemUserTests
     public async Task PostRequestSystemUser()
     {
         // Prerequisite-step
-        var maskinportenClientResult = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithClientId(Guid.NewGuid()
@@ -149,7 +149,7 @@ public class SystemUserTests
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
             .WithRedirectUrl("https://altinn.no")
-            .WithToken(maskinportenClientResult.Token);
+            .WithToken(maskinportenToken);
 
         var response = await _systemRegisterClient.PostSystem(teststate);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -163,7 +163,7 @@ public class SystemUserTests
         // Act
         var respons =
             await _platformClient.PostAsync("authentication/api/v1/systemuser/request/vendor", body,
-                maskinportenClientResult.Token);
+                maskinportenToken);
 
         var content = await respons.Content.ReadAsStringAsync();
         _outputHelper.WriteLine(content);
@@ -177,10 +177,35 @@ public class SystemUserTests
     [Fact]
     public async Task GetRequestSystemUserStatus()
     {
-        var maskinportenClientResult = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetToken();
         const string url = "/authentication/api/v1/systemuser/request/vendor/96034ac3-fc2d-4e72-887a-c72092e790b8";
 
-        var resp = await _platformClient.GetAsync(url, maskinportenClientResult.Token);
+        var resp = await _platformClient.GetAsync(url, maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSystemusersBySystem()
+    {
+        var maskinportenToken = await _platformClient.GetToken();
+        
+        const string url = "authentication/api/v1/systemuser/vendor/bysystem/312605031_b4fadafa-42c5-44b6-88cc-ee2db237c4c0";
+
+        var resp = await _platformClient.GetAsync(url, maskinportenToken);
+        var ok = await resp.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+    
+    [Fact]
+    public async Task GetSystemUserByParty()
+    {
+        var maskinportenToken = await _platformClient.GetToken();
+        
+        const string url = "authentication/api/v1/systemuser/party/312605031";
+
+        var resp = await _platformClient.GetAsync(url, maskinportenToken);
+        var ok = await resp.Content.ReadAsStringAsync();
+        _outputHelper.WriteLine(ok);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
@@ -197,10 +222,10 @@ public class SystemUserTests
     /// https://docs.altinn.studio/nb/authentication/guides/systemauthentication-for-systemproviders/
     /// Du trenger ikke angi system user
     /// </summary>
-    [Fact]
+    //[Fact]
     public async Task UseSystemUser()
     {
-        //Bruk jwt og hent maskinporten-token direkte - todo: implement
+        //Bruk jwt og hent maskinporten-token direkte
     }
 
     private async Task<HttpResponseMessage> CreateSystemUserTestdata(string party, AltinnUser user)

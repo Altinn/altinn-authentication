@@ -1,8 +1,6 @@
 using System.Net;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 

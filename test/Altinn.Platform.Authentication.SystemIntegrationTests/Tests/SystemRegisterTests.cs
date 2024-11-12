@@ -52,14 +52,14 @@ public class SystemRegisterTests
     public async Task CreateNewSystemReturns200Ok()
     {
         // Prepare
-        var maskinportenClientResult = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
-            .WithToken(maskinportenClientResult.Token);
+            .WithToken(maskinportenToken);
 
         // Act
         var response = await _systemRegisterClient.PostSystem(teststate);
@@ -76,11 +76,11 @@ public class SystemRegisterTests
     public async Task GetSystemRegisterReturns200Ok()
     {
         // Prepare
-        var maskinportenClientResult = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetToken();
 
         // Act
         var response =
-            await _platformClient.GetAsync("/authentication/api/v1/systemregister", maskinportenClientResult.Token);
+            await _platformClient.GetAsync("/authentication/api/v1/systemregister", maskinportenToken);
 
         _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
@@ -93,22 +93,22 @@ public class SystemRegisterTests
     [Fact]
     public async Task ValidateRights()
     {
-        // Prepares
-        var maskinportenClientResult = await _platformClient.GetToken();
+        // Prepare
+        var maskinportenToken = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
-            .WithToken(maskinportenClientResult.Token);
+            .WithToken(maskinportenToken);
 
         await _systemRegisterClient.PostSystem(teststate);
 
         // Act
         var response =
             await _platformClient.GetAsync(
-                $"/authentication/api/v1/systemregister/{teststate.SystemId}/rights", maskinportenClientResult.Token);
+                $"/authentication/api/v1/systemregister/{teststate.SystemId}/rights", maskinportenToken);
 
         _outputHelper.WriteLine("systemid " + teststate.SystemId);
         var rights = await response.Content.ReadFromJsonAsync<List<Right>>();
@@ -125,7 +125,7 @@ public class SystemRegisterTests
     public async Task DeleteRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenClientResult = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithRedirectUrl("https://altinn.no")
@@ -133,7 +133,7 @@ public class SystemRegisterTests
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
-            .WithToken(maskinportenClientResult.Token);
+            .WithToken(maskinportenToken);
 
         //post system to Systemregister
         await _systemRegisterClient.PostSystem(teststate);
@@ -150,7 +150,7 @@ public class SystemRegisterTests
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenClientResult = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithRedirectUrl("https://altinn.no")
@@ -158,7 +158,7 @@ public class SystemRegisterTests
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor("312605031")
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
-            .WithToken(maskinportenClientResult.Token);
+            .WithToken(maskinportenToken);
 
         await _systemRegisterClient.PostSystem(teststate);
 
@@ -169,14 +169,14 @@ public class SystemRegisterTests
         // Act
         var response =
             await _platformClient.PutAsync($"/authentication/api/v1/systemregister/vendor/{teststate.SystemId}",
-                requestBody, maskinportenClientResult.Token);
+                requestBody, maskinportenToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var get =
             await _platformClient.GetAsync($"/authentication/api/v1/systemregister/{teststate.SystemId}",
-                maskinportenClientResult.Token);
+                maskinportenToken);
 
         //More asserts should be added, but there are known bugs right now regarding validation of rights 
         Assert.Equal(HttpStatusCode.OK, get.StatusCode);
