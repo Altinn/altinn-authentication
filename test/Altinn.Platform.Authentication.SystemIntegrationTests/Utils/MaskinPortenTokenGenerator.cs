@@ -14,6 +14,15 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 /// </summary>
 public class MaskinPortenTokenGenerator
 {
+    public string maskinportenClientId { get; set; }
+    public EnvironmentHelper EnvHelper { get; set; }
+
+    public MaskinPortenTokenGenerator(EnvironmentHelper environmentHelper)
+    {
+        EnvHelper = environmentHelper;
+        maskinportenClientId = environmentHelper.maskinportenClientId;
+    }
+
     private static string ToStandardBase64(string? base64Url)
     {
         Assert.True(base64Url != null, "Base64 url should not be null");
@@ -31,14 +40,15 @@ public class MaskinPortenTokenGenerator
         return base64;
     }
 
-    public static Task<string> GenerateJwt(Jwk jwk, EnvironmentHelper.MaskinportenClient client)
+    public Task<string> GenerateJwt()
     {
         const string audience = "https://test.maskinporten.no/token";
-        var iss = client.MaskinportenClientId;
+        var iss = maskinportenClientId;
 
         Assert.True(iss != null, "iss is null somehow, check it");
 
-        const string scope = "altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read";
+        const string scope =
+            "altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read";
         //const string scope = "altinn:authentication/systemregister.write";
 
         // Set the current time and expiration time for the token
@@ -46,6 +56,8 @@ public class MaskinPortenTokenGenerator
         var exp = now.AddMinutes(1).ToUnixTimeSeconds();
         var iat = now.ToUnixTimeSeconds();
         var jti = Guid.NewGuid().ToString(); // Unique ID for the JWT   
+
+        var jwk = EnvHelper.jwk;
 
         // Create RSA key from your JSON key parameters
         var rsa = new RSACryptoServiceProvider();
@@ -126,13 +138,12 @@ public class MaskinPortenTokenGenerator
     /// This fetches a bearer token from Maskinporten
     /// </summary>
     /// <param name="maskinportenClient"></param>
+    /// <param name="jwk">Jwk</param>
     /// <returns></returns>
     /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
-    public static async Task<string> GetMaskinportenBearerToken(EnvironmentHelper.MaskinportenClient maskinportenClient)
+    public async Task<string> GetMaskinportenBearerToken()
     {
-        var jwk = JwkLoader.LoadJwk(maskinportenClient.PathToJwks);
-
-        var jwt = await GenerateJwt(jwk, maskinportenClient);
+        var jwt = await GenerateJwt();
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;

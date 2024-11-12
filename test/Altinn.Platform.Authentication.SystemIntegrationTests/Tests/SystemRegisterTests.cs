@@ -32,7 +32,8 @@ public class SystemRegisterTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState, string filePath)
+    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterState systemRegisterState,
+        string filePath)
     {
         var fileContent = await Helper.ReadFile(filePath);
         return fileContent
@@ -51,12 +52,12 @@ public class SystemRegisterTests
     public async Task CreateNewSystemReturns200Ok()
     {
         // Prepare
-        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
-            .WithVendor("312605031")
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
             .WithToken(maskinportenClientResult.Token);
 
@@ -75,7 +76,7 @@ public class SystemRegisterTests
     public async Task GetSystemRegisterReturns200Ok()
     {
         // Prepare
-        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetToken();
 
         // Act
         var response =
@@ -93,7 +94,7 @@ public class SystemRegisterTests
     public async Task ValidateRights()
     {
         // Prepares
-        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithRedirectUrl("https://altinn.no")
@@ -124,7 +125,7 @@ public class SystemRegisterTests
     public async Task DeleteRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithRedirectUrl("https://altinn.no")
@@ -149,7 +150,7 @@ public class SystemRegisterTests
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithRedirectUrl("https://altinn.no")

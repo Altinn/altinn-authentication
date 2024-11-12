@@ -22,9 +22,6 @@
       <None Update="Resources\Environment\environment.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Resources\Jwks\jwks.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="Resources\Testdata\Systemregister\CreateNewSystem.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -32,9 +29,6 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Resources\Testdata\SystemUser\RequestSystemUser.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="Resources\Jwks\unitTestJwks.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Resources\Testdata\Systemregister\UnitTestFilePut.json">

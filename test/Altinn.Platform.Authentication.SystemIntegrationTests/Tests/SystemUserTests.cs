@@ -32,7 +32,7 @@ public class SystemUserTests
     private async Task<SystemRegisterState> CreateSystemRegisterUser()
     {
         // Prerequisite-step
-        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithClientId(Guid.NewGuid()
@@ -141,7 +141,7 @@ public class SystemUserTests
     public async Task PostRequestSystemUser()
     {
         // Prerequisite-step
-        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetToken();
 
         var teststate = new SystemRegisterState()
             .WithClientId(Guid.NewGuid()
@@ -177,7 +177,7 @@ public class SystemUserTests
     [Fact]
     public async Task GetRequestSystemUserStatus()
     {
-        var maskinportenClientResult = await _platformClient.GetTokenForClient("SystemRegisterClient");
+        var maskinportenClientResult = await _platformClient.GetToken();
         const string url = "/authentication/api/v1/systemuser/request/vendor/96034ac3-fc2d-4e72-887a-c72092e790b8";
 
         var resp = await _platformClient.GetAsync(url, maskinportenClientResult.Token);

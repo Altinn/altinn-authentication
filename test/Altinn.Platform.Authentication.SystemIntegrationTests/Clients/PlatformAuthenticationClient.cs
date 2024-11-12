@@ -13,7 +13,7 @@ public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
     public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
-
+    
     /// <summary>
     /// baseUrl for api
     /// </summary>
@@ -24,10 +24,9 @@ public class PlatformAuthenticationClient
     /// </summary>
     public PlatformAuthenticationClient()
     {
-        //Todo - fix - unngå hardkoding og gjør sjekk på github secret
         EnvironmentHelper = LoadEnvironment();
         BaseUrl = $"https://platform.{EnvironmentHelper.Testenvironment}.altinn.cloud";
-        _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator();
+        _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
     }
 
     /// <summary>
@@ -47,22 +46,6 @@ public class PlatformAuthenticationClient
 
         var response = await client.PostAsync($"{BaseUrl}/{endpoint}", content);
         return response;
-    }
-
-    /// <summary>
-    /// Post a request 
-    /// </summary>
-    /// <param name="endpoint">Endpoint for api</param>
-    /// <param name="token">Bearer token</param>
-    /// <param name="content">Request content</param>
-    /// <returns></returns>
-    public async Task<HttpResponseMessage> PostAsync(string endpoint, string token, HttpContent content)
-    {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
-
-        return await client.PostAsync($"{BaseUrl}/{endpoint}", content);
     }
 
     /// <summary>
@@ -139,7 +122,6 @@ public class PlatformAuthenticationClient
             $"&pid={user.pid}" +
             $"&userid={user.userId}" +
             $"&partyid={user.partyId}" +
-            
             $"&authLvl=3&ttl=3000";
 
         var token = await GetAltinnToken(url);
@@ -178,32 +160,35 @@ public class PlatformAuthenticationClient
 
     private static EnvironmentHelper LoadEnvironment()
     {
-        //Add more explicit checks to verify github etc.
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
-        const string localFilePath = "Resources/Environment/environment.json";
         var envJson = Environment.GetEnvironmentVariable(githubVariable);
-
+        
+        //Runs on Github
         if (!string.IsNullOrEmpty(envJson))
         {
             return JsonSerializer.Deserialize<EnvironmentHelper>(envJson)
                    ?? throw new Exception($"Unable to deserialize environment from {githubVariable}.");
         }
 
+        //Runs locally
+        return LoadEnvironmentFromFile();
+    }
+
+    private static EnvironmentHelper LoadEnvironmentFromFile()
+    {
+        const string localFilePath = "Resources/Environment/environment.json";
         var jsonString = Helper.ReadFile(localFilePath).Result;
         return JsonSerializer.Deserialize<EnvironmentHelper>(jsonString)
                ?? throw new Exception($"Unable to read environment from {localFilePath}.");
     }
 
-    public async Task<MaskinportenClientResult> GetTokenForClient(string clientName)
+    public async Task<MaskinportenClientResult> GetToken()
     {
-        var maskinportenClient = EnvironmentHelper.GetMaskinportenClientByName(clientName);
-        var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken(maskinportenClient);
+        var token = await _maskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
-        Assert.True(null != maskinportenClient.MaskinportenClientId, "Unable to retrieve maskinporten client id");
         return new MaskinportenClientResult
         {
-            Token = token,
-            ClientId = maskinportenClient.MaskinportenClientId
+            Token = token
         };
     }
 }
