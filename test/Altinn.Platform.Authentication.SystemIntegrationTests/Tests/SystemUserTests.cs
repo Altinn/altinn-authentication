@@ -196,6 +196,79 @@ public class SystemUserTests
     }
 
     /// <summary>
+    /// https://github.com/Altinn/altinn-authentication/issues/791
+    /// API for creating a change request for System User
+    /// </summary>
+    [Fact]
+    public async Task PostChangeRequestSystemUser()
+    {
+        // Prerequisite-step
+        var maskinportenToken = await _platformClient.GetToken();
+
+        var teststate = new SystemRegisterState()
+            .WithClientId(Guid.NewGuid()
+                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor("312605031")
+            .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
+            .WithRedirectUrl("https://altinn.no")
+            .WithToken(maskinportenToken);
+
+        var response = await _systemRegisterClient.PostSystem(teststate);
+        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
+
+        // Prepare New Request for a new SystemUser from a Vendor
+        var body = await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json");
+        body = body
+            .Replace("{systemId}", teststate.SystemId)
+            .Replace("{redirectUrl}", teststate.RedirectUrl);
+
+        var respons =
+            await _platformClient.PostAsync("authentication/api/v1/systemuser/request/vendor", body,
+                maskinportenToken);
+
+        var content = await respons.Content.ReadAsStringAsync();
+        Assert.True(HttpStatusCode.Created == respons.StatusCode,
+            $"Status code was not Created, but: {respons.StatusCode} -  {content}");
+
+        // Prepare Approve Request by end user
+        var requestId = JObject.Parse(content)["id"].ToString();
+
+        const string party = "50692553";
+        var manager = new AltinnUser
+        {
+            userId = "20012772",
+            partyId = "51670464",
+            pid = "64837001585",
+        };
+
+        var token = await _platformClient.GetPersonalAltinnToken(manager);
+
+        // End user approves the request
+        var responseApprove = await _platformClient.PostAsync($"authentication/api/v1/systemuser/request/{party}/{requestId}/approve", null!, token);
+        Assert.True(HttpStatusCode.OK == responseApprove.StatusCode, $"Status code was not OK, but: {responseApprove.StatusCode} -  {await responseApprove.Content.ReadAsStringAsync()}");
+
+        // Prepare Create Change Request for an existing SystemUser by a Vendor
+        var bodyChange = await Helper.ReadFile("Resources/Testdata/SystemUser/CreateChangeRequest.json");
+
+        bodyChange = bodyChange
+            .Replace("{systemId}", teststate.SystemId)
+            .Replace("{redirectUrl}", teststate.RedirectUrl);
+
+        // Use the Verify endpoint to test if the change request returns an OK empty response, ie no change needed
+        var responsChange = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor/verify", body, maskinportenToken);
+        Assert.True(HttpStatusCode.OK == responsChange.StatusCode, $"Status code was not Ok, but: {responsChange.StatusCode} -  {await responsChange.Content.ReadAsStringAsync()}");
+
+        // Use the Verify endpoint to test if the change request returns a set of Required Rights, because the change is needed
+        var responsChangeNeeded = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor/verify", bodyChange, maskinportenToken);
+        Assert.True(HttpStatusCode.OK == responsChangeNeeded.StatusCode, $"Status code was not OK, but: {responsChangeNeeded.StatusCode} -  {await responsChangeNeeded.Content.ReadAsStringAsync()}");
+        string changeRequestResponse = JObject.Parse(await responsChangeNeeded.Content.ReadAsStringAsync()).ToString();
+        List<string> requiredRights = JObject.Parse(changeRequestResponse)["requiredRights"].ToObject<List<string>>();
+        Assert.NotEmpty(requiredRights);
+        string debug;
+    }
+
+
+    /// <summary>
     /// https://docs.altinn.studio/nb/authentication/guides/systemauthentication-for-systemproviders/
     /// </summary>
     //[Fact]
