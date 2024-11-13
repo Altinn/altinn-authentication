@@ -273,7 +273,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/handleloggedout");
-            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo" + "=" + "SystemuserRequestId=c0970300-005c-4784-aea6-5e7bac61b9b1");
+            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo=SystemuserRequestId=c0970300-005c-4784-aea6-5e7bac61b9b1");
 
             // Act
             HttpResponseMessage response = await client.SendAsync(requestMessage);
@@ -281,11 +281,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues("location", out values))
-            {
-                Assert.Equal("https://smartcloudaltinn.azurewebsites.net/", values.First());
-            }
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
+
+            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            Assert.Equal("https://smartcloudaltinn.azurewebsites.net/", locationValues?.First());
         }
 
         [Fact]
@@ -302,11 +302,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues("location", out values))
-            {
-                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
-            }
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
+
+            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            Assert.Equal("http://localhost/ui/authentication/logout", locationValues?.First());
         }
 
         /// <summary>
