@@ -30,7 +30,7 @@ public class SystemUserTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    private async Task<SystemRegisterState> CreateSystemRegisterUser()
+    public async Task<SystemRegisterState> CreateSystemRegisterUser()
     {
         // Prerequisite-step
         var maskinportenToken = await _platformClient.GetToken();

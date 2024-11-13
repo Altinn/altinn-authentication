@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
 
@@ -13,7 +14,7 @@ public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
     public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
-    
+
     /// <summary>
     /// baseUrl for api
     /// </summary>
@@ -60,6 +61,14 @@ public class PlatformAuthenticationClient
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetAsync($"{BaseUrl}/{endpoint}");
+    }
+
+    public async Task<HttpResponseMessage> GetAsync(UriBuilder uriBuilder, string? token)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        return await client.GetAsync(uriBuilder.ToString());
     }
 
     public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string? token)
@@ -162,7 +171,7 @@ public class PlatformAuthenticationClient
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
         var envJson = Environment.GetEnvironmentVariable(githubVariable);
-        
+
         //Runs on Github
         if (!string.IsNullOrEmpty(envJson))
         {
