@@ -65,5 +65,15 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Scope for system user read scope.
         /// </summary>
         public const string SCOPE_SYSTEMUSER_REQUEST_READ = "altinn:authentication/systemuser.request.read";
+
+        /// <summary>
+        /// Policy used for endpoint where maskinporten can 
+        /// </summary>
+        public const string POLICY_SCOPE_SYSTEMUSERLOOKUP = "ScopeSystemUserLookup";
+
+        /// <summary>
+        /// Scope set by maskinporten for system user lookup
+        /// </summary>
+        public const string SCOPE_SYSTEMUSER_LOOKUP = "altinn:maskinporten/systemuser.read";
     }
 }
