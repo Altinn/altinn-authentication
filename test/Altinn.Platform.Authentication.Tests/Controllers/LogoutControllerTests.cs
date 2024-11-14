@@ -272,7 +272,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange
             HttpClient client = CreateClient();
 
-            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/handleloggedout");
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout/handleloggedout");
             requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo=SystemuserRequestId=c0970300-005c-4784-aea6-5e7bac61b9b1");
 
             // Act
@@ -294,7 +294,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange
             HttpClient client = CreateClient();
 
-            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/handleloggedout");
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout/handleloggedout");
 
             // Act
             HttpResponseMessage response = await client.SendAsync(requestMessage);

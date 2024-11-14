@@ -96,7 +96,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status302Found)]
-        [HttpGet("handleloggedout")]
+        [HttpGet("logout/handleloggedout")]
         public async Task<ActionResult> HandleLoggedOut()
         {
             string logoutInfoCookie = Request.Cookies[_generalSettings.AltinnLogoutInfoCookieName];
