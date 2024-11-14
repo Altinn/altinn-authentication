@@ -22,6 +22,8 @@ public class SystemUserStatus
 
     // /Default systemId to avoid creating new systems all the time
     private const string SYSTEM_ID = "312605031_9cfc4cac-1776-4052-882a-d0874fc6b548";
+
+    //Default system_request_id instead of creating new every time in test environment
     private const string REQUEST_ID = "83775428-9693-4b77-bd25-f0d55bfc4a5b";
 
     /// <summary>
@@ -75,33 +77,39 @@ public class SystemUserStatus
         // Test endpoint by system ID
         var endpointBySystem = $"authentication/api/v1/systemuser/request/vendor/bysystem/{systemRequest?.systemId}";
         var responseBySystem = await _platformClient.GetAsync(endpointBySystem, token);
+        var paginatedResponseContent = await responseBySystem.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(paginatedResponseContent);
+
+        //Find the next url that should be the next list elements
+        var nextUrl = document.RootElement
+            .GetProperty("links")
+            .GetProperty("next")
+            .GetString();
+
+        var uri = new Uri(nextUrl);
+
+        // Combine the AbsolutePath and Query to get the desired substring
+        nextUrl = $"{uri.AbsolutePath}{uri.Query}";
+        _outputHelper.WriteLine($"nextUrl: {nextUrl}");
 
         True(responseBySystem.StatusCode == HttpStatusCode.OK,
             $"Response code wasn't 200, but: {responseBySystem.StatusCode}");
-
-        var paginationResult = responseBySystem.Content.ReadAsStringAsync().Result;
-        _outputHelper.WriteLine(paginationResult);
 
         // Verify status is "New"
         var responseContent = await responseByExternalRef.Content.ReadAsStringAsync();
         Contains("\"status\": \"New\",", responseContent);
 
-        var paginering = await _platformClient.GetAsync(
-            "authentication/api/v1/systemuser/request/vendor/bysystem/312605031_9cfc4cac-1776-4052-882a-d0874fc6b548?token=ImU4M2FiOWU2LWMwYWEtNDczZS1hZWM1LWEyODAzMzE4ZDhlOCI",
-            token);
-        
-        var paginatedResult = paginering.Content.ReadAsStringAsync().Result;
-        _outputHelper.WriteLine(paginatedResult);
-
-        True(paginering.StatusCode == HttpStatusCode.OK, "not OK");
+        //Verify paginated result
+        var paginering = await _platformClient.GetAsync(nextUrl, token);
+        True(paginering.StatusCode == HttpStatusCode.OK, $"Did not receive OK, but {paginering.StatusCode}");
     }
 
     public class SystemUserRequestResponse
     {
-        public string id { get; set; }
-        public string externalRef { get; set; }
-        public string systemId { get; set; }
-        public string status { get; set; }
-        public string partyOrgNo { get; set; }
+        public string? id { get; set; }
+        public string? externalRef { get; set; }
+        public string? systemId { get; set; }
+        public string? status { get; set; }
+        public string? partyOrgNo { get; set; }
     }
 }
