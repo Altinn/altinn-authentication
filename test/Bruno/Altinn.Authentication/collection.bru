@@ -1,0 +1,25 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{bearerToken}}
+}
+
+script:pre-request {
+  const tokenGenerator = require("./TestToolsTokenGenerator.js");
+}
+
+script:post-response {
+  // Reset request vars so auth token data does not bleed between requests.
+  // Probably better ways of doing this?
+  bru.setVar("auth_tokenType", null);
+  bru.setVar("auth_userId", null);
+  bru.setVar("auth_partyId", null);
+  bru.setVar("auth_ssn", null);
+  bru.setVar("auth_scopes", null);
+  bru.setVar("auth_org", null);
+  bru.setVar("auth_orgNo", null);
+  bru.setVar("auth_username", null);
+  bru.setVar("bearerToken", null);
+}
