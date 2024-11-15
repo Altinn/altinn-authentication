@@ -54,6 +54,8 @@ public class SystemUserStatus
             $"Response code wasn't 200, but: {responseByVendor.StatusCode}");
 
         var responseContent = await responseByVendor.Content.ReadAsStringAsync();
+        _outputHelper.WriteLine(_platformClient.BaseUrl);
+        _outputHelper.WriteLine(responseContent);
         Contains("\"status\": \"New\",", responseContent);
     }
 

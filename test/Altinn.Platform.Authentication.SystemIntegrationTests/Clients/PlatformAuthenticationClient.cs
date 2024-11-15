@@ -27,6 +27,7 @@ public class PlatformAuthenticationClient
     {
         EnvironmentHelper = LoadEnvironment();
         BaseUrl = $"https://platform.{EnvironmentHelper.Testenvironment}.altinn.cloud";
+        
         _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
     }
 

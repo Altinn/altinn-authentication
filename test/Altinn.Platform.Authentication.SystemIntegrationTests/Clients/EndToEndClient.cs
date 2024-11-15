@@ -31,6 +31,8 @@ public class EndToEndClient
         };
 
         var test = await _platformClient.GetAsync(uri, maskinportenToken);
+        
+        
 
         return test.StatusCode != HttpStatusCode.OK;
     }
