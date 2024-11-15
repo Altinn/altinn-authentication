@@ -74,7 +74,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.GetAsync("/authentication/api/v1/systemregister", maskinportenToken);
+            await _platformClient.GetAsync("v1/systemregister", maskinportenToken);
         
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -100,7 +100,7 @@ public class SystemRegisterTests
         // Act
         var response =
             await _platformClient.GetAsync(
-                $"/authentication/api/v1/systemregister/{teststate.SystemId}/rights", maskinportenToken);
+                $"v1/systemregister/{teststate.SystemId}/rights", maskinportenToken);
 
         var rights = await response.Content.ReadFromJsonAsync<List<Right>>();
 
@@ -131,7 +131,7 @@ public class SystemRegisterTests
 
         // Act
         var respons = await _platformClient.Delete(
-            $"/authentication/api/v1/systemregister/vendor/{teststate.SystemId}", teststate.Token);
+            $"v1/systemregister/vendor/{teststate.SystemId}", teststate.Token);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
@@ -159,14 +159,14 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.PutAsync($"/authentication/api/v1/systemregister/vendor/{teststate.SystemId}",
+            await _platformClient.PutAsync($"v1/systemregister/vendor/{teststate.SystemId}",
                 requestBody, maskinportenToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var get =
-            await _platformClient.GetAsync($"/authentication/api/v1/systemregister/{teststate.SystemId}",
+            await _platformClient.GetAsync($"v1/systemregister/{teststate.SystemId}",
                 maskinportenToken);
 
         //More asserts should be added, but there are known bugs right now regarding validation of rights 

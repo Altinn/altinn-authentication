@@ -71,7 +71,7 @@ public class SystemUserTests
 
         //Act
         var respons =
-            await _platformClient.PostAsync("authentication/api/v1/systemuser/50692553", requestBody,
+            await _platformClient.PostAsync("/systemuser/50692553", requestBody,
                 token);
 
         //Assert

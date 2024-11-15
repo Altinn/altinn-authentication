@@ -13,11 +13,11 @@ public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
     public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
-    
+
     /// <summary>
     /// baseUrl for api
     /// </summary>
-    public readonly string BaseUrl;
+    public readonly string? BaseUrl;
 
     /// <summary>
     /// Base class for running requests
@@ -25,8 +25,25 @@ public class PlatformAuthenticationClient
     public PlatformAuthenticationClient()
     {
         EnvironmentHelper = LoadEnvironment();
-        BaseUrl = $"https://platform.{EnvironmentHelper.Testenvironment}.altinn.cloud";
+        BaseUrl = GetEnvironment(EnvironmentHelper.Testenvironment);
         _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
+    }
+
+    private string GetEnvironment(string environmentHelperTestenvironment)
+    {
+        // Define base URLs for tt02 and all "at" environments
+        const string tt02 = "https://platform.tt02.altinn.no/authentication/api/";
+        const string atBaseUrl = "https://platform.{env}.altinn.cloud/authentication/api/";
+
+        // Handle case-insensitive input and return the correct URL
+        environmentHelperTestenvironment = environmentHelperTestenvironment.ToLower();
+
+        return environmentHelperTestenvironment switch
+        {
+            "tt02" => tt02,
+            "at22" or "at23" or "at24" => atBaseUrl.Replace("{env}", environmentHelperTestenvironment),
+            _ => throw new ArgumentException($"Unknown environment: {environmentHelperTestenvironment}")
+        };
     }
 
     /// <summary>
@@ -162,7 +179,7 @@ public class PlatformAuthenticationClient
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
         var envJson = Environment.GetEnvironmentVariable(githubVariable);
-        
+
         //Runs on Github
         if (!string.IsNullOrEmpty(envJson))
         {

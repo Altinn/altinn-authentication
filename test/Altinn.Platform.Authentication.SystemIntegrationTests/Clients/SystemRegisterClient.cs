@@ -28,7 +28,7 @@ public class SystemRegisterClient
         Assert.True(state.Token != null, "Token should not be empty");
 
         var response = await _platformClient.PostAsync(
-            "authentication/api/v1/systemregister/vendor", requestBody, state.Token);
+            "v1/systemregister/vendor", requestBody, state.Token);
 
         Assert.True(HttpStatusCode.OK == response.StatusCode,
             $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
