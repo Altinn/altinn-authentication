@@ -83,9 +83,9 @@ public class SystemUserTests
     /// <summary>
     /// Test Get endpoint for System User
     /// Github: #765
-    /// Reported bug: https://github.com/Altinn/altinn-authentication/issues/848
+    /// Reported bug from earlier: https://github.com/Altinn/altinn-authentication/issues/848
     /// </summary>
-    // [Fact]
+    [Fact]
     public async Task GetCreatedSystemUser()
     {
         const string alternativeParty = "50891151";
@@ -198,7 +198,10 @@ public class SystemUserTests
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
-    [Fact]
+    //[Fact]
+    /// <summary>
+    /// Bug created: https://github.com/Altinn/altinn-authentication/issues/871
+    /// </summary>
     public async Task ApproveSystemUserRequest()
     {
         var maskinportenToken = await _platformClient.GetToken();
@@ -261,15 +264,6 @@ public class SystemUserTests
             "System user approval response: " + await postSystemResponse.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, postSystemResponse.StatusCode);
-    }
-
-    /// <summary>
-    /// https://docs.altinn.studio/nb/authentication/guides/systemauthentication-for-systemproviders/
-    /// </summary>
-    //[Fact]
-    public async Task UseSystemUser()
-    {
-        //Bruk jwt og hent maskinporten-token direkte
     }
 
     private async Task<HttpResponseMessage> CreateSystemUserTestdata(string party, AltinnUser user)
