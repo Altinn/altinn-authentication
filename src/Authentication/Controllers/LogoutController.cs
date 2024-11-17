@@ -38,6 +38,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IEventLog _eventLog;
         private readonly IFeatureManager _featureManager;
         private readonly IRequestSystemUser _requestSystemUser;
+        private readonly IChangeRequestSystemUser _changeRequestSystemUser;
 
         /// <summary>
         /// Defay
@@ -49,7 +50,8 @@ namespace Altinn.Platform.Authentication.Controllers
             IOidcProvider oidcProvider,
             IEventLog eventLog,
             IFeatureManager featureManager,
-            IRequestSystemUser requestSystemUser)
+            IRequestSystemUser requestSystemUser,
+            IChangeRequestSystemUser changeRequestSystemUser)
         {
             _generalSettings = generalSettings.Value;
             _oidcProviderSettings = oidcProviderSettings.Value;
@@ -57,6 +59,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _eventLog = eventLog;
             _featureManager = featureManager;
             _requestSystemUser = requestSystemUser;
+            _changeRequestSystemUser = changeRequestSystemUser;
         }
 
         /// <summary>
@@ -110,6 +113,12 @@ namespace Altinn.Platform.Authentication.Controllers
             if (cookieValues != null && cookieValues.TryGetValue("SystemuserRequestId", out string requestId) && Guid.TryParse(requestId, out Guid requestGuid))
             {
                 Result<string> redirectUrl = await _requestSystemUser.GetRedirectByRequestId(requestGuid);
+                return Redirect(redirectUrl.Value);
+            }
+
+            if (cookieValues != null && cookieValues.TryGetValue("SystemuserChangeRequestId", out string changeRequestId) && Guid.TryParse(changeRequestId, out Guid changeRequestGuid))
+            {
+                Result<string> redirectUrl = await _changeRequestSystemUser.GetRedirectByChangeRequestId(changeRequestGuid);
                 return Redirect(redirectUrl.Value);
             }
 
