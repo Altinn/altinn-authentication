@@ -424,6 +424,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
             policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_WRITE))
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP, policy =>
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_LOOKUP))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ));
 
