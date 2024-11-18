@@ -65,19 +65,15 @@ public class SystemUserTests
             .Replace("{systemId}", $"{teststate.SystemId}")
             .Replace("{randomIntegrationTitle}", $"{teststate.Name}");
 
-        var manager = new AltinnUser
-        {
-            altinnPartyId = "51808847", pid = "01907195356", userId = "1314848",
-        };
-        var token = await _platformClient.GetPersonalAltinnToken(manager);
+        var (daglUser, altinnToken) = await _platformClient.GetAltinnTokenByRole("DAGL");
 
         //Act
         var respons =
-            await _platformClient.PostAsync($"v1/systemuser/{manager.altinnPartyId}", requestBody,
-                token);
+            await _platformClient.PostAsync($"v1/systemuser/{daglUser.AltinnPartyId}", requestBody,
+                altinnToken);
 
         var resp = await respons.Content.ReadAsStringAsync();
-        
+
         //Assert
         Assert.True(HttpStatusCode.Created == respons.StatusCode, resp + respons.StatusCode);
     }
@@ -117,9 +113,9 @@ public class SystemUserTests
     public async Task DeleteCreatedSystemUser()
     {
         var manager = _platformClient.TestUsers.First();
-        
+
         _outputHelper.WriteLine("asdasd");
-        
+
         //Prepare
         // var systemUser = await CreateSystemUserTestdata(party, manager);
         // var resp = await systemUser.Content.ReadAsStringAsync();
@@ -160,7 +156,7 @@ public class SystemUserTests
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithRedirectUrl("https://altinn.no")
             .WithToken(maskinportenToken);
-        
+
         var requestBodySystemREgister = testState.GenerateRequestBody();
 
         // Register system
@@ -171,7 +167,7 @@ public class SystemUserTests
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json"))
             .Replace("{systemId}", testState.SystemId)
             .Replace("{redirectUrl}", testState.RedirectUrl);
-        
+
         //Create system user request on the same rights that exist in the SystemRegister
         var rightsJson = JsonSerializer.Serialize(testState.Rights, new JsonSerializerOptions
         {

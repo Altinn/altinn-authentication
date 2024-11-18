@@ -13,7 +13,7 @@ public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
     public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
-    public Dictionary<string, EnvironmentUsers>? TestUsers { get; set; }
+    public List<Testuser> TestUsers { get; set; }
 
     /// <summary>
     /// baseUrl for api
@@ -28,15 +28,26 @@ public class PlatformAuthenticationClient
         EnvironmentHelper = LoadEnvironment();
         BaseUrl = GetEnvironment(EnvironmentHelper.Testenvironment);
         _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
-        TestUsers = LoadTestUsers("Resources/Testusers/testusers.json");
-
+        TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
     }
-    
 
-    private Dictionary<string, EnvironmentUsers>? LoadTestUsers(string filePath)
+
+    private static List<Testuser> LoadTestUsers(string testenvironment)
     {
-        var json = File.ReadAllText(filePath);
-        return JsonSerializer.Deserialize<Dictionary<string, EnvironmentUsers>>(json);
+        // Determine the file to load based on the environment
+        string fileName = testenvironment.StartsWith("at")
+            ? "Resources/Testusers/testusers.at.json"
+            : "Resources/Testusers/testusers.tt02.json";
+
+        if (!File.Exists(fileName))
+        {
+            throw new FileNotFoundException($"Test users file not found: {fileName}");
+        }
+
+        // Read and deserialize the JSON file into a list of Testuser objects
+        var json = File.ReadAllText(fileName);
+        return JsonSerializer.Deserialize<List<Testuser>>(json)
+               ?? throw new InvalidOperationException("Failed to deserialize test users.");
     }
 
     private string GetEnvironment(string environmentHelperTestenvironment)
@@ -151,6 +162,43 @@ public class PlatformAuthenticationClient
             $"&partyid={user.altinnPartyId}" +
             $"&authLvl=3&ttl=3000";
 
+        var token = await GetAltinnToken(url);
+        Assert.True(token != null, "Token retrieval failed for Altinn token");
+        return token;
+    }
+    /// <summary>
+    /// Fetches an Altinn test token for a user by role.
+    /// </summary>
+    /// <param name="role">The role of the user (e.g., "DAGL", "SIGNE")</param>
+    /// <returns>The Altinn test token as a string</returns>
+    public async Task<(Testuser user, string token)> GetAltinnTokenByRole(string role)
+    {
+        // Find the user by role
+        var user = TestUsers.FirstOrDefault(u => u.Role.Equals(role, StringComparison.OrdinalIgnoreCase))
+                   ?? throw new Exception($"Unable to find test user by role: {role}");
+
+        // Fetch the token for the found user
+        var token = await GetPersonalAltinnToken(user);
+        return (user, token);
+    }
+
+    /// <summary>
+    /// Used for fetching an Altinn test token for a specific role
+    /// </summary>
+    /// <param name="user">User read from test config (testusers.at.json)</param>
+    /// <returns>The Altinn test token as a string</returns>
+    public async Task<string> GetPersonalAltinnToken(Testuser user)
+    {
+        // Construct the URL for fetching the Altinn test token
+        var url =
+            $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env={EnvironmentHelper.Testenvironment}" +
+            $"&scopes=" +
+            $"&pid={user.Pid}" +
+            $"&userid={user.UserId}" +
+            $"&partyid={user.AltinnPartyId}" +
+            $"&authLvl=3&ttl=3000";
+
+        // Retrieve the token
         var token = await GetAltinnToken(url);
         Assert.True(token != null, "Token retrieval failed for Altinn token");
         return token;

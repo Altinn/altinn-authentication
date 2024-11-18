@@ -37,7 +37,10 @@
       <None Update="Resources\Testdata\SystemUser\CreateRequest.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Resources\Testusers\testusers.json">
+      <None Update="Resources\Testusers\testusers.tt02.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testusers\testusers.at.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
