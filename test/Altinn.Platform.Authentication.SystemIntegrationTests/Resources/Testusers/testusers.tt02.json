@@ -3,7 +3,24 @@
     "altinnPartyId": "51808847",
     "pid": "01907195356",
     "userId": "1314848",
-    "role": "DAGL"
+    "role": "DAGL",
+    "org": ""
+  },
+  {
+    "info": "test user in same org as Vendor Org for System user Requests to approve",
+    "role": "DAGL",
+    "altinnPartyId": "51642319",
+    "pid": "05848998356",
+    "userId": "1416269",
+    "org": "312605031"
   }
 ]
   
+
+
+
+
+
+
+
+

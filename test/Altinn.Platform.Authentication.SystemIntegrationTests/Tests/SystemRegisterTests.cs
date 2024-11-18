@@ -49,7 +49,7 @@ public class SystemRegisterTests
     public async Task CreateNewSystemReturns200Ok()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid()
@@ -74,7 +74,7 @@ public class SystemRegisterTests
     public async Task GetSystemRegisterReturns200Ok()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
 
         // Act
         var response =
@@ -91,7 +91,7 @@ public class SystemRegisterTests
     public async Task ValidateRights()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
@@ -129,7 +129,7 @@ public class SystemRegisterTests
     public async Task DeleteRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenToken = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
@@ -156,7 +156,7 @@ public class SystemRegisterTests
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenToken = await _platformClient.GetToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")

@@ -12,7 +12,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
-    public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
+    public MaskinPortenTokenGenerator MaskinPortenTokenGenerator { get; set; }
     public List<Testuser> TestUsers { get; set; }
 
     /// <summary>
@@ -27,7 +27,7 @@ public class PlatformAuthenticationClient
     {
         EnvironmentHelper = LoadEnvironment();
         BaseUrl = GetEnvironment(EnvironmentHelper.Testenvironment);
-        _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
+        MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
     }
 
@@ -35,7 +35,7 @@ public class PlatformAuthenticationClient
     private static List<Testuser> LoadTestUsers(string testenvironment)
     {
         // Determine the file to load based on the environment
-        string fileName = testenvironment.StartsWith("at")
+        var fileName = testenvironment.StartsWith("at")
             ? "Resources/Testusers/testusers.at.json"
             : "Resources/Testusers/testusers.tt02.json";
 
@@ -147,41 +147,12 @@ public class PlatformAuthenticationClient
             $"Failed to retrieve exchange token: {response.StatusCode} {await response.Content.ReadAsStringAsync()}");
     }
 
-    /// <summary>
-    /// Used for fetching an Altinn test token
-    /// </summary>
-    /// <param name="user"></param>
-    /// <returns></returns>
-    public async Task<string> GetPersonalAltinnToken(AltinnUser user)
+    public Testuser FindTestUserByRole(string role)
     {
-        var url =
-            $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env={EnvironmentHelper.Testenvironment}" +
-            $"&scopes={user.scopes}" +
-            $"&pid={user.pid}" +
-            $"&userid={user.userId}" +
-            $"&partyid={user.altinnPartyId}" +
-            $"&authLvl=3&ttl=3000";
-
-        var token = await GetAltinnToken(url);
-        Assert.True(token != null, "Token retrieval failed for Altinn token");
-        return token;
+        return TestUsers.Last(u => u.Role.Equals(role, StringComparison.OrdinalIgnoreCase))
+               ?? throw new Exception($"Unable to find test user by role: {role}");
     }
-    /// <summary>
-    /// Fetches an Altinn test token for a user by role.
-    /// </summary>
-    /// <param name="role">The role of the user (e.g., "DAGL", "SIGNE")</param>
-    /// <returns>The Altinn test token as a string</returns>
-    public async Task<(Testuser user, string token)> GetAltinnTokenByRole(string role)
-    {
-        // Find the user by role
-        var user = TestUsers.FirstOrDefault(u => u.Role.Equals(role, StringComparison.OrdinalIgnoreCase))
-                   ?? throw new Exception($"Unable to find test user by role: {role}");
-
-        // Fetch the token for the found user
-        var token = await GetPersonalAltinnToken(user);
-        return (user, token);
-    }
-
+    
     /// <summary>
     /// Used for fetching an Altinn test token for a specific role
     /// </summary>
@@ -192,7 +163,7 @@ public class PlatformAuthenticationClient
         // Construct the URL for fetching the Altinn test token
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env={EnvironmentHelper.Testenvironment}" +
-            $"&scopes=" +
+            $"&scopes={user.Scopes}" + 
             $"&pid={user.Pid}" +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
@@ -257,9 +228,13 @@ public class PlatformAuthenticationClient
                ?? throw new Exception($"Unable to read environment from local file path: {localFilePath}.");
     }
 
-    public async Task<string> GetToken()
+    /// <summary>
+    /// IMPORTANT - Gets token for a vendor / organization with this id: "312605031"
+    /// </summary>
+    /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
+    public async Task<string> GetMaskinportenToken()
     {
-        var token = await _maskinPortenTokenGenerator.GetMaskinportenBearerToken();
+        var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
         return token;
     }
