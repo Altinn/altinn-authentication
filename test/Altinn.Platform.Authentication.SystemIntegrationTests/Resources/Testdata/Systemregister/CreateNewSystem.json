@@ -13,16 +13,7 @@
     "nb": "Integrasjonstest. Noe er randomisert her, men mye blir likt.",
     "nn": "integrasjonstest på nynorsk. Noe er randomisert her, men mye blir likt."
   },
-  "Rights": [
-    {
-      "Resource": [
-        {
-          "id": "urn:altinn:resource",
-          "value": "vegardtestressurs"
-        }
-      ]
-    }
-  ],
+{rights}
   "allowedRedirectUrls": [
     "https://altinn.no"
   ],

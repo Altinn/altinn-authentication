@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
@@ -12,7 +13,7 @@ public class Helper
     /// </summary>
     /// <param name="path">Path to file. For instance: "Resources/Testdata/Systemregister/CreateNewSystem.json"</param>
     /// <returns></returns>
-    public static async Task<string> ReadFile(string? path)
+    public static async Task<string> ReadFile(string path)
     {
         var basePath = Directory.GetCurrentDirectory();
         Assert.True(path != null, "Path cannot be null");

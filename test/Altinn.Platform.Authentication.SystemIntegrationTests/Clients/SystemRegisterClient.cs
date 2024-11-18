@@ -1,5 +1,6 @@
 using System.Net;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
@@ -19,16 +20,10 @@ public class SystemRegisterClient
     /// <summary>
     /// Creates a new system in Systemregister. Requires Bearer token from Maskinporten
     /// </summary>
-    public async Task<HttpResponseMessage> PostSystem(SystemRegisterState state)
+    public async Task<HttpResponseMessage> PostSystem(string requestBody, string token)
     {
-        // Prepare
-        var requestBody = await SystemRegisterTests.GetRequestBodyWithReplacements(
-            state, "Resources/Testdata/Systemregister/CreateNewSystem.json");
-
-        Assert.True(state.Token != null, "Token should not be empty");
-
         var response = await _platformClient.PostAsync(
-            "v1/systemregister/vendor", requestBody, state.Token);
+            "v1/systemregister/vendor", requestBody, token);
 
         Assert.True(HttpStatusCode.OK == response.StatusCode,
             $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");

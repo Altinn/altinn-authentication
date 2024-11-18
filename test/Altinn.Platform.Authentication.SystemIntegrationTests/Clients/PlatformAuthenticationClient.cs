@@ -13,6 +13,7 @@ public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
     public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
+    public Dictionary<string, EnvironmentUsers>? TestUsers { get; set; }
 
     /// <summary>
     /// baseUrl for api
@@ -27,6 +28,15 @@ public class PlatformAuthenticationClient
         EnvironmentHelper = LoadEnvironment();
         BaseUrl = GetEnvironment(EnvironmentHelper.Testenvironment);
         _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
+        TestUsers = LoadTestUsers("Resources/Testusers/testusers.json");
+
+    }
+    
+
+    private Dictionary<string, EnvironmentUsers>? LoadTestUsers(string filePath)
+    {
+        var json = File.ReadAllText(filePath);
+        return JsonSerializer.Deserialize<Dictionary<string, EnvironmentUsers>>(json);
     }
 
     private string GetEnvironment(string environmentHelperTestenvironment)
@@ -114,7 +124,7 @@ public class PlatformAuthenticationClient
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await client.GetAsync(BaseUrl + "/authentication/api/v1/exchange/maskinporten?test=true");
+        var response = await client.GetAsync(BaseUrl + "v1/exchange/maskinporten?test=true");
 
         if (response.IsSuccessStatusCode)
         {
@@ -138,7 +148,7 @@ public class PlatformAuthenticationClient
             $"&scopes={user.scopes}" +
             $"&pid={user.pid}" +
             $"&userid={user.userId}" +
-            $"&partyid={user.partyId}" +
+            $"&partyid={user.altinnPartyId}" +
             $"&authLvl=3&ttl=3000";
 
         var token = await GetAltinnToken(url);
