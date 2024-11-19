@@ -616,6 +616,8 @@ public class ChangeRequestSystemUserService(
             return res.Problem;
         }
 
+        logger.LogError($"SystemUser-ChangeRequest XacmlResponse: {res.Value}");
+
         bool allRequiredRightsAreDelegated = MapPDPResponse(res.Value);
 
         if (allRequiredRightsAreDelegated)
