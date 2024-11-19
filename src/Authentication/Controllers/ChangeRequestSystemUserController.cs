@@ -127,6 +127,14 @@ public class ChangeRequestSystemUserController : ControllerBase
             return Ok(emptyResponse);
         }
 
+        // Calls the PDP endpoint to validate the set of rights, and see if any change is actually needed
+        Result<ChangeRequestResponse> verifyResponse = await _changeRequestService.VerifySetOfRights(createRequest, vendorOrgNo);
+        if (verifyResponse.IsSuccess)
+        {
+            // No change needed, return the response
+            return Ok(verifyResponse.Value);
+        }
+
         // Check to see if the Request already exists
         Result<ChangeRequestResponse> response = await _changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
