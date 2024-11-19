@@ -258,13 +258,13 @@ public class SystemUserTests
         var responsChange = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor/verify", body, maskinportenToken);
         Assert.True(HttpStatusCode.OK == responsChange.StatusCode, $"Status code was not Ok, but: {responsChange.StatusCode} -  {await responsChange.Content.ReadAsStringAsync()}");
 
-        ////// Use the Verify endpoint to test if the change request returns a set of Required Rights, because the change is needed
-        //var responsChangeNeeded = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor/verify", bodyChange, maskinportenToken);
+        // Use the Verify endpoint to test if the change request returns a set of Required Rights, because the change is needed
+        var responsChangeNeeded = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor/verify", bodyChange, maskinportenToken);
 
-        //Assert.True(HttpStatusCode.OK == responsChangeNeeded.StatusCode, $"Status code was not OK, but: {responsChangeNeeded.StatusCode} -  {await responsChangeNeeded.Content.ReadAsStringAsync()}");
-        //string changeRequestResponse = JObject.Parse(await responsChangeNeeded.Content.ReadAsStringAsync()).ToString();
-        //string requiredRights = JObject.Parse(changeRequestResponse)["requiredRights"].ToString();
-        
+        Assert.True(HttpStatusCode.OK == responsChangeNeeded.StatusCode, $"Status code was not OK, but: {responsChangeNeeded.StatusCode} -  {await responsChangeNeeded.Content.ReadAsStringAsync()}");
+        string changeRequestResponse = JObject.Parse(await responsChangeNeeded.Content.ReadAsStringAsync()).ToString();
+        string requiredRights = JObject.Parse(changeRequestResponse)["requiredRights"].ToString();
+
         // Use the Create endpoint to create the change request, returns a ChangeRequestResponse
         var responsChangeCreate = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor", bodyChange, maskinportenToken);
 
