@@ -23,6 +23,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public string AltinnPartyCookieName { get; set; }
 
         /// <summary>
+        /// Gets or sets the AltinnLogoutInfo cookie name
+        /// </summary>
+        public string AltinnLogoutInfoCookieName { get; set; }
+
+        /// <summary>
         /// Gets or sets the bridge authentication api endpoint
         /// </summary>
         public string BridgeAuthnApiEndpoint { get; set; }

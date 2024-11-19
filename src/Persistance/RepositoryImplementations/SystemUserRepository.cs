@@ -300,17 +300,20 @@ public class SystemUserRepository : ISystemUserRepository
 
     private static ValueTask<SystemUser> ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
     {
+        string? external_ref = reader.GetFieldValue<string>("external_ref");
+        string orgno = reader.GetFieldValue<string>("reportee_org_no");
+
         return new ValueTask<SystemUser>(new SystemUser
         {
             Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
             SystemId = reader.GetFieldValue<string>("system_id"),
-            ReporteeOrgNo = reader.GetFieldValue<string>("reportee_org_no"),
+            ReporteeOrgNo = orgno,
             PartyId = reader.GetFieldValue<string>("reportee_party_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
-            ExternalRef = reader.GetFieldValue<string>("external_ref")
+            ExternalRef = external_ref ?? orgno
         });
     }
 
