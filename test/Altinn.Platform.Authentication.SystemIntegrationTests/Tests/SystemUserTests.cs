@@ -164,16 +164,14 @@ public class SystemUserTests
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
         var respons = await createSystemUserRequest(maskinportenToken);
 
-        _outputHelper.WriteLine(respons);
-
         using var jsonDoc = JsonDocument.Parse(respons);
         var id = jsonDoc.RootElement.GetProperty("id").GetString();
 
+        var vendor = _platformClient.EnvironmentHelper.Vendor;
+
         //both of these work? Both parties that belong to the org / vendor
-        var testperson = _platformClient.TestUsers.Find(testuser => testuser.Org.Equals(
-            _platformClient.EnvironmentHelper.Vendor
-        ));
-        Assert.NotNull(testperson);
+        var testperson = _platformClient.TestUsers.Find(testUser => testUser.Org.Equals(vendor))
+                         ?? throw new Exception($"Test user not found for organization: {vendor}");
 
         var endpoint = _platformClient.BaseUrl + $"/v1/systemuser/request/{testperson.AltinnPartyId}/{id}/approve";
 
