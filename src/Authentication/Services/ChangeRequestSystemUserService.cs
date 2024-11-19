@@ -24,6 +24,7 @@ using Altinn.Platform.Register.Models;
 using Altinn.Urn;
 using Altinn.Urn.Json;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -31,6 +32,7 @@ namespace Altinn.Platform.Authentication.Services;
 
 /// <inheritdoc/>
 public class ChangeRequestSystemUserService(
+    ILogger<ChangeRequestSystemUserService> logger,
     ISystemRegisterService systemRegisterService,
     IPartiesClient partiesClient,
     ISystemRegisterRepository systemRegisterRepository,
