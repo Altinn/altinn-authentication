@@ -799,7 +799,7 @@ public class ChangeRequestSystemUserService(
         };
 
         var req = request.ToString();
-        logger.LogInformation($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
+        logger.LogError($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
 
         return await PDPClient.GetDecisionForRequest(request);
     }
