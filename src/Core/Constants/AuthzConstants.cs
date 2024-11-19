@@ -75,5 +75,10 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Scope set by maskinporten for system user lookup
         /// </summary>
         public const string SCOPE_SYSTEMUSER_LOOKUP = "altinn:maskinporten/systemuser.read";
+
+        /// <summary>
+        /// General scope given to everyone loging in to altinn platform 
+        /// </summary>
+        public const string SCOPE_PORTAL = "altinn:portal/enduser";
     }
 }
