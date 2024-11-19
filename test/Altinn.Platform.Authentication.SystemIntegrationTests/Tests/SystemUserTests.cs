@@ -200,7 +200,7 @@ public class SystemUserTests
     /// API for creating a change request for System User
     /// </summary>
     [Fact]
-    public async Task PostChangeRequestSystemUser()
+    public async Task PostChangeRequestSystemUserAndApproveReturnSuccess()
     {
         // Prerequisite-step
         var maskinportenToken = await _platformClient.GetToken();
@@ -258,13 +258,23 @@ public class SystemUserTests
         var responsChange = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor/verify", body, maskinportenToken);
         Assert.True(HttpStatusCode.OK == responsChange.StatusCode, $"Status code was not Ok, but: {responsChange.StatusCode} -  {await responsChange.Content.ReadAsStringAsync()}");
 
-        // Use the Verify endpoint to test if the change request returns a set of Required Rights, because the change is needed
+        //// Use the Verify endpoint to test if the change request returns a set of Required Rights, because the change is needed
         var responsChangeNeeded = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor/verify", bodyChange, maskinportenToken);
+
         Assert.True(HttpStatusCode.OK == responsChangeNeeded.StatusCode, $"Status code was not OK, but: {responsChangeNeeded.StatusCode} -  {await responsChangeNeeded.Content.ReadAsStringAsync()}");
         string changeRequestResponse = JObject.Parse(await responsChangeNeeded.Content.ReadAsStringAsync()).ToString();
-        List<string> requiredRights = JObject.Parse(changeRequestResponse)["requiredRights"].ToObject<List<string>>();
-        Assert.NotEmpty(requiredRights);
-        string debug;
+        string requiredRights = JObject.Parse(changeRequestResponse)["requiredRights"].ToString();
+        
+        // Use the Create endpoint to create the change request, returns a ChangeRequestResponse
+        var responsChangeCreate = await _platformClient.PostAsync("authentication/api/v1/systemuser/changerequest/vendor", bodyChange, maskinportenToken);
+
+        Assert.True(HttpStatusCode.Created == responsChangeCreate.StatusCode, $"Status code was not OK, but: {responsChangeNeeded.StatusCode} -  {await responsChangeNeeded.Content.ReadAsStringAsync()}");
+        string changeRequestResponseCreated = JObject.Parse(await responsChangeCreate.Content.ReadAsStringAsync()).ToString();
+        string requestIdChange = JObject.Parse(changeRequestResponseCreated)["id"].ToString();
+        Assert.NotEmpty(requestIdChange);
+
+        var responseApproveChange = await _platformClient.PostAsync($"authentication/api/v1/systemuser/changerequest/{party}/{requestIdChange}/approve", null!, token);
+        Assert.True(HttpStatusCode.OK == responseApproveChange.StatusCode, $"Status code was not OK, but: {responseApproveChange.StatusCode} -  {await responseApproveChange.Content.ReadAsStringAsync()}");
     }
 
 
