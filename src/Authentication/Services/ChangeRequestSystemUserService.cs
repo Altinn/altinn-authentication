@@ -616,6 +616,8 @@ public class ChangeRequestSystemUserService(
             return res.Problem;
         }
 
+        logger.LogError($"SystemUser-ChangeRequest XacmlResponse: {res.Value}");
+
         bool allRequiredRightsAreDelegated = MapPDPResponse(res.Value);
 
         if (allRequiredRightsAreDelegated)
@@ -799,7 +801,7 @@ public class ChangeRequestSystemUserService(
         };
 
         var req = request.ToString();
-        logger.LogInformation($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
+        logger.LogError($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
 
         return await PDPClient.GetDecisionForRequest(request);
     }
