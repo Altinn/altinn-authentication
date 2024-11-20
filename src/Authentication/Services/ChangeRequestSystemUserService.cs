@@ -640,7 +640,7 @@ public class ChangeRequestSystemUserService(
             Id = Guid.NewGuid(),
             ExternalRef = JsonSerializer.Serialize(res.Value),
 
-            // ExternalRef = verifyRequest.ExternalRef,
+            //ExternalRef = verifyRequest.ExternalRef,
             SystemId = verifyRequest.SystemId,
             SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
