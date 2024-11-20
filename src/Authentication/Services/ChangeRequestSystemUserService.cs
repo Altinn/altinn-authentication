@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -59,7 +60,16 @@ public class ChangeRequestSystemUserService(
             return validationSet.Problem;
         }
 
-        var verified = await VerifySetOfRights(createRequest, vendorOrgNo);
+        Result<ChangeRequestResponse> verified = await VerifySetOfRights(createRequest, vendorOrgNo);
+        if (verified.IsProblem) 
+        {
+            return verified.Problem;
+        }
+
+        if (verified.Value.Status == ChangeRequestStatus.NoChangeNeeded.ToString())
+        {
+            return verified.Value;
+        }
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
@@ -637,7 +647,9 @@ public class ChangeRequestSystemUserService(
         return new ChangeRequestResponse()
         {
             Id = Guid.NewGuid(),
-            ExternalRef = verifyRequest.ExternalRef,
+
+            // ExternalRef = verifyRequest.ExternalRef,
+            ExternalRef = JsonSerializer.Serialize(res.Value),
             SystemId = verifyRequest.SystemId,
             SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
