@@ -1,5 +1,5 @@
 name: >
-  Vegard test ${{ github.event.inputs.testenvironment }}
+  Run system integration tests
 on:
   workflow_dispatch:
     inputs:
@@ -18,7 +18,7 @@ env:
 jobs:
   build-and-test:
     name: >
-      VEGARD Tests Authentication: ${{ github.event.inputs.testenvironment }})
+      Environment: ${{ github.event.inputs.testenvironment }})
     runs-on: ubuntu-latest
 
     steps:
