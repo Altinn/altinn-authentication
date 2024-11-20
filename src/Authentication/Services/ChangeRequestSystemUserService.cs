@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -616,6 +617,11 @@ public class ChangeRequestSystemUserService(
             return res.Problem;
         }
 
+        var req = JsonSerializer.Serialize(res.Value);
+
+        logger.LogError($"SystemUser-ChangeRequest: {req} OrgNo: {valSet.Value.SystemUser.ReporteeOrgNo}");
+        System.Console.WriteLine($"SystemUser-ChangeRequest: {req} OrgNo: {valSet.Value.SystemUser.ReporteeOrgNo}");
+
         bool allRequiredRightsAreDelegated = MapPDPResponse(res.Value);
 
         if (allRequiredRightsAreDelegated)
@@ -637,7 +643,9 @@ public class ChangeRequestSystemUserService(
         return new ChangeRequestResponse()
         {
             Id = Guid.NewGuid(),
-            ExternalRef = verifyRequest.ExternalRef,
+            ExternalRef = JsonSerializer.Serialize(res.Value),
+
+            // ExternalRef = verifyRequest.ExternalRef,
             SystemId = verifyRequest.SystemId,
             SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
@@ -798,8 +806,9 @@ public class ChangeRequestSystemUserService(
             }
         };
 
-        var req = request.ToString();
-        logger.LogInformation($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
+        var req = JsonSerializer.Serialize(request);
+        logger.LogError($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
+        System.Console.WriteLine($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
 
         return await PDPClient.GetDecisionForRequest(request);
     }
