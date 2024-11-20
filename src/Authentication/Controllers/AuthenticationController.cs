@@ -1062,20 +1062,20 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
             }
 
-            if (!claims.Any(c => c.Type == AuthzConstants.CLAIM_MASKINPORTEN_SCOPE))
+            if (!claims.Any(c => c.Type == AuthzConstants.CLAIM_SCOPE))
             {
-                claims.Add(new Claim(AuthzConstants.CLAIM_MASKINPORTEN_SCOPE, AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AuthzConstants.CLAIM_SCOPE, AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
             }
             else
             {
                 // Find the existing claim and modify its value
-                Claim existingClaim = claims.FirstOrDefault(c => c.Type == AuthzConstants.CLAIM_MASKINPORTEN_SCOPE);
+                Claim existingClaim = claims.FirstOrDefault(c => c.Type == AuthzConstants.CLAIM_SCOPE);
                 if (existingClaim != null)
                 {
                     claims.Remove(existingClaim);
 
                     // Adding portal scope to list of scopes
-                    claims.Add(new Claim(AuthzConstants.CLAIM_MASKINPORTEN_SCOPE, existingClaim.Value + " " + AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
+                    claims.Add(new Claim(AuthzConstants.CLAIM_SCOPE, existingClaim.Value + " " + AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
                 }
             }
 

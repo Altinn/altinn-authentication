@@ -29,7 +29,7 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// <summary>
         /// Claim for scopes from maskinporten token
         /// </summary>
-        public const string CLAIM_MASKINPORTEN_SCOPE = "scope";
+        public const string CLAIM_SCOPE = "scope";
 
         /// <summary>
         /// Claim for consumer prefixes from maskinporten token
