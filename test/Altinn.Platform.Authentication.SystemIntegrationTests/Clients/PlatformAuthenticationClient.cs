@@ -154,7 +154,7 @@ public class PlatformAuthenticationClient
         return TestUsers.Last(u => u.Role.Equals(role, StringComparison.OrdinalIgnoreCase))
                ?? throw new Exception($"Unable to find test user by role: {role}");
     }
-    
+
     /// <summary>
     /// Used for fetching an Altinn test token for a specific role
     /// </summary>
@@ -165,7 +165,7 @@ public class PlatformAuthenticationClient
         // Construct the URL for fetching the Altinn test token
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env={EnvironmentHelper.Testenvironment}" +
-            $"&scopes={user.Scopes}" + 
+            $"&scopes={user.Scopes}" +
             $"&pid={user.Pid}" +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
@@ -209,13 +209,26 @@ public class PlatformAuthenticationClient
     private static EnvironmentHelper LoadEnvironment()
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
+        const string environmentVariable = "AT22";
+    
+        // Fetch environment JSON and override value
         var envJson = Environment.GetEnvironmentVariable(githubVariable);
+        var testEnvironmentOverride = Environment.GetEnvironmentVariable(environmentVariable);
 
-        //Runs on Github
+        // Runs on GitHub
         if (!string.IsNullOrEmpty(envJson))
         {
-            return JsonSerializer.Deserialize<EnvironmentHelper>(envJson)
-                   ?? throw new Exception($"Unable to deserialize environment from {githubVariable}.");
+            // Deserialize the environment JSON
+            var environmentHelper = JsonSerializer.Deserialize<EnvironmentHelper>(envJson)
+                                    ?? throw new Exception($"Unable to deserialize environment from {githubVariable}.");
+
+            // Override Testenvironment if TEST_ENVIRONMENT is provided
+            if (!string.IsNullOrEmpty(testEnvironmentOverride))
+            {
+                environmentHelper.Testenvironment = testEnvironmentOverride;
+            }
+
+            return environmentHelper;
         }
 
         //Runs locally
