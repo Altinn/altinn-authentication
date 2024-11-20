@@ -1,5 +1,4 @@
-name: >
-  Run system integration tests
+name: System integration tests
 on:
   workflow_dispatch:
     inputs:

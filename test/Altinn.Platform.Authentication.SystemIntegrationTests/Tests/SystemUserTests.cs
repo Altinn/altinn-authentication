@@ -47,6 +47,9 @@ public class SystemUserTests
 
         Assert.True(HttpStatusCode.OK == respons.StatusCode,
             $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
+        
+        //Fail on purpose
+        Assert.True(2 == 1, _platformClient.EnvironmentHelper.Testenvironment);
     }
 
 
