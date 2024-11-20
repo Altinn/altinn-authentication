@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -637,7 +638,9 @@ public class ChangeRequestSystemUserService(
         return new ChangeRequestResponse()
         {
             Id = Guid.NewGuid(),
-            ExternalRef = verifyRequest.ExternalRef,
+            ExternalRef = JsonSerializer.Serialize(res.Value),
+
+            // ExternalRef = verifyRequest.ExternalRef,
             SystemId = verifyRequest.SystemId,
             SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
