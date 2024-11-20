@@ -209,7 +209,7 @@ public class PlatformAuthenticationClient
     private static EnvironmentHelper LoadEnvironment()
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
-        const string environmentVariable = "AT22";
+        const string environmentVariable = "TEST_ENVIRONMENT";
     
         // Fetch environment JSON and override value
         var envJson = Environment.GetEnvironmentVariable(githubVariable);
