@@ -60,7 +60,17 @@ public class ChangeRequestSystemUserService(
             return validationSet.Problem;
         }
 
-        var verified = await VerifySetOfRights(createRequest, vendorOrgNo);
+        Result<ChangeRequestResponse> verified = await VerifySetOfRights(createRequest, vendorOrgNo);
+        if (verified.IsProblem)
+        {
+            return verified.Problem;
+        }
+
+        // Similar as to running the Verify endpoint, but we need to check here too, since the vendor might not have verified the request first.
+        if (verified.Value.Status == ChangeRequestStatus.NoChangeNeeded.ToString())
+        {
+            return verified.Value;
+        }
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
@@ -99,6 +109,7 @@ public class ChangeRequestSystemUserService(
     /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
+    /// <param name="systemInfo">the System</param>
     /// <returns>Result or Problem</returns>
     private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
     {
@@ -395,7 +406,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
+        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
@@ -434,9 +445,10 @@ public class ChangeRequestSystemUserService(
         return await changeRequestRepository.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
     }
 
-    private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, CancellationToken cancellationToken = default)
+    private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, ChangeRequestResponse changeRequest, CancellationToken cancellationToken = default)
     {
-        List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+        var rights = await VerifySubsetOfRights(changeRequest.RequiredRights, systemId, cancellationToken);
+
         List<RightResponses> rightResponsesList = [];
 
         foreach (Right right in rights)
@@ -462,6 +474,28 @@ public class ChangeRequestSystemUserService(
         }
 
         return new DelegationCheckResult(true, rightResponsesList);
+    }
+
+    /// <summary>
+    /// Removes requested Rights that are not in the System's list of prepared Rights
+    /// </summary>
+    /// <param name="rights">the Requested Rights</param>
+    /// <param name="systemId">the system id</param>
+    /// <param name="cancellationToken">cancellation </param>
+    /// <returns></returns>
+    private async Task<List<Right>> VerifySubsetOfRights(List<Right> rights, string systemId, CancellationToken cancellationToken)
+    {
+        List<Right> rightsInSystem = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+
+        foreach (var right in rights)
+        {
+            if (!rightsInSystem.Contains(right))
+            {
+                rights.Remove(right);
+            }
+        }
+
+        return rights;
     }
 
     private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
@@ -617,11 +651,6 @@ public class ChangeRequestSystemUserService(
             return res.Problem;
         }
 
-        var req = JsonSerializer.Serialize(res.Value);
-
-        logger.LogError($"SystemUser-ChangeRequest: {req} OrgNo: {valSet.Value.SystemUser.ReporteeOrgNo}");
-        System.Console.WriteLine($"SystemUser-ChangeRequest: {req} OrgNo: {valSet.Value.SystemUser.ReporteeOrgNo}");
-
         bool allRequiredRightsAreDelegated = MapPDPResponse(res.Value);
 
         if (allRequiredRightsAreDelegated)
@@ -644,8 +673,6 @@ public class ChangeRequestSystemUserService(
         {
             Id = Guid.NewGuid(),
             ExternalRef = JsonSerializer.Serialize(res.Value),
-
-            // ExternalRef = verifyRequest.ExternalRef,
             SystemId = verifyRequest.SystemId,
             SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
@@ -805,10 +832,6 @@ public class ChangeRequestSystemUserService(
                 }
             }
         };
-
-        var req = JsonSerializer.Serialize(request);
-        logger.LogError($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
-        System.Console.WriteLine($"SystemUser-ChangeRequest: {req} OrgNo: {systemUser.ReporteeOrgNo}");
 
         return await PDPClient.GetDecisionForRequest(request);
     }
