@@ -42,10 +42,14 @@ public class PlatformAuthenticationClient
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        HttpContent content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        if (body is not null && body != string.Empty)
+        {
+            HttpContent content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            return await client.PostAsync($"{BaseUrl}/{endpoint}", content);
+        }
 
-        var response = await client.PostAsync($"{BaseUrl}/{endpoint}", content);
-        return response;
+        return await client.PostAsync($"{BaseUrl}/{endpoint}", null);
+        
     }
 
     /// <summary>

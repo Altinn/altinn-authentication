@@ -21,6 +21,14 @@
           "value": "kravogbetaling"
         }
       ]
+    },
+    {
+      "Resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "ske-innrapportering-boligsameie"
+        }
+      ]
     }
   ],
   "allowedRedirectUrls": [

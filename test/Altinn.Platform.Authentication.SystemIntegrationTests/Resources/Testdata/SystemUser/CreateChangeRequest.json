@@ -1,0 +1,25 @@
+{
+  "external_ref": "312605031",
+  "systemId": "{systemId}",
+  "partyOrgNo": "312605031",
+  "requiredRights": [
+    {
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "kravogbetaling"
+        }
+      ]
+    },
+    {
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "ske-innrapportering-boligsameie"
+        }
+      ]
+    }
+  ],
+  "unwantedRights": [],
+  "redirectUrl": "{redirectUrl}"
+}
