@@ -49,7 +49,7 @@ public class SystemUserTests
             $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
         
         //Fail on purpose
-        Assert.True(2 == 1, _platformClient.EnvironmentHelper.Testenvironment);
+        Assert.True(2 == 1, _platformClient.EnvironmentHelper.Testenvironment + " baseurl " + _platformClient.BaseUrl);
     }
 
 
