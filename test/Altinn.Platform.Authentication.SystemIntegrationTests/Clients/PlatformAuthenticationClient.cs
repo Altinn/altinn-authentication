@@ -80,7 +80,9 @@ public class PlatformAuthenticationClient
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        HttpContent content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        HttpContent? content = string.IsNullOrEmpty(body)
+            ? null
+            : new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
         var response = await client.PostAsync($"{BaseUrl}/{endpoint}", content);
         return response;

@@ -1,10 +1,8 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
-using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,28 +30,9 @@ public class SystemUserTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    private async Task<SystemRegisterHelper> CreateSystemRegisterUser()
-    {
-        // Prerequisite-step
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
-
-        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithClientId(Guid.NewGuid()
-                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
-            .WithVendor("312605031")
-            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithToken(maskinportenToken);
-
-        var requestBody = teststate.GenerateRequestBody();
-        await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
-
-        return teststate;
-    }
-
     /// <summary>
     /// Test Get endpoint for System User
     /// Github: #765
-    /// Reported bug: https://github.com/Altinn/altinn-authentication/issues/848
     /// </summary>
     [Fact]
     public async Task GetCreatedSystemUser()
@@ -66,14 +45,13 @@ public class SystemUserTests
 
         var respons = await _platformClient.GetAsync(endpoint, altinnToken);
 
-        //TODO - fix. Breaks in at22 due to 403. Verify endpoint and test user
-        // Assert.True(HttpStatusCode.OK == respons.StatusCode,
-        //     $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
+        Assert.True(HttpStatusCode.OK == respons.StatusCode,
+            $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
     }
 
 
     /// <summary>
-    /// https://github.com/Altinn/altinn-authentication/issues/574?issue=Altinn%7Caltinn-authentication%7C586
+    /// https://github.com/Altinn/altinn-authentication/issues/586
     /// API for creating request for System User
     /// </summary>
     [Fact]
@@ -127,7 +105,7 @@ public class SystemUserTests
     public async Task GetRequestSystemUserStatus()
     {
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var respons = await createSystemUserRequest(maskinportenToken);
+        var respons = await CreateSystemUserRequest(maskinportenToken);
 
         using var jsonDoc = JsonDocument.Parse(respons);
         var id = jsonDoc.RootElement.GetProperty("id").GetString();
@@ -146,7 +124,7 @@ public class SystemUserTests
     public async Task GetSystemusersBySystem()
     {
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var respons = await createSystemUserRequest(maskinportenToken);
+        var respons = await CreateSystemUserRequest(maskinportenToken);
 
         using var jsonDoc = JsonDocument.Parse(respons);
         var systemId = jsonDoc.RootElement.GetProperty("systemId").GetString();
@@ -162,29 +140,22 @@ public class SystemUserTests
     public async Task ApproveRequestSystemUser()
     {
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var respons = await createSystemUserRequest(maskinportenToken);
 
-        using var jsonDoc = JsonDocument.Parse(respons);
+        // Create system and system user request
+        var responseRequestSystemUser = await CreateSystemUserRequest(maskinportenToken);
+
+        using var jsonDoc = JsonDocument.Parse(responseRequestSystemUser);
         var id = jsonDoc.RootElement.GetProperty("id").GetString();
 
         var vendor = _platformClient.EnvironmentHelper.Vendor;
 
-        //both of these work? Both parties that belong to the org / vendor
         var testperson = _platformClient.TestUsers.Find(testUser => testUser.Org.Equals(vendor))
                          ?? throw new Exception($"Test user not found for organization: {vendor}");
 
-        var endpoint = _platformClient.BaseUrl + $"/v1/systemuser/request/{testperson.AltinnPartyId}/{id}/approve";
-
-        var dagl = _platformClient.FindTestUserByRole("DAGL");
-        var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
-
-        // Set up the HttpClient
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", altinnToken);
-
-        // Create the POST request without a body
-        var response = await httpClient.PostAsync(endpoint, null);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // Approve
+        var approveResp =
+            await ApproveRequest($"v1/systemuser/request/{testperson.AltinnPartyId}/{id}/approve", testperson);
+        Assert.True(HttpStatusCode.OK == approveResp.StatusCode);
 
         //Get status
         var url = $"v1/systemuser/request/vendor/{id}";
@@ -197,7 +168,7 @@ public class SystemUserTests
     }
 
 
-    public async Task<string> createSystemUserRequest(string maskinportenToken)
+    public async Task<string> CreateSystemUserRequest(string maskinportenToken)
     {
         var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid().ToString())
@@ -239,21 +210,13 @@ public class SystemUserTests
         return content;
     }
 
-    private async Task<HttpResponseMessage> CreateSystemUserTestdata(Testuser user)
+    private async Task<HttpResponseMessage> ApproveRequest(string endpoint, Testuser testperson)
     {
-        var teststate = await CreateSystemRegisterUser();
+        // Get the Altinn token
+        var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
 
-        var requestBody = await Helper.ReadFile("Resources/Testdata/SystemUser/RequestSystemUser.json");
-
-        requestBody = requestBody
-            .Replace("{systemId}", $"{teststate.SystemId}")
-            .Replace("{randomIntegrationTitle}", $"{teststate.Name}");
-
-        var endpoint = "v1/systemuser/" + user.AltinnPartyId;
-
-        var token = await _platformClient.GetPersonalAltinnToken(user);
-
-        var respons = await _platformClient.PostAsync(endpoint, requestBody, token);
-        return respons;
+        // Use the PostAsync method for the approval request
+        var response = await _platformClient.PostAsync(endpoint, string.Empty, altinnToken);
+        return response;
     }
 }

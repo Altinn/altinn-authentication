@@ -25,9 +25,6 @@
       <None Update="Resources\Testdata\Systemregister\CreateNewSystem.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Resources\Testdata\Systemregister\TilgangslisteTest.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="Resources\Testdata\SystemUser\RequestSystemUser.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>

@@ -17,7 +17,8 @@
   "allowedRedirectUrls": [
     "https://altinn.no"
   ],
-  "ClientId": [
+"isVisible": false,
+"ClientId": [
     "{clientId}"
   ]
 }
