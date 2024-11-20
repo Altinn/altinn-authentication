@@ -31,14 +31,14 @@ public class SystemUserTests
     }
 
     /// <summary>
+    /// Github: #https://github.com/Altinn/altinn-authentication/issues/765
     /// Test Get endpoint for System User
-    /// Github: #765
     /// </summary>
     [Fact]
     public async Task GetCreatedSystemUser()
     {
         var dagl = _platformClient.FindTestUserByRole("DAGL");
-        dagl.Scopes = "users.read";
+        //dagl.Scopes = "users.read";
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
         var endpoint = "v1/systemuser/" + dagl.AltinnPartyId;
@@ -47,9 +47,6 @@ public class SystemUserTests
 
         Assert.True(HttpStatusCode.OK == respons.StatusCode,
             $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
-        
-        //Fail on purpose
-        Assert.True(2 == 1, _platformClient.EnvironmentHelper.Testenvironment + " baseurl " + _platformClient.BaseUrl);
     }
 
 
@@ -123,22 +120,9 @@ public class SystemUserTests
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
-    [Fact]
-    public async Task GetSystemusersBySystem()
-    {
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var respons = await CreateSystemUserRequest(maskinportenToken);
-
-        using var jsonDoc = JsonDocument.Parse(respons);
-        var systemId = jsonDoc.RootElement.GetProperty("systemId").GetString();
-        Assert.True(systemId != null, $"Unable to find system user id {systemId}");
-
-        var url = $"v1/systemuser/vendor/bysystem/{systemId}";
-
-        var resp = await _platformClient.GetAsync(url, maskinportenToken);
-        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-    }
-
+    /// <summary>
+    /// "End to end" from creating request for System user to approving it and using /GET system user to find created user
+    /// </summary>
     [Fact]
     public async Task ApproveRequestSystemUser()
     {
@@ -147,8 +131,8 @@ public class SystemUserTests
         // Create system and system user request
         var responseRequestSystemUser = await CreateSystemUserRequest(maskinportenToken);
 
-        using var jsonDoc = JsonDocument.Parse(responseRequestSystemUser);
-        var id = jsonDoc.RootElement.GetProperty("id").GetString();
+        using var jsonDocSystemRequestResponse = JsonDocument.Parse(responseRequestSystemUser);
+        var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
 
         var vendor = _platformClient.EnvironmentHelper.Vendor;
 
@@ -168,6 +152,14 @@ public class SystemUserTests
         var status = jsonDocRequestStatus.RootElement.GetProperty("status").GetString();
         Assert.True(status != null, $"Unable to find status in response {await resp.Content.ReadAsStringAsync()}");
         Assert.True(status.Equals("Accepted"), "Status was not approved but: " + status);
+
+        var systemId = jsonDocSystemRequestResponse.RootElement.GetProperty("systemId").GetString();
+        Assert.True(systemId != null, $"Unable to find system user id {systemId}");
+
+        //Verify system is found
+        var urlGetBySystem = $"v1/systemuser/vendor/bysystem/{systemId}";
+        var responseGetBySystem = await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
+        Assert.Contains(systemId, responseGetBySystem.Content.ReadAsStringAsync().Result);
     }
 
 

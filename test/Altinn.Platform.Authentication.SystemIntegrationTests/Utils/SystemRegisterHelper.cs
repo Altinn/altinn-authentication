@@ -12,8 +12,6 @@ public class SystemRegisterHelper
     public string? ClientId { get; set; }
     public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
     public string RedirectUrl { get; set; }
-    public string ResourceValue { get; private set; }
-    public string ResourceId { get; private set; }
 
     private string _templateContent;
 

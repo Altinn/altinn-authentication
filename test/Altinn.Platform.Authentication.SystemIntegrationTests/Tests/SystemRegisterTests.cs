@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
@@ -113,13 +114,7 @@ public class SystemRegisterTests
 
         var rightsFromApiResponse = await response.Content.ReadFromJsonAsync<List<Right>>();
         Assert.NotNull(rightsFromApiResponse);
-        //Assert.True(rights.Count == 3);
-
-        // Assert
-        // Assert.True(teststate.Rights.Zip(rightsFromApiResponse).All(pair =>
-        //         pair.First.Resource!.Zip(pair.Second.Resource!).All(res =>
-        //             res.First.Value == res.Second.Value && res.First.Id == res.Second.Id)),
-            // "All rights and resources should match.");
+        Assert.Equal(3, rightsFromApiResponse.Count);
     }
 
     /// <summary>
