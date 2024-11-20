@@ -1,0 +1,44 @@
+meta {
+  name: Create SmartCloud system request
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 
+}
+
+body:json {
+  {
+      "systemId": "991825827_smartcloud",
+      "partyOrgNo": "{{partyOrgNo}}",
+      "redirectUrl": "https://smartcloudaltinn.azurewebsites.net/receipt",
+      "rights": [
+          {
+              "action": null,
+              "resource": [
+                  {
+                      "id": "urn:altinn:resource",
+                      "value": "kravogbetaling"
+                  }
+              ]
+          }
+      ]
+  }
+}
+
+vars:pre-request {
+  partyOrgNo: 313641341
+}
+
+docs {
+  Required scope: altinn:authentication/systemuser.request.write
+  
+  Token generator request params: scopes=altinn:authentication/systemuser.request.write&org=digdir&orgNo=991825827
+}
