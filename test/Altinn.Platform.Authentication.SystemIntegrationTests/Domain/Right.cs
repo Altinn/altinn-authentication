@@ -1,12 +1,15 @@
+using System.Text.Json.Serialization;
+
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 
 public class Right
 {
-    public List<Resource>? Resource { get; set; }
+    [JsonPropertyName("resource")] public List<Resource> Resource { get; set; } = new();
 }
 
 public class Resource
 {
-    public string? Value { get; set; }
-    public string? Id { get; set; }
+    [JsonPropertyName("value")] public string? Value { get; set; }
+
+    [JsonPropertyName("id")] public string? Id { get; set; }
 }

@@ -17,8 +17,8 @@ public class AltinnUser
 
     /// <summary>
     /// Partyid
-    /// </summary>
-    public string? partyId; // "50822874";
+    /// </summary> (intern altinnId)
+    public string? altinnPartyId; // "50822874"; (From console in GUI - "AltinnPartyId")
 
     /// <summary>
     /// Scopes. On the format: //"altinn:authentication/systemuser.request.read";
