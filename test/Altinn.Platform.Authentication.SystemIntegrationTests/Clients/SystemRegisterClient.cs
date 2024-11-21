@@ -22,10 +22,13 @@ public class SystemRegisterClient
     public async Task<HttpResponseMessage> PostSystem(SystemRegisterState state)
     {
         // Prepare
-        var requestBody = await SystemRegisterTests.GetRequestBodyWithReplacements(
-            state, "Resources/Testdata/Systemregister/CreateNewSystem.json");
+        var requestBody =
+            await SystemRegisterTests.GetRequestBodyWithReplacements(state,
+                "Resources/Testdata/Systemregister/CreateNewSystem.json");
 
         Assert.True(state.Token != null, "Token should not be empty");
+        
+        
 
         var response = await _platformClient.PostAsync(
             "authentication/api/v1/systemregister/vendor", requestBody, state.Token);
@@ -34,5 +37,22 @@ public class SystemRegisterClient
             $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
         return response;
+    }
+
+    public async Task<SystemRegisterState> CreateSystemRegisterUser()
+    {
+        // Prerequisite-step
+        var maskinportenToken = await _platformClient.GetToken();
+
+        var teststate = new SystemRegisterState()
+            .WithClientId(Guid.NewGuid()
+                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor("312605031")
+            .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
+            .WithToken(maskinportenToken);
+
+        await PostSystem(teststate);
+
+        return teststate;
     }
 }

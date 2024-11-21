@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text;
+using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
@@ -30,7 +32,7 @@ public class SystemUserTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    private async Task<SystemRegisterState> CreateSystemRegisterUser()
+    public async Task<SystemRegisterState> CreateSystemRegisterUser()
     {
         // Prerequisite-step
         var maskinportenToken = await _platformClient.GetToken();
@@ -81,9 +83,9 @@ public class SystemUserTests
     /// <summary>
     /// Test Get endpoint for System User
     /// Github: #765
-    /// Reported bug: https://github.com/Altinn/altinn-authentication/issues/848
+    /// Reported bug from earlier: https://github.com/Altinn/altinn-authentication/issues/848
     /// </summary>
-    // [Fact]
+    [Fact]
     public async Task GetCreatedSystemUser()
     {
         const string alternativeParty = "50891151";
@@ -187,21 +189,81 @@ public class SystemUserTests
     public async Task GetSystemusersBySystem()
     {
         var maskinportenToken = await _platformClient.GetToken();
-        
-        const string url = "authentication/api/v1/systemuser/vendor/bysystem/312605031_b4fadafa-42c5-44b6-88cc-ee2db237c4c0";
+
+        const string url =
+            "authentication/api/v1/systemuser/vendor/bysystem/312605031_b4fadafa-42c5-44b6-88cc-ee2db237c4c0";
 
         var resp = await _platformClient.GetAsync(url, maskinportenToken);
-        var ok = await resp.Content.ReadAsStringAsync();
+
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
-    /// <summary>
-    /// https://docs.altinn.studio/nb/authentication/guides/systemauthentication-for-systemproviders/
-    /// </summary>
     //[Fact]
-    public async Task UseSystemUser()
+    /// <summary>
+    /// Bug created: https://github.com/Altinn/altinn-authentication/issues/871
+    /// </summary>
+    public async Task ApproveSystemUserRequest()
     {
-        //Bruk jwt og hent maskinporten-token direkte
+        var maskinportenToken = await _platformClient.GetToken();
+
+        var teststate = new SystemRegisterState()
+            .WithClientId(Guid.NewGuid()
+                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor("312605031")
+            .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
+            .WithRedirectUrl("https://altinn.no")
+            .WithToken(maskinportenToken);
+
+        var response = await _systemRegisterClient.PostSystem(teststate);
+        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
+
+        // Prepare
+        var body = await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json");
+        body = body
+            .Replace("{systemId}", teststate.SystemId)
+            .Replace("{redirectUrl}", teststate.RedirectUrl);
+
+        // Act
+        var respons =
+            await _platformClient.PostAsync("authentication/api/v1/systemuser/request/vendor", body,
+                maskinportenToken);
+
+        var content = await respons.Content.ReadAsStringAsync();
+        Assert.True(HttpStatusCode.Created == respons.StatusCode,
+            $"Status code was not Created, but: {respons.StatusCode} -  {content}");
+
+        _outputHelper.WriteLine("System user request: " + content);
+
+        var party = "51686389";
+
+        var manager = new AltinnUser
+        {
+            userId = "20012772", partyId = party, pid = "04855195742"
+        };
+
+        var token = await _platformClient.GetPersonalAltinnToken(manager);
+
+        const string requestId = "29cb9c96-b139-4e6e-a498-ed2e115f8245";
+
+        var baseurl = _platformClient.BaseUrl;
+        //  /authentication/api/v1/systemuser/request/500000/13fd2c40-54a6-4147-8e1e-24d06fcfb2a2/approve
+        var url = $"{baseurl}/authentication/api/v1/systemuser/request/{party}/{requestId}/approve";
+
+        // Create the request body
+        var requestBody = new
+        {
+            party, requestId
+        };
+
+        var jsonBody = JsonSerializer.Serialize(requestBody);
+
+        var postSystemResponse = await _platformClient.PostAsync(url, jsonBody, token);
+
+        _outputHelper.WriteLine(postSystemResponse.StatusCode + "");
+        _outputHelper.WriteLine(
+            "System user approval response: " + await postSystemResponse.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, postSystemResponse.StatusCode);
     }
 
     private async Task<HttpResponseMessage> CreateSystemUserTestdata(string party, AltinnUser user)
