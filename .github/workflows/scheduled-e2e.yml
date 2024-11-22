@@ -42,5 +42,5 @@ jobs:
         if: failure() # This step runs only if the previous steps fail
         run: |
           curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "⚠️ Tester feilet i testmiljø:`${{ matrix.environment }}` feilet på repo: `${{ github.repository }}`. Sjekk ut detaljene her: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            "text": "Tester feilet i testmiljø:`${{ matrix.environment }}` på repo: `${{ github.repository }}`. Mer detaljer her: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }' ${{ secrets.SLACK_WEBHOOK_URL }}
