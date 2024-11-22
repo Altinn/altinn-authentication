@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+        
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -39,3 +39,11 @@ jobs:
         env:
           SYSTEMINTEGRATIONTEST_JSON: ${{ secrets.SYSTEMINTEGRATIONTEST_JSON }}
           TEST_ENVIRONMENT: ${{ github.event.inputs.testenvironment }}
+          
+      #TODO - this is only for testing purposes and must be removed before merge
+      - name: Notify Slack on Failure
+        if: failure() # This step runs only if the previous steps fail
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "⚠️ Tester feilet i testmiljø:`${{ matrix.environment }}` feilet på repo: `${{ github.repository }}`. Sjekk ut detaljene her: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}

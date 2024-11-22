@@ -160,6 +160,8 @@ public class SystemUserTests
         var urlGetBySystem = $"v1/systemuser/vendor/bysystem/{systemId}";
         var responseGetBySystem = await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
         Assert.Contains(systemId, responseGetBySystem.Content.ReadAsStringAsync().Result);
+
+        Assert.True(1 == 2, "you failed :(");
     }
 
 
