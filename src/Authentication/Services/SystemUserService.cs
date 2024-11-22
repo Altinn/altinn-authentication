@@ -32,7 +32,7 @@ namespace Altinn.Platform.Authentication.Services
         ISystemRegisterRepository systemRegisterRepository,
         IAccessManagementClient accessManagementClient,
         IPartiesClient partiesClient,
-        IOptions<PaginationOptions> _paginationOption) : ISystemUserService
+        IOptions<PaginationOptions> paginationOption) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
         private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
@@ -42,7 +42,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Used to limit the number of items returned in a paginated list
         /// </summary>
-        private int _paginationSize = _paginationOption.Value.Size;
+        private int _paginationSize = paginationOption.Value.Size;
 
         /// <summary>
         /// Creates a new SystemUser
