@@ -167,7 +167,7 @@ namespace Altinn.Platform.Authentication.Services
             List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, cancellationToken);
             theList ??= [];
 
-            return Page.Create(theList, 3, static theList => theList.Id);
+            return Page.Create(theList, _paginationSize, static theList => theList.Id);
         }
     }
 }
