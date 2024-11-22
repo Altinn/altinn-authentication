@@ -565,15 +565,20 @@ public class RequestSystemUserService(
     {
         List<Right> rightsInSystem = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
 
+        List<Right> verifiedRights = [];
+
         foreach (var right in rights)
         {
-            if (!rightsInSystem.Contains(right))
+            foreach (var rightInSystem in rightsInSystem)
             {
-                rights.Remove(right);
+                if (Right.Compare(right, rightInSystem))
+                {
+                    verifiedRights.Add(right);
+                }
             }
         }
 
-        return rights;
+        return verifiedRights;
     }
 
     private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
