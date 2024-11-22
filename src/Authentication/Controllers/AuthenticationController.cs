@@ -14,6 +14,7 @@ using System.Web;
 
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -1058,6 +1059,23 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         claims.Add(new Claim(kvp.Key, claimvalue, ClaimValueTypes.String, issuer));
                     }
+                }
+            }
+
+            if (!claims.Any(c => c.Type == AuthzConstants.CLAIM_SCOPE))
+            {
+                claims.Add(new Claim(AuthzConstants.CLAIM_SCOPE, AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
+            }
+            else
+            {
+                // Find the existing claim and modify its value
+                Claim existingClaim = claims.FirstOrDefault(c => c.Type == AuthzConstants.CLAIM_SCOPE);
+                if (existingClaim != null)
+                {
+                    claims.Remove(existingClaim);
+
+                    // Adding portal scope to list of scopes
+                    claims.Add(new Claim(AuthzConstants.CLAIM_SCOPE, existingClaim.Value + " " + AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
                 }
             }
 

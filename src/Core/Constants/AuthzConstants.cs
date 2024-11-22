@@ -29,7 +29,7 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// <summary>
         /// Claim for scopes from maskinporten token
         /// </summary>
-        public const string CLAIM_MASKINPORTEN_SCOPE = "scope";
+        public const string CLAIM_SCOPE = "scope";
 
         /// <summary>
         /// Claim for consumer prefixes from maskinporten token
@@ -75,5 +75,10 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Scope set by maskinporten for system user lookup
         /// </summary>
         public const string SCOPE_SYSTEMUSER_LOOKUP = "altinn:maskinporten/systemuser.read";
+
+        /// <summary>
+        /// General scope given to everyone loging in to altinn platform 
+        /// </summary>
+        public const string SCOPE_PORTAL = "altinn:portal/enduser";
     }
 }
