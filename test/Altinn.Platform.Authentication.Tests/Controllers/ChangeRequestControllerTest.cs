@@ -1375,7 +1375,7 @@ public class ChangeRequestControllerTest(
         // Arrange
         string systemId = "991825827_the_matrix";
 
-        await CreateSeveralChangeRequest(_paginationSize, systemId);
+        await CreateSeveralChangeRequest(_paginationSize, systemId);        
 
         // Get the Request
         HttpClient client2 = CreateClient();
@@ -1388,7 +1388,8 @@ public class ChangeRequestControllerTest(
         Assert.True(res2 is not null);
         var list = res2.Items.ToList();
         Assert.NotEmpty(list);
-        Assert.Equal(_paginationSize, list.Count);
+
+        Assert.Equal(_paginationSize, list.Count);        
         Assert.Contains(list, x => x.PartyOrgNo == "910493353");
         Assert.NotNull(res2.Links.Next);
 

@@ -72,7 +72,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 return res;
             }
 
-
             return null;
         }
     }
