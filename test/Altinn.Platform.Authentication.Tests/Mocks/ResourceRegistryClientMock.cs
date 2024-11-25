@@ -53,6 +53,25 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 return res;
             }
 
+            if (resourceId == "ske-krav-og-betalinger-2")
+            {
+                List<PolicyRightsDTO> res = [];
+                dataFileName = "Data/ResourceRegistry/policyrightDTO-kravogbetaling2.json";
+                string content = string.Empty;
+                try
+                {
+                    content = File.ReadAllText(dataFileName);
+                    res = (List<PolicyRightsDTO>)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+                catch (Exception ex)
+                {
+                    string message = $"Error reading file {dataFileName}";
+                    throw;
+                }
+
+                return res;
+            }
+
             return null;
         }
     }

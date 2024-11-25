@@ -452,7 +452,7 @@ public class RequestSystemUserService(
             return toBeInserted.Problem;
         }
 
-        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
+        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserRequest,cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
         { 
             return Problem.Rights_NotFound_Or_NotDelegable; 
@@ -518,9 +518,10 @@ public class RequestSystemUserService(
         return toBeInserted!;
     }
 
-    private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, CancellationToken cancellationToken = default)
-    {
-        List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+    private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, RequestSystemResponse systemUserRequest, CancellationToken cancellationToken = default)
+    {                  
+        var rights = await VerifySubsetOfRights(systemUserRequest.Rights, systemId, cancellationToken);
+
         List<RightResponses> rightResponsesList = [];
 
         foreach (Right right in rights)
@@ -545,7 +546,39 @@ public class RequestSystemUserService(
             rightResponsesList.Add(new RightResponses(rightResponses));
         }
 
+        if (rightResponsesList.Count == 0)
+        {
+            return new DelegationCheckResult(false, null);
+        }
+
         return new DelegationCheckResult(true, rightResponsesList);
+    }
+
+    /// <summary>
+    /// Removes requested Rights that are not in the System's list of prepared Rights
+    /// </summary>
+    /// <param name="rights">the Requested Rights</param>
+    /// <param name="systemId">the system id</param>
+    /// <param name="cancellationToken">cancellation </param>
+    /// <returns></returns>
+    private async Task<List<Right>> VerifySubsetOfRights(List<Right> rights, string systemId, CancellationToken cancellationToken)
+    {
+        List<Right> rightsInSystem = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+
+        List<Right> verifiedRights = [];
+
+        foreach (var right in rights)
+        {
+            foreach (var rightInSystem in rightsInSystem)
+            {
+                if (Right.Compare(right, rightInSystem))
+                {
+                    verifiedRights.Add(right);
+                }
+            }
+        }
+
+        return verifiedRights;
     }
 
     private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
