@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -28,11 +28,13 @@ namespace Altinn.Platform.Authentication.Services
     public class SystemUserService(
         ISystemUserRepository systemUserRepository,
         ISystemRegisterRepository systemRegisterRepository,
+        ISystemRegisterService systemRegisterService,
         IAccessManagementClient accessManagementClient,
         IPartiesClient partiesClient) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
         private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
+        private readonly ISystemRegisterService systemRegisterService = systemRegisterService;
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
         private readonly IPartiesClient _partiesClient = partiesClient;
 
@@ -104,10 +106,12 @@ namespace Altinn.Platform.Authentication.Services
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
-        public async Task<bool> SetDeleteFlagOnSystemUser(Guid systemUserId)
+        public async Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
         {
-            await _repository.SetDeleteSystemUserById(systemUserId);            
-
+            await _repository.SetDeleteSystemUserById(systemUserId);
+            SystemUser systemUser = await _repository.GetSystemUserById(systemUserId);
+            List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
+            await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
             return true; // if it can't be found, there is no need to delete it.
         }
 

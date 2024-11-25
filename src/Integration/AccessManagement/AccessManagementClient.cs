@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
@@ -139,6 +139,17 @@ public class AccessManagementClient : IAccessManagementClient
         return true;
     }
 
+    /// <inheritdoc />
+    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
+    {
+        if (!await RevokeRightsToSystemUser(partyId, systemUser, rights))
+        {
+            return Problem.Rights_FailedToDelegate;
+        };
+
+        return true;
+    }
+
     private async Task<bool> DelegateSingleRightToSystemUser(string partyId, SystemUser systemUser, RightResponses rightResponses)
     {
         List<Right> rights = [];
@@ -181,6 +192,40 @@ public class AccessManagementClient : IAccessManagementClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication.UI // AccessManagementClient // DelegateSingleRightToSystemUser // Exception");
+            throw;
+        }
+
+    }
+
+    private async Task<bool> RevokeRightsToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
+    {
+        DelegationRequest revokeDelegatedRights = new()
+        {
+            To =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:systemuser:uuid",
+                    Value = systemUser.Id
+                }
+            ],
+
+            Rights = rights
+        };
+
+        try
+        {
+            string endpointUrl = $"internal/{partyId}/rights/delegation/offered/revoke";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(revokeDelegatedRights));
+
+            response.EnsureSuccessStatusCode();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeSingleRightToSystemUser // Exception");
             throw;
         }
 
