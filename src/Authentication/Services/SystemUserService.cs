@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -14,6 +15,7 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Microsoft.Extensions.Options;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Services
@@ -29,12 +31,18 @@ namespace Altinn.Platform.Authentication.Services
         ISystemUserRepository systemUserRepository,
         ISystemRegisterRepository systemRegisterRepository,
         IAccessManagementClient accessManagementClient,
-        IPartiesClient partiesClient) : ISystemUserService
+        IPartiesClient partiesClient,
+        IOptions<PaginationOptions> paginationOption) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
         private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
         private readonly IPartiesClient _partiesClient = partiesClient;
+
+        /// <summary>
+        /// Used to limit the number of items returned in a paginated list
+        /// </summary>
+        private int _paginationSize = paginationOption.Value.Size;
 
         /// <summary>
         /// Creates a new SystemUser
@@ -159,7 +167,7 @@ namespace Altinn.Platform.Authentication.Services
             List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, cancellationToken);
             theList ??= [];
 
-            return Page.Create(theList, 3, static theList => theList.Id);
+            return Page.Create(theList, _paginationSize, static theList => theList.Id);
         }
     }
 }
