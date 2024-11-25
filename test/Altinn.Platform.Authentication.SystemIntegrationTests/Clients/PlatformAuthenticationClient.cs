@@ -12,12 +12,13 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 public class PlatformAuthenticationClient
 {
     public EnvironmentHelper EnvironmentHelper { get; set; }
-    public MaskinPortenTokenGenerator _maskinPortenTokenGenerator { get; set; }
-    
+    public MaskinPortenTokenGenerator MaskinPortenTokenGenerator { get; set; }
+    public List<Testuser> TestUsers { get; set; }
+
     /// <summary>
     /// baseUrl for api
     /// </summary>
-    public readonly string BaseUrl;
+    public readonly string? BaseUrl;
 
     /// <summary>
     /// Base class for running requests
@@ -25,8 +26,45 @@ public class PlatformAuthenticationClient
     public PlatformAuthenticationClient()
     {
         EnvironmentHelper = LoadEnvironment();
-        BaseUrl = $"https://platform.{EnvironmentHelper.Testenvironment}.altinn.cloud";
-        _maskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
+        BaseUrl = GetEnvironment(EnvironmentHelper.Testenvironment);
+        MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
+        TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
+    }
+
+
+    private static List<Testuser> LoadTestUsers(string testenvironment)
+    {
+        // Determine the file to load based on the environment
+        var fileName = testenvironment.StartsWith("at")
+            ? "Resources/Testusers/testusers.at.json"
+            : "Resources/Testusers/testusers.tt02.json";
+
+        if (!File.Exists(fileName))
+        {
+            throw new FileNotFoundException($"Test users file not found: {fileName}");
+        }
+
+        // Read and deserialize the JSON file into a list of Testuser objects
+        var json = File.ReadAllText(fileName);
+        return JsonSerializer.Deserialize<List<Testuser>>(json)
+               ?? throw new InvalidOperationException("Failed to deserialize test users.");
+    }
+
+    private string GetEnvironment(string environmentHelperTestenvironment)
+    {
+        // Define base URLs for tt02 and all "at" environments
+        const string tt02 = "https://platform.tt02.altinn.no/authentication/api/";
+        const string atBaseUrl = "https://platform.{env}.altinn.cloud/authentication/api/";
+
+        // Handle case-insensitive input and return the correct URL
+        environmentHelperTestenvironment = environmentHelperTestenvironment.ToLower();
+
+        return environmentHelperTestenvironment switch
+        {
+            "tt02" => tt02,
+            "at22" or "at23" or "at24" => atBaseUrl.Replace("{env}", environmentHelperTestenvironment),
+            _ => throw new ArgumentException($"Unknown environment: {environmentHelperTestenvironment}")
+        };
     }
 
     /// <summary>
@@ -42,7 +80,9 @@ public class PlatformAuthenticationClient
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        HttpContent content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        HttpContent? content = string.IsNullOrEmpty(body)
+            ? null
+            : new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
         var response = await client.PostAsync($"{BaseUrl}/{endpoint}", content);
         return response;
@@ -97,7 +137,7 @@ public class PlatformAuthenticationClient
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await client.GetAsync(BaseUrl + "/authentication/api/v1/exchange/maskinporten?test=true");
+        var response = await client.GetAsync(BaseUrl + "v1/exchange/maskinporten?test=true");
 
         if (response.IsSuccessStatusCode)
         {
@@ -109,21 +149,29 @@ public class PlatformAuthenticationClient
             $"Failed to retrieve exchange token: {response.StatusCode} {await response.Content.ReadAsStringAsync()}");
     }
 
-    /// <summary>
-    /// Used for fetching an Altinn test token
-    /// </summary>
-    /// <param name="user"></param>
-    /// <returns></returns>
-    public async Task<string> GetPersonalAltinnToken(AltinnUser user)
+    public Testuser FindTestUserByRole(string role)
     {
+        return TestUsers.Last(u => u.Role.Equals(role, StringComparison.OrdinalIgnoreCase))
+               ?? throw new Exception($"Unable to find test user by role: {role}");
+    }
+
+    /// <summary>
+    /// Used for fetching an Altinn test token for a specific role
+    /// </summary>
+    /// <param name="user">User read from test config (testusers.at.json)</param>
+    /// <returns>The Altinn test token as a string</returns>
+    public async Task<string> GetPersonalAltinnToken(Testuser user)
+    {
+        // Construct the URL for fetching the Altinn test token
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env={EnvironmentHelper.Testenvironment}" +
-            $"&scopes={user.scopes}" +
-            $"&pid={user.pid}" +
-            $"&userid={user.userId}" +
-            $"&partyid={user.partyId}" +
+            $"&scopes={user.Scopes}" +
+            $"&pid={user.Pid}" +
+            $"&userid={user.UserId}" +
+            $"&partyid={user.AltinnPartyId}" +
             $"&authLvl=3&ttl=3000";
 
+        // Retrieve the token
         var token = await GetAltinnToken(url);
         Assert.True(token != null, "Token retrieval failed for Altinn token");
         return token;
@@ -161,13 +209,26 @@ public class PlatformAuthenticationClient
     private static EnvironmentHelper LoadEnvironment()
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
+        const string environmentVariable = "TEST_ENVIRONMENT";
+    
+        // Fetch environment JSON and override value
         var envJson = Environment.GetEnvironmentVariable(githubVariable);
-        
-        //Runs on Github
+        var testEnvironmentOverride = Environment.GetEnvironmentVariable(environmentVariable);
+
+        // Runs on GitHub
         if (!string.IsNullOrEmpty(envJson))
         {
-            return JsonSerializer.Deserialize<EnvironmentHelper>(envJson)
-                   ?? throw new Exception($"Unable to deserialize environment from {githubVariable}.");
+            // Deserialize the environment JSON
+            var environmentHelper = JsonSerializer.Deserialize<EnvironmentHelper>(envJson)
+                                    ?? throw new Exception($"Unable to deserialize environment from {githubVariable}.");
+
+            // Override Testenvironment if TEST_ENVIRONMENT is provided
+            if (!string.IsNullOrEmpty(testEnvironmentOverride))
+            {
+                environmentHelper.Testenvironment = testEnvironmentOverride;
+            }
+
+            return environmentHelper;
         }
 
         //Runs locally
@@ -182,9 +243,13 @@ public class PlatformAuthenticationClient
                ?? throw new Exception($"Unable to read environment from local file path: {localFilePath}.");
     }
 
-    public async Task<string> GetToken()
+    /// <summary>
+    /// IMPORTANT - Gets token for a vendor / organization with this id: "312605031"
+    /// </summary>
+    /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
+    public async Task<string> GetMaskinportenToken()
     {
-        var token = await _maskinPortenTokenGenerator.GetMaskinportenBearerToken();
+        var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
         return token;
     }

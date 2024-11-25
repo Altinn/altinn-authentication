@@ -1,29 +1,23 @@
-name: System integration tests
+name: Scheduled integration tests
 on:
-  workflow_dispatch:
-    inputs:
-      testenvironment:
-        description: "Select the test environment (tt02 or at22)"
-        required: true
-        default: at22
-        type: choice
-        options:
-          - at22
-          - at23
-          - at24
-          - tt02
+  schedule:
+    - cron: '0 7 * * 1-5'
+
 env:
   DOTNET_VERSION: '8.0.x'
 
 jobs:
-  build-and-run-integration-tests:
-    name: >
-      Environment: ${{ github.event.inputs.testenvironment }}
+  scheduled-integration-tests:
+    name: Run Tests for ${{ matrix.environment }}
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        environment: [ at22, tt02 ]
 
     steps:
       - uses: actions/checkout@v4
-        
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -33,18 +27,19 @@ jobs:
       - name: Install dependencies
         run: dotnet restore test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj
 
-      - name: Build
+      - name: Build the project
         run: dotnet build test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --configuration Release --no-restore
 
       - name: Test
         run: dotnet test test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --logger:"console;verbosity=detailed"
         env:
           SYSTEMINTEGRATIONTEST_JSON: ${{ secrets.SYSTEMINTEGRATIONTEST_JSON }}
-          TEST_ENVIRONMENT: ${{ github.event.inputs.testenvironment }}
-          
+          TEST_ENVIRONMENT: ${{ matrix.environment }}
+
+
       - name: Notify Slack on Failure
         if: failure() # This step runs only if the previous steps fail
         run: |
           curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "Tester feilet i testmiljø:`${{ github.event.inputs.testenvironment }}` på repo: `${{ github.repository }}`. Mer detaljer her: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            "text": "Tester feilet i testmiljø:`${{ matrix.environment }}` på repo: `${{ github.repository }}`. Mer detaljer her: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }' ${{ secrets.SLACK_WEBHOOK_URL }}
