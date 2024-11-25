@@ -1,5 +1,4 @@
 name: Scheduled integration tests
-
 on:
   schedule:
     - cron: '0 7 * * 1-5'
@@ -32,7 +31,7 @@ jobs:
         run: dotnet build test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test test/Altinn.Platform.Authentication.SystemIntegrationTesgts/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --logger:"console;verbosity=detailed"
+        run: dotnet test test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --logger:"console;verbosity=detailed"
         env:
           SYSTEMINTEGRATIONTEST_JSON: ${{ secrets.SYSTEMINTEGRATIONTEST_JSON }}
           TEST_ENVIRONMENT: ${{ matrix.environment }}
