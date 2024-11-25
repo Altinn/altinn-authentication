@@ -25,7 +25,7 @@ jobs:
       - name: Build & Test
         run: |
            dotnet build Altinn.Platform.Authentication.sln -v m
-           dotnet test Altinn.Platform.Authentication.sln -v m
+           dotnet test Altinn.Platform.Authentication.sln -v m --filter "Category!=IntegrationTest" 
   analyze:
     name: Analyze
     if: ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) || github.event_name == 'push') && github.repository_owner == 'Altinn' && github.actor != 'dependabot[bot]' 
@@ -80,6 +80,6 @@ jobs:
             /d:sonar.cpd.exclusions="**/Swagger/*Filter.cs"
 
           dotnet build --no-incremental
-          dotnet coverage collect 'dotnet test --no-build --results-directory TestResults/' -f xml -o 'TestResults/coverage.xml'
+          dotnet coverage collect 'dotnet test --no-build --results-directory TestResults/ --filter "Category!=IntegrationTest"' -f xml -o 'TestResults/coverage.xml'
 
           ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"

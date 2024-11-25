@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Extensions;
@@ -33,6 +37,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private readonly IEventLog _eventLog;
         private readonly IFeatureManager _featureManager;
+        private readonly IRequestSystemUser _requestSystemUser;
 
         /// <summary>
         /// Defay
@@ -43,13 +48,15 @@ namespace Altinn.Platform.Authentication.Controllers
             IOptions<OidcProviderSettings> oidcProviderSettings,
             IOidcProvider oidcProvider,
             IEventLog eventLog,
-            IFeatureManager featureManager)
+            IFeatureManager featureManager,
+            IRequestSystemUser requestSystemUser)
         {
             _generalSettings = generalSettings.Value;
             _oidcProviderSettings = oidcProviderSettings.Value;
             _validator = new JwtSecurityTokenHandler();
             _eventLog = eventLog;
             _featureManager = featureManager;
+            _requestSystemUser = requestSystemUser;
         }
 
         /// <summary>
@@ -82,6 +89,31 @@ namespace Altinn.Platform.Authentication.Controllers
 
             _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext);
             return Redirect(provider.LogoutEndpoint);
+        }
+
+        /// <summary>
+        /// Redirects user to specific url if AltinnLogoutInfo is set
+        /// </summary>
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status302Found)]
+        [HttpGet("logout/handleloggedout")]
+        public async Task<ActionResult> HandleLoggedOut()
+        {
+            string logoutInfoCookie = Request.Cookies[_generalSettings.AltinnLogoutInfoCookieName];
+            CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
+            Response.Cookies.Delete(_generalSettings.AltinnLogoutInfoCookieName, opt);
+
+            Dictionary<string, string> cookieValues = logoutInfoCookie?.Split('?')
+                .Select(x => x.Split('='))
+                .ToDictionary(x => x[0], x => x[1]);
+
+            if (cookieValues != null && cookieValues.TryGetValue("SystemuserRequestId", out string requestId) && Guid.TryParse(requestId, out Guid requestGuid))
+            {
+                Result<string> redirectUrl = await _requestSystemUser.GetRedirectByRequestId(requestGuid);
+                return Redirect(redirectUrl.Value);
+            }
+
+            return Redirect(_generalSettings.SBLLogoutEndpoint);
         }
 
         /// <summary>

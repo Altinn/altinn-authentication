@@ -1,0 +1,25 @@
+meta {
+  name: Get vendor system
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{systemId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: 
+}
+
+vars:pre-request {
+  systemId: 991825827_smartcloud
+}
+
+docs {
+  Required scope: altinn:authentication/systemregister.write
+  
+  Token generator request params: scopes=altinn:authentication/systemregister.write&org=digdir&orgNo=991825827
+}

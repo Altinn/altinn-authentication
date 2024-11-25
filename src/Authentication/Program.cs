@@ -31,6 +31,7 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
 using AltinnCore.Authentication.JwtCookie;
+using ArchiverService;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
@@ -88,6 +89,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 builder.Services.AddPersistanceLayer();
+
+// builder.Services.AddHostedService<Archiver>();
 
 var app = builder.Build();
 
@@ -310,7 +313,13 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
 
     services.Configure<AccessTokenSettings>(config.GetSection("AccessTokenSettings"));
+
+    // Configure OIDC providers used by JwtCookieHandler
+    services.Configure<Altinn.Common.Authentication.Configuration.OidcProviderSettings>(config.GetSection("OidcProviders"));
+
+    // Configure OIDC providers used by authentication
     services.ConfigureOidcProviders(config.GetSection("OidcProviders"));
+
     services.ConfigureDataProtection(builder.Environment.IsDevelopment(), config.GetSection("AzureStorageConfiguration").Get<AzureStorageConfiguration>());
     services.AddAuthentication(JwtCookieDefaults.AuthenticationScheme)
          .AddJwtCookie(JwtCookieDefaults.AuthenticationScheme, options =>
@@ -358,6 +367,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
+    services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserService>();
     services.AddSingleton<IGuidService, GuidService>();
     services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
     services.AddSingleton<IPDP, PDPAppSI>();
@@ -416,6 +426,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
             policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_WRITE))
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP, policy =>
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_LOOKUP))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ));
 

@@ -331,8 +331,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 };
 
-                string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterResponse.json").ReadToEnd();
-                RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
+                string systemRegisterDTO = File.OpenText("Data/SystemRegister/Json/SystemRegisterDtoResponse.json").ReadToEnd();
+                RegisteredSystemDTO expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemDTO>(systemRegisterDTO, options);
 
                 string systemId = "991825827_the_matrix";
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{systemId}");
@@ -438,6 +438,66 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{name}/");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 Assert.Equal(HttpStatusCode.BadRequest, rightsResponse.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Delete_System_BySystemOwner()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string name = "991825827_the_matrix";
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{name}/");
+                HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                Assert.Equal(HttpStatusCode.OK, rightsResponse.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Delete_System_BySystemOwner_WrongScope()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string name = "991825827_the_matrix";
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.read", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{name}/");
+                HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                Assert.Equal(HttpStatusCode.Forbidden, rightsResponse.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Delete_System_BySystemOwner_MismatchInOrg()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string name = "991825827_the_matrix";
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825826", "altinn:authentication/systemregister.write", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{name}/");
+                HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                Assert.Equal(HttpStatusCode.Forbidden, rightsResponse.StatusCode);
             }
         }
 

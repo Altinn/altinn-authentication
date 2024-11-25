@@ -1,4 +1,6 @@
 ﻿using System.Data;
+using System.Data.Common;
+using System.Threading;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -17,7 +19,6 @@ public class RequestRepository : IRequestRepository
     private readonly ISystemUserRepository _systemUserRepository;
     private readonly ILogger _logger;
     private const int REQUEST_TIMEOUT_DAYS = 10;
-    private const int ARCHIVE_TIMEOUT_DAYS = 60;
 
     /// <summary>
     /// Constructor
@@ -109,9 +110,10 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
 
-            return await command.ExecuteEnumerableAsync()
+            var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
                 .FirstOrDefaultAsync();
+            return dbres;
         }
         catch (Exception ex)
         {
@@ -189,7 +191,7 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // CreateRegisteredSystem // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // ApproveAndCreateSystemUser // Exception");
             throw;
         }
     }
@@ -314,7 +316,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<int> DeleteTimedoutRequests()
+    public async Task<int> SetDeleteTimedoutRequests(int days)
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.request
@@ -328,13 +330,115 @@ public class RequestRepository : IRequestRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-ARCHIVE_TIMEOUT_DAYS));
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-days));
 
             return await command.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // DeleteTimedoutRequests // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> CopyOldRequestsToArchive(int days)
+    {
+        const string QUERY = /*strpsql*/"""
+            INSERT INTO business_application.request_archive
+            SELECT *
+            FROM business_application.request
+            WHERE business_application.request.created < @archive_timeout
+                and business_application.request.is_deleted = true;
+            """;
+        await using NpgsqlConnection conn = await _dataSource.OpenConnectionAsync();
+        await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(IsolationLevel.RepeatableRead);
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);        
+
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-days));
+
+            int res = await command.ExecuteNonQueryAsync();   
+            
+            int res2 = await DeleteArchivedAndDeleted(-days);
+
+            if (res != res2)
+            {
+                await transaction.RollbackAsync();
+            }
+
+            await transaction.CommitAsync();
+
+            return res;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // MoveToArchive // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> DeleteArchivedAndDeleted(int days)
+    {
+        const string QUERY = /*strpsql*/"""
+            DELETE FROM business_application.request
+            WHERE business_application.request.is_deleted = true
+                and business_application.request.created < @archive_timeout
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("archive_timeout", DateTime.UtcNow.AddDays(-days));
+
+            return await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // DeleteArchivedAndDeleted // Exception");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Not reachable from the API
+    /// </summary>
+    /// <param name="internalId">The guid as it was in the main tabble</param>
+    /// <returns></returns>
+    public async Task<RequestSystemResponse?> GetArchivedRequestByInternalId(Guid internalId)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                rights,
+                request_status,
+                redirect_urls,
+                created 
+            FROM business_application.request_archive r
+            WHERE r.id = @request_id
+                and r.is_deleted = true;
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("request_id", internalId);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToRequest)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
             throw;
         }
     }

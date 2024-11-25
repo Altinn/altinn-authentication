@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
@@ -318,6 +319,24 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Map RegisteredSystem to bff object RegisteredSystemDTO
+        /// </summary>
+        /// <param name="registeredSystem">the RegisteredSystem object to convert to RegisteredSystemDTO</param>
+        /// <returns>RegisteredSystemDTO of RegisteredSystem</returns>
+        public static RegisteredSystemDTO MapRegisteredSystemToRegisteredSystemDTO(RegisteredSystem registeredSystem) 
+        {
+            return new RegisteredSystemDTO 
+            { 
+                Description = registeredSystem.Description,
+                Name = registeredSystem.Name,
+                Rights = registeredSystem.Rights,
+                SystemId = registeredSystem.Id,
+                SystemVendorOrgName = registeredSystem.SystemVendorOrgName,
+                SystemVendorOrgNumber = GetOrgNumber(registeredSystem.SystemVendorOrgNumber)
+            };
         }
 
         private static string GetOrganizationNumberFromClaim(string claim)

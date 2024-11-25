@@ -15,6 +15,7 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -114,41 +115,65 @@ public class RequestSystemUserService(
     }
 
     /// <summary>
-    /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected
+    /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected.
+    /// Also ensure that if any of the new Rights have sub-resources, that the sub-resources are equal to the registered Rights.
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
+    /// <param name="systemInfo">The Vendor's Registered System</param>
     /// <returns>Result or Problem</returns>
-    private Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
+    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
     {
         if (rights.Count == 0 || systemInfo.Rights.Count == 0)
         {
-            return false;
+            return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
         if (rights.Count > systemInfo.Rights.Count)
         {
-            return false;
+            return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
         bool[] validate = new bool[rights.Count];
-        int i = 0;
-        foreach (var rightRequest in rights)
+        foreach (var requestRight in rights)
         {
-            foreach (var resource in rightRequest.Resource)
+            // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
+            List<Right> topMatchesInSystem = FindListOfMatchingRightsOnTopAttribute(requestRight.Resource[0], systemInfo.Rights);
+            if (topMatchesInSystem.Count == 0)
             {
-                if (FindOneAttributePair(resource, systemInfo.Rights))
-                {
-                    validate[i] = true;
-                    break;
-                }
+                return Problem.Rights_NotFound_Or_NotDelegable;
             }
 
-            i++;
+            // Locate one full match, the first we find might not be the correct
+            foreach (var systemRight in topMatchesInSystem)
+            {
+                if (IsFullMatch(systemRight, requestRight))
+                {
+                    validate[rights.IndexOf(requestRight)] = true;
+                }
+            }    
         }
 
         foreach (bool right in validate)
         {
             if (!right)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsFullMatch(Right systemRight, Right requestRight)
+    {
+        if (requestRight.Resource.Count != systemRight.Resource.Count)
+        {
+            return false;
+        }
+
+        foreach (var systemPair in systemRight.Resource)
+        {
+            if (!VerifySubResource(systemPair, requestRight))
             {
                 return false;
             }
@@ -157,20 +182,37 @@ public class RequestSystemUserService(
         return true;
     }
 
-    private static bool FindOneAttributePair(AttributePair pair, List<Right> list)
+    // Ensure that the system's sub-resource is present in the request's list of sub-resources
+    private static bool VerifySubResource(AttributePair system, Right request)
     {
-        foreach (Right l in list)
+        foreach (var resource in request.Resource)
         {
-            foreach (AttributePair p in l.Resource)
+            if (system.Id == resource.Id && system.Value == resource.Value)
             {
-                if (pair.Id == p.Id && pair.Value == p.Value)
-                {
-                    return true;
-                }
+                return true;
             }
         }
 
         return false;
+    }
+
+    // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
+    private static List<Right> FindListOfMatchingRightsOnTopAttribute(AttributePair newpair, List<Right> systemlist)
+    {
+        List<Right> list = [];
+
+        foreach (Right systemRight in systemlist)
+        {
+            foreach (AttributePair p in systemRight.Resource)
+            {
+                if (newpair.Id == p.Id && newpair.Value == p.Value)
+                {
+                    list.Add(systemRight);
+                }
+            }
+        }
+
+        return list;
     }
 
     /// <summary>
@@ -191,7 +233,7 @@ public class RequestSystemUserService(
             }
         }
 
-        return true;
+        return Problem.RedirectUriNotFound;
     }
 
     /// <summary>
@@ -404,7 +446,11 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        SystemUser toBeInserted = await MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        Result<SystemUser> toBeInserted = MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        if (toBeInserted.IsProblem)
+        {
+            return toBeInserted.Problem;
+        }
 
         DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
@@ -412,16 +458,16 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable; 
         }
 
-        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted, userId, cancellationToken);
+        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted.Value, userId, cancellationToken);
 
         if (systemUserId is null)
         {
             return Problem.SystemUser_FailedToCreate;
         }
 
-        toBeInserted.Id = systemUserId.ToString()!;
+        toBeInserted.Value.Id = systemUserId.ToString()!;
 
-        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted, delegationCheckFinalResult.RightResponses);
+        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted.Value, delegationCheckFinalResult.RightResponses);
         if (delegationSucceeded.IsProblem) 
         { 
             return delegationSucceeded.Problem; 
@@ -447,21 +493,29 @@ public class RequestSystemUserService(
         return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
     }
 
-    private async Task<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
+    private static Result<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
     {
-        SystemUser toBeInserted = null;
-        regSystem.Name.TryGetValue("nb", out string systemName);
-        if (systemUserRequest != null)
-        {            
-            toBeInserted = new SystemUser();
-            toBeInserted.SystemId = systemUserRequest.SystemId;
-            toBeInserted.IntegrationTitle = systemName;
-            toBeInserted.SystemInternalId = regSystem?.InternalId;
-            toBeInserted.PartyId = partyId.ToString();
-            toBeInserted.ReporteeOrgNo = systemUserRequest.PartyOrgNo;          
+        SystemUser? toBeInserted = null;
+        regSystem.Name.TryGetValue("nb", out string? systemName);
+        if (systemName is null) 
+        {
+            return Problem.SystemNameNotFound;
         }
 
-        return toBeInserted;
+        if (systemUserRequest != null)
+        {
+            toBeInserted = new SystemUser
+            {
+                SystemId = systemUserRequest.SystemId,
+                IntegrationTitle = systemName,
+                SystemInternalId = regSystem?.InternalId,
+                PartyId = partyId.ToString(),
+                ReporteeOrgNo = systemUserRequest.PartyOrgNo,
+                ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo
+            };
+        }
+
+        return toBeInserted!;
     }
 
     private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, CancellationToken cancellationToken = default)

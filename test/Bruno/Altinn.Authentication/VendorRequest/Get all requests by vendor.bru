@@ -1,0 +1,21 @@
+meta {
+  name: Get all requests by vendor
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/bysystem/{{requestId}}
+  body: none
+  auth: bearer
+}
+
+vars:pre-request {
+  requestId: 991825827_smartcloud
+}
+
+docs {
+  Required scope: altinn:authentication/systemuser.request.read
+  
+  Token generator request params: scopes=altinn:authentication/systemuser.request.read&org=digdir&orgNo=991825827
+}

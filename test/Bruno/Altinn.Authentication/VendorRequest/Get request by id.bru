@@ -1,0 +1,25 @@
+meta {
+  name: Get request by id
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/{{requestId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: 
+}
+
+vars:pre-request {
+  requestId: 
+}
+
+docs {
+  Required scope: altinn:authentication/systemuser.request.read
+  
+  Token generator request params: scopes=altinn:authentication/systemuser.request.read&org=digdir&orgNo=991825827
+}

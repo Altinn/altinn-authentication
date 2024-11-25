@@ -51,19 +51,10 @@ public class SystemRegisterController : ControllerBase
 
         foreach (RegisteredSystem system in lista)
         {
-            registeredSystemDTOs.Add(
-                new RegisteredSystemDTO 
-                { 
-                    Description = system.Description,
-                    Name = system.Name,
-                    Rights = system.Rights,
-                    SystemId = system.Id,
-                    SystemVendorOrgName = system.SystemVendorOrgName,
-                    SystemVendorOrgNumber = system.SystemVendorOrgNumber
-                });
+            registeredSystemDTOs.Add(AuthenticationHelper.MapRegisteredSystemToRegisteredSystemDTO(system));
         }
 
-        return Ok(lista);
+        return Ok(registeredSystemDTOs);
     }
 
     /// <summary>
@@ -75,14 +66,16 @@ public class SystemRegisterController : ControllerBase
     [HttpGet("{systemId}")]
     public async Task<ActionResult<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
     {
-        Result<RegisteredSystemDTO> registeredSystem = await _systemRegisterService.GetRegisteredSystemDto(systemId, cancellationToken);
-
-        if (registeredSystem.IsProblem)
+        RegisteredSystem registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+        
+        if (registeredSystem == null)
         {
-            return registeredSystem.Problem.ToActionResult();
+            return NotFound();
         }
 
-        return Ok(registeredSystem.Value);
+        RegisteredSystemDTO registeredSystemDto = AuthenticationHelper.MapRegisteredSystemToRegisteredSystemDTO(registeredSystem);
+
+        return Ok(registeredSystemDto);
     }
 
     /// <summary>
@@ -279,7 +272,7 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
         RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
-        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse?.SystemVendorOrgNumber, User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse?.Vendor?.ID), User))
         {
             return Forbid();
         }

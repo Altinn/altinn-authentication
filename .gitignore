@@ -38,3 +38,5 @@ msbuild.wrn
 
 #Test
 TestResults
+/test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Environment/environment.json
+/test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Jwks/jwks.json

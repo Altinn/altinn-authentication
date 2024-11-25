@@ -95,6 +95,7 @@ public class SystemUserController : ControllerBase
     /// <param name="systemUserOwnerOrgNo">The legal number (Orgno) of the party owning the System User Integration</param>
     /// <param name="cancellationToken">Cancellationtoken</param>/// 
     /// <returns>The SystemUserIntegration model API DTO</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP)]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet("byExternalId")]
     public async Task<ActionResult> CheckIfPartyHasIntegration([FromQuery] string clientId, [FromQuery] string systemProviderOrgNo, [FromQuery] string systemUserOwnerOrgNo, CancellationToken cancellationToken = default)
