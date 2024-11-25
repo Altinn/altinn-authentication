@@ -39,7 +39,6 @@ public class ChangeRequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IChangeRequestRepository changeRequestRepository,
-    IRequestRepository requestRepository,
     ISystemUserRepository systemUserRepository,
     IResourceRegistryClient resourceRegistryClient,
     IPDP PDPClient,

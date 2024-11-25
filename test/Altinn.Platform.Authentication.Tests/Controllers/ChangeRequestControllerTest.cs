@@ -132,7 +132,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -147,6 +147,18 @@ public class ChangeRequestControllerTest(
                 {
                     Id = "urn:altinn:resource",
                     Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
                 }
             ]
         };
@@ -183,7 +195,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        xacmlJsonResults = GetDecisionResultList();
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
@@ -198,7 +210,7 @@ public class ChangeRequestControllerTest(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            RequiredRights = [right],
+            RequiredRights = [right2],
             UnwantedRights = []
         };
 
@@ -293,7 +305,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        xacmlJsonResults = GetDecisionResultList();
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
@@ -356,7 +368,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -375,13 +387,25 @@ public class ChangeRequestControllerTest(
             ]
         };
 
+        Right right2 = new()
+        {
+            Resource =
+             [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+             ]
+        };
+
         // Arrange
         CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right2]
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -408,7 +432,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        xacmlJsonResults = GetDecisionResultList();
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
@@ -458,7 +482,7 @@ public class ChangeRequestControllerTest(
     }
 
     /// <summary>
-    /// After having verified that the ChangeRequest is needed, create a ChangeRequest, then approve it
+    /// After having verified that the ChangeRequest is needed, create a ChangeRequest, then delete it
     /// </summary>
     [Fact]
     public async Task ChangeRequest_Delete_ReturnOk()
@@ -471,7 +495,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -490,13 +514,25 @@ public class ChangeRequestControllerTest(
             ]
         };
 
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+             ]
+        };
+
         // Arrange
         CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right2]
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -523,7 +559,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        xacmlJsonResults = GetDecisionResultList();
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
@@ -810,7 +846,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -829,13 +865,25 @@ public class ChangeRequestControllerTest(
             ]
         };
 
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+            ]
+        };
+
         // Arrange
         CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right2]
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -862,7 +910,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        xacmlJsonResults = GetDecisionResultList();
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
@@ -928,7 +976,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -947,13 +995,25 @@ public class ChangeRequestControllerTest(
             ]
         };
 
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+            ]
+        };
+
         // Arrange
         CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right2]
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -980,7 +1040,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        xacmlJsonResults = GetDecisionResultList();
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
@@ -1048,7 +1108,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -1065,6 +1125,18 @@ public class ChangeRequestControllerTest(
                     Value = "ske-krav-og-betalinger"
                 }
             ]
+        };
+
+        Right right2 = new()
+        {
+            Resource =
+             [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+             ]  
         };
 
         // Arrange
@@ -1101,7 +1173,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        xacmlJsonResults = GetDecisionResultList();
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
@@ -1116,7 +1188,7 @@ public class ChangeRequestControllerTest(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            RequiredRights = [right],
+            RequiredRights = [right2],
             UnwantedRights = [],
             RedirectUrl = "https://altinn.no"
         };
@@ -1169,7 +1241,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -1188,13 +1260,25 @@ public class ChangeRequestControllerTest(
             ]
         };
 
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+            ]
+        };
+
         // Arrange
         CreateRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right2]
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -1221,7 +1305,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        xacmlJsonResults = GetDecisionResultList();
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
@@ -1282,7 +1366,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -1353,13 +1437,25 @@ public class ChangeRequestControllerTest(
             ]
         };
 
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+            ]
+        };
+
         // Arrange
         CreateRequestSystemUser req = new()
         {
             ExternalRef = externalRef.ToString(),
             SystemId = systemId,
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right2]
         };
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
@@ -1395,6 +1491,8 @@ public class ChangeRequestControllerTest(
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
         {
