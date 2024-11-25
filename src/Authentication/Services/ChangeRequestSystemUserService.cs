@@ -461,7 +461,7 @@ public class ChangeRequestSystemUserService(
 
             if (rightResponses is null)
             {
-                return new DelegationCheckResult(false, null);
+                return new DelegationCheckResult(false, null, null);
             }
 
             if (!ResolveIfHasAccess(rightResponses))
@@ -512,7 +512,7 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        return true;
+        return (true, []);
     }
 
     /// <inheritdoc/>
