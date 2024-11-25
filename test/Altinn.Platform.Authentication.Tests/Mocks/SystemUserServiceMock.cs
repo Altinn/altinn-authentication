@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -70,17 +70,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             SystemUser search = theMockList.Find(s => s.Id == systemUserId.ToString());
 
             return Task.FromResult(search);
-        }
-
-        /// <summary>
-        /// Set the Delete flag on the identified SystemUser
-        /// </summary>
-        /// <returns></returns>
-        public Task<bool> SetDeleteFlagOnSystemUser(Guid systemUserId)
-        {
-            SystemUser toBeDeleted = theMockList.Find(s => s.Id == systemUserId.ToString());
-            toBeDeleted.IsDeleted = true;
-            return Task.FromResult(true);
         }
 
         /// <summary>
@@ -179,6 +168,17 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             });
 
             return Page.Create<SystemUser,string>(theList, 2, static theList => theList.Id);
+        }
+
+        /// <summary>
+        /// Set the Delete flag on the identified SystemUser
+        /// </summary>
+        /// <returns></returns>
+        public Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
+        {
+            SystemUser toBeDeleted = theMockList.Find(s => s.Id == systemUserId.ToString());
+            toBeDeleted.IsDeleted = true;
+            return Task.FromResult(true);
         }
     }
 }
