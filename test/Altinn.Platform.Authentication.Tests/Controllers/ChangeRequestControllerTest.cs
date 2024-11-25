@@ -229,7 +229,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -244,6 +244,18 @@ public class ChangeRequestControllerTest(
                 {
                     Id = "urn:altinn:resource",
                     Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
                 }
             ]
         };
@@ -296,7 +308,7 @@ public class ChangeRequestControllerTest(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            RequiredRights = [right],
+            RequiredRights = [right2],
             UnwantedRights = []
         };
 

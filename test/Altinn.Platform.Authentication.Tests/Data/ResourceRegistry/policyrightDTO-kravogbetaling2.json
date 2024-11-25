@@ -1,0 +1,210 @@
+﻿[
+  {
+    "action": {
+      "type": "urn:oasis:names:tc:xacml:1.0:action:action-id",
+      "value": "read"
+    },
+    "resource": [
+      {
+        "type": "urn:altinn:resource",
+        "value": "ske-krav-og-betalinger-2"
+      }
+    ],
+    "subjects": [
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:rolecode",
+            "value": "siskd"
+          }
+        ]
+      }
+    ],
+    "rightKey": "read;ske-krav-og-betalinger;5399f4ba0d56ad6ce316cae930495b73",
+    "subjectTypes": [
+      "urn:altinn:rolecode"
+    ]
+  },
+  {
+    "action": {
+      "type": "urn:oasis:names:tc:xacml:1.0:action:action-id",
+      "value": "write"
+    },
+    "resource": [
+      {
+        "type": "urn:altinn:resource",
+        "value": "ske-krav-og-betalinger-2"
+      }
+    ],
+    "subjects": [
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:rolecode",
+            "value": "siskd"
+          }
+        ]
+      }
+    ],
+    "rightKey": "write;ske-krav-og-betalinger;0c95f690f4efead84336ac09d9e8735c",
+    "subjectTypes": [
+      "urn:altinn:rolecode"
+    ]
+  },
+  {
+    "action": {
+      "type": "urn:oasis:names:tc:xacml:1.0:action:action-id",
+      "value": "delete"
+    },
+    "resource": [
+      {
+        "type": "urn:altinn:resource",
+        "value": "ske-krav-og-betalinger-2"
+      }
+    ],
+    "subjects": [
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:rolecode",
+            "value": "siskd"
+          }
+        ]
+      }
+    ],
+    "rightKey": "delete;ske-krav-og-betalinger;715005be0625f5e41ae52cb6648766e1",
+    "subjectTypes": [
+      "urn:altinn:rolecode"
+    ]
+  },
+  {
+    "action": {
+      "type": "urn:oasis:names:tc:xacml:1.0:action:action-id",
+      "value": "instantiate"
+    },
+    "resource": [
+      {
+        "type": "urn:altinn:resource",
+        "value": "ske-krav-og-betalinger-2"
+      }
+    ],
+    "subjects": [
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:rolecode",
+            "value": "siskd"
+          }
+        ]
+      }
+    ],
+    "rightKey": "instantiate;ske-krav-og-betalinger;4828749eca5ab65b60293c244109509b",
+    "subjectTypes": [
+      "urn:altinn:rolecode"
+    ]
+  },
+  {
+    "action": {
+      "type": "urn:oasis:names:tc:xacml:1.0:action:action-id",
+      "value": "publish"
+    },
+    "resource": [
+      {
+        "type": "urn:altinn:resource",
+        "value": "ske-krav-og-betalinger-2"
+      }
+    ],
+    "subjects": [
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:organizationnumber",
+            "value": "974761076"
+          }
+        ]
+      },
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:organizationnumber",
+            "value": "974761076"
+          }
+        ]
+      },
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:org",
+            "value": "skd"
+          }
+        ]
+      },
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:partyid",
+            "value": "50125678"
+          }
+        ]
+      }
+    ],
+    "rightKey": "publish;ske-krav-og-betalinger;e79a758bc9a9ed296a67dc38eccf9035",
+    "subjectTypes": [
+      "urn:altinn:org",
+      "urn:altinn:organizationnumber",
+      "urn:altinn:partyid"
+    ]
+  },
+  {
+    "action": {
+      "type": "urn:oasis:names:tc:xacml:1.0:action:action-id",
+      "value": "subscribe"
+    },
+    "resource": [
+      {
+        "type": "urn:altinn:resource",
+        "value": "ske-krav-og-betalinger-2"
+      }
+    ],
+    "subjects": [
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:organizationnumber",
+            "value": "974761076"
+          }
+        ]
+      },
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:organizationnumber",
+            "value": "974761076"
+          }
+        ]
+      },
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:org",
+            "value": "skd"
+          }
+        ]
+      },
+      {
+        "subjectAttributes": [
+          {
+            "type": "urn:altinn:partyid",
+            "value": "50125678"
+          }
+        ]
+      }
+    ],
+    "rightKey": "subscribe;ske-krav-og-betalinger;f4c7d2626170030ce09920e570782e2e",
+    "subjectTypes": [
+      "urn:altinn:org",
+      "urn:altinn:organizationnumber",
+      "urn:altinn:partyid"
+    ]
+  }
+]
