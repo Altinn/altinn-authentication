@@ -96,8 +96,20 @@ public class DelegationHelper(
         {
             if (data.Status != "Delegable")
             {
-                errors.AddRange(data.Details);
-                canDelegate = false;
+                if (data.Details is not null && data.Details.Count > 0)
+                {
+                    errors.AddRange(data.Details);
+                }
+                else
+                {
+                    errors.Add(new DetailExternal()
+                    {
+                        Code = DetailCodeExternal.Unknown,
+                        Description = "Unknown Error"
+                    });
+
+                    canDelegate = false;
+                }
             }
         }
 
@@ -127,17 +139,21 @@ public class DelegationHelper(
 
         foreach (var right in rights)
         {
+            bool found = false;
             foreach (var rightInSystem in rightsInSystem)
             {
                 if (Right.Compare(right, rightInSystem))
                 {
                     verifiedRights.Add(right);
-                }
-                else
-                {
-                    unknownRights.Add(right);
-                    allVerified = false;
-                }
+                    found = true;
+                    break;
+                }                
+            }
+
+            if (!found)
+            {
+                unknownRights.Add(right);
+                allVerified = false;
             }
         }
 
