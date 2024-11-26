@@ -538,9 +538,11 @@ public class RequestSystemUserService(
                 return new DelegationCheckResult(false, null, null); 
             }
 
-            if (!ResolveIfHasAccess(rightResponses)) 
+            (bool canDelegate, List<DetailExternal> errors) = ResolveIfHasAccess(rightResponses);
+
+            if (!canDelegate) 
             { 
-                return new DelegationCheckResult(false, null, null); 
+                return new DelegationCheckResult(false, null, errors); 
             }
 
             rightResponsesList.Add(new RightResponses(rightResponses));
@@ -548,10 +550,10 @@ public class RequestSystemUserService(
 
         if (rightResponsesList.Count == 0)
         {
-            return new DelegationCheckResult(false, null);
+            return new DelegationCheckResult(false, null, null);
         }
 
-        return new DelegationCheckResult(true, rightResponsesList);
+        return new DelegationCheckResult(true, rightResponsesList, null);
     }
 
     /// <summary>
@@ -581,17 +583,17 @@ public class RequestSystemUserService(
         return verifiedRights;
     }
 
-    private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
+    private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
     {
         foreach (var data in rightResponse)
         {
             if (data.Status != "Delegable")
             { 
-                return false; 
+                return (false, data.Details); 
             }
         }
 
-        return true;
+        return (true, []);
     }
 
     /// <inheritdoc/>
