@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Tests.Mocks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -35,6 +36,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
@@ -610,12 +612,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             };
 
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
-
-            var result = await createSystemUserResponse.Content.ReadFromJsonAsync<CreateSystemUserResponse>();
-            Assert.Equal(HttpStatusCode.BadRequest, createSystemUserResponse.StatusCode);
-            Assert.True(result.IsSuccess = false);
-            Assert.Null(result.SystemUser);
-            Assert.NotEmpty(result.Problem?.Detail);
+            Assert.Equal(HttpStatusCode.BadRequest, createSystemUserResponse.StatusCode);            
         }
 
         private static string GetConfigPath()

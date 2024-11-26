@@ -189,8 +189,8 @@ namespace Altinn.Platform.Authentication.Services
             {
                 return Problem.Reportee_Orgno_NotFound;
             }
-                        
-            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, cancellationToken);
+
+            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
             if (delegationCheckFinalResult.RightResponses is null)
             {
                 // This represents some problem with doing the delegation check beyond the rights not being delegable.

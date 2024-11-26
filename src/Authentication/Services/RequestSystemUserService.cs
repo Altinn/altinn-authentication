@@ -12,6 +12,7 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
@@ -28,7 +29,8 @@ public class RequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IRequestRepository requestRepository,
-    IOptions<PaginationOptions> _paginationOption)
+    IOptions<PaginationOptions> _paginationOption,
+    DelegationHelper delegationHelper)
     : IRequestSystemUser
 {
     /// <summary>
@@ -452,7 +454,7 @@ public class RequestSystemUserService(
             return toBeInserted.Problem;
         }
 
-        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserRequest,cancellationToken);
+        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserRequest.Rights, false, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
         { 
             return Problem.Rights_NotFound_Or_NotDelegable; 
@@ -518,7 +520,7 @@ public class RequestSystemUserService(
         return toBeInserted!;
     }
 
-    private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, RequestSystemResponse systemUserRequest, CancellationToken cancellationToken = default)
+    private async Task<DelegationCheckResult> UserDelegationCheckForReporteeDeprecated(int partyId, string systemId, RequestSystemResponse systemUserRequest, CancellationToken cancellationToken = default)
     {                  
         var rights = await VerifySubsetOfRights(systemUserRequest.Rights, systemId, cancellationToken);
 

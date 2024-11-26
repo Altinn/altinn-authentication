@@ -21,13 +21,14 @@ public class DelegationHelper(
     /// </summary>
     /// <param name="partyId">reportee</param>
     /// <param name="systemId">the system</param>
-    /// <param name="requestedRights">The set of requested Rights, from the BFF/UI, Request or ChangeRequest </param>
+    /// <param name="requestedRights">The set of requested Rights, (currently empty collection from the BFF/UI), Request or ChangeRequest </param>
+    /// <param name="fromBff">the BFF/UI does not currently support a subset of the Rights, all will be delegated</param>
     /// <param name="cancellationToken">cancel token</param>
     /// <returns>DelegationCheckResult record</returns>
-    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, List<Right> requestedRights, CancellationToken cancellationToken = default)
-    {
-        (bool allVerified, List<Right> verifiedRights) = await VerifySubsetOfRights(requestedRights, systemId, cancellationToken);
-        if (!allVerified) 
+    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, List<Right> requestedRights, bool fromBff, CancellationToken cancellationToken = default)
+    { 
+        (bool allVerified, List<Right> verifiedRights) = await VerifySubsetOfRights(requestedRights, systemId, fromBff, cancellationToken);
+        if (!allVerified)
         {
             List<DetailExternal> errors = [];
 
@@ -49,7 +50,7 @@ public class DelegationHelper(
             }
 
             return new DelegationCheckResult(false, null, errors);
-        }
+        }     
 
         List<RightResponses> rightResponsesList = [];
         List<DetailExternal> allErrorDetails = [];
@@ -108,11 +109,18 @@ public class DelegationHelper(
     /// </summary>
     /// <param name="rights">the Requested Rights</param>
     /// <param name="systemId">the system id</param>
+    /// <param name="fromBff">the BFF/UI does not currently support a subset of the Rights, all will be delegated</param>
     /// <param name="cancellationToken">cancellation </param>
     /// <returns>Either the verified rights, or the set of unknown rights</returns>
-    private async Task<(bool AllVerified, List<Right> VerifiedRights)> VerifySubsetOfRights(List<Right> rights, string systemId, CancellationToken cancellationToken)
+    private async Task<(bool AllVerified, List<Right> VerifiedRights)> VerifySubsetOfRights(List<Right> rights, string systemId, bool fromBff, CancellationToken cancellationToken)
     {
         List<Right> rightsInSystem = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+
+        if (fromBff)
+        {
+            return (true, rightsInSystem);
+        }
+        
         List<Right> verifiedRights = [];
         List<Right> unknownRights = [];
         bool allVerified = true;
