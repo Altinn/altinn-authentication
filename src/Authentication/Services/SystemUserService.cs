@@ -237,7 +237,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     IsSuccess = false,
                     SystemUser = null,
-                    Problem = delegationSucceeded.Problem
+                    Problem = delegationSucceeded.Problem.Detail
                 };
             }
 
@@ -248,34 +248,34 @@ namespace Altinn.Platform.Authentication.Services
             };
         }
 
-        private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
+        private static string MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
         {
             if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
             {
-                return Problem.UnableToDoDelegationCheck;
+                return Problem.UnableToDoDelegationCheck.Detail;
             }
 
             if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
             {
-                return Problem.DelegationRightMissingRoleAccess;
+                return Problem.DelegationRightMissingRoleAccess.Detail;
             }
 
             if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
             {
-                return Problem.DelegationRightMissingDelegationAccess;
+                return Problem.DelegationRightMissingDelegationAccess.Detail;
             }
 
             if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
             {
-                return Problem.DelegationRightMissingSrrRightAccess;
+                return Problem.DelegationRightMissingSrrRightAccess.Detail;
             }
 
             if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
             {
-                return Problem.DelegationRightInsufficientAuthenticationLevel;
+                return Problem.DelegationRightInsufficientAuthenticationLevel.Detail;
             }
 
-            return Problem.UnableToDoDelegationCheck;
+            return Problem.UnableToDoDelegationCheck.Detail;
         }
     }
 }

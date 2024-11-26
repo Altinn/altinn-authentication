@@ -73,7 +73,7 @@ public class DelegationHelper(
 
             if (!canDelegate)
             {
-                return new DelegationCheckResult(false, null, errors);
+                return new DelegationCheckResult(false, rightResponsesList, errors);
             }
 
             rightResponsesList.Add(new RightResponses(rightResponses));
@@ -81,10 +81,10 @@ public class DelegationHelper(
 
         if (allErrorDetails.Count > 0)
         {
-            return new DelegationCheckResult(false, null, allErrorDetails);
+            return new DelegationCheckResult(false, rightResponsesList, allErrorDetails);
         }
 
-        return new DelegationCheckResult(true, rightResponsesList, null);
+        return new DelegationCheckResult(true, rightResponsesList, []);
     }
 
     private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
@@ -102,10 +102,18 @@ public class DelegationHelper(
                 }
                 else
                 {
+                    Dictionary<string, List<AttributePair>> parameters = [];
+
+                    foreach (var attributePair in data.Resource)
+                    {
+                        parameters.Add(attributePair.Id, [attributePair]);
+                    }
+
                     errors.Add(new DetailExternal()
                     {
                         Code = DetailCodeExternal.Unknown,
-                        Description = "Unknown Error"
+                        Description = "Unknown Error During DelegationCheck",
+                        Parameters = parameters
                     });
 
                     canDelegate = false;

@@ -1,4 +1,5 @@
 ﻿using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
@@ -21,5 +22,5 @@ public class CreateSystemUserResponse
     /// <summary>
     /// Set if the SystemUser was not created
     /// </summary>
-    public ProblemInstance? Problem { get; set; }
+    public string Problem { get; set; } = string.Empty;
 }

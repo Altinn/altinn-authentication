@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Core.Problems;
 using Altinn.Authentication.Tests.Mocks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
@@ -478,6 +479,38 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemUser_Create_Returns_DelegationErrorDetail()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500004;
+            Guid id = Guid.NewGuid();
+
+            string para = $"{partyId}/{id}";
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix",
+            };
+
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/bff");
+            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            
+            CreateSystemUserResponse? shouldBeCreated = JsonSerializer.Deserialize<CreateSystemUserResponse>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
+            Assert.NotNull(shouldBeCreated);
+            Assert.NotNull(shouldBeCreated.Problem);
+            Assert.Equal(Problem.UnableToDoDelegationCheck.Detail, shouldBeCreated.Problem);
+        }
+
+        [Fact]
         public async Task SystemUser_Create_ReturnsForbidden()
         {
             // Create System used for test
@@ -589,7 +622,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task SystemUser_CreateAndDelegate_Returns_DelegationError()
+        public async Task SystemUser_CreateAndDelegate_Returns_Error()
         {
             // Create System used for test
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
