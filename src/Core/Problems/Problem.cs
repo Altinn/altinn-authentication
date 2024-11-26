@@ -99,7 +99,7 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor UnableToDoDelegationCheck { get; }
-        = _factory.Create(14, HttpStatusCode.InternalServerError, "DelegationCheck failed with unknown error.");
+        = _factory.Create(14, HttpStatusCode.Forbidden, "DelegationCheck failed with unknown error.");
     
      /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.

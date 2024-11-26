@@ -33,6 +33,7 @@ using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -498,16 +499,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/bff");
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
             createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
             
-            CreateSystemUserResponse? shouldBeCreated = JsonSerializer.Deserialize<CreateSystemUserResponse>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
-
-            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
-            Assert.NotNull(shouldBeCreated);
-            Assert.NotNull(shouldBeCreated.Problem);
-            Assert.Equal(Problem.UnableToDoDelegationCheck.Detail, shouldBeCreated.Problem);
+            Assert.Equal(HttpStatusCode.Forbidden, createSystemUserResponse.StatusCode);
+            Assert.Equal(Problem.UnableToDoDelegationCheck.Detail, problemDetails.Detail);
         }
 
         [Fact]
@@ -606,7 +604,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/bff")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
@@ -639,13 +637,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/bff")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
 
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, createSystemUserResponse.StatusCode);            
+            Assert.Equal(HttpStatusCode.BadRequest, createSystemUserResponse.StatusCode);  
+            var problemDetails = await createSystemUserResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.Equal(Problem.Reportee_Orgno_NotFound.Detail, problemDetails.Detail);
         }
 
         private static string GetConfigPath()

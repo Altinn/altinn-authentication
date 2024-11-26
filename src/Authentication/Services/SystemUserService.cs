@@ -200,12 +200,7 @@ namespace Altinn.Platform.Authentication.Services
             if (!delegationCheckFinalResult.CanDelegate)
             {
                 // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-                return new CreateSystemUserResponse
-                {
-                    IsSuccess = false,
-                    SystemUser = null,
-                    Problem = MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors)
-                };
+                return MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
             }
 
             SystemUser newSystemUser = new()
@@ -233,12 +228,7 @@ namespace Altinn.Platform.Authentication.Services
             if (delegationSucceeded.IsProblem)
             {
                 await _repository.SetDeleteSystemUserById((Guid)insertedId);
-                return new CreateSystemUserResponse
-                {
-                    IsSuccess = false,
-                    SystemUser = null,
-                    Problem = delegationSucceeded.Problem.Detail
-                };
+                return delegationSucceeded.Problem;
             }
 
             return new CreateSystemUserResponse
@@ -248,34 +238,34 @@ namespace Altinn.Platform.Authentication.Services
             };
         }
 
-        private static string MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
+        private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
         {
             if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
             {
-                return Problem.UnableToDoDelegationCheck.Detail;
+                return Problem.UnableToDoDelegationCheck;
             }
 
             if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
             {
-                return Problem.DelegationRightMissingRoleAccess.Detail;
+                return Problem.DelegationRightMissingRoleAccess;
             }
 
             if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
             {
-                return Problem.DelegationRightMissingDelegationAccess.Detail;
+                return Problem.DelegationRightMissingDelegationAccess;
             }
 
             if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
             {
-                return Problem.DelegationRightMissingSrrRightAccess.Detail;
+                return Problem.DelegationRightMissingSrrRightAccess;
             }
 
             if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
             {
-                return Problem.DelegationRightInsufficientAuthenticationLevel.Detail;
+                return Problem.DelegationRightInsufficientAuthenticationLevel;
             }
 
-            return Problem.UnableToDoDelegationCheck.Detail;
+            return Problem.UnableToDoDelegationCheck;
         }
     }
 }
