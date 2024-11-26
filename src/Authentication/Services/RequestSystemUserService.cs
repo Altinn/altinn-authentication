@@ -585,15 +585,19 @@ public class RequestSystemUserService(
 
     private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
     {
+        List<DetailExternal> errors = [];
+        var canDelegate = true;
+
         foreach (var data in rightResponse)
         {
             if (data.Status != "Delegable")
             { 
-                return (false, data.Details); 
+                errors.AddRange(data.Details);
+                canDelegate = false;
             }
         }
 
-        return (true, []);
+        return (canDelegate, errors);
     }
 
     /// <inheritdoc/>

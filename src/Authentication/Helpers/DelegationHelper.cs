@@ -21,15 +21,40 @@ public class DelegationHelper(
     /// </summary>
     /// <param name="partyId">reportee</param>
     /// <param name="systemId">the system</param>
+    /// <param name="requestedRights">The set of requested Rights, from the BFF/UI, Request or ChangeRequest </param>
     /// <param name="cancellationToken">cancel token</param>
-    /// <returns></returns>
-    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, CancellationToken cancellationToken = default)
+    /// <returns>DelegationCheckResult record</returns>
+    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, List<Right> requestedRights, CancellationToken cancellationToken = default)
     {
-        List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+        (bool allVerified, List<Right> verifiedRights) = await VerifySubsetOfRights(requestedRights, systemId, cancellationToken);
+        if (!allVerified) 
+        {
+            List<DetailExternal> errors = [];
+
+            foreach (var right in verifiedRights)
+            {
+                Dictionary<string, List<AttributePair>> parameters = [];
+
+                foreach (var attributePair in right.Resource)
+                {
+                    parameters.Add(attributePair.Id, [attributePair]);
+                }
+
+                errors.Add(new DetailExternal()
+                {
+                    Code = DetailCodeExternal.Unknown,
+                    Description = "Unknown Right",
+                    Parameters = parameters
+                });
+            }
+
+            return new DelegationCheckResult(false, null, errors);
+        }
+
         List<RightResponses> rightResponsesList = [];
         List<DetailExternal> allErrorDetails = [];
 
-        foreach (Right right in rights)
+        foreach (Right right in verifiedRights)
         {
             DelegationCheckRequest request = new()
             {
@@ -43,9 +68,11 @@ public class DelegationHelper(
                 return new DelegationCheckResult(false, null, null);
             }
 
-            if (!ResolveIfHasAccess(rightResponses))
+            (bool canDelegate, List<DetailExternal> errors) = ResolveIfHasAccess(rightResponses);
+
+            if (!canDelegate)
             {
-                allErrorDetails.AddRange(FlattenListOfErrors(rightResponses));
+                return new DelegationCheckResult(false, null, errors);
             }
 
             rightResponsesList.Add(new RightResponses(rightResponses));
@@ -59,31 +86,58 @@ public class DelegationHelper(
         return new DelegationCheckResult(true, rightResponsesList, null);
     }
 
-    private static List<DetailExternal> FlattenListOfErrors(List<DelegationResponseData> input)
+    private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
     {
         List<DetailExternal> errors = [];
+        var canDelegate = true;
 
-        foreach (var delegationResponseData in input)
-        {
-            if (delegationResponseData.Status != "Delegable")
-            {
-                errors.AddRange(delegationResponseData.Details);
-            }
-        }
-
-        return errors;
-    }
-
-    private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
-    {
         foreach (var data in rightResponse)
         {
             if (data.Status != "Delegable")
-            {                
-                return false;
+            {
+                errors.AddRange(data.Details);
+                canDelegate = false;
             }
         }
 
-        return true;
+        return (canDelegate, errors);
+    }
+
+    /// <summary>
+    /// Checks that all requested Rights are in the System's list of prepared Rights
+    /// </summary>
+    /// <param name="rights">the Requested Rights</param>
+    /// <param name="systemId">the system id</param>
+    /// <param name="cancellationToken">cancellation </param>
+    /// <returns>Either the verified rights, or the set of unknown rights</returns>
+    private async Task<(bool AllVerified, List<Right> VerifiedRights)> VerifySubsetOfRights(List<Right> rights, string systemId, CancellationToken cancellationToken)
+    {
+        List<Right> rightsInSystem = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+        List<Right> verifiedRights = [];
+        List<Right> unknownRights = [];
+        bool allVerified = true;
+
+        foreach (var right in rights)
+        {
+            foreach (var rightInSystem in rightsInSystem)
+            {
+                if (Right.Compare(right, rightInSystem))
+                {
+                    verifiedRights.Add(right);
+                }
+                else
+                {
+                    unknownRights.Add(right);
+                    allVerified = false;
+                }
+            }
+        }
+
+        if (!allVerified)
+        {
+            return (false, unknownRights);
+        }
+
+        return (allVerified, verifiedRights);
     }
 }
