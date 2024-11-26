@@ -108,8 +108,8 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>Boolean True if row affected</returns>
         public async Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
         {
-            await _repository.SetDeleteSystemUserById(systemUserId);
             SystemUser systemUser = await _repository.GetSystemUserById(systemUserId);
+            await _repository.SetDeleteSystemUserById(systemUserId);
             List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
             await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
             return true; // if it can't be found, there is no need to delete it.

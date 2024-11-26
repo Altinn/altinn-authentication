@@ -144,7 +144,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         if (!await RevokeRightsToSystemUser(partyId, systemUser, rights))
         {
-            return Problem.Rights_FailedToDelegate;
+            return Problem.Rights_FailedToRevoke;
         };
 
         return true;

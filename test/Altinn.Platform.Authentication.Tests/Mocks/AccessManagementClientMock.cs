@@ -59,8 +59,8 @@ public class AccessManagementClientMock : IAccessManagementClient
         throw new NotImplementedException();
     }
 
-    public Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
+    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
     {
-        throw new NotImplementedException();
+        return await Task.FromResult(true);
     }
 }
