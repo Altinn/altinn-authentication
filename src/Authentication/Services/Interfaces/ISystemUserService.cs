@@ -85,5 +85,5 @@ public interface ISystemUserService
     /// <param name="request">the requested SystemUser to be created</param>
     /// <param name="userId">the logged in user</param>
     /// <returns>The CreateSystemUserResponse response model, with either a new SystemUser model inside, or a list of errors.</returns>
-    Task<Result<CreateSystemUserResponse>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
 }

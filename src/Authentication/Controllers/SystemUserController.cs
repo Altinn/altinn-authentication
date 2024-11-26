@@ -252,11 +252,11 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("{party}/create")]
-    public async Task<ActionResult<CreateSystemUserResponse>> CreateAndDelegateSystemUser(string party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<SystemUser>> CreateAndDelegateSystemUser(string party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
-        Result<CreateSystemUserResponse> createdSystemUser = await _systemUserService.CreateAndDelegateSystemUser(party, request, userId, cancellationToken);
+        Result<SystemUser> createdSystemUser = await _systemUserService.CreateAndDelegateSystemUser(party, request, userId, cancellationToken);
         if (createdSystemUser.IsSuccess)
         {
             return Ok(createdSystemUser.Value);

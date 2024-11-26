@@ -175,7 +175,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<CreateSystemUserResponse>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
             RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
@@ -231,11 +231,7 @@ namespace Altinn.Platform.Authentication.Services
                 return delegationSucceeded.Problem;
             }
 
-            return new CreateSystemUserResponse
-            {
-                IsSuccess = true,
-                SystemUser = inserted
-            };
+            return inserted;
         }
 
         private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)

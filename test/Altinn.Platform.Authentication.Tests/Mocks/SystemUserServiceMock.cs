@@ -186,10 +186,5 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             throw new NotImplementedException();
         }
-
-        Task<Result<CreateSystemUserResponse>> ISystemUserService.CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

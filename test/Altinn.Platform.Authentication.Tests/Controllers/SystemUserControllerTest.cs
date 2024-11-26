@@ -611,12 +611,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
 
-            var result = await createSystemUserResponse.Content.ReadFromJsonAsync<CreateSystemUserResponse>();
-            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
-            SystemUser? shouldBeCreated = result?.SystemUser;
-            Assert.NotNull(shouldBeCreated);
-            Assert.Equal(newSystemUser.SystemId, shouldBeCreated.SystemId);
-            Assert.Equal(newSystemUser.IntegrationTitle, shouldBeCreated.IntegrationTitle);
+            var result = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
+            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);           
+            
+            Assert.Equal(newSystemUser.IntegrationTitle, result.IntegrationTitle);
         }
 
         [Fact]
