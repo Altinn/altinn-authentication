@@ -117,5 +117,5 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor Rights_FailedToRevoke { get; }
-        = _factory.Create(2, HttpStatusCode.BadRequest, "The operation to revoke rights failed.");
+        = _factory.Create(22, HttpStatusCode.BadRequest, "The operation to revoke rights failed.");
 }
