@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -57,5 +57,10 @@ public class AccessManagementClientMock : IAccessManagementClient
     public Task<AuthorizedPartyExternal> GetPartyFromReporteeListIfExists(int partyId, string token)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
+    {
+        return await Task.FromResult(true);
     }
 }

@@ -95,6 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(timeProviderMock.Object);
             services.AddSingleton(guidService.Object);
+            services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();

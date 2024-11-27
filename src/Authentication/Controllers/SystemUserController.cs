@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -121,12 +121,12 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("{party}/{systemUserId}")]
-    public async Task<ActionResult> SetDeleteFlagOnSystemUser(Guid systemUserId)
+    public async Task<ActionResult> SetDeleteFlagOnSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken = default)
     {
         SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
         if (toBeDeleted is not null)
         {
-            await _systemUserService.SetDeleteFlagOnSystemUser(systemUserId);
+            await _systemUserService.SetDeleteFlagOnSystemUser(party, systemUserId, cancellationToken);
             return Accepted(1);
         }
 
