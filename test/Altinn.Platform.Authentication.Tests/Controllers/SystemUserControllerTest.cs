@@ -17,6 +17,7 @@ using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
@@ -89,6 +90,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(timeProviderMock.Object);
             services.AddSingleton(guidService.Object);
+            services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();

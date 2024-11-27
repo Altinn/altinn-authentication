@@ -1,4 +1,4 @@
-﻿using Altinn.Authorization.ProblemDetails;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 
@@ -35,4 +35,13 @@ public interface IAccessManagementClient
     /// <param name="rights">The Rights to be delegated to the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser to receive the rights</param>
     Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> rights);
+
+    /// <summary>
+    /// Revokes the Delegated the rights to the systemuser
+    /// </summary>
+    /// <param name="partyId">The party id</param>
+    /// <param name="token">The authorization header bearer token</param>
+    /// <param name="rights">The Rights to be revoked for the systemuser on behalf of the Party</param>
+    /// <param name="systemUser">The SystemUser that misses the rights</param>
+    Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights);
 }

@@ -112,4 +112,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor RedirectUriNotFound { get; }
         = _factory.Create(16, HttpStatusCode.BadRequest, "The RedirectUri was not found or not valid.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Rights_FailedToRevoke { get; }
+        = _factory.Create(22, HttpStatusCode.BadRequest, "The operation to revoke rights failed.");
 }

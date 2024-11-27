@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,9 +30,10 @@ public interface ISystemUserService
     /// <summary>
     /// Set the Delete flag on the identified SystemUser
     /// </summary>
+    /// <param name="partyId">the party id of the reportee</param>
     /// <param name="systemUserId">The db id for the SystemUser to be deteled</param>
     /// <returns></returns>
-    Task<bool> SetDeleteFlagOnSystemUser(Guid systemUserId);
+    Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new SystemUser
