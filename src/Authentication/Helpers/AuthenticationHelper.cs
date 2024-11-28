@@ -21,6 +21,11 @@ namespace Altinn.Platform.Authentication.Helpers
     public static class AuthenticationHelper
     {
         /// <summary>
+        /// Regular expression for valid uri
+        /// </summary>
+        public static readonly Regex ValidUri = new Regex(@"^https://[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$");
+
+        /// <summary>
         /// Get user information from the token
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
@@ -306,10 +311,10 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="redirectUrls">the redirect url for a system</param>
         /// <returns>true if the url matches the expression</returns>
         public static bool IsValidRedirectUrl(List<Uri> redirectUrls)
-        {
+        {            
             foreach (Uri redirectUri in redirectUrls)
             {
-                if (!redirectUri.IsWellFormedOriginalString() || !redirectUri.OriginalString.StartsWith("https:")) 
+                if (!IsValidUriWithHttps(redirectUri.OriginalString)) 
                 {
                     return false;
                 }
@@ -376,6 +381,12 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return 0;
+        }
+
+        private static bool IsValidUriWithHttps(string uri)
+        {
+            return Uri.TryCreate(uri, UriKind.Absolute, out Uri? validatedUri)
+                   && validatedUri.Scheme == Uri.UriSchemeHttps;
         }
     }
 }
