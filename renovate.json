@@ -2,5 +2,18 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>Altinn/renovate-config"
+  ],
+  "packageRules":[
+    {
+      "matchPackageNames": [
+        "Testcontainers",
+        "Testcontainers.PostgreSql"
+      ],
+      "groupName": "Testcontainers for .NET",
+      "groupSlug": "testcontainers-for-dotnet",
+      "matchUpdateTypes": [
+        "major"
+      ]
+    }
   ]
 }
