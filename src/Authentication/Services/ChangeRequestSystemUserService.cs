@@ -18,6 +18,7 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -42,7 +43,8 @@ public class ChangeRequestSystemUserService(
     ISystemUserRepository systemUserRepository,
     IResourceRegistryClient resourceRegistryClient,
     IPDP PDPClient,
-    IOptions<PaginationOptions> _paginationOption)
+    IOptions<PaginationOptions> _paginationOption,
+    DelegationHelper delegationHelper)
     : IChangeRequestSystemUser
 {
     /// <summary>
@@ -405,7 +407,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest, cancellationToken);
+        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
@@ -444,7 +446,7 @@ public class ChangeRequestSystemUserService(
         return await changeRequestRepository.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
     }
 
-    private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, ChangeRequestResponse changeRequest, CancellationToken cancellationToken = default)
+    private async Task<DelegationCheckResult> UserDelegationCheckForReporteeDeprecated(int partyId, string systemId, ChangeRequestResponse changeRequest, CancellationToken cancellationToken = default)
     {
         var rights = await VerifySubsetOfRights(changeRequest.RequiredRights, systemId, cancellationToken);
 
@@ -461,18 +463,18 @@ public class ChangeRequestSystemUserService(
 
             if (rightResponses is null)
             {
-                return new DelegationCheckResult(false, null);
+                return new DelegationCheckResult(false, null, null);
             }
 
             if (!ResolveIfHasAccess(rightResponses))
             {
-                return new DelegationCheckResult(false, null);
+                return new DelegationCheckResult(false, null, null);
             }
 
             rightResponsesList.Add(new RightResponses(rightResponses));
         }
 
-        return new DelegationCheckResult(true, rightResponsesList);
+        return new DelegationCheckResult(true, rightResponsesList, null);
     }
 
     /// <summary>
