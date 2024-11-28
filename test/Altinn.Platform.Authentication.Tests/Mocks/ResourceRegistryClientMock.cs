@@ -28,6 +28,20 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
 
+            if (resourceId == "ske-krav-og-betalinger-3")
+            {
+                dataFileName = "Data/ResourceRegistry/kravogbetaling.json";
+                string content = File.ReadAllText(dataFileName);
+                return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+
+            if (resourceId == "ske-krav-og-betalinger-subres")
+            {
+                dataFileName = "Data/ResourceRegistry/kravogbetaling.json";
+                string content = File.ReadAllText(dataFileName);
+                return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+
             return null;
         }
 
