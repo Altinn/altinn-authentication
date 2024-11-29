@@ -114,10 +114,10 @@ public class DelegationHelper(
                         Code = DetailCodeExternal.Unknown,
                         Description = "Unknown Error During DelegationCheck",
                         Parameters = parameters
-                    });
-
-                    canDelegate = false;
+                    });                    
                 }
+
+                canDelegate = false;
             }
         }
 
