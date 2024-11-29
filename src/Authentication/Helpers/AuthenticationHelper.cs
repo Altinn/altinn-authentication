@@ -22,11 +22,6 @@ namespace Altinn.Platform.Authentication.Helpers
     public static class AuthenticationHelper
     {
         /// <summary>
-        /// Regular expression for valid uri
-        /// </summary>
-        public static readonly Regex ValidUri = new Regex(@"^https://[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$");
-
-        /// <summary>
         /// Get user information from the token
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
