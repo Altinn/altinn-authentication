@@ -117,7 +117,7 @@ public class DelegationHelper(
                     });                    
                 }
 
-                canDelegate = false;
+                canDelegate = false; 
             }
         }
 
