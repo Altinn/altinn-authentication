@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Policy;
 using System.Text.RegularExpressions;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
@@ -321,6 +322,11 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return true;
+
+            static bool IsValidAbsoluteUriWithHttps(Uri uri)
+            {
+                return uri.IsAbsoluteUri && uri.Scheme == Uri.UriSchemeHttps;
+            }
         }
 
         /// <summary>
@@ -381,16 +387,6 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return 0;
-        }
-
-        private static bool IsValidAbsoluteUriWithHttps(Uri uri)
-        {
-            if (!uri.IsAbsoluteUri || uri.Scheme != Uri.UriSchemeHttps)
-            {
-                return false;
-            }
-
-            return true;
         }
     }
 }
