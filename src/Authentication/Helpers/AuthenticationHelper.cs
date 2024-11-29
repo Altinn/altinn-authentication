@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Policy;
 using System.Text.RegularExpressions;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
@@ -306,19 +307,21 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="redirectUrls">the redirect url for a system</param>
         /// <returns>true if the url matches the expression</returns>
         public static bool IsValidRedirectUrl(List<Uri> redirectUrls)
-        {
-            string pattern = @"^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$";
-            Regex expression = new Regex(pattern, RegexOptions.Compiled, TimeSpan.FromSeconds(1));
-
+        {            
             foreach (Uri redirectUri in redirectUrls)
             {
-                if (!redirectUri.IsWellFormedOriginalString() || !expression.IsMatch(redirectUri.OriginalString))
+                if (!IsValidAbsoluteUriWithHttps(redirectUri)) 
                 {
                     return false;
                 }
             }
 
             return true;
+
+            static bool IsValidAbsoluteUriWithHttps(Uri uri)
+            {
+                return uri.IsAbsoluteUri && uri.Scheme == Uri.UriSchemeHttps;
+            }
         }
 
         /// <summary>
