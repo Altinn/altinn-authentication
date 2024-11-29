@@ -314,7 +314,7 @@ namespace Altinn.Platform.Authentication.Helpers
         {            
             foreach (Uri redirectUri in redirectUrls)
             {
-                if (!IsValidUriWithHttps(redirectUri.OriginalString)) 
+                if (!IsValidAbsoluteUriWithHttps(redirectUri)) 
                 {
                     return false;
                 }
@@ -383,10 +383,14 @@ namespace Altinn.Platform.Authentication.Helpers
             return 0;
         }
 
-        private static bool IsValidUriWithHttps(string uri)
+        private static bool IsValidAbsoluteUriWithHttps(Uri uri)
         {
-            return Uri.TryCreate(uri, UriKind.Absolute, out Uri? validatedUri)
-                   && validatedUri.Scheme == Uri.UriSchemeHttps;
+            if (!uri.IsAbsoluteUri || uri.Scheme != Uri.UriSchemeHttps)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
