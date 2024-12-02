@@ -65,7 +65,7 @@ namespace Altinn.Platform.Authentication.Services
 
             Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
            
-            if (party is null)
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
                 return null;
             }
@@ -190,7 +190,7 @@ namespace Altinn.Platform.Authentication.Services
 
             Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
 
-            if (party is null)
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
                 return Problem.Reportee_Orgno_NotFound;
             }
