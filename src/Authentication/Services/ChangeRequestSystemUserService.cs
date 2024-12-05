@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -17,6 +18,7 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -24,6 +26,7 @@ using Altinn.Platform.Register.Models;
 using Altinn.Urn;
 using Altinn.Urn.Json;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -31,16 +34,17 @@ namespace Altinn.Platform.Authentication.Services;
 
 /// <inheritdoc/>
 public class ChangeRequestSystemUserService(
+    ILogger<ChangeRequestSystemUserService> logger,
     ISystemRegisterService systemRegisterService,
     IPartiesClient partiesClient,
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IChangeRequestRepository changeRequestRepository,
-    IRequestRepository requestRepository,
     ISystemUserRepository systemUserRepository,
     IResourceRegistryClient resourceRegistryClient,
     IPDP PDPClient,
-    IOptions<PaginationOptions> _paginationOption)
+    IOptions<PaginationOptions> _paginationOption,
+    DelegationHelper delegationHelper)
     : IChangeRequestSystemUser
 {
     /// <summary>
@@ -57,7 +61,17 @@ public class ChangeRequestSystemUserService(
             return validationSet.Problem;
         }
 
-        var verified = await VerifySetOfRights(createRequest, vendorOrgNo);
+        Result<ChangeRequestResponse> verified = await VerifySetOfRights(createRequest, vendorOrgNo);
+        if (verified.IsProblem)
+        {
+            return verified.Problem;
+        }
+
+        // Similar as to running the Verify endpoint, but we need to check here too, since the vendor might not have verified the request first.
+        if (verified.Value.Status == ChangeRequestStatus.NoChangeNeeded.ToString())
+        {
+            return verified.Value;
+        }
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
@@ -96,6 +110,7 @@ public class ChangeRequestSystemUserService(
     /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected
     /// </summary>
     /// <param name="rights">the Rights chosen for the Request</param>
+    /// <param name="systemInfo">the System</param>
     /// <returns>Result or Problem</returns>
     private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
     {
@@ -392,7 +407,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        DelegationCheckResult delegationCheckFinalResult = await UserDelegationCheckForReportee(partyId, regSystem.Id, cancellationToken);
+        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
@@ -431,9 +446,10 @@ public class ChangeRequestSystemUserService(
         return await changeRequestRepository.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
     }
 
-    private async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, CancellationToken cancellationToken = default)
+    private async Task<DelegationCheckResult> UserDelegationCheckForReporteeDeprecated(int partyId, string systemId, ChangeRequestResponse changeRequest, CancellationToken cancellationToken = default)
     {
-        List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+        var rights = await VerifySubsetOfRights(changeRequest.RequiredRights, systemId, cancellationToken);
+
         List<RightResponses> rightResponsesList = [];
 
         foreach (Right right in rights)
@@ -447,18 +463,45 @@ public class ChangeRequestSystemUserService(
 
             if (rightResponses is null)
             {
-                return new DelegationCheckResult(false, null);
+                return new DelegationCheckResult(false, null, null);
             }
 
             if (!ResolveIfHasAccess(rightResponses))
             {
-                return new DelegationCheckResult(false, null);
+                return new DelegationCheckResult(false, null, null);
             }
 
             rightResponsesList.Add(new RightResponses(rightResponses));
         }
 
-        return new DelegationCheckResult(true, rightResponsesList);
+        return new DelegationCheckResult(true, rightResponsesList, null);
+    }
+
+    /// <summary>
+    /// Removes requested Rights that are not in the System's list of prepared Rights
+    /// </summary>
+    /// <param name="rights">the Requested Rights</param>
+    /// <param name="systemId">the system id</param>
+    /// <param name="cancellationToken">cancellation </param>
+    /// <returns></returns>
+    private async Task<List<Right>> VerifySubsetOfRights(List<Right> rights, string systemId, CancellationToken cancellationToken)
+    {
+        List<Right> rightsInSystem = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+
+        List<Right> verifiedRights = [];
+
+        foreach (var right in rights)
+        {
+            foreach (var rightInSystem in rightsInSystem)
+            {
+                if (Right.Compare(right, rightInSystem))
+                {
+                    verifiedRights.Add(right);
+                }
+            }
+        }
+
+        return verifiedRights;
     }
 
     private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
@@ -635,7 +678,7 @@ public class ChangeRequestSystemUserService(
         return new ChangeRequestResponse()
         {
             Id = Guid.NewGuid(),
-            ExternalRef = verifyRequest.ExternalRef,
+            ExternalRef = JsonSerializer.Serialize(res.Value),
             SystemId = verifyRequest.SystemId,
             SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,

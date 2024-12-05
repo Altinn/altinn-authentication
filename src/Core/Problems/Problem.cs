@@ -98,18 +98,54 @@ public static class Problem
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
+    public static ProblemDescriptor UnableToDoDelegationCheck { get; }
+        = _factory.Create(14, HttpStatusCode.Forbidden, "DelegationCheck failed with unknown error.");
+    
+     /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
     public static ProblemDescriptor SystemUserNotFound { get; }
-        = _factory.Create(14, HttpStatusCode.NotFound, "The SystemUser was not found.");
+        = _factory.Create(15, HttpStatusCode.NotFound, "The SystemUser was not found.");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
+    public static ProblemDescriptor DelegationRightMissingRoleAccess { get; }
+        = _factory.Create(16, HttpStatusCode.Forbidden, "DelegationCheck failed with error: Has not access by a delegation of role in ER or Altinn.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>        
     public static ProblemDescriptor SystemNameNotFound { get; }
-        = _factory.Create(15, HttpStatusCode.NotFound, "The SystemName was not found.");
+        = _factory.Create(17, HttpStatusCode.NotFound, "The SystemName was not found.");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
+    public static ProblemDescriptor DelegationRightMissingDelegationAccess { get; }
+        = _factory.Create(18, HttpStatusCode.Forbidden, "DelegationCheck failed with error: Has not access by direct delegation.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightMissingSrrRightAccess { get; }
+        = _factory.Create(19, HttpStatusCode.Forbidden, "DelegationCheck failed with error: The service requires explicit access in SRR and the reportee is missing this.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightInsufficientAuthenticationLevel { get; }
+        = _factory.Create(20, HttpStatusCode.Forbidden, "DelegationCheck failed with error: The service requires explicit authentication level and the reportee is missing this.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>    
     public static ProblemDescriptor RedirectUriNotFound { get; }
-        = _factory.Create(16, HttpStatusCode.BadRequest, "The RedirectUri was not found or not valid.");
+        = _factory.Create(21, HttpStatusCode.BadRequest, "The RedirectUri was not found or not valid.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Rights_FailedToRevoke { get; }
+        = _factory.Create(22, HttpStatusCode.BadRequest, "The operation to revoke rights failed.");
 }

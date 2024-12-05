@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
 #nullable enable
@@ -30,9 +31,10 @@ public interface ISystemUserService
     /// <summary>
     /// Set the Delete flag on the identified SystemUser
     /// </summary>
+    /// <param name="partyId">the party id of the reportee</param>
     /// <param name="systemUserId">The db id for the SystemUser to be deteled</param>
     /// <returns></returns>
-    Task<bool> SetDeleteFlagOnSystemUser(Guid systemUserId);
+    Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new SystemUser
@@ -75,4 +77,14 @@ public interface ISystemUserService
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<string>.Request continueRequest, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Called from the Authn.UI BFF to create a new SystemUser and delegate it to the given Reportee Party,
+    /// returns either the new SystemUser or the ProblemInstance from the Result
+    /// </summary>
+    /// <param name="party">the Reportee partyId</param>
+    /// <param name="request">the requested SystemUser to be created</param>
+    /// <param name="userId">the logged in user</param>
+    /// <returns>The CreateSystemUserResponse response model, with either a new SystemUser model inside, or a list of errors.</returns>
+    Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
 }

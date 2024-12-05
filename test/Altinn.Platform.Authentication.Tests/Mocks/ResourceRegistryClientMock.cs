@@ -28,6 +28,20 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
 
+            if (resourceId == "ske-krav-og-betalinger-3")
+            {
+                dataFileName = "Data/ResourceRegistry/kravogbetaling.json";
+                string content = File.ReadAllText(dataFileName);
+                return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+
+            if (resourceId == "ske-krav-og-betalinger-subres")
+            {
+                dataFileName = "Data/ResourceRegistry/kravogbetaling.json";
+                string content = File.ReadAllText(dataFileName);
+                return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+
             return null;
         }
 
@@ -50,6 +64,25 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     throw;
                 }                
                                 
+                return res;
+            }
+
+            if (resourceId == "ske-krav-og-betalinger-2")
+            {
+                List<PolicyRightsDTO> res = [];
+                dataFileName = "Data/ResourceRegistry/policyrightDTO-kravogbetaling2.json";
+                string content = string.Empty;
+                try
+                {
+                    content = File.ReadAllText(dataFileName);
+                    res = (List<PolicyRightsDTO>)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+                catch (Exception ex)
+                {
+                    string message = $"Error reading file {dataFileName}";
+                    throw;
+                }
+
                 return res;
             }
 

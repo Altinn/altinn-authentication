@@ -1,0 +1,45 @@
+name: Scheduled integration tests
+on:
+  schedule:
+    - cron: '0 7 * * 1-5'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  scheduled-integration-tests:
+    name: Run Tests for ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        environment: [ at22, tt02 ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            ${{ env.DOTNET_VERSION }}
+
+      - name: Install dependencies
+        run: dotnet restore test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj
+
+      - name: Build the project
+        run: dotnet build test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test test/Altinn.Platform.Authentication.SystemIntegrationTests/Altinn.Platform.Authentication.SystemIntegrationTests.csproj --no-restore --logger:"console;verbosity=detailed"
+        env:
+          SYSTEMINTEGRATIONTEST_JSON: ${{ secrets.SYSTEMINTEGRATIONTEST_JSON }}
+          TEST_ENVIRONMENT: ${{ matrix.environment }}
+
+
+      - name: Notify Slack on Failure
+        if: failure() # This step runs only if the previous steps fail
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "Tester feilet i testmiljø:`${{ matrix.environment }}` på repo: `${{ github.repository }}`. Mer detaljer her: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}

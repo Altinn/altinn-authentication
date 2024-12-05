@@ -194,6 +194,11 @@ public class SystemUserRepository : ISystemUserRepository
                 RETURNING system_user_profile_id;";
 
         string createdBy = "user_id:" + userId.ToString();
+        string ext_ref = toBeInserted.ExternalRef;
+        if (string.IsNullOrEmpty(ext_ref))
+        {
+            ext_ref = toBeInserted.ReporteeOrgNo;
+        }
 
         try
         {
@@ -204,7 +209,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("reportee_party_id", toBeInserted.PartyId);
             command.Parameters.AddWithValue("reportee_org_no", toBeInserted.ReporteeOrgNo);
             command.Parameters.AddWithValue("created_by", createdBy);
-            command.Parameters.AddWithValue("external_ref", toBeInserted.ExternalRef);
+            command.Parameters.AddWithValue("external_ref", ext_ref);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
