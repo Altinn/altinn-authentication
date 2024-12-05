@@ -47,7 +47,6 @@ namespace Altinn.Platform.Authentication.Controllers
             ILogger<LogoutController> logger,
             IOptions<GeneralSettings> generalSettings,
             IOptions<OidcProviderSettings> oidcProviderSettings,
-            IOidcProvider oidcProvider,
             IEventLog eventLog,
             IFeatureManager featureManager,
             IRequestSystemUser requestSystemUser,
