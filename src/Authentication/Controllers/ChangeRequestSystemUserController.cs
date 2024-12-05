@@ -217,30 +217,6 @@ public class ChangeRequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves the RedirectURL for the Authn.UI to redirect the user to the correct page
-    /// based only on the Request.Id GUID
-    /// </summary>
-    /// <param name="requestId">The UUID for the Request</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    [HttpGet("redirect/{requestId}")]
-    public async Task<ActionResult<RedirectUrl>> GetRedirectByRequestId(Guid requestId, CancellationToken cancellationToken = default)
-    {    
-        Result<string> response = await _changeRequestService.GetRedirectByChangeRequestId(requestId);
-        if (response.IsProblem)
-        {
-            return response.Problem.ToActionResult();
-        }
-
-        if (response.IsSuccess)
-        {            
-            return Ok(new RedirectUrl() { Url = response.Value });
-        }
-
-        return NotFound();
-    }
-
-    /// <summary>
     /// Retrieves the Status (Response model) for a Request
     /// based on the SystemId, OrgNo and the ExternalRef 
     /// ( which is enforced as a unique combination )
