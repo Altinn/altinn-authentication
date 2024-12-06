@@ -5,12 +5,14 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -34,16 +36,19 @@ public class RequestSystemUserController : ControllerBase
 {
     private readonly IRequestSystemUser _requestSystemUser;
     private readonly GeneralSettings _generalSettings;
+    private readonly ISystemUserRepository _systemUserRepository;
 
     /// <summary>
     /// Constructor
     /// </summary>
     public RequestSystemUserController(
         IRequestSystemUser requestSystemUser,
-        IOptions<GeneralSettings> generalSettings)
+        IOptions<GeneralSettings> generalSettings,
+        ISystemUserRepository systemUserRepository)
     {
         _requestSystemUser = requestSystemUser;
         _generalSettings = generalSettings.Value;
+        _systemUserRepository = systemUserRepository;
     }
 
     /// <summary>
@@ -90,6 +95,13 @@ public class RequestSystemUserController : ControllerBase
             OrgNo = createRequest.PartyOrgNo,
             SystemId = createRequest.SystemId,
         };
+
+        SystemUser? existing = await _systemUserRepository.GetSystemUserByExternalRequestId(externalRequestId);
+        if (existing is not null)
+        {
+            string message = $"SystemUser already exists with Id: {existing.Id}";
+            return Conflict(message);
+        }
 
         // Check to see if the Request already exists
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
