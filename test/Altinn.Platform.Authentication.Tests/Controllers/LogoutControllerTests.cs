@@ -90,6 +90,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
             services.AddSingleton<IRequestSystemUser, RequestSystemUserServiceMock>();
+            services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserServiceMock>();
             services.AddSingleton(_featureManager.Object);
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(_timeProviderMock.Object);
@@ -267,7 +268,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task Logout_HandleLoggedOut_RedirectToRedirectUrl()
+        public async Task Logout_HandleLoggedOut_RedirectToRequestRedirectUrl()
         {
             // Arrange
             HttpClient client = CreateClient();
@@ -285,7 +286,29 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
             response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
-            Assert.Equal("https://smartcloudaltinn.azurewebsites.net/", locationValues?.First());
+            Assert.Equal("https://smartcloudaltinn.azurewebsites.net/request", locationValues?.First());
+        }
+
+        [Fact]
+        public async Task Logout_HandleLoggedOut_RedirectToChangeRequestRedirectUrl()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout/handleloggedout");
+            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo=SystemuserChangeRequestId=c0970300-005c-4784-aea6-5e7bac61b9b1");
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
+
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
+
+            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            Assert.Equal("https://smartcloudaltinn.azurewebsites.net/changerequest", locationValues?.First());
         }
 
         [Fact]

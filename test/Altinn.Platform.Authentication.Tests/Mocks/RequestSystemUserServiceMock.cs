@@ -45,7 +45,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
         public async Task<Result<string>> GetRedirectByRequestId(Guid requestId)
         {
-            return await Task.FromResult("https://smartcloudaltinn.azurewebsites.net/");
+            return await Task.FromResult("https://smartcloudaltinn.azurewebsites.net/request");
         }
 
         public Task<Result<RequestSystemResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
