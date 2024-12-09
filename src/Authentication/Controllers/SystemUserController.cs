@@ -92,8 +92,8 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <param name="clientId">The unique id maintained by MaskinPorten tying their clients to the Registered Systems the ServiceProivders have created in our db.</param>        
     /// <param name="systemProviderOrgNo">The legal number (Orgno) of the Vendor creating the Registered System (Accounting system)</param>
-    /// <param name="systemUserOwnerOrgNo">The legal number (Orgno) of the party owning the System User Integration</param>
-    /// <param name="externalRef">Used for disambiguation resolver for customers with several SystemUsers on one reporteeOrgno</param>
+    /// <param name="systemUserOwnerOrgNo">The legal number (Orgno) of the party owning the System User Integration. (The ReporteeOrgno)</param>
+    /// <param name="externalRef">Used for disambiguation resolver when there are several SystemUsers on one reporteeOrgno</param>
     /// <param name="cancellationToken">Cancellationtoken</param>/// 
     /// <returns>The SystemUserIntegration model API DTO</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP)]
