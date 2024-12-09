@@ -46,7 +46,7 @@ public interface ISystemUserService
     /// <param name="request">The DTO describing the Product the Caller wants to create.</param>
     /// <param name="userId">The userid for the loged in Reporter User.</param>
     /// <returns></returns> 
-    Task<SystemUser?> CreateSystemUser(string party, SystemUserRequestDto request, int userId);
+    Task<Result<SystemUser>> CreateSystemUser(string party, SystemUserRequestDto request, int userId);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the update 

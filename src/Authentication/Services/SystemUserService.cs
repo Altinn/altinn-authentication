@@ -54,20 +54,33 @@ public class SystemUserService(
     /// Creates a new SystemUser
     /// The unique Id for the systemuser is handled by the db.
     /// </summary>
-    /// <returns>The SystemUser created</returns>
-    public async Task<SystemUser?> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
+    /// <returns>The SystemUser created</returns>    
+    public async Task<Result<SystemUser>> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
     {
         RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
         if (regSystem is null)
         {
-            return null;
+            return Problem.SystemIdNotFound;
         }
 
         Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
        
         if (party is null || string.IsNullOrEmpty(party.OrgNumber))
         {
-            return null;
+            return Problem.SystemUserNotFound;
+        }
+
+        ExternalRequestId externalRequestId = new()
+        {
+            OrgNo = party.OrgNumber,
+            SystemId = request.SystemId,
+            ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
+        };
+
+        SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+        if (existing is not null)
+        {
+            return Problem.SystemUser_AlreadyExists;
         }
 
         SystemUser newSystemUser = new()
@@ -82,10 +95,15 @@ public class SystemUserService(
         Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);        
         if (insertedId is null)
         {
-            return null;
+            return Problem.SystemUser_FailedToCreate;
         }
 
         SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+        if (inserted is null)
+        {
+            return Problem.SystemUser_FailedToCreate;
+        }
+
         return inserted;
     }
 

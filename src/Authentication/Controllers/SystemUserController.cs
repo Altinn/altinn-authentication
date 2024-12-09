@@ -163,13 +163,13 @@ public class SystemUserController : ControllerBase
     public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
-        SystemUser? createdSystemUser = await _systemUserService.CreateSystemUser(party, request, userId);
-        if (createdSystemUser is not null)
+        Result<SystemUser> createdSystemUser = await _systemUserService.CreateSystemUser(party, request, userId);
+        if (createdSystemUser.IsSuccess)
         {
-            return Created($"/authentication/api/v1/systemuser/{createdSystemUser.PartyId}/{createdSystemUser.Id}", createdSystemUser);
+            return Created($"/authentication/api/v1/systemuser/{createdSystemUser.Value.PartyId}/{createdSystemUser.Value.Id}", createdSystemUser.Value);
         }
 
-        return NotFound();
+        return createdSystemUser.Problem.ToActionResult();
     }
 
     /// <summary>
