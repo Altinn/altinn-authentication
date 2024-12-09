@@ -150,29 +150,6 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new SystemUser.
-    /// </summary>
-    /// <param name="party">The partyId for the reportee</param>
-    /// <param name="request">The DTO describing the Product the Caller wants to create.</param>
-    /// <returns>A SystemUser model</returns>    
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]                
-    [Produces("application/json")]
-    [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
-    [ProducesResponseType(StatusCodes.Status404NotFound)]        
-    [HttpPost("{party}")]
-    public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
-    {
-        var userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<SystemUser> createdSystemUser = await _systemUserService.CreateSystemUser(party, request, userId);
-        if (createdSystemUser.IsSuccess)
-        {
-            return Created($"/authentication/api/v1/systemuser/{createdSystemUser.Value.PartyId}/{createdSystemUser.Value.Id}", createdSystemUser.Value);
-        }
-
-        return createdSystemUser.Problem.ToActionResult();
-    }
-
-    /// <summary>
     /// Replaces the values for the existing system user with those from the update. 
     /// </summary>
     /// <param name="request">The DTO describing the updateed SystemUser.</param>
@@ -267,7 +244,7 @@ public class SystemUserController : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpPost("{party}/create")]
+    [HttpPost("{party}")]
     public async Task<ActionResult<SystemUser>> CreateAndDelegateSystemUser(string party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);

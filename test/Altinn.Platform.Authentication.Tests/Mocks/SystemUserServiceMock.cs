@@ -29,26 +29,6 @@ public class SystemUserServiceMock : ISystemUserService
     }
 
     /// <summary>
-    /// Creates a new SystemUser
-    /// The unique Id for the systemuser is handled by the db.
-    /// But the calling client may send a guid for the request of creating a new system user
-    /// to ensure that there is no mismatch if the same partyId creates several new SystemUsers at the same time
-    /// </summary>
-    /// <returns></returns>
-    public Task<SystemUser> CreateSystemUser(SystemUserRequestDto request, string partyOrgNo, int userId)
-    {
-        SystemUser newSystemUser = new()
-        {
-            Id = Guid.NewGuid().ToString(),
-            IntegrationTitle = request.IntegrationTitle,
-            SystemId = request.SystemId,
-            ReporteeOrgNo = partyOrgNo
-        };
-        theMockList.Add(newSystemUser);
-        return Task.FromResult(newSystemUser);
-    }
-
-    /// <summary>
     /// Returns the list of SystemUsers this PartyID has registered, including "deleted" ones.
     /// </summary>
     /// <returns></returns>
@@ -190,5 +170,10 @@ public class SystemUserServiceMock : ISystemUserService
         SystemUser toBeDeleted = theMockList.Find(s => s.Id == systemUserId.ToString());
         toBeDeleted.IsDeleted = true;
         return Task.FromResult(true);
+    }
+
+    Task<Result<SystemUser>> ISystemUserService.CreateSystemUser(string party, SystemUserRequestDto request, int userId)
+    {
+        throw new NotImplementedException();
     }
 }

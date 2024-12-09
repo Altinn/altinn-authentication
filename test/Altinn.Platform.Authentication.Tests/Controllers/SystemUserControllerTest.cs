@@ -416,7 +416,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.Created, createSystemUserResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
             SystemUser? shouldBeCreated = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
             Assert.NotNull(shouldBeCreated);
 
@@ -453,105 +453,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{Guid.NewGuid()}");
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.NotFound, response2.StatusCode);
-        }
-
-        [Fact(Skip = "Deprecated")]
-        public async Task SystemUser_Update_IntegrationTitle_ReturnsOk()
-        {
-            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-
-            int partyId = 500000;
-            Guid id = Guid.NewGuid();
-
-            string para = $"{partyId}/{id}";
-            SystemUserRequestDto newSystemUser = new()
-            {
-                IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
-            };
-
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
-            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
-            HttpResponseMessage response2 = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
-
-            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await response2.Content.ReadAsStringAsync(), _options);
-            Assert.NotNull(shouldBeCreated);
-
-            SystemUserUpdateDto updateDto = new SystemUserUpdateDto
-            {
-                IntegrationTitle = "updated_integration_title",
-                Id = shouldBeCreated.Id,
-                PartyId = shouldBeCreated.PartyId,
-                SystemId = shouldBeCreated.SystemId
-            };
-
-            HttpRequestMessage updateRequest = new(HttpMethod.Put, $"/authentication/api/v1/systemuser/{updateDto.Id}");
-            updateRequest.Content = JsonContent.Create<SystemUserUpdateDto>(updateDto, new MediaTypeHeaderValue("application/json"));
-            HttpResponseMessage updateResponse = await client.SendAsync(updateRequest, HttpCompletionOption.ResponseContentRead);
-            
-            Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
-
-            HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{para}");
-            HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-            SystemUser shouldBeUpdated = JsonSerializer.Deserialize<SystemUser>(await response3.Content.ReadAsStringAsync(), _options)!;
-
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response2.StatusCode);
-            Assert.Equal("updated_integration_title", shouldBeUpdated!.IntegrationTitle);
-        }
-
-        [Fact(Skip = "Deprecated")]
-        public async Task SystemUser_Update_ReturnsNotFound()
-        {
-            HttpClient client = CreateClient(); //GetTestClient(_sblCookieDecryptionService.Object, _userProfileService.Object);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
-            client.DefaultRequestHeaders.Add("X-Altinn-EnterpriseUser-Authentication", "VmFsaWRVc2VyOlZhbGlkUGFzc3dvcmQ=");
-
-            SystemUser doesNotExist = new() { Id = "123" };
-
-            HttpRequestMessage request2 = new(HttpMethod.Put, $"/authentication/api/v1/systemuser/")
-            {
-                Content = JsonContent.Create<SystemUser>(doesNotExist, new MediaTypeHeaderValue("application/json"), _options)
-            };
-            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
-
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response2.StatusCode);
-            Assert.False(response2.IsSuccessStatusCode);
-        }
-
-        [Fact(Skip = "Deprecated")]
-        public async Task SystemUser_Create_ReturnsOk()
-        {
-            // Create System used for test
-            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",  PrincipalUtil.GetToken(1337, null, 3));
-
-            int partyId = 500000;
-            Guid id = Guid.NewGuid();
-
-            string para = $"{partyId}/{id}";
-            SystemUserRequestDto newSystemUser = new()
-            {
-                IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "991825827_the_matrix",
-            };
-
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
-            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
-            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
-                         
-            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
-
-            Assert.Equal(HttpStatusCode.Created, createSystemUserResponse.StatusCode);
-            Assert.NotNull(shouldBeCreated);
-            Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);            
-        }
+        } 
 
         [Fact]
         public async Task SystemUser_CreateAndDelegate_Returns_DelegationErrorDetail()
@@ -573,40 +475,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
             createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
             
             Assert.Equal(HttpStatusCode.Forbidden, createSystemUserResponse.StatusCode);
             Assert.Equal(Problem.UnableToDoDelegationCheck.Detail, problemDetails.Detail);
-        }
-
-        [Fact(Skip = "Deprecated")]
-        public async Task SystemUser_Create_ReturnsForbidden()
-        {
-            // Create System used for test
-            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-
-            int partyId = 500801;
-            Guid id = Guid.NewGuid();
-
-            string para = $"{partyId}/{id}";
-            SystemUserRequestDto newSystemUser = new()
-            {
-                IntegrationTitle = "IntegrationTitleValue",
-                SystemId = "the_matrix",
-            };
-
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}");
-            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
-            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
-         
-            Assert.Equal(HttpStatusCode.Forbidden, createSystemUserResponse.StatusCode);
         }
 
         [Fact]
@@ -635,7 +510,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
-            Assert.Equal(HttpStatusCode.Created, createSystemUserResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
             Assert.NotNull(shouldBeCreated);
             Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);
 
@@ -678,7 +553,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
@@ -709,7 +584,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
@@ -721,7 +596,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(newSystemUser.IntegrationTitle, result.IntegrationTitle);
 
-            HttpRequestMessage createSystemUserRequest2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            HttpRequestMessage createSystemUserRequest2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
@@ -749,7 +624,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
@@ -780,7 +655,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
@@ -811,7 +686,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
