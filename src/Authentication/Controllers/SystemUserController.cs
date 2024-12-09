@@ -100,7 +100,15 @@ public class SystemUserController : ControllerBase
     [HttpGet("byExternalId")]
     public async Task<ActionResult> CheckIfPartyHasIntegration([FromQuery] string clientId, [FromQuery] string systemProviderOrgNo, [FromQuery] string systemUserOwnerOrgNo, CancellationToken cancellationToken = default)
     {
-        SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, cancellationToken);
+        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(systemProviderOrgNo) || string.IsNullOrEmpty(systemUserOwnerOrgNo))
+        {
+            return BadRequest();
+        }
+
+        // Temporary fix until Maskinporten changes their integration
+        string externalRef = systemUserOwnerOrgNo;
+
+        SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, externalRef, cancellationToken);
 
         if (res is null)
         {
