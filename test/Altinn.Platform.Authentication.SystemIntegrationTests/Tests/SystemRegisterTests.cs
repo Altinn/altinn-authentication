@@ -56,8 +56,8 @@ public class SystemRegisterTests
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
-            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
+            // .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            // .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
 
@@ -80,7 +80,6 @@ public class SystemRegisterTests
         // Act
         var response =
             await _platformClient.GetAsync("v1/systemregister", maskinportenToken);
-        
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);

@@ -137,9 +137,7 @@ public class MaskinPortenTokenGenerator
     /// <summary>
     /// This fetches a bearer token from Maskinporten
     /// </summary>
-    /// <param name="maskinportenClient"></param>
-    /// <param name="jwk">Jwk</param>
-    /// <returns></returns>
+    /// <returns>Access token</returns>
     /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
     public async Task<string> GetMaskinportenBearerToken()
     {

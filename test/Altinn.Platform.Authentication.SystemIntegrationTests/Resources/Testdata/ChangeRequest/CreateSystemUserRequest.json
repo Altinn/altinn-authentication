@@ -1,0 +1,16 @@
+{
+  "systemId": "{systemId}",
+  "partyOrgNo": "312605031",
+  "externalRef": "{externalRef}",
+  "rights": [
+    {
+      "resource": [
+        {
+          "value": "vegardtestressurs",
+          "id": "urn:altinn:resource"
+        }
+      ]
+    }
+  ],
+  "redirectUrl": "{redirectUrl}"
+}
