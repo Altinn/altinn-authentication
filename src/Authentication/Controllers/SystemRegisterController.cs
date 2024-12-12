@@ -51,6 +51,11 @@ public class SystemRegisterController : ControllerBase
 
         foreach (RegisteredSystem system in lista)
         {
+            if (!system.IsVisible)
+            {
+                continue;
+            }
+
             registeredSystemDTOs.Add(AuthenticationHelper.MapRegisteredSystemToRegisteredSystemDTO(system));
         }
 
@@ -68,7 +73,7 @@ public class SystemRegisterController : ControllerBase
     {
         RegisteredSystem registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
         
-        if (registeredSystem == null)
+        if (registeredSystem == null || !registeredSystem.IsVisible)
         {
             return NotFound();
         }
@@ -140,6 +145,12 @@ public class SystemRegisterController : ControllerBase
     [HttpGet("{systemId}/rights")]
     public async Task<ActionResult<List<Right>>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
     {
+        RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        if (registerSystemResponse == null || !registerSystemResponse.IsVisible)
+        {
+            return NotFound();
+        }
+
         List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
         if (lista is null || lista.Count == 0)
         {
