@@ -1,20 +1,32 @@
 {
-  "systemId": "991825827_the_matrix_01",
-  "systemVendorOrgNumber": "991825827",
-  "systemName": "The Matrix 001",
+  "id": "991825827_the_matrix_01",
+  "vendor": {
+    "authority": "iso6523-actorid-upis",
+    "ID": "0192:991825827"
+  },
+  "name": {
+    "nb": "The Matrix",
+    "en": "The Matrix",
+    "nn": "The Matrix"
+  },
+  "description": {
+    "nb": "Test system",
+    "en": "Test system",
+    "nn": "Test system"
+  },
   "rights": [
     {
       "resource": [
         {
           "id": "urn:altinn:resource",
-          "value": "ske_krav-og-betaling"
+          "value": "ske-krav-og-betalinger"
         }
       ]
     }
   ],
   "softDeleted": false,
   "clientId": [
-    "32ef65ac-6e62-498d-880f-76c85c2052ae"
+    "32ef65ac-6e62-498d-880f-76c85c2052af"
   ],
   "isVisible": true
 }

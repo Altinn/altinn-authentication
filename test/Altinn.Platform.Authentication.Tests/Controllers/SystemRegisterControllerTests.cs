@@ -269,7 +269,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
                 HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                List<RegisteredSystem> list = JsonSerializer.Deserialize<List<RegisteredSystem>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
+                List<RegisteredSystemDTO> list = JsonSerializer.Deserialize<List<RegisteredSystemDTO>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
                 Assert.True(list.Count > 1);
             }
         }
