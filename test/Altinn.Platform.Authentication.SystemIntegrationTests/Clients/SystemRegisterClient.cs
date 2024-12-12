@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text.Json;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
@@ -30,4 +32,24 @@ public class SystemRegisterClient
 
         return response;
     }
+
+    public async Task<List<SystemDto>> GetSystemsAsync(string token)
+    {
+        var response = await _platformClient.GetAsync("v1/systemregister/", token);
+
+        // Assert the response status is OK
+        Assert.True(HttpStatusCode.OK == response.StatusCode,
+            $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+
+        // Deserialize the JSON content to a list of SystemDto
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var systems = JsonSerializer.Deserialize<List<SystemDto>>(jsonContent, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true // Allows matching JSON properties in different casing
+        });
+
+        return systems ?? new List<SystemDto>();
+    }
+    
+    
 }

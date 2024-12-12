@@ -80,7 +80,7 @@ public class SystemRegisterTests
         // Act
         var response =
             await _platformClient.GetAsync("v1/systemregister", maskinportenToken);
-        
+
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -182,5 +182,26 @@ public class SystemRegisterTests
 
         //More asserts should be added, but there are known bugs right now regarding validation of rights 
         Assert.Equal(HttpStatusCode.OK, get.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteEverySystemCreatedByEndToEndTests()
+    {
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var systemIds = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
+
+        var idsToDelete = systemIds.FindAll(system => system.SystemVendorOrgNumber.Equals(_platformClient.EnvironmentHelper.Vendor));
+        
+        foreach (var systemDto in idsToDelete)
+        {
+            _outputHelper.WriteLine("Attempting to delete system with id: " + systemDto.SystemId);
+            // Act
+            var respons = await _platformClient.Delete(
+                $"v1/systemregister/vendor/{systemDto.SystemId}", maskinportenToken);
+        
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
+        }
+        
     }
 }
