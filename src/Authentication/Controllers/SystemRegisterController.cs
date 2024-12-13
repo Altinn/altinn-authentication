@@ -201,6 +201,13 @@ public class SystemRegisterController : ControllerBase
                 ]);
             }
 
+            if (AuthenticationHelper.HasDuplicateRights(registerNewSystem.Rights))
+            {
+                errors.Add(ValidationErrors.SystemRegister_ResourceId_Duplicates, [
+                    "/registersystemrequest/rights/resource"
+                ]);
+            }
+
             if (!AuthenticationHelper.IsValidRedirectUrl(registerNewSystem.AllowedRedirectUrls))
             {
                 errors.Add(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat, [
