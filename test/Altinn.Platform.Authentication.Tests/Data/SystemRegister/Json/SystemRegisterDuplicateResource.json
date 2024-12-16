@@ -1,0 +1,45 @@
+{
+  "id": "991825827_the_matrix",
+  "vendor": {
+    "authority": "iso6523-actorid-upis",
+    "ID": "0192:991825827"
+  },
+  "name": {
+    "nb": "The Matrix",
+    "en": "The Matrix",
+    "nn": "The Matrix"
+  },
+  "description": {
+    "nb": "Test system",
+    "en": "Test system",
+    "nn": "Test system"
+  },
+  "rights": [
+    {
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "ske-krav-og-betalinger"
+        }
+      ]
+    },
+    {
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "ske-krav-og-betalinger"
+        }
+      ]
+    }
+  ],
+  "softDeleted": false,
+  "clientId": [
+    "32ef65ac-6e62-498d-880f-76c85c2052ae"
+  ],
+  "allowedredirecturls": [
+    "https://vg.no",
+    "https://nrk.no",
+    "https://altinn.no"
+  ],
+  "isVisible": true
+}

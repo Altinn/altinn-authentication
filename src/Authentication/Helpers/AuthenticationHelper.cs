@@ -405,5 +405,27 @@ namespace Altinn.Platform.Authentication.Helpers
 
             return false; // No duplicates
         }
+
+        /// <summary>
+        /// Check for duplicates in the rights
+        /// </summary>
+        /// <param name="rights">the resources that the system gives rights to</param>
+        /// <returns>true if duplicate rights found</returns>
+        public static bool DoesResourceAlreadyExists(List<Right> rights, List<Right> existingRights)
+        {
+            var existingRightsSet = new HashSet<string>(existingRights.Select(r => $"{r.Action}:{string.Join(",", r.Resource.Select(res => $"{res.Id}:{res.Value}"))}"));
+
+            foreach (var right in rights)
+            {
+                var rightKey = $"{right.Action}:{string.Join(",", right.Resource.Select(r => $"{r.Id}:{r.Value}"))}";
+
+                if (existingRightsSet.Contains(rightKey))
+                {
+                    return true; // Duplicate found
+                }
+            }
+
+            return false; // No duplicates
+        }
     }
 }

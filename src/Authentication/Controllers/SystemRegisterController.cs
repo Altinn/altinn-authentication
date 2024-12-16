@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.ResourceRegistry.Core.Errors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -104,13 +104,29 @@ public class SystemRegisterController : ControllerBase
     [HttpPut("vendor/{systemId}")]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisteredSystem updateSystem, string systemId, CancellationToken cancellationToken = default)
     {
+        ValidationErrorBuilder errors = default;
         if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor.ID), User))
         {
             return Forbid();
         }
 
+        if (AuthenticationHelper.HasDuplicateRights(updateSystem.Rights))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ResourceId_Duplicates, [
+                "/registersystemrequest/rights/resource"
+            ]);
+        }
+
         List<MaskinPortenClientInfo> maskinPortenClients = await _systemRegisterService.GetMaskinportenClients(updateSystem.ClientId, cancellationToken);
         RegisteredSystem systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+
+        if (AuthenticationHelper.DoesResourceAlreadyExists(updateSystem.Rights, systemInfo.Rights))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ResourceId_AlreadyExists, [
+                "/registersystemrequest/rights/resource"
+            ]);
+        }
+
         foreach (string clientId in updateSystem.ClientId)
         {
             bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.InternalId).Count > 0;
@@ -252,12 +268,39 @@ public class SystemRegisterController : ControllerBase
     /// <returns>true if changed</returns>
     [HttpPut("vendor/{systemId}/rights")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId, CancellationToken cancellationToken = default)
     {
+        ValidationErrorBuilder errors = default;
         RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
         if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
         {
             return Forbid();
+        }
+
+        if (AuthenticationHelper.HasDuplicateRights(rights))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ResourceId_Duplicates, [
+                "/registersystemrequest/rights/resource"
+            ]);
+        }
+
+        if (AuthenticationHelper.DoesResourceAlreadyExists(rights, registerSystemResponse.Rights))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ResourceId_AlreadyExists, [
+                "/registersystemrequest/rights/resource"
+            ]);
+        }
+
+        if (!await _systemRegisterService.DoesResourceIdExists(rights, cancellationToken))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ResourceId_DoesNotExist, [
+                "/registersystemrequest/rights/resource"
+            ]);
+        }
+
+        if (errors.TryToActionResult(out var errorResult))
+        {
+            return errorResult;
         }
 
         bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);

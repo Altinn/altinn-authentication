@@ -1,0 +1,18 @@
+[
+  {
+    "resource": [
+      {
+        "id": "urn:altinn:resource",
+        "value": "ske_kravogbetaling"
+      }
+    ]
+  },
+  {
+    "resource": [
+      {
+        "id": "urn:altinn:resource",
+        "value": "ske_kravogbetaling"
+      }
+    ]
+  }
+]
