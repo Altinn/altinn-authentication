@@ -130,6 +130,9 @@
     <None Update="Data\Roles\user_1337\party_501337\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterWithoutResource.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterDuplicateResource.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -175,7 +178,7 @@
     <None Update="Data\SystemRegister\Json\SystemRegister01.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Data\SystemRegister\Json\UpdateRightResourceIdExists - Copy.json">
+    <None Update="Data\SystemRegister\Json\UpdateRightResourceIdExists.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemRegister\Json\UpdateRightResourceIdNotExist.json">

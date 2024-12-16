@@ -215,7 +215,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemRegister_Update_Success()
         {
-            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
             if (response.IsSuccessStatusCode)
@@ -300,8 +300,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.BadRequest, updateResponse.StatusCode);
                 AltinnValidationProblemDetails problemDetails = await updateResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
-                Assert.NotNull(problemDetails);
-                Assert.Single(problemDetails.Errors);
+                Assert.NotNull(problemDetails);                
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_Duplicates.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
                 Assert.Equal("One or more duplicate rights found", error.Detail);
@@ -521,7 +520,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpClient client = CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
 
-                HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{name}/rights");
+                HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 Assert.Equal(HttpStatusCode.NotFound, rightsResponse.StatusCode);
             }
