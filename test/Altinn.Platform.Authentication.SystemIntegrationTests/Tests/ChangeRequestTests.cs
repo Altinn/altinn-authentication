@@ -44,44 +44,55 @@ public class ChangeRequestTests
             (await Helper.ReadFile("Resources/Testdata/ChangeRequest/ChangeRequest.json"))
             .Replace("{systemId}", systemId)
             .Replace("{externalRef}", externalRef);
-        
+
         var changeRequestResponse = await _platformAuthentication.PostAsync("v1/systemuser/changerequest/vendor",
             changeRequestBody,
             maskinportenToken);
         
+        _outputHelper.WriteLine(changeRequestResponse.ToString());
+
         using var jsonDocSystemRequestResponse =
             JsonDocument.Parse(await changeRequestResponse.Content.ReadAsStringAsync());
         var requestId = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
-        
+
         Assert.Equal(HttpStatusCode.Created, changeRequestResponse.StatusCode);
-        
-        var verifyResponse = await _platformAuthentication.PostAsync("v1/systemuser/changerequest/vendor/verify",
-            changeRequestBody,
-            maskinportenToken);
-        
-        _outputHelper.WriteLine($"Verify response: {await verifyResponse.Content.ReadAsStringAsync()}");
-        
-        var approvalResp = await _common.ApproveRequest(
-            $"v1/systemuser/changerequest/{testperson.AltinnPartyId}/{requestId}/approve",
-            testperson);
-        
+
+        // var verifyResponse = await _platformAuthentication.PostAsync("v1/systemuser/changerequest/vendor/verify",
+        //     changeRequestBody, maskinportenToken);
+        //
+        // _outputHelper.WriteLine($"Verify response: {await verifyResponse.Content.ReadAsStringAsync()}");
+
+        var approvalResp =
+            await _common.ApproveRequest($"v1/systemuser/changerequest/{testperson.AltinnPartyId}/{requestId}/approve",
+                testperson);
+
         Assert.True(HttpStatusCode.OK == approvalResp.StatusCode,
             "Was not approved, received status code: " + approvalResp.StatusCode);
-        
+
         var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);
         _outputHelper.WriteLine("System user for vendor: " + await respGetSystemUsersForVendor.ReadAsStringAsync());
         // Assert.Contains(await respGetSystemUsersForVendor.ReadAsStringAsync(), systemId);
-        
+
         //Validate system user from party's perspective:
-        var altinnToken = await _platformAuthentication.GetPersonalAltinnToken(testperson);
-        
-        var systemUserId = "";
-        
-        var endpoint = $"v1/systemuser/{testperson.AltinnPartyId}/{systemUserId}";
-        var getSystemUsers = await _platformAuthentication.GetAsync(endpoint, altinnToken);
-        
+        // var altinnToken = await _platformAuthentication.GetPersonalAltinnToken(testperson);
+        // var systemUserId = "";
+        // var endpoint = $"v1/systemuser/{testperson.AltinnPartyId}/{systemUserId}";
+        // var getSystemUsers = await _platformAuthentication.GetAsync(endpoint, altinnToken);
         // Assert.True(HttpStatusCode.OK == getSystemUsers.StatusCode, await getSystemUsers.Content.ReadAsStringAsync());
-        var output = await getSystemUsers.Content.ReadAsStringAsync();
-        _outputHelper.WriteLine(output);
+        // var output = await getSystemUsers.Content.ReadAsStringAsync();
+        // _outputHelper.WriteLine(output);
+        
+        // Todo: Endpoints to verify:
+        // /authentication/api/v1/systemuser/changerequest/vendor/{requestId}
+        // /authentication/api/v1/systemuser/changerequest/vendor/verify -- BUG (commented out and commented on Github)
+        // /authentication/api/v1/systemuser/changerequest/vendor/{requestId}  / GET Status
+        // /authentication/api/v1/systemuser/changerequest/vendor/{requestId} / DELETE Change request
+        // /authentication/api/v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{orgNo}/{externalRef} // Get by exeternalRef
+        // /authentication/api/v1/systemuser/changerequest/{party}/{requestId} // Used by BFF  (Coverd by Playwright)
+        // /authentication/api/v1/systemuser/changerequest/{party}/{requestId}/approve /POST  // approved -- already covered in this test and Playwright
+        // /authentication/api/v1/systemuser/changerequest/vendor/bysystem/{systemId} -- /GET Another one by systemId
+        // /authentication/api/v1/systemuser/changerequest/{party}/{requestId}/reject -- Reject (Covered with Playwright)
+        
+        
     }
 }
