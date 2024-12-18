@@ -95,6 +95,7 @@ public class RequestSystemUserController : ControllerBase
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
         {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
             return Ok(response.Value);
         }
 
