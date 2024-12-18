@@ -2,10 +2,10 @@
 
 using Altinn.Authorization.ProblemDetails;
 
-namespace Altinn.ResourceRegistry.Core.Errors;
+namespace Altinn.Platform.Authentication.Core.Errors;
 
 /// <summary>
-/// Validation errors for the Resource Registry.
+/// Validation errors for the Authentication.
 /// </summary>
 public static class ValidationErrors
 {
@@ -47,4 +47,16 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_InValid_RedirectUrlFormat { get; }
         = _factory.Create(5, "One or more of the redirect urls format is not valid. The valid format is https://xxx.xx");
+
+    /// <summary>
+    /// Gets a validation error descriptor for duplicate resource(rights) id
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_ResourceId_Duplicates { get; }
+        = _factory.Create(6, "One or more duplicate rights found");
+
+    /// <summary>
+    /// Gets a validation error descriptor for already existing resource(rights) id
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_ResourceId_AlreadyExists { get; }
+        = _factory.Create(7, "One or all the resources in rights to be updated is already found in the system");
 }
