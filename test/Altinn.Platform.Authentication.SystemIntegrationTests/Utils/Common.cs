@@ -20,11 +20,10 @@ public class Common
         Output = output;
     }
 
-    public async Task<string> CreateAndApproveSystemUserRequest(string maskinportenToken, string externalRef,
-        Testuser testuser)
+    public async Task<string> CreateAndApproveSystemUserRequest(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
         var testState = new SystemRegisterHelper("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
-            .WithClientId(Guid.NewGuid().ToString())
+            .WithClientId(clientId)
             .WithVendor("312605031")
             .WithRedirectUrl("https://altinn.no")
             .WithToken(maskinportenToken);

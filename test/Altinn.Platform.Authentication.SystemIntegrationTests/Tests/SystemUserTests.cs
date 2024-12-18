@@ -39,6 +39,7 @@ public class SystemUserTests
     public async Task GetCreatedSystemUser()
     {
         var dagl = _platformClient.FindTestUserByRole("DAGL");
+        
         //dagl.Scopes = "users.read";
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
@@ -49,7 +50,6 @@ public class SystemUserTests
         Assert.True(HttpStatusCode.OK == respons.StatusCode,
             $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
     }
-
 
     /// <summary>
     /// https://github.com/Altinn/altinn-authentication/issues/586

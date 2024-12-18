@@ -37,7 +37,10 @@ public class ChangeRequestTests
         var testperson = _platformAuthentication.TestUsers.Find(testUser => testUser.Org.Equals(partyOrg))
                          ?? throw new Exception($"Test user not found for organization: {partyOrg}");
 
-        var systemId = await _common.CreateAndApproveSystemUserRequest(maskinportenToken, externalRef, testperson);
+        var clientId = Guid.NewGuid().ToString();
+
+        var systemId =
+            await _common.CreateAndApproveSystemUserRequest(maskinportenToken, externalRef, testperson, clientId);
 
         //Change request requesting one new right and removing the existing one
         var changeRequestBody =
@@ -49,14 +52,13 @@ public class ChangeRequestTests
             changeRequestBody,
             maskinportenToken);
         
-        _outputHelper.WriteLine(changeRequestResponse.ToString());
-
         using var jsonDocSystemRequestResponse =
             JsonDocument.Parse(await changeRequestResponse.Content.ReadAsStringAsync());
         var requestId = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
 
         Assert.Equal(HttpStatusCode.Created, changeRequestResponse.StatusCode);
 
+        // BUG / TODO - doesnt work
         // var verifyResponse = await _platformAuthentication.PostAsync("v1/systemuser/changerequest/vendor/verify",
         //     changeRequestBody, maskinportenToken);
         //
@@ -69,30 +71,48 @@ public class ChangeRequestTests
         Assert.True(HttpStatusCode.OK == approvalResp.StatusCode,
             "Was not approved, received status code: " + approvalResp.StatusCode);
 
+        //Already covered by assert
         var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);
-        _outputHelper.WriteLine("System user for vendor: " + await respGetSystemUsersForVendor.ReadAsStringAsync());
+        _outputHelper.WriteLine(await respGetSystemUsersForVendor.ReadAsStringAsync());
         // Assert.Contains(await respGetSystemUsersForVendor.ReadAsStringAsync(), systemId);
 
-        //Validate system user from party's perspective:
-        // var altinnToken = await _platformAuthentication.GetPersonalAltinnToken(testperson);
-        // var systemUserId = "";
-        // var endpoint = $"v1/systemuser/{testperson.AltinnPartyId}/{systemUserId}";
-        // var getSystemUsers = await _platformAuthentication.GetAsync(endpoint, altinnToken);
-        // Assert.True(HttpStatusCode.OK == getSystemUsers.StatusCode, await getSystemUsers.Content.ReadAsStringAsync());
-        // var output = await getSystemUsers.Content.ReadAsStringAsync();
-        // _outputHelper.WriteLine(output);
-        
-        // Todo: Endpoints to verify:
-        // /authentication/api/v1/systemuser/changerequest/vendor/{requestId}
-        // /authentication/api/v1/systemuser/changerequest/vendor/verify -- BUG (commented out and commented on Github)
-        // /authentication/api/v1/systemuser/changerequest/vendor/{requestId}  / GET Status
-        // /authentication/api/v1/systemuser/changerequest/vendor/{requestId} / DELETE Change request
-        // /authentication/api/v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{orgNo}/{externalRef} // Get by exeternalRef
-        // /authentication/api/v1/systemuser/changerequest/{party}/{requestId} // Used by BFF  (Coverd by Playwright)
-        // /authentication/api/v1/systemuser/changerequest/{party}/{requestId}/approve /POST  // approved -- already covered in this test and Playwright
-        // /authentication/api/v1/systemuser/changerequest/vendor/bysystem/{systemId} -- /GET Another one by systemId
-        // /authentication/api/v1/systemuser/changerequest/{party}/{requestId}/reject -- Reject (Covered with Playwright)
-        
-        
+        // Validate system user from party's perspective:
+         var altinnToken = await _platformAuthentication.GetPersonalAltinnToken(testperson);
+         var systemUserId = "";
+         var endpoint = $"v1/systemuser/{testperson.AltinnPartyId}/{systemUserId}";
+         var getSystemUsers = await _platformAuthentication.GetAsync(endpoint, altinnToken);
+         Assert.True(HttpStatusCode.OK == getSystemUsers.StatusCode, await getSystemUsers.Content.ReadAsStringAsync());
+         var output = await getSystemUsers.Content.ReadAsStringAsync();
+         _outputHelper.WriteLine(output);
+
+        var getRequestByIdUrl = $"v1/systemuser/changerequest/vendor/{requestId}";
+        var responsGetByRequestId = await _platformAuthentication.GetAsync(getRequestByIdUrl, maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, responsGetByRequestId.StatusCode);
+        Assert.NotNull(responsGetByRequestId);
+        // _outputHelper.WriteLine(await responsGetByRequestId.Content.ReadAsStringAsync()); //BUG: SystemUserId settes til:   "systemUserId": "00000000-0000-0000-0000-000000000000",
+
+        //Test get by externalRef
+        var getByExternalRefUrl =
+            $"v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{_platformAuthentication.EnvironmentHelper.Vendor}/{externalRef}";
+        var respByExternalRef = await _platformAuthentication.GetAsync(getByExternalRefUrl, maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, respByExternalRef.StatusCode);
+        // _outputHelper.WriteLine(await respByExternalRef.Content.ReadAsStringAsync());
+
+        // var maskinportenUrl =
+        //     $"v1/systemuser/byExternalId?systemUserOwnerOrgNo=312605031&systemProviderOrgNo={_platformAuthentication.EnvironmentHelper.Vendor}&clientId={clientId}";
+        //
+        // var resp = await _platformAuthentication.GetAsync(maskinportenUrl, maskinportenToken);
+        // // _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
+        // Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    public async Task DeleteRequest()
+    {
+        //Tested manually, works regardless of status, and gets 404 when trying to fetch request after. 
+
+        // var deleteUrl = $"v1/systemuser/changerequest/vendor/{requestId}";
+        //
+        // var deleteResponse = await _platformAuthentication.Delete(deleteUrl, maskinportenToken);
+        // Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
     }
 }
