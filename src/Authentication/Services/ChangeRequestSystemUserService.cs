@@ -297,7 +297,8 @@ public class ChangeRequestSystemUserService(
             RequiredRights = res.RequiredRights,
             UnwantedRights = res.UnwantedRights,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            SystemUserId = res.SystemUserId
         };
     }
 
@@ -325,7 +326,8 @@ public class ChangeRequestSystemUserService(
             RequiredRights = res.RequiredRights,
             UnwantedRights = res.UnwantedRights,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            SystemUserId = res.SystemUserId
         };
     }
 
@@ -375,7 +377,8 @@ public class ChangeRequestSystemUserService(
             UnwantedRights = find.UnwantedRights,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
-            RedirectUrl = find.RedirectUrl
+            RedirectUrl = find.RedirectUrl,
+            SystemUserId = find.SystemUserId
         };
 
         return request;
