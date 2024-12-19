@@ -105,7 +105,7 @@ public class ChangeRequestControllerTest(
         services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
         services.AddSingleton(_pdpMock.Object);
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
-        services.AddSingleton<ISystemUserService, SystemUserServiceMock>();
+        services.AddSingleton<ISystemUserService, SystemUserService>();
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
         services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
         services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
@@ -328,8 +328,8 @@ public class ChangeRequestControllerTest(
         HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, verifyChangeRequestEndpoint)
         {
             Content = JsonContent.Create(change)
-        };        
-        
+        };
+
         HttpResponseMessage createdResponseMessage = await client.SendAsync(verifyChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Created, createdResponseMessage.StatusCode);
 
@@ -463,6 +463,8 @@ public class ChangeRequestControllerTest(
         Assert.NotNull(createdResponse);
         Assert.NotEmpty(createdResponse.RequiredRights);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
+        Assert.NotEqual(Guid.Empty, createdResponse.Id);
+        Guid systemUserIdFromChangeRequest = createdResponse.SystemUserId;
 
         // works up to here
         xacmlJsonResults = GetDecisionResultSingle();
@@ -480,6 +482,25 @@ public class ChangeRequestControllerTest(
         HttpRequestMessage approveChangeRequestMessage = new(HttpMethod.Post, approveChangeRequestEndpoint);
         HttpResponseMessage approveChangeResponseMessage = await client3.SendAsync(approveChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveChangeResponseMessage.StatusCode);
+
+        // Doublecheck that the correct SystemUser was updated
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        HttpClient client4 = CreateClient();
+        client4.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        string getSystemUserEndpoint = $"/authentication/api/v1/systemuser/{partyId}/{systemUserIdFromChangeRequest}";
+        HttpRequestMessage getSystemUserRequestMessage = new(HttpMethod.Get, getSystemUserEndpoint);
+        HttpResponseMessage getSystemUserResponseMessage = await client4.SendAsync(getSystemUserRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getSystemUserResponseMessage.StatusCode);
+        Assert.NotNull(getSystemUserResponseMessage.Content);
+        SystemUser? systemUser = await getSystemUserResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        Assert.NotNull(systemUser);
+        Assert.Equal(systemUserIdFromChangeRequest, Guid.Parse(systemUser.Id));
     }
 
     /// <summary>
