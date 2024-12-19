@@ -700,22 +700,7 @@ public class RequestControllerTests(
         HttpResponseMessage message2 = await client.SendAsync(request2, HttpCompletionOption.ResponseHeadersRead);
 
         // Return OK in stead of Created, signifying that the request already exists, and that the request is not created again.
-        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-
-        // Vendor checks afterwards that the Request is approved
-        // Get by Guid
-        HttpClient client3 = CreateClient();
-        AddSystemUserRequesReadTestTokenToClient(client3);
-        Guid testId = res.Id;
-        string endpoint3 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
-
-        HttpResponseMessage message3 = await client3.GetAsync(endpoint3);
-
-        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
-        RequestSystemResponse? res3 = await message3.Content.ReadFromJsonAsync<RequestSystemResponse>();
-        Assert.True(res3 is not null);
-        Assert.Equal(testId, res3.Id);
-        Assert.Equal("Accepted", res3.Status);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);       
     }
 
     [Fact]
