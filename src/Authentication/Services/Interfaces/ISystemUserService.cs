@@ -64,10 +64,9 @@ public interface ISystemUserService
     /// <param name="clientId">The unique id maintained by IdPorten tying their clients to the Registered Systems we maintain</param>        
     /// <param name="systemProviderOrgNo">The legal number (Orgno) of the Vendor creating the Registered System (Accounting system)</param>
     /// <param name="systemUserOwnerOrgNo">The legal number (Orgno) of the party owning the System User Integration</param>
-    /// <param name="externalRef">Used for disambiguation for users with several systemusers pr orgno</param>
     /// <param name="cancellationToken">Cancellationtoken</param>/// 
     /// <returns>The SystemUserIntegration model API DTO</returns>
-    Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken);
+    Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of SystemUsers the Vendor has for a given system they own.

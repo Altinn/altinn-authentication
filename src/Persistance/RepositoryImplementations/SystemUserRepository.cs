@@ -251,7 +251,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken)
+    public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
     {      
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -282,7 +282,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
             command.Parameters.AddWithValue("client_id", clientId);
             command.Parameters.AddWithValue("systemVendorOrgno", systemProviderOrgNo);
-            command.Parameters.AddWithValue("external_ref", externalRef);
+            command.Parameters.AddWithValue("external_ref", systemUserOwnerOrgNo);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)
