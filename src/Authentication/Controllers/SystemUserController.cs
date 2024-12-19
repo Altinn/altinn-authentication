@@ -92,7 +92,7 @@ public class SystemUserController : ControllerBase
     /// </summary>
     /// <param name="clientId">The unique id maintained by MaskinPorten tying their clients to the Registered Systems the ServiceProivders have created in our db.</param>        
     /// <param name="systemProviderOrgNo">The legal number (Orgno) of the Vendor creating the Registered System (Accounting system)</param>
-    /// <param name="systemUserOwnerOrgNo">The legal number (Orgno) of the party owning the System User Integration</param>
+    /// <param name="systemUserOwnerOrgNo">The legal number (Orgno) of the party owning the System User Integration. (The ReporteeOrgno)</param>
     /// <param name="cancellationToken">Cancellationtoken</param>/// 
     /// <returns>The SystemUserIntegration model API DTO</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP)]
@@ -100,6 +100,11 @@ public class SystemUserController : ControllerBase
     [HttpGet("byExternalId")]
     public async Task<ActionResult> CheckIfPartyHasIntegration([FromQuery] string clientId, [FromQuery] string systemProviderOrgNo, [FromQuery] string systemUserOwnerOrgNo, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(systemProviderOrgNo) || string.IsNullOrEmpty(systemUserOwnerOrgNo))
+        {
+            return BadRequest();
+        }
+
         SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, cancellationToken);
 
         if (res is null)
@@ -131,29 +136,6 @@ public class SystemUserController : ControllerBase
         }
 
         return NotFound(0);            
-    }
-
-    /// <summary>
-    /// Creates a new SystemUser.
-    /// </summary>
-    /// <param name="party">The partyId for the reportee</param>
-    /// <param name="request">The DTO describing the Product the Caller wants to create.</param>
-    /// <returns>A SystemUser model</returns>    
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]                
-    [Produces("application/json")]
-    [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]        
-    [ProducesResponseType(StatusCodes.Status404NotFound)]        
-    [HttpPost("{party}")]
-    public async Task<ActionResult<SystemUser>> CreateSystemUser(string party, [FromBody] SystemUserRequestDto request)
-    {
-        var userId = AuthenticationHelper.GetUserId(HttpContext);
-        SystemUser? createdSystemUser = await _systemUserService.CreateSystemUser(party, request, userId);
-        if (createdSystemUser is not null)
-        {
-            return Created($"/authentication/api/v1/systemuser/{createdSystemUser.PartyId}/{createdSystemUser.Id}", createdSystemUser);
-        }
-
-        return NotFound();
     }
 
     /// <summary>
