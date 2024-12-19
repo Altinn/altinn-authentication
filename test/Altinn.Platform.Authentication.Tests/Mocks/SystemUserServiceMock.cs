@@ -113,7 +113,7 @@ public class SystemUserServiceMock : ISystemUserService
         return systemUserList;
     }
 
-    public Task<SystemUser> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, string externalRef, CancellationToken cancellationToken)
+    public Task<SystemUser> CheckIfPartyHasIntegration(string clientId, string consumerId, string systemOrg, CancellationToken cancellationToken)
     {
         return Task.FromResult(new SystemUser
         {
@@ -124,7 +124,7 @@ public class SystemUserServiceMock : ISystemUserService
             IsDeleted = false,
             SupplierName = "Supplier3 Name",
             SupplierOrgNo = consumerId,
-            ExternalRef = externalRef
+            ExternalRef = systemOrg
         });
     }
 
