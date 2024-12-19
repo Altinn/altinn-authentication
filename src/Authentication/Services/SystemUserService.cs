@@ -21,282 +21,283 @@ using Altinn.Platform.Register.Models;
 using Microsoft.Extensions.Options;
 
 #nullable enable
-namespace Altinn.Platform.Authentication.Services;
-
-/// <summary>
-/// The service that supports the SystemUser CRUD APIcontroller
-/// </summary>
-/// <remarks>
-/// The Constructor
-/// </remarks>
-[ExcludeFromCodeCoverage]
-public class SystemUserService(
-    ISystemUserRepository systemUserRepository,
-    ISystemRegisterRepository systemRegisterRepository,
-    ISystemRegisterService systemRegisterService,
-    IAccessManagementClient accessManagementClient,
-    DelegationHelper delegationHelper,
-    IPartiesClient partiesClient,
-    IOptions<PaginationOptions> paginationOption) : ISystemUserService
+namespace Altinn.Platform.Authentication.Services
 {
-    private readonly ISystemUserRepository _repository = systemUserRepository;
-    private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
-    private readonly ISystemRegisterService systemRegisterService = systemRegisterService;
-    private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
-    private readonly IPartiesClient _partiesClient = partiesClient;
-
     /// <summary>
-    /// Used to limit the number of items returned in a paginated list
+    /// The service that supports the SystemUser CRUD APIcontroller
     /// </summary>
-    private int _paginationSize = paginationOption.Value.Size;
-
-    /// <summary>
-    /// Creates a new SystemUser
-    /// The unique Id for the systemuser is handled by the db.
-    /// </summary>
-    /// <returns>The SystemUser created</returns>    
-    public async Task<Result<SystemUser>> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
+    /// <remarks>
+    /// The Constructor
+    /// </remarks>
+    [ExcludeFromCodeCoverage]
+    public class SystemUserService(
+        ISystemUserRepository systemUserRepository,
+        ISystemRegisterRepository systemRegisterRepository,
+        ISystemRegisterService systemRegisterService,
+        IAccessManagementClient accessManagementClient,
+        DelegationHelper delegationHelper,
+        IPartiesClient partiesClient,
+        IOptions<PaginationOptions> paginationOption) : ISystemUserService
     {
-        RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
-        if (regSystem is null)
-        {
-            return Problem.SystemIdNotFound;
-        }
+        private readonly ISystemUserRepository _repository = systemUserRepository;
+        private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
+        private readonly ISystemRegisterService systemRegisterService = systemRegisterService;
+        private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
+        private readonly IPartiesClient _partiesClient = partiesClient;
 
-        Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
+        /// <summary>
+        /// Used to limit the number of items returned in a paginated list
+        /// </summary>
+        private int _paginationSize = paginationOption.Value.Size;
+
+        /// <summary>
+        /// Creates a new SystemUser
+        /// The unique Id for the systemuser is handled by the db.
+        /// </summary>
+        /// <returns>The SystemUser created</returns>    
+        public async Task<Result<SystemUser>> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
+        {
+            RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
        
-        if (party is null || string.IsNullOrEmpty(party.OrgNumber))
-        {
-            return Problem.SystemUserNotFound;
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+            {
+                return Problem.SystemUserNotFound;
+            }
+
+            ExternalRequestId externalRequestId = new()
+            {
+                OrgNo = party.OrgNumber,
+                SystemId = request.SystemId,
+                ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
+            };
+
+            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            if (existing is not null)
+            {
+                return Problem.SystemUser_AlreadyExists;
+            }
+
+            SystemUser newSystemUser = new()
+            {                
+                ReporteeOrgNo = party.OrgNumber,
+                SystemInternalId = regSystem.InternalId,
+                IntegrationTitle = request.IntegrationTitle,
+                SystemId = request.SystemId,
+                PartyId = partyId
+            };
+
+            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);        
+            if (insertedId is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+            if (inserted is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            return inserted;
         }
 
-        ExternalRequestId externalRequestId = new()
+        /// <summary>
+        /// Returns the list of SystemUsers this PartyID has registered.
+        /// </summary>
+        /// <returns>list of SystemUsers</returns>
+        public async Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId)
         {
-            OrgNo = party.OrgNumber,
-            SystemId = request.SystemId,
-            ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
-        };
+            if (partyId < 1)
+            {
+                return [];
+            }
 
-        SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
-        if (existing is not null)
-        {
-            return Problem.SystemUser_AlreadyExists;
+            return await _repository.GetAllActiveSystemUsersForParty(partyId);
         }
 
-        SystemUser newSystemUser = new()
-        {                
-            ReporteeOrgNo = party.OrgNumber,
-            SystemInternalId = regSystem.InternalId,
-            IntegrationTitle = request.IntegrationTitle,
-            SystemId = request.SystemId,
-            PartyId = partyId
-        };
-
-        Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);        
-        if (insertedId is null)
+        /// <summary>
+        /// Return a single SystemUser by PartyId and SystemUserId
+        /// </summary>
+        /// <returns>SystemUser</returns>
+        public async Task<SystemUser?> GetSingleSystemUserById(Guid systemUserId)
         {
-            return Problem.SystemUser_FailedToCreate;
-        }
-
-        SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
-        if (inserted is null)
-        {
-            return Problem.SystemUser_FailedToCreate;
-        }
-
-        return inserted;
-    }
-
-    /// <summary>
-    /// Returns the list of SystemUsers this PartyID has registered.
-    /// </summary>
-    /// <returns>list of SystemUsers</returns>
-    public async Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId)
-    {
-        if (partyId < 1)
-        {
-            return [];
-        }
-
-        return await _repository.GetAllActiveSystemUsersForParty(partyId);
-    }
-
-    /// <summary>
-    /// Return a single SystemUser by PartyId and SystemUserId
-    /// </summary>
-    /// <returns>SystemUser</returns>
-    public async Task<SystemUser?> GetSingleSystemUserById(Guid systemUserId)
-    {
-        SystemUser? search = await _repository.GetSystemUserById(systemUserId);
+            SystemUser? search = await _repository.GetSystemUserById(systemUserId);
         
-        return search;
-    }
+            return search;
+        }
 
-    /// <summary>
-    /// Set the Delete flag on the identified SystemUser
-    /// </summary>
-    /// <returns>Boolean True if row affected</returns>
-    public async Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
-    {
-        SystemUser systemUser = await _repository.GetSystemUserById(systemUserId);
-        await _repository.SetDeleteSystemUserById(systemUserId);
+        /// <summary>
+        /// Set the Delete flag on the identified SystemUser
+        /// </summary>
+        /// <returns>Boolean True if row affected</returns>
+        public async Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
+        {
+            SystemUser systemUser = await _repository.GetSystemUserById(systemUserId);
+            await _repository.SetDeleteSystemUserById(systemUserId);
         
-        //List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
-        //await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
-        return true; // if it can't be found, there is no need to delete it.
-    }
-
-    /// <summary>
-    /// Replaces the values for the existing system user with those from the update 
-    /// </summary>
-    /// <returns>Number of rows affected</returns>
-    public async Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
-    {
-        SystemUser search = await _repository.GetSystemUserById(Guid.Parse(request.Id));
-        if (search == null)
-        {                
-            return 0;
+            //List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
+            //await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
+            return true; // if it can't be found, there is no need to delete it.
         }
 
-        if (request.SystemId == null )
+        /// <summary>
+        /// Replaces the values for the existing system user with those from the update 
+        /// </summary>
+        /// <returns>Number of rows affected</returns>
+        public async Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
-            return 0;
+            SystemUser search = await _repository.GetSystemUserById(Guid.Parse(request.Id));
+            if (search == null)
+            {                
+                return 0;
+            }
+
+            if (request.SystemId == null )
+            {
+                return 0;
+            }
+
+            return await _repository.UpdateIntegrationTitle(Guid.Parse(request.Id), request.SystemId);
         }
 
-        return await _repository.UpdateIntegrationTitle(Guid.Parse(request.Id), request.SystemId);
-    }
-
-    /// <inheritdoc/>
-    public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken)
-    {
-        return await _repository.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, externalRef, cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public async Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(
-        OrganisationNumber vendorOrgNo, 
-        string systemId, 
-        Page<string>.Request continueRequest, 
-        CancellationToken cancellationToken)
-    {
-        RegisteredSystem? system = await _registerRepository.GetRegisteredSystemById(systemId);
-        if (system is null)
+        /// <inheritdoc/>
+        public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken)
         {
-            return Problem.SystemIdNotFound;
+            return await _repository.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, externalRef, cancellationToken);
         }
 
-        // Verify that the orgno from the logged on token owns this system
-        if (OrganisationNumber.CreateFromStringOrgNo(system.SystemVendorOrgNumber) != vendorOrgNo)
+        /// <inheritdoc/>
+        public async Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(
+            OrganisationNumber vendorOrgNo, 
+            string systemId, 
+            Page<string>.Request continueRequest, 
+            CancellationToken cancellationToken)
         {
-            return Problem.SystemIdNotFound;
+            RegisteredSystem? system = await _registerRepository.GetRegisteredSystemById(systemId);
+            if (system is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            // Verify that the orgno from the logged on token owns this system
+            if (OrganisationNumber.CreateFromStringOrgNo(system.SystemVendorOrgNumber) != vendorOrgNo)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, cancellationToken);
+            theList ??= [];
+
+            return Page.Create(theList, _paginationSize, static theList => theList.Id);
         }
 
-        List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, cancellationToken);
-        theList ??= [];
-
-        return Page.Create(theList, _paginationSize, static theList => theList.Id);
-    }
-
-    /// <inheritdoc/>
-    public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
-    {
-        RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
-        if (regSystem is null)
+        /// <inheritdoc/>
+        public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
-            return Problem.SystemIdNotFound;
+            RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+            {
+                return Problem.Reportee_Orgno_NotFound;
+            }
+
+            ExternalRequestId externalRequestId = new()
+            {
+                OrgNo = party.OrgNumber,
+                SystemId = request.SystemId,
+                ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
+            };
+
+            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            if (existing is not null)
+            {
+                return Problem.SystemUser_AlreadyExists;
+            }
+
+            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+            if (delegationCheckFinalResult.RightResponses is null)
+            {
+                // This represents some problem with doing the delegation check beyond the rights not being delegable.
+                return Problem.UnableToDoDelegationCheck;
+            }
+
+            if (!delegationCheckFinalResult.CanDelegate)
+            {
+                // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
+                return MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+            }
+
+            SystemUser newSystemUser = new()
+            {
+                ReporteeOrgNo = party.OrgNumber,
+                SystemInternalId = regSystem.InternalId,
+                IntegrationTitle = request.IntegrationTitle,
+                SystemId = request.SystemId,
+                PartyId = partyId
+            };
+
+            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
+            if (insertedId is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+            if (inserted is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses);
+            if (delegationSucceeded.IsProblem)
+            {
+                await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                return delegationSucceeded.Problem;
+            }
+
+            return inserted;
         }
 
-        Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
-
-        if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+        private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
         {
-            return Problem.Reportee_Orgno_NotFound;
-        }
+            if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
+            {
+                return Problem.UnableToDoDelegationCheck;
+            }
 
-        ExternalRequestId externalRequestId = new()
-        {
-            OrgNo = party.OrgNumber,
-            SystemId = request.SystemId,
-            ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
-        };
+            if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
+            {
+                return Problem.DelegationRightMissingRoleAccess;
+            }
 
-        SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
-        if (existing is not null)
-        {
-            return Problem.SystemUser_AlreadyExists;
-        }
+            if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
+            {
+                return Problem.DelegationRightMissingDelegationAccess;
+            }
 
-        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
-        if (delegationCheckFinalResult.RightResponses is null)
-        {
-            // This represents some problem with doing the delegation check beyond the rights not being delegable.
+            if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
+            {
+                return Problem.DelegationRightMissingSrrRightAccess;
+            }
+
+            if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
+            {
+                return Problem.DelegationRightInsufficientAuthenticationLevel;
+            }
+
             return Problem.UnableToDoDelegationCheck;
         }
-
-        if (!delegationCheckFinalResult.CanDelegate)
-        {
-            // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-            return MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
-        }
-
-        SystemUser newSystemUser = new()
-        {
-            ReporteeOrgNo = party.OrgNumber,
-            SystemInternalId = regSystem.InternalId,
-            IntegrationTitle = request.IntegrationTitle,
-            SystemId = request.SystemId,
-            PartyId = partyId
-        };
-
-        Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
-        if (insertedId is null)
-        {
-            return Problem.SystemUser_FailedToCreate;
-        }
-
-        SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
-        if (inserted is null)
-        {
-            return Problem.SystemUser_FailedToCreate;
-        }
-
-        Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses);
-        if (delegationSucceeded.IsProblem)
-        {
-            await _repository.SetDeleteSystemUserById((Guid)insertedId);
-            return delegationSucceeded.Problem;
-        }
-
-        return inserted;
-    }
-
-    private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
-    {
-        if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
-        {
-            return Problem.UnableToDoDelegationCheck;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
-        {
-            return Problem.DelegationRightMissingRoleAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
-        {
-            return Problem.DelegationRightMissingDelegationAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
-        {
-            return Problem.DelegationRightMissingSrrRightAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
-        {
-            return Problem.DelegationRightInsufficientAuthenticationLevel;
-        }
-
-        return Problem.UnableToDoDelegationCheck;
     }
 }
