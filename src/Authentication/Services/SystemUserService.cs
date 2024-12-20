@@ -268,5 +268,11 @@ namespace Altinn.Platform.Authentication.Services
 
             return Problem.UnableToDoDelegationCheck;
         }
+
+        /// <inheritdoc/>
+        public async Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
+        {
+            return await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+        }
     }
 }
