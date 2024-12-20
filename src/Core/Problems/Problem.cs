@@ -148,4 +148,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor Rights_FailedToRevoke { get; }
         = _factory.Create(22, HttpStatusCode.BadRequest, "The operation to revoke rights failed.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Vendor_Orgno_NotFound { get; }
+        = _factory.Create(22, HttpStatusCode.Unauthorized, "Can't resolve the Organisation Number for the Vendor from the Token.");
 }

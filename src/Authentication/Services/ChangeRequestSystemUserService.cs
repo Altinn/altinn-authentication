@@ -40,7 +40,7 @@ public class ChangeRequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IChangeRequestRepository changeRequestRepository,
-    ISystemUserRepository systemUserRepository,
+    ISystemUserService systemUserService,
     IResourceRegistryClient resourceRegistryClient,
     IPDP PDPClient,
     IOptions<PaginationOptions> _paginationOption,
@@ -404,7 +404,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        SystemUser? toBeChanged = await systemUserRepository.GetSystemUserById(systemUserChangeRequest.SystemUserId);
+        SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
         if (toBeChanged is null)
         {
             return Problem.SystemUserNotFound;
@@ -585,7 +585,7 @@ public class ChangeRequestSystemUserService(
             SystemId = validateSet.SystemId,
         };
 
-        SystemUser? systemUser = await systemUserRepository.GetSystemUserByExternalRequestId(externalRequestId);
+        SystemUser? systemUser = await systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
         var debug = " ";
         if (systemUser is null)
         {
