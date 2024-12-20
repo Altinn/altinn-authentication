@@ -190,4 +190,9 @@ public class SystemUserServiceMock : ISystemUserService
         toBeDeleted.IsDeleted = true;
         return Task.FromResult(true);
     }
+
+    public Task<SystemUser> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
+    {
+        throw new NotImplementedException();
+    }
 }
