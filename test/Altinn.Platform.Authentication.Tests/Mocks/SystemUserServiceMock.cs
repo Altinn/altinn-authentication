@@ -172,7 +172,7 @@ public class SystemUserServiceMock : ISystemUserService
         return Task.FromResult(true);
     }
 
-    Task<Result<SystemUser>> ISystemUserService.CreateSystemUser(string party, SystemUserRequestDto request, int userId)
+    public Task<SystemUser> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
     {
         throw new NotImplementedException();
     }

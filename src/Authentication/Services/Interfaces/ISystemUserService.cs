@@ -87,4 +87,11 @@ public interface ISystemUserService
     /// <param name="userId">the logged in user</param>
     /// <returns>The CreateSystemUserResponse response model, with either a new SystemUser model inside, or a list of errors.</returns>
     Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fetches a SystemUser by the ExternalRequestId    /// 
+    /// </summary>
+    /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
+    /// <returns>A SystemUser, if one is active.</returns>
+    Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
 }

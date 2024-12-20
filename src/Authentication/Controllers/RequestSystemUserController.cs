@@ -86,7 +86,7 @@ public class RequestSystemUserController : ControllerBase
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty()) 
         {
-            return Unauthorized();
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
         }
 
         ExternalRequestId externalRequestId = new()
