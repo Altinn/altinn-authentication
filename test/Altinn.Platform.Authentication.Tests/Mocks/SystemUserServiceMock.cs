@@ -176,4 +176,9 @@ public class SystemUserServiceMock : ISystemUserService
     {
         throw new NotImplementedException();
     }
+
+    Task<Result<SystemUser>> ISystemUserService.CreateSystemUser(string party, SystemUserRequestDto request, int userId)
+    {
+        throw new NotImplementedException();
+    }
 }
