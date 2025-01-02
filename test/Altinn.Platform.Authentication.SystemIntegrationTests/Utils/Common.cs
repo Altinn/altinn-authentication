@@ -20,11 +20,12 @@ public class Common
         Output = output;
     }
 
-    public async Task<string> CreateAndApproveSystemUserRequest(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
+    public async Task<string> CreateAndApproveSystemUserRequest(string maskinportenToken, string externalRef,
+        Testuser testuser, string clientId)
     {
         var testState = new SystemRegisterHelper("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
             .WithClientId(clientId)
-            .WithVendor("312605031")
+            .WithVendor(testuser.Org)
             .WithRedirectUrl("https://altinn.no")
             .WithToken(maskinportenToken);
 
@@ -55,7 +56,7 @@ public class Common
         // Approve
         var approveResp =
             await ApproveRequest($"v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve", testuser);
-        
+
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
 
@@ -79,5 +80,17 @@ public class Common
         // Use the PostAsync method for the approval request
         var response = await _platformClient.PostAsync(endpoint, string.Empty, altinnToken);
         return response;
+    }
+
+    public void AssertSuccess(HttpResponseMessage response, string message)
+    {
+        Assert.True(response.IsSuccessStatusCode,
+            $"{message}. Received: {response.StatusCode} and response text was: {response.Content.ReadAsStringAsync().Result}");
+    }
+
+    public static async Task AssertContains(string expected, HttpContent content, string message = "")
+    {
+        var responseBody = await content.ReadAsStringAsync();
+        Assert.Contains(expected, responseBody, StringComparison.OrdinalIgnoreCase);
     }
 }

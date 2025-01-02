@@ -80,6 +80,8 @@ public class SystemRegisterTests
         // Act
         var response =
             await _platformClient.GetAsync("v1/systemregister", maskinportenToken);
+        
+        _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
