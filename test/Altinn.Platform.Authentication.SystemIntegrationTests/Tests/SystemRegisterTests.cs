@@ -96,7 +96,7 @@ public class SystemRegisterTests
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString())
-            .WithVendor("312605031")
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
@@ -129,7 +129,7 @@ public class SystemRegisterTests
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
-            .WithVendor("312605031")
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
@@ -156,7 +156,7 @@ public class SystemRegisterTests
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
-            .WithVendor("312605031")
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
 

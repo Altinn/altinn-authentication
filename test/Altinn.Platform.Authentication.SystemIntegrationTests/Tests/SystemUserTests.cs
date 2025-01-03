@@ -62,7 +62,7 @@ public class SystemUserTests
 
         var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid().ToString())
-            .WithVendor("312605031")
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithRedirectUrl("https://altinn.no")
@@ -242,7 +242,7 @@ public class SystemUserTests
     {
         var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid().ToString())
-            .WithVendor("312605031")
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithRedirectUrl("https://altinn.no")
