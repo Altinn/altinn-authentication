@@ -43,8 +43,7 @@ public class SystemUserTests
         //dagl.Scopes = "users.read";
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
-        var endpoint = "v1/systemuser/" + dagl.AltinnPartyId;
-
+        var endpoint = string.Format(UrlConstants.GetSystemUserByPartyIdUrlTemplate, dagl.AltinnPartyId);
         var respons = await _platformClient.GetAsync(endpoint, altinnToken);
 
         Assert.True(HttpStatusCode.OK == respons.StatusCode,
@@ -91,7 +90,7 @@ public class SystemUserTests
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync("v1/systemuser/request/vendor", finalJson, maskinportenToken);
+            await _platformClient.PostAsync(UrlConstants.CreateSystemUserRequestBaseUrl, finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -111,7 +110,7 @@ public class SystemUserTests
         using var jsonDoc = JsonDocument.Parse(respons);
         var id = jsonDoc.RootElement.GetProperty("id").GetString();
 
-        var url = $"v1/systemuser/request/vendor/{id}";
+        var url = string.Format(UrlConstants.GetSystemUserRequestStatusUrlTemplate, id);
 
         var resp = await _platformClient.GetAsync(url, maskinportenToken);
 
@@ -140,13 +139,17 @@ public class SystemUserTests
         var testperson = _platformClient.TestUsers.Find(testUser => testUser.Org.Equals(vendor))
                          ?? throw new Exception($"Test user not found for organization: {vendor}");
 
+        var approveUrl = string.Format(UrlConstants.ApproveSystemUserRequestUrlTemplate, testperson.AltinnPartyId, id);
+
         // Approve
         var approveResp =
-            await ApproveRequest($"v1/systemuser/request/{testperson.AltinnPartyId}/{id}/approve", testperson);
+            await ApproveRequest(approveUrl,testperson);
+        
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode);
 
         //Get status
-        var url = $"v1/systemuser/request/vendor/{id}";
+        var url = String.Format(UrlConstants.GetSystemUserRequestStatusUrlTemplate, id);
+
         var resp = await _platformClient.GetAsync(url, maskinportenToken);
 
         using var jsonDocRequestStatus = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
@@ -158,9 +161,12 @@ public class SystemUserTests
         Assert.True(systemId != null, $"Unable to find system user id {systemId}");
 
         //Verify system is found
-        var urlGetBySystem = $"v1/systemuser/vendor/bysystem/{systemId}";
+        var urlGetBySystem = string.Format(UrlConstants.GetBySystemForVendor, systemId);
         var responseGetBySystem = await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
-        Assert.Contains(systemId, responseGetBySystem.Content.ReadAsStringAsync().Result);
+        
+        // Assert
+        var responseContent = await responseGetBySystem.Content.ReadAsStringAsync();
+        Assert.Contains(systemId, responseContent);
     }
 
     /// <summary>
@@ -226,7 +232,8 @@ public class SystemUserTests
         }
 
         //Delete
-        var deleteResp = await DeleteRequest($"v1/systemuser/{testperson.AltinnPartyId}/{systemUserId}/", testperson);
+        var deleteUrl = string.Format(UrlConstants.DeleteSystemUserUrlTemplate, testperson.AltinnPartyId, systemUserId);
+        var deleteResp = await DeleteRequest(deleteUrl, testperson);
         Assert.Equal(HttpStatusCode.Accepted, deleteResp.StatusCode);
     }
 

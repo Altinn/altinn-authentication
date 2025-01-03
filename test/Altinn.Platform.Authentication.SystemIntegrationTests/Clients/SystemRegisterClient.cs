@@ -25,7 +25,7 @@ public class SystemRegisterClient
     public async Task<HttpResponseMessage> PostSystem(string requestBody, string token)
     {
         var response = await _platformClient.PostAsync(
-            "v1/systemregister/vendor", requestBody, token);
+            UrlConstants.PostSystemsystemSystemRegister, requestBody, token);
 
         Assert.True(HttpStatusCode.OK == response.StatusCode,
             $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
@@ -35,7 +35,7 @@ public class SystemRegisterClient
 
     public async Task<List<SystemDto>> GetSystemsAsync(string token)
     {
-        var response = await _platformClient.GetAsync("v1/systemregister/", token);
+        var response = await _platformClient.GetAsync(UrlConstants.GetSystemsystemSystemRegister, token);
 
         // Assert the response status is OK
         Assert.True(HttpStatusCode.OK == response.StatusCode,

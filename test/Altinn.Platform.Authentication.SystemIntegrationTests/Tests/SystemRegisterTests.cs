@@ -56,9 +56,9 @@ public class SystemRegisterTests
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
-            // .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            // .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
+            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
+            //.WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
 
         var requestBody = teststate.GenerateRequestBody();
@@ -80,7 +80,6 @@ public class SystemRegisterTests
         // Act
         var response =
             await _platformClient.GetAsync("v1/systemregister", maskinportenToken);
-        
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -141,7 +140,7 @@ public class SystemRegisterTests
 
         // Act
         var respons = await _platformClient.Delete(
-            $"v1/systemregister/vendor/{teststate.SystemId}", teststate.Token);
+            $"{UrlConstants.PostSystemsystemSystemRegister}/{teststate.SystemId}", teststate.Token);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
@@ -170,7 +169,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.PutAsync($"v1/systemregister/vendor/{teststate.SystemId}",
+            await _platformClient.PutAsync($"{UrlConstants.PostSystemsystemSystemRegister}{teststate.SystemId}",
                 requestBody, maskinportenToken);
 
         // Assert
@@ -190,18 +189,18 @@ public class SystemRegisterTests
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
         var systemIds = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
 
-        var idsToDelete = systemIds.FindAll(system => system.SystemVendorOrgNumber.Equals(_platformClient.EnvironmentHelper.Vendor));
-        
+        var idsToDelete = systemIds.FindAll(system =>
+            system.SystemVendorOrgNumber.Equals(_platformClient.EnvironmentHelper.Vendor));
+
         foreach (var systemDto in idsToDelete)
         {
             _outputHelper.WriteLine("Attempting to delete system with id: " + systemDto.SystemId);
             // Act
             var respons = await _platformClient.Delete(
-                $"v1/systemregister/vendor/{systemDto.SystemId}", maskinportenToken);
-        
+                $"{UrlConstants.DeleteSystemsystemSystemRegister}/{systemDto.SystemId}", maskinportenToken);
+
             // Assert
             Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
         }
-        
     }
 }
