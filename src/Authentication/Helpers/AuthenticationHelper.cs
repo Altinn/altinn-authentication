@@ -338,7 +338,8 @@ namespace Altinn.Platform.Authentication.Helpers
                 Rights = registeredSystem.Rights,
                 SystemId = registeredSystem.Id,
                 SystemVendorOrgName = registeredSystem.SystemVendorOrgName,
-                SystemVendorOrgNumber = GetOrgNumber(registeredSystem.SystemVendorOrgNumber)
+                SystemVendorOrgNumber = GetOrgNumber(registeredSystem.SystemVendorOrgNumber),
+                IsVisible = registeredSystem.IsVisible
             };
         }
 
