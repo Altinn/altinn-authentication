@@ -364,7 +364,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             ClientId = clientIds,
             Rights = rights,
             IsVisible = reader.GetFieldValue<bool>("is_visible"),
-            AllowedRedirectUrls = reader.GetFieldValue<List<string>>("allowedredirecturls").ConvertAll<Uri>(delegate (string u) { return new Uri(u); })
+            AllowedRedirectUrls = reader.IsDBNull("allowedredirecturls") ? null : reader.GetFieldValue<List<string>>("allowedredirecturls")?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); })
         });
     }
 

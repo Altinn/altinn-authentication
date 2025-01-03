@@ -6,5 +6,13 @@
         "value": "ske-krav-og-betalinger"
       }
     ]
+  },
+  {
+    "resource": [
+      {
+        "id": "urn:altinn:resource",
+        "value": "ske-krav-og-betalinger"
+      }
+    ]
   }
 ]
