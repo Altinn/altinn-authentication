@@ -322,12 +322,18 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
     {
         RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+
+        if(registerSystemResponse == null)
+        {
+            return BadRequest();
+        }
+
         if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse?.Vendor?.ID), User))
         {
             return Forbid();
         }
 
-        bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId);
+        bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId, registerSystemResponse.InternalId);
         if (!deleted) 
         { 
             return BadRequest();

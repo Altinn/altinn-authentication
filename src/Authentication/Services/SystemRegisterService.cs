@@ -79,9 +79,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> SetDeleteRegisteredSystemById(string id)
+        public Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId)
         {
-            return _systemRegisterRepository.SetDeleteRegisteredSystemById(id);
+            return _systemRegisterRepository.SetDeleteRegisteredSystemById(id, systemInternalId);
         }
 
         /// <inheritdoc/>
