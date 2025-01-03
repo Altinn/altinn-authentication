@@ -519,7 +519,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             system_internal_id,
             is_deleted
             FROM business_application.maskinporten_client mc
-            WHERE mc.client_id = ANY(array[@client_id]::text[]);
+            WHERE mc.client_id = ANY(array[@client_id]::text[])
+            AND mc.is_deleted = false;
         ";
 
         try
@@ -547,7 +548,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             system_internal_id,
             is_deleted
             FROM business_application.maskinporten_client mc
-            WHERE mc.system_internal_id = @system_internal_id;
+            WHERE mc.system_internal_id = @system_internal_id
+            AND mc.is_deleted = false;
         ";
 
         try
