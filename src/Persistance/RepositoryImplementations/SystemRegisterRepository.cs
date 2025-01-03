@@ -1,8 +1,5 @@
 ﻿using System.Data;
-using System.Numerics;
 using System.Text.Json;
-using System.Text.Unicode;
-using System.Threading;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -233,25 +230,42 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public async Task<bool> SetDeleteRegisteredSystemById(string id)
+    public async Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId)
     {
-        const string QUERY = /*strpsql*/@"
+        const string QUERY1 = /*strpsql*/@"
                 UPDATE business_application.system_register
 	            SET is_deleted = TRUE,
                 last_changed = CURRENT_TIMESTAMP
         	    WHERE business_application.system_register.system_id = @system_id;
                 ";
 
+        const string QUERY2 = /*strpsql*/@"
+            UPDATE business_application.maskinporten_client
+            SET is_deleted = TRUE
+            WHERE business_application.maskinporten_client.system_internal_id = @system_internal_id;
+            ";
+
+        await using NpgsqlConnection conn = await _datasource.OpenConnectionAsync();
+        await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead);
+
         try
         {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using NpgsqlCommand command1 = new NpgsqlCommand(QUERY1, conn, transaction);
+            command1.Parameters.AddWithValue("system_id", id);
 
-            command.Parameters.AddWithValue("system_id", id);
+            await using NpgsqlCommand command2 = new NpgsqlCommand(QUERY2, conn, transaction);
+            command2.Parameters.AddWithValue("system_internal_id", systemInternalId);
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            int rowsAffected1 = await command1.ExecuteNonQueryAsync();
+            int rowsAffected2 = await command2.ExecuteNonQueryAsync();
+
+            await transaction.CommitAsync();
+
+            return rowsAffected1 > 0 && rowsAffected2 > 0;
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync();
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // SetDeleteRegisteredSystemById // Exception");
             throw;
         }
