@@ -49,8 +49,9 @@ public interface ISystemRegisterRepository
     /// This will break any existing integrations.
     /// </summary>
     /// <param name="id">The human readable string id</param>
+    /// <param name="systemInternalId">The internal system idenficator for a system</param>
     /// <returns>True if set to deleted</returns>
-    Task<bool> SetDeleteRegisteredSystemById(string id);
+    Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId);
 
     /// <summary>
     /// Retrieves the list, if any, of Default Rights 
