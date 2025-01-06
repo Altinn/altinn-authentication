@@ -44,9 +44,10 @@ public class Common
         // Act
         var userResponse =
             await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
-
+        
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
+        
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
             $"Unexpected status code: {userResponse.StatusCode} - {content}");
 
@@ -82,15 +83,18 @@ public class Common
         return response;
     }
 
-    public void AssertSuccess(HttpResponseMessage response, string message)
+    public static void AssertSuccess(HttpResponseMessage response, string message)
     {
         Assert.True(response.IsSuccessStatusCode,
             $"{message}. Received: {response.StatusCode} and response text was: {response.Content.ReadAsStringAsync().Result}");
     }
-
-    public static async Task AssertContains(string expected, HttpContent content, string message = "")
+    
+    public static string ExtractPropertyFromJson(string json, string propertyName)
     {
-        var responseBody = await content.ReadAsStringAsync();
-        Assert.Contains(expected, responseBody, StringComparison.OrdinalIgnoreCase);
+        using var jsonDoc = JsonDocument.Parse(json);
+        return jsonDoc.RootElement.GetProperty(propertyName).GetString()
+               ?? throw new Exception($"Property '{propertyName}' not found in JSON: {json}");
     }
+    
+    
 }

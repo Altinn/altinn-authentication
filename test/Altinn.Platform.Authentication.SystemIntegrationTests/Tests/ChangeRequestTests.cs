@@ -40,14 +40,15 @@ public class ChangeRequestTests
 
         // Act
         var changeRequestResponse = await SubmitChangeRequest(systemId, externalRef, maskinportenToken);
-        _common.AssertSuccess(changeRequestResponse, "Change request submission failed");
 
-        //Assert change request response
+        Common.AssertSuccess(changeRequestResponse, "Change request submission failed");
+
+        // Assert change request response
         Assert.Equal(HttpStatusCode.Created, changeRequestResponse.StatusCode);
 
         var requestId = ExtractRequestId(await changeRequestResponse.Content.ReadAsStringAsync());
         var approvalResponse = await ApproveChangeRequest(requestId, testperson);
-        _common.AssertSuccess(approvalResponse, "Change request approval failed");
+        Common.AssertSuccess(approvalResponse, "Change request approval failed");
 
         // Assert relevant change request endpoints
         await AssertSystemUserUpdated(systemId, externalRef, maskinportenToken);

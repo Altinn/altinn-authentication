@@ -79,7 +79,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.GetAsync("v1/systemregister", maskinportenToken);
+            await _platformClient.GetAsync(UrlConstants.GetSystemsystemSystemRegister, maskinportenToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
