@@ -59,8 +59,10 @@ public class ChangeRequestTests
     private async Task AssertRequestRetrievalByExternalRef(string systemId, string externalRef,
         string maskinportenToken)
     {
-        var getByExternalRefUrl = string.Format(UrlConstants.GetByExternalRefUrlTemplate, systemId,
-            _platformAuthentication.EnvironmentHelper.Vendor, externalRef);
+        var getByExternalRefUrl = UrlConstants.GetByExternalRefUrlTemplate
+            .Replace("{systemId}", systemId)
+            .Replace("{vendor}", _platformAuthentication.EnvironmentHelper.Vendor)
+            .Replace("{externalRef}", externalRef);
 
         var respByExternalRef = await _platformAuthentication.GetAsync(getByExternalRefUrl, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, respByExternalRef.StatusCode);
@@ -71,7 +73,8 @@ public class ChangeRequestTests
     private async Task AssertRequestRetrievalById(string requestId, string systemId, string externalRef,
         string maskinportenToken)
     {
-        var getRequestByIdUrl = string.Format(UrlConstants.GetRequestByIdUrlTemplate, requestId);
+        var getRequestByIdUrl = UrlConstants.GetRequestByIdUrlTemplate
+            .Replace("{requestId}", requestId);
         var responsGetByRequestId = await _platformAuthentication.GetAsync(getRequestByIdUrl, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, responsGetByRequestId.StatusCode);
         Assert.Contains(systemId, await responsGetByRequestId.Content.ReadAsStringAsync());
@@ -92,8 +95,9 @@ public class ChangeRequestTests
 
     private async Task<HttpResponseMessage> ApproveChangeRequest(string requestId, Testuser testperson)
     {
-        var approveUrl = string.Format(UrlConstants.ApproveChangeRequestUrlTemplate, testperson.AltinnPartyId,
-            requestId);
+        var approveUrl = UrlConstants.ApproveChangeRequestUrlTemplate
+            .Replace("{partyId}", testperson.AltinnPartyId)
+            .Replace("{requestId}", requestId);
 
         var approvalResp =
             await _common.ApproveRequest(approveUrl, testperson);

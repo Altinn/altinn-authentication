@@ -43,7 +43,8 @@ public class SystemUserTests
         //dagl.Scopes = "users.read";
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
-        var endpoint = string.Format(UrlConstants.GetSystemUserByPartyIdUrlTemplate, dagl.AltinnPartyId);
+        var endpoint = UrlConstants.GetSystemUserByPartyIdUrlTemplate.Replace("{partyId}", dagl.AltinnPartyId);
+
         var respons = await _platformClient.GetAsync(endpoint, altinnToken);
 
         Assert.True(HttpStatusCode.OK == respons.StatusCode,
@@ -140,18 +141,18 @@ public class SystemUserTests
 
         // Assert system user exists
         await AssertSystemUserRequestStatus(statusResponse, "Accepted");
-        Assert.Contains(systemId,content);
+        Assert.Contains(systemId, content);
 
         // Extract system user ID
         var systemUserId = ExtractSystemUserId(content);
 
         // Act - Delete the system user
         await DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
-        
+
         // Assert - Verify system user is deleted
         var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
         _outputHelper.WriteLine(await deleteVerificationResponse.Content.ReadAsStringAsync());
-        
+
         // Ths won't work since the response lists system users for vendor, verify it's empty
 //        Assert.Equal(HttpStatusCode.NotFound, deleteVerificationResponse.StatusCode);
     }
@@ -251,7 +252,7 @@ public class SystemUserTests
 
     private async Task<HttpResponseMessage> GetSystemUserRequestStatus(string requestId, string token)
     {
-        var url = string.Format(UrlConstants.GetSystemUserRequestStatusUrlTemplate, requestId);
+        var url = UrlConstants.GetSystemUserRequestStatusUrlTemplate.Replace("requestId", requestId);
         return await _platformClient.GetAsync(url, token);
     }
 
@@ -275,7 +276,10 @@ public class SystemUserTests
 
     private async Task ApproveSystemUserRequest(string altinnPartyId, string requestId)
     {
-        var approveUrl = string.Format(UrlConstants.ApproveSystemUserRequestUrlTemplate, altinnPartyId, requestId);
+        var approveUrl = UrlConstants.ApproveSystemUserRequestUrlTemplate
+            .Replace("{partyId}", altinnPartyId)
+            .Replace("{requestId}", requestId);
+
         var approveResponse = await ApproveRequest(approveUrl, GetTestUserForVendor());
 
         Assert.True(approveResponse.StatusCode == HttpStatusCode.OK,
@@ -284,7 +288,7 @@ public class SystemUserTests
 
     private async Task<HttpResponseMessage> GetSystemUserById(string systemId, string token)
     {
-        var urlGetBySystem = string.Format(UrlConstants.GetBySystemForVendor, systemId);
+        var urlGetBySystem = UrlConstants.GetBySystemForVendor.Replace("{systemId}", systemId);
         return await _platformClient.GetAsync(urlGetBySystem, token);
     }
 
@@ -303,8 +307,9 @@ public class SystemUserTests
 
     private async Task DeleteSystemUser(string altinnPartyId, string systemUserId)
     {
-        var deleteUrl = string.Format(UrlConstants.DeleteSystemUserUrlTemplate, altinnPartyId, systemUserId);
-        var deleteResponse = await DeleteRequest(deleteUrl, GetTestUserForVendor());
+        var deleteUrl = UrlConstants.DeleteSystemUserUrlTemplate
+            .Replace("{partyId}", altinnPartyId)
+            .Replace("{systemUserId}", systemUserId);        var deleteResponse = await DeleteRequest(deleteUrl, GetTestUserForVendor());
 
         Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
     }
