@@ -121,74 +121,7 @@ public class SystemUserTests
         Assert.Contains(systemId, await systemUserResponseContent.Content.ReadAsStringAsync());
     }
 
-    /// <summary>
     /// "End to end" from creating request for System user to approving it and using /GET system user to find created user and deleting it
-    /// </summary>
-    [Fact]
-    public async Task DeleteSystemUserTest()
-    {
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
-
-        // Create system and system user request
-        var responseRequestSystemUser = await CreateSystemUserRequest(maskinportenToken);
-
-        using var jsonDocSystemRequestResponse = JsonDocument.Parse(responseRequestSystemUser);
-        var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
-
-        var vendor = _platformClient.EnvironmentHelper.Vendor;
-
-        var testperson = _platformClient.TestUsers.Find(testUser => testUser.Org.Equals(vendor))
-                         ?? throw new Exception($"Test user not found for organization: {vendor}");
-
-        // Approve
-        var approveResp =
-            await ApproveRequest($"v1/systemuser/request/{testperson.AltinnPartyId}/{id}/approve", testperson);
-        Assert.True(HttpStatusCode.OK == approveResp.StatusCode);
-
-        //Get status
-        var url = $"v1/systemuser/request/vendor/{id}";
-        var resp = await _platformClient.GetAsync(url, maskinportenToken);
-
-        using var jsonDocRequestStatus = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-        var status = jsonDocRequestStatus.RootElement.GetProperty("status").GetString();
-        Assert.True(status != null, $"Unable to find status in response {await resp.Content.ReadAsStringAsync()}");
-        Assert.True(status.Equals("Accepted"), "Status was not approved but: " + status);
-
-        var systemId = jsonDocSystemRequestResponse.RootElement.GetProperty("systemId").GetString();
-        Assert.True(systemId != null, $"Unable to find system user id {systemId}");
-
-        //Verify system is found
-        var urlGetBySystem = $"v1/systemuser/vendor/bysystem/{systemId}";
-        var responseGetBySystem = await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
-        Assert.Contains(systemId, responseGetBySystem.Content.ReadAsStringAsync().Result);
-
-        // Ensure the response is successful
-        responseGetBySystem.EnsureSuccessStatusCode();
-
-        // Read the response content as a string
-        var jsonString = await responseGetBySystem.Content.ReadAsStringAsync();
-
-        // Parse the JSON response
-        JsonNode jsonNode = JsonNode.Parse(jsonString);
-
-        string systemUserId = string.Empty;
-        // Check if it's an array
-        if (jsonNode is JsonObject jsonObject)
-        {
-            // Get the element with data
-            JsonArray jsonArray = jsonObject.ElementAt(1).Value.AsArray();
-            JsonObject systemUserObject = jsonArray.First().AsObject();
-
-            // Extract the 'id' of the created systemuser
-            systemUserId = systemUserObject["id"].GetValue<string>();
-        }
-
-        //Delete
-        var deleteUrl = string.Format(UrlConstants.DeleteSystemUserUrlTemplate, testperson.AltinnPartyId, systemUserId);
-        var deleteResp = await DeleteRequest(deleteUrl, testperson);
-        Assert.Equal(HttpStatusCode.Accepted, deleteResp.StatusCode);
-    }
-
     [Fact]
     public async Task deleteRefactored()
     {
@@ -204,11 +137,8 @@ public class SystemUserTests
         var statusResponse = await GetSystemUserRequestStatus(id, maskinportenToken);
         var systemUserResponseContent = await GetSystemUserById(systemId, maskinportenToken);
         var content = await systemUserResponseContent.Content.ReadAsStringAsync();
-        
-        _outputHelper.WriteLine(systemId);
-        _outputHelper.WriteLine(content);
 
-        // Assert
+        // Assert system user exists
         await AssertSystemUserRequestStatus(statusResponse, "Accepted");
         Assert.Contains(systemId,content);
 
@@ -217,6 +147,13 @@ public class SystemUserTests
 
         // Act - Delete the system user
         await DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
+        
+        // Assert - Verify system user is deleted
+        var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
+        _outputHelper.WriteLine(await deleteVerificationResponse.Content.ReadAsStringAsync());
+        
+        // Ths won't work since the response lists system users for vendor, verify it's empty
+//        Assert.Equal(HttpStatusCode.NotFound, deleteVerificationResponse.StatusCode);
     }
 
 
