@@ -188,33 +188,18 @@ public class SystemRegisterTests
     {
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
-        //Print count of all systems
-        _outputHelper.WriteLine(systems.Count.ToString());
-
-        var countAll = systems.Count(system => system is { isDeleted: false, isVisible: true });
-        _outputHelper.WriteLine("Antall systemer +" + countAll);
-
-
-        foreach (var systemDto in systems)
-        {
-            _outputHelper.WriteLine(systemDto.SystemId);
-            _outputHelper.WriteLine(systemDto.isDeleted.ToString());
-            _outputHelper.WriteLine(systemDto.isVisible.ToString());
-            _outputHelper.WriteLine("/n");
-        }
-
+        
         var idsToDelete = systems.FindAll(system =>
             system.SystemVendorOrgNumber.Equals(_platformClient.EnvironmentHelper.Vendor));
 
         foreach (var systemDto in idsToDelete)
         {
-            _outputHelper.WriteLine("Attempting to delete system with id: " + systemDto.SystemId);
             // Act
             var respons = await _platformClient.Delete(
                 $"{UrlConstants.DeleteSystemsystemSystemRegister}/{systemDto.SystemId}", maskinportenToken);
 
             // Assert
-            Assert.True(HttpStatusCode.OK == respons.StatusCode, "deletion failed: " + respons.StatusCode + " - " + await respons.Content.ReadAsStringAsync());
+            Assert.True(HttpStatusCode.OK == respons.StatusCode, "deletion failed with status code: " + respons.StatusCode + " - " + await respons.Content.ReadAsStringAsync());
         }
     }
 }

@@ -124,7 +124,7 @@ public class SystemUserTests
 
     /// "End to end" from creating request for System user to approving it and using /GET system user to find created user and deleting it
     [Fact]
-    public async Task deleteRefactored()
+    public async Task DeleteSystemUserTest()
     {
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
@@ -151,10 +151,8 @@ public class SystemUserTests
 
         // Assert - Verify system user is deleted
         var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
-        _outputHelper.WriteLine(await deleteVerificationResponse.Content.ReadAsStringAsync());
-
-        // Ths won't work since the response lists system users for vendor, verify it's empty
-//        Assert.Equal(HttpStatusCode.NotFound, deleteVerificationResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
+        Assert.DoesNotContain(systemUserId, await deleteVerificationResponse.Content.ReadAsStringAsync());
     }
 
 
@@ -309,7 +307,8 @@ public class SystemUserTests
     {
         var deleteUrl = UrlConstants.DeleteSystemUserUrlTemplate
             .Replace("{partyId}", altinnPartyId)
-            .Replace("{systemUserId}", systemUserId);        var deleteResponse = await DeleteRequest(deleteUrl, GetTestUserForVendor());
+            .Replace("{systemUserId}", systemUserId);
+        var deleteResponse = await DeleteRequest(deleteUrl, GetTestUserForVendor());
 
         Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
     }

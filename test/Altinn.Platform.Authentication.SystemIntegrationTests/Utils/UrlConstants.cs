@@ -17,16 +17,9 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils
 
         // API Endpoints changerequest
         public const string ChangeRequestVendorUrl = "v1/systemuser/changerequest/vendor";
-
-        public const string ApproveChangeRequestUrlTemplate =
-            "v1/systemuser/changerequest/{partyId}/{requestId}/approve";
-
+        public const string ApproveChangeRequestUrlTemplate = "v1/systemuser/changerequest/{partyId}/{requestId}/approve";
         public const string GetRequestByIdUrlTemplate = "v1/systemuser/changerequest/vendor/{requestId}";
-
-        public const string GetByExternalRefUrlTemplate =
-            "v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{vendor}/{externalRef}";
-
-        public const string GetChangeRequestByRequestId =
-            "/authentication/api/v1/systemuser/changerequest/vendor/{requestId}";
+        public const string GetByExternalRefUrlTemplate = "v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{vendor}/{externalRef}";
+        public const string GetChangeRequestByRequestId = "/authentication/api/v1/systemuser/changerequest/vendor/{requestId}";
     }
 }

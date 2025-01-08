@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
@@ -45,8 +44,10 @@ public class ChangeRequestTests
 
         // Assert change request response
         Assert.Equal(HttpStatusCode.Created, changeRequestResponse.StatusCode);
+        
+        var requestId = Common.ExtractPropertyFromJson(await changeRequestResponse.Content.ReadAsStringAsync(), "id");
 
-        var requestId = ExtractRequestId(await changeRequestResponse.Content.ReadAsStringAsync());
+        
         var approvalResponse = await ApproveChangeRequest(requestId, testperson);
         Common.AssertSuccess(approvalResponse, "Change request approval failed");
 
@@ -83,10 +84,9 @@ public class ChangeRequestTests
 
     private async Task AssertSystemUserUpdated(string systemId, string externalRef, string maskinportenToken)
     {
-        // Verify system user was updated // created
+        // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
         var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);
         var systemusersRespons = await respGetSystemUsersForVendor.ReadAsStringAsync();
-        _outputHelper.WriteLine($"System users for vendor is: {systemusersRespons}");
 
         // Assert systemId
         Assert.Contains(systemId, systemusersRespons);
@@ -103,16 +103,6 @@ public class ChangeRequestTests
             await _common.ApproveRequest(approveUrl, testperson);
 
         return approvalResp;
-    }
-
-    private string ExtractRequestId(string changeRequestResponse)
-    {
-        //Get request id for change request
-        using var jsonDocSystemRequestResponse =
-            JsonDocument.Parse(changeRequestResponse);
-        var requestId = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
-        Assert.True(requestId != null, nameof(requestId) + "Request ID is null in response");
-        return requestId;
     }
 
     private async Task<HttpResponseMessage> SubmitChangeRequest(string systemId, string externalRef,
