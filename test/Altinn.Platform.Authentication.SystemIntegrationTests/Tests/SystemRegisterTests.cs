@@ -79,7 +79,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.GetAsync(UrlConstants.GetSystemsystemSystemRegister, maskinportenToken);
+            await _platformClient.GetAsync(UrlConstants.GetSystemSystemRegister, maskinportenToken);
         
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -138,7 +138,7 @@ public class SystemRegisterTests
         await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
 
         // Act
-        var respons = await _platformClient.Delete($"{UrlConstants.PostSystemsystemSystemRegister}/{teststate.SystemId}", teststate.Token);
+        var respons = await _platformClient.Delete($"{UrlConstants.PostSystemSystemRegister}/{teststate.SystemId}", teststate.Token);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
@@ -167,7 +167,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.PutAsync($"{UrlConstants.PostSystemsystemSystemRegister}{teststate.SystemId}",
+            await _platformClient.PutAsync($"{UrlConstants.PostSystemSystemRegister}{teststate.SystemId}",
                 requestBody, maskinportenToken);
 
         // Assert
@@ -194,7 +194,7 @@ public class SystemRegisterTests
         {
             // Act
             var respons = await _platformClient.Delete(
-                $"{UrlConstants.DeleteSystemsystemSystemRegister}/{systemDto.SystemId}", maskinportenToken);
+                $"{UrlConstants.DeleteSystemSystemRegister}/{systemDto.SystemId}", maskinportenToken);
 
             // Assert
             Assert.True(HttpStatusCode.OK == respons.StatusCode, "deletion failed with status code: " + respons.StatusCode + " - " + await respons.Content.ReadAsStringAsync());
