@@ -81,8 +81,6 @@ public class SystemRegisterTests
         var response =
             await _platformClient.GetAsync(UrlConstants.GetSystemsystemSystemRegister, maskinportenToken);
         
-        _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
-
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

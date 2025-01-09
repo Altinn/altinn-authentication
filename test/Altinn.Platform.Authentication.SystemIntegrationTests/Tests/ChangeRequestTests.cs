@@ -44,17 +44,28 @@ public class ChangeRequestTests
 
         // Assert change request response
         Assert.Equal(HttpStatusCode.Created, changeRequestResponse.StatusCode);
-        
         var requestId = Common.ExtractPropertyFromJson(await changeRequestResponse.Content.ReadAsStringAsync(), "id");
+        await AssertStatusChangeRequest(requestId, "New", maskinportenToken);
 
-        
         var approvalResponse = await ApproveChangeRequest(requestId, testperson);
         Common.AssertSuccess(approvalResponse, "Change request approval failed");
 
         // Assert relevant change request endpoints
+        await AssertStatusChangeRequest(requestId, "Accepted", maskinportenToken);
         await AssertSystemUserUpdated(systemId, externalRef, maskinportenToken);
         await AssertRequestRetrievalById(requestId, systemId, externalRef, maskinportenToken);
         await AssertRequestRetrievalByExternalRef(systemId, externalRef, maskinportenToken);
+    }
+
+    private async Task AssertStatusChangeRequest(string requestId, string expectedStatus, string maskinportenToken)
+    {
+        var getRequestByIdUrl = UrlConstants.GetChangeRequestByRequestIdUrlTemplate.Replace("{requestId}", requestId);
+        var responsGetByRequestId = await _platformAuthentication.GetAsync(getRequestByIdUrl, maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, responsGetByRequestId.StatusCode);
+        Assert.Contains(requestId, await responsGetByRequestId.Content.ReadAsStringAsync());
+
+        var status = Common.ExtractPropertyFromJson(await responsGetByRequestId.Content.ReadAsStringAsync(), "status");
+        Assert.True(expectedStatus.Equals(status), $"Status is not {expectedStatus} but: " + status);
     }
 
     private async Task AssertRequestRetrievalByExternalRef(string systemId, string externalRef,
