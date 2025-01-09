@@ -58,7 +58,6 @@ public class SystemRegisterTests
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            //.WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
 
         var requestBody = teststate.GenerateRequestBody();
@@ -79,7 +78,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.GetAsync(UrlConstants.GetSystemSystemRegister, maskinportenToken);
+            await _platformClient.GetAsync(UrlConstants.GetSystemRegister, maskinportenToken);
         
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
@@ -138,7 +137,7 @@ public class SystemRegisterTests
         await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
 
         // Act
-        var respons = await _platformClient.Delete($"{UrlConstants.PostSystemSystemRegister}/{teststate.SystemId}", teststate.Token);
+        var respons = await _platformClient.Delete($"{UrlConstants.PostSystemRegister}/{teststate.SystemId}", teststate.Token);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
@@ -167,7 +166,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.PutAsync($"{UrlConstants.PostSystemSystemRegister}{teststate.SystemId}",
+            await _platformClient.PutAsync($"{UrlConstants.PostSystemRegister}{teststate.SystemId}",
                 requestBody, maskinportenToken);
 
         // Assert
@@ -194,7 +193,7 @@ public class SystemRegisterTests
         {
             // Act
             var respons = await _platformClient.Delete(
-                $"{UrlConstants.DeleteSystemSystemRegister}/{systemDto.SystemId}", maskinportenToken);
+                $"{UrlConstants.DeleteSystemRegister}/{systemDto.SystemId}", maskinportenToken);
 
             // Assert
             Assert.True(HttpStatusCode.OK == respons.StatusCode, "deletion failed with status code: " + respons.StatusCode + " - " + await respons.Content.ReadAsStringAsync());

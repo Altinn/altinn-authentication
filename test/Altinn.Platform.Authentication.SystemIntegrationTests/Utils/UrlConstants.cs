@@ -3,9 +3,9 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils
     public static class UrlConstants
     {
         // API Endpoints SystemRegister
-        public const string PostSystemSystemRegister = "v1/systemregister/vendor";
-        public const string GetSystemSystemRegister = "v1/systemregister";
-        public const string DeleteSystemSystemRegister = "v1/systemregister/vendor";
+        public const string PostSystemRegister = "v1/systemregister/vendor";
+        public const string GetSystemRegister = "v1/systemregister";
+        public const string DeleteSystemRegister = "v1/systemregister/vendor";
 
         // API Endpoints SystemUser
         public const string GetSystemUserByPartyIdUrlTemplate = "v1/systemuser/{partyId}";

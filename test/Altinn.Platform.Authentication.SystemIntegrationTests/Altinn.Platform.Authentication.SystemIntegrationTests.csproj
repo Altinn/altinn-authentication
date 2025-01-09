@@ -51,8 +51,4 @@
       </None>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Resources\Endpoints\ChangeRequest\" />
-    </ItemGroup>
-
 </Project>
