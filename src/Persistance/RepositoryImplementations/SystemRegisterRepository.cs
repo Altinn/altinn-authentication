@@ -240,8 +240,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 ";
 
         const string QUERY2 = /*strpsql*/@"
-            UPDATE business_application.maskinporten_client
-            SET is_deleted = TRUE
+            DELETE FROM business_application.maskinporten_client            
             WHERE business_application.maskinporten_client.system_internal_id = @system_internal_id;
             ";
 
@@ -387,8 +386,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         return new ValueTask<MaskinPortenClientInfo>(new MaskinPortenClientInfo
         {
             ClientId = reader.GetFieldValue<string>("Client_id"),
-            SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
-            IsDeleted = reader.GetFieldValue<bool>("is_deleted")
+            SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id")
         });
     }
 
@@ -516,11 +514,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
             client_id,
-            system_internal_id,
-            is_deleted
+            system_internal_id
             FROM business_application.maskinporten_client mc
-            WHERE mc.client_id = ANY(array[@client_id]::text[])
-            AND mc.is_deleted = false;
+            WHERE mc.client_id = ANY(array[@client_id]::text[]);
         ";
 
         try
@@ -545,11 +541,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
             client_id,
-            system_internal_id,
-            is_deleted
+            system_internal_id
             FROM business_application.maskinporten_client mc
-            WHERE mc.system_internal_id = @system_internal_id
-            AND mc.is_deleted = false;
+            WHERE mc.system_internal_id = @system_internal_id;
         ";
 
         try
