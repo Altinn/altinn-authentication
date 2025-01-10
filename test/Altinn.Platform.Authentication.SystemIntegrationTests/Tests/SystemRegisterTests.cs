@@ -58,7 +58,6 @@ public class SystemRegisterTests
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
 
         var requestBody = teststate.GenerateRequestBody();
@@ -79,9 +78,8 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.GetAsync("v1/systemregister", maskinportenToken);
-
-
+            await _platformClient.GetAsync(UrlConstants.GetSystemRegister, maskinportenToken);
+        
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -97,7 +95,7 @@ public class SystemRegisterTests
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString())
-            .WithVendor("312605031")
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
@@ -128,9 +126,8 @@ public class SystemRegisterTests
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
-            .WithClientId(Guid.NewGuid()
-                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
-            .WithVendor("312605031")
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
@@ -140,8 +137,7 @@ public class SystemRegisterTests
         await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
 
         // Act
-        var respons = await _platformClient.Delete(
-            $"v1/systemregister/vendor/{teststate.SystemId}", teststate.Token);
+        var respons = await _platformClient.Delete($"{UrlConstants.PostSystemRegister}/{teststate.SystemId}", teststate.Token);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
@@ -157,7 +153,7 @@ public class SystemRegisterTests
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
-            .WithVendor("312605031")
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
 
@@ -170,7 +166,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.PutAsync($"v1/systemregister/vendor/{teststate.SystemId}",
+            await _platformClient.PutAsync($"{UrlConstants.PostSystemRegister}{teststate.SystemId}",
                 requestBody, maskinportenToken);
 
         // Assert
@@ -188,20 +184,19 @@ public class SystemRegisterTests
     public async Task DeleteEverySystemCreatedByEndToEndTests()
     {
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var systemIds = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
-
-        var idsToDelete = systemIds.FindAll(system => system.SystemVendorOrgNumber.Equals(_platformClient.EnvironmentHelper.Vendor));
+        var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
         
+        var idsToDelete = systems.FindAll(system =>
+            system.SystemVendorOrgNumber.Equals(_platformClient.EnvironmentHelper.Vendor));
+
         foreach (var systemDto in idsToDelete)
         {
-            _outputHelper.WriteLine("Attempting to delete system with id: " + systemDto.SystemId);
             // Act
             var respons = await _platformClient.Delete(
-                $"v1/systemregister/vendor/{systemDto.SystemId}", maskinportenToken);
-        
+                $"{UrlConstants.DeleteSystemRegister}/{systemDto.SystemId}", maskinportenToken);
+
             // Assert
-            Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
+            Assert.True(HttpStatusCode.OK == respons.StatusCode, "deletion failed with status code: " + respons.StatusCode + " - " + await respons.Content.ReadAsStringAsync());
         }
-        
     }
 }
