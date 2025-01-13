@@ -30,8 +30,7 @@ public class PlatformAuthenticationClient
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
     }
-
-
+    
     private static List<Testuser> LoadTestUsers(string testenvironment)
     {
         // Determine the file to load based on the environment
@@ -210,7 +209,7 @@ public class PlatformAuthenticationClient
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
         const string environmentVariable = "TEST_ENVIRONMENT";
-    
+
         // Fetch environment JSON and override value
         var envJson = Environment.GetEnvironmentVariable(githubVariable);
         var testEnvironmentOverride = Environment.GetEnvironmentVariable(environmentVariable);
@@ -244,7 +243,6 @@ public class PlatformAuthenticationClient
     }
 
     /// <summary>
-    /// IMPORTANT - Gets token for a vendor / organization with this id: "312605031"
     /// </summary>
     /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
     public async Task<string> GetMaskinportenToken()

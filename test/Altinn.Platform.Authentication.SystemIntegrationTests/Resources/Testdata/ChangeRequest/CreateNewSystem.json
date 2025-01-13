@@ -5,7 +5,7 @@
   },
   "Name": {
     "en": "Test name english - e2e {Name}",
-    "nb": "IntegrationTestNb{Name}",
+    "nb": "IntegrationTes{Name}",
     "nn": "IntegrationTestNynorsk{Name}"
   },
   "Description": {
@@ -13,12 +13,29 @@
     "nb": "Integrasjonstest. Noe er randomisert her, men mye blir likt.",
     "nn": "integrasjonstest på nynorsk. Noe er randomisert her, men mye blir likt."
   },
-{rights}
+  "rights": [
+    {
+      "resource": [
+        {
+          "value": "authentication-e2e-test",
+          "id": "urn:altinn:resource"
+        }
+      ]
+    },
+    {
+      "resource": [
+        {
+          "value": "vegardtestressurs",
+          "id": "urn:altinn:resource"
+        }
+      ]
+    }
+  ],
   "allowedRedirectUrls": [
     "https://altinn.no"
   ],
-"isVisible": false,
-"ClientId": [
+  "isVisible": false,
+  "ClientId": [
     "{clientId}"
   ]
 }

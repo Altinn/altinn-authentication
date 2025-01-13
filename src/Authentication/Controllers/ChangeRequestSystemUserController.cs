@@ -131,6 +131,7 @@ public class ChangeRequestSystemUserController : ControllerBase
         Result<ChangeRequestResponse> response = await _changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
         {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
             return Ok(response.Value);
         }
 

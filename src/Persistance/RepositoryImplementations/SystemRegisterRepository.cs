@@ -1,8 +1,5 @@
 ﻿using System.Data;
-using System.Numerics;
 using System.Text.Json;
-using System.Text.Unicode;
-using System.Threading;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -233,25 +230,41 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public async Task<bool> SetDeleteRegisteredSystemById(string id)
+    public async Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId)
     {
-        const string QUERY = /*strpsql*/@"
+        const string QUERY1 = /*strpsql*/@"
                 UPDATE business_application.system_register
 	            SET is_deleted = TRUE,
                 last_changed = CURRENT_TIMESTAMP
         	    WHERE business_application.system_register.system_id = @system_id;
                 ";
 
+        const string QUERY2 = /*strpsql*/@"
+            DELETE FROM business_application.maskinporten_client            
+            WHERE business_application.maskinporten_client.system_internal_id = @system_internal_id;
+            ";
+
+        await using NpgsqlConnection conn = await _datasource.OpenConnectionAsync();
+        await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead);
+
         try
         {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using NpgsqlCommand command1 = new NpgsqlCommand(QUERY1, conn, transaction);
+            command1.Parameters.AddWithValue("system_id", id);
 
-            command.Parameters.AddWithValue("system_id", id);
+            await using NpgsqlCommand command2 = new NpgsqlCommand(QUERY2, conn, transaction);
+            command2.Parameters.AddWithValue("system_internal_id", systemInternalId);
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            int rowsAffected1 = await command1.ExecuteNonQueryAsync();
+            int rowsAffected2 = await command2.ExecuteNonQueryAsync();
+
+            await transaction.CommitAsync();
+
+            return rowsAffected1 > 0 && rowsAffected2 > 0;
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync();
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // SetDeleteRegisteredSystemById // Exception");
             throw;
         }
@@ -364,7 +377,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             ClientId = clientIds,
             Rights = rights,
             IsVisible = reader.GetFieldValue<bool>("is_visible"),
-            AllowedRedirectUrls = reader.GetFieldValue<List<string>>("allowedredirecturls").ConvertAll<Uri>(delegate (string u) { return new Uri(u); })
+            AllowedRedirectUrls = reader.IsDBNull("allowedredirecturls") ? null : reader.GetFieldValue<List<string>>("allowedredirecturls")?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); })
         });
     }
 
@@ -373,8 +386,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         return new ValueTask<MaskinPortenClientInfo>(new MaskinPortenClientInfo
         {
             ClientId = reader.GetFieldValue<string>("Client_id"),
-            SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
-            IsDeleted = reader.GetFieldValue<bool>("is_deleted")
+            SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id")
         });
     }
 
@@ -502,8 +514,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
             client_id,
-            system_internal_id,
-            is_deleted
+            system_internal_id
             FROM business_application.maskinporten_client mc
             WHERE mc.client_id = ANY(array[@client_id]::text[]);
         ";
@@ -530,8 +541,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
             client_id,
-            system_internal_id,
-            is_deleted
+            system_internal_id
             FROM business_application.maskinporten_client mc
             WHERE mc.system_internal_id = @system_internal_id;
         ";

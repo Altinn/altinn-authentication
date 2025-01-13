@@ -34,4 +34,9 @@ public record class RegisteredSystemDTO
     /// The array of Rights versus System Provider's Resources needed to use this Registered System
     /// </summary>
     public List<Right> Rights { get; set; } = [];
+
+    /// <summary>
+    /// True if the registered system is visible to the user in the UI
+    /// </summary>
+    public bool IsVisible { get; set; }
 }

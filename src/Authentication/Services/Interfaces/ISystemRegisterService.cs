@@ -64,11 +64,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
 
         /// <summary>
         /// Set's the product's is_deleted column to True.
+        /// Deletes the clientid from the maskinporten_cleitn table
         /// This will break any existing integrations.
         /// </summary>
         /// <param name="id">The human readable string id</param>
+        /// <param name="systemInternalId">The internal system idenficator for a system</param>
         /// <returns>True if set to deleted</returns>
-        Task<bool> SetDeleteRegisteredSystemById(string id);
+        Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId);
 
         /// <summary>
         /// Replaces the entire registered system
