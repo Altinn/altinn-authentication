@@ -1430,6 +1430,47 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         /// <summary>
+        /// Needs to use correct scope for payment and stats. Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
+        /// </summary>
+        [Fact]
+        public async Task AuthenticateEndUser_RequestTokenUsingDigDirScope()
+        {
+            // Arrange
+            string expectedAuthLevel = "4";
+
+            List<Claim> claims = new List<Claim>();
+
+            string pid = "19108000239";
+            string amr = "Minid-PIN";
+            string acr = "idporten-loa-high";
+
+            claims.Add(new Claim("pid", pid));
+            claims.Add(new Claim("amr", amr));
+            claims.Add(new Claim("acr", acr));
+            claims.Add(new Claim("scope", "oidc digdir:instances:altinn:rocks"));
+
+            ClaimsIdentity identity = new ClaimsIdentity();
+            identity.AddClaims(claims);
+            ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
+
+            UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
+            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
+
+            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
+            HttpClient client = CreateClient();
+
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
+            string url = "/authentication/api/v1/exchange/id-porten";
+
+            // Act
+            HttpResponseMessage response = await client.GetAsync(url);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        /// <summary>
         /// Test of method <see cref="AuthenticationController.ExchangeExternalSystemToken"/>.
         /// </summary>
         [Fact]
