@@ -1337,7 +1337,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             claims.Add(new Claim("pid", pid));
             claims.Add(new Claim("amr", amr));
             claims.Add(new Claim("acr", acr));
-
+            claims.Add(new Claim("scope", "altinn:instances.read"));
+;
             ClaimsIdentity identity = new ClaimsIdentity();
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
@@ -1394,6 +1395,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             claims.Add(new Claim("pid", pid));
             claims.Add(new Claim("amr", amr));
             claims.Add(new Claim("acr", acr));
+            claims.Add(new Claim("scope", "oidc altinn:instances.read"));
 
             ClaimsIdentity identity = new ClaimsIdentity();
             identity.AddClaims(claims);
@@ -1591,6 +1593,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             claims.Add(new Claim("amr", amr));
             claims.Add(new Claim("acr", acr));
             claims.Add(new Claim("jti", jti));
+            claims.Add(new Claim("scope", "oidc altinn:instances.read"));
 
             ClaimsIdentity identity = new ClaimsIdentity();
             identity.AddClaims(claims);
