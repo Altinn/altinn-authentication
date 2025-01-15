@@ -718,11 +718,6 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private static bool HasAltinnScope(string scope)
         {
-            if (scope == null)
-            {
-                return false;
-            }
-
             return scope?.Split(" ").Any(s => s.StartsWith("altinn:")) ?? false;
         }
 
