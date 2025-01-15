@@ -1519,6 +1519,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             claims.Add(new Claim("pid", pid));
             claims.Add(new Claim("amr", amr));
+            claims.Add(new Claim("scope", "oidc altinn:instances.read"));
 
             ClaimsIdentity identity = new ClaimsIdentity();
             identity.AddClaims(claims);
