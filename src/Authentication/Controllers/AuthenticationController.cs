@@ -14,7 +14,6 @@ using System.Web;
 
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
-using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -65,6 +64,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private const string IdportenLevel0 = "idporten-loa-low";
         private const string IdportenLevel3 = "idporten-loa-substantial";
         private const string IdportenLevel4 = "idporten-loa-high";
+        private const string ScopeClaim = "scope";
         private readonly GeneralSettings _generalSettings;
         private readonly ILogger _logger;
         private readonly IOrganisationsService _organisationService;
@@ -571,7 +571,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 string authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
                 string authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
                 string externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
-                string scope = token.Claims.Where(c => c.Type.Equals(Altinn.Platform.Authentication.Core.Constants.AuthzConstants.CLAIM_MASKINPORTEN_SCOPE)).Select(c => c.Value).FirstOrDefault();
+                string scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
                 
                 if (!HasAltinnScope(scope))
                 {
