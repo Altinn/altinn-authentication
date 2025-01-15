@@ -571,7 +571,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 string authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
                 string authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
                 string externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
-                string scope = token.Claims.Where(c => c.Type.Equals(AuthzConstants.CLAIM_MASKINPORTEN_SCOPE)).Select(c => c.Value).FirstOrDefault();
+                string scope = token.Claims.Where(c => c.Type.Equals(Altinn.Platform.Authentication.Core.Constants.AuthzConstants.CLAIM_MASKINPORTEN_SCOPE)).Select(c => c.Value).FirstOrDefault();
                 
                 if (!HasAltinnScope(scope))
                 {
