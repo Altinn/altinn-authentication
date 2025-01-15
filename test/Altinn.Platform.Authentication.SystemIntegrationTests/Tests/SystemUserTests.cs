@@ -40,7 +40,6 @@ public class SystemUserTests
     {
         var dagl = _platformClient.FindTestUserByRole("DAGL");
 
-        //dagl.Scopes = "users.read";
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
         var endpoint = UrlConstants.GetSystemUserByPartyIdUrlTemplate.Replace("{partyId}", dagl.AltinnPartyId);
@@ -151,10 +150,86 @@ public class SystemUserTests
 
         // Assert - Verify system user is deleted
         var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
+        
         Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
         Assert.DoesNotContain(systemUserId, await deleteVerificationResponse.Content.ReadAsStringAsync());
     }
 
+    [Fact]
+    public async Task RemoveAllSystemUsers()
+    {
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        
+        var dagl = _platformClient.FindTestUserByRole("DAGL");
+        var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
+        
+        //Get All system users for org
+        var endpoint = UrlConstants.GetSystemUserByPartyIdUrlTemplate.Replace("{partyId}", dagl.AltinnPartyId);
+
+        var respons = await _platformClient.GetAsync(endpoint, altinnToken);
+
+        Assert.True(HttpStatusCode.OK == respons.StatusCode,
+            $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
+        
+    }
+
+    
+    //This might come in handy
+    public async Task<string> CreateSystemUserRequestOnExistingSystem(string maskinportenToken)
+    {
+        var systemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
+        
+        // Prepare system user request
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json"))
+            .Replace("{systemId}", systemId)
+            .Replace("{redirectUrl}", "https://altinn.no");
+
+        var rights = new List<Right>
+        {
+            new()
+            {
+                Resource = new List<Resource>
+                {
+                    new()
+                    {
+                        Value = "authentication-e2e-test",
+                        Id = "urn:altinn:resource"
+                    }
+                }
+            },
+            new()
+            {
+                Resource = new List<Resource>
+                {
+                    new()
+                    {
+                        Value = "vegardtestressurs",
+                        Id = "urn:altinn:resource"
+                    }
+                }
+            }
+        };
+
+
+        var rightsJson = JsonSerializer.Serialize(rights, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        });
+
+        var finalJson = requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
+
+        // Act
+        var userResponse =
+            await _platformClient.PostAsync("v1/systemuser/request/vendor", finalJson, maskinportenToken);
+
+        // Assert
+        var content = await userResponse.Content.ReadAsStringAsync();
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
+            $"Unexpected status code: {userResponse.StatusCode} - {content}");
+
+        return content;
+    }
 
     public async Task<string> CreateSystemUserRequest(string maskinportenToken)
     {
@@ -163,7 +238,7 @@ public class SystemUserTests
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            .WithRedirectUrl("https://altinn.no")
+            .WithRedirectUrl("https://vg.no")
             .WithToken(maskinportenToken);
 
         var requestBodySystemREgister = testState.GenerateRequestBody();

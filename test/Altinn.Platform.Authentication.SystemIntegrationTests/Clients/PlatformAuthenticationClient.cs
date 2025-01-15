@@ -251,4 +251,11 @@ public class PlatformAuthenticationClient
         Assert.True(null != token, "Unable to retrieve maskinporten token");
         return token;
     }
+    
+    public async Task<string> GetSystemUserToken()
+    {
+        var token = await MaskinPortenTokenGenerator.GetMaskinportenSystemUserToken();
+        Assert.True(null != token, "Unable to retrieve maskinporten systemuser token");
+        return token;
+    } 
 }

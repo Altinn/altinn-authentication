@@ -48,6 +48,12 @@ public class SystemRegisterHelper
         RedirectUrl = redirectUrl;
         return this;
     }
+    
+    public SystemRegisterHelper WithName(string name)
+    {
+        Name = name;
+        return this;
+    }
 
     public SystemRegisterHelper WithResource(string value, string id)
     {

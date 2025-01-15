@@ -40,6 +40,80 @@ public class MaskinPortenTokenGenerator
         return base64;
     }
 
+    public Task<string> GenerateJwtForSystemUserToken()
+    {
+        const string audience = "https://test.maskinporten.no/token";
+        var iss = maskinportenClientId;
+
+        Assert.True(iss != null, "iss is null somehow, check it");
+
+        const string scope = "altinn:authentication/systemregister.write";
+
+        var now = DateTimeOffset.UtcNow;
+        var exp = now.AddMinutes(1).ToUnixTimeSeconds();
+        var iat = now.ToUnixTimeSeconds();
+        var jti = Guid.NewGuid().ToString();
+
+        var jwk = EnvHelper.jwk;
+
+        var rsa = new RSACryptoServiceProvider();
+        rsa.ImportParameters(new RSAParameters
+        {
+            Modulus = Convert.FromBase64String(ToStandardBase64(jwk.n)),
+            Exponent = Convert.FromBase64String("AQAB"),
+            D = Convert.FromBase64String(ToStandardBase64(jwk.d)),
+            P = Convert.FromBase64String(ToStandardBase64(jwk.p)),
+            Q = Convert.FromBase64String(ToStandardBase64(jwk.q)),
+            DP = Convert.FromBase64String(ToStandardBase64(jwk.dp)),
+            DQ = Convert.FromBase64String(ToStandardBase64(jwk.dq)),
+            InverseQ = Convert.FromBase64String(ToStandardBase64(jwk.qi))
+        });
+
+        var signingCredentials = new SigningCredentials(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Aud, audience),
+            new(JwtRegisteredClaimNames.Sub, iss),
+            new(JwtRegisteredClaimNames.Iss, iss),
+            new("scope", scope),
+            new(JwtRegisteredClaimNames.Exp, exp.ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Iat, iat.ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Jti, jti)
+        };
+
+        var vendor = EnvHelper.Vendor;
+
+        // Add authorization_details claim strictly following documentation
+        var systemUserOrg = new JwtPayload
+        {
+            { "authority", "iso6523-actorid-upis" },
+            { "ID", $"0192:{vendor}" }
+        };
+
+        // Create the authorization_detail object
+        var authorizationDetail = new JwtPayload
+        {
+            { "systemuser_org", systemUserOrg },
+            { "type", "urn:altinn:systemuser" }
+        };
+
+        // Create a list for authorization_details (even if it's a single object, Maskinporten expects an array)
+        List<JwtPayload> authorizationDetails = [authorizationDetail];
+
+        var header = new JwtHeader(signingCredentials)
+        {
+            { "kid", jwk.kid }
+        };
+
+        var payload = new JwtPayload(claims) { { "authorization_details", authorizationDetails } };
+        var token = new JwtSecurityToken(header, payload);
+        var tokenHandler = new JwtSecurityTokenHandler();
+
+        return Task.FromResult(tokenHandler.WriteToken(token));
+    }
+
+
     public Task<string> GenerateJwt()
     {
         const string audience = "https://test.maskinporten.no/token";
@@ -142,6 +216,22 @@ public class MaskinPortenTokenGenerator
     public async Task<string> GetMaskinportenBearerToken()
     {
         var jwt = await GenerateJwt();
+        var maskinportenTokenResponse = await RequestToken(jwt);
+        var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
+        var root = jsonDoc.RootElement;
+
+        return root.GetProperty("access_token").GetString() ??
+               throw new Exception("Unable to get access token from response.");
+    }
+
+    /// <summary>
+    /// This fetches a bearer token from Maskinporten
+    /// </summary>
+    /// <returns>Access token</returns>
+    /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
+    public async Task<string> GetMaskinportenSystemUserToken()
+    {
+        var jwt = await GenerateJwtForSystemUserToken();
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;
