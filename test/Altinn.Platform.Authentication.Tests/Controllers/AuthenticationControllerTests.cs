@@ -1338,7 +1338,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             claims.Add(new Claim("amr", amr));
             claims.Add(new Claim("acr", acr));
             claims.Add(new Claim("scope", "altinn:instances.read"));
-;
+
             ClaimsIdentity identity = new ClaimsIdentity();
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
@@ -1467,7 +1467,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.GetAsync(url);
 
             // Assert
-            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
         /// <summary>

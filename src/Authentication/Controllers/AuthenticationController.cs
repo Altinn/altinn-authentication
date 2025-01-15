@@ -576,7 +576,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 if (!HasAltinnScope(scope))
                 {
                     _logger.LogInformation("Missing scope");
-                    return Unauthorized();
+                    if (!HasAltinnScope(scope))
+                    {
+                        _logger.LogInformation("Missing scope");
+                        return Forbid();
+                    }
                 }
 
                 if (string.IsNullOrWhiteSpace(pid) || string.IsNullOrWhiteSpace(authLevel))
