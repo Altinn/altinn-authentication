@@ -1481,6 +1481,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string pid = "19108000239";
             string amr = "MinId-PIN";
+            claims.Add(new Claim("scope", "oidc altinn:instances.read"));
 
             claims.Add(new Claim("pid", pid));
             claims.Add(new Claim("amr", amr));
