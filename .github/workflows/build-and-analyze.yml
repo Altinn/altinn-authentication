@@ -25,7 +25,7 @@ jobs:
       - name: Build & Test
         run: |
           dotnet build Altinn.Platform.Authentication.sln -v m
-          dotnet test Altinn.Platform.Authentication.sln --results-directory TestResults/ --collect:"XPlat Code Coverage" --filter "Category!=IntegrationTest"
+          dotnet test Altinn.Platform.Authentication.sln --filter "Category!=IntegrationTest"
   analyze:
     name: Analyze
     if: ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) || github.event_name == 'push') && github.repository_owner == 'Altinn' && github.actor != 'dependabot[bot]' 
