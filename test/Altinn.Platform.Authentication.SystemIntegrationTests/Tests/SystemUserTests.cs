@@ -150,7 +150,7 @@ public class SystemUserTests
 
         // Assert - Verify system user is deleted
         var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
-        
+
         Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
         Assert.DoesNotContain(systemUserId, await deleteVerificationResponse.Content.ReadAsStringAsync());
     }
@@ -159,26 +159,49 @@ public class SystemUserTests
     public async Task RemoveAllSystemUsers()
     {
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        
         var dagl = _platformClient.FindTestUserByRole("DAGL");
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
-        
-        //Get All system users for org
+
+        //Get All system users for party
         var endpoint = UrlConstants.GetSystemUserByPartyIdUrlTemplate.Replace("{partyId}", dagl.AltinnPartyId);
 
         var respons = await _platformClient.GetAsync(endpoint, altinnToken);
+        var jsonResponse = await respons.Content.ReadAsStringAsync();
+        //Parse into class SystemUser (list of)
+        var systemUsers = JsonSerializer.Deserialize<List<SystemUser>>(jsonResponse, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
 
         Assert.True(HttpStatusCode.OK == respons.StatusCode,
             $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
-        
+
+        foreach (var systemUser in systemUsers.Where(systemUser => !systemUser.IntegrationTitle.Equals(
+                                                                       "IntegrationTestNbTeam-Authentication-SystemuserE2E-User-Do-Not-Delete") &&
+                                                                   systemUser.SupplierOrgno.Equals(_platformClient
+                                                                       .EnvironmentHelper.Vendor)))
+        {
+            _outputHelper.WriteLine(systemUser.IntegrationTitle);
+            _outputHelper.WriteLine(systemUser.SystemId);
+            await DeleteSystemUser(dagl.AltinnPartyId, systemUser.Id.ToString());
+            // Assert - Verify system user is deleted
+            var deleteVerificationResponse = await GetSystemUserById(systemUser.SystemId, maskinportenToken);
+
+            Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
+            Assert.DoesNotContain(systemUser.Id.ToString(),
+                await deleteVerificationResponse.Content.ReadAsStringAsync());
+        }
+
+        // Use this: public class SystemUser - to parse the response of the previous thingy ^ and then delete every system user EXCEPT:
+        // IntegrationTestNbTeam-Authentication-SystemuserE2E-User-Do-Not-Delete (integration title)
     }
 
-    
+
     //This might come in handy
     public async Task<string> CreateSystemUserRequestOnExistingSystem(string maskinportenToken)
     {
         var systemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
-        
+
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json"))
             .Replace("{systemId}", systemId)

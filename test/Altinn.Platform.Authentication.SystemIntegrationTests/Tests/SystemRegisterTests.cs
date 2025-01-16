@@ -143,7 +143,8 @@ public class SystemRegisterTests
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
     }
 
-    //[Fact] Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
+    [Fact] 
+    //Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares
@@ -166,7 +167,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.PutAsync($"{UrlConstants.PostSystemRegister}{teststate.SystemId}",
+            await _platformClient.PutAsync($"{UrlConstants.PostSystemRegister}/{teststate.SystemId}",
                 requestBody, maskinportenToken);
 
         // Assert
