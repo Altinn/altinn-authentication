@@ -65,6 +65,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private const string IdportenLevel0 = "idporten-loa-low";
         private const string IdportenLevel3 = "idporten-loa-substantial";
         private const string IdportenLevel4 = "idporten-loa-high";
+        private const string ScopeClaim = "scope";
         private readonly GeneralSettings _generalSettings;
         private readonly ILogger _logger;
         private readonly IOrganisationsService _organisationService;
@@ -571,7 +572,14 @@ namespace Altinn.Platform.Authentication.Controllers
                 string authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
                 string authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
                 string externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
+                string scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
                 
+                if (!HasAltinnScope(scope))
+                {
+                     _logger.LogInformation("Missing scope");
+                     return Forbid();
+                }
+
                 if (string.IsNullOrWhiteSpace(pid) || string.IsNullOrWhiteSpace(authLevel))
                 {
                     _logger.LogInformation("Token contained invalid or missing claims.");
@@ -707,6 +715,11 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return false;
+        }
+
+        private static bool HasAltinnScope(string scope)
+        {
+            return scope?.Split(" ").Any(s => s.StartsWith("altinn:")) ?? false;
         }
 
         private static bool IssuerMatchesWellknownEndpoint(string issOriginal, string wellknownEndpoint, string alternativeWellknownEndpoint)
