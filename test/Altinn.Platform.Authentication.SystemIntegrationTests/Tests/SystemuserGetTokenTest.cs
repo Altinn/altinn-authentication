@@ -24,10 +24,42 @@ public class SystemuserGetTokenTest
     }
 
     [Fact]
+    public async Task GetByExternalIdMaskinporten()
+    {
+        //Får ikke laget bruker med riktig scope hjer i samarbeidsportalen?? Why?
+        // var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        const string scopes = "altinn:maskinporten/systemuser.read";
+
+        var altinnEnterpriseToken =
+            await _platformClient.GetEnterpriseAltinnToken(_platformClient.EnvironmentHelper.Vendor, scopes);
+
+        var endpoint = "v1/systemuser/byExternalId";
+
+        // Define the query parameters
+        var clientId = _platformClient.EnvironmentHelper.maskinportenClientId;
+        var systemProviderOrgNo = _platformClient.EnvironmentHelper.Vendor;
+        var systemUserOwnerOrgNo = _platformClient.EnvironmentHelper.Vendor;
+        // var externalRef = "51554df1-6013-4471-bf80-7281749bc042";
+        
+
+        // Build the query string
+        var queryString =
+            $"?clientId={clientId}&systemProviderOrgNo={systemProviderOrgNo}&systemUserOwnerOrgNo={systemUserOwnerOrgNo}";
+
+        // Combine the endpoint and query string
+        var fullEndpoint = $"{endpoint}{queryString}";
+
+        // Make the GET request with the full endpoint and token
+        var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
+        _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
+        Assert.NotNull(resp);
+        Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrg()
     {
         var maskinportenToken = await _platformClient.GetSystemUserToken();
         _outputHelper.WriteLine($"maskinportenToken: {maskinportenToken}");
-
     }
 }

@@ -29,7 +29,8 @@ public class SystemRegisterTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterHelper systemRegisterHelper, string filePath)
+    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterHelper systemRegisterHelper,
+        string filePath)
     {
         var fileContent = await Helper.ReadFile(filePath);
         return fileContent
@@ -51,11 +52,12 @@ public class SystemRegisterTests
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithClientId(Guid.NewGuid()
+                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithName("Team Authentication E2E-tests-" + Guid.NewGuid())
+            .WithName("Team-Authentication-SystemuserE2E-User-Do-Not-Delete")
             .WithToken(maskinportenToken);
 
         var requestBody = teststate.GenerateRequestBody();
@@ -143,7 +145,7 @@ public class SystemRegisterTests
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
     }
 
-    [Fact] 
+    [Fact]
     //Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
@@ -191,12 +193,12 @@ public class SystemRegisterTests
             system.SystemVendorOrgNumber.Equals(_platformClient.EnvironmentHelper.Vendor));
 
         //Delete everything but the one system used by actual Maskinporten
-        foreach (var systemDto in idsToDelete.Where(system => !system.SystemId.Contains("SystemuserE2E-User-Do-Not-Delete")))
+        foreach (var systemDto in idsToDelete)
         {
             // Where(systemDto =>
             //     !systemDto.SystemId.Contains(_platformClient.EnvironmentHelper.Vendor)
             _outputHelper.WriteLine($"Deleting system {systemDto.SystemId}");
-            
+
             // Act
             var respons = await _platformClient.Delete(
                 $"{UrlConstants.DeleteSystemRegister}/{systemDto.SystemId}", maskinportenToken);

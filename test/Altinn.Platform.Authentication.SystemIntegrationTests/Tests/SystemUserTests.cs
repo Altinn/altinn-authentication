@@ -156,7 +156,39 @@ public class SystemUserTests
     }
 
     [Fact]
-    public async Task RemoveAllSystemUsers()
+    public async Task CreateEndToEndSystemUser()
+    {
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var systemUserResponse = await CreateSystemUser(maskinportenToken);
+        var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
+        var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
+        var testperson = GetTestUserForVendor();
+
+        // Act
+        await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
+        var statusResponse = await GetSystemUserRequestStatus(id, maskinportenToken);
+        var systemUserResponseContent = await GetSystemUserById(systemId, maskinportenToken);
+
+        // Assert
+        await AssertSystemUserRequestStatus(statusResponse, "Accepted");
+        Assert.Contains(systemId, await systemUserResponseContent.Content.ReadAsStringAsync());
+
+        // Extract system user ID
+        var systemUserId = ExtractSystemUserId(await systemUserResponseContent.Content.ReadAsStringAsync());
+        _outputHelper.WriteLine($"SystemUserId: {systemUserId}");
+
+        // var stystemUserToken = await _platformClient.GetSystemUserToken();
+
+        // // Delete system user 
+        // await DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
+        //
+        // // Delete system in System Register
+        // var respons = await _platformClient.Delete(
+        //     $"{UrlConstants.DeleteSystemRegister}/{systemId}", maskinportenToken);
+    }
+
+    [Fact]
+    public async Task RemoveAllSystemUsersForEndtoEndTests()
     {
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
         var dagl = _platformClient.FindTestUserByRole("DAGL");
@@ -177,12 +209,10 @@ public class SystemUserTests
             $"Received status code: {respons.StatusCode} more details: {await respons.Content.ReadAsStringAsync()}");
 
         foreach (var systemUser in systemUsers.Where(systemUser => !systemUser.IntegrationTitle.Equals(
-                                                                       "IntegrationTestNbTeam-Authentication-SystemuserE2E-User-Do-Not-Delete") &&
+                                                                       "IntegrationTestNbTeam-Authentication-SystemuserE2E-User-Do-NoTt-Delete") &&
                                                                    systemUser.SupplierOrgno.Equals(_platformClient
                                                                        .EnvironmentHelper.Vendor)))
         {
-            _outputHelper.WriteLine(systemUser.IntegrationTitle);
-            _outputHelper.WriteLine(systemUser.SystemId);
             await DeleteSystemUser(dagl.AltinnPartyId, systemUser.Id.ToString());
             // Assert - Verify system user is deleted
             var deleteVerificationResponse = await GetSystemUserById(systemUser.SystemId, maskinportenToken);
@@ -191,50 +221,41 @@ public class SystemUserTests
             Assert.DoesNotContain(systemUser.Id.ToString(),
                 await deleteVerificationResponse.Content.ReadAsStringAsync());
         }
-
-        // Use this: public class SystemUser - to parse the response of the previous thingy ^ and then delete every system user EXCEPT:
-        // IntegrationTestNbTeam-Authentication-SystemuserE2E-User-Do-Not-Delete (integration title)
     }
 
 
-    //This might come in handy
-    public async Task<string> CreateSystemUserRequestOnExistingSystem(string maskinportenToken)
+    //Create system user with valid machineporten client id
+    public async Task<string> CreateSystemUser(string maskinportenToken)
     {
-        var systemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
+        var name = "Team-Authentication-SystemuserE2E-User " + Guid.NewGuid();
+
+        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithClientId(_platformClient.EnvironmentHelper
+                .maskinportenClientId) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
+            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
+            .WithName(name)
+            .WithToken(maskinportenToken);
+
+        var requestBodySystemRegister = teststate.GenerateRequestBody();
+
+        // Act
+        var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+
+        // Assert
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var externalRef = Guid.NewGuid();
 
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json"))
-            .Replace("{systemId}", systemId)
+            .Replace("{systemId}", teststate.SystemId)
+            .Replace("{externalRef}", externalRef.ToString())
             .Replace("{redirectUrl}", "https://altinn.no");
 
-        var rights = new List<Right>
-        {
-            new()
-            {
-                Resource = new List<Resource>
-                {
-                    new()
-                    {
-                        Value = "authentication-e2e-test",
-                        Id = "urn:altinn:resource"
-                    }
-                }
-            },
-            new()
-            {
-                Resource = new List<Resource>
-                {
-                    new()
-                    {
-                        Value = "vegardtestressurs",
-                        Id = "urn:altinn:resource"
-                    }
-                }
-            }
-        };
-
-
-        var rightsJson = JsonSerializer.Serialize(rights, new JsonSerializerOptions
+        var rightsJson = JsonSerializer.Serialize(teststate.Rights, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = false
