@@ -26,14 +26,13 @@ public class SystemuserGetTokenTest
     [Fact]
     public async Task GetByExternalIdMaskinporten()
     {
-        //Får ikke laget bruker med riktig scope hjer i samarbeidsportalen?? Why?
-        // var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        //Only way to use this token is by using the "fake" altinn token service, not allowed to configure this in samarbeidsportalen
         const string scopes = "altinn:maskinporten/systemuser.read";
 
         var altinnEnterpriseToken =
             await _platformClient.GetEnterpriseAltinnToken(_platformClient.EnvironmentHelper.Vendor, scopes);
 
-        var endpoint = "v1/systemuser/byExternalId";
+        const string endpoint = "v1/systemuser/byExternalId";
 
         // Define the query parameters
         var clientId = _platformClient.EnvironmentHelper.maskinportenClientId;

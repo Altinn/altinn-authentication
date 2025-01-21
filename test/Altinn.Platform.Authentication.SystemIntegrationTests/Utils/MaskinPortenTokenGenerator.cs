@@ -122,7 +122,7 @@ public class MaskinPortenTokenGenerator
         Assert.True(iss != null, "iss is null somehow, check it");
 
         const string scope =
-            "altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read altinn:maskinporten/systemuser.read";
+            "altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read";
         
         //const string scope = "altinn:authentication/systemregister.write";
 

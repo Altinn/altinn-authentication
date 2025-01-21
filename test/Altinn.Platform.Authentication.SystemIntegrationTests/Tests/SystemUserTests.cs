@@ -95,6 +95,7 @@ public class SystemUserTests
 
         // Act
         var response = await GetSystemUserRequestStatus(id, maskinportenToken);
+        _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
         // Assert
         await AssertSystemUserRequestStatus(response, "New");
@@ -282,7 +283,7 @@ public class SystemUserTests
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            .WithRedirectUrl("https://vg.no")
+            .WithRedirectUrl("https://altinn.no")
             .WithToken(maskinportenToken);
 
         var requestBodySystemREgister = testState.GenerateRequestBody();
