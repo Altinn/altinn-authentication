@@ -106,6 +106,24 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Create_WithApp_Success()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_WithResourceAndApp_Success()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithResourceAndApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
         public async Task SystemRegister_Create_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidRequest.json";
