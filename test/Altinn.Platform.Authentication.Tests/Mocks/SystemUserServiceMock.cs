@@ -181,4 +181,9 @@ public class SystemUserServiceMock : ISystemUserService
     {
         throw new NotImplementedException();
     }
+
+    public Task<SystemUser> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
 }

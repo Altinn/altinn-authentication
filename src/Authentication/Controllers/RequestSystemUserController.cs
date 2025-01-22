@@ -36,6 +36,7 @@ public class RequestSystemUserController : ControllerBase
 {
     private readonly IRequestSystemUser _requestSystemUser;
     private readonly GeneralSettings _generalSettings;
+    private readonly ISystemUserService _systemUserService;
     private readonly ISystemUserRepository _systemUserRepository;
 
     /// <summary>
@@ -44,11 +45,13 @@ public class RequestSystemUserController : ControllerBase
     public RequestSystemUserController(
         IRequestSystemUser requestSystemUser,
         IOptions<GeneralSettings> generalSettings,
-        ISystemUserRepository systemUserRepository)
+        ISystemUserRepository systemUserRepository,
+        ISystemUserService systemUserService)
     {
         _requestSystemUser = requestSystemUser;
         _generalSettings = generalSettings.Value;
         _systemUserRepository = systemUserRepository;
+        _systemUserService = systemUserService;
     }
 
     /// <summary>
@@ -95,8 +98,8 @@ public class RequestSystemUserController : ControllerBase
             OrgNo = createRequest.PartyOrgNo,
             SystemId = createRequest.SystemId,
         };
-
-        SystemUser? existing = await _systemUserRepository.GetSystemUserByExternalRequestId(externalRequestId);
+        
+        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
         if (existing is not null)
         {
             string message = $"SystemUser already exists with Id: {existing.Id}";

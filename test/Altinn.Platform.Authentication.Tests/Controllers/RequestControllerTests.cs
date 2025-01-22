@@ -105,7 +105,7 @@ public class RequestControllerTests(
         services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
         services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
-        services.AddSingleton<ISystemUserService, SystemUserServiceMock>();    
+        services.AddSingleton<ISystemUserService, SystemUserService>();    
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
         services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
         services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
