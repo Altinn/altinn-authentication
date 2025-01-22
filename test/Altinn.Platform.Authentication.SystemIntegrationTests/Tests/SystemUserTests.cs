@@ -83,6 +83,37 @@ public class SystemUserTests
     }
 
     /// <summary>
+    /// https://github.com/Altinn/altinn-authentication/issues/586
+    /// API for creating request for System User
+    /// </summary>
+    [Fact]
+    public async Task PostRequestSystemUserTest_WithApp()
+    {
+        // Arrange
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+
+        // Registering system to System Register
+        var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithClientId(Guid.NewGuid().ToString())
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
+            .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
+            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            .WithRedirectUrl("https://altinn.no")
+            .WithToken(maskinportenToken);
+
+        await RegisterSystem(testState, maskinportenToken);
+
+        var requestBody = await PrepareSystemUserRequest(testState);
+
+        // Act
+        var userResponse = await
+            _platformClient.PostAsync(UrlConstants.CreateSystemUserRequestBaseUrl, requestBody, maskinportenToken);
+
+        // Assert
+        await AssertSystemUserRequestCreated(userResponse);
+    }
+
+    /// <summary>
     /// https://github.com/Altinn/altinn-authentication/issues/576
     /// </summary>
     [Fact]
@@ -107,6 +138,27 @@ public class SystemUserTests
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
         var systemUserResponse = await CreateSystemUserRequest(maskinportenToken);
+
+        var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
+        var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
+        var testperson = GetTestUserForVendor();
+
+        // Act
+        await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
+        var statusResponse = await GetSystemUserRequestStatus(id, maskinportenToken);
+        var systemUserResponseContent = await GetSystemUserById(systemId, maskinportenToken);
+
+        // Assert
+        await AssertSystemUserRequestStatus(statusResponse, "Accepted");
+        Assert.Contains(systemId, await systemUserResponseContent.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task ApproveRequestSystemUserTest_WithApp()
+    {
+        // Arrange
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var systemUserResponse = await CreateSystemUserRequest(maskinportenToken, true);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
@@ -156,7 +208,7 @@ public class SystemUserTests
     }
 
 
-    public async Task<string> CreateSystemUserRequest(string maskinportenToken)
+    public async Task<string> CreateSystemUserRequest(string maskinportenToken, bool withApp=false)
     {
         var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid().ToString())
@@ -165,6 +217,20 @@ public class SystemUserTests
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithRedirectUrl("https://altinn.no")
             .WithToken(maskinportenToken);
+        if(withApp)
+        {
+            testState.Rights.Add(new Right
+            {
+                Resource = new List<Resource>
+                {
+                    new Resource
+                    {
+                        Id = "urn:altinn:resource",
+                        Value = "app_ttd_endring-av-navn-v2"
+                    }
+                }
+            });
+        }
 
         var requestBodySystemREgister = testState.GenerateRequestBody();
 

@@ -249,8 +249,7 @@ public class SystemRegisterController : ControllerBase
                 return BadRequest();
             }
 
-            return Ok(registeredSystemGuid);
-            
+            return Ok(registeredSystemGuid);            
         }
         catch (Exception e)
         {

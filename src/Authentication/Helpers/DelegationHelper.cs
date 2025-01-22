@@ -57,9 +57,30 @@ public class DelegationHelper(
 
         foreach (Right right in verifiedRights)
         {
+            var resource = new List<AttributePair>();
+            foreach (var attributePair in right.Resource)
+            {
+                if (attributePair.Id == AttributeIdentifier.ResourceRegistryAttribute)
+                {
+                    if (!string.IsNullOrEmpty(attributePair.Value) && attributePair.Value.StartsWith("app_"))
+                    {
+                        var (org, app) = SplitResourceId(attributePair.Value);
+                        if (!string.IsNullOrEmpty(org) && !string.IsNullOrEmpty(app))
+                        {
+                            resource.Add(new AttributePair { Id = AttributeIdentifier.OrgAttribute, Value = org });
+                            resource.Add(new AttributePair { Id = AttributeIdentifier.AppAttribute, Value = app });
+                        }
+                    }
+                    else
+                    {
+                        resource.Add(attributePair);
+                    }
+                }
+            }
+
             DelegationCheckRequest request = new()
             {
-                Resource = right.Resource
+                Resource = resource
             };
 
             List<DelegationResponseData>? rightResponses = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), request);
@@ -85,6 +106,25 @@ public class DelegationHelper(
         }
 
         return new DelegationCheckResult(true, rightResponsesList, []);
+    }
+
+    /// <summary>
+    /// Splits the resourceId into Org and App
+    /// </summary>
+    /// <param name="resourceId">the id of the resource</param>
+    /// <returns>org and app name</returns>
+    public (string Org, string App) SplitResourceId(string resourceId)
+    {
+        if (resourceId.StartsWith("app_"))
+        {
+            var parts = resourceId.Split('_', 3);
+            if (parts.Length == 3)
+            {
+                return (parts[1], parts[2]);
+            }
+        }
+
+        return (string.Empty, string.Empty);
     }
 
     private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
