@@ -275,7 +275,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(shouldBeCreated.Id, systemUserDoesExist.Id);
         }
 
-        [Fact (Skip ="Wait for later PR")]
+        [Fact]
         public async Task SystemUser_Get_byExternalIdp_withExternalRef_ReturnOK()
         {
             // Create System used for test
@@ -313,7 +313,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(shouldBeCreated.Id, systemUserDoesExist.Id);
         }
 
-        [Fact(Skip = "Wait for later PR")]
+        [Fact]
         public async Task SystemUser_Get_byExternalIdp_withWrongExternalRef()
         {
             // Create System used for test
