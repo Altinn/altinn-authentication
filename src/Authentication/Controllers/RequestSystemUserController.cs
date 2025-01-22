@@ -102,8 +102,7 @@ public class RequestSystemUserController : ControllerBase
         SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
         if (existing is not null)
         {
-            string message = $"SystemUser already exists with Id: {existing.Id}";
-            return Conflict(message);
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
         }
 
         // Check to see if the Request already exists

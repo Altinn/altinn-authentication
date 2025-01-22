@@ -656,7 +656,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Approve_Request_SecondTime_ReturnConflict() 
+    public async Task Approve_Request_SecondTime_ReturnBadRequest() 
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -716,7 +716,7 @@ public class RequestControllerTests(
         };
         HttpResponseMessage messageAgain = await client.SendAsync(requestAgain, HttpCompletionOption.ResponseHeadersRead);
 
-        Assert.Equal(HttpStatusCode.Conflict, messageAgain.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, messageAgain.StatusCode);
     }
 
     [Fact]
