@@ -360,6 +360,74 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
+    public async Task<List<SystemUser>> GetAllSystemUsersPaginated(Page<string>.Request continueFrom, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+	    	    sui.system_user_profile_id,
+		        sui.integration_title,
+		        sui.system_internal_id,
+                sr.system_id,
+                sr.systemvendor_orgnumber,
+                sui.reportee_org_no,
+		        sui.reportee_party_id,
+		        sui.created,
+                sui.external_ref
+	        FROM business_application.system_user_profile sui 
+	        WHERE sui.created > @continue
+	            AND sui.is_deleted = false;
+            ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+            command.Parameters.AddWithValue("continue", continueFrom);
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToSystemUser)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllSystemUsersByVendorSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<List<SystemUser>> GetAllSystemUsers(CancellationToken cancellationToken) 
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+	    	    sui.system_user_profile_id,
+		        sui.integration_title,
+		        sui.system_internal_id,
+                sr.system_id,
+                sr.systemvendor_orgnumber,
+                sui.reportee_org_no,
+		        sui.reportee_party_id,
+		        sui.created,
+                sui.external_ref
+	        FROM business_application.system_user_profile sui 
+	            AND sui.is_deleted = false;
+            ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);           
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToSystemUser)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllSystemUsersByVendorSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<bool> ChangeSystemUser(SystemUser toBeChanged, int userId)
     {
         const string QUERY = /*strpsql*/@"

@@ -227,6 +227,41 @@ public class SystemUserController : ControllerBase
         return NotFound();
     }
 
+    /// <summary>
+    /// Returns a paginated list of all SystemUsers
+    /// called by the Registry to include SystemUsers in the list of entities.
+    /// </summary>
+    /// <returns>Paginated list of SystemUser</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP)]
+    [HttpGet("stream", Name = "systemusers/stream")]
+    public async Task<ActionResult<Paginated<SystemUser>>> GetPaginatedListOfAllSystemUsers(
+        [FromQuery(Name = "token")] Opaque<string>? token = null,
+        CancellationToken cancellationToken = default) 
+    {
+        Page<string>.Request continueFrom = null!;
+        if (token?.Value is not null)
+        {
+            continueFrom = Page.ContinueFrom(token!.Value);
+        }
+
+        Result<Page<SystemUser, string>> pageResult = await _systemUserService.GetAllSystemUsersPaginated(continueFrom, cancellationToken);
+        if (pageResult.IsProblem)
+        {
+            return pageResult.Problem.ToActionResult();
+        }
+
+        var nextLink = pageResult.Value.ContinuationToken.HasValue
+            ? Url.Link("systemusers/stream", new { token = Opaque.Create(pageResult.Value.ContinuationToken.Value) })
+            : null;
+
+        if (pageResult.IsSuccess)
+        {
+            return Paginated.Create(pageResult.Value.Items.ToList(), nextLink);
+        }
+
+        return NotFound();
+    }
+
     private OrganisationNumber? RetrieveOrgNoFromToken()
     {
         string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName);

@@ -190,4 +190,9 @@ public class SystemUserServiceMock : ISystemUserService
         toBeDeleted.IsDeleted = true;
         return Task.FromResult(true);
     }
+
+    public Task<Result<Page<SystemUser, string>>> GetAllSystemUsersPaginated(Page<string>.Request continueFrom, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
 }

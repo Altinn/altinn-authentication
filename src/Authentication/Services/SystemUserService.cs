@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -175,6 +176,22 @@ namespace Altinn.Platform.Authentication.Services
 
             List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, cancellationToken);
             theList ??= [];
+
+            return Page.Create(theList, _paginationSize, static theList => theList.Id);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<Page<SystemUser, string>>> GetAllSystemUsersPaginated(
+            Page<string>.Request continueFrom, 
+            CancellationToken cancellationToken)
+        {
+            List<SystemUser> theList = await _repository.GetAllSystemUsersPaginated(continueFrom, cancellationToken);
+            theList ??= [];
+
+            if (continueFrom is not null)
+            {
+                List<SystemUser> nextPage = theList.SkipWhile(x => x.Created != DateTime.Parse(continueFrom.ContinuationToken)).Skip(1).Take(_paginationSize).ToList();
+            }
 
             return Page.Create(theList, _paginationSize, static theList => theList.Id);
         }

@@ -912,7 +912,7 @@ public class RequestControllerTests(
 
         // Arrange
         string systemId = "991825827_the_matrix";
-        
+
         await CreateSeveralRequest(client, _paginationSize, systemId);
 
         // Get the Request
@@ -934,6 +934,20 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
         Paginated<RequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
         Assert.True(res3 is not null);
+        var list2 = res3.Items.ToList();
+
+        HttpResponseMessage message4 = await client2.GetAsync(res3.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message4.StatusCode);
+        Paginated<RequestSystemResponse>? res4 = await message4.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res4 is not null);
+        var list3 = res4.Items.ToList();
+
+        // Assert that no item in list is contained in list2 or list3
+        foreach (var item in list)
+        {
+            Assert.DoesNotContain(item, list2);
+            Assert.DoesNotContain(item, list3);
+        }
     }
 
     [Fact]
@@ -1138,7 +1152,7 @@ public class RequestControllerTests(
 
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
-        var tasks = Enumerable.Range(0, paginationSize + 1)
+        var tasks = Enumerable.Range(0, (paginationSize * 7) + 1)
                               .Select(i => CreateRequest(client, i, systemId))
                               .ToList();
 

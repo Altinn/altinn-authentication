@@ -542,6 +542,11 @@ public class ChangeRequestSystemUserService(
         List<ChangeRequestResponse>? theList = await changeRequestRepository.GetAllChangeRequestsBySystem(systemId, cancellationToken);
         theList ??= [];
 
+        if (continueRequest is not null)
+        {
+            List<ChangeRequestResponse> nextPage = theList.SkipWhile(x => x.Id != continueRequest.ContinuationToken).Skip(1).Take(_paginationSize).ToList();
+        }
+
         return Page.Create(theList, _paginationSize, static theList => theList.Id);
     }
 

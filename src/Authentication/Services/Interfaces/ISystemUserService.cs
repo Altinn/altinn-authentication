@@ -87,4 +87,13 @@ public interface ISystemUserService
     /// <param name="userId">the logged in user</param>
     /// <returns>The CreateSystemUserResponse response model, with either a new SystemUser model inside, or a list of errors.</returns>
     Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns a paginated list of all SystemUsers
+    /// called by the Registry to include SystemUsers in the list of entities.
+    /// </summary>
+    /// <param name="continueFrom">The Guid denoting from where to continue with Pagination</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Paginated list of SystemUser</returns>
+    Task<Result<Page<SystemUser, string>>> GetAllSystemUsersPaginated(Page<string>.Request continueFrom, CancellationToken cancellationToken);
 }

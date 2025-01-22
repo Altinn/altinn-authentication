@@ -1,5 +1,6 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using System.Threading;
 
 namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 
@@ -76,4 +77,19 @@ public interface ISystemUserRepository
     /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
     /// <returns>A SystemUser, if one is active.</returns>
     Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
+
+    /// <summary>
+    /// Returns a paginated list of all SystemUsers
+    /// called by the Registry to include SystemUsers in the list of entities.
+    /// </summary>
+    /// <param name="continueFrom">The object denoting from where to continue with Pagination</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Paginated list of SystemUser</returns>
+    Task<List<SystemUser>> GetAllSystemUsersPaginated(Page<string>.Request continueFrom, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns a list of all SystemUsers    
+    /// </summary>
+    /// <returns>List of SystemUser</returns>
+    Task<List<SystemUser>> GetAllSystemUsers(CancellationToken cancellationToken);
 }
