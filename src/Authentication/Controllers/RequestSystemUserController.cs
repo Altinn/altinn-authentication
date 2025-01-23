@@ -37,7 +37,6 @@ public class RequestSystemUserController : ControllerBase
     private readonly IRequestSystemUser _requestSystemUser;
     private readonly GeneralSettings _generalSettings;
     private readonly ISystemUserService _systemUserService;
-    private readonly ISystemUserRepository _systemUserRepository;
 
     /// <summary>
     /// Constructor
@@ -45,12 +44,10 @@ public class RequestSystemUserController : ControllerBase
     public RequestSystemUserController(
         IRequestSystemUser requestSystemUser,
         IOptions<GeneralSettings> generalSettings,
-        ISystemUserRepository systemUserRepository,
         ISystemUserService systemUserService)
     {
         _requestSystemUser = requestSystemUser;
         _generalSettings = generalSettings.Value;
-        _systemUserRepository = systemUserRepository;
         _systemUserService = systemUserService;
     }
 
