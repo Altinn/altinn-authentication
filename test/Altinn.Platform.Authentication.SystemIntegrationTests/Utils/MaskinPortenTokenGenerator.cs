@@ -84,18 +84,18 @@ public class MaskinPortenTokenGenerator
 
         var vendor = EnvHelper.Vendor;
 
-        // Add authorization_details claim strictly following documentation
         var systemUserOrg = new JwtPayload
         {
             { "authority", "iso6523-actorid-upis" },
-            { "ID", $"0192:{vendor}" }
+            { "ID", $"0192:312605031" }
         };
 
         // Create the authorization_detail object
         var authorizationDetail = new JwtPayload
         {
             { "systemuser_org", systemUserOrg },
-            { "type", "urn:altinn:systemuser" }
+            { "type", "urn:altinn:systemuser" },
+            {"externalRef", "1eecfd0b-0618-4e6d-ad8b-88ea8b037e24"}
         };
 
         // Create a list for authorization_details (even if it's a single object, Maskinporten expects an array)
@@ -124,8 +124,6 @@ public class MaskinPortenTokenGenerator
         const string scope =
             "altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read";
         
-        //const string scope = "altinn:authentication/systemregister.write";
-
         // Set the current time and expiration time for the token
         var now = DateTimeOffset.UtcNow;
         var exp = now.AddMinutes(1).ToUnixTimeSeconds();

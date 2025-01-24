@@ -38,12 +38,14 @@ public class SystemuserGetTokenTest
         var clientId = _platformClient.EnvironmentHelper.maskinportenClientId;
         var systemProviderOrgNo = _platformClient.EnvironmentHelper.Vendor;
         var systemUserOwnerOrgNo = _platformClient.EnvironmentHelper.Vendor;
-        // var externalRef = "51554df1-6013-4471-bf80-7281749bc042";
-        
+        const string externalRef = "1eecfd0b-0618-4e6d-ad8b-88ea8b037e24";
 
         // Build the query string
         var queryString =
-            $"?clientId={clientId}&systemProviderOrgNo={systemProviderOrgNo}&systemUserOwnerOrgNo={systemUserOwnerOrgNo}";
+            $"?clientId={clientId}" +
+            $"&systemProviderOrgNo={systemProviderOrgNo}" +
+            $"&systemUserOwnerOrgNo={systemUserOwnerOrgNo}" +
+            $"&externalRef={externalRef}";
 
         // Combine the endpoint and query string
         var fullEndpoint = $"{endpoint}{queryString}";
