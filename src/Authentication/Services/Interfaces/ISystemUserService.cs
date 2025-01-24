@@ -46,7 +46,7 @@ public interface ISystemUserService
     /// <param name="request">The DTO describing the Product the Caller wants to create.</param>
     /// <param name="userId">The userid for the loged in Reporter User.</param>
     /// <returns></returns> 
-    Task<SystemUser?> CreateSystemUser(string party, SystemUserRequestDto request, int userId);
+    Task<Result<SystemUser>> CreateSystemUser(string party, SystemUserRequestDto request, int userId);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the update 
@@ -64,9 +64,10 @@ public interface ISystemUserService
     /// <param name="clientId">The unique id maintained by IdPorten tying their clients to the Registered Systems we maintain</param>        
     /// <param name="systemProviderOrgNo">The legal number (Orgno) of the Vendor creating the Registered System (Accounting system)</param>
     /// <param name="systemUserOwnerOrgNo">The legal number (Orgno) of the party owning the System User Integration</param>
+    /// <param name="externalRef">The External Reference is provided by the Vendor, and is used to identify their Customer in the Vendor's system.</param>
     /// <param name="cancellationToken">Cancellationtoken</param>/// 
     /// <returns>The SystemUserIntegration model API DTO</returns>
-    Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken);
+    Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of SystemUsers the Vendor has for a given system they own.
@@ -87,4 +88,11 @@ public interface ISystemUserService
     /// <param name="userId">the logged in user</param>
     /// <returns>The CreateSystemUserResponse response model, with either a new SystemUser model inside, or a list of errors.</returns>
     Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fetches a SystemUser by the ExternalRequestId    /// 
+    /// </summary>
+    /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
+    /// <returns>A SystemUser, if one is active.</returns>
+    Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
 }

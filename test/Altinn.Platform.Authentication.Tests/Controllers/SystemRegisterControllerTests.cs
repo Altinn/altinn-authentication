@@ -89,7 +89,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-            services.AddSingleton<ISystemUserService, SystemUserServiceMock>();    
+            services.AddSingleton<ISystemUserService, SystemUserService>();    
             services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
             SetupDateTimeMock();
