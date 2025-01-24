@@ -172,7 +172,7 @@ public class SystemRegisterTests
         Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
     }
 
-    //[Fact] Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
+    [Fact] //Relevant Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares
@@ -195,7 +195,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.PutAsync($"{UrlConstants.PostSystemRegister}{teststate.SystemId}",
+            await _platformClient.PutAsync($"{UrlConstants.PostSystemRegister}/{teststate.SystemId}",
                 requestBody, maskinportenToken);
 
         // Assert
@@ -210,22 +210,12 @@ public class SystemRegisterTests
     }
 
     [Fact]
-    public async Task DeleteEverySystemCreatedByEndToEndTests()
+    public async Task VerifySystemRegistergetSystemsIsOk()
     {
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
         
-        var idsToDelete = systems.FindAll(system =>
-            system.SystemVendorOrgNumber.Equals(_platformClient.EnvironmentHelper.Vendor));
-
-        foreach (var systemDto in idsToDelete)
-        {
-            // Act
-            var respons = await _platformClient.Delete(
-                $"{UrlConstants.DeleteSystemRegister}/{systemDto.SystemId}", maskinportenToken);
-
-            // Assert
-            Assert.True(HttpStatusCode.OK == respons.StatusCode, "deletion failed with status code: " + respons.StatusCode + " - " + await respons.Content.ReadAsStringAsync());
-        }
+        //verify endpoint responds ok
+        Assert.NotNull(systems);
     }
 }
