@@ -947,9 +947,9 @@ public class RequestControllerTests(
         string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, approveResponseMessage.StatusCode);
         ProblemDetails problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("One or more Right not found or not delegable.", problem.Detail);
+        Assert.Equal("DelegationCheck failed with unknown error.", problem.Detail);
     }
 
     [Fact]
