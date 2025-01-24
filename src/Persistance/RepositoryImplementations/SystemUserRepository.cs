@@ -251,7 +251,12 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
+    public async Task<SystemUser?> CheckIfPartyHasIntegration(
+        string clientId, 
+        string systemProviderOrgNo, 
+        string systemUserOwnerOrgNo,
+        string externalRef,
+        CancellationToken cancellationToken)
     {      
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -271,7 +276,8 @@ public class SystemUserRepository : ISystemUserRepository
                 AND sui.is_deleted = false
                 AND sr.is_deleted = false
                 AND @client_id = ANY (sr.client_id)
-                AND systemvendor_orgnumber = @systemVendorOrgno;
+                AND systemvendor_orgnumber = @systemVendorOrgno
+                AND sui.external_ref = @external_ref;
             ";
 
         try
@@ -281,6 +287,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("systemUserOwnerOrgNo", systemUserOwnerOrgNo);
             command.Parameters.AddWithValue("client_id", clientId);
             command.Parameters.AddWithValue("systemVendorOrgno", systemProviderOrgNo);
+            command.Parameters.AddWithValue("external_ref", externalRef);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemUser)
