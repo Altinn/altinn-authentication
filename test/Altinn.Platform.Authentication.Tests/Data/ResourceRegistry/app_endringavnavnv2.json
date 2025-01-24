@@ -1,0 +1,40 @@
+{
+  "identifier": "app_ttd_endring-av-navn-v2",
+  "title": {
+    "en": "Change of name",
+    "nb": "Endring av navn",
+    "nn": "Endring av namn"
+  },
+  "resourceReferences": [
+    {
+      "referenceSource": "Altinn3",
+      "reference": "ttd/endring-av-navn-v2",
+      "referenceType": "ApplicationId"
+    }
+  ],
+  "delegable": true,
+  "visible": true,
+  "hasCompetentAuthority": {
+    "name": {
+      "en": "Test Ministry",
+      "nn": "Testdepartementet",
+      "nb": "Testdepartementet"
+    },
+    "organization": "991825827",
+    "orgcode": "ttd"
+  },
+  "accessListMode": "Disabled",
+  "selfIdentifiedUserEnabled": false,
+  "enterpriseUserEnabled": false,
+  "resourceType": "AltinnApp",
+  "authorizationReference": [
+    {
+      "id": "urn:altinn:org",
+      "value": "ttd"
+    },
+    {
+      "id": "urn:altinn:app",
+      "value": "endring-av-navn-v2"
+    }
+  ]
+}

@@ -70,6 +70,35 @@ public class SystemRegisterTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    /// <summary>
+    /// Verify that you can post and create a system in Systemregister:
+    /// https://github.com/Altinn/altinn-authentication/issues/575
+    /// Requires Maskinporten token and valid vendor / organization id
+    /// </summary>
+    [Fact]
+    public async Task CreateNewSystemWithAppReturns200Ok()
+    {
+        // Prepare
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+
+        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithClientId(Guid.NewGuid()
+                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
+            .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
+            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
+            .WithToken(maskinportenToken);
+
+        var requestBody = teststate.GenerateRequestBody();
+
+        // Act
+        var response = await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
+
+        // Assert
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     [Fact]
     public async Task GetSystemRegisterReturns200Ok()
     {

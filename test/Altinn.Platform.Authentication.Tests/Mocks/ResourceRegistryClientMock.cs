@@ -42,6 +42,13 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
 
+            if (resourceId == "app_ttd_endring-av-navn-v2")
+            {
+                dataFileName = "Data/ResourceRegistry/app_endringavnavnv2.json";
+                string content = File.ReadAllText(dataFileName);
+                return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+
             return null;
         }
 
