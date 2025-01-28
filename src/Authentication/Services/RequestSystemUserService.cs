@@ -455,9 +455,16 @@ public class RequestSystemUserService(
         }
 
         DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserRequest.Rights, false, cancellationToken);
-        if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null) 
-        { 
-            return Problem.Rights_NotFound_Or_NotDelegable; 
+        if (delegationCheckFinalResult.RightResponses is null)
+        {
+            // This represents some problem with doing the delegation check beyond the rights not being delegable.
+            return Problem.UnableToDoDelegationCheck;
+        }
+
+        if (!delegationCheckFinalResult.CanDelegate)
+        {
+            // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
+            return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
         }
 
         Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted.Value, userId, cancellationToken);
@@ -518,44 +525,6 @@ public class RequestSystemUserService(
         }
 
         return toBeInserted!;
-    }
-
-    private async Task<DelegationCheckResult> UserDelegationCheckForReporteeDeprecated(int partyId, string systemId, RequestSystemResponse systemUserRequest, CancellationToken cancellationToken = default)
-    {                  
-        var rights = await VerifySubsetOfRights(systemUserRequest.Rights, systemId, cancellationToken);
-
-        List<RightResponses> rightResponsesList = [];
-
-        foreach (Right right in rights)
-        {
-            DelegationCheckRequest request = new()
-            {
-                Resource = right.Resource
-            };
-
-            List<DelegationResponseData>? rightResponses = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), request);
-
-            if (rightResponses is null) 
-            { 
-                return new DelegationCheckResult(false, null, null); 
-            }
-
-            (bool canDelegate, List<DetailExternal> errors) = ResolveIfHasAccess(rightResponses);
-
-            if (!canDelegate) 
-            { 
-                return new DelegationCheckResult(false, null, errors); 
-            }
-
-            rightResponsesList.Add(new RightResponses(rightResponses));
-        }
-
-        if (rightResponsesList.Count == 0)
-        {
-            return new DelegationCheckResult(false, null, null);
-        }
-
-        return new DelegationCheckResult(true, rightResponsesList, null);
     }
 
     /// <summary>

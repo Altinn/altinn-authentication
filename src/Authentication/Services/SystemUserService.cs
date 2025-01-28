@@ -246,7 +246,7 @@ namespace Altinn.Platform.Authentication.Services
             if (!delegationCheckFinalResult.CanDelegate)
             {
                 // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-                return MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
             }
 
             SystemUser newSystemUser = new()
@@ -278,36 +278,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return inserted;
-        }
-
-        private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
-        {
-            if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
-            {
-                return Problem.UnableToDoDelegationCheck;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
-            {
-                return Problem.DelegationRightMissingRoleAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
-            {
-                return Problem.DelegationRightMissingDelegationAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
-            {
-                return Problem.DelegationRightMissingSrrRightAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
-            {
-                return Problem.DelegationRightInsufficientAuthenticationLevel;
-            }
-
-            return Problem.UnableToDoDelegationCheck;
         }
 
         /// <inheritdoc/>

@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Problems;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -125,6 +127,41 @@ public class DelegationHelper(
         }
 
         return (string.Empty, string.Empty);
+    }
+
+    /// <summary>
+    /// Maps the DetailExternal list to a ProblemInstance
+    /// </summary>
+    /// <param name="errors">the error received from access management</param>
+    /// <returns></returns>
+    public static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
+    {
+        if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
+        {
+            return Problem.UnableToDoDelegationCheck;
+        }
+
+        if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
+        {
+            return Problem.DelegationRightMissingRoleAccess;
+        }
+
+        if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
+        {
+            return Problem.DelegationRightMissingDelegationAccess;
+        }
+
+        if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
+        {
+            return Problem.DelegationRightMissingSrrRightAccess;
+        }
+
+        if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
+        {
+            return Problem.DelegationRightInsufficientAuthenticationLevel;
+        }
+
+        return Problem.UnableToDoDelegationCheck;
     }
 
     private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
