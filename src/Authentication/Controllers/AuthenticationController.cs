@@ -136,7 +136,10 @@ namespace Altinn.Platform.Authentication.Controllers
             _eventLog = eventLog;
             _featureManager = featureManager;
             _guidService = guidService;
-            _partnerScopes = _generalSettings.PartnerScopes.Split(";").ToList();
+            if (_generalSettings.PartnerScopes != null)
+            {
+                _partnerScopes = _generalSettings.PartnerScopes.Split(";").ToList();
+            }
         }
 
         /// <summary>
