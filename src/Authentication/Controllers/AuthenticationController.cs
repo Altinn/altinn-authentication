@@ -895,14 +895,14 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 ClaimsPrincipal originalPrincipal = _validator.ValidateToken(originalToken, validationParameters, out _);
                 return originalPrincipal;
-            }
-            catch (SecurityTokenUnableToValidateException)
+            }           
+            catch (Exception)
             {
-                validationParameters.IssuerSigningKeys = alternativeSigningKeys;
-                return _validator.ValidateToken(originalToken, validationParameters, out _);
-            }
-            catch (SecurityTokenSignatureKeyNotFoundException)
-            {
+                if (alternativeSigningKeys is null || alternativeSigningKeys.Count == 0)
+                {
+                    throw;
+                }
+
                 validationParameters.IssuerSigningKeys = alternativeSigningKeys;
                 return _validator.ValidateToken(originalToken, validationParameters, out _);
             }
