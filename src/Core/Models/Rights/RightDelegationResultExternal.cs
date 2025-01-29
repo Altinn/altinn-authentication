@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -11,6 +12,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights
     /// <summary>
     /// Response model describing the delegation result for a given single right, whether the authenticated user was able to delegate the right or not on behalf of the from part.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class RightDelegationResultExternal
     {
         /// <summary>
