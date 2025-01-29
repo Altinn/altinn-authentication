@@ -10,7 +10,12 @@ public class SystemRegisterHelper
     public string? VendorId { get; set; }
     public string? Name { get; set; }
     public string? ClientId { get; set; }
-    public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
+    public string SystemId
+    {
+        get => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
+        set => throw new NotImplementedException();
+    }
+
     public string RedirectUrl { get; set; }
 
     private string _templateContent;
@@ -46,6 +51,12 @@ public class SystemRegisterHelper
     public SystemRegisterHelper WithRedirectUrl(string redirectUrl)
     {
         RedirectUrl = redirectUrl;
+        return this;
+    }
+    
+    public SystemRegisterHelper WithSystemId(string systemId)
+    {
+        SystemId = systemId;
         return this;
     }
 

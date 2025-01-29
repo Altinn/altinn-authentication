@@ -262,6 +262,57 @@ public class SystemUserTests
         Assert.DoesNotContain(systemUserId, await deleteVerificationResponse.Content.ReadAsStringAsync());
     }
 
+    [Fact]
+    public async Task GetSystemUserRequestById()
+    {
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var requestId = "9b095074-0902-4610-a81c-bd413167ee8e";
+        
+        var response = await GetSystemUserRequestStatus(requestId, maskinportenToken);
+        _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+    }
+    
+    [Fact]
+    public async Task PostSystemUserRequestOnExistingSystem()
+    {
+        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        
+        //This is expired
+        const string requestId = "9b095074-0902-4610-a81c-bd413167ee8e";
+        const string systemId = "312605031_e4390f6b-fec0-4dd9-a079-f0daf2c133f0";
+
+        var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource");
+        
+        var response = await GetSystemUserRequestStatus(requestId, maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        //need to create these rights:
+        // Prepare system user request
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))
+            .Replace("{systemId}", systemId)
+            .Replace("{redirectUrl}", "https://altinn.no")
+            .Replace("{externalRef}","312605031");
+
+        //Create system user request on the same rights that exist in the SystemRegister
+        var rightsJson = JsonSerializer.Serialize(testState.Rights, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        });
+
+        var finalJson = requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
+
+        // Act
+        var userResponse =
+            await _platformClient.PostAsync("v1/systemuser/request/vendor", finalJson, maskinportenToken);
+        
+        _outputHelper.WriteLine(await userResponse.Content.ReadAsStringAsync());
+    }
+
+
+    
+
     public async Task<string> CreateSystemUserRequestWithExternalRef(SystemRegisterHelper testState, string maskinportenToken)
     {
         // Prepare system user request
