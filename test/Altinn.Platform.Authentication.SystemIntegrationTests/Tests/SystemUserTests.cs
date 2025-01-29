@@ -121,7 +121,7 @@ public class SystemUserTests
     {
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var systemUserResponse = await CreateSystemUserRequest(maskinportenToken);
+        var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
 
@@ -150,16 +150,16 @@ public class SystemUserTests
         var statusResponse = await GetSystemUserRequestStatus(id, maskinportenToken);
         var systemUserResponseContent = await GetSystemUserById(systemId, maskinportenToken);
         var responseByExternalRef = await GetSystemUserByExternalRef(externalRef, systemId, maskinportenToken);
-
-        Assert.True(responseByExternalRef.StatusCode == HttpStatusCode.OK, "Response was: " + await responseByExternalRef.Content.ReadAsStringAsync());
-        Assert.True(statusResponse.StatusCode == HttpStatusCode.OK);
-        Assert.True(systemUserResponseContent.StatusCode == HttpStatusCode.OK);
         
-        // Assert
+        // Assert response codes
+        await Common.AssertResponse(responseByExternalRef, HttpStatusCode.OK);
+        await Common.AssertResponse(statusResponse,HttpStatusCode.OK);
+        await Common.AssertResponse(systemUserResponseContent, HttpStatusCode.OK);
+
+        // Assert actual content
         await AssertSystemUserRequestStatus(statusResponse, "Accepted");
         Assert.Contains(systemId, await systemUserResponseContent.Content.ReadAsStringAsync());
         Assert.Contains(systemId, await responseByExternalRef.Content.ReadAsStringAsync());
-
     }
 
     private async Task<HttpResponseMessage> GetSystemUserByExternalRef(string externalRef, string systemId, string maskinportenToken)
@@ -168,12 +168,6 @@ public class SystemUserTests
             .Replace("{externalRef}", externalRef)
             .Replace("{systemId}", systemId)
             .Replace("{orgNo}", _platformClient.EnvironmentHelper.Vendor);
-        ;
-        ;
-
-
-        // public const string GetByExternalRef = "/v1/systemuser/request/vendor/byexternalref/{systemId}/{orgNo}/{externalRef}";
-
 
         return await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
     }
@@ -201,7 +195,7 @@ public class SystemUserTests
     {
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var systemUserResponse = await CreateSystemUserRequest(maskinportenToken);
+        var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
         var requestId = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var urlDelete = UrlConstants.DeleteRequest.Replace("{requestId}", requestId);
 
@@ -219,7 +213,7 @@ public class SystemUserTests
     {
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var systemUserResponse = await CreateSystemUserRequest(maskinportenToken, true);
+        var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken, true);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
@@ -241,7 +235,7 @@ public class SystemUserTests
     {
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var systemUserResponse = await CreateSystemUserRequest(maskinportenToken);
+        var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
@@ -297,8 +291,7 @@ public class SystemUserTests
         return content;
     }
 
-
-    public async Task<string> CreateSystemUserRequest(string maskinportenToken, bool withApp = false)
+    public async Task<string> CreateSystemAndSystemUserRequest(string maskinportenToken, bool withApp = false)
     {
         var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid().ToString())

@@ -30,8 +30,7 @@ public class SystemRegisterTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterHelper systemRegisterHelper,
-        string filePath)
+    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterHelper systemRegisterHelper, string filePath)
     {
         var fileContent = await Helper.ReadFile(filePath);
         return fileContent
