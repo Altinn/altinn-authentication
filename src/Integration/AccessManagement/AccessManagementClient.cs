@@ -219,7 +219,7 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError("Authentication.UI // AccessManagementClient // DelegateSingleRightToSystemUser // Problem: {Problem}", problemDetails.Detail);
+                _logger.LogError($"Authentication.UI // AccessManagementClient // DelegateSingleRightToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
                 ProblemInstance problemInstance = ProblemInstance.Create(Problem.Rights_FailedToDelegate);
                 return new Result<RightsDelegationResponseExternal>(problemInstance);
