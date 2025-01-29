@@ -14,6 +14,8 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils
         public const string ApproveSystemUserRequestUrlTemplate = "v1/systemuser/request/{partyId}/{requestId}/approve";
         public const string DeleteSystemUserUrlTemplate = "v1/systemuser/{partyId}/{systemUserId}";
         public const string GetBySystemForVendor = "v1/systemuser/vendor/bysystem/{systemId}";
+        public const string DeleteRequest = "/v1/systemuser/request/vendor/{requestId}";
+        public const string GetByExternalRef = "/v1/systemuser/request/vendor/byexternalref/{systemId}/{orgNo}/{externalRef}";
 
         // API Endpoints changerequest
         public const string ChangeRequestVendorUrl = "v1/systemuser/changerequest/vendor";
@@ -21,6 +23,5 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils
         public const string GetRequestByIdUrlTemplate = "v1/systemuser/changerequest/vendor/{requestId}";
         public const string GetByExternalRefUrlTemplate = "v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{vendor}/{externalRef}";
         public const string GetChangeRequestByRequestIdUrlTemplate = "v1/systemuser/changerequest/vendor/{requestId}";
-        
     }
 }
