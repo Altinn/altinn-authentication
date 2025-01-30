@@ -1,2 +1,3 @@
 Resources/Jwks/jwks.json
 Resources/Environment/environment.json
+Resources/Environment/environment.dev.json
