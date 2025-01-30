@@ -100,5 +100,49 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             // Assert
             Assert.Equal(Problem.DelegationRightInsufficientAuthenticationLevel, result);
         }
+
+        [Theory]
+        [InlineData("app_org_appname", "org", "appname")]
+        [InlineData("app_orgname_app", "orgname", "app")]
+        [InlineData("invalid_format", "", "")]
+        [InlineData("app_", "", "")]
+        [InlineData("app_org_", "org", "")]
+        public void SplitResourceId_ShouldReturnExpectedResults(string resourceId, string expectedOrg, string expectedApp)
+        {
+            // Act
+            var result = DelegationHelper.SplitResourceId(resourceId);
+
+            // Assert
+            Assert.Equal(expectedOrg, result.Org);
+            Assert.Equal(expectedApp, result.App);
+        }
+
+        [Fact]
+        public void ConvertAppResourceToOldResourceFormat_ShouldConvertCorrectly()
+        {
+            // Arrange
+            var resource = new List<AttributePair>
+            {
+                new AttributePair { Id = "urn:altinn:resource", Value = "app_org_appname" }
+            };
+
+            var expected = new List<AttributePair>
+            {
+                new AttributePair { Id = "urn:altinn:org", Value = "org" },
+                new AttributePair { Id = "urn:altinn:app", Value = "appname" },
+            };
+
+            // Act
+            var result = DelegationHelper.ConvertAppResourceToOldResourceFormat(resource);
+
+            // Assert
+            Assert.Equal(expected.Count, result.Count);
+            for (int i = 0; i < expected.Count; i++)
+            {
+                Assert.Equal(expected[i].Id, result[i].Id);
+                Assert.Equal(expected[i].Value, result[i].Value);
+            }
+        }
+
     }
 }
