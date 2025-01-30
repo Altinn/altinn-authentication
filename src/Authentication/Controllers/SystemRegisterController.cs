@@ -157,12 +157,23 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<List<Right>>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
     {
         List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
+
         if (lista is null || lista.Count == 0)
         {
             return NotFound();
         }
+        else
+        {
+            foreach (Right right in lista)
+            {
+                var resource = new List<AttributePair>();
+                resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
 
-        return Ok(lista);
+                right.Resource = resource;
+            }
+
+            return Ok(lista);
+        }
     }
 
     /// <summary>

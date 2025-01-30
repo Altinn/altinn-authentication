@@ -60,25 +60,7 @@ public class DelegationHelper(
         foreach (Right right in verifiedRights)
         {
             var resource = new List<AttributePair>();
-            foreach (var attributePair in right.Resource)
-            {
-                if (attributePair.Id == AttributeIdentifier.ResourceRegistryAttribute)
-                {
-                    if (!string.IsNullOrEmpty(attributePair.Value) && attributePair.Value.StartsWith("app_"))
-                    {
-                        var (org, app) = SplitResourceId(attributePair.Value);
-                        if (!string.IsNullOrEmpty(org) && !string.IsNullOrEmpty(app))
-                        {
-                            resource.Add(new AttributePair { Id = AttributeIdentifier.OrgAttribute, Value = org });
-                            resource.Add(new AttributePair { Id = AttributeIdentifier.AppAttribute, Value = app });
-                        }
-                    }
-                    else
-                    {
-                        resource.Add(attributePair);
-                    }
-                }
-            }
+            resource = ConvertAppResourceToOldResourceFormat(right.Resource);
 
             DelegationCheckRequest request = new()
             {
@@ -115,7 +97,7 @@ public class DelegationHelper(
     /// </summary>
     /// <param name="resourceId">the id of the resource</param>
     /// <returns>org and app name</returns>
-    public (string Org, string App) SplitResourceId(string resourceId)
+    public static (string Org, string App) SplitResourceId(string resourceId)
     {
         if (resourceId.StartsWith("app_"))
         {
@@ -127,6 +109,36 @@ public class DelegationHelper(
         }
 
         return (string.Empty, string.Empty);
+    }
+
+    /// <summary>
+    /// Converts the new resource format to old format for app
+    /// </summary>
+    /// <returns>resource format in old format for app</returns>
+    public static List<AttributePair> ConvertAppResourceToOldResourceFormat(List<AttributePair> resource)
+    {
+        var processedResource = new List<AttributePair>();
+        foreach (var attributePair in resource)
+        {            
+            if (attributePair.Id == AttributeIdentifier.ResourceRegistryAttribute)
+            {
+                if (!string.IsNullOrEmpty(attributePair.Value) && attributePair.Value.StartsWith("app_"))
+                {
+                    var (org, app) = SplitResourceId(attributePair.Value);
+                    if (!string.IsNullOrEmpty(org) && !string.IsNullOrEmpty(app))
+                    {
+                        processedResource.Add(new AttributePair { Id = AttributeIdentifier.OrgAttribute, Value = org });
+                        processedResource.Add(new AttributePair { Id = AttributeIdentifier.AppAttribute, Value = app });
+                    }
+                }
+                else
+                {
+                    processedResource.Add(attributePair);
+                }
+            }
+        }
+
+        return processedResource;
     }
 
     /// <summary>
