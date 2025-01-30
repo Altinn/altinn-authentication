@@ -151,10 +151,11 @@ public class SystemRegisterController : ControllerBase
     /// Retrieves a list of the predfined default rights for the Product type, if any
     /// </summary>
     /// <param name="systemId">The Id of the Product </param>
+    /// <param name="useOldFormatForApp">The old format for the App</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [HttpGet("{systemId}/rights")]
-    public async Task<ActionResult<List<Right>>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<Right>>> GetRightsForRegisteredSystem(string systemId, [FromQuery] bool useOldFormatForApp = false, CancellationToken cancellationToken = default)
     {
         List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
 
@@ -164,15 +165,22 @@ public class SystemRegisterController : ControllerBase
         }
         else
         {
-            foreach (Right right in lista)
+            if (useOldFormatForApp)
             {
-                var resource = new List<AttributePair>();
-                resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
+                foreach (Right right in lista)
+                {
+                    var resource = new List<AttributePair>();
+                    resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
 
-                right.Resource = resource;
+                    right.Resource = resource;
+                }
+
+                return Ok(lista);
             }
-
-            return Ok(lista);
+            else
+            {
+                return Ok(lista);
+            }
         }
     }
 
