@@ -17,6 +17,7 @@ public class SystemUserTests
 {
     private readonly ITestOutputHelper _outputHelper;
     private readonly SystemRegisterClient _systemRegisterClient;
+    private readonly SystemUserClient _systemUserClient;
     private readonly PlatformAuthenticationClient _platformClient;
 
     /// <summary>
@@ -28,6 +29,7 @@ public class SystemUserTests
     {
         _outputHelper = outputHelper;
         _platformClient = new PlatformAuthenticationClient();
+        _systemUserClient = new SystemUserClient(_platformClient);
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
@@ -58,7 +60,7 @@ public class SystemUserTests
     public async Task PostRequestSystemUserTest()
     {
         // Arrange
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         // Registering system to System Register
         var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
@@ -89,7 +91,7 @@ public class SystemUserTests
     public async Task PostRequestSystemUserTest_WithApp()
     {
         // Arrange
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         // Registering system to System Register
         var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
@@ -119,7 +121,7 @@ public class SystemUserTests
     public async Task GetRequestSystemUserStatus()
     {
         // Arrange
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
@@ -135,9 +137,9 @@ public class SystemUserTests
     public async Task ApproveRequestSystemUserTest()
     {
         // Arrange
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systemInSystemRegister = await CreateSystemInSystemRegister(maskinportenToken);
-        var systemUserResponse = await CreateSystemUserRequestWithExternalRef(systemInSystemRegister, maskinportenToken);
+        var systemUserResponse = await _systemUserClient.CreateSystemUserRequestWithExternalRef(systemInSystemRegister, maskinportenToken);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
@@ -148,7 +150,7 @@ public class SystemUserTests
         await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
         var statusResponse = await GetSystemUserRequestStatus(id, maskinportenToken);
         var systemUserResponseContent = await GetSystemUserById(systemId, maskinportenToken);
-        var responseByExternalRef = await GetSystemUserByExternalRef(externalRef, systemId, maskinportenToken);
+        var responseByExternalRef = await _systemUserClient.GetSystemUserByExternalRef(externalRef, systemId, maskinportenToken);
         
         // Assert response codes
         await Common.AssertResponse(responseByExternalRef, HttpStatusCode.OK);
@@ -159,16 +161,6 @@ public class SystemUserTests
         await AssertSystemUserRequestStatus(statusResponse, "Accepted");
         Assert.Contains(systemId, await systemUserResponseContent.Content.ReadAsStringAsync());
         Assert.Contains(systemId, await responseByExternalRef.Content.ReadAsStringAsync());
-    }
-
-    private async Task<HttpResponseMessage> GetSystemUserByExternalRef(string externalRef, string systemId, string maskinportenToken)
-    {
-        var urlGetBySystem = UrlConstants.GetByExternalRef
-            .Replace("{externalRef}", externalRef)
-            .Replace("{systemId}", systemId)
-            .Replace("{orgNo}", _platformClient.EnvironmentHelper.Vendor);
-
-        return await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
     }
 
     private async Task<SystemRegisterHelper> CreateSystemInSystemRegister(string maskinportenToken)
@@ -193,7 +185,7 @@ public class SystemUserTests
     public async Task DeleteSystemUserRequestTest()
     {
         // Arrange
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
         var requestId = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var urlDelete = UrlConstants.DeleteRequest.Replace("{requestId}", requestId);
@@ -211,7 +203,7 @@ public class SystemUserTests
     public async Task ApproveRequestSystemUserTest_WithApp()
     {
         // Arrange
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken, true);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
@@ -233,7 +225,7 @@ public class SystemUserTests
     public async Task DeleteSystemUserTest()
     {
         // Arrange
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
@@ -259,35 +251,6 @@ public class SystemUserTests
         var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
         Assert.DoesNotContain(systemUserId, await deleteVerificationResponse.Content.ReadAsStringAsync());
-    }
-
-    public async Task<string> CreateSystemUserRequestWithExternalRef(SystemRegisterHelper testState, string maskinportenToken)
-    {
-        // Prepare system user request
-        var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))
-            .Replace("{systemId}", testState.SystemId)
-            .Replace("{redirectUrl}", testState.RedirectUrl)
-            .Replace("{externalRef}", Guid.NewGuid().ToString());
-
-        //Create system user request on the same rights that exist in the SystemRegister
-        var rightsJson = JsonSerializer.Serialize(testState.Rights, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
-        });
-
-        var finalJson = requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
-
-        // Act
-        var userResponse =
-            await _platformClient.PostAsync("v1/systemuser/request/vendor", finalJson, maskinportenToken);
-
-        // Assert
-        var content = await userResponse.Content.ReadAsStringAsync();
-        Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
-            $"Unexpected status code: {userResponse.StatusCode} - {content}");
-
-        return content;
     }
 
     public async Task<string> CreateSystemAndSystemUserRequest(string maskinportenToken, bool withApp = false)

@@ -14,4 +14,9 @@ public class SystemUser
     public string SupplierName { get; set; }
     public string SupplierOrgno { get; set; }
     public string ExternalRef { get; set; }
+    
+    public class SystemUsers
+    {
+        // public List<SystemUser> SystemUsers { get; set; }
+    }
 }

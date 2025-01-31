@@ -48,7 +48,7 @@ public class SystemRegisterTests
     public async Task CreateNewSystemReturns200Ok()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid()
@@ -78,7 +78,7 @@ public class SystemRegisterTests
     public async Task CreateNewSystemWithAppReturns200Ok()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid()
@@ -102,7 +102,7 @@ public class SystemRegisterTests
     public async Task GetSystemRegisterReturns200Ok()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         // Act
         var response =
@@ -118,7 +118,7 @@ public class SystemRegisterTests
     public async Task ValidateRights()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
@@ -150,7 +150,7 @@ public class SystemRegisterTests
     public async Task DeleteRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
@@ -175,7 +175,7 @@ public class SystemRegisterTests
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
@@ -211,7 +211,7 @@ public class SystemRegisterTests
     [Fact]
     public async Task VerifySystemRegistergetSystemsIsOk()
     {
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
         
         //verify endpoint responds ok

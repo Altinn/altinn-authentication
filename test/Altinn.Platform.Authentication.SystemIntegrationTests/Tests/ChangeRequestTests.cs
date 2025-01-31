@@ -30,7 +30,7 @@ public class ChangeRequestTests
     public async Task MakeChangeRequestAsVendorTest()
     {
         // Prepare
-        var maskinportenToken = await _platformAuthentication.GetMaskinportenToken();
+        var maskinportenToken = await _platformAuthentication.GetMaskinportenTokenForVendor();
         var externalRef = Guid.NewGuid().ToString();
         var clientId = Guid.NewGuid().ToString();
         var testperson = GetTestUser();

@@ -271,7 +271,7 @@ public class PlatformAuthenticationClient
     /// <summary>
     /// </summary>
     /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
-    public async Task<string> GetMaskinportenToken()
+    public async Task<string> GetMaskinportenTokenForVendor()
     {
         var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");

@@ -15,7 +15,11 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils
         public const string DeleteSystemUserUrlTemplate = "v1/systemuser/{partyId}/{systemUserId}";
         public const string GetBySystemForVendor = "v1/systemuser/vendor/bysystem/{systemId}";
         public const string DeleteRequest = "v1/systemuser/request/vendor/{requestId}";
-        public const string GetByExternalRef = "v1/systemuser/request/vendor/byexternalref/{systemId}/{orgNo}/{externalRef}";
+        public const string SystemUserGetByExternalRef = "v1/systemuser/byExternalId";
+        public const string GetSystemUserForParty = "v1/systemuser/{party}";
+        
+        //API Endpoint Maskinporten
+        public const string GetByExternalId = "v1/systemuser/byExternalId";
 
         // API Endpoints changerequest
         public const string ChangeRequestVendorUrl = "v1/systemuser/changerequest/vendor";
