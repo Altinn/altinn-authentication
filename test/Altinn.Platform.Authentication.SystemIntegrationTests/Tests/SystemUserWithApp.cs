@@ -1,4 +1,3 @@
-using System.Net;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
@@ -23,7 +22,7 @@ public class SystemUserWithApp
         _platformClient = new PlatformAuthenticationClient();
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
-    
+
     /// <summary>
     /// https://github.com/Altinn/altinn-authentication/issues/586
     /// API for creating request for System User
@@ -49,18 +48,21 @@ public class SystemUserWithApp
 
         // Act
         var systemUserRequestResponse = await _platformClient.PostAsync(UrlConstants.CreateSystemUserRequestBaseUrl, requestBody, maskinportenToken);
-        
-        
+
         var systemUserResponse = await systemUserRequestResponse.Content.ReadAsStringAsync();
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
+        var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
         var testperson = _platformClient.TestUsers.Find(testUser => testUser.Org.Equals(_platformClient.EnvironmentHelper.Vendor))
                          ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper}");
 
         // // Act
-        // await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
-        _outputHelper.WriteLine($"User: {await systemUserRequestResponse.Content.ReadAsStringAsync()}");
-        //
-        // // Assert
-        // await Common.AssertResponse(userResponse, HttpStatusCode.Created);
+        await _platformClient.ApproveSystemUserRequest(testperson.AltinnPartyId, id);
+        
+        //Cleanup
+        var systemUserResponseContent = await _platformClient.GetSystemUserBySystemIdForVendor(systemId, maskinportenToken);
+        var content = await systemUserResponseContent.Content.ReadAsStringAsync();
+        var systemUserId = Common.ExtractSystemUserId(content);
+        await _platformClient.DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
     }
+    
 }

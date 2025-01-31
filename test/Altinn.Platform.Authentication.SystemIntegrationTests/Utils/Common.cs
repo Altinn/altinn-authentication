@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Xunit;
@@ -99,5 +100,18 @@ public class Common
     public static async Task AssertResponse(HttpResponseMessage response, HttpStatusCode statusCode)
     {
         Assert.True(statusCode == response.StatusCode, $"[Response was {response.StatusCode} : Response body was: {await response.Content.ReadAsStringAsync()}]");
+    }
+    
+    public static string ExtractSystemUserId(string jsonResponse)
+    {
+        var jsonNode = JsonNode.Parse(jsonResponse);
+
+        if (jsonNode is JsonObject jsonObject && jsonObject.ElementAt(1).Value is JsonArray jsonArray)
+        {
+            var systemUserObject = jsonArray.First().AsObject();
+            return systemUserObject["id"].GetValue<string>();
+        }
+
+        throw new Exception("Unable to extract system user ID from response.");
     }
 }

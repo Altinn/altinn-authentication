@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
@@ -125,7 +126,61 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", token);
         return await client.DeleteAsync($"{BaseUrl}/{endpoint}");
     }
+    
+    public async Task ApproveSystemUserRequest(string altinnPartyId, string requestId)
+    {
+        var approveUrl = UrlConstants.ApproveSystemUserRequestUrlTemplate
+            .Replace("{partyId}", altinnPartyId)
+            .Replace("{requestId}", requestId);
 
+        var approveResponse = await ApproveRequest(approveUrl, GetTestUserForVendor());
+
+        Assert.True(approveResponse.StatusCode == HttpStatusCode.OK,
+            $"Approval failed with status code: {approveResponse.StatusCode}");
+    }
+    
+    public async Task<HttpResponseMessage> GetSystemUserBySystemIdForVendor(string systemId, string token)
+    {
+        var urlGetBySystem = UrlConstants.GetBySystemForVendor.Replace("{systemId}", systemId);
+        return await GetAsync(urlGetBySystem, token);
+    }
+    
+    public async Task DeleteSystemUser(string altinnPartyId, string systemUserId)
+    {
+        var deleteUrl = UrlConstants.DeleteSystemUserUrlTemplate
+            .Replace("{partyId}", altinnPartyId)
+            .Replace("{systemUserId}", systemUserId);
+        var deleteResponse = await DeleteRequest(deleteUrl, GetTestUserForVendor());
+
+        Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
+    }
+    
+    private async Task<HttpResponseMessage> DeleteRequest(string endpoint, Testuser testperson)
+    {
+        // Get the Altinn token
+        var altinnToken = await GetPersonalAltinnToken(testperson);
+
+        // Use the PostAsync method for the approval request
+        var response = await Delete(endpoint, altinnToken);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> ApproveRequest(string endpoint, Testuser testperson)
+    {
+        // Get the Altinn token
+        var altinnToken = await GetPersonalAltinnToken(testperson);
+
+        // Use the PostAsync method for the approval request
+        var response = await PostAsync(endpoint, string.Empty, altinnToken);
+        return response;
+    }
+    
+    public Testuser GetTestUserForVendor()
+    {
+        return TestUsers.Find(testUser => testUser.Org.Equals(EnvironmentHelper.Vendor))
+               ?? throw new Exception($"Test user not found for organization: {EnvironmentHelper.Vendor}");
+    }
+    
     /// <summary>
     /// Endpoint that converts a maskinporten token into an Altinn Token
     /// </summary>
