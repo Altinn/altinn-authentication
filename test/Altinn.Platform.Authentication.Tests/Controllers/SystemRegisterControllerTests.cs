@@ -106,6 +106,24 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Create_WithApp_Success()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_WithResourceAndApp_Success()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithResourceAndApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
         public async Task SystemRegister_Create_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidRequest.json";
@@ -417,7 +435,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)    
             {
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
@@ -505,6 +523,160 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 List<Right> list = JsonSerializer.Deserialize<List<Right>>(await rightsResponse.Content.ReadAsStringAsync(), _options);
                 Assert.Equal("ske-krav-og-betalinger", list[0].Resource[0].Value);
                 Assert.True(list.Count == 1);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Get_ProductDefaultRights_App()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            var expectedRights = new List<AttributePair>
+            {
+                new AttributePair { Id = "urn:altinn:resource", Value = "app_ttd_endring-av-navn-v2" }
+            };
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string name = "991825827_system_with_app";
+                HttpClient client = CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+
+                HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights");
+                HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                List<Right> list = JsonSerializer.Deserialize<List<Right>>(await rightsResponse.Content.ReadAsStringAsync(), _options);
+
+                // Assert
+                Assert.True(list.Count == 1);
+                Assert.Equal(expectedRights.Count, list[0].Resource.Count);
+                for (int i = 0; i < expectedRights.Count; i++)
+                {
+                    Assert.Equal(expectedRights[i].Id, list[0].Resource[i].Id);
+                    Assert.Equal(expectedRights[i].Value, list[0].Resource[i].Value);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Get_ProductDefaultRights_App_OldFormat()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            var expectedRights = new List<AttributePair>
+            {
+                new AttributePair { Id = "urn:altinn:org", Value = "ttd" },
+                new AttributePair { Id = "urn:altinn:app", Value = "endring-av-navn-v2" },
+            };
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string name = "991825827_system_with_app";
+                HttpClient client = CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+
+                HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights?useoldformatforapp=true");
+                HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                List<Right> list = JsonSerializer.Deserialize<List<Right>>(await rightsResponse.Content.ReadAsStringAsync(), _options);
+
+                // Assert
+                Assert.True(list.Count == 1);
+                Assert.Equal(expectedRights.Count, list[0].Resource.Count);
+                for (int i = 0; i < expectedRights.Count; i++)
+                {
+                    Assert.Equal(expectedRights[i].Id, list[0].Resource[i].Id);
+                    Assert.Equal(expectedRights[i].Value, list[0].Resource[i].Value);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Get_ProductDefaultRights_App_Resource()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithResourceAndApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            var expectedAppRights = new List<AttributePair>
+            {
+                new AttributePair { Id = "urn:altinn:resource", Value = "app_ttd_endring-av-navn-v2" }
+            };
+
+            var expectedResourceRights = new List<AttributePair>
+            {
+                new AttributePair { Id = "urn:altinn:resource", Value = "ske-krav-og-betalinger" },
+            };
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string name = "991825827_system_with_app_and_resource";
+                HttpClient client = CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+
+                HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights");
+                HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                List<Right> list = JsonSerializer.Deserialize<List<Right>>(await rightsResponse.Content.ReadAsStringAsync(), _options);
+
+                // Assert
+                Assert.True(list.Count == 2);
+                Assert.Equal(expectedAppRights.Count, list[0].Resource.Count);
+                Assert.Equal(expectedResourceRights.Count, list[1].Resource.Count);
+                for (int i = 0; i < expectedAppRights.Count; i++)
+                {
+                    Assert.Equal(expectedAppRights[i].Id, list[0].Resource[i].Id);
+                    Assert.Equal(expectedAppRights[i].Value, list[0].Resource[i].Value);
+                }
+
+                for (int i = 0; i < expectedResourceRights.Count; i++)
+                {
+                    Assert.Equal(expectedResourceRights[i].Id, list[1].Resource[i].Id);
+                    Assert.Equal(expectedResourceRights[i].Value, list[1].Resource[i].Value);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Get_ProductDefaultRights_App_Resource_OldAppFormat()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithResourceAndApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            var expectedAppRights = new List<AttributePair>
+            {
+                new AttributePair { Id = "urn:altinn:org", Value = "ttd" },
+                new AttributePair { Id = "urn:altinn:app", Value = "endring-av-navn-v2" },
+            };
+
+            var expectedResourceRights = new List<AttributePair>
+            {
+                new AttributePair { Id = "urn:altinn:resource", Value = "ske-krav-og-betalinger" },
+            };
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string name = "991825827_system_with_app_and_resource";
+                HttpClient client = CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+
+                HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights?useoldformatforapp=true");
+                HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                List<Right> list = JsonSerializer.Deserialize<List<Right>>(await rightsResponse.Content.ReadAsStringAsync(), _options);
+
+                // Assert
+                Assert.True(list.Count == 2);
+                Assert.Equal(expectedAppRights.Count, list[0].Resource.Count);
+                Assert.Equal(expectedResourceRights.Count, list[1].Resource.Count);
+                for (int i = 0; i < expectedAppRights.Count; i++)
+                {
+                    Assert.Equal(expectedAppRights[i].Id, list[0].Resource[i].Id);
+                    Assert.Equal(expectedAppRights[i].Value, list[0].Resource[i].Value);
+                }
+
+                for (int i = 0; i < expectedResourceRights.Count; i++)
+                {
+                    Assert.Equal(expectedResourceRights[i].Id, list[1].Resource[i].Id);
+                    Assert.Equal(expectedResourceRights[i].Value, list[1].Resource[i].Value);
+                }
             }
         }
 

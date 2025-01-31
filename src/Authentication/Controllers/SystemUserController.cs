@@ -103,16 +103,20 @@ public class SystemUserController : ControllerBase
         [FromQuery] string clientId, 
         [FromQuery] string systemProviderOrgNo, 
         [FromQuery] string systemUserOwnerOrgNo,
-        [FromQuery] string externalRef,
+        [FromQuery] string? externalRef = null,
         CancellationToken cancellationToken = default)
     {
         // We dont't throw a badrequest for a missing externalRef yet, rather we set it equal to the orgno
         if (string.IsNullOrEmpty(clientId) 
             || string.IsNullOrEmpty(systemProviderOrgNo) 
-            || string.IsNullOrEmpty(systemUserOwnerOrgNo) 
-            || string.IsNullOrEmpty(externalRef))
+            || string.IsNullOrEmpty(systemUserOwnerOrgNo))
         {
             return BadRequest();
+        }
+
+        if (string.IsNullOrEmpty(externalRef))
+        {
+            externalRef = systemUserOwnerOrgNo;
         }
 
         SystemUser? res = await _systemUserService.CheckIfPartyHasIntegration(
