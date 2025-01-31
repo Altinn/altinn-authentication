@@ -1,0 +1,27 @@
+{
+  "Testenvironment": "at22",
+  "MaskinportenClientId": "2d91b84b-1054-4878-a442-6e094a7eb73d",
+  "Vendor": "312605031",
+  "TestCredentials": {
+    "username": "autotest",
+    "password": "altinn8900bnn"
+  },
+  "Jwks": {
+    "alg": "RS256",
+    "d": "Ej3ELRqmMIoCEot3E_lZsLQxg2HaAOP0f5oIM6xZ105lmgGsvavHSSjbUo3k8GIOFH6iOLYMVD-C7B8qBDmrXHdrD-Z0TSPlEnKMn9Gue4XEKOf1LmafFffqVzmzq4o_X0BwJvvjgfc4cmFRKMufNCL525oUmz_qiTrrqYRHHoiFmuv3yFhsuqTgBggqyDwxgpRVuxPmh2H1bCDu8r2y6gjGZOt4Td0ymyAl8G3UGmxtwJ0WRB9Q8KIootGURSZ0_zXMZRUpokODCuFnfKhgKKtu_aJMNKgBA_6qePVWMfVxa17-8t0MxWx8MaQAcdnjq4Az0oMbTN9bYC5c0s5BOQ",
+    "dp": "5Ua94u3saJ2L-gyjpDJvkumynHQYAhyNBjZ9Fb_e7SczyT_SrVwuPVjQVWGGMi1qzFbSUciR0I9Ob2TP7SHTd4jPVlzhNeWeH9lcbU33TcXMS9DR8M7Vi1-NdoS2oQhkQVswsGfn9kG2Nenyp4WoJevBJyAF9s8VNxY2weYpHo0",
+    "dq": "r79kLXScXh1SQ30rnLgErRQP0Jx3QFTBsJJtdRUmoErukswar_bBL78b9VIKcGwc-kxnq1N0YSZPUVdd9dfNuUdfdpdVKkZBrriaZDa5rM8n1oc-57MEhz4h8yKtkWhKUIN8uBz7iqcTtoF69IU2vrwvdHAL9mAfbZsLToEWFq0",
+    "e": "AQAB",
+    "key_ops": [],
+    "kid": "e2e-authentication-TEST.2025-01-30",
+    "kty": "RSA",
+    "n": "4MGYqPlGqbauKJlSaygTWcFxOlmu_GNn49JdKgskg4A2Ty-iykO3Rgj5qq1WZ9CRFptlYIMnh0iu-wv9qRAzHrIm87QoaL0olupYYhoyZrhR8tF2j1HX43WYSbx4MMyX9-e20Ml-PHxKMjxVAHiEDiie829t8X12gGIIx9SFjMS1pVeO48oWVzUgpYg1TgTCEHoPU8YS1RpbMyTXEaERyGAuY0vgrPplxYSRahx6cH1yrIf4QgBS4SgIhcTPv-71ztoKPAsoldIni7XL-eKT4Aa1AME28xdzC4HZTLHixObJdmIN9nS23-rrlLHtLsrokWzpV6lDpDi3L1O3uGZPgw",
+    "oth": [],
+    "p": "-P-zEgunnsbpM2AtjD9gps8PVyeh84NpS3MjjyT8hGqrgXY_Mmao3PbAKgXNMbEIAhxqxTTzEOoHlF0WiMsEdcgd7fIz2fwhlmag6NswUU1gydlI3M0uDeKYumUJhLeor5dG9BChiQnrlb3xXLXezqVSvmDLc3xWzf-8f6BXtv8",
+    "q": "5xNl4rgSDSV37t0Yx76OE1M7cQRzv0mVG5XsPqauAI1qumq4x9C230fTCDZbe8C7jkG4Fd_g4SGrGfcxhYmybB3lFmwhZElCMQ9OPVwFDSWnnpO_TXG0kJ7kF8BxAuFqBmNYZw5NQK4Jp0SGnMzwpgIOKwa0VaroNDGTm_RLC30",
+    "qi": "SkoDnzVmVlYg37Mfe1bs69_N1XQ7bFQHwKmDoP7b9tlFtZBP4YuXnF91pPrvo86nI_gPG1Osuv3zuZsYsZIG75aTQ7BI9WnIHkLzEz-yIKmvqlLfsN3XIZg_tMpJ7BGbBn532DPLipUFYPCAHuLpDKOEdH5MJGoa8NDHED7JBsI",
+    "use": "sig",
+    "x5c": []
+  }
+}
+

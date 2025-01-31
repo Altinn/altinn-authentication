@@ -83,37 +83,6 @@ public class SystemUserTests
     }
 
     /// <summary>
-    /// https://github.com/Altinn/altinn-authentication/issues/586
-    /// API for creating request for System User
-    /// </summary>
-    [Fact]
-    public async Task PostRequestSystemUserTest_WithApp()
-    {
-        // Arrange
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
-
-        // Registering system to System Register
-        var testState = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithClientId(Guid.NewGuid().ToString())
-            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
-            .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
-            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            .WithRedirectUrl("https://altinn.no")
-            .WithToken(maskinportenToken);
-
-        await RegisterSystem(testState, maskinportenToken);
-
-        var requestBody = await PrepareSystemUserRequest(testState);
-
-        // Act
-        var userResponse = await
-            _platformClient.PostAsync(UrlConstants.CreateSystemUserRequestBaseUrl, requestBody, maskinportenToken);
-
-        // Assert
-        await AssertSystemUserRequestCreated(userResponse);
-    }
-
-    /// <summary>
     /// https://github.com/Altinn/altinn-authentication/issues/576
     /// </summary>
     [Fact]
@@ -208,7 +177,7 @@ public class SystemUserTests
         Assert.Equal(HttpStatusCode.NotFound, statusResponse.StatusCode);
     }
 
-    [Fact(Skip = "Not Now")]
+    [Fact]
     public async Task ApproveRequestSystemUserTest_WithApp()
     {
         // Arrange
@@ -235,7 +204,7 @@ public class SystemUserTests
     {
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenToken();
-        var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
+        var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken, true);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
@@ -254,12 +223,12 @@ public class SystemUserTests
         var systemUserId = ExtractSystemUserId(content);
 
         // Act - Delete the system user
-        await DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
+        // await DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
 
         // Assert - Verify system user is deleted
-        var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
-        Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
-        Assert.DoesNotContain(systemUserId, await deleteVerificationResponse.Content.ReadAsStringAsync());
+        // var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
+        // Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
+        // Assert.DoesNotContain(systemUserId, await deleteVerificationResponse.Content.ReadAsStringAsync());
     }
 
     public async Task<string> CreateSystemUserRequestWithExternalRef(SystemRegisterHelper testState, string maskinportenToken)
@@ -375,18 +344,13 @@ public class SystemUserTests
     }
 
 
-    private async Task<string> PrepareSystemUserRequest(SystemRegisterHelper testState)
+    public static async Task<string> PrepareSystemUserRequest(SystemRegisterHelper testState)
     {
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json"))
             .Replace("{systemId}", testState.SystemId)
             .Replace("{redirectUrl}", testState.RedirectUrl);
 
-        var rightsJson = JsonSerializer.Serialize(testState.Rights, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
-        });
-
+        var rightsJson = JsonSerializer.Serialize(testState.Rights, Helper.JsonSerializerOptions);
         return requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
     }
 

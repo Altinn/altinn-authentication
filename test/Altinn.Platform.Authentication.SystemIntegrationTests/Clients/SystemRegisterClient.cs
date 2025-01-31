@@ -49,4 +49,13 @@ public class SystemRegisterClient
 
         return systems ?? new List<SystemDto>();
     }
+    
+    
+
+    public async Task RegisterSystem(SystemRegisterHelper testState, string maskinportenToken)
+    {
+        var requestBodySystemRegister = testState.GenerateRequestBody();
+        var response = await PostSystem(requestBodySystemRegister, maskinportenToken);
+        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
+    }
 }

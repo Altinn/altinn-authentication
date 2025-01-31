@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
@@ -21,4 +22,13 @@ public class Helper
         var stringBody = await File.ReadAllTextAsync(filePath);
         return stringBody;
     }
+
+    public static readonly JsonSerializerOptions JsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
+
+// Usage:
+// var rightsJson = JsonSerializer.Serialize(testState.Rights, _jsonSerializerOptions);
 }
