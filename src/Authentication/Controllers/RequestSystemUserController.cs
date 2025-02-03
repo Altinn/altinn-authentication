@@ -102,9 +102,9 @@ public class RequestSystemUserController : ControllerBase
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
         }
 
-        // Check to see if the Request already exists
+        // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
-        if (response.IsSuccess)
+        if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
             response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
             return Ok(response.Value);
