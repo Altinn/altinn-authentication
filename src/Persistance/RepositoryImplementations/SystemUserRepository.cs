@@ -390,4 +390,38 @@ public class SystemUserRepository : ISystemUserRepository
             throw;
         }
     }
+
+    /// <inheritdoc />
+    public async Task<List<SystemUser>> GetAllSystemUsers(CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+	    	    sui.system_user_profile_id,
+		        sui.integration_title,
+		        sui.system_internal_id,
+                sr.system_id,
+                sr.systemvendor_orgnumber,
+                sui.reportee_org_no,
+		        sui.reportee_party_id,
+		        sui.created,
+                sui.external_ref
+	        FROM business_application.system_user_profile sui 
+	            AND sui.is_deleted = false;
+            "
+        ;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToSystemUser)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllSystemUsers // Exception");
+            throw;
+        }
+    }
 }
