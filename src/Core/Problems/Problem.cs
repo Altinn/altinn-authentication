@@ -153,5 +153,11 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor Vendor_Orgno_NotFound { get; }
-        = _factory.Create(22, HttpStatusCode.Unauthorized, "Can't resolve the Organisation Number for the Vendor from the Token.");
+        = _factory.Create(23, HttpStatusCode.Unauthorized, "Can't resolve the Organisation Number for the Vendor from the Token.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Delete_SystemUser_NotOwned { get; }
+        = _factory.Create(24, HttpStatusCode.Forbidden, "you don't have rights to delete this systemuser");
 }
