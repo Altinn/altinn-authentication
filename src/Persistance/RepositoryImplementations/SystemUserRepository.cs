@@ -429,7 +429,7 @@ public class SystemUserRepository : ISystemUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllSystemUsersByVendorSystem // Exception");
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllSystemUsers // Exception");
             throw;
         }
     }
