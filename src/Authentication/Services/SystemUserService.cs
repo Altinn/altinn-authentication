@@ -136,9 +136,14 @@ namespace Altinn.Platform.Authentication.Services
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
-        public async Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
         {
             SystemUser systemUser = await _repository.GetSystemUserById(systemUserId);
+            if (systemUser.PartyId != partyId)
+            {
+                return Problem.Delete_SystemUser_NotOwned;
+            }
+
             await _repository.SetDeleteSystemUserById(systemUserId);
 
             List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
