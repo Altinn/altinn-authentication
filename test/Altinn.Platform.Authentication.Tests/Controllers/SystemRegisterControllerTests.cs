@@ -89,7 +89,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-            services.AddSingleton<ISystemUserService, SystemUserServiceMock>();    
+            services.AddSingleton<ISystemUserService, SystemUserService>();    
             services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
             SetupDateTimeMock();
@@ -101,6 +101,24 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_WithApp_Success()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_WithResourceAndApp_Success()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithResourceAndApp.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         }

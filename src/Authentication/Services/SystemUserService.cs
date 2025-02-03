@@ -55,20 +55,33 @@ namespace Altinn.Platform.Authentication.Services
         /// Creates a new SystemUser
         /// The unique Id for the systemuser is handled by the db.
         /// </summary>
-        /// <returns>The SystemUser created</returns>
-        public async Task<SystemUser?> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
+        /// <returns>The SystemUser created</returns>    
+        public async Task<Result<SystemUser>> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
         {
             RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
             {
-                return null;
+                return Problem.SystemIdNotFound;
             }
 
             Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
-           
+       
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
-                return null;
+                return Problem.SystemUserNotFound;
+            }
+
+            ExternalRequestId externalRequestId = new()
+            {
+                OrgNo = party.OrgNumber,
+                SystemId = request.SystemId,
+                ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
+            };
+
+            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            if (existing is not null)
+            {
+                return Problem.SystemUser_AlreadyExists;
             }
 
             SystemUser newSystemUser = new()
@@ -83,10 +96,15 @@ namespace Altinn.Platform.Authentication.Services
             Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);        
             if (insertedId is null)
             {
-                return null;
+                return Problem.SystemUser_FailedToCreate;
             }
 
             SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+            if (inserted is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
             return inserted;
         }
 
@@ -111,7 +129,7 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<SystemUser?> GetSingleSystemUserById(Guid systemUserId)
         {
             SystemUser? search = await _repository.GetSystemUserById(systemUserId);
-            
+        
             return search;
         }
 
@@ -123,7 +141,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             SystemUser systemUser = await _repository.GetSystemUserById(systemUserId);
             await _repository.SetDeleteSystemUserById(systemUserId);
-            
+        
             //List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
             //await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
             return true; // if it can't be found, there is no need to delete it.
@@ -150,9 +168,19 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, CancellationToken cancellationToken)
+        public async Task<SystemUser?> CheckIfPartyHasIntegration(
+            string clientId, 
+            string systemProviderOrgNo, 
+            string systemUserOwnerOrgNo, 
+            string externalRef,
+            CancellationToken cancellationToken)
         {
-            return await _repository.CheckIfPartyHasIntegration(clientId, systemProviderOrgNo, systemUserOwnerOrgNo, cancellationToken);
+            return await _repository.CheckIfPartyHasIntegration(
+                clientId, 
+                systemProviderOrgNo, 
+                systemUserOwnerOrgNo, 
+                externalRef,
+                cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -212,6 +240,19 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.Reportee_Orgno_NotFound;
             }
 
+            ExternalRequestId externalRequestId = new()
+            {
+                OrgNo = party.OrgNumber,
+                SystemId = request.SystemId,
+                ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
+            };
+
+            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            if (existing is not null)
+            {
+                return Problem.SystemUser_AlreadyExists;
+            }
+
             DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
             if (delegationCheckFinalResult.RightResponses is null)
             {
@@ -222,7 +263,7 @@ namespace Altinn.Platform.Authentication.Services
             if (!delegationCheckFinalResult.CanDelegate)
             {
                 // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-                return MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
             }
 
             SystemUser newSystemUser = new()
@@ -256,34 +297,10 @@ namespace Altinn.Platform.Authentication.Services
             return inserted;
         }
 
-        private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
+        /// <inheritdoc/>
+        public async Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
         {
-            if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
-            {
-                return Problem.UnableToDoDelegationCheck;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
-            {
-                return Problem.DelegationRightMissingRoleAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
-            {
-                return Problem.DelegationRightMissingDelegationAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
-            {
-                return Problem.DelegationRightMissingSrrRightAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
-            {
-                return Problem.DelegationRightInsufficientAuthenticationLevel;
-            }
-
-            return Problem.UnableToDoDelegationCheck;
+            return await _repository.GetSystemUserByExternalRequestId(externalRequestId);
         }
     }
 }

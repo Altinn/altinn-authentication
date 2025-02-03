@@ -5,12 +5,14 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -34,16 +36,19 @@ public class RequestSystemUserController : ControllerBase
 {
     private readonly IRequestSystemUser _requestSystemUser;
     private readonly GeneralSettings _generalSettings;
+    private readonly ISystemUserService _systemUserService;
 
     /// <summary>
     /// Constructor
     /// </summary>
     public RequestSystemUserController(
         IRequestSystemUser requestSystemUser,
-        IOptions<GeneralSettings> generalSettings)
+        IOptions<GeneralSettings> generalSettings,
+        ISystemUserService systemUserService)
     {
         _requestSystemUser = requestSystemUser;
         _generalSettings = generalSettings.Value;
+        _systemUserService = systemUserService;
     }
 
     /// <summary>
@@ -81,7 +86,7 @@ public class RequestSystemUserController : ControllerBase
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty()) 
         {
-            return Unauthorized();
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
         }
 
         ExternalRequestId externalRequestId = new()
@@ -90,10 +95,16 @@ public class RequestSystemUserController : ControllerBase
             OrgNo = createRequest.PartyOrgNo,
             SystemId = createRequest.SystemId,
         };
+        
+        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        if (existing is not null)
+        {
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
+        }
 
-        // Check to see if the Request already exists
+        // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
-        if (response.IsSuccess)
+        if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
             response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
             return Ok(response.Value);

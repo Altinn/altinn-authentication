@@ -40,7 +40,7 @@ public class ChangeRequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IChangeRequestRepository changeRequestRepository,
-    ISystemUserRepository systemUserRepository,
+    ISystemUserService systemUserService,
     IResourceRegistryClient resourceRegistryClient,
     IPDP PDPClient,
     IOptions<PaginationOptions> _paginationOption,
@@ -404,7 +404,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        SystemUser? toBeChanged = await systemUserRepository.GetSystemUserById(systemUserChangeRequest.SystemUserId);
+        SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
         if (toBeChanged is null)
         {
             return Problem.SystemUserNotFound;
@@ -447,77 +447,6 @@ public class ChangeRequestSystemUserService(
         }
 
         return await changeRequestRepository.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
-    }
-
-    private async Task<DelegationCheckResult> UserDelegationCheckForReporteeDeprecated(int partyId, string systemId, ChangeRequestResponse changeRequest, CancellationToken cancellationToken = default)
-    {
-        var rights = await VerifySubsetOfRights(changeRequest.RequiredRights, systemId, cancellationToken);
-
-        List<RightResponses> rightResponsesList = [];
-
-        foreach (Right right in rights)
-        {
-            DelegationCheckRequest request = new()
-            {
-                Resource = right.Resource
-            };
-
-            List<DelegationResponseData>? rightResponses = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), request);
-
-            if (rightResponses is null)
-            {
-                return new DelegationCheckResult(false, null, null);
-            }
-
-            if (!ResolveIfHasAccess(rightResponses))
-            {
-                return new DelegationCheckResult(false, null, null);
-            }
-
-            rightResponsesList.Add(new RightResponses(rightResponses));
-        }
-
-        return new DelegationCheckResult(true, rightResponsesList, null);
-    }
-
-    /// <summary>
-    /// Removes requested Rights that are not in the System's list of prepared Rights
-    /// </summary>
-    /// <param name="rights">the Requested Rights</param>
-    /// <param name="systemId">the system id</param>
-    /// <param name="cancellationToken">cancellation </param>
-    /// <returns></returns>
-    private async Task<List<Right>> VerifySubsetOfRights(List<Right> rights, string systemId, CancellationToken cancellationToken)
-    {
-        List<Right> rightsInSystem = await systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
-
-        List<Right> verifiedRights = [];
-
-        foreach (var right in rights)
-        {
-            foreach (var rightInSystem in rightsInSystem)
-            {
-                if (Right.Compare(right, rightInSystem))
-                {
-                    verifiedRights.Add(right);
-                }
-            }
-        }
-
-        return verifiedRights;
-    }
-
-    private static bool ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
-    {
-        foreach (var data in rightResponse)
-        {
-            if (data.Status != "Delegable")
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /// <inheritdoc/>
@@ -590,7 +519,7 @@ public class ChangeRequestSystemUserService(
             SystemId = validateSet.SystemId,
         };
 
-        SystemUser? systemUser = await systemUserRepository.GetSystemUserByExternalRequestId(externalRequestId);
+        SystemUser? systemUser = await systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
         var debug = " ";
         if (systemUser is null)
         {
