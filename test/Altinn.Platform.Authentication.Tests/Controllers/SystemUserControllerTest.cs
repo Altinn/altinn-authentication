@@ -746,7 +746,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.OK, vendorResponse.StatusCode);
 
-            var result = await vendorResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
+            var result = await vendorResponse.Content.ReadFromJsonAsync<Paginated<SystemUserRegisterDTO>>();
             Assert.NotNull(result);
             var list = result.Items.ToList();
 

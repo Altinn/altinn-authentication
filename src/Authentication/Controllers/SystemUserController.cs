@@ -237,11 +237,11 @@ public class SystemUserController : ControllerBase
     /// <returns>Paginated list of all SystmUsers e</returns>
     // [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("internal/systemusers/stream", Name = "internal/systemusers/stream")]
-    public async Task<ActionResult<Paginated<SystemUser>>> GetAllSystemUsers(
+    public async Task<ActionResult<Paginated<SystemUserRegisterDTO>>> GetAllSystemUsers(
         [FromQuery(Name = "token")] Opaque<long>? token = null,
         CancellationToken cancellationToken = default)
     {        
-        Result<Page<SystemUser, long>> pageResult = await _systemUserService.GetAllSystemUsers(
+        Result<Page<SystemUserRegisterDTO, long>> pageResult = await _systemUserService.GetAllSystemUsers(
             token?.Value ?? 0,
             cancellationToken);
         if (pageResult.IsProblem)

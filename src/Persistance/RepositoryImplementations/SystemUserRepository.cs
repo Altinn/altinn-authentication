@@ -71,8 +71,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
-                sui.external_ref,
-                sui.sequence_no
+                sui.external_ref
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -109,8 +108,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
-                sui.external_ref,
-                sui.sequence_no
+                sui.external_ref
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -147,8 +145,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
                 sui.reportee_party_id,
                 sui.created,
-                sui.external_ref,
-                sui.sequence_no
+                sui.external_ref
             FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -272,8 +269,7 @@ public class SystemUserRepository : ISystemUserRepository
                 reportee_party_id,
                 sui.created,
                 systemvendor_orgnumber,
-                external_ref,
-                sui.sequence_no
+                external_ref
             FROM business_application.system_user_profile sui
                 JOIN business_application.system_register sr  
                 ON   sui.system_internal_id = sr.system_internal_id
@@ -330,8 +326,7 @@ public class SystemUserRepository : ISystemUserRepository
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
-            ExternalRef = external_ref ?? orgno,
-            SequenceNo = reader.GetFieldValue<long>("sequence_no")
+            ExternalRef = external_ref ?? orgno
         });
     }
 
@@ -348,8 +343,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
-                sui.external_ref,
-                sui.sequence_no
+                sui.external_ref
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -399,25 +393,18 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken)
+    public async Task<List<SystemUserRegisterDTO>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
 	    	    sui.system_user_profile_id,
 		        sui.integration_title,
-		        sui.system_internal_id,
-                sr.system_id,
-                sr.systemvendor_orgnumber,
-                sui.reportee_org_no,
-		        sui.reportee_party_id,
 		        sui.created,
-                sui.external_ref,
-                sui.sequence_no
-	        FROM business_application.system_user_profile sui
-                JOIN business_application.system_register sr  
-                ON sui.system_internal_id = sr.system_internal_id    
-            WHERE sui.is_deleted = false
-                AND sequence_no > @sequence_no
+                sui.last_changed,
+                sui.sequence_no,
+                sui.is_deleted
+	        FROM business_application.system_user_profile sui                
+            WHERE sui.sequence_no > @sequence_no
             LIMIT @limit;
             "
         ;
@@ -430,7 +417,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("limit", limit);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToSystemUser)
+                .SelectAwait(ConvertFromReaderToSystemUserRegisterDTO)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -438,5 +425,18 @@ public class SystemUserRepository : ISystemUserRepository
             _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllSystemUsers // Exception");
             throw;
         }
+    }
+
+    private static ValueTask<SystemUserRegisterDTO> ConvertFromReaderToSystemUserRegisterDTO(NpgsqlDataReader reader)
+    {
+        return new ValueTask<SystemUserRegisterDTO>(new SystemUserRegisterDTO
+        {
+            Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
+            IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
+            Created = reader.GetFieldValue<DateTime>("created"),
+            LastChanged = reader.GetFieldValue<DateTime>("last_changed"),
+            SequenceNo = reader.GetFieldValue<long>("sequence_no"),
+            IsDeleted = reader.GetFieldValue<bool>("is_deleted")
+        });
     }
 }
