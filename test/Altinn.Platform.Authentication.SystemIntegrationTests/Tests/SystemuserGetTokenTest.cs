@@ -16,7 +16,7 @@ public class SystemuserGetTokenTest
     private readonly SystemUserClient _systemUserClient;
     private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
 
-    private static readonly JsonSerializerOptions? _jsonSerializerOptions = new()
+    private static readonly JsonSerializerOptions? JsonSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
@@ -39,9 +39,9 @@ public class SystemuserGetTokenTest
     public async Task GetByExternalIdMaskinporten()
     {
         // Setup
-        var systemUser = await GetSystemUser(SystemId) ?? await CreateSystemUser();
+        var systemUser = await GetSystemUser(SystemId); 
+                         // ?? await GetSystemUserWithProperMaskinportenClient();
 
-        //Assert system user exists
         //Only way to use this token is by using the "fake" altinn token service, not allowed to configure this in samarbeidsportalen
         const string scopes = "altinn:maskinporten/systemuser.read";
 
@@ -53,6 +53,8 @@ public class SystemuserGetTokenTest
         var systemProviderOrgNo = _platformClient.EnvironmentHelper.Vendor;
         var systemUserOwnerOrgNo = _platformClient.EnvironmentHelper.Vendor;
         var externalRef = systemUser?.ExternalRef;
+        
+        // _outputHelper.WriteLine($"System user external ref: {systemUser.ExternalRef}");
 
         // Build the query string
         var queryString =
@@ -64,7 +66,6 @@ public class SystemuserGetTokenTest
         // Combine the endpoint and query string
         var fullEndpoint = $"{UrlConstants.SystemUserGetByExternalRef}{queryString}";
 
-        // Make the GET request with the full endpoint and token
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
         Assert.NotNull(resp);
@@ -72,8 +73,17 @@ public class SystemuserGetTokenTest
     }
 
     [Fact]
-    public async Task SystemuserGetToken_ReturnsTokenForOrg()
+    public async Task SystemuserGetToken_ReturnsTokenForOrgWithExternalRef()
     {
+        var systemUser = await GetSystemUser(SystemId) ?? await CreateSystemUserWithProperClient();
+        var maskinportenToken = await _platformClient.GetSystemUserToken(systemUser?.ExternalRef);
+        _outputHelper.WriteLine($"maskinportenToken: {maskinportenToken}");
+    }
+    
+    [Fact]
+    public async Task SystemuserGetToken_ReturnsTokenForOrgNoExternalRef()
+    {
+        var systemUser = await GetSystemUser(SystemId) ?? await CreateSystemUserWithProperClient();
         var maskinportenToken = await _platformClient.GetSystemUserToken();
         _outputHelper.WriteLine($"maskinportenToken: {maskinportenToken}");
     }
@@ -85,18 +95,15 @@ public class SystemuserGetTokenTest
 
         if (await GetSystemUser(systemId) is null)
         {
-            await CreateSystemUser();
+            await CreateSystemUserWithProperClient();
         }
-
-        
     }
 
-    private async Task<SystemUser?> CreateSystemUser()
+    private async Task<SystemUser?> CreateSystemUserWithProperClient()
     {
         var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org.Equals(_platformClient.EnvironmentHelper.Vendor))
                        ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper.Vendor}");
-
-        //if system user not found - create one
+        
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
@@ -105,11 +112,9 @@ public class SystemuserGetTokenTest
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
-            .WithName("Team-Authentication-SystemuserE2E-User-Do-Not-Delete")
+            .WithName("Team-Authentication-SystemuserE2E-User-Do-Not-Delete-TT02")
             .WithToken(maskinportenToken);
-
-        _outputHelper.WriteLine($"SystemID: {teststate.SystemId}");
-
+        
         var requestBody = teststate.GenerateRequestBody();
 
         // Create system in System Register
@@ -121,12 +126,10 @@ public class SystemuserGetTokenTest
         //Approve system user
         var id = Common.ExtractPropertyFromJson(postSystemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(postSystemUserResponse, "systemId");
-        var externalRef = Common.ExtractPropertyFromJson(postSystemUserResponse, "externalRef");
-
-        // Act
+        
         await _systemUserClient.ApproveSystemUserRequest(testuser, id);
         
-        //Return system user
+        //Return system user and make sure it was created
         return await GetSystemUser(systemId);
     }
 
@@ -139,7 +142,7 @@ public class SystemuserGetTokenTest
         var resp = await _systemUserClient.GetSystemuserForParty(testuser.AltinnPartyId, altinnToken);
 
         var content = await resp.Content.ReadAsStringAsync();
-        var systemUsers = JsonSerializer.Deserialize<List<SystemUser>>(content, _jsonSerializerOptions) ?? [];
+        var systemUsers = JsonSerializer.Deserialize<List<SystemUser>>(content, JsonSerializerOptions) ?? [];
 
         return systemUsers.Find(user => user.SystemId == systemId);
     }

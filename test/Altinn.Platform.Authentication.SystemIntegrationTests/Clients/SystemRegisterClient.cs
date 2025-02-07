@@ -26,8 +26,7 @@ public class SystemRegisterClient
     {
         var response = await _platformClient.PostAsync(UrlConstants.PostSystemRegister, requestBody, token);
 
-        Assert.True(HttpStatusCode.OK == response.StatusCode,
-            $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+        Assert.True(HttpStatusCode.OK == response.StatusCode, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
         return response;
     }

@@ -52,6 +52,9 @@
       <None Update="Resources\Testdata\SystemUser\CreateRequestExternalRef.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Resources\Environment\environment.dev.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

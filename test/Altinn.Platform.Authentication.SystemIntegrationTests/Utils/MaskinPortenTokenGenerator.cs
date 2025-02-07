@@ -2,8 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using Xunit;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
@@ -16,6 +16,7 @@ public class MaskinPortenTokenGenerator
 {
     public string maskinportenClientId { get; set; }
     public EnvironmentHelper EnvHelper { get; set; }
+
 
     public MaskinPortenTokenGenerator(EnvironmentHelper environmentHelper)
     {
@@ -40,9 +41,12 @@ public class MaskinPortenTokenGenerator
         return base64;
     }
 
-    public Task<string> GenerateJwtForSystemUserToken()
+    public Task<string> GenerateJwtForSystemUserToken(string? externalRef = "")
     {
-        const string audience = "https://test.maskinporten.no/token";
+        var audience = string.IsNullOrEmpty(EnvHelper.MaskinportenEnvironment)
+            ? "https://test.maskinporten.no/token"
+            : EnvHelper.MaskinportenEnvironment;
+
         var iss = maskinportenClientId;
 
         Assert.True(iss != null, "iss is null somehow, check it");
@@ -55,7 +59,7 @@ public class MaskinPortenTokenGenerator
         var jti = Guid.NewGuid().ToString();
 
         var jwk = EnvHelper.jwk;
-
+        
         var rsa = new RSACryptoServiceProvider();
         rsa.ImportParameters(new RSAParameters
         {
@@ -87,7 +91,7 @@ public class MaskinPortenTokenGenerator
         var systemUserOrg = new JwtPayload
         {
             { "authority", "iso6523-actorid-upis" },
-            { "ID", $"0192:312605031" }
+            { "ID", $"0192:{vendor}" }
         };
 
         // Create the authorization_detail object
@@ -95,8 +99,12 @@ public class MaskinPortenTokenGenerator
         {
             { "systemuser_org", systemUserOrg },
             { "type", "urn:altinn:systemuser" },
-            {"externalRef", "1eecfd0b-0618-4e6d-ad8b-88ea8b037e24"}
         };
+
+        if (!string.IsNullOrEmpty(externalRef))
+        {
+            authorizationDetail["externalRef"] = externalRef;
+        }
 
         // Create a list for authorization_details (even if it's a single object, Maskinporten expects an array)
         List<JwtPayload> authorizationDetails = [authorizationDetail];
@@ -107,6 +115,9 @@ public class MaskinPortenTokenGenerator
         };
 
         var payload = new JwtPayload(claims) { { "authorization_details", authorizationDetails } };
+        // Convert to JSON string
+        var json = JsonConvert.SerializeObject(payload);
+      
         var token = new JwtSecurityToken(header, payload);
         var tokenHandler = new JwtSecurityTokenHandler();
 
@@ -116,14 +127,16 @@ public class MaskinPortenTokenGenerator
 
     public Task<string> GenerateJwt()
     {
-        const string audience = "https://test.maskinporten.no/token";
+        var audience = string.IsNullOrEmpty(EnvHelper.MaskinportenEnvironment)
+            ? "https://test.maskinporten.no/token"
+            : EnvHelper.MaskinportenEnvironment;
         var iss = maskinportenClientId;
 
         Assert.True(iss != null, "iss is null somehow, check it");
 
         const string scope =
             "altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read";
-        
+
         // Set the current time and expiration time for the token
         var now = DateTimeOffset.UtcNow;
         var exp = now.AddMinutes(1).ToUnixTimeSeconds();
@@ -186,7 +199,7 @@ public class MaskinPortenTokenGenerator
     /// <param name="jwt">The generated jwt needed for the assertion parameter</param>
     /// <returns></returns>
     /// <exception cref="Exception">Throws a failure if unable to retrieve token</exception>
-    public static async Task<string> RequestToken(string jwt)
+    public async Task<string> RequestToken(string jwt)
     {
         using var client = new HttpClient();
         var requestContent = new FormUrlEncodedContent([
@@ -194,7 +207,11 @@ public class MaskinPortenTokenGenerator
             new KeyValuePair<string, string>("assertion", jwt)
         ]);
 
-        var response = await client.PostAsync("https://test.maskinporten.no/token", requestContent);
+        var environment = string.IsNullOrEmpty(EnvHelper.MaskinportenEnvironment)
+            ? "https://test.maskinporten.no/token"
+            : EnvHelper.MaskinportenEnvironment;
+
+        var response = await client.PostAsync(environment, requestContent);
 
         if (response.IsSuccessStatusCode)
         {
@@ -226,11 +243,12 @@ public class MaskinPortenTokenGenerator
     /// <summary>
     /// This fetches a bearer token from Maskinporten
     /// </summary>
+    /// <param name="externalRef"></param>
     /// <returns>Access token</returns>
     /// <exception cref="Exception">Gives an exception if unable to find access token in jsonDoc response</exception>
-    public async Task<string> GetMaskinportenSystemUserToken()
+    public async Task<string> GetMaskinportenSystemUserToken(string? externalRef = "")
     {
-        var jwt = await GenerateJwtForSystemUserToken();
+        var jwt = await GenerateJwtForSystemUserToken(externalRef);
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;

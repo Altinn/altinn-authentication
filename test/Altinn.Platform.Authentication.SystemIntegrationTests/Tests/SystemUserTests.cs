@@ -199,7 +199,7 @@ public class SystemUserTests
         Assert.Equal(HttpStatusCode.NotFound, statusResponse.StatusCode);
     }
 
-    [Fact(Skip = "Not Now")]
+    [Fact]
     public async Task ApproveRequestSystemUserTest_WithApp()
     {
         // Arrange
@@ -209,6 +209,9 @@ public class SystemUserTests
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
         var testperson = GetTestUserForVendor();
+        
+        _outputHelper.WriteLine(testperson.Pid);
+        _outputHelper.WriteLine(systemUserResponse);
 
         // Act
         await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
@@ -243,6 +246,7 @@ public class SystemUserTests
 
         // Extract system user ID
         var systemUserId = ExtractSystemUserId(content);
+        _outputHelper.WriteLine(systemUserId);
 
         // Act - Delete the system user
         await DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
@@ -271,7 +275,8 @@ public class SystemUserTests
                     new Resource
                     {
                         Id = "urn:altinn:resource",
-                        Value = "app_ttd_endring-av-navn-v2"
+                        Value = "app_ttd_martinotest"
+                        //bjorn-tore-test
                     }
                 }
             });

@@ -12,8 +12,15 @@ public class EnvironmentHelper
     /// Environment. Eg: AT22
     /// </summary>
     public required string Testenvironment { get; set; }
+    
+    /// <summary>
+    /// Environment. Eg: AT22
+    /// </summary>
+    public string? MaskinportenEnvironment { get; set; }
 
     [JsonPropertyName("Jwks")] public required Jwk jwk { get; set; }
+    
+    [JsonPropertyName("JwksDev")] public Jwk? jwkDev { get; set; }
 
     /// <summary>
     /// 

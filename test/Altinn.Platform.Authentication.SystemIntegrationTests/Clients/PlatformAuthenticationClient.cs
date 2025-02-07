@@ -228,10 +228,11 @@ public class PlatformAuthenticationClient
         {
             Console.WriteLine("Exception occurred: " + ex.Message);
         }
+
         return null;
     }
 
-    private static EnvironmentHelper LoadEnvironment()
+    private EnvironmentHelper LoadEnvironment()
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
         const string environmentVariable = "TEST_ENVIRONMENT";
@@ -244,8 +245,7 @@ public class PlatformAuthenticationClient
         if (!string.IsNullOrEmpty(envJson))
         {
             // Deserialize the environment JSON
-            var environmentHelper = JsonSerializer.Deserialize<EnvironmentHelper>(envJson)
-                                    ?? throw new Exception($"Unable to deserialize environment from {githubVariable}.");
+            var environmentHelper = JsonSerializer.Deserialize<EnvironmentHelper>(envJson) ?? throw new Exception($"Unable to deserialize environment from {githubVariable}.");
 
             // Override Testenvironment if TEST_ENVIRONMENT is provided
             if (!string.IsNullOrEmpty(testEnvironmentOverride))
@@ -260,9 +260,11 @@ public class PlatformAuthenticationClient
         return LoadEnvironmentFromFile();
     }
 
-    private static EnvironmentHelper LoadEnvironmentFromFile()
+    private EnvironmentHelper LoadEnvironmentFromFile()
     {
-        const string localFilePath = "Resources/Environment/environment.json";
+        //Todo fix support for dev
+        var localFilePath = "Resources/Environment/environment.json";
+        if (localFilePath == null) throw new ArgumentNullException(nameof(localFilePath));
         var jsonString = Helper.ReadFile(localFilePath).Result;
         return JsonSerializer.Deserialize<EnvironmentHelper>(jsonString)
                ?? throw new Exception($"Unable to read environment from local file path: {localFilePath}.");
@@ -278,9 +280,9 @@ public class PlatformAuthenticationClient
         return token;
     }
 
-    public async Task<string> GetSystemUserToken()
+    public async Task<string> GetSystemUserToken(string? externalRef = "")
     {
-        var token = await MaskinPortenTokenGenerator.GetMaskinportenSystemUserToken();
+        var token = await MaskinPortenTokenGenerator.GetMaskinportenSystemUserToken(externalRef);
         Assert.True(null != token, "Unable to retrieve maskinporten systemuser token");
         return token;
     }

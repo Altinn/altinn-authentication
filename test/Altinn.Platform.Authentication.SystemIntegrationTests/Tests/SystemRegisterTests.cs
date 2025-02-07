@@ -51,12 +51,11 @@ public class SystemRegisterTests
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithClientId(Guid.NewGuid()
-                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithName("Team-Authentication-SystemuserE2E-User-Do-Not-Delete")
+            // .WithName("Team-Authentication-SystemuserE2E-User-Do-Not-Delete")
             .WithToken(maskinportenToken);
 
         var requestBody = teststate.GenerateRequestBody();
