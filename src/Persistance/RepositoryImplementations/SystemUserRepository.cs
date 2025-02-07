@@ -392,7 +392,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllSystemUsers(CancellationToken cancellationToken)
+    public async Task<List<SystemUser>> GetAllSystemUsers(CancellationToken cancellationToken, ulong fromSequenceNo, int limit)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -405,14 +405,21 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.reportee_party_id,
 		        sui.created,
                 sui.external_ref
-	        FROM business_application.system_user_profile sui 
-	            AND sui.is_deleted = false;
+	        FROM business_application.system_user_profile sui
+                JOIN business_application.system_register sr  
+                ON sui.system_internal_id = sr.system_internal_id    
+            WHERE sui.is_deleted = false
+                AND sequence_no > @sequence_no
+            LIMIT @limit;
             "
         ;
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("sequence_no", fromSequenceNo);
+            command.Parameters.AddWithValue("limit", limit);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToSystemUser)
