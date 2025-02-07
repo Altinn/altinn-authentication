@@ -3,7 +3,7 @@
 CREATE OR REPLACE FUNCTION business_application.update_sequence_no()
 RETURNS TRIGGER AS $BODY$
 BEGIN
-  NEW.version_id = register.tx_nextval('business_application.sequence_no');
+  NEW.sequence_no = business_application.tx_nextval('business_application.systemuser_seq');
   RETURN NEW;
 END
 $BODY$ 
