@@ -94,5 +94,11 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// </summary>
         [JsonPropertyName("externalRef")]
         public string ExternalRef { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Used internally when paginating
+        /// </summary>
+        [JsonIgnore]
+        public ulong SequenceNo {  get; set; } = 0;
     }
 }

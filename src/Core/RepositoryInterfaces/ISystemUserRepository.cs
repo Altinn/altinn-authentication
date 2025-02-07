@@ -82,5 +82,5 @@ public interface ISystemUserRepository
     /// Returns a list of all SystemUsers    
     /// </summary>
     /// <returns>List of SystemUser</returns>
-    Task<List<SystemUser>> GetAllSystemUsers(CancellationToken cancellationToken, ulong fromSequenceNo, int limit);
+    Task<List<SystemUser>> GetAllSystemUsers(ulong fromSequenceNo, int limit, CancellationToken cancellationToken);
 }

@@ -290,5 +290,14 @@ namespace Altinn.Platform.Authentication.Services
         {
             return await _repository.GetSystemUserByExternalRequestId(externalRequestId);
         }
+
+        /// <inheritdoc/>
+        public async Task<Result<Page<SystemUser, ulong>>> GetAllSystemUsers(ulong continueFrom, CancellationToken cancellationToken)
+        {
+            List<SystemUser>? theList = await _repository.GetAllSystemUsers(continueFrom, _paginationSize, cancellationToken);
+            theList ??= [];
+
+            return Page.Create(theList, _paginationSize, static theList => theList.SequenceNo);
+        }
     }
 }

@@ -95,4 +95,10 @@ public interface ISystemUserService
     /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
     /// <returns>A SystemUser, if one is active.</returns>
     Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
+
+    /// <summary>
+    /// Returns a list of all SystemUsers    
+    /// </summary>
+    /// <returns>List of SystemUser</returns>
+    Task<Result<Page<SystemUser, ulong>>> GetAllSystemUsers(ulong continueFrom, CancellationToken cancellationToken);
 }
