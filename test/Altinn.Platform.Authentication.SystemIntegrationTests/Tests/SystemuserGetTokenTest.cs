@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
@@ -75,8 +76,9 @@ public class SystemuserGetTokenTest
     [Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrgWithExternalRef()
     {
-        var systemUser = await GetSystemUser(SystemId) ?? await CreateSystemUserWithProperClient();
-        var maskinportenToken = await _platformClient.GetSystemUserToken(systemUser?.ExternalRef);
+        //External Ref is set to Vendor's org for both tt and at
+        var externalRef = _platformClient.EnvironmentHelper.Vendor;
+        var maskinportenToken = await _platformClient.GetSystemUserToken(externalRef);
         _outputHelper.WriteLine($"maskinportenToken: {maskinportenToken}");
     }
     
@@ -86,6 +88,30 @@ public class SystemuserGetTokenTest
         var systemUser = await GetSystemUser(SystemId) ?? await CreateSystemUserWithProperClient();
         var maskinportenToken = await _platformClient.GetSystemUserToken();
         _outputHelper.WriteLine($"maskinportenToken: {maskinportenToken}");
+    }
+    
+    [Fact]
+    public async Task Systemusertoken_Denied()
+    {
+        var systemUserWithProperClient = await GetSystemUser(SystemId) ?? await CreateSystemUserWithProperClient();
+        var systemUserToken = await _platformClient.GetSystemUserToken();
+        
+        // "SmartCloud": {
+        //     "LogisticApi": "https://systemuserapi.azurewebsites.net/api/Logistics/",
+        //     "SalariApi": "https://systemuserapi.azurewebsites.net/api/Salary/",
+        //     "LogisticsScope": "altinn:systembruker.demo"
+
+        _outputHelper.WriteLine($"systemUserToken: {systemUserToken}");
+        var baseUrl = "https://systemuserapi.azurewebsites.net/";
+        var path = "api/Logistics/";
+        
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", systemUserToken);
+        var response = await client.GetAsync($"{baseUrl}/{path}/{_platformClient.EnvironmentHelper.Vendor}");
+        
+        var responseContent = await response.Content.ReadAsStringAsync();
+        _outputHelper.WriteLine(responseContent);
+        
     }
 
     [Fact]
