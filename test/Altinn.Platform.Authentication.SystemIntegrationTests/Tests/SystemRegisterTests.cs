@@ -178,10 +178,9 @@ public class SystemRegisterTests
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
-            .WithClientId(Guid.NewGuid()
-                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
-            .WithResource(value: "kravogbetaling", id: "urn:altinn:resource")
+            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithToken(maskinportenToken);
 
         var requestBodySystemRegister = teststate.GenerateRequestBody();

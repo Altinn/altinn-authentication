@@ -153,7 +153,7 @@ public class AccessManagementClient : IAccessManagementClient
                     Detail = "Not all rights were successfully delegated.",
                     Extensions = { { "Details", notDelegatedDetails } }
                 };
-                _logger.LogInformation("rightresponses: {rightresponses}", rightResponse);
+
                 _logger.LogError("Authentication.UI // AccessManagementClient // DelegateRightToSystemUser // Problem: {Problem}", problemDetails.Detail);
                 throw new DelegationException(problemDetails);
             }
@@ -202,7 +202,6 @@ public class AccessManagementClient : IAccessManagementClient
             Rights = rights
         };
 
-        _logger.LogInformation($"rightsDelegationRequest: {JsonSerializer.Serialize(rightsDelegationRequest)}");
         try
         {
             string endpointUrl = $"internal/{partyId}/rights/delegation/offered";
