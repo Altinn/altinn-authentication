@@ -232,18 +232,16 @@ public class SystemUserController : ControllerBase
     /// Retrieves a list of all SystemUsers for internal use, 
     /// called by the Register
     /// </summary>
-    /// <param name="systemId">The system the Vendor wants the list for</param>
     /// <param name="token">Optional continuation token</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Paginated list of all SystmUsers e</returns>
     // [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpGet("internal/systemusers/stream", Name = "internal/systemusers/stream")]
     public async Task<ActionResult<Paginated<SystemUser>>> GetAllSystemUsers(
-        string systemId,
-        [FromQuery(Name = "token")] Opaque<ulong>? token = null,
+        [FromQuery(Name = "token")] Opaque<long>? token = null,
         CancellationToken cancellationToken = default)
     {        
-        Result<Page<SystemUser, ulong>> pageResult = await _systemUserService.GetAllSystemUsers(
+        Result<Page<SystemUser, long>> pageResult = await _systemUserService.GetAllSystemUsers(
             token?.Value ?? 0,
             cancellationToken);
         if (pageResult.IsProblem)
@@ -252,9 +250,8 @@ public class SystemUserController : ControllerBase
         }
 
         var nextLink = pageResult.Value.ContinuationToken.HasValue
-            ? Url.Link("vendor/systemusers/bysystem", new
+            ? Url.Link("internal/systemusers/stream", new
             {
-                systemId,
                 token = Opaque.Create(pageResult.Value.ContinuationToken.Value)
             })
             : null;

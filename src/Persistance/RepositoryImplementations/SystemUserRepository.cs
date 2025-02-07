@@ -7,6 +7,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 
@@ -330,7 +331,7 @@ public class SystemUserRepository : ISystemUserRepository
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             ExternalRef = external_ref ?? orgno,
-            SequenceNo = reader.GetFieldValue<ulong>("sequence_no")
+            SequenceNo = reader.GetFieldValue<long>("sequence_no")
         });
     }
 
@@ -398,7 +399,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllSystemUsers(ulong fromSequenceNo, int limit, CancellationToken cancellationToken)
+    public async Task<List<SystemUser>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -425,7 +426,7 @@ public class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("sequence_no", fromSequenceNo);
+            command.Parameters.Add(new("sequence_no", NpgsqlDbType.Bigint) { Value = (long)fromSequenceNo });
             command.Parameters.AddWithValue("limit", limit);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)

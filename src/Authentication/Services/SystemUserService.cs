@@ -292,7 +292,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<Page<SystemUser, ulong>>> GetAllSystemUsers(ulong continueFrom, CancellationToken cancellationToken)
+        public async Task<Result<Page<SystemUser, long>>> GetAllSystemUsers(long continueFrom, CancellationToken cancellationToken)
         {
             List<SystemUser>? theList = await _repository.GetAllSystemUsers(continueFrom, _paginationSize, cancellationToken);
             theList ??= [];

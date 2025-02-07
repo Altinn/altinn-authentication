@@ -100,5 +100,5 @@ public interface ISystemUserService
     /// Returns a list of all SystemUsers    
     /// </summary>
     /// <returns>List of SystemUser</returns>
-    Task<Result<Page<SystemUser, ulong>>> GetAllSystemUsers(ulong continueFrom, CancellationToken cancellationToken);
+    Task<Result<Page<SystemUser, long>>> GetAllSystemUsers(long continueFrom, CancellationToken cancellationToken);
 }

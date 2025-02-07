@@ -99,6 +99,6 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// Used internally when paginating
         /// </summary>
         [JsonIgnore]
-        public ulong SequenceNo {  get; set; } = 0;
+        public long SequenceNo {  get; set; } = 0;
     }
 }
