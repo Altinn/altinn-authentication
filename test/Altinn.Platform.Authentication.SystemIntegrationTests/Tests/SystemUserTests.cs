@@ -209,9 +209,6 @@ public class SystemUserTests
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
         var testperson = GetTestUserForVendor();
-        
-        _outputHelper.WriteLine(testperson.Pid);
-        _outputHelper.WriteLine(systemUserResponse);
 
         // Act
         await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
@@ -272,11 +269,12 @@ public class SystemUserTests
             {
                 Resource = new List<Resource>
                 {
-                    new Resource
+                    new()
                     {
                         Id = "urn:altinn:resource",
-                        Value = "app_ttd_martinotest"
-                        //bjorn-tore-test
+                        Value = "app_ttd_endring-av-navn-v2"
+                        //app_ttd_endring-av-navn-v2
+                        //app_ttd_martinotest
                     }
                 }
             });
