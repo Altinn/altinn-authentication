@@ -77,6 +77,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly JwtSecurityTokenHandler _validator;
         private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
         private readonly IOidcProvider _oidcProvider;
+        private readonly IProfile _profileService;
 
         private readonly OidcProviderSettings _oidcProviderSettings;
         private readonly IAntiforgery _antiforgery;
@@ -103,6 +104,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="eventLog">the event logging service</param>
         /// <param name="featureManager">the feature toggle service</param>
         /// <param name="guidService">the guid service</param>
+        /// <param name="profileService">the profile service</param>
         public AuthenticationController(
             ILogger<AuthenticationController> logger,
             IOptions<GeneralSettings> generalSettings,
@@ -118,7 +120,8 @@ namespace Altinn.Platform.Authentication.Controllers
             IAntiforgery antiforgery,
             IEventLog eventLog,
             IFeatureManager featureManager,
-            IGuidService guidService)
+            IGuidService guidService,
+            IProfile profileService)
         {
             _logger = logger;
             _generalSettings = generalSettings.Value;
@@ -136,6 +139,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _eventLog = eventLog;
             _featureManager = featureManager;
             _guidService = guidService;
+            _profileService = profileService;
         }
 
         /// <summary>
@@ -244,6 +248,12 @@ namespace Altinn.Platform.Authentication.Controllers
                     _logger.LogWarning(sblBridgeException, "SBL Bridge replied with {StatusCode} - {ReasonPhrase}", sblBridgeException.Response.StatusCode, sblBridgeException.Response.ReasonPhrase);
                     return StatusCode(StatusCodes.Status503ServiceUnavailable);
                 }
+            }
+
+            if (userAuthentication.UserID != 0 && userAuthentication.PartyUuid == null)
+            {
+                UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID });
+                userAuthentication.PartyUuid = profile.UserUuid;
             }
             
             if (userAuthentication != null && userAuthentication.IsAuthenticated)
