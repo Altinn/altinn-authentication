@@ -17,6 +17,7 @@ using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Authorization;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
@@ -429,7 +430,9 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_LOOKUP))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ, policy =>
-            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ));
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ))
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS, policy =>
+                policy.Requirements.Add(new InternalScopeOrAccessTokenRequirement("altinn:register/partylookup.admin")));
 
     services.AddFeatureManagement();
 }
