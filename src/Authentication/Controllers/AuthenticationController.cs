@@ -1064,6 +1064,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userAuthentication.Username, ClaimValueTypes.String, issuer));
             }
 
+            if (userAuthentication.PartyUuid != null)
+            {
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userAuthentication.Username, ClaimValueTypes.String, issuer));
+            }
+
             if (!string.IsNullOrEmpty(userAuthentication.Iss))
             {
                 claims.Add(new Claim(OriginalIssClaimName, userAuthentication.Iss, ClaimValueTypes.String, issuer));
