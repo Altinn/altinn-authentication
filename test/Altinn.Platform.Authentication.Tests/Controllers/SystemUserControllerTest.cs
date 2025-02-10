@@ -736,7 +736,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient vendorClient = CreateClient();
             string[] prefixes = { "altinn", "digdir" };
-            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.admin", prefixes);
             vendorClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             string vendorEndpoint = $"/authentication/api/v1/systemuser/internal/systemusers/stream";
