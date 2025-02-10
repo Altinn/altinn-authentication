@@ -1066,7 +1066,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             if (userAuthentication.PartyUuid != null)
             {
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userAuthentication.Username, ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, userAuthentication.PartyUuid.ToString(), ClaimValueTypes.String, issuer));
             }
 
             if (!string.IsNullOrEmpty(userAuthentication.Iss))
