@@ -432,7 +432,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS, policy =>
-                policy.Requirements.Add(new InternalScopeOrAccessTokenRequirement("altinn:authentication/systemuser.admin")));
+                policy.Requirements.Add(new InternalScopeOrAccessTokenRequirement(
+                    AuthzConstants.SCOPE_INTERNAL_OR_PLATFORM_ACCESS)));
 
     services.AddFeatureManagement();
 }
