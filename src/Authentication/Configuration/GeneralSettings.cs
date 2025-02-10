@@ -153,5 +153,10 @@ namespace Altinn.Platform.Authentication.Configuration
         /// Cookie to store original 
         /// </summary>
         public string AuthnGoToCookieName { get; set; } = "authngoto";
+
+        /// <summary>
+        /// Scopes for partner authentication with exchange. 
+        /// </summary>
+        public string PartnerScopes { get; set; }
     }
 }

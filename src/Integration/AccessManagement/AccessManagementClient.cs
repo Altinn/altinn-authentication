@@ -14,6 +14,9 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Microsoft.Extensions.Primitives;
 using Altinn.AccessManagement.Core.Helpers;
 using Altinn.Authentication.Integration.Configuration;
+using Microsoft.AspNetCore.Mvc;
+using Altinn.Platform.Authentication.Core.Exceptions;
+using System.Net;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -127,16 +130,36 @@ public class AccessManagementClient : IAccessManagementClient
     /// <inheritdoc />
     public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> responseData)
     {
-
         foreach (RightResponses rightResponse in responseData)
         {
-            if (! await DelegateSingleRightToSystemUser(partyId, systemUser, rightResponse) )
+            Result<RightsDelegationResponseExternal> result = await DelegateSingleRightToSystemUser(partyId, systemUser, rightResponse);
+
+            if (result.IsProblem)
             {
-                return Problem.Rights_FailedToDelegate;
-            };
+                return new Result<bool>(result.Problem!);
+            }
+
+            bool allDelegated = result.Value.RightDelegationResults.All(r => r.Status == DelegationStatusExternal.Delegated);
+            if (!allDelegated)
+            {
+                var notDelegatedDetails = result.Value.RightDelegationResults
+                    .Where(r => r.Status != DelegationStatusExternal.Delegated)
+                    .Select(r => r.Details)
+                    .ToList();
+
+                var problemDetails = new ProblemDetails
+                {
+                    Title = "Some rights were not delegated",
+                    Detail = "Not all rights were successfully delegated.",
+                    Extensions = { { "Details", notDelegatedDetails } }
+                };
+
+                _logger.LogError("Authentication.UI // AccessManagementClient // DelegateRightToSystemUser // Problem: {Problem}", problemDetails.Detail);
+                throw new DelegationException(problemDetails);
+            }
         }
 
-        return true;
+        return new Result<bool>(true);
     }
 
     /// <inheritdoc />
@@ -150,7 +173,7 @@ public class AccessManagementClient : IAccessManagementClient
         return true;
     }
 
-    private async Task<bool> DelegateSingleRightToSystemUser(string partyId, SystemUser systemUser, RightResponses rightResponses)
+    private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(string partyId, SystemUser systemUser, RightResponses rightResponses)
     {
         List<Right> rights = [];
 
@@ -185,9 +208,21 @@ public class AccessManagementClient : IAccessManagementClient
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(rightsDelegationRequest));
 
-            response.EnsureSuccessStatusCode();
+            if (response.IsSuccessStatusCode)
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                RightsDelegationResponseExternal result = JsonSerializer.Deserialize<RightsDelegationResponseExternal>(responseContent, _serializerOptions)!;
+                return new Result<RightsDelegationResponseExternal>(result);
+            }
+            else
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                _logger.LogError($"Authentication.UI // AccessManagementClient // DelegateSingleRightToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
-            return true;
+                ProblemInstance problemInstance = ProblemInstance.Create(Problem.Rights_FailedToDelegate);
+                return new Result<RightsDelegationResponseExternal>(problemInstance);
+            }
         }
         catch (Exception ex)
         {

@@ -103,7 +103,7 @@ public class SystemUserController : ControllerBase
         [FromQuery] string clientId, 
         [FromQuery] string systemProviderOrgNo, 
         [FromQuery] string systemUserOwnerOrgNo,
-        [FromQuery] string externalRef,
+        [FromQuery] string? externalRef = null,
         CancellationToken cancellationToken = default)
     {
         // We dont't throw a badrequest for a missing externalRef yet, rather we set it equal to the orgno

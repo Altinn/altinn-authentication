@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -136,13 +137,27 @@ namespace Altinn.Platform.Authentication.Services
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
-        public async Task<bool> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
         {
             SystemUser systemUser = await _repository.GetSystemUserById(systemUserId);
+            if (systemUser.PartyId != partyId)
+            {
+                return Problem.Delete_SystemUser_NotOwned;
+            }
+
             await _repository.SetDeleteSystemUserById(systemUserId);
-        
-            //List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
-            //await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
+
+            List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
+
+            foreach (Right right in rights)
+            {
+                var resource = new List<AttributePair>();
+                resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
+
+                right.Resource = resource;
+            }
+
+            await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
             return true; // if it can't be found, there is no need to delete it.
         }
 
@@ -246,7 +261,7 @@ namespace Altinn.Platform.Authentication.Services
             if (!delegationCheckFinalResult.CanDelegate)
             {
                 // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-                return MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
             }
 
             SystemUser newSystemUser = new()
@@ -278,36 +293,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return inserted;
-        }
-
-        private static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
-        {
-            if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
-            {
-                return Problem.UnableToDoDelegationCheck;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
-            {
-                return Problem.DelegationRightMissingRoleAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
-            {
-                return Problem.DelegationRightMissingDelegationAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
-            {
-                return Problem.DelegationRightMissingSrrRightAccess;
-            }
-
-            if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
-            {
-                return Problem.DelegationRightInsufficientAuthenticationLevel;
-            }
-
-            return Problem.UnableToDoDelegationCheck;
         }
 
         /// <inheritdoc/>

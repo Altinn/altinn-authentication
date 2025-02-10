@@ -21,9 +21,7 @@ using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
-
 using AltinnCore.Authentication.Constants;
-
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -86,6 +84,8 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IFeatureManager _featureManager;
         private readonly IGuidService _guidService;
 
+        private readonly List<string> _partnerScopes; 
+
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
         /// </summary>
@@ -140,6 +140,10 @@ namespace Altinn.Platform.Authentication.Controllers
             _featureManager = featureManager;
             _guidService = guidService;
             _profileService = profileService;
+            if (_generalSettings.PartnerScopes != null)
+            {
+                _partnerScopes = _generalSettings.PartnerScopes.Split(";").ToList();
+            }
         }
 
         /// <summary>
@@ -584,7 +588,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 string externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
                 string scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
                 
-                if (!HasAltinnScope(scope))
+                if (!HasAltinnScope(scope) && !HasPartnerScope(scope))
                 {
                      _logger.LogInformation("Missing scope");
                      return Forbid();
@@ -730,6 +734,21 @@ namespace Altinn.Platform.Authentication.Controllers
         private static bool HasAltinnScope(string scope)
         {
             return scope?.Split(" ").Any(s => s.StartsWith("altinn:")) ?? false;
+        }
+
+        private bool HasPartnerScope(string scope)
+        {
+            string[] scopes = scope?.Split(" ");
+
+            foreach (string partnerScope in _partnerScopes)
+            {
+                if (scopes.Contains(partnerScope))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IssuerMatchesWellknownEndpoint(string issOriginal, string wellknownEndpoint, string alternativeWellknownEndpoint)
@@ -905,14 +924,14 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 ClaimsPrincipal originalPrincipal = _validator.ValidateToken(originalToken, validationParameters, out _);
                 return originalPrincipal;
-            }
-            catch (SecurityTokenUnableToValidateException)
+            }           
+            catch (Exception)
             {
-                validationParameters.IssuerSigningKeys = alternativeSigningKeys;
-                return _validator.ValidateToken(originalToken, validationParameters, out _);
-            }
-            catch (SecurityTokenSignatureKeyNotFoundException)
-            {
+                if (alternativeSigningKeys is null || alternativeSigningKeys.Count == 0)
+                {
+                    throw;
+                }
+
                 validationParameters.IssuerSigningKeys = alternativeSigningKeys;
                 return _validator.ValidateToken(originalToken, validationParameters, out _);
             }
