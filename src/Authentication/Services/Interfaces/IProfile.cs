@@ -1,6 +1,6 @@
-﻿using Altinn.Platform.Authentication.Model;
+﻿using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Profile.Models;
-using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces
 {
