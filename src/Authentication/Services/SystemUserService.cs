@@ -300,5 +300,11 @@ namespace Altinn.Platform.Authentication.Services
         {
             return await _repository.GetSystemUserByExternalRequestId(externalRequestId);
         }
+
+        /// <inheritdoc/>
+        public async Task<Result<List<DelegationOutput>>> GetDelegationsForSystemUser(string partyId, string systemUserId, CancellationToken cancellationToken)
+        {
+            return await _accessManagementClient.GetDelegationsForSystemUser(partyId, systemUserId, cancellationToken);
+        }
     }
 }

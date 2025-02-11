@@ -44,4 +44,13 @@ public interface IAccessManagementClient
     /// <param name="rights">The Rights to be revoked for the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser that misses the rights</param>
     Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights);
+
+    /// <summary>
+    /// Gets the delegations for a system user
+    /// </summary>
+    /// <param name="partyId"></param>
+    /// <param name="systemUserId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>list of delegations for a system user</returns>
+    Task<Result<List<DelegationOutput>>> GetDelegationsForSystemUser(string partyId, string systemUserId, CancellationToken cancellationToken);
 }

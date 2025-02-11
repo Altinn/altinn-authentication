@@ -49,6 +49,11 @@ public class AccessManagementClientMock : IAccessManagementClient
         }
     }
 
+    public Task<Result<List<DelegationOutput>>> GetDelegationsForSystemUser(string partyId, string systemUserId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<PartyExternal> GetParty(int partyId, string token)
     {
         throw new NotImplementedException();

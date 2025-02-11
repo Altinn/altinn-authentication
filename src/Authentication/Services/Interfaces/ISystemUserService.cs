@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
@@ -95,4 +96,13 @@ public interface ISystemUserService
     /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
     /// <returns>A SystemUser, if one is active.</returns>
     Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
+
+    /// <summary>
+    /// Gets all the delegations for a given SystemUser
+    /// </summary>
+    /// <param name="partyId">the partyid of the reportee</param>
+    /// <param name="systemUserId">the system user id</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    Task<Result<List<DelegationOutput>>> GetDelegationsForSystemUser(string partyId, string systemUserId, CancellationToken cancellationToken);
 }

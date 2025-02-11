@@ -17,6 +17,9 @@ using Altinn.Authentication.Integration.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Altinn.Platform.Authentication.Core.Exceptions;
 using System.Net;
+using Altinn.Platform.Register.Models;
+using System.Diagnostics;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -123,6 +126,35 @@ public class AccessManagementClient : IAccessManagementClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication.UI // AccessManagementClient // CheckDelegationAccess // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<List<DelegationOutput>>> GetDelegationsForSystemUser(string partyUUId, string systemUserUUId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string endpointUrl = $"todo/{systemUserUUId}"; // TODO: Switch with actual backend endpoint from AM when available
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
+
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, null,cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                var delegationOutputs = JsonSerializer.Deserialize<List<DelegationOutput>>(responseContent);
+                return new Result<List<DelegationOutput>>(delegationOutputs);
+            }
+            else
+            {
+                return new Result<List<DelegationOutput>>(Problem.Rights_FailedToDelegate);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Getting single rights from accessmanagement failed");
+            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // GetDelegationsForSystemUser // Exception");
             throw;
         }
     }

@@ -265,4 +265,25 @@ public class SystemUserController : ControllerBase
 
         return createdSystemUser.Problem.ToActionResult();
     }
+
+    /// <summary>
+    /// Creates a new SystemUser.
+    /// </summary>
+    /// <returns>delegation output model</returns>    
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpGet("{party}/rightholder/{systemUserId}")]
+    public async Task<ActionResult<SystemUser>> GetDelegationsForSystemUser(string party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
+    {
+        var userId = AuthenticationHelper.GetUserId(HttpContext);
+
+        Result<SystemUser> createdSystemUser = await _systemUserService.CreateAndDelegateSystemUser(party, request, userId, cancellationToken);
+        if (createdSystemUser.IsSuccess)
+        {
+            return Ok(createdSystemUser.Value);
+        }
+
+        return createdSystemUser.Problem.ToActionResult();
+    }
 }    
