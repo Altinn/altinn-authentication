@@ -352,6 +352,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
     services.AddHttpClient<IResourceRegistryClient, ResourceRegistryClient>();
     services.AddHttpClient<IPartiesClient, PartiesClient>();
+    services.AddHttpClient<IProfile, ProfileService>();
     services.AddSingleton<IAccessTokenGenerator, AccessTokenGenerator>();
     services.AddTransient<ISigningCredentialsResolver, SigningCredentialsResolver>();
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
