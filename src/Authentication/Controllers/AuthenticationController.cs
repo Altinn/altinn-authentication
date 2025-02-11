@@ -11,7 +11,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
-
+using Altinn.Authentication.Integration.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
@@ -84,7 +84,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IFeatureManager _featureManager;
         private readonly IGuidService _guidService;
 
-        private readonly List<string> _partnerScopes; 
+        private readonly List<string> _partnerScopes;
 
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.

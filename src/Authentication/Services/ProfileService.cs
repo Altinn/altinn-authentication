@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Altinn.Authentication.Integration.Configuration;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -23,16 +24,16 @@ namespace Altinn.Platform.Authentication.Services
         private readonly HttpClient _profileClient;
         private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         private readonly ILogger _logger;
-        private readonly GeneralSettings _generalSettings;
+        private readonly PlatformSettings _platformSettings;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProfileService"/> class
         /// </summary>
-        public ProfileService(HttpClient httpClient, ILogger<ProfileService> logger, IOptions<GeneralSettings> generalSettings)
+        public ProfileService(HttpClient httpClient, ILogger<ProfileService> logger, IOptions<PlatformSettings> platformSettings)
         {
             _profileClient = httpClient;
-            _generalSettings = generalSettings.Value;
-            _profileClient.BaseAddress = new Uri(_generalSettings.ProfileAPIEndpoint);
+            _platformSettings = platformSettings.Value;
+            _profileClient.BaseAddress = new Uri(_platformSettings.ApiProfileEndpoint);
             _logger = logger;
         }
 

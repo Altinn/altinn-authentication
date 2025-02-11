@@ -29,7 +29,7 @@
         /// <summary>
         /// Gets or sets the resource registry api endpoint.
         /// </summary>
-        public string? ApiResourceRegistryEndpoint { get; set; }
+        public string? ApiResourceRegistryEndpoint { get; set; }c
 
         /// <summary>
         /// Gets or sets the subscriptionkey.
