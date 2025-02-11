@@ -186,8 +186,9 @@ public class PlatformAuthenticationClient
     {
         // Construct the URL for fetching the Altinn test token
         var url =
-            $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env={EnvironmentHelper.Testenvironment}" +
-            $"&scopes={user.Scopes}" +
+            $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
+            $"?env={EnvironmentHelper.Testenvironment}" +
+            $"&scopes=altinn:portal/enduser" +
             $"&pid={user.Pid}" +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
