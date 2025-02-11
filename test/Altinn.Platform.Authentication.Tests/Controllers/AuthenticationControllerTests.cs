@@ -607,6 +607,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
             Assert.NotNull(principal);
 
+            Assert.True(principal.Claims.ToList().Exists(c => c.Type == "urn:altinn:party:uuid"));
             Assert.NotNull(sameSite);
             Assert.Equal("lax", sameSite);
 
