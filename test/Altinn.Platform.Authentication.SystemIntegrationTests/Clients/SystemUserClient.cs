@@ -33,7 +33,7 @@ public class SystemUserClient
 
     public async Task<HttpResponseMessage> GetSystemUserByExternalRef(string externalRef, string systemId, string maskinportenToken)
     {
-        var urlGetBySystem = UrlConstants.SystemUserGetByExternalRef
+        var urlGetBySystem = UrlConstants.GetByExternalRef
             .Replace("{externalRef}", externalRef)
             .Replace("{systemId}", systemId)
             .Replace("{orgNo}", _platformClient.EnvironmentHelper.Vendor);

@@ -51,7 +51,8 @@ public class MaskinPortenTokenGenerator
 
         Assert.True(iss != null, "iss is null somehow, check it");
 
-        const string scope = "altinn:authentication/systemregister.write";
+        const string scope = "altinn:authentication/systemregister.write ";
+            // "altinn:systembruker.demo";
 
         var now = DateTimeOffset.UtcNow;
         var exp = now.AddMinutes(1).ToUnixTimeSeconds();

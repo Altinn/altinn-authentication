@@ -280,7 +280,7 @@ public class PlatformAuthenticationClient
         return token;
     }
 
-    public async Task<string> GetSystemUserToken(string? externalRef = "")
+    public async Task<string> GetSystemUserToken(string? externalRef = "", string scopes="")
     {
         var token = await MaskinPortenTokenGenerator.GetMaskinportenSystemUserToken(externalRef);
         Assert.True(null != token, "Unable to retrieve maskinporten systemuser token");

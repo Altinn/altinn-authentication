@@ -133,9 +133,7 @@ public class ChangeRequestTests
 
     private Testuser GetTestUser()
     {
-        return _platformAuthentication.TestUsers.Find(testUser =>
-                   testUser.Org.Equals(_platformAuthentication.EnvironmentHelper.Vendor))
-               ?? throw new Exception(
-                   $"Test user not found for organization: {_platformAuthentication.EnvironmentHelper.Vendor}");
+        return _platformAuthentication.TestUsers.Find(testUser => testUser.Org.Equals(_platformAuthentication.EnvironmentHelper.Vendor))
+               ?? throw new Exception($"Test user not found for organization: {_platformAuthentication.EnvironmentHelper.Vendor}");
     }
 }
