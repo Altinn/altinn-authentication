@@ -304,7 +304,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
     services.Configure<PaginationOptions>(config.GetSection("PaginationOptions"));
     services.Configure<Altinn.Common.PEP.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
-    services.Configure< >(config.GetSection("PlatformSettings"));
+    services.Configure<Altinn.Authentication.Integration.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
     services.Configure<AccessManagementSettings>(config.GetSection("AccessManagementSettings"));
     services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
     services.Configure<PostgreSQLSettings>(config.GetSection("PostgreSQLSettings"));
