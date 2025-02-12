@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Tests;
 using AltinnCore.Authentication.Constants;
 
@@ -10,14 +11,14 @@ namespace App.IntegrationTests.Utils
     {
         public static readonly string AltinnCoreClaimTypesOrg = "urn:altinn:org";
 
-        public static string GetToken(int userId, List<Claim> claims, int authenticationLevel = 2)
+        public static string GetToken(int userId, List<Claim> claims, int authenticationLevel = 2, bool addPortalScope = false)
         {
-            ClaimsPrincipal principal = GetUserPrincipal(userId, claims, authenticationLevel);
+            ClaimsPrincipal principal = GetUserPrincipal(userId, claims, authenticationLevel, addPortalScope);
             string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
             return token;
         }
 
-        public static ClaimsPrincipal GetUserPrincipal(int userId, List<Claim> extClaims, int authenticationLevel = 2)
+        public static ClaimsPrincipal GetUserPrincipal(int userId, List<Claim> extClaims, int authenticationLevel = 2, bool addPortalScope = false)
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.altinn.no";
@@ -27,6 +28,11 @@ namespace App.IntegrationTests.Utils
             claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userId.ToString(), ClaimValueTypes.Integer32, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "AltinnPIN", ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authenticationLevel.ToString(), ClaimValueTypes.Integer32, issuer));
+            
+            if (addPortalScope)
+            {
+                claims.Add(new(AuthzConstants.CLAIM_SCOPE, "altinn:portal/enduser", ClaimValueTypes.String, issuer));
+            }
 
             if (extClaims != null)
             {
