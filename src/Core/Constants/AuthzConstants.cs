@@ -77,6 +77,11 @@ namespace Altinn.Platform.Authentication.Core.Constants
         public const string SCOPE_SYSTEMUSER_LOOKUP = "altinn:maskinporten/systemuser.read";
 
         /// <summary>
+        /// Policy tag for authorizing write scope.
+        /// </summary>
+        public const string POLICY_SCOPE_PORTAL = "ScopePortal";
+
+        /// <summary>
         /// General scope given to everyone loging in to altinn platform 
         /// </summary>
         public const string SCOPE_PORTAL = "altinn:portal/enduser";

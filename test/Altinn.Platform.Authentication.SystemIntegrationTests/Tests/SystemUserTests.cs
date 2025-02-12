@@ -208,7 +208,7 @@ public class SystemUserTests
         Assert.Equal(HttpStatusCode.NotFound, statusResponse.StatusCode);
     }
 
-    [Fact(Skip = "Not Now")]
+    [Fact]
     public async Task ApproveRequestSystemUserTest_WithApp()
     {
         // Arrange

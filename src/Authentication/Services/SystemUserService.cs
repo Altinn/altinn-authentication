@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -147,6 +148,15 @@ namespace Altinn.Platform.Authentication.Services
             await _repository.SetDeleteSystemUserById(systemUserId);
 
             List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
+
+            foreach (Right right in rights)
+            {
+                var resource = new List<AttributePair>();
+                resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
+
+                right.Resource = resource;
+            }
+
             await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
             return true; // if it can't be found, there is no need to delete it.
         }

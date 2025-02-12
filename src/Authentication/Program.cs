@@ -434,6 +434,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         .AddPolicy(AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS, policy =>
                 policy.Requirements.Add(new InternalScopeOrAccessTokenRequirement(
                     AuthzConstants.SCOPE_INTERNAL_OR_PLATFORM_ACCESS)));
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_PORTAL, policy =>
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_PORTAL));
 
     services.AddFeatureManagement();
 }
