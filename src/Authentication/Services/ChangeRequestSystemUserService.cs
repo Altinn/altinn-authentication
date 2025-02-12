@@ -511,7 +511,6 @@ public class ChangeRequestSystemUserService(
         };
 
         SystemUser? systemUser = await systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
-        var debug = " ";
         if (systemUser is null)
         {
             return Problem.SystemUserNotFound;
