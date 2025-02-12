@@ -433,7 +433,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS, policy =>
                 policy.Requirements.Add(new InternalScopeOrAccessTokenRequirement(
-                    AuthzConstants.SCOPE_INTERNAL_OR_PLATFORM_ACCESS)));
+                    AuthzConstants.SCOPE_INTERNAL_OR_PLATFORM_ACCESS)))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_PORTAL, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_PORTAL));
 
