@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
+[Trait("Category", "IntegrationTest")]
 public sealed class SkipUnlessTt02FactAttribute : FactAttribute
 {
     private readonly PlatformAuthenticationClient _platformClient;
