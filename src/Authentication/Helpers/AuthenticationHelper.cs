@@ -14,6 +14,8 @@ using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
+#nullable enable
+
 namespace Altinn.Platform.Authentication.Helpers
 {
     /// <summary>
@@ -338,7 +340,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 Rights = registeredSystem.Rights,
                 SystemId = registeredSystem.Id,
                 SystemVendorOrgName = registeredSystem.SystemVendorOrgName,
-                SystemVendorOrgNumber = GetOrgNumber(registeredSystem.SystemVendorOrgNumber),
+                SystemVendorOrgNumber = GetOrgNumber(registeredSystem.SystemVendorOrgNumber) ?? string.Empty,
                 IsVisible = registeredSystem.IsVisible
             };
         }
@@ -411,6 +413,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// Check for duplicates in the rights
         /// </summary>
         /// <param name="rights">the resources that the system gives rights to</param>
+        /// <param name="existingRights">the existing rights </param>
         /// <returns>true if duplicate rights found</returns>
         public static bool DoesResourceAlreadyExists(List<Right> rights, List<Right> existingRights)
         {

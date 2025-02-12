@@ -275,9 +275,7 @@ public class ChangeRequestRepository(
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
-
-            string debug = "stop here";
-
+                        
             return dbres;
         }
         catch (Exception ex)
@@ -316,9 +314,7 @@ public class ChangeRequestRepository(
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
-
-            string debug = "stop here";
-
+                        
             return dbres;
         }
         catch (Exception ex)

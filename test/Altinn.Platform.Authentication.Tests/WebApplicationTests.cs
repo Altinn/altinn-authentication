@@ -10,9 +10,9 @@ using Xunit;
 namespace Altinn.Platform.Authentication.Tests;
 
 public abstract class WebApplicationTests
-    : IClassFixture<DbFixture>
-    , IClassFixture<WebApplicationFixture>
-    , IAsyncLifetime
+    : IClassFixture<DbFixture>,
+    IClassFixture<WebApplicationFixture>,
+    IAsyncLifetime
 {
     private readonly DbFixture _dbFixture;
     private readonly WebApplicationFixture _webApplicationFixture;

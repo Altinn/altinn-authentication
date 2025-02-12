@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Altinn.Platform.Authentication.Enum;
 
+#nullable enable
+
 namespace Altinn.Platform.Authentication.Model
 {
     /// <summary>

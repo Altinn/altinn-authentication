@@ -126,7 +126,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId }/create");
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
             createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
 
@@ -397,7 +397,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUser? systemUserDoesExist = JsonSerializer.Deserialize<SystemUser>(await lookupSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.NotFound, lookupSystemUserResponse.StatusCode);
-
         }
 
         [Fact]
@@ -488,7 +487,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
             
             Assert.Equal(HttpStatusCode.Forbidden, createSystemUserResponse.StatusCode);
-            Assert.Equal(Problem.UnableToDoDelegationCheck.Detail, problemDetails.Detail);
+            Assert.Equal(Problem.UnableToDoDelegationCheck.Detail, problemDetails?.Detail);
         }
 
         [Fact]
@@ -570,7 +569,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
             Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);           
             
-            Assert.Equal(newSystemUser.IntegrationTitle, result.IntegrationTitle);
+            Assert.Equal(newSystemUser.IntegrationTitle, result?.IntegrationTitle);
         }
 
         [Fact]
@@ -601,7 +600,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
             Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
 
-            Assert.Equal(newSystemUser.IntegrationTitle, result.IntegrationTitle);
+            Assert.Equal(newSystemUser.IntegrationTitle, result?.IntegrationTitle);
 
             HttpRequestMessage createSystemUserRequest2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
             {
@@ -641,7 +640,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
             Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
 
-            Assert.Equal(newSystemUser.IntegrationTitle, result.IntegrationTitle);
+            Assert.Equal(newSystemUser.IntegrationTitle, result?.IntegrationTitle);
         }
 
         [Fact]
@@ -672,7 +671,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
             Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
 
-            Assert.Equal(newSystemUser.IntegrationTitle, result.IntegrationTitle);
+            Assert.Equal(newSystemUser.IntegrationTitle, result?.IntegrationTitle);
         }
 
         [Fact]
@@ -701,7 +700,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, createSystemUserResponse.StatusCode);  
             var problemDetails = await createSystemUserResponse.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.Reportee_Orgno_NotFound.Detail, problemDetails.Detail);
+            Assert.Equal(Problem.Reportee_Orgno_NotFound.Detail, problemDetails?.Detail);
         }
 
         [Fact]
@@ -757,8 +756,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private static string GetConfigPath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(SystemUserControllerTest).Assembly.Location).LocalPath);
-            return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+            string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(SystemUserControllerTest).Assembly.Location).LocalPath);
+            return Path.Combine(unitTestFolder!, $"../../../appsettings.json");
         }
 
         private void SetupDateTimeMock()
@@ -791,6 +790,5 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             return response;
         }
-
     }
 }

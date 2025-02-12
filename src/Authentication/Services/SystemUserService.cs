@@ -139,7 +139,12 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>Boolean True if row affected</returns>
         public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
         {
-            SystemUser systemUser = await _repository.GetSystemUserById(systemUserId);
+            SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
+            if (systemUser is null) 
+            {
+                return Problem.SystemUserNotFound;   
+            }
+
             if (systemUser.PartyId != partyId)
             {
                 return Problem.Delete_SystemUser_NotOwned;
@@ -151,8 +156,7 @@ namespace Altinn.Platform.Authentication.Services
 
             foreach (Right right in rights)
             {
-                var resource = new List<AttributePair>();
-                resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
+                List<AttributePair> resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
 
                 right.Resource = resource;
             }
@@ -167,13 +171,13 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>Number of rows affected</returns>
         public async Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
-            SystemUser search = await _repository.GetSystemUserById(Guid.Parse(request.Id));
+            SystemUser? search = await _repository.GetSystemUserById(Guid.Parse(request.Id));
             if (search == null)
             {                
                 return 0;
             }
 
-            if (request.SystemId == null )
+            if (request.SystemId == null)
             {
                 return 0;
             }

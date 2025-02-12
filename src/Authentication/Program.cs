@@ -234,7 +234,6 @@ async Task SetUpPostgresConfigFromKeyVault(Altinn.Common.AccessToken.Configurati
 
         KeyVaultSecret secretUser = await client.GetSecretAsync(postgresConfigKeySecretNameUser);
         postgresUserConnectionString = secretUser.Value;
-
     }
     catch (Exception postgresConfigException) 
     {
