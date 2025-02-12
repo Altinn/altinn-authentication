@@ -163,9 +163,6 @@ public class PlatformAuthenticationClient
     /// <returns>The Altinn test token as a string</returns>
     public async Task<string> GetEnterpriseAltinnToken(string? org, string scopes)
     {
-        // GetEnterpriseToken?org=skatteetaten&env=tt02&orgNo=974761076&ttl=86400";
-
-        // Construct the URL for fetching the Altinn test token
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetEnterpriseToken?env={EnvironmentHelper.Testenvironment}&orgNo={org}" +
             $"&scopes={scopes}" +
@@ -281,13 +278,13 @@ public class PlatformAuthenticationClient
         return token;
     }
 
-    public async Task<string> GetSystemUserToken(string? externalRef = "", string scopes="")
+    public async Task<string> GetSystemUserToken(string? externalRef = "", string scopes = "")
     {
         var token = await MaskinPortenTokenGenerator.GetMaskinportenSystemUserToken(externalRef);
         Assert.True(null != token, "Unable to retrieve maskinporten systemuser token");
         return token;
     }
-    
+
     public async Task<HttpResponseMessage> DeleteRequest(string endpoint, Testuser testperson)
     {
         // Get the Altinn token
@@ -297,7 +294,7 @@ public class PlatformAuthenticationClient
         var response = await Delete(endpoint, altinnToken);
         return response;
     }
-    
+
     public Testuser GetTestUserForVendor()
     {
         var vendor = EnvironmentHelper.Vendor;
