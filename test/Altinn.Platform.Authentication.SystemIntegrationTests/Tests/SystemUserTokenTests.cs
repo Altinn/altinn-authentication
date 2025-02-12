@@ -11,6 +11,8 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 
 // Documentation: https://docs.digdir.no/docs/Maskinporten/maskinporten_func_systembruker
 /* This won't work in AT22 due to maskinporten is only configured to use TT02 */
+
+[Trait("Category", "IntegrationTest")]
 public class SystemUserTokenTests
 {
     private readonly ITestOutputHelper _outputHelper;
