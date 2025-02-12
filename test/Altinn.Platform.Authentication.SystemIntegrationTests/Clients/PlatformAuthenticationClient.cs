@@ -151,8 +151,8 @@ public class PlatformAuthenticationClient
 
     public Testuser FindTestUserByRole(string role)
     {
-        return TestUsers.Last(u => u.Role.Equals(role, StringComparison.OrdinalIgnoreCase))
-               ?? throw new Exception($"Unable to find test user by role: {role}");
+        var testUser = TestUsers.LastOrDefault(user => user.Role?.Equals(role, StringComparison.OrdinalIgnoreCase) == true);
+        return testUser ?? throw new Exception($"Unable to find test user by role: {role}");
     }
 
     /// <summary>
@@ -161,7 +161,7 @@ public class PlatformAuthenticationClient
     /// <param name="org"></param>
     /// <param name="scopes"></param>
     /// <returns>The Altinn test token as a string</returns>
-    public async Task<string> GetEnterpriseAltinnToken(string org, string scopes)
+    public async Task<string> GetEnterpriseAltinnToken(string? org, string scopes)
     {
         // GetEnterpriseToken?org=skatteetaten&env=tt02&orgNo=974761076&ttl=86400";
 
@@ -286,5 +286,23 @@ public class PlatformAuthenticationClient
         var token = await MaskinPortenTokenGenerator.GetMaskinportenSystemUserToken(externalRef);
         Assert.True(null != token, "Unable to retrieve maskinporten systemuser token");
         return token;
+    }
+    
+    public async Task<HttpResponseMessage> DeleteRequest(string endpoint, Testuser testperson)
+    {
+        // Get the Altinn token
+        var altinnToken = await GetPersonalAltinnToken(testperson);
+
+        // Use the PostAsync method for the approval request
+        var response = await Delete(endpoint, altinnToken);
+        return response;
+    }
+    
+    public Testuser GetTestUserForVendor()
+    {
+        var vendor = EnvironmentHelper.Vendor;
+
+        return TestUsers.Find(testUser => testUser.Org!.Equals(vendor))
+               ?? throw new Exception($"Test user not found for organization: {vendor}");
     }
 }

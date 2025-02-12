@@ -55,7 +55,6 @@ public class SystemRegisterTests
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            // .WithName("Team-Authentication-SystemuserE2E-User-Do-Not-Delete")
             .WithToken(maskinportenToken);
 
         var requestBody = teststate.GenerateRequestBody();
@@ -66,6 +65,12 @@ public class SystemRegisterTests
         // Assert
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
+        var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
+        Assert.True(isFound, $"Could not find System that was created with Systemid: {teststate.SystemId}");
+        
+        // Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
     }
 
     /// <summary>
@@ -95,6 +100,12 @@ public class SystemRegisterTests
         // Assert
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
+        var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
+        Assert.True(isFound, $"Could not find System that was created with Systemid: {teststate.SystemId}");
+        
+        // Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
     }
 
     [Fact]
@@ -140,6 +151,9 @@ public class SystemRegisterTests
         var rightsFromApiResponse = await response.Content.ReadFromJsonAsync<List<Right>>();
         Assert.NotNull(rightsFromApiResponse);
         Assert.Equal(3, rightsFromApiResponse.Count);
+        
+        // Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
     }
 
     /// <summary>
@@ -164,10 +178,12 @@ public class SystemRegisterTests
         await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
 
         // Act
-        var respons = await _platformClient.Delete($"{UrlConstants.PostSystemRegister}/{teststate.SystemId}", teststate.Token);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
+        
+        // Assert system is not found
+        var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
+        var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
+        Assert.False(isFound);
     }
 
     [Fact] //Relevant Bug reported - https://github.com/Altinn/altinn-authentication/issues/856

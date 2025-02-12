@@ -111,6 +111,9 @@ public class SystemUserTests
 
         // Assert
         await AssertSystemUserRequestCreated(userResponse);
+        
+        // Cleanup
+        await _systemRegisterClient.DeleteSystem(testState.SystemId, maskinportenToken);
     }
 
     /// <summary>
@@ -135,6 +138,7 @@ public class SystemUserTests
     [Fact]
     public async Task gjenskapBug()
     {
+        //TODO  -  REMOVE
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         
         // "systemId": "312605031_f45b6ca9-910d-49ba-a611-834f38ab20d4",
@@ -146,7 +150,7 @@ public class SystemUserTests
         var byId = await GetSystemUserById("312605031_f45b6ca9-910d-49ba-a611-834f38ab20d4", maskinportenToken);
         _outputHelper.WriteLine("Get by id: " + await byId.Content.ReadAsStringAsync());
         
-        var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org.Equals(_platformClient.EnvironmentHelper.Vendor))
+        var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
                        ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper.Vendor}");
 
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
@@ -166,7 +170,7 @@ public class SystemUserTests
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
         var externalRef = Common.ExtractPropertyFromJson(systemUserResponse, "externalRef");
-        var testperson = GetTestUserForVendor();
+        var testperson = _platformClient.GetTestUserForVendor();
 
         // Act
         await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
@@ -231,7 +235,7 @@ public class SystemUserTests
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
-        var testperson = GetTestUserForVendor();
+        var testperson = _platformClient.GetTestUserForVendor();
 
         // Act
         await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
@@ -253,7 +257,7 @@ public class SystemUserTests
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
-        var testperson = GetTestUserForVendor();
+        var testperson = _platformClient.GetTestUserForVendor();
 
         await ApproveSystemUserRequest(testperson.AltinnPartyId, id);
         var statusResponse = await GetSystemUserRequestStatus(id, maskinportenToken);
@@ -268,12 +272,12 @@ public class SystemUserTests
         var systemUserId = ExtractSystemUserId(content);
 
         // Act - Delete the system user
-        await DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
+        await _systemUserClient.DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
 
         // Assert - Verify system user is deleted
         var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
-        Assert.DoesNotContain(systemUserId, await deleteVerificationResponse.Content.ReadAsStringAsync());
+        Assert.DoesNotContain(systemUserId!, await deleteVerificationResponse.Content.ReadAsStringAsync());
     }
 
     public async Task<string> CreateSystemAndSystemUserRequest(string maskinportenToken, bool withApp = false)
@@ -328,6 +332,7 @@ public class SystemUserTests
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
+        _outputHelper.WriteLine(content);
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
             $"Unexpected status code: {userResponse.StatusCode} - {content}");
 
@@ -341,16 +346,6 @@ public class SystemUserTests
 
         // Use the PostAsync method for the approval request
         var response = await _platformClient.PostAsync(endpoint, string.Empty, altinnToken);
-        return response;
-    }
-
-    private async Task<HttpResponseMessage> DeleteRequest(string endpoint, Testuser testperson)
-    {
-        // Get the Altinn token
-        var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
-
-        // Use the PostAsync method for the approval request
-        var response = await _platformClient.Delete(endpoint, altinnToken);
         return response;
     }
 
@@ -400,21 +395,13 @@ public class SystemUserTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    private Testuser GetTestUserForVendor()
-    {
-        var vendor = _platformClient.EnvironmentHelper.Vendor;
-
-        return _platformClient.TestUsers.Find(testUser => testUser.Org.Equals(vendor))
-               ?? throw new Exception($"Test user not found for organization: {vendor}");
-    }
-
-    private async Task ApproveSystemUserRequest(string altinnPartyId, string requestId)
+    private async Task ApproveSystemUserRequest(string? altinnPartyId, string requestId)
     {
         var approveUrl = UrlConstants.ApproveSystemUserRequestUrlTemplate
             .Replace("{partyId}", altinnPartyId)
             .Replace("{requestId}", requestId);
 
-        var approveResponse = await ApproveRequest(approveUrl, GetTestUserForVendor());
+        var approveResponse = await ApproveRequest(approveUrl, _platformClient.GetTestUserForVendor());
 
         Assert.True(approveResponse.StatusCode == HttpStatusCode.OK,
             $"Approval failed with status code: {approveResponse.StatusCode}");
@@ -426,26 +413,16 @@ public class SystemUserTests
         return await _platformClient.GetAsync(urlGetBySystem, token);
     }
 
-    private string ExtractSystemUserId(string jsonResponse)
+    private static string? ExtractSystemUserId(string jsonResponse)
     {
         var jsonNode = JsonNode.Parse(jsonResponse);
 
         if (jsonNode is JsonObject jsonObject && jsonObject.ElementAt(1).Value is JsonArray jsonArray)
         {
-            var systemUserObject = jsonArray.First().AsObject();
-            return systemUserObject["id"].GetValue<string>();
+            var systemUserObject = jsonArray.First()?.AsObject();
+            return systemUserObject?["id"]?.GetValue<string>();
         }
 
         throw new Exception("Unable to extract system user ID from response.");
-    }
-
-    private async Task DeleteSystemUser(string altinnPartyId, string systemUserId)
-    {
-        var deleteUrl = UrlConstants.DeleteSystemUserUrlTemplate
-            .Replace("{partyId}", altinnPartyId)
-            .Replace("{systemUserId}", systemUserId);
-        var deleteResponse = await DeleteRequest(deleteUrl, GetTestUserForVendor());
-
-        Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
     }
 }

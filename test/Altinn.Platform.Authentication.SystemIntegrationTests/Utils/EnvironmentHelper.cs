@@ -31,7 +31,7 @@ public class EnvironmentHelper
     [JsonPropertyName("MaskinportenClientId")]
     public required string maskinportenClientId { get; set; }
 
-    public required string Vendor { get; set; }
+    public required string? Vendor { get; set; }
 
     /// <summary>
     /// Credentials for test api

@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 
@@ -6,14 +5,14 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 public class SystemRegisterHelper
 {
-    public string? Token { get; set; }
+    private string? Token { get; set; }
     public string? VendorId { get; set; }
-    public string? Name { get; set; }
-    public string? ClientId { get; set; }
+    public string? Name { get; private set; }
+    public string? ClientId { get; private set; }
     public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
-    public string RedirectUrl { get; set; }
+    public string? RedirectUrl { get; private set; }
 
-    private string _templateContent;
+    private readonly string _templateContent;
 
     public List<Right> Rights { get; set; } = [];
 
@@ -25,7 +24,7 @@ public class SystemRegisterHelper
         Name = Guid.NewGuid().ToString();
     }
 
-    public SystemRegisterHelper WithVendor(string vendorId)
+    public SystemRegisterHelper WithVendor(string? vendorId)
     {
         VendorId = vendorId;
         return this;
@@ -43,7 +42,7 @@ public class SystemRegisterHelper
         return this;
     }
 
-    public SystemRegisterHelper WithRedirectUrl(string redirectUrl)
+    public SystemRegisterHelper WithRedirectUrl(string? redirectUrl)
     {
         RedirectUrl = redirectUrl;
         return this;

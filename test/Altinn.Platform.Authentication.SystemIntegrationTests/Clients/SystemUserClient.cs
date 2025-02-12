@@ -19,7 +19,7 @@ public class SystemUserClient
         _platformClient = platformClient;
     }
 
-    public async Task<HttpResponseMessage> GetSystemuserForParty(string party, string token)
+    public async Task<HttpResponseMessage> GetSystemuserForParty(string? party, string token)
     {
         var urlGetBySystem = UrlConstants.GetSystemUserForParty
             .Replace("{party}", party);
@@ -30,6 +30,16 @@ public class SystemUserClient
 
         return response;
     }
+    
+    public async Task<List<SystemUser>> GetSystemUsersForTestUser(Testuser testuser)
+    {
+        var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
+        var resp = await GetSystemuserForParty(testuser.AltinnPartyId, altinnToken);
+
+        var content = await resp.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<List<SystemUser>>(content, Common.JsonSerializerOptions) ?? [];
+    }
+
 
     public async Task<HttpResponseMessage> GetSystemUserByExternalRef(string externalRef, string systemId, string maskinportenToken)
     {
@@ -47,7 +57,7 @@ public class SystemUserClient
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))
             .Replace("{systemId}", testState.SystemId)
             .Replace("{redirectUrl}", testState.RedirectUrl)
-            .Replace("{externalRef}", Guid.NewGuid().ToString());
+            .Replace("{externalRef}",_platformClient.EnvironmentHelper.Vendor);
 
         //Create system user request on the same rights that exist in the SystemRegister
         var rightsJson = JsonSerializer.Serialize(testState.Rights, new JsonSerializerOptions
@@ -89,5 +99,15 @@ public class SystemUserClient
         // Use the PostAsync method for the approval request
         var response = await _platformClient.PostAsync(endpoint, string.Empty, altinnToken);
         return response;
+    }
+    
+    public async Task DeleteSystemUser(string? altinnPartyId, string? systemUserId)
+    {
+        var deleteUrl = UrlConstants.DeleteSystemUserUrlTemplate
+            .Replace("{partyId}", altinnPartyId)
+            .Replace("{systemUserId}", systemUserId);
+        var deleteResponse = await _platformClient.DeleteRequest(deleteUrl,  _platformClient.GetTestUserForVendor());
+
+        Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
     }
 }
