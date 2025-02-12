@@ -23,7 +23,7 @@ namespace AltinnCore.Authentication.Constants
         /// <summary>
         /// The partyuuid for the user/person/systemuser when the user is authenticated
         /// </summary>
-        public const string PartyUUID = "urn:altinn:partyuuid";
+        public const string PartyUUID = "urn:altinn:party:uuid";
 
         /// <summary>
         /// The PartyId in register for the party the user is representing

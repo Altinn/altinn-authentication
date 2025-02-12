@@ -429,7 +429,9 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_LOOKUP))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ, policy =>
-            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ));
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ))
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_PORTAL, policy =>
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_PORTAL));
 
     services.AddFeatureManagement();
 }
