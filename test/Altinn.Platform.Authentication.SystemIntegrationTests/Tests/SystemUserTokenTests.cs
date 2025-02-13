@@ -12,7 +12,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 // Documentation: https://docs.digdir.no/docs/Maskinporten/maskinporten_func_systembruker
 /* This won't work in AT22 due to maskinporten is only configured to use TT02 */
 
-[Trait("Category", "IntegrationTest")] 
+[Trait("Category", "IntegrationTest")]
 public class SystemUserTokenTests
 {
     private readonly ITestOutputHelper _outputHelper;
@@ -32,10 +32,11 @@ public class SystemUserTokenTests
         _systemUserClient = new SystemUserClient(_platformClient);
     }
 
-    [Trait("Category", "IntegrationTest")]
-    [SkipUnlessTt02FactAttribute]
+    [Fact]
     public async Task GetByExternalIdMaskinporten()
     {
+        if (!IsTestEnvironment("tt02")) return;
+
         // Setup
         var systemUser = await GetSystemUserOnSystemId(SystemId);
 
@@ -50,7 +51,6 @@ public class SystemUserTokenTests
         var systemUserOwnerOrgNo = _platformClient.EnvironmentHelper.Vendor;
         var externalRef = systemUser?.ExternalRef;
 
-        _outputHelper.WriteLine($"External ref: {systemUser?.ExternalRef}");
         var queryString =
             $"?clientId={clientId}" +
             $"&systemProviderOrgNo={systemProviderOrgNo}" +
@@ -58,7 +58,6 @@ public class SystemUserTokenTests
             $"&externalRef={externalRef}";
 
         var fullEndpoint = $"{UrlConstants.GetByExternalId}{queryString}";
-        _outputHelper.WriteLine($"Full endpoint: {fullEndpoint}");
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
@@ -66,11 +65,12 @@ public class SystemUserTokenTests
         _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
         Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
     }
-    
-    [Trait("Category", "IntegrationTest")]
-    [SkipUnlessTt02FactAttribute]
+
+    [Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrgWithExternalRef()
     {
+        if (!IsTestEnvironment("tt02")) return;
+
         var systemUser = await GetSystemUserOnSystemId(SystemId);
         Assert.NotNull(systemUser);
         Assert.NotNull(systemUser.ExternalRef);
@@ -84,8 +84,7 @@ public class SystemUserTokenTests
         return _platformClient.EnvironmentHelper.Testenvironment.Contains(expectedEnv, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Trait("Category", "IntegrationTest")]
-    [SkipUnlessTt02FactAttribute]
+    [Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrgNoExternalRef()
     {
         if (!IsTestEnvironment("tt02")) return;
@@ -132,12 +131,11 @@ public class SystemUserTokenTests
         Assert.True(remainingTime < TimeSpan.FromSeconds(122) && remainingTime > TimeSpan.FromSeconds(118), $"Token should be valid for less than 2 minutes, remaining time is: {remainingTime}");
     }
 
-    [Trait("Category", "IntegrationTest")]
-    [SkipUnlessTt02FactAttribute]
+    [Fact]
     public async Task Systemusertoken_Denied()
     {
         if (!IsTestEnvironment("tt02")) return;
-        
+
         await GetSystemUserOnSystemId(SystemId);
         var systemUserToken = await _platformClient.GetSystemUserToken();
 
@@ -157,7 +155,7 @@ public class SystemUserTokenTests
 
     private async Task<SystemUser?> CreateSystemUserOnExistingSystem(string name)
     {
-        var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor)) 
+        var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
                        ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper.Vendor}");
 
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
@@ -193,6 +191,7 @@ public class SystemUserTokenTests
 
         return systemUsers.Find(user => user.SystemId == systemId);
     }
+
     // Utility function to properly pad Base64 strings before decoding
     private static string PadBase64(string base64)
     {
