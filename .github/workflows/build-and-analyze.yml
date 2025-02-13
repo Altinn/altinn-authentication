@@ -80,6 +80,6 @@ jobs:
             /d:sonar.cpd.exclusions="**/Swagger/*Filter.cs"
 
           dotnet build --no-incremental
-          dotnet coverage collect 'dotnet test --no-build --results-directory TestResults/ --filter "Category!=IntegrationTest"' -f xml -o 'TestResults/coverage.xml'
+          dotnet coverage collect -- 'dotnet test --no-build --results-directory TestResults/ --filter "Category!=IntegrationTest"' -f xml -o 'TestResults/coverage.xml'
 
           ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
