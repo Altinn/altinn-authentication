@@ -12,7 +12,7 @@ public sealed class SkipUnlessTt02FactAttribute : FactAttribute
         _platformClient = new PlatformAuthenticationClient();
         if (!IsTt02())
         {
-            Skip = "Skipping test: Only run in TT02.";
+            Skip = "Skipping test: this test will only run in TT02 due to Maskinporten's configuration using our TT02 environment";
         }
     }
 
