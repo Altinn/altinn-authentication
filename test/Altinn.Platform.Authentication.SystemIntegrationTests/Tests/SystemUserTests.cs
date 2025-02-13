@@ -292,10 +292,7 @@ public class SystemUserTests : IDisposable
           ""systemId"": ""{systemId}""
         }}";
         
-        var respPut = await _systemUserClient.PutSystemUser(jsonBody, maskinportenToken);
-
-        // Cleanup - Delete the system user
-        await _systemUserClient.DeleteSystemUser(_testperson.AltinnPartyId, _systemUserId);
+        await _systemUserClient.PutSystemUser(jsonBody, maskinportenToken);
     }
 
     public async Task<string> CreateSystemAndSystemUserRequest(string maskinportenToken, bool withApp = false)
