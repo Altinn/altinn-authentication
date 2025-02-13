@@ -230,7 +230,7 @@ public class PlatformAuthenticationClient
         return null;
     }
 
-    private EnvironmentHelper LoadEnvironment()
+    private static EnvironmentHelper LoadEnvironment()
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
         const string environmentVariable = "TEST_ENVIRONMENT";
