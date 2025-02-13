@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
@@ -18,11 +19,13 @@ public class ChangeRequestTests
     private readonly ITestOutputHelper _outputHelper;
     private readonly Common _common;
     private readonly PlatformAuthenticationClient _platformAuthentication;
+    private readonly SystemUserClient _systemUserClient;
 
     public ChangeRequestTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
         _platformAuthentication = new PlatformAuthenticationClient();
+        _systemUserClient = new SystemUserClient(_platformAuthentication);
         _common = new Common(_platformAuthentication, outputHelper);
     }
 
@@ -30,19 +33,16 @@ public class ChangeRequestTests
     public async Task MakeChangeRequestAsVendorTest()
     {
         // Prepare
-        var maskinportenToken = await _platformAuthentication.GetMaskinportenToken();
+        var maskinportenToken = await _platformAuthentication.GetMaskinportenTokenForVendor();
         var externalRef = Guid.NewGuid().ToString();
         var clientId = Guid.NewGuid().ToString();
-        var testperson = GetTestUser();
-        var systemId =
-            await _common.CreateAndApproveSystemUserRequest(maskinportenToken, externalRef, testperson, clientId);
+        var testperson = _platformAuthentication.GetTestUserForVendor();
+        var systemId = await _common.CreateAndApproveSystemUserRequest(maskinportenToken, externalRef, testperson, clientId);
 
         // Act
         var changeRequestResponse = await SubmitChangeRequest(systemId, externalRef, maskinportenToken);
 
         Common.AssertSuccess(changeRequestResponse, "Change request submission failed");
-
-        // Assert change request response
         Assert.Equal(HttpStatusCode.Created, changeRequestResponse.StatusCode);
         var requestId = Common.ExtractPropertyFromJson(await changeRequestResponse.Content.ReadAsStringAsync(), "id");
         await AssertStatusChangeRequest(requestId, "New", maskinportenToken);
@@ -55,6 +55,11 @@ public class ChangeRequestTests
         await AssertSystemUserUpdated(systemId, externalRef, maskinportenToken);
         await AssertRequestRetrievalById(requestId, systemId, externalRef, maskinportenToken);
         await AssertRequestRetrievalByExternalRef(systemId, externalRef, maskinportenToken);
+
+        var systemUsers = await _systemUserClient.GetSystemUsersForTestUser(testperson);
+        
+        //Cleanup
+        await _systemUserClient.DeleteSystemUser(testperson.AltinnPartyId, systemUsers.FirstOrDefault()?.Id);
     }
 
     private async Task AssertStatusChangeRequest(string requestId, string expectedStatus, string maskinportenToken)
@@ -68,8 +73,7 @@ public class ChangeRequestTests
         Assert.True(expectedStatus.Equals(status), $"Status is not {expectedStatus} but: " + status);
     }
 
-    private async Task AssertRequestRetrievalByExternalRef(string systemId, string externalRef,
-        string maskinportenToken)
+    private async Task AssertRequestRetrievalByExternalRef(string systemId, string externalRef, string maskinportenToken)
     {
         var getByExternalRefUrl = UrlConstants.GetByExternalRefUrlTemplate
             .Replace("{systemId}", systemId)
@@ -82,8 +86,7 @@ public class ChangeRequestTests
         Assert.Contains(systemId, await respByExternalRef.Content.ReadAsStringAsync());
     }
 
-    private async Task AssertRequestRetrievalById(string requestId, string systemId, string externalRef,
-        string maskinportenToken)
+    private async Task AssertRequestRetrievalById(string requestId, string systemId, string externalRef, string maskinportenToken)
     {
         var getRequestByIdUrl = UrlConstants.GetRequestByIdUrlTemplate
             .Replace("{requestId}", requestId);
@@ -93,7 +96,7 @@ public class ChangeRequestTests
         Assert.Contains(externalRef, await responsGetByRequestId.Content.ReadAsStringAsync());
     }
 
-    private async Task AssertSystemUserUpdated(string systemId, string externalRef, string maskinportenToken)
+    private async Task<string> AssertSystemUserUpdated(string systemId, string externalRef, string maskinportenToken)
     {
         // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
         var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);
@@ -102,6 +105,8 @@ public class ChangeRequestTests
         // Assert systemId
         Assert.Contains(systemId, systemusersRespons);
         Assert.Contains(externalRef, systemusersRespons);
+
+        return systemusersRespons;
     }
 
     private async Task<HttpResponseMessage> ApproveChangeRequest(string requestId, Testuser testperson)
@@ -116,8 +121,7 @@ public class ChangeRequestTests
         return approvalResp;
     }
 
-    private async Task<HttpResponseMessage> SubmitChangeRequest(string systemId, string externalRef,
-        string maskinportenToken)
+    private async Task<HttpResponseMessage> SubmitChangeRequest(string systemId, string externalRef, string maskinportenToken)
     {
         var changeRequestBody =
             (await Helper.ReadFile("Resources/Testdata/ChangeRequest/ChangeRequest.json"))
@@ -129,13 +133,5 @@ public class ChangeRequestTests
             maskinportenToken);
 
         return changeRequestResponse;
-    }
-
-    private Testuser GetTestUser()
-    {
-        return _platformAuthentication.TestUsers.Find(testUser =>
-                   testUser.Org.Equals(_platformAuthentication.EnvironmentHelper.Vendor))
-               ?? throw new Exception(
-                   $"Test user not found for organization: {_platformAuthentication.EnvironmentHelper.Vendor}");
     }
 }

@@ -12,8 +12,15 @@ public class EnvironmentHelper
     /// Environment. Eg: AT22
     /// </summary>
     public required string Testenvironment { get; set; }
+    
+    /// <summary>
+    /// Environment. Eg: AT22
+    /// </summary>
+    public string? MaskinportenEnvironment { get; set; }
 
     [JsonPropertyName("Jwks")] public required Jwk jwk { get; set; }
+    
+    [JsonPropertyName("JwksDev")] public Jwk? jwkDev { get; set; }
 
     /// <summary>
     /// 
@@ -24,7 +31,7 @@ public class EnvironmentHelper
     [JsonPropertyName("MaskinportenClientId")]
     public required string maskinportenClientId { get; set; }
 
-    public required string Vendor { get; set; }
+    public required string? Vendor { get; set; }
 
     /// <summary>
     /// Credentials for test api
