@@ -32,11 +32,9 @@ public class SystemUserTokenTests
         _systemUserClient = new SystemUserClient(_platformClient);
     }
 
-    [Fact]
+    [SkipUnlessTt02Fact]
     public async Task GetByExternalIdMaskinporten()
     {
-        if (!IsTestEnvironment("tt02")) return;
-
         // Setup
         var systemUser = await GetSystemUserOnSystemId(SystemId);
 
@@ -66,11 +64,9 @@ public class SystemUserTokenTests
         Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
     }
 
-    [Fact]
+    [SkipUnlessTt02Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrgWithExternalRef()
     {
-        if (!IsTestEnvironment("tt02")) return;
-
         var systemUser = await GetSystemUserOnSystemId(SystemId);
         Assert.NotNull(systemUser);
         Assert.NotNull(systemUser.ExternalRef);
@@ -84,11 +80,9 @@ public class SystemUserTokenTests
         return _platformClient.EnvironmentHelper.Testenvironment.Contains(expectedEnv, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [SkipUnlessTt02Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrgNoExternalRef()
     {
-        if (!IsTestEnvironment("tt02")) return;
-
         // Act
         var maskinportenToken = await _platformClient.GetSystemUserToken();
 
@@ -131,7 +125,7 @@ public class SystemUserTokenTests
         Assert.True(remainingTime < TimeSpan.FromSeconds(122) && remainingTime > TimeSpan.FromSeconds(118), $"Token should be valid for less than 2 minutes, remaining time is: {remainingTime}");
     }
 
-    [Fact]
+    [SkipUnlessTt02Fact]
     public async Task Systemusertoken_Denied()
     {
         if (!IsTestEnvironment("tt02")) return;
