@@ -30,7 +30,7 @@ public class SystemUserClient
 
         return response;
     }
-    
+
     public async Task<List<SystemUser>> GetSystemUsersForTestUser(Testuser testuser)
     {
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
@@ -57,7 +57,7 @@ public class SystemUserClient
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))
             .Replace("{systemId}", testState.SystemId)
             .Replace("{redirectUrl}", testState.RedirectUrl)
-            .Replace("{externalRef}",_platformClient.EnvironmentHelper.Vendor);
+            .Replace("{externalRef}", _platformClient.EnvironmentHelper.Vendor);
 
         //Create system user request on the same rights that exist in the SystemRegister
         var rightsJson = JsonSerializer.Serialize(testState.Rights, Common.JsonSerializerOptions);
@@ -74,7 +74,7 @@ public class SystemUserClient
 
         return content;
     }
-    
+
     public async Task ApproveSystemUserRequest(Testuser testuser, string requestId)
     {
         var approveUrl = UrlConstants.ApproveSystemUserRequestUrlTemplate
@@ -86,7 +86,7 @@ public class SystemUserClient
         Assert.True(approveResponse.StatusCode == HttpStatusCode.OK,
             $"Approval failed with status code: {approveResponse.StatusCode}");
     }
-    
+
     public async Task<HttpResponseMessage> ApproveRequest(string endpoint, Testuser testperson)
     {
         // Get the Altinn token
@@ -96,14 +96,23 @@ public class SystemUserClient
         var response = await _platformClient.PostAsync(endpoint, string.Empty, altinnToken);
         return response;
     }
-    
+
     public async Task DeleteSystemUser(string? altinnPartyId, string? systemUserId)
     {
         var deleteUrl = UrlConstants.DeleteSystemUserUrlTemplate
             .Replace("{partyId}", altinnPartyId)
             .Replace("{systemUserId}", systemUserId);
-        var deleteResponse = await _platformClient.DeleteRequest(deleteUrl,  _platformClient.GetTestUserForVendor());
+        var deleteResponse = await _platformClient.DeleteRequest(deleteUrl, _platformClient.GetTestUserForVendor());
 
         Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
+    }
+
+    public async Task<HttpResponseMessage> PutSystemUser(string requestBody, string? token)
+    {
+        var putUrl = UrlConstants.PutSystemUserUrlTemplate;
+        var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
+
+        Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);
+        return putResponse;
     }
 }
