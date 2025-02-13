@@ -75,11 +75,6 @@ public class SystemUserTokenTests
         Assert.NotNull(maskinportenToken);
     }
 
-    private bool IsTestEnvironment(string expectedEnv)
-    {
-        return _platformClient.EnvironmentHelper.Testenvironment.Contains(expectedEnv, StringComparison.OrdinalIgnoreCase);
-    }
-
     [SkipUnlessTt02Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrgNoExternalRef()
     {
@@ -128,8 +123,6 @@ public class SystemUserTokenTests
     [SkipUnlessTt02Fact]
     public async Task Systemusertoken_Denied()
     {
-        if (!IsTestEnvironment("tt02")) return;
-
         await GetSystemUserOnSystemId(SystemId);
         var systemUserToken = await _platformClient.GetSystemUserToken();
 

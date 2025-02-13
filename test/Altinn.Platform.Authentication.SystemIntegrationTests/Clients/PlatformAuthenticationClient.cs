@@ -258,7 +258,7 @@ public class PlatformAuthenticationClient
         return LoadEnvironmentFromFile();
     }
 
-    private EnvironmentHelper LoadEnvironmentFromFile()
+    private static EnvironmentHelper LoadEnvironmentFromFile()
     {
         //Todo fix support for dev
         var localFilePath = "Resources/Environment/environment.json";

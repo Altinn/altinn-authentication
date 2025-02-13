@@ -60,11 +60,7 @@ public class SystemUserClient
             .Replace("{externalRef}",_platformClient.EnvironmentHelper.Vendor);
 
         //Create system user request on the same rights that exist in the SystemRegister
-        var rightsJson = JsonSerializer.Serialize(testState.Rights, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
-        });
+        var rightsJson = JsonSerializer.Serialize(testState.Rights, Common.JsonSerializerOptions);
 
         var finalJson = requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
 

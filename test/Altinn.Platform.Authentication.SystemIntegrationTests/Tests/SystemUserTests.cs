@@ -136,30 +136,6 @@ public class SystemUserTests
     }
 
     [Fact]
-    public async Task gjenskapBug()
-    {
-        //TODO  -  REMOVE
-        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-        
-        // "systemId": "312605031_f45b6ca9-910d-49ba-a611-834f38ab20d4",
-        var responseByExternalRef = await _systemUserClient.GetSystemUserByExternalRef("312605031", "312605031_f45b6ca9-910d-49ba-a611-834f38ab20d4", maskinportenToken);
-        
-        Assert.NotNull(responseByExternalRef);
-        _outputHelper.WriteLine(await responseByExternalRef.Content.ReadAsStringAsync());
-
-        var byId = await GetSystemUserById("312605031_f45b6ca9-910d-49ba-a611-834f38ab20d4", maskinportenToken);
-        _outputHelper.WriteLine("Get by id: " + await byId.Content.ReadAsStringAsync());
-        
-        var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
-                       ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper.Vendor}");
-
-        var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
-        var resp = await _systemUserClient.GetSystemuserForParty(testuser.AltinnPartyId, altinnToken);
-        _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
-
-    }
-
-    [Fact]
     public async Task ApproveRequestSystemUserTest()
     {
         // Arrange
