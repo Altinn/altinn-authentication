@@ -12,7 +12,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 // Documentation: https://docs.digdir.no/docs/Maskinporten/maskinporten_func_systembruker
 /* This won't work in AT22 due to maskinporten is only configured to use TT02 */
 
-[Trait("Category", "IntegrationTest")]
+[Trait("Category", "IntegrationTest")] 
 public class SystemUserTokenTests
 {
     private readonly ITestOutputHelper _outputHelper;
@@ -32,7 +32,7 @@ public class SystemUserTokenTests
         _systemUserClient = new SystemUserClient(_platformClient);
     }
 
-    [SkipUnlessTt02Fact]
+    [Fact]
     public async Task GetByExternalIdMaskinporten()
     {
         // Setup
@@ -66,7 +66,7 @@ public class SystemUserTokenTests
         Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
     }
     
-    [SkipUnlessTt02Fact]
+    [Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrgWithExternalRef()
     {
         var systemUser = await GetSystemUserOnSystemId(SystemId);
@@ -82,7 +82,7 @@ public class SystemUserTokenTests
         return _platformClient.EnvironmentHelper.Testenvironment.Contains(expectedEnv, StringComparison.OrdinalIgnoreCase);
     }
 
-    [SkipUnlessTt02Fact]
+    [Fact]
     public async Task SystemuserGetToken_ReturnsTokenForOrgNoExternalRef()
     {
         if (!IsTestEnvironment("tt02")) return;
@@ -129,7 +129,7 @@ public class SystemUserTokenTests
         Assert.True(remainingTime < TimeSpan.FromSeconds(122) && remainingTime > TimeSpan.FromSeconds(118), $"Token should be valid for less than 2 minutes, remaining time is: {remainingTime}");
     }
 
-    [SkipUnlessTt02Fact]
+    [Fact]
     public async Task Systemusertoken_Denied()
     {
         if (!IsTestEnvironment("tt02")) return;

@@ -332,9 +332,7 @@ public class SystemUserTests
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
-        _outputHelper.WriteLine(content);
-        Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
-            $"Unexpected status code: {userResponse.StatusCode} - {content}");
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {userResponse.StatusCode} - {content}");
 
         return content;
     }
