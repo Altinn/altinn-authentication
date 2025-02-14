@@ -50,14 +50,37 @@ public class SystemUserClient
 
         return await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
     }
+    
+    public async Task<string> CreateSystemUserRequestWithoutExternalRef(TestState testState, string maskinportenToken)
+    {
+        // Prepare system user request
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json"))
+            .Replace("{systemId}", testState.SystemId)
+            .Replace("{redirectUrl}", testState.RedirectUrl);
 
-    public async Task<string> CreateSystemUserRequestWithExternalRef(SystemRegisterHelper testState, string maskinportenToken)
+        //Create system user request on the same rights that exist in the SystemRegister
+        var rightsJson = JsonSerializer.Serialize(testState.Rights, Common.JsonSerializerOptions);
+
+        var finalJson = requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
+
+        // Act
+        var userResponse =
+            await _platformClient.PostAsync(UrlConstants.CreateSystemUserRequestBaseUrl, finalJson, maskinportenToken);
+
+        // Assert
+        var content = await userResponse.Content.ReadAsStringAsync();
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {userResponse.StatusCode} - {content}");
+
+        return content;
+    }
+
+    public async Task<string> CreateSystemUserRequestWithExternalRef(TestState testState, string maskinportenToken)
     {
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))
             .Replace("{systemId}", testState.SystemId)
             .Replace("{redirectUrl}", testState.RedirectUrl)
-            .Replace("{externalRef}", _platformClient.EnvironmentHelper.Vendor);
+            .Replace("{externalRef}",testState.ExternalRef);
 
         //Create system user request on the same rights that exist in the SystemRegister
         var rightsJson = JsonSerializer.Serialize(testState.Rights, Common.JsonSerializerOptions);
@@ -107,12 +130,11 @@ public class SystemUserClient
         Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
     }
 
-    public async Task<HttpResponseMessage> PutSystemUser(string requestBody, string? token)
+    public async Task PutSystemUser(string requestBody, string? token)
     {
-        var putUrl = UrlConstants.PutSystemUserUrlTemplate;
+        const string putUrl = UrlConstants.PutSystemUserUrlTemplate;
         var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
 
         Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);
-        return putResponse;
     }
 }

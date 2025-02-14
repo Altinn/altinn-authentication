@@ -29,14 +29,14 @@ public class SystemRegisterTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    public static async Task<string> GetRequestBodyWithReplacements(SystemRegisterHelper systemRegisterHelper, string filePath)
+    public static async Task<string> GetRequestBodyWithReplacements(TestState testState, string filePath)
     {
         var fileContent = await Helper.ReadFile(filePath);
         return fileContent
-            .Replace("{vendorId}", systemRegisterHelper.VendorId)
-            .Replace("{Name}", systemRegisterHelper.Name)
-            .Replace("{clientId}", systemRegisterHelper.ClientId)
-            .Replace("{redirectUrl}", systemRegisterHelper.RedirectUrl);
+            .Replace("{vendorId}", testState.VendorId)
+            .Replace("{Name}", testState.Name)
+            .Replace("{clientId}", testState.ClientId)
+            .Replace("{redirectUrl}", testState.RedirectUrl);
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class SystemRegisterTests
         // Prepare
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
-        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
@@ -84,7 +84,7 @@ public class SystemRegisterTests
         // Prepare
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
-        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
@@ -130,7 +130,7 @@ public class SystemRegisterTests
         // Prepare
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
-        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
@@ -145,8 +145,7 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.GetAsync(
-                $"v1/systemregister/{teststate.SystemId}/rights", maskinportenToken);
+            await _platformClient.GetAsync($"v1/systemregister/{teststate.SystemId}/rights", maskinportenToken);
 
         var rightsFromApiResponse = await response.Content.ReadFromJsonAsync<List<Right>>();
         Assert.NotNull(rightsFromApiResponse);
@@ -165,7 +164,7 @@ public class SystemRegisterTests
         // Prepares
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
-        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
@@ -192,7 +191,7 @@ public class SystemRegisterTests
         // Prepares
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
-        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
@@ -215,8 +214,7 @@ public class SystemRegisterTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var get =
-            await _platformClient.GetAsync($"v1/systemregister/{teststate.SystemId}",
-                maskinportenToken);
+            await _platformClient.GetAsync($"v1/systemregister/{teststate.SystemId}", maskinportenToken);
 
         //More asserts should be added, but there are known bugs right now regarding validation of rights 
         Assert.Equal(HttpStatusCode.OK, get.StatusCode);

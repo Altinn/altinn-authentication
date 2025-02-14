@@ -147,7 +147,7 @@ public class SystemUserTokenTests
 
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
-        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(_platformClient.EnvironmentHelper.maskinportenClientId) //Creates System User With MaskinportenClientId
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
