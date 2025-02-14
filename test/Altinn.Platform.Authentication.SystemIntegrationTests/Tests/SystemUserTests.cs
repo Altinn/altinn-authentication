@@ -254,6 +254,10 @@ public class SystemUserTests
         var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, deleteVerificationResponse.StatusCode);
         Assert.DoesNotContain(systemUserId!, await deleteVerificationResponse.Content.ReadAsStringAsync());
+        
+        // Verify system user request with given externalRef was also deleted
+        var statusResponseAfterDelete = await GetSystemUserRequestStatus(id, maskinportenToken);
+        Assert.Equal(HttpStatusCode.NotFound, statusResponseAfterDelete.StatusCode);
     }
 
     public async Task<string> CreateSystemAndSystemUserRequest(string maskinportenToken, bool withApp = false)
@@ -359,7 +363,7 @@ public class SystemUserTests
         return await _platformClient.GetAsync(url, token);
     }
 
-    private async Task AssertSystemUserRequestStatus(HttpResponseMessage response, string expectedStatus)
+    private static async Task AssertSystemUserRequestStatus(HttpResponseMessage response, string expectedStatus)
     {
         var responseContent = await response.Content.ReadAsStringAsync();
         var actualStatus = Common.ExtractPropertyFromJson(responseContent, "status");
