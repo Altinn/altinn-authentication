@@ -428,5 +428,27 @@ namespace Altinn.Platform.Authentication.Helpers
 
             return false; // No duplicates
         }
+
+        /// <summary>
+        /// Checks if the AccessPackages list has duplicate values
+        /// </summary>
+        /// <param name="accessPackages">The list of access packages to check</param>
+        /// <returns>true if duplicate access packages found</returns>
+        public static bool HasDuplicateAccessPackage(List<AttributePair> accessPackages)
+        {
+            var uniqueAccessPackages = new HashSet<string>();
+
+            foreach (var accessPackage in accessPackages)
+            {
+                var accessPackageKey = $"{accessPackage.Id}:{accessPackage.Value}";
+
+                if (!uniqueAccessPackages.Add(accessPackageKey))
+                {
+                    return true; // Duplicate found
+                }
+            }
+
+            return false; // No duplicates
+        }
     }
 }

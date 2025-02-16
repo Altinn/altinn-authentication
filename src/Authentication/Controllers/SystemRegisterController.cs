@@ -191,7 +191,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
     [HttpPost("vendor")]    
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    ////[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisteredSystem registerNewSystem, CancellationToken cancellationToken = default)
     {
         try
@@ -240,6 +240,21 @@ public class SystemRegisterController : ControllerBase
             {
                 errors.Add(ValidationErrors.SystemRegister_ResourceId_Duplicates, [
                     "/registersystemrequest/rights/resource"
+                ]);
+            }
+
+            //// ToDO : integrate with AM api
+            //if (await _systemRegisterService.HasValidAccessPackages(registerNewSystem.AccessPackages, cancellationToken))
+            //{
+            //    errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
+            //        "/registersystemrequest/accessPackages"
+            //    ]);
+            //}
+
+            if (AuthenticationHelper.HasDuplicateAccessPackage(registerNewSystem.AccessPackages))
+            {
+                errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
+                    "/registersystemrequest/accesspackages"
                 ]);
             }
 

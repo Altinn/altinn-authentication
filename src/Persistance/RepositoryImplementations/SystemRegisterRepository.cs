@@ -44,7 +44,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 client_id,
                 rights,
                 is_visible,
-                allowedredirecturls
+                allowedredirecturls,
+                accesspackages
             FROM business_application.system_register sr
             WHERE sr.is_deleted = FALSE;";
 
@@ -75,7 +76,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 rights,
                 name,
                 description,
-                allowedredirecturls)
+                allowedredirecturls,
+                accesspackages)
             VALUES(
                 @system_id,
                 @systemvendor_orgnumber,                
@@ -84,7 +86,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 @rights,
                 @name,
                 @description,
-                @allowedredirecturls)
+                @allowedredirecturls,
+                @accesspackages)
             RETURNING system_internal_id;";
 
         try
@@ -99,6 +102,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
             command.Parameters.AddWithValue("allowedredirecturls", toBeInserted.AllowedRedirectUrls.ConvertAll<string>(delegate (Uri u) { return u.ToString(); }));
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = toBeInserted.AccessPackages });
 
             Guid systemInternalId = await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -129,6 +133,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 is_visible = @is_visible,
                 is_deleted = @is_deleted,
                 rights = @rights,
+                accesspackages = @accesspackages,
                 last_changed = CURRENT_TIMESTAMP,
                 allowedredirecturls = @allowedredirecturls
             WHERE business_application.system_register.system_id = @system_id
@@ -147,6 +152,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
             command.Parameters.AddWithValue("is_deleted", updatedSystem.IsDeleted);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
             command.Parameters.AddWithValue("allowedredirecturls", updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
@@ -180,7 +186,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 client_id,
                 rights,
                 is_visible,
-                allowedredirecturls
+                allowedredirecturls,
+                accesspackages
             FROM business_application.system_register sr
             WHERE sr.system_id = @system_id;
         ";
@@ -377,7 +384,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             ClientId = clientIds,
             Rights = rights,
             IsVisible = reader.GetFieldValue<bool>("is_visible"),
-            AllowedRedirectUrls = reader.IsDBNull("allowedredirecturls") ? null : reader.GetFieldValue<List<string>>("allowedredirecturls")?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); })
+            AllowedRedirectUrls = reader.IsDBNull("allowedredirecturls") ? null : reader.GetFieldValue<List<string>>("allowedredirecturls")?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); }),
+            AccessPackages = reader.GetFieldValue<List<AttributePair>>("accesspackages")
         });
     }
 

@@ -59,4 +59,10 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_ResourceId_AlreadyExists { get; }
         = _factory.Create(7, "One or all the resources in rights to be updated is already found in the system");
+
+    /// <summary>
+    /// Gets a validation error descriptor for duplicate resource(rights) id
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_AccessPackage_Duplicates { get; }
+        = _factory.Create(8, "One or more duplicate access package(s) found");
 }

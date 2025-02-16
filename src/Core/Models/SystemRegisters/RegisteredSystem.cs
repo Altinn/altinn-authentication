@@ -78,6 +78,11 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         public List<Right> Rights { get; set; } = [];
 
         /// <summary>
+        /// The array of access package(s) that is required to use this Registered System
+        /// </summary>
+        public List<AttributePair> AccessPackages { get; set; } = [];
+
+        /// <summary>
         /// Registered Systems can be set to Soft Deleted
         /// </summary>
         [JsonIgnore]

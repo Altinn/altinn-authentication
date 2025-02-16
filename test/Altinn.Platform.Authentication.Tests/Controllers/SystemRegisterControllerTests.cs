@@ -124,6 +124,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Create_WithAccessPackage_Success()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
         public async Task SystemRegister_Create_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidRequest.json";
@@ -197,6 +206,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_Duplicates.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
             Assert.Equal("One or more duplicate rights found", error.Detail);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_DuplicateAccessPackage_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterDuplicateAccessPackage.json";
+
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+            AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Single(problemDetails.Errors);
+            AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_Duplicates.ErrorCode);
+            Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
+            Assert.Equal("One or more duplicate access package(s) found", error.Detail);
         }
 
         [Fact]
