@@ -1,6 +1,8 @@
 {
   "Testenvironment": "at22",
   "MaskinportenClientId": "test",
+  "MaskinportenEnvironment" : "https://maskinporten.dev/token", //  test "https://test.maskinporten.no/token",
+
   "Vendor": "312605031",
   "TestCredentials": {
     "username": "dummy",

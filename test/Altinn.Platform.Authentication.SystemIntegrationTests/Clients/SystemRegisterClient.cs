@@ -26,8 +26,7 @@ public class SystemRegisterClient
     {
         var response = await _platformClient.PostAsync(UrlConstants.PostSystemRegister, requestBody, token);
 
-        Assert.True(HttpStatusCode.OK == response.StatusCode,
-            $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+        Assert.True(HttpStatusCode.OK == response.StatusCode, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
         return response;
     }
@@ -42,11 +41,13 @@ public class SystemRegisterClient
 
         // Deserialize the JSON content to a list of SystemDto
         var jsonContent = await response.Content.ReadAsStringAsync();
-        var systems = JsonSerializer.Deserialize<List<SystemDto>>(jsonContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true // Allows matching JSON properties in different casing
-        });
+        var systems = JsonSerializer.Deserialize<List<SystemDto>>(jsonContent, Common.JsonSerializerOptions);
+        return systems ?? [];
+    }
 
-        return systems ?? new List<SystemDto>();
+    public async Task DeleteSystem(string SystemId, string token)
+    {
+        var resp = await _platformClient.Delete($"{UrlConstants.DeleteSystemRegister}/{SystemId}", token);
+        Assert.True(HttpStatusCode.OK == resp.StatusCode, $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
     }
 }
