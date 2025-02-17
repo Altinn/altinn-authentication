@@ -336,6 +336,32 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
+    /// <inheritdoc/> 
+    public async Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AttributePair> accessPackages, string systemId)
+    {
+        const string QUERY = /*strpsql*/"""            
+            UPDATE business_application.system_register
+            SET accesspackages = @accesspackages,
+            last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.system_register.system_id = @system_id;
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = accessPackages });
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateAccessPackagesForRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
     /// <summary>
     /// The list of Right for each Registered System is stored as a text array in the db.
     /// Each element in this Array Type is a concatenation of the Servive Provider ( NAV, Skatteetaten, etc ...)

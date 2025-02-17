@@ -136,6 +136,9 @@
     <None Update="Data\Roles\user_1337\party_501337\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\UpdateAccessPackageDuplicate.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterDuplicateAccessPackage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -194,6 +197,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemRegister\Json\SystemRegister01.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\SystemRegister\Json\UpdateAccessPackages.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemRegister\Json\UpdateRightResourceIdExists.json">

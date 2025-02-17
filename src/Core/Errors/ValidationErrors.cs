@@ -65,4 +65,10 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_AccessPackage_Duplicates { get; }
         = _factory.Create(8, "One or more duplicate access package(s) found");
+
+    /// <summary>
+    /// Gets a validation error descriptor for non existing accesspackage id
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_AccessPackage_DoesNotExist { get; }
+        = _factory.Create(9, "One or all the accesspackage(s) is not found in altinn's access packages");
 }

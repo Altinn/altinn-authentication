@@ -63,6 +63,14 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
 
         /// <summary>
+        /// Updates the access packages on a registered system
+        /// </summary>
+        /// <param name="accessPackages">A list of access packages</param>
+        /// <param name="systemId">The human readable string id</param>
+        /// <returns>true if changed</returns>
+        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AttributePair> accessPackages, string systemId);
+
+        /// <summary>
         /// Set's the product's is_deleted column to True.
         /// Deletes the clientid from the maskinporten_cleitn table
         /// This will break any existing integrations.

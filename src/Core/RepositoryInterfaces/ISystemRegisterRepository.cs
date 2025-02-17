@@ -85,6 +85,14 @@ public interface ISystemRegisterRepository
     Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
 
     /// <summary>
+    /// Updates the access packages on a registered system
+    /// </summary>
+    /// <param name="accessPackages">A list of access packages</param>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>true if changed</returns>
+    Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AttributePair> accessPackages, string systemId);
+
+    /// <summary>
     /// Updates the whole registered system,
     /// except internal_id, system_id, orgnr and client_id.    
     /// </summary>

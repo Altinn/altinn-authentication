@@ -79,6 +79,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
+        public Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AttributePair> accessPackages, string systemId)
+        {
+            return _systemRegisterRepository.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId);
+        }
+
+        /// <inheritdoc/>
         public Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId)
         {
             return _systemRegisterRepository.SetDeleteRegisteredSystemById(id, systemInternalId);

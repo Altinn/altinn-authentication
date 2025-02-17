@@ -256,7 +256,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task SystemRegister_Update_Success()
+        public async Task SystemRegister_Update_Rights_Success()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
@@ -279,6 +279,36 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
                 string systemID = "991825827_the_matrix";
                 HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/rights");
+                request.Content = content;
+                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(System.Net.HttpStatusCode.OK, updateResponse.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_AccessPackage_Success()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.IsSuccessStatusCode)
+            {
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                // Arrange
+                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateAccessPackages.json");
+                StreamContent content = new StreamContent(dataStream);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                string systemID = "991825827_the_matrix";
+                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/accesspackages");
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.OK, updateResponse.StatusCode);
@@ -347,6 +377,41 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_Duplicates.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
                 Assert.Equal("One or more duplicate rights found", error.Detail);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_DuplicateAccessPackage_BadRequest()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.IsSuccessStatusCode)
+            {
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                // Arrange
+                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateAccessPackageDuplicate.json");
+                StreamContent content = new StreamContent(dataStream);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                string systemID = "991825827_the_matrix";
+                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/accesspackages");
+                request.Content = content;
+                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(System.Net.HttpStatusCode.BadRequest, updateResponse.StatusCode);
+                AltinnValidationProblemDetails problemDetails = await updateResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+                Assert.NotNull(problemDetails);
+                AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_Duplicates.ErrorCode);
+                Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
+                Assert.Equal("One or more duplicate access package(s) found", error.Detail);
             }
         }
 

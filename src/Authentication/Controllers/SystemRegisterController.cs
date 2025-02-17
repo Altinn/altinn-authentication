@@ -346,6 +346,52 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
+    /// Updates the rights on a registered system
+    /// </summary>
+    /// <param name="accessPackages">A list of access packages</param>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>true if changed</returns>
+    [HttpPut("vendor/{systemId}/accesspackages")]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateAccessPackagesOnRegisteredSystem([FromBody] List<AttributePair> accessPackages, string systemId, CancellationToken cancellationToken = default)
+    {
+        ValidationErrorBuilder errors = default;
+        RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
+        {
+            return Forbid();
+        }
+
+        if (AuthenticationHelper.HasDuplicateAccessPackage(accessPackages))
+        {
+            errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
+                "/registersystemrequest/accesspackages"
+            ]);
+        }
+
+        //// ToDO : integrate with AM api
+        //if (!await _systemRegisterService.HasValidAccessPackages(accessPackages, cancellationToken))
+        //{
+        //    errors.Add(ValidationErrors.SystemRegister_AccessPackage_DoesNotExist, [
+        //        "/registersystemrequest/accesspackages"
+        //    ]);
+        //}
+
+        if (errors.TryToActionResult(out var errorResult))
+        {
+            return errorResult;
+        }
+
+        bool success = await _systemRegisterService.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId);
+        if (!success)
+        {
+            return BadRequest();
+        }
+
+        return Ok(new SystemRegisterUpdateResult(true));
+    }
+
+    /// <summary>
     /// Set the registered system to be deleted.    
     /// </summary>
     /// <param name="systemId">The human readable string id</param>
