@@ -68,9 +68,9 @@ public class SystemRegisterTests
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
         var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
         Assert.True(isFound, $"Could not find System that was created with Systemid: {teststate.SystemId}");
-        
+
         // Cleanup
-        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
     }
 
     /// <summary>
@@ -103,9 +103,9 @@ public class SystemRegisterTests
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
         var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
         Assert.True(isFound, $"Could not find System that was created with Systemid: {teststate.SystemId}");
-        
+
         // Cleanup
-        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
     }
 
     [Fact]
@@ -116,8 +116,8 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.GetAsync(UrlConstants.GetSystemRegister, maskinportenToken);
-        
+            await _platformClient.GetAsync(ApiEndpoints.GetAllSystemsFromRegister.Url(), maskinportenToken);
+
         // Assert
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -145,14 +145,14 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.GetAsync($"v1/systemregister/{teststate.SystemId}/rights", maskinportenToken);
+            await _platformClient.GetAsync(ApiEndpoints.GetSystemRegisterRights.Url().Replace("{systemId}", teststate.SystemId), maskinportenToken);
 
         var rightsFromApiResponse = await response.Content.ReadFromJsonAsync<List<Right>>();
         Assert.NotNull(rightsFromApiResponse);
         Assert.Equal(3, rightsFromApiResponse.Count);
-        
+
         // Cleanup
-        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
     }
 
     /// <summary>
@@ -177,8 +177,8 @@ public class SystemRegisterTests
         await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
 
         // Act
-        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
-        
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
+
         // Assert system is not found
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
         var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
@@ -207,17 +207,23 @@ public class SystemRegisterTests
 
         // Act
         var response =
-            await _platformClient.PutAsync($"{UrlConstants.PostSystemRegister}/{teststate.SystemId}",
-                requestBody, maskinportenToken);
+            await _platformClient.PutAsync($"{ApiEndpoints.UpdateVendorSystemRegister.Url()}".Replace("{systemId}", teststate.SystemId), requestBody, maskinportenToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var get =
-            await _platformClient.GetAsync($"v1/systemregister/{teststate.SystemId}", maskinportenToken);
+            await _platformClient.GetAsync($"{ApiEndpoints.GetSystemRegisterById.Url()}".Replace("{systemId}", teststate.SystemId), maskinportenToken);
 
         //More asserts should be added, but there are known bugs right now regarding validation of rights 
         Assert.Equal(HttpStatusCode.OK, get.StatusCode);
+
+        var getForVendor =
+            await _platformClient.GetAsync($"{ApiEndpoints.GetVendorSystemRegisterById.Url()}".Replace("{systemId}", teststate.SystemId), maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, getForVendor.StatusCode);
+
+        //Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
     }
 
     [Fact]
@@ -225,8 +231,56 @@ public class SystemRegisterTests
     {
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
-        
+
         //verify endpoint responds ok
         Assert.NotNull(systems);
+    }
+
+    [Fact]
+    public async Task UpdateRightsInSystemForVendorReturns200Ok()
+    {
+        // Prepare
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithRedirectUrl("https://altinn.no")
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
+            .WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
+            .WithToken(maskinportenToken);
+
+        await _systemRegisterClient.PostSystem(teststate.GenerateRequestBody(), maskinportenToken);
+
+        const string jsonBody = @"[
+                      {
+                        ""action"": ""read"",
+                        ""resource"": [
+                          {
+                            ""id"": ""urn:altinn:resource"",
+                            ""value"": ""authentication-e2e-test""
+                          }
+                        ]
+                      },
+                      {
+                        ""action"": ""read"",
+                        ""resource"": [
+                          {
+                            ""id"": ""urn:altinn:resource"",
+                            ""value"": ""vegardtestressurs""
+                          }
+                        ]
+                      }
+                    ]";
+        await _systemRegisterClient.UpdateRightsOnSystem(teststate.SystemId, jsonBody, maskinportenToken);
+
+        var getForVendor =
+            await _platformClient.GetAsync($"{ApiEndpoints.GetVendorSystemRegisterById.Url()}".Replace("{systemId}", teststate.SystemId), maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, getForVendor.StatusCode);
+        
+        var stringBody = await getForVendor.Content.ReadAsStringAsync();
+
+        Assert.Contains("authentication-e2e-test",stringBody);
+        Assert.Contains("vegardtestressurs",stringBody);
+        Assert.DoesNotContain("resource_nonDelegable_enkeltrettighet", stringBody);
     }
 }

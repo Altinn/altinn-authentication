@@ -19,7 +19,6 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils
         public const string GetSystemUserForParty = "v1/systemuser/{party}";
         public const string GetByExternalRef = "v1/systemuser/request/vendor/byexternalref/{systemId}/{orgNo}/{externalRef}";
         public const string PutSystemUserUrlTemplate = "v1/systemuser/";
-
         
         //API Endpoint Maskinporten
         public const string GetByExternalId = "v1/systemuser/byExternalId";

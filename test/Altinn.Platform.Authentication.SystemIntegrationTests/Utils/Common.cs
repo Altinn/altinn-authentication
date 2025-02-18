@@ -43,8 +43,7 @@ public class Common
             .Replace("{externalRef}", externalRef);
 
         // Act
-        var userResponse =
-            await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
+        var userResponse = await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();

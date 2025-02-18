@@ -46,7 +46,7 @@ public class SystemUserTests : IDisposable
 
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
-        var endpoint = UrlConstants.GetSystemUserByPartyIdUrlTemplate.Replace("{partyId}", dagl.AltinnPartyId);
+        var endpoint = ApiEndpoints.GetSystemUsersByParty.Url().Replace("{party}", dagl.AltinnPartyId);
 
         var respons = await _platformClient.GetAsync(endpoint, altinnToken);
 
@@ -78,7 +78,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse = await
-            _platformClient.PostAsync(UrlConstants.CreateSystemUserRequestBaseUrl, requestBody, maskinportenToken);
+            _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
 
         // Assert
         await AssertSystemUserRequestCreated(userResponse);
@@ -109,7 +109,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse = await
-            _platformClient.PostAsync(UrlConstants.CreateSystemUserRequestBaseUrl, requestBody, maskinportenToken);
+            _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
 
         // Assert
         await AssertSystemUserRequestCreated(userResponse);
@@ -193,7 +193,7 @@ public class SystemUserTests : IDisposable
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
         var requestId = Common.ExtractPropertyFromJson(systemUserResponse, "id");
-        var urlDelete = UrlConstants.DeleteRequest.Replace("{requestId}", requestId);
+        var urlDelete = ApiEndpoints.DeleteSystemUserRequest.Url().Replace("{requestId}", requestId);
 
         // Act - Delete System User Request
         var responseDelete = await _platformClient.Delete(urlDelete, maskinportenToken);
@@ -281,23 +281,21 @@ public class SystemUserTests : IDisposable
 
         await RejectSystemUserRequest(testperson.AltinnPartyId, idNewRequestWithExternalRef);
         await ApproveSystemUserRequest(testperson, idNewRequestWithoutExternalRef);
-        
+
         var statusExternalRef = await GetSystemUserRequestStatus(idNewRequestWithExternalRef, maskinportenToken);
         var statusNoExternalRef = await GetSystemUserRequestStatus(idNewRequestWithoutExternalRef, maskinportenToken);
         await AssertSystemUserRequestStatus(statusExternalRef, "Rejected");
         await AssertSystemUserRequestStatus(statusNoExternalRef, "Accepted");
-        
+
         var newExternalRef = Guid.NewGuid().ToString();
         testState.ExternalRef = newExternalRef;
-        
+
         var test = await _systemUserClient.CreateSystemUserRequestWithExternalRef(testState, maskinportenToken);
-        _outputHelper.WriteLine(test);
-        
         var newId = Common.ExtractPropertyFromJson(test, "id");
-        
+
         //approve with test user not part of org:
         var ikkeDagligLeder = _platformClient.TestUsers.Find(user => user.AltinnPartyId!.Equals("50891151"));
-        await ApproveSystemUserRequest(ikkeDagligLeder, newId);
+        await ApproveSystemUserRequest(ikkeDagligLeder, newId, HttpStatusCode.Forbidden);
     }
 
     [Fact(Skip = "Bug reported: https://github.com/Altinn/altinn-authentication/issues/1074")]
@@ -333,7 +331,7 @@ public class SystemUserTests : IDisposable
           ""integrationTitle"": ""Hei, ny integration title"",
           ""systemId"": ""{systemId}""
         }}";
-
+        
         await _systemUserClient.PutSystemUser(jsonBody, maskinportenToken);
     }
 
@@ -412,7 +410,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync("v1/systemuser/request/vendor", finalJson, maskinportenToken);
+            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -445,11 +443,7 @@ public class SystemUserTests : IDisposable
             .Replace("{systemId}", testState.SystemId)
             .Replace("{redirectUrl}", testState.RedirectUrl);
 
-        var rightsJson = JsonSerializer.Serialize(testState.Rights, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
-        });
+        var rightsJson = JsonSerializer.Serialize(testState.Rights, Common.JsonSerializerOptions);
 
         return requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
     }
@@ -463,7 +457,7 @@ public class SystemUserTests : IDisposable
 
     private async Task<HttpResponseMessage> GetSystemUserRequestStatus(string requestId, string token)
     {
-        var url = UrlConstants.GetSystemUserRequestStatusUrlTemplate.Replace("requestId", requestId);
+        var url = ApiEndpoints.GetSystemUserRequestStatus.Url().Replace("requestId", requestId);
         return await _platformClient.GetAsync(url, token);
     }
 
@@ -477,22 +471,21 @@ public class SystemUserTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    private async Task ApproveSystemUserRequest(Testuser testuser, string requestId)
+    private async Task ApproveSystemUserRequest(Testuser testuser, string requestId, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
     {
-        var approveUrl = UrlConstants.ApproveSystemUserRequestUrlTemplate
-            .Replace("{partyId}", testuser.AltinnPartyId)
+        var approveUrl = ApiEndpoints.ApproveSystemUserRequest.Url()
+            .Replace("{party}", testuser.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
         var approveResponse = await ApproveRequest(approveUrl, testuser);
 
-        Assert.True(approveResponse.StatusCode == HttpStatusCode.OK,
-            $"Approval failed with status code: {approveResponse.StatusCode}");
+        Assert.True(approveResponse.StatusCode == expectedStatusCode, $"Approval failed with status code: {approveResponse.StatusCode}");
     }
-    
+
     private async Task RejectSystemUserRequest(string? altinnPartyId, string requestId)
     {
-        var approveUrl = UrlConstants.RejectSystemuserRequestUrlTemplate
-            .Replace("{partyId}", altinnPartyId)
+        var approveUrl = ApiEndpoints.RejectSystemUserRequest.Url()
+            .Replace("{party}", altinnPartyId)
             .Replace("{requestId}", requestId);
 
         var approveResponse = await ApproveRequest(approveUrl, _platformClient.GetTestUserForVendor());
@@ -503,7 +496,7 @@ public class SystemUserTests : IDisposable
 
     private async Task<HttpResponseMessage> GetSystemUserById(string systemId, string token)
     {
-        var urlGetBySystem = UrlConstants.GetBySystemForVendor.Replace("{systemId}", systemId);
+        var urlGetBySystem = ApiEndpoints.GetSystemUsersBySystemForVendor.Url().Replace("{systemId}", systemId);
         return await _platformClient.GetAsync(urlGetBySystem, token);
     }
 

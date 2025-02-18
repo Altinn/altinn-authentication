@@ -128,7 +128,7 @@ public class ChangeRequestTests
             .Replace("{systemId}", systemId)
             .Replace("{externalRef}", externalRef);
 
-        var changeRequestResponse = await _platformAuthentication.PostAsync(UrlConstants.ChangeRequestVendorUrl,
+        var changeRequestResponse = await _platformAuthentication.PostAsync(ApiEndpoints.PostChangeRequestVendor.Url(),
             changeRequestBody,
             maskinportenToken);
 
