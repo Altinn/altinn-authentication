@@ -63,6 +63,14 @@ public interface ISystemRegisterRepository
     Task<List<Right>> GetRightsForRegisteredSystem(string systemId);
 
     /// <summary>
+    /// Retrieves the list, if any, of access packages 
+    /// the System Vendor has set on the Registered System.
+    /// </summary>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>List of Default Rights</returns>
+    Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId);
+
+    /// <summary>
     /// Adds a client id and the respective internal system id
     /// </summary>
     /// <param name="clientId">the client id from the maskinporten</param>

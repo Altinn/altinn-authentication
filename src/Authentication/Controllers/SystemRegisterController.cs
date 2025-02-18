@@ -186,6 +186,28 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves a list of the predfined default rights for the Product type, if any
+    /// </summary>
+    /// <param name="systemId">The Id of the Product </param>
+    /// <param name="useOldFormatForApp">The old format for the App</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    [HttpGet("{systemId}/accesspackages")]
+    public async Task<ActionResult<List<AccessPackage>>> GetAccessPackagesForRegisteredSystem(string systemId, [FromQuery] bool useOldFormatForApp = false, CancellationToken cancellationToken = default)
+    {
+        List<AccessPackage> lista = await _systemRegisterService.GetAccessPackagesForRegisteredSystem(systemId, cancellationToken);
+
+        if (lista is null || lista.Count == 0)
+        {
+            return NotFound();
+        }
+        else
+        {
+            return Ok(lista);
+        }
+    }
+
+    /// <summary>
     /// Create a new System 
     /// </summary>
     /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>

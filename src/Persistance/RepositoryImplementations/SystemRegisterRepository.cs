@@ -312,6 +312,39 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
+    public async Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId)
+    {
+        List<AccessPackage> accessPackages = [];
+
+        const string QUERY = /*strpsql*/@"
+                SELECT accesspackages
+                FROM business_application.system_register
+                WHERE business_application.system_register.system_id = @system_id;
+                ";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                accessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages");
+            }
+
+            return accessPackages;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetRightsForRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/> 
     public async Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
     {
         const string QUERY = /*strpsql*/"""            

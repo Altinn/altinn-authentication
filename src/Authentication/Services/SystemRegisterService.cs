@@ -45,6 +45,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
+        public Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId, CancellationToken cancellation = default)
+        {
+            return _systemRegisterRepository.GetAccessPackagesForRegisteredSystem(systemId);
+        }
+
+        /// <inheritdoc/>
         public Task<bool> CreateClient(string clientId, Guid systemInteralId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.CreateClient(clientId, systemInteralId);

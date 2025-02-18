@@ -30,6 +30,15 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<List<Right>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default);
 
         /// <summary>
+        /// Retrieves the list, if any, of the access packages the System Provider
+        /// has set for the Registered System.
+        /// </summary>
+        /// <param name="systemId">The Id of the Registered System</param>
+        /// <param name="cancellation">Cancellation token</param>
+        /// <returns>List of access packages for the registered system</returns>
+        Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId, CancellationToken cancellation = default);
+
+        /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider
         /// has set for the Registered System.
         /// </summary>
