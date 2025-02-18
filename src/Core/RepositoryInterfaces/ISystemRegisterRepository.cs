@@ -1,4 +1,5 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -90,7 +91,7 @@ public interface ISystemRegisterRepository
     /// <param name="accessPackages">A list of access packages</param>
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
-    Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AttributePair> accessPackages, string systemId);
+    Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId);
 
     /// <summary>
     /// Updates the whole registered system,

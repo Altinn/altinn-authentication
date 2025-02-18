@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -337,7 +338,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
-    public async Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AttributePair> accessPackages, string systemId)
+    public async Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId)
     {
         const string QUERY = /*strpsql*/"""            
             UPDATE business_application.system_register
@@ -411,7 +412,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             Rights = rights,
             IsVisible = reader.GetFieldValue<bool>("is_visible"),
             AllowedRedirectUrls = reader.IsDBNull("allowedredirecturls") ? null : reader.GetFieldValue<List<string>>("allowedredirecturls")?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); }),
-            AccessPackages = reader.GetFieldValue<List<AttributePair>>("accesspackages")
+            AccessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages")
         });
     }
 

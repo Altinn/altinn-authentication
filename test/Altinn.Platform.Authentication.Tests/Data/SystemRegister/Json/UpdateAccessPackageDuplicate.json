@@ -1,10 +1,8 @@
  [
     {
-      "id": "urn:altinn:accesspackage",
-      "value": "sjøfart"
+      "urn": "urn:altinn:accesspackage:sjøfart"
     },
     {
-      "id": "urn:altinn:accesspackage",
-      "value": "sjøfart"
+      "urn": "urn:altinn:accesspackage:sjøfart"
     }
   ]

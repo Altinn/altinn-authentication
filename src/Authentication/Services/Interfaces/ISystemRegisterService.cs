@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces
@@ -68,7 +69,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="accessPackages">A list of access packages</param>
         /// <param name="systemId">The human readable string id</param>
         /// <returns>true if changed</returns>
-        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AttributePair> accessPackages, string systemId);
+        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId);
 
         /// <summary>
         /// Set's the product's is_deleted column to True.

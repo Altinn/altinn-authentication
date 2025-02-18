@@ -1,4 +1,5 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
@@ -80,7 +81,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// The array of access package(s) that is required to use this Registered System
         /// </summary>
-        public List<AttributePair> AccessPackages { get; set; } = [];
+        public List<AccessPackage> AccessPackages { get; set; } = [];
 
         /// <summary>
         /// Registered Systems can be set to Soft Deleted
