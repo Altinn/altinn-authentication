@@ -12,6 +12,7 @@ public class Common
     private readonly SystemRegisterClient _systemRegisterClient;
     private readonly PlatformAuthenticationClient _platformClient;
     public readonly ITestOutputHelper Output;
+    public static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true };
 
     public Common(PlatformAuthenticationClient platformClient, ITestOutputHelper output)
     {
