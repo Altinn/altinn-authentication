@@ -23,7 +23,7 @@ jobs:
         run: dotnet build Altinn.Platform.Authentication.sln -v m
 
       - name: dotnet test
-        run: dotnet test Altinn.Platform.Authentication.sln --results-directory TestResults/ --collect:"XPlat Code Coverage" -v m --filter "Category!=IntegrationTest"
+        run: dotnet test test/Altinn.Platform.Authentication.Tests/Altinn.Platform.Authentication.Tests.csproj --results-directory TestResults/ --collect:"XPlat Code Coverage" -v m --filter "Category!=IntegrationTest"
 
       - name: Generate coverage results
         run: |

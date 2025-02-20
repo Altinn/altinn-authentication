@@ -276,6 +276,127 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemUser_Get_byExternalIdp_Deleted_SystemUser_ReturnNotFound()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+            Guid id = Guid.NewGuid();
+
+            string para = $"{partyId}/{id}";
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix",
+            };
+
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
+            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+
+            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
+            Assert.NotNull(shouldBeCreated);
+
+            // Replaces token with Maskinporten token faking
+            HttpClient client2 = CreateClient();
+            client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:maskinporten/systemuser.read", null));
+
+            string clientId = "32ef65ac-6e62-498d-880f-76c85c2052ae";
+            string systemProviderOrgNo = "991825827";
+            string systemUserOwnerOrgNo = "910493353";
+            string externalRef = "910493353";
+
+            HttpRequestMessage looukpSystemUserRequest =
+                new(HttpMethod.Get, $"/authentication/api/v1/systemuser/byExternalId?systemProviderOrgNo={systemProviderOrgNo}&systemUserOwnerOrgNo={systemUserOwnerOrgNo}&clientId={clientId}&externalRef={externalRef}");
+            HttpResponseMessage lookupSystemUserResponse = await client2.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            SystemUser? systemUserDoesExist = JsonSerializer.Deserialize<SystemUser>(await lookupSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, lookupSystemUserResponse.StatusCode);
+            Assert.True(systemUserDoesExist is not null);
+            Assert.Equal(shouldBeCreated.Id, systemUserDoesExist.Id);
+                      
+            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.Accepted, response2.StatusCode);
+
+            HttpRequestMessage looukpSystemUserRequest2 =
+                new(HttpMethod.Get, $"/authentication/api/v1/systemuser/byExternalId?systemProviderOrgNo={systemProviderOrgNo}&systemUserOwnerOrgNo={systemUserOwnerOrgNo}&clientId={clientId}&externalRef={externalRef}");
+            HttpResponseMessage lookupSystemUserResponse2 = await client2.SendAsync(looukpSystemUserRequest2, HttpCompletionOption.ResponseContentRead);
+            SystemUser? systemUserDoesExist2 = JsonSerializer.Deserialize<SystemUser>(await lookupSystemUserResponse2.Content.ReadAsStringAsync(), _options);
+
+            Assert.NotEqual(HttpStatusCode.OK, lookupSystemUserResponse2.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, lookupSystemUserResponse2.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemUser_Get_byExternalIdp_Deleted_SystemUser_ReturnNotFound_CreateNewWorks()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix",
+            };
+
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
+            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+
+            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
+            Assert.NotNull(shouldBeCreated);
+
+            // Replaces token with Maskinporten token faking
+            HttpClient client2 = CreateClient();
+            client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:maskinporten/systemuser.read", null));
+
+            string clientId = "32ef65ac-6e62-498d-880f-76c85c2052ae";
+            string systemProviderOrgNo = "991825827";
+            string systemUserOwnerOrgNo = "910493353";
+            string externalRef = "910493353";
+
+            HttpRequestMessage looukpSystemUserRequest =
+                new(HttpMethod.Get, $"/authentication/api/v1/systemuser/byExternalId?systemProviderOrgNo={systemProviderOrgNo}&systemUserOwnerOrgNo={systemUserOwnerOrgNo}&clientId={clientId}&externalRef={externalRef}");
+            HttpResponseMessage lookupSystemUserResponse = await client2.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            SystemUser? systemUserDoesExist = JsonSerializer.Deserialize<SystemUser>(await lookupSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, lookupSystemUserResponse.StatusCode);
+            Assert.True(systemUserDoesExist is not null);
+            Assert.Equal(shouldBeCreated.Id, systemUserDoesExist.Id);
+
+            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.Accepted, response2.StatusCode);
+
+            HttpRequestMessage looukpSystemUserRequest2 =
+                new(HttpMethod.Get, $"/authentication/api/v1/systemuser/byExternalId?systemProviderOrgNo={systemProviderOrgNo}&systemUserOwnerOrgNo={systemUserOwnerOrgNo}&clientId={clientId}&externalRef={externalRef}");
+            HttpResponseMessage lookupSystemUserResponse2 = await client2.SendAsync(looukpSystemUserRequest2, HttpCompletionOption.ResponseContentRead);
+
+            Assert.NotEqual(HttpStatusCode.OK, lookupSystemUserResponse2.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, lookupSystemUserResponse2.StatusCode);
+
+            // Create new systemuser right after the delete, before the request has been archived, will fail if the request is not also deleted
+            HttpRequestMessage createSystemUserRequest2 = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
+            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
+            HttpResponseMessage createSystemUserResponse2 = await client.SendAsync(createSystemUserRequest2, HttpCompletionOption.ResponseContentRead);
+
+            SystemUser? shouldBeCreated2 = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse2.Content.ReadAsStringAsync(), _options);
+            Assert.NotNull(shouldBeCreated2);
+        }
+
+        [Fact]
         public async Task SystemUser_Get_byExternalIdp_withExternalRef_ReturnOK()
         {
             // Create System used for test

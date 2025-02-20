@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
@@ -49,11 +48,10 @@ public class SystemRegisterTests
     public async Task CreateNewSystemReturns200Ok()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithClientId(Guid.NewGuid()
-                .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
@@ -67,6 +65,12 @@ public class SystemRegisterTests
         // Assert
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
+        var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
+        Assert.True(isFound, $"Could not find System that was created with Systemid: {teststate.SystemId}");
+        
+        // Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
     }
 
     /// <summary>
@@ -78,7 +82,7 @@ public class SystemRegisterTests
     public async Task CreateNewSystemWithAppReturns200Ok()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid()
@@ -96,13 +100,19 @@ public class SystemRegisterTests
         // Assert
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
+        var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
+        Assert.True(isFound, $"Could not find System that was created with Systemid: {teststate.SystemId}");
+        
+        // Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
     }
 
     [Fact]
     public async Task GetSystemRegisterReturns200Ok()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         // Act
         var response =
@@ -118,7 +128,7 @@ public class SystemRegisterTests
     public async Task ValidateRights()
     {
         // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
@@ -141,6 +151,9 @@ public class SystemRegisterTests
         var rightsFromApiResponse = await response.Content.ReadFromJsonAsync<List<Right>>();
         Assert.NotNull(rightsFromApiResponse);
         Assert.Equal(3, rightsFromApiResponse.Count);
+        
+        // Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
     }
 
     /// <summary>
@@ -150,7 +163,7 @@ public class SystemRegisterTests
     public async Task DeleteRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
@@ -165,17 +178,19 @@ public class SystemRegisterTests
         await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
 
         // Act
-        var respons = await _platformClient.Delete($"{UrlConstants.PostSystemRegister}/{teststate.SystemId}", teststate.Token);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, respons.StatusCode);
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId,maskinportenToken);
+        
+        // Assert system is not found
+        var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
+        var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
+        Assert.False(isFound);
     }
 
     [Fact] //Relevant Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithRedirectUrl("https://altinn.no")
@@ -210,7 +225,7 @@ public class SystemRegisterTests
     [Fact]
     public async Task VerifySystemRegistergetSystemsIsOk()
     {
-        var maskinportenToken = await _platformClient.GetMaskinportenToken();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
         
         //verify endpoint responds ok

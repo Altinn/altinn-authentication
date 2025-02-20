@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -34,18 +35,22 @@ public class SystemUserController : ControllerBase
 {
     private readonly ISystemUserService _systemUserService;
     private readonly GeneralSettings _generalSettings;
+    private readonly IRequestSystemUser _requestSystemUser;
 
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="systemUserService">The SystemUserService supports this API specifically.</param>
+    /// <param name="requestSystemUser">The RequestUserService is called too</param>
     /// <param name="generalSettings">The appsettings needed </param>
     public SystemUserController(
         ISystemUserService systemUserService, 
+        IRequestSystemUser requestSystemUser, 
         IOptions<GeneralSettings> generalSettings)
     {
         _systemUserService = systemUserService;
         _generalSettings = generalSettings.Value;
+        _requestSystemUser = requestSystemUser;
     }
 
     /// <summary>
@@ -151,10 +156,21 @@ public class SystemUserController : ControllerBase
         if (toBeDeleted is not null)
         {
             await _systemUserService.SetDeleteFlagOnSystemUser(party, systemUserId, cancellationToken);
+            await DeleteRequestForSystemUser(toBeDeleted);
             return Accepted(1);
         }
 
         return NotFound(0);            
+    }
+
+    private async Task DeleteRequestForSystemUser(SystemUser toBeDeleted)
+    {
+        ExternalRequestId ext = new(toBeDeleted.ReporteeOrgNo, toBeDeleted.ExternalRef, toBeDeleted.SystemId);
+        var req = await _requestSystemUser.GetRequestByExternalRef(ext, OrganisationNumber.CreateFromStringOrgNo(toBeDeleted.SupplierOrgNo));
+        if (req.IsSuccess)
+        {
+            await _requestSystemUser.DeleteRequestByRequestId(req.Value.Id);
+        }
     }
 
     /// <summary>
