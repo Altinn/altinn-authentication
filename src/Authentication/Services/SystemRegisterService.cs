@@ -136,14 +136,15 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public async Task<bool> HasValidAccessPackages(List<AttributePair> accessPackages, CancellationToken cancellationToken)
         {
-            foreach (AttributePair accessPackage in accessPackages)
-            {
-                ServiceResource resource = await _resourceRegistryClient.GetResource(accessPackage.Value);
-                if (resource == null)
-                {
-                    return false;
-                }
-            }
+            //todo: integrate with access management to check the access packages metadata
+            //foreach (AttributePair accessPackage in accessPackages)
+            //{
+            //    ServiceResource resource = await _resourceRegistryClient.GetResource(accessPackage.Value);
+            //    if (resource == null)
+            //    {
+            //        return false;
+            //    }
+            //}
 
             return true;
         }
