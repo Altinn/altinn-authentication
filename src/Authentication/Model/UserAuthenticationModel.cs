@@ -83,5 +83,10 @@ namespace Altinn.Platform.Authentication.Model
         /// The external session identity (jti)
         /// </summary>
         public string ExternalSessionId { get; internal set; }
+
+        /// <summary>
+        /// The party uuid
+        /// </summary>
+        public Guid? PartyUuid { get; set; }
     }
 }
