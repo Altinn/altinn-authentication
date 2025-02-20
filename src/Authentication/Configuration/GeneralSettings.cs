@@ -38,11 +38,6 @@ namespace Altinn.Platform.Authentication.Configuration
         public string BridgeProfileApiEndpoint { get; set; }
 
         /// <summary>
-        /// Endpoint url for Profile endpoint
-        /// </summary>
-        public string ProfileAPIEndpoint { get; set; }
-
-        /// <summary>
         /// Gets or sets the sbl redirect endpoint
         /// </summary>
         public string SBLRedirectEndpoint { get; set; }
