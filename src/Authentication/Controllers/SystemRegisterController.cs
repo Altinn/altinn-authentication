@@ -220,7 +220,6 @@ public class SystemRegisterController : ControllerBase
         try
         {
             ValidationErrorBuilder errors = default;
-
             if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor.ID))
             {
                 errors.Add(ValidationErrors.SystemRegister_InValid_Org_Identifier, [
@@ -233,66 +232,15 @@ public class SystemRegisterController : ControllerBase
                 }
             }
 
+            ValidationErrorBuilder validationErrorRegisteredSystem = await ValidateRegisteredSystem(registerNewSystem, cancellationToken);
+            ValidationErrorBuilder validationErrorRights = await ValidateRights(registerNewSystem.Rights, null, cancellationToken);
+            ValidationErrorBuilder validationErrorAccessPackages = await ValidateAccessPackages(registerNewSystem.AccessPackages, cancellationToken);
+
+            errors = MergeValidationErrors(validationErrorRegisteredSystem, validationErrorRights, validationErrorAccessPackages);
+
             if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor.ID), User))
             {
                 return Forbid();
-            }
-
-            if (!AuthenticationHelper.DoesSystemIdStartWithOrgnumber(registerNewSystem))
-            {
-                errors.Add(ValidationErrors.SystemRegister_Invalid_SystemId_Format, [
-                    "/registersystemrequest/systemid"
-                ]);
-            }
-
-            if (await _systemRegisterService.GetRegisteredSystemInfo(registerNewSystem.Id, cancellationToken) != null)
-            {
-                errors.Add(ValidationErrors.SystemRegister_SystemId_Exists, [
-                    "/registersystemrequest/systemid"
-                ]);
-            }
-
-            if (!await _systemRegisterService.DoesResourceIdExists(registerNewSystem.Rights, cancellationToken))
-            {
-                errors.Add(ValidationErrors.SystemRegister_ResourceId_DoesNotExist, [
-                    "/registersystemrequest/rights/resource"
-                ]);
-            }
-
-            if (AuthenticationHelper.HasDuplicateRights(registerNewSystem.Rights))
-            {
-                errors.Add(ValidationErrors.SystemRegister_ResourceId_Duplicates, [
-                    "/registersystemrequest/rights/resource"
-                ]);
-            }
-
-            //// ToDO : integrate with AM api
-            //if (await _systemRegisterService.HasValidAccessPackages(registerNewSystem.AccessPackages, cancellationToken))
-            //{
-            //    errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
-            //        "/registersystemrequest/accessPackages"
-            //    ]);
-            //}
-
-            if (AuthenticationHelper.HasDuplicateAccessPackage(registerNewSystem.AccessPackages))
-            {
-                errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
-                    "/registersystemrequest/accesspackages"
-                ]);
-            }
-
-            if (!AuthenticationHelper.IsValidRedirectUrl(registerNewSystem.AllowedRedirectUrls))
-            {
-                errors.Add(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat, [
-                    "/registersystemrequest/allowedredirecturls"
-                ]);
-            }
-
-            if (await _systemRegisterService.DoesClientIdExists(registerNewSystem.ClientId, cancellationToken))
-            {
-                errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [
-                    "/registersystemrequest/clientid"
-                ]);
             }
 
             if (errors.TryToActionResult(out var errorResult))
@@ -333,26 +281,7 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
-        if (AuthenticationHelper.HasDuplicateRights(rights))
-        {
-            errors.Add(ValidationErrors.SystemRegister_ResourceId_Duplicates, [
-                "/registersystemrequest/rights/resource"
-            ]);
-        }
-
-        if (AuthenticationHelper.DoesResourceAlreadyExists(rights, registerSystemResponse.Rights))
-        {
-            errors.Add(ValidationErrors.SystemRegister_ResourceId_AlreadyExists, [
-                "/registersystemrequest/rights/resource"
-            ]);
-        }
-
-        if (!await _systemRegisterService.DoesResourceIdExists(rights, cancellationToken))
-        {
-            errors.Add(ValidationErrors.SystemRegister_ResourceId_DoesNotExist, [
-                "/registersystemrequest/rights/resource"
-            ]);
-        }
+        errors = await ValidateRights(rights, registerSystemResponse.Rights, cancellationToken);
 
         if (errors.TryToActionResult(out var errorResult))
         {
@@ -385,20 +314,7 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
-        if (AuthenticationHelper.HasDuplicateAccessPackage(accessPackages))
-        {
-            errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
-                "/registersystemrequest/accesspackages"
-            ]);
-        }
-
-        //// ToDO : integrate with AM api
-        //if (!await _systemRegisterService.HasValidAccessPackages(accessPackages, cancellationToken))
-        //{
-        //    errors.Add(ValidationErrors.SystemRegister_AccessPackage_DoesNotExist, [
-        //        "/registersystemrequest/accesspackages"
-        //    ]);
-        //}
+        errors = await ValidateAccessPackages(accessPackages, cancellationToken);
 
         if (errors.TryToActionResult(out var errorResult))
         {
@@ -442,5 +358,105 @@ public class SystemRegisterController : ControllerBase
         }
 
         return Ok(new SystemRegisterUpdateResult(true));
+    }
+
+    private async Task<ValidationErrorBuilder> ValidateRights(List<Right> rights, List<Right> existingRights, CancellationToken cancellationToken)
+    {
+        ValidationErrorBuilder errors = default;
+        if (!await _systemRegisterService.DoesResourceIdExists(rights, cancellationToken))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ResourceId_DoesNotExist, [
+                "/registersystemrequest/rights/resource"
+            ]);
+        }
+
+        if (AuthenticationHelper.HasDuplicateRights(rights))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ResourceId_Duplicates, [
+                "/registersystemrequest/rights/resource"
+            ]);
+        }
+
+        if (existingRights != null && existingRights.Count > 0)
+        {
+            if (AuthenticationHelper.DoesResourceAlreadyExists(rights, existingRights))
+            {
+                errors.Add(ValidationErrors.SystemRegister_ResourceId_AlreadyExists, [
+                    "/registersystemrequest/rights/resource"
+                ]);
+            }
+        }
+
+        return errors;
+    }
+
+    private async Task<ValidationErrorBuilder> ValidateAccessPackages(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
+    {
+        ValidationErrorBuilder errors = default;
+        //// ToDO : integrate with AM api
+        //if (await _systemRegisterService.HasValidAccessPackages(registerNewSystem.AccessPackages, cancellationToken))
+        //{
+        //    errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
+        //        "/registersystemrequest/accessPackages"
+        //    ]);
+        //}
+
+        if (AuthenticationHelper.HasDuplicateAccessPackage(accessPackages))
+        {
+            errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
+                "/registersystemrequest/accesspackages"
+            ]);
+        }
+
+        return errors;
+    }
+
+    private async Task<ValidationErrorBuilder> ValidateRegisteredSystem(RegisteredSystem systemToValidate, CancellationToken cancellationToken)
+    {
+        ValidationErrorBuilder errors = default;
+
+        if (!AuthenticationHelper.DoesSystemIdStartWithOrgnumber(systemToValidate))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Invalid_SystemId_Format, [
+                "/registersystemrequest/systemid"
+            ]);
+        }
+
+        if (await _systemRegisterService.GetRegisteredSystemInfo(systemToValidate.Id, cancellationToken) != null)
+        {
+            errors.Add(ValidationErrors.SystemRegister_SystemId_Exists, [
+                "/registersystemrequest/systemid"
+            ]);
+        }
+
+        if (!AuthenticationHelper.IsValidRedirectUrl(systemToValidate.AllowedRedirectUrls))
+        {
+            errors.Add(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat, [
+                "/registersystemrequest/allowedredirecturls"
+            ]);
+        }
+
+        if (await _systemRegisterService.DoesClientIdExists(systemToValidate.ClientId, cancellationToken))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [
+                "/registersystemrequest/clientid"
+            ]);
+        }
+
+        return errors;
+    }
+
+    private ValidationErrorBuilder MergeValidationErrors(params ValidationErrorBuilder[] errorBuilders)
+    {
+        ValidationErrorBuilder mergedErrors = default;
+        foreach (var errorBuilder in errorBuilders)
+        {
+            foreach (var error in errorBuilder)
+            {
+                mergedErrors.Add(error);
+            }
+        }
+
+        return mergedErrors;
     }
 }
