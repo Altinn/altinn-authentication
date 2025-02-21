@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -44,6 +45,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
+        public Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId, CancellationToken cancellation = default)
+        {
+            return _systemRegisterRepository.GetAccessPackagesForRegisteredSystem(systemId);
+        }
+
+        /// <inheritdoc/>
         public Task<bool> CreateClient(string clientId, Guid systemInteralId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.CreateClient(clientId, systemInteralId);
@@ -79,6 +86,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
+        public Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId)
+        {
+            return _systemRegisterRepository.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId);
+        }
+
+        /// <inheritdoc/>
         public Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId)
         {
             return _systemRegisterRepository.SetDeleteRegisteredSystemById(id, systemInternalId);
@@ -111,6 +124,27 @@ namespace Altinn.Platform.Authentication.Services
                     }
                 }                
             }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Checks if the access packages are found in access package list
+        /// </summary>
+        /// <param name="accessPackages">the list of access packages required by the system</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns></returns>
+        public async Task<bool> HasValidAccessPackages(List<AttributePair> accessPackages, CancellationToken cancellationToken)
+        {
+            //todo: integrate with access management to check the access packages metadata
+            //foreach (AttributePair accessPackage in accessPackages)
+            //{
+            //    ServiceResource resource = await _resourceRegistryClient.GetResource(accessPackage.Value);
+            //    if (resource == null)
+            //    {
+            //        return false;
+            //    }
+            //}
 
             return true;
         }

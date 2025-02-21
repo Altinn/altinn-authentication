@@ -7,6 +7,7 @@ using System.Security.Policy;
 using System.Text.RegularExpressions;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
@@ -421,6 +422,28 @@ namespace Altinn.Platform.Authentication.Helpers
                 var rightKey = $"{right.Action}:{string.Join(",", right.Resource.Select(r => $"{r.Id}:{r.Value}"))}";
 
                 if (existingRightsSet.Contains(rightKey))
+                {
+                    return true; // Duplicate found
+                }
+            }
+
+            return false; // No duplicates
+        }
+
+        /// <summary>
+        /// Checks if the AccessPackages list has duplicate values
+        /// </summary>
+        /// <param name="accessPackages">The list of access packages to check</param>
+        /// <returns>true if duplicate access packages found</returns>
+        public static bool HasDuplicateAccessPackage(List<AccessPackage> accessPackages)
+        {
+            var uniqueAccessPackages = new HashSet<string>();
+
+            foreach (var accessPackage in accessPackages)
+            {
+                var accessPackageKey = $"{accessPackage.Urn}";
+
+                if (!uniqueAccessPackages.Add(accessPackageKey))
                 {
                     return true; // Duplicate found
                 }

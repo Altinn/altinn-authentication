@@ -1,4 +1,5 @@
 ﻿using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -62,6 +63,14 @@ public interface ISystemRegisterRepository
     Task<List<Right>> GetRightsForRegisteredSystem(string systemId);
 
     /// <summary>
+    /// Retrieves the list, if any, of access packages 
+    /// the System Vendor has set on the Registered System.
+    /// </summary>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>List of Default Rights</returns>
+    Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId);
+
+    /// <summary>
     /// Adds a client id and the respective internal system id
     /// </summary>
     /// <param name="clientId">the client id from the maskinporten</param>
@@ -83,6 +92,14 @@ public interface ISystemRegisterRepository
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
     Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
+
+    /// <summary>
+    /// Updates the access packages on a registered system
+    /// </summary>
+    /// <param name="accessPackages">A list of access packages</param>
+    /// <param name="systemId">The human readable string id</param>
+    /// <returns>true if changed</returns>
+    Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId);
 
     /// <summary>
     /// Updates the whole registered system,

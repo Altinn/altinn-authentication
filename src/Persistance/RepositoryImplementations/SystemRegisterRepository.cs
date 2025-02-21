@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -44,7 +45,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 client_id,
                 rights,
                 is_visible,
-                allowedredirecturls
+                allowedredirecturls,
+                accesspackages
             FROM business_application.system_register sr
             WHERE sr.is_deleted = FALSE;";
 
@@ -75,7 +77,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 rights,
                 name,
                 description,
-                allowedredirecturls)
+                allowedredirecturls,
+                accesspackages)
             VALUES(
                 @system_id,
                 @systemvendor_orgnumber,                
@@ -84,7 +87,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 @rights,
                 @name,
                 @description,
-                @allowedredirecturls)
+                @allowedredirecturls,
+                @accesspackages)
             RETURNING system_internal_id;";
 
         try
@@ -99,6 +103,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
             command.Parameters.AddWithValue("allowedredirecturls", toBeInserted.AllowedRedirectUrls.ConvertAll<string>(delegate (Uri u) { return u.ToString(); }));
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = toBeInserted.AccessPackages });
 
             Guid systemInternalId = await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -129,6 +134,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 is_visible = @is_visible,
                 is_deleted = @is_deleted,
                 rights = @rights,
+                accesspackages = @accesspackages,
                 last_changed = CURRENT_TIMESTAMP,
                 allowedredirecturls = @allowedredirecturls
             WHERE business_application.system_register.system_id = @system_id
@@ -147,6 +153,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
             command.Parameters.AddWithValue("is_deleted", updatedSystem.IsDeleted);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
             command.Parameters.AddWithValue("allowedredirecturls", updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
@@ -180,7 +187,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 client_id,
                 rights,
                 is_visible,
-                allowedredirecturls
+                allowedredirecturls,
+                accesspackages
             FROM business_application.system_register sr
             WHERE sr.system_id = @system_id;
         ";
@@ -304,6 +312,39 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/> 
+    public async Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId)
+    {
+        List<AccessPackage> accessPackages = [];
+
+        const string QUERY = /*strpsql*/@"
+                SELECT accesspackages
+                FROM business_application.system_register
+                WHERE business_application.system_register.system_id = @system_id;
+                ";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                accessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages");
+            }
+
+            return accessPackages;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetRightsForRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/> 
     public async Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
     {
         const string QUERY = /*strpsql*/"""            
@@ -325,6 +366,32 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateRightsForRegisteredSystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/> 
+    public async Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId)
+    {
+        const string QUERY = /*strpsql*/"""            
+            UPDATE business_application.system_register
+            SET accesspackages = @accesspackages,
+            last_changed = CURRENT_TIMESTAMP
+            WHERE business_application.system_register.system_id = @system_id;
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = accessPackages });
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // UpdateAccessPackagesForRegisteredSystem // Exception");
             throw;
         }
     }
@@ -377,7 +444,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             ClientId = clientIds,
             Rights = rights,
             IsVisible = reader.GetFieldValue<bool>("is_visible"),
-            AllowedRedirectUrls = reader.IsDBNull("allowedredirecturls") ? null : reader.GetFieldValue<List<string>>("allowedredirecturls")?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); })
+            AllowedRedirectUrls = reader.IsDBNull("allowedredirecturls") ? null : reader.GetFieldValue<List<string>>("allowedredirecturls")?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); }),
+            AccessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages")
         });
     }
 
