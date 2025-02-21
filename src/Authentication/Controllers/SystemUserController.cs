@@ -244,6 +244,42 @@ public class SystemUserController : ControllerBase
         return NotFound();
     }
 
+    /// <summary>
+    /// Retrieves a list of all SystemUsers for internal use, 
+    /// called by the Register
+    /// </summary>
+    /// <param name="token">Optional continuation token</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Paginated list of all SystmUsers e</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS)]
+    [HttpGet("internal/systemusers/stream", Name = "internal/systemusers/stream")]
+    public async Task<ActionResult<Paginated<SystemUserRegisterDTO>>> GetAllSystemUsers(
+        [FromQuery(Name = "token")] Opaque<long>? token = null,
+        CancellationToken cancellationToken = default)
+    {        
+        Result<Page<SystemUserRegisterDTO, long>> pageResult = await _systemUserService.GetAllSystemUsers(
+            token?.Value ?? 0,
+            cancellationToken);
+        if (pageResult.IsProblem)
+        {
+            return pageResult.Problem.ToActionResult();
+        }
+
+        var nextLink = pageResult.Value.ContinuationToken.HasValue
+            ? Url.Link("internal/systemusers/stream", new
+            {
+                token = Opaque.Create(pageResult.Value.ContinuationToken.Value)
+            })
+            : null;
+
+        if (pageResult.IsSuccess)
+        {
+            return Paginated.Create(pageResult.Value.Items.ToList(), nextLink);
+        }
+
+        return NotFound();
+    }
+
     private OrganisationNumber? RetrieveOrgNoFromToken()
     {
         string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName);

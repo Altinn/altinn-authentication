@@ -283,6 +283,7 @@ public class SystemRegisterController : ControllerBase
     /// </summary>
     /// <param name="rights">A list of rights</param>
     /// <param name="systemId">The human readable string id</param>
+    /// <param name="cancellationToken">a cancellation token</param>
     /// <returns>true if changed</returns>
     [HttpPut("vendor/{systemId}/rights")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
@@ -341,7 +342,7 @@ public class SystemRegisterController : ControllerBase
     {
         RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
 
-        if(registerSystemResponse == null)
+        if (registerSystemResponse == null)
         {
             return BadRequest();
         }

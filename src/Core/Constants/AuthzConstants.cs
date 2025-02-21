@@ -85,5 +85,15 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// General scope given to everyone loging in to altinn platform 
         /// </summary>
         public const string SCOPE_PORTAL = "altinn:portal/enduser";
+
+        /// <summary>
+        /// Used for internal APIs
+        /// </summary>
+        public const string POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS = "InternalOrPlatformAccess";
+
+        /// <summary>
+        /// Used for internal SystemUser APIs
+        /// </summary>
+        public const string SCOPE_INTERNAL_OR_PLATFORM_ACCESS = "altinn:authentication/systemuser.admin";
     }
 }

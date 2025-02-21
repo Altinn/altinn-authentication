@@ -17,6 +17,7 @@ using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Authorization;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
@@ -233,7 +234,6 @@ async Task SetUpPostgresConfigFromKeyVault(Altinn.Common.AccessToken.Configurati
 
         KeyVaultSecret secretUser = await client.GetSecretAsync(postgresConfigKeySecretNameUser);
         postgresUserConnectionString = secretUser.Value;
-
     }
     catch (Exception postgresConfigException) 
     {
@@ -431,6 +431,9 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_LOOKUP))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_READ))
+        .AddPolicy(AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS, policy =>
+                policy.Requirements.Add(new InternalScopeOrAccessTokenRequirement(
+                    AuthzConstants.SCOPE_INTERNAL_OR_PLATFORM_ACCESS)))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_PORTAL, policy =>
             policy.RequireScopeAnyOf(AuthzConstants.SCOPE_PORTAL));
 
