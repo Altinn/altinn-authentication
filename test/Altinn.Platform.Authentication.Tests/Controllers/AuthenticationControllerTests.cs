@@ -55,9 +55,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
-            bool enableOidc = false;
-            bool forceOidc = false;
-            string defaultOidc = "altinn";
 
             string configPath = GetConfigPath();
 
@@ -78,10 +75,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     { "GeneralSettings:DefaultOidcProvider", "altinn" }
                 })
               .Build();
-
-            //configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-            //configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
-            //configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
 
@@ -136,11 +129,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.MaskinPorten, SecurityLevel.Sensitive, 974760223, AuthenticationEventType.TokenExchange);
 
-            //= GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -189,7 +180,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -231,7 +221,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -275,7 +264,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -318,7 +306,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -363,11 +350,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.VirksomhetsBruker, SecurityLevel.Sensitive, 974760223, AuthenticationEventType.TokenExchange, 1234, true, "fe155387-c5f2-42e9-943a-811789db663a");
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -412,14 +397,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             Mock<IGuidService> guidService = new Mock<IGuidService>();
             guidService.Setup(q => q.NewGuid()).Returns("eaec330c-1e2d-4acb-8975-5f3eba12b2fb");
 
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.VirksomhetsBruker, SecurityLevel.Sensitive, 974760223, AuthenticationEventType.TokenExchange, 1234);
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -463,7 +446,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -512,7 +494,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -554,11 +535,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             _cookieDecryptionService.Setup(s => s.DecryptTicket(It.IsAny<string>())).ReturnsAsync(userAuthenticationModel);
 
-            //Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.AltinnPIN, SecurityLevel.QuiteSensitive, null, AuthenticationEventType.Authenticate, 434, true);
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
             HttpClient client = CreateClient();
 
             string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost";
@@ -607,6 +586,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
             Assert.NotNull(principal);
 
+            Assert.True(principal.Claims.ToList().Exists(c => c.Type == "urn:altinn:party:uuid"));
             Assert.NotNull(sameSite);
             Assert.Equal("lax", sameSite);
 
@@ -622,7 +602,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUser_NoTokenPortalParametersIncluded_RedirectsToSBL()
         {
             // Arrange         
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();            
 
             string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost&DontChooseReportee=true";
@@ -653,7 +632,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
@@ -692,7 +670,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:ForceOidc"] = "true";
             _configuration["GeneralSettings:DefaultOidcProvider"] = "idporten";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true, "idporten");
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
@@ -739,11 +716,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            //Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.BankIDMobil, SecurityLevel.VerySensitive, null, AuthenticationEventType.Authenticate, 1337, true);
-
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object, true, true);
 
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
@@ -823,11 +797,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            //Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.BankIDMobil, SecurityLevel.VerySensitive, null, AuthenticationEventType.Authenticate, 1337, true);
-
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object, true, true);
 
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
@@ -857,7 +828,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // different formats and this component does not need to understand it. It just exchanged code with
             // OIDC Provider to get a JWT ID token in response. In this test we create a JWTToken as code to make
             // the exchange in OidcProviderMock simple
-
             List<Claim> claims = new List<Claim>();
             claims.Add(new Claim("scope", "openid"));
             string authorizationCode = CreateOidcCode("1337", "1337", nonceParam, claims);
@@ -1000,7 +970,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
 
             string redirectUri = "http://localhost/authentication/api/v1/authentication?iss=uidp";
@@ -1077,7 +1046,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
@@ -1135,7 +1103,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
 
@@ -1187,7 +1154,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
 
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
@@ -1225,7 +1191,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
 
             string redirectUri = "http://localhost/authentication/api/v1/authentication";
@@ -1261,7 +1226,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, false, false);
             HttpClient client = CreateClient();
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true&iss=idporten";
@@ -1289,7 +1253,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange         
             string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
             
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, false);
             HttpClient client = CreateClient();
 
             string url = "/authentication/api/v1/authentication?goto=" + HttpUtility.UrlEncode(gotoUrl) + "&DontChooseReportee=true";
@@ -1319,7 +1282,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SblBridgeResponseException sblBridgeResponseException = new SblBridgeResponseException(bridgeResponse);
             _cookieDecryptionService.Setup(s => s.DecryptTicket(It.IsAny<string>())).ThrowsAsync(sblBridgeResponseException);
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost";
@@ -1340,7 +1302,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateExternalSystemToken_MissingBearerToken_NotAuthorized()
         {
             // Arrange
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             string url = "/authentication/api/v1/exchange/maskinporten";
@@ -1359,7 +1320,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateExternalSystemToken_UnreadableBearerToken_NotAuthorized()
         {
             // Arrange
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "ThisTokenShouldNotBeReadable");
@@ -1391,7 +1351,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
             string token = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -1437,12 +1396,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
 
-            //Mock<IEventsQueueClient> eventQueue = new Mock<IEventsQueueClient>();
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
 
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.MinIDPin, SecurityLevel.VerySensitive, null, AuthenticationEventType.TokenExchange, 20000);
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, eventQueue.Object, timeProviderMock.Object, guidService.Object);
             HttpClient client = CreateClient();
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
@@ -1495,7 +1452,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
@@ -1527,8 +1483,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateEndUser_RequestTokenUsingDigDirScope()
         {
             // Arrange
-            string expectedAuthLevel = "4";
-
             List<Claim> claims = new List<Claim>();
 
             string pid = "19108000239";
@@ -1547,7 +1501,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
@@ -1568,8 +1521,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateEndUser_RequestTokenUsingValidPartnerScope()
         {
             // Arrange
-            string expectedAuthLevel = "4";
-
             List<Claim> claims = new List<Claim>();
 
             string pid = "19108000239";
@@ -1588,7 +1539,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
@@ -1624,7 +1574,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -1662,7 +1611,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string url = "/authentication/api/v1/exchange/id-porten";
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
@@ -1707,7 +1655,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange
             string accessToken = JwtTokenMock.GenerateAccessToken("studio", "studio.designer", TimeSpan.FromMinutes(2));
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -1734,7 +1681,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateStudioToken_InvalidToken_ReturnsUnauthorized()
         {
             // Arrange
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "234234234234asasassdbadtoken");
@@ -1755,8 +1701,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateAltinn3Token_ValidToken_ReturnsNewToken_Refresh()
         {
             // Arrange
-            string expectedAuthLevel = "4";
-
             List<Claim> claims = new List<Claim>();
 
             string pid = "19108000239";
@@ -1777,7 +1721,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
 
-            //HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient client = CreateClient();
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
@@ -1794,7 +1737,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             url = "/authentication/api/v1/refresh";
 
-            //HttpClient refreshClient = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object);
             HttpClient refreshClient = CreateClient();
             refreshClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             HttpResponseMessage refreshedTokenMessage = await refreshClient.GetAsync(url);
@@ -1806,66 +1748,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(altinnSessionId, principal.FindFirstValue("jti"));
             Assert.True(principal.HasClaim(c => c.Type == "amr"));
         }
-
-        //private HttpClient GetTestClient(
-        //    ISblCookieDecryptionService cookieDecryptionService, 
-        //    IUserProfileService userProfileService, 
-        //    IEventsQueueClient eventLog = null, 
-        //    TimeProvider timeProviderMock = null,
-        //    IGuidService guidService = null,
-        //    bool enableOidc = false, 
-        //    bool forceOidc = false, 
-        //    string defaultOidc = "altinn")
-        //{
-        //    HttpClient client = _factory.WithWebHostBuilder(builder =>
-        //    {
-        //        string configPath = GetConfigPath();
-        //        builder.ConfigureAppConfiguration((context, conf) =>
-        //        {
-        //            conf.AddJsonFile(configPath);
-        //        });
-
-        //        var configuration = new ConfigurationBuilder()
-        //          .AddJsonFile(configPath)
-        //          .Build();
-
-        //        configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-        //        configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
-        //        configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
-
-        //        IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-
-        //        builder.ConfigureTestServices(services =>
-        //        {
-        //            services.Configure<GeneralSettings>(generalSettingSection);
-        //            services.AddSingleton(cookieDecryptionService);
-        //            services.AddSingleton(userProfileService);
-        //            services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
-        //            services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
-        //            services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
-        //            services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
-        //            services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-        //            services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
-        //            services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
-        //            if (eventLog != null)
-        //            {
-        //                services.AddSingleton(eventLog);
-        //            }
-
-        //            if (timeProviderMock != null)
-        //            {
-        //                services.AddSingleton(timeProviderMock);
-        //            }
-
-        //            if (guidService != null)
-        //            {
-        //                services.AddSingleton(guidService);
-        //            }
-        //        });
-        //    }).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-
-        //    return client;
-        //}
 
         private static string GetConfigPath()
         {
@@ -2012,7 +1894,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(HasCookieValue(setCookieHeaders, "authngoto", gotoUrl));
         }
 
-        private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string? externalSessionId = null)
+        private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string externalSessionId = null)
         {
             AuthenticationEvent authenticationEvent = new AuthenticationEvent();
             authenticationEvent.Created = new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero);

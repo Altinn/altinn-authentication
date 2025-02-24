@@ -15,6 +15,7 @@
 		<PackageReference Include="Altinn.Common.AccessTokenClient" Version="3.0.12" />
 		<PackageReference Include="Altinn.Platform.Models" Version="1.6.1" />
 		<PackageReference Include="Altinn.Urn" Version="2.6.1" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.4.0" />
 	</ItemGroup>
 
   <ItemGroup>
