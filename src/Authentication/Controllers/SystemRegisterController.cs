@@ -316,7 +316,7 @@ public class SystemRegisterController : ControllerBase
             return errorResult;
         }
 
-        bool success = await _systemRegisterService.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId);
+        bool success = await _systemRegisterService.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId, cancellationToken);
         if (!success)
         {
             return BadRequest();
@@ -375,7 +375,7 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private ValidationErrorBuilder ValidateAccessPackages(List<AccessPackage> accessPackages)
+    private static ValidationErrorBuilder ValidateAccessPackages(List<AccessPackage> accessPackages)
     {
         ValidationErrorBuilder errors = default;
 

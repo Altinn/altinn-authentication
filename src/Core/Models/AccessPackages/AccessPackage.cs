@@ -14,6 +14,6 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         /// <summary>
         /// The unique identifier for the Access Package
         /// </summary>
-        public string Urn { get; set; }
+        public required string Urn { get; set; }
     }
 }

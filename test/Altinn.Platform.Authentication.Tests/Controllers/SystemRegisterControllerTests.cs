@@ -769,7 +769,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpResponseMessage responseMessage = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 List<AccessPackage> list = JsonSerializer.Deserialize<List<AccessPackage>>(await responseMessage.Content.ReadAsStringAsync(), _options);
                 Assert.Equal("urn:altinn:accesspackage:sjøfart", list[0].Urn);
-                Assert.True(list.Count == 1);
+                Assert.Single(list);
             }
         }
 
