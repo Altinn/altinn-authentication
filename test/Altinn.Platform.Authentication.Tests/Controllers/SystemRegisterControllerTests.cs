@@ -462,7 +462,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string dataFileName02 = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageNull.json";
             HttpResponseMessage response02 = await CreateSystemRegister(dataFileName02);
 
-            if (response02.StatusCode == System.Net.HttpStatusCode.OK) /* && response01.StatusCode == System.Net.HttpStatusCode.OK)*/
+            if (response.StatusCode == System.Net.HttpStatusCode.OK && response01.StatusCode == System.Net.HttpStatusCode.OK && response02.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 HttpClient client = CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
