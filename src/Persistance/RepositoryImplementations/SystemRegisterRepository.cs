@@ -304,7 +304,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             while (await reader.ReadAsync())
             {
-                if (!reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_RIGHTS))
+                if (!await reader.IsDBNullAsync(SystemRegisterFieldConstants.SYSTEM_RIGHTS))
                 {
                     rights = await reader.GetFieldValueAsync<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);
                 }
@@ -340,7 +340,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             while (await reader.ReadAsync())
             {
-                if (!reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES))
+                if (!await reader.IsDBNullAsync(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES))
                 {
                     accessPackages = await reader.GetFieldValueAsync<List<AccessPackage>>(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES);
                 }
