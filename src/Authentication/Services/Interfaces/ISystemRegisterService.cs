@@ -77,8 +77,9 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="accessPackages">A list of access packages</param>
         /// <param name="systemId">The human readable string id</param>
+        /// <param name="cancellation">The cancellation token</param>
         /// <returns>true if changed</returns>
-        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId);
+        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, CancellationToken cancellation = default);
 
         /// <summary>
         /// Set's the product's is_deleted column to True.
@@ -122,13 +123,5 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>false when one of the resource idnot found</returns>
         Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Checks if the access packages are found in access package list
-        /// </summary>
-        /// <param name="accessPackages">the access package</param>
-        /// <param name="cancellationToken">the cancellation token</param>
-        /// <returns>false when one of the resource idnot found</returns>
-        Task<bool> HasValidAccessPackages(List<AttributePair> accessPackages, CancellationToken cancellationToken);
     }
 }

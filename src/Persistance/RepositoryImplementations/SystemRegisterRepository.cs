@@ -4,6 +4,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Persistance.Constants;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -95,15 +96,15 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_id", toBeInserted.Id);
-            command.Parameters.AddWithValue("systemvendor_orgnumber", GetOrgNumber(toBeInserted.Vendor.ID));
-            command.Parameters.AddWithValue("name", toBeInserted.Name);
-            command.Parameters.AddWithValue("description", toBeInserted.Description);
-            command.Parameters.AddWithValue("client_id", toBeInserted.ClientId);
-            command.Parameters.AddWithValue("is_visible", toBeInserted.IsVisible);
-            command.Parameters.AddWithValue("allowedredirecturls", toBeInserted.AllowedRedirectUrls.ConvertAll<string>(delegate (Uri u) { return u.ToString(); }));
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
-            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = toBeInserted.AccessPackages });
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, toBeInserted.Id);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER, GetOrgNumber(toBeInserted.Vendor.ID));
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_NAME, toBeInserted.Name);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_DESCRIPTION, toBeInserted.Description);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, toBeInserted.ClientId);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE, toBeInserted.IsVisible);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, toBeInserted.AllowedRedirectUrls.ConvertAll<string>(delegate (Uri u) { return u.ToString(); }));
+            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
+            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = toBeInserted.AccessPackages });
 
             Guid systemInternalId = await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -146,15 +147,15 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn, transaction);
 
-            command.Parameters.AddWithValue("system_id", updatedSystem.Id);
-            command.Parameters.AddWithValue("systemvendor_orgnumber", GetOrgNumber(updatedSystem.Vendor.ID));
-            command.Parameters.AddWithValue("name", updatedSystem.Name);
-            command.Parameters.AddWithValue("description", updatedSystem.Description);
-            command.Parameters.AddWithValue("is_visible", updatedSystem.IsVisible);
-            command.Parameters.AddWithValue("is_deleted", updatedSystem.IsDeleted);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
-            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
-            command.Parameters.AddWithValue("allowedredirecturls", updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, updatedSystem.Id);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER, GetOrgNumber(updatedSystem.Vendor.ID));
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_NAME, updatedSystem.Name);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_DESCRIPTION, updatedSystem.Description);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE, updatedSystem.IsVisible);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_DELETED, updatedSystem.IsDeleted);
+            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
+            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
 
@@ -197,7 +198,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_id", id);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, id);
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemRegister)
@@ -258,10 +259,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         try
         {
             await using NpgsqlCommand command1 = new NpgsqlCommand(QUERY1, conn, transaction);
-            command1.Parameters.AddWithValue("system_id", id);
+            command1.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, id);
 
             await using NpgsqlCommand command2 = new NpgsqlCommand(QUERY2, conn, transaction);
-            command2.Parameters.AddWithValue("system_internal_id", systemInternalId);
+            command2.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID, systemInternalId);
 
             int rowsAffected1 = await command1.ExecuteNonQueryAsync();
             int rowsAffected2 = await command2.ExecuteNonQueryAsync();
@@ -293,13 +294,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, systemId);
 
             await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
             {
-                rights = reader.GetFieldValue<List<Right>>("rights");                                
+                rights = reader.GetFieldValue<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);                                
             }
 
             return rights;
@@ -326,13 +327,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, systemId);
 
             await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
             {
-                accessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages");
+                accessPackages = reader.GetFieldValue<List<AccessPackage>>(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES);
             }
 
             return accessPackages;
@@ -358,8 +359,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_id", systemId);
-            command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = rights });
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, systemId);
+            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = rights });
 
             return await command.ExecuteNonQueryAsync() > 0;
         }
@@ -384,8 +385,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_id", systemId);
-            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = accessPackages });
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, systemId);
+            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = accessPackages });
 
             return await command.ExecuteNonQueryAsync() > 0;
         }
@@ -413,8 +414,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
-        string[] stringGuids = reader.GetFieldValue<string[]>("client_id");                
-        List<Right> rights = reader.GetFieldValue<List<Right>>("rights");
+        string[] stringGuids = reader.GetFieldValue<string[]>(SystemRegisterFieldConstants.SYSTEM_CLIENTID);                
+        List<Right> rights = reader.GetFieldValue<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);
         List<string> clientIds = [];
 
         foreach (string str in stringGuids)
@@ -429,23 +430,23 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
         VendorInfo vendor = new() 
         {
-            ID = "0192:" + reader.GetFieldValue<string>("systemvendor_orgnumber"),
+            ID = "0192:" + reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER),
             Authority = "iso6523-actorid-upis"
         };
 
         return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
-            InternalId = reader.GetFieldValue<Guid>("system_internal_id"),
-            Id = reader.GetFieldValue<string>("system_id"),
+            InternalId = reader.GetFieldValue<Guid>(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID),
+            Id = reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_ID),
             Vendor = vendor,
-            Name = reader.GetFieldValue<IDictionary<string, string>>("name"),
-            Description = reader.GetFieldValue<IDictionary<string, string>>("description"),
-            IsDeleted = reader.GetFieldValue<bool>("is_deleted"),
+            Name = reader.GetFieldValue<IDictionary<string, string>>(SystemRegisterFieldConstants.SYSTEM_NAME),
+            Description = reader.GetFieldValue<IDictionary<string, string>>(SystemRegisterFieldConstants.SYSTEM_DESCRIPTION),
+            IsDeleted = reader.GetFieldValue<bool>(SystemRegisterFieldConstants.SYSTEM_IS_DELETED),
             ClientId = clientIds,
             Rights = rights,
-            IsVisible = reader.GetFieldValue<bool>("is_visible"),
-            AllowedRedirectUrls = reader.IsDBNull("allowedredirecturls") ? null : reader.GetFieldValue<List<string>>("allowedredirecturls")?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); }),
-            AccessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages")
+            IsVisible = reader.GetFieldValue<bool>(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE),
+            AllowedRedirectUrls = reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS) ? null : reader.GetFieldValue<List<string>>(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS)?.ConvertAll<Uri>(delegate (string u) { return new Uri(u); }),
+            AccessPackages = reader.GetFieldValue<List<AccessPackage>>(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES)
         });
     }
 
@@ -453,8 +454,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         return new ValueTask<MaskinPortenClientInfo>(new MaskinPortenClientInfo
         {
-            ClientId = reader.GetFieldValue<string>("Client_id"),
-            SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id")
+            ClientId = reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_CLIENTID),
+            SystemInternalId = reader.GetFieldValue<Guid>(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID)
         });
     }
 
@@ -473,7 +474,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
             command.Parameters.AddWithValue("new_client_id", clientId);
-            command.Parameters.AddWithValue("system_internal_id", systemInteralId);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID, systemInteralId);
             return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
@@ -498,7 +499,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn, transaction);
 
             command.Parameters.AddWithValue("new_client_id", clientId);
-            command.Parameters.AddWithValue("system_internal_id", systemInteralId);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID, systemInteralId);
             await command.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
@@ -548,7 +549,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand guidCommand = _datasource.CreateCommand(GUIDQUERY);
 
-            guidCommand.Parameters.AddWithValue("system_id", id);
+            guidCommand.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, id);
 
             return await guidCommand.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -591,7 +592,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("client_id", id.ToArray());
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, id.ToArray());
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToMaskinPortenClientInfo)
@@ -618,7 +619,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("system_internal_id", systemInternalId);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID, systemInternalId);
 
             return await command.ExecuteEnumerableAsync()
                             .SelectAwait(ConvertFromReaderToMaskinPortenClientInfo)

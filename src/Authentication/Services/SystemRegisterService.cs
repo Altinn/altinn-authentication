@@ -86,7 +86,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId)
+        public Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId);
         }
@@ -124,27 +124,6 @@ namespace Altinn.Platform.Authentication.Services
                     }
                 }                
             }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Checks if the access packages are found in access package list
-        /// </summary>
-        /// <param name="accessPackages">the list of access packages required by the system</param>
-        /// <param name="cancellationToken">the cancellation token</param>
-        /// <returns></returns>
-        public async Task<bool> HasValidAccessPackages(List<AttributePair> accessPackages, CancellationToken cancellationToken)
-        {
-            //todo: integrate with access management to check the access packages metadata
-            //foreach (AttributePair accessPackage in accessPackages)
-            //{
-            //    ServiceResource resource = await _resourceRegistryClient.GetResource(accessPackage.Value);
-            //    if (resource == null)
-            //    {
-            //        return false;
-            //    }
-            //}
 
             return true;
         }

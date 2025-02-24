@@ -136,6 +136,9 @@
     <None Update="Data\Roles\user_1337\party_501337\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterUpdateBadRequest.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\UpdateAccessPackageDuplicate.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
