@@ -433,6 +433,7 @@ namespace Altinn.Platform.Authentication.Helpers
                     }
                 }
             }
+
             return false; // No duplicates
         }
     }
