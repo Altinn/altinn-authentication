@@ -7,6 +7,7 @@ using System.Security.Policy;
 using System.Text.RegularExpressions;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
@@ -420,20 +421,19 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
-        /// Check for duplicates in the rights
+        /// Checks if the AccessPackages list has duplicate values
         /// </summary>
-        /// <param name="rights">the resources that the system gives rights to</param>
-        /// <param name="existingRights">the existing rights </param>
-        /// <returns>true if duplicate rights found</returns>
-        public static bool DoesResourceAlreadyExists(List<Right> rights, List<Right> existingRights)
+        /// <param name="accessPackages">The list of access packages to check</param>
+        /// <returns>true if duplicate access packages found</returns>
+        public static bool HasDuplicateAccessPackage(List<AccessPackage> accessPackages)
         {
-            var existingRightsSet = new HashSet<string>(existingRights.Select(r => $"{r.Action}:{string.Join(",", r.Resource.Select(res => $"{res.Id}:{res.Value}"))}"));
+            var uniqueAccessPackages = new HashSet<string>();
 
-            foreach (var right in rights)
+            foreach (var accessPackage in accessPackages)
             {
-                var rightKey = $"{right.Action}:{string.Join(",", right.Resource.Select(r => $"{r.Id}:{r.Value}"))}";
+                var accessPackageKey = $"{accessPackage.Urn}";
 
-                if (existingRightsSet.Contains(rightKey))
+                if (!uniqueAccessPackages.Add(accessPackageKey))
                 {
                     return true; // Duplicate found
                 }

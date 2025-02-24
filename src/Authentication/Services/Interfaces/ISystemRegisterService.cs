@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 #nullable enable
@@ -29,6 +30,15 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellation">Cancellation token</param>
         /// <returns>List of Default Rights</returns>
         Task<List<Right>> GetRightsForRegisteredSystem(string systemId, CancellationToken cancellation = default);
+
+        /// <summary>
+        /// Retrieves the list, if any, of the access packages the System Provider
+        /// has set for the Registered System.
+        /// </summary>
+        /// <param name="systemId">The Id of the Registered System</param>
+        /// <param name="cancellation">Cancellation token</param>
+        /// <returns>List of access packages for the registered system</returns>
+        Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId, CancellationToken cancellation = default);
 
         /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider
@@ -63,6 +73,15 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The human readable string id</param>
         /// <returns>true if changed</returns>
         Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
+
+        /// <summary>
+        /// Updates the access packages on a registered system
+        /// </summary>
+        /// <param name="accessPackages">A list of access packages</param>
+        /// <param name="systemId">The human readable string id</param>
+        /// <param name="cancellation">The cancellation token</param>
+        /// <returns>true if changed</returns>
+        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, CancellationToken cancellation = default);
 
         /// <summary>
         /// Set's the product's is_deleted column to True.

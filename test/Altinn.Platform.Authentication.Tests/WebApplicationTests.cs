@@ -2,6 +2,8 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +42,7 @@ public abstract class WebApplicationTests
 
     protected virtual void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<IProfile, ProfileMock>();
     }
 
     async Task IAsyncLifetime.DisposeAsync()
