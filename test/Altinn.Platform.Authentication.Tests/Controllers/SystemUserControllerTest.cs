@@ -854,19 +854,19 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(shouldBeCreated);
             Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);
 
-            HttpClient vendorClient = CreateClient();
+            HttpClient streamClient = CreateClient();
             string[] prefixes = { "altinn", "digdir" };
             string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.admin", prefixes);
-            vendorClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            streamClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            string vendorEndpoint = $"/authentication/api/v1/systemuser/internal/systemusers/stream";
+            string streamEndpoint = $"/authentication/api/v1/systemuser/internal/systemusers/stream";
 
-            HttpRequestMessage vendorMessage = new(HttpMethod.Get, vendorEndpoint);
-            HttpResponseMessage vendorResponse = await vendorClient.SendAsync(vendorMessage, HttpCompletionOption.ResponseContentRead);
+            HttpRequestMessage streamMessage = new(HttpMethod.Get, streamEndpoint);
+            HttpResponseMessage streamResponse = await streamClient.SendAsync(streamMessage, HttpCompletionOption.ResponseContentRead);
 
-            Assert.Equal(HttpStatusCode.OK, vendorResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, streamResponse.StatusCode);
 
-            var result = await vendorResponse.Content.ReadFromJsonAsync<Paginated<SystemUserRegisterDTO>>();
+            var result = await streamResponse.Content.ReadFromJsonAsync<ItemStream<SystemUserRegisterDTO>>();
             Assert.NotNull(result);
             var list = result.Items.ToList();
 

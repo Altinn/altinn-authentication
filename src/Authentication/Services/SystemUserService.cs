@@ -308,10 +308,9 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<IEnumerable<SystemUserRegisterDTO>>> GetAllSystemUsers(long continueFrom, CancellationToken cancellationToken)
         {
-            List<SystemUserRegisterDTO>? theList = await _repository.GetAllSystemUsers(continueFrom, _paginationSize, cancellationToken);
-            theList ??= [];
-
-            return theList;
+            List<SystemUserRegisterDTO>? systemUserDtos = await _repository.GetAllSystemUsers(continueFrom, _paginationSize, cancellationToken);
+            systemUserDtos ??= [];
+            return systemUserDtos;
         }
     }
 }

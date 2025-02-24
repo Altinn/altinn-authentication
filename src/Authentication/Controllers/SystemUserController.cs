@@ -256,7 +256,7 @@ public class SystemUserController : ControllerBase
     /// <param name="token">Optional continuation token</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Paginated list of all SystmUsers e</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS)]
+    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS)]
     [HttpGet("internal/systemusers/stream", Name = ROUTE_GET_STREAM)]
     public async Task<ActionResult<ItemStream<SystemUserRegisterDTO>>> GetAllSystemUsers(
         [FromQuery(Name = "token")] Opaque<long>? token = null,

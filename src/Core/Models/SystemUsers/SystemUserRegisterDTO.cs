@@ -10,23 +10,20 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers
     public class SystemUserRegisterDTO
     {
         /// <summary>
-        /// GUID created by the "real" Authentication Component
-        /// When the Frontend send a request for the creation of a new SystemUser the Id is null
+        /// GUID Id for the SystemUser
         /// </summary>
         [JsonPropertyName("id")]
-        public string Id { get; set; } = string.Empty;
+        public required string Id { get; set; }
 
         /// <summary>
         /// The Title is by default the same as the System's Display Name
         /// </summary>
         [JsonPropertyName("integrationTitle")]
-        public string IntegrationTitle { get; set; }
+        public required string IntegrationTitle { get; set; }
 
         /// <summary>
         /// False by default, if a SystemUser is deleted in the API,
-        /// it is marked as IsDeleted ("tombstoned") rather than actually deleted
-        /// from the database. This is to avoid complications with cascade delete,
-        /// and the need to maintain consistent logging, and possible compliance rules.
+        /// it is marked as IsDeleted ("tombstoned") rather than actually deleted.
         /// </summary>
         [JsonPropertyName("isDeleted")]
         public bool IsDeleted { get; set; } = false;
@@ -34,13 +31,14 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers
         /// <summary>
         /// Last changed data time
         /// </summary>
+        [JsonPropertyName("lastChanged")]
         public DateTime LastChanged {  get; set; }
 
         /// <summary>
         /// Created date time
         /// </summary>
         [JsonPropertyName("created")]
-        public System.DateTime Created { get; set; } = DateTime.UtcNow;
+        public DateTime Created { get; set; } 
 
         /// <summary>
         /// Used internally when paginating
