@@ -395,17 +395,18 @@ public class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<List<SystemUserRegisterDTO>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken)
     {
-        const string QUERY = /*strpsql*/@"""
+        const string QUERY = /*strpsql*/"""
             SELECT 
-	    	    sui.system_user_profile_id,
-		        sui.integration_title,
-		        sui.created,
+                sui.system_user_profile_id,
+                sui.integration_title,      
+                sui.created,        
                 sui.last_changed,
                 sui.sequence_no,
                 sui.is_deleted
-	        FROM business_application.system_user_profile sui                
+            FROM business_application.system_user_profile sui                
             WHERE sui.sequence_no > @sequence_no
                 AND sui.sequence_no <= business_application.tx_max_safeval('business_application.systemuser_seq')
+            ORDER BY sui.sequence_no ASC
             LIMIT @limit;
             """
         ;
