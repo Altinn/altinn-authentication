@@ -139,6 +139,9 @@
     <None Update="Data\SystemRegister\Json\SystemRegisterUpdateBadRequest.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterWithAccessPackageNull.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\UpdateAccessPackageDuplicate.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

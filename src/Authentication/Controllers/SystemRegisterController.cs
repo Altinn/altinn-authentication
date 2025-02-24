@@ -155,28 +155,21 @@ public class SystemRegisterController : ControllerBase
     {
         List<Right> lista = await _systemRegisterService.GetRightsForRegisteredSystem(systemId, cancellationToken);
 
-        if (lista is null || lista.Count == 0)
+        if (useOldFormatForApp)
         {
-            return NotFound();
+            foreach (Right right in lista)
+            {
+                var resource = new List<AttributePair>();
+                resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
+
+                right.Resource = resource;
+            }
+
+            return Ok(lista);
         }
         else
         {
-            if (useOldFormatForApp)
-            {
-                foreach (Right right in lista)
-                {
-                    var resource = new List<AttributePair>();
-                    resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
-
-                    right.Resource = resource;
-                }
-
-                return Ok(lista);
-            }
-            else
-            {
-                return Ok(lista);
-            }
+            return Ok(lista);
         }
     }
 
@@ -192,14 +185,8 @@ public class SystemRegisterController : ControllerBase
     {
         List<AccessPackage> lista = await _systemRegisterService.GetAccessPackagesForRegisteredSystem(systemId, cancellationToken);
 
-        if (lista is null || lista.Count == 0)
-        {
-            return NotFound();
-        }
-        else
-        {
-            return Ok(lista);
-        }
+        return Ok(lista);
+
     }
 
     /// <summary>
