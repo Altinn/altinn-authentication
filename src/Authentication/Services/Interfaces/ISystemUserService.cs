@@ -102,5 +102,5 @@ public interface ISystemUserService
     /// Returns a list of all SystemUsers    
     /// </summary>
     /// <returns>List of SystemUser</returns>
-    Task<Result<Page<SystemUserRegisterDTO, long>>> GetAllSystemUsers(long continueFrom, CancellationToken cancellationToken);
+    Task<Result<IEnumerable<SystemUserRegisterDTO>>> GetAllSystemUsers(long continueFrom, CancellationToken cancellationToken);
 }

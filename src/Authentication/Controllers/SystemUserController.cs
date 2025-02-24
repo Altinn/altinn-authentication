@@ -38,6 +38,11 @@ public class SystemUserController : ControllerBase
     private readonly IRequestSystemUser _requestSystemUser;
 
     /// <summary>
+    /// Route name for the internal stream of systemusers used by the Registry
+    /// </summary>
+    public const string ROUTE_GET_STREAM = "internal/systemusers/stream";
+
+    /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="systemUserService">The SystemUserService supports this API specifically.</param>
@@ -252,12 +257,12 @@ public class SystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Paginated list of all SystmUsers e</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS)]
-    [HttpGet("internal/systemusers/stream", Name = "internal/systemusers/stream")]
-    public async Task<ActionResult<Paginated<SystemUserRegisterDTO>>> GetAllSystemUsers(
+    [HttpGet("internal/systemusers/stream", Name = ROUTE_GET_STREAM)]
+    public async Task<ActionResult<ItemStream<SystemUserRegisterDTO>>> GetAllSystemUsers(
         [FromQuery(Name = "token")] Opaque<long>? token = null,
         CancellationToken cancellationToken = default)
-    {        
-        Result<Page<SystemUserRegisterDTO, long>> pageResult = await _systemUserService.GetAllSystemUsers(
+    {
+        Result<IEnumerable<SystemUserRegisterDTO>> pageResult = await _systemUserService.GetAllSystemUsers(
             token?.Value ?? 0,
             cancellationToken);
         if (pageResult.IsProblem)
@@ -265,19 +270,23 @@ public class SystemUserController : ControllerBase
             return pageResult.Problem.ToActionResult();
         }
 
-        var nextLink = pageResult.Value.ContinuationToken.HasValue
-            ? Url.Link("internal/systemusers/stream", new
-            {
-                token = Opaque.Create(pageResult.Value.ContinuationToken.Value)
-            })
-            : null;
+        List<SystemUserRegisterDTO> systemUserList = pageResult.Value.ToList();
+        long maxSeq = 1000;
+        string? nextLink = null;
 
-        if (pageResult.IsSuccess)
+        if (systemUserList.Count > 0)
         {
-            return Paginated.Create(pageResult.Value.Items.ToList(), nextLink);
-        }
+            nextLink = Url.Link(ROUTE_GET_STREAM, new
+            {
+                token = Opaque.Create(systemUserList[^1].SequenceNo)                
+            });    
+        }        
 
-        return NotFound();
+        return ItemStream.Create(
+            pageResult.Value,
+            next: nextLink,
+            sequenceMax: maxSeq,
+            sequenceNumberFactory: static s => s.SequenceNo);            
     }
 
     private OrganisationNumber? RetrieveOrgNoFromToken()
