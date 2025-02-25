@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Core.Models;
 
@@ -34,6 +35,11 @@ public record class RegisteredSystemDTO
     /// The array of Rights versus System Provider's Resources needed to use this Registered System
     /// </summary>
     public List<Right> Rights { get; set; } = [];
+
+    /// <summary>
+    /// The array of access packages versus System Provider's Resources needed to use this Registered System
+    /// </summary>
+    public List<AccessPackage> AccessPackages { get; set; } = [];
 
     /// <summary>
     /// True if the registered system is visible to the user in the UI

@@ -346,8 +346,9 @@ namespace Altinn.Platform.Authentication.Helpers
                 Rights = registeredSystem.Rights,
                 SystemId = registeredSystem.Id,
                 SystemVendorOrgName = registeredSystem.SystemVendorOrgName,
-                SystemVendorOrgNumber = GetOrgNumber(registeredSystem.SystemVendorOrgNumber) ?? string.Empty,
-                IsVisible = registeredSystem.IsVisible
+                SystemVendorOrgNumber = GetOrgNumber(registeredSystem.SystemVendorOrgNumber),
+                IsVisible = registeredSystem.IsVisible,
+                AccessPackages = registeredSystem.AccessPackages
             };
         }
 
@@ -407,13 +408,16 @@ namespace Altinn.Platform.Authentication.Helpers
         {
             var uniqueRights = new HashSet<string>();
 
-            foreach (var right in rights)
+            if (rights != null)
             {
-                var rightKey = $"{right.Action}:{string.Join(",", right.Resource.Select(r => $"{r.Id}:{r.Value}"))}";
-
-                if (!uniqueRights.Add(rightKey))
+                foreach (var right in rights)
                 {
-                    return true; // Duplicate found
+                    var rightKey = $"{right.Action}:{string.Join(",", right.Resource.Select(r => $"{r.Id}:{r.Value}"))}";
+
+                    if (!uniqueRights.Add(rightKey))
+                    {
+                        return true; // Duplicate found
+                    }
                 }
             }
 
@@ -429,13 +433,16 @@ namespace Altinn.Platform.Authentication.Helpers
         {
             var uniqueAccessPackages = new HashSet<string>();
 
-            foreach (var accessPackage in accessPackages)
+            if (accessPackages != null)
             {
-                var accessPackageKey = $"{accessPackage.Urn}";
-
-                if (!uniqueAccessPackages.Add(accessPackageKey))
+                foreach (var accessPackage in accessPackages)
                 {
-                    return true; // Duplicate found
+                    var accessPackageKey = $"{accessPackage.Urn}";
+
+                    if (!uniqueAccessPackages.Add(accessPackageKey))
+                    {
+                        return true; // Duplicate found
+                    }
                 }
             }
 
