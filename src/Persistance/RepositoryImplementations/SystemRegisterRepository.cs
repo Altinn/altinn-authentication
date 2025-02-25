@@ -105,8 +105,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, toBeInserted.ClientId);
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE, toBeInserted.IsVisible);
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, toBeInserted.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
-            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = toBeInserted.Rights });
-            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = toBeInserted.AccessPackages });
+            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = (toBeInserted.Rights == null) ? DBNull.Value : toBeInserted.Rights });
+            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
 
             Guid systemInternalId = await command.ExecuteEnumerableAsync()
                 .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
@@ -298,13 +298,16 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, systemId);
+            command.Parameters.AddWithValue("system_id", systemId);
 
             await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
             {
-                rights = await reader.GetFieldValueAsync<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);                                
+                if (!await reader.IsDBNullAsync(SystemRegisterFieldConstants.SYSTEM_RIGHTS))
+                {
+                    rights = await reader.GetFieldValueAsync<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);
+                }
             }
 
             return rights;
@@ -337,7 +340,10 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             while (await reader.ReadAsync())
             {
-                accessPackages = await reader.GetFieldValueAsync<List<AccessPackage>>(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES);
+                if (!await reader.IsDBNullAsync(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES))
+                {
+                    accessPackages = await reader.GetFieldValueAsync<List<AccessPackage>>(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES);
+                }
             }
 
             return accessPackages;
@@ -404,7 +410,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         string[] stringGuids = reader.GetFieldValue<string[]>(SystemRegisterFieldConstants.SYSTEM_CLIENTID);                
-        List<Right> rights = reader.GetFieldValue<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);
+        List<Right>? rights = reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_RIGHTS) ? null : reader.GetFieldValue<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);
+        List<AccessPackage>? accessPackages = reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES) ? null : reader.GetFieldValue<List<AccessPackage>>(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES);
         List<string> clientIds = [];
         List<Uri> allowedRedirectUrls = [];
 
@@ -441,7 +448,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             Rights = rights,
             IsVisible = reader.GetFieldValue<bool>(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE),
             AllowedRedirectUrls = allowedRedirectUrls,
-            AccessPackages = reader.GetFieldValue<List<AccessPackage>>(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES)
+            AccessPackages = accessPackages
         });
     }
 

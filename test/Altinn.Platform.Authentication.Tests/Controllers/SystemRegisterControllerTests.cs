@@ -459,8 +459,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
             string dataFileName01 = "Data/SystemRegister/Json/SystemRegister01.json";
             HttpResponseMessage response01 = await CreateSystemRegister(dataFileName01);
+            string dataFileName02 = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageNull.json";
+            HttpResponseMessage response02 = await CreateSystemRegister(dataFileName02);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK && response01.StatusCode == System.Net.HttpStatusCode.OK)
+            if (response.StatusCode == System.Net.HttpStatusCode.OK && response01.StatusCode == System.Net.HttpStatusCode.OK && response02.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 HttpClient client = CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
@@ -468,7 +470,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
                 HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 List<RegisteredSystemDTO> list = JsonSerializer.Deserialize<List<RegisteredSystemDTO>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
-                Assert.True(list.Count > 1);
+                Assert.Equal(3, list.Count);
             }
         }
 
@@ -749,7 +751,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                Assert.Equal(HttpStatusCode.NotFound, rightsResponse.StatusCode);
+                Assert.Equal(HttpStatusCode.OK, rightsResponse.StatusCode);
+                Assert.Equal("[]", await rightsResponse.Content.ReadAsStringAsync());
             }
         }
 
@@ -787,7 +790,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/accesspackages");
                 HttpResponseMessage responseMessage = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                Assert.Equal(HttpStatusCode.NotFound, responseMessage.StatusCode);
+                Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+                Assert.Equal("[]", await responseMessage.Content.ReadAsStringAsync());
             }
         }
 
