@@ -874,7 +874,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(list[0].IntegrationTitle, newSystemUser.IntegrationTitle);
             Assert.Equal(10, list.Count);
 
-            // Stream some more, should get only 1
+            // Stream some more, should get only 2
             streamEndpoint = result.Links.Next!;
             HttpRequestMessage streamMessage2 = new(HttpMethod.Get, streamEndpoint);
             HttpResponseMessage streamResponse2 = await streamClient.SendAsync(streamMessage2, HttpCompletionOption.ResponseContentRead);
@@ -883,6 +883,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(result2);
             var list2 = result2.Items.ToList();
             Assert.Equal(2, list2.Count);
+
+            // Stream yet again, should get 0 new 
+            streamEndpoint = result2.Links.Next!;
+            HttpRequestMessage streamMessage3 = new(HttpMethod.Get, streamEndpoint);
+            HttpResponseMessage streamResponse3 = await streamClient.SendAsync(streamMessage3, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.OK, streamResponse3.StatusCode);
+            var result3 = await streamResponse3.Content.ReadFromJsonAsync<ItemStream<SystemUserRegisterDTO>>();
+            Assert.NotNull(result3);
+            var list3 = result3.Items.ToList();
+            Assert.Empty(list3);
         }
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
