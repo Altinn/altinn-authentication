@@ -857,7 +857,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(shouldBeCreated);
             Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);
 
-            await CreateSeveralSystemUsers(client, 10, systemId);
+            await CreateSeveralSystemUsers(client, 11, systemId);
 
             // Stream PAGE_SIZE (10)
             HttpClient streamClient = CreateClient();
@@ -882,7 +882,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result2 = await streamResponse2.Content.ReadFromJsonAsync<ItemStream<SystemUserRegisterDTO>>();            
             Assert.NotNull(result2);
             var list2 = result2.Items.ToList();
-            Assert.Equal(1, list2.Count);
+            Assert.Equal(2, list2.Count);
         }
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
