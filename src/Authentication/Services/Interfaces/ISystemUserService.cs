@@ -103,4 +103,10 @@ public interface ISystemUserService
     /// </summary>
     /// <returns>List of SystemUser</returns>
     Task<Result<IEnumerable<SystemUserRegisterDTO>>> GetAllSystemUsers(long continueFrom, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the max sequence no for SystemUsers
+    /// </summary>
+    /// <returns></returns>
+    Task<long> GetMaxSystemUserSequenceNo();
 }

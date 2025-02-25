@@ -83,4 +83,10 @@ public interface ISystemUserRepository
     /// </summary>
     /// <returns>List of SystemUser</returns>
     Task<List<SystemUserRegisterDTO>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the max sequence number for SystemUsers
+    /// </summary>
+    /// <returns>long</returns>
+    Task<long> GetMaxSystemUserSequenceNo();
 }

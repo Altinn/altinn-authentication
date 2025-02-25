@@ -1,5 +1,5 @@
 -- CREATE FUNCTION
-CREATE FUNCTION business_application.tx_nextval(
+CREATE FUNCTION IF NOT EXISTS business_application.tx_nextval(
   seq regclass
 )
 RETURNS bigint AS $$
@@ -30,7 +30,7 @@ $$ LANGUAGE plpgsql;
 
 
 -- CREATE FUNCTION
-CREATE FUNCTION business_application.tx_max_safeval(
+CREATE FUNCTION IF NOT EXISTS business_application.tx_max_safeval(
   seq regclass
 )
 RETURNS bigint AS $$

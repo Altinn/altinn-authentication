@@ -271,7 +271,7 @@ public class SystemUserController : ControllerBase
         }
 
         List<SystemUserRegisterDTO> systemUserList = pageResult.Value.ToList();
-        long maxSeq = 1000;
+        long maxSeq = await _systemUserService.GetMaxSystemUserSequenceNo();
         string? nextLink = null;
 
         if (systemUserList.Count > 0)

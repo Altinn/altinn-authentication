@@ -393,6 +393,35 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
+    public async Task<long> GetMaxSystemUserSequenceNo()
+    {
+        const string QUERY = /*strpsql*/"""
+            SELECT MAX(sequence_no) FROM business_application.system_user_profile
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleResult | CommandBehavior.SingleRow);
+
+            if (await reader.ReadAsync())
+            {
+                return await reader.GetFieldValueAsync<long>(0);
+            }
+            else
+            {
+                throw new InvalidOperationException("No resultset is currently being traversed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetSystemUserSequenceNo // Exception");
+            throw;
+        }        
+    }
+
+    /// <inheritdoc />
     public async Task<List<SystemUserRegisterDTO>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/"""

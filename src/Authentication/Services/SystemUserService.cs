@@ -312,5 +312,11 @@ namespace Altinn.Platform.Authentication.Services
             systemUserDtos ??= [];
             return systemUserDtos;
         }
+
+        /// <inheritdoc/>
+        public async Task<long> GetMaxSystemUserSequenceNo()
+        {
+            return await _repository.GetMaxSystemUserSequenceNo();
+        }
     }
 }
