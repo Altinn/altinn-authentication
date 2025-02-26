@@ -23,7 +23,7 @@ namespace AltinnCore.Authentication.JwtCookie
     /// </summary>
     public class JwtCookieHandler : AuthenticationHandler<JwtCookieOptions>
     {
-        private readonly OidcProviderSettings _oidcProviderSettings;
+        private readonly IOptionsMonitor<OidcProviderSettings> _oidcProviderSettings;
 
         /// <summary>
         /// The default constructor
@@ -32,16 +32,14 @@ namespace AltinnCore.Authentication.JwtCookie
         /// <param name="oidcProviderSettings">The settings related to oidc providers</param>
         /// <param name="logger">The logger</param>
         /// <param name="encoder">The Url encoder</param>
-        /// <param name="clock">The system clock</param>
         public JwtCookieHandler(
             IOptionsMonitor<JwtCookieOptions> options,
-            IOptions<OidcProviderSettings> oidcProviderSettings,
+            IOptionsMonitor<OidcProviderSettings> oidcProviderSettings,
             ILoggerFactory logger,
-            UrlEncoder encoder,
-            ISystemClock clock)
-            : base(options, logger, encoder, clock)
+            UrlEncoder encoder)
+            : base(options, logger, encoder)
         {
-            _oidcProviderSettings = oidcProviderSettings.Value;
+            _oidcProviderSettings = oidcProviderSettings;
         }
 
         /// <summary>
@@ -66,6 +64,8 @@ namespace AltinnCore.Authentication.JwtCookie
         /// <returns></returns>
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            var settings = _oidcProviderSettings.CurrentValue;
+
             try
             {
                 string token = string.Empty;
@@ -110,9 +110,9 @@ namespace AltinnCore.Authentication.JwtCookie
                 TokenValidationParameters validationParameters = null;
                 string issuer = validator.ReadJwtToken(token).Issuer;
 
-                if (issuer != null && _oidcProviderSettings.Count > 0)
+                if (issuer != null && settings.Count > 0)
                 {
-                    foreach (KeyValuePair<string, OidcProvider> provider in _oidcProviderSettings)
+                    foreach (KeyValuePair<string, OidcProvider> provider in settings)
                     {
                         if (provider.Value.Issuer == issuer)
                         {
