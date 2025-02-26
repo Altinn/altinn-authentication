@@ -52,6 +52,11 @@ namespace Altinn.Platform.Authentication.Services
         private int _paginationSize = paginationOption.Value.Size;
 
         /// <summary>
+        /// Used to set the stream chunk limit, for the internal API
+        /// </summary>
+        const int STREAM_LIMIT = 100;
+
+        /// <summary>
         /// Creates a new SystemUser
         /// The unique Id for the systemuser is handled by the db.
         /// </summary>
@@ -308,7 +313,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<IEnumerable<SystemUserRegisterDTO>>> GetAllSystemUsers(long continueFrom, CancellationToken cancellationToken)
         {
-            List<SystemUserRegisterDTO>? systemUserDtos = await _repository.GetAllSystemUsers(continueFrom, _paginationSize, cancellationToken);
+            List<SystemUserRegisterDTO>? systemUserDtos = await _repository.GetAllSystemUsers(continueFrom, STREAM_LIMIT, cancellationToken);
             systemUserDtos ??= [];
             return systemUserDtos;
         }
