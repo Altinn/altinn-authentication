@@ -9,13 +9,10 @@ namespace AltinnCore.Authentication.JwtCookie
     /// <summary>
     /// Post configures the Jwt Cookie options
     /// </summary>
-    public class JwtCookiePostConfigureOptions: IPostConfigureOptions<JwtCookieOptions>
+    internal sealed class JwtCookiePostConfigureOptions
+        : IPostConfigureOptions<JwtCookieOptions>
     {
-        /// <summary>
-        /// Invoked to post configure a TOptions instance.
-        /// </summary>
-        /// <param name="name">The name of the options instance being configured.</param>
-        /// <param name="options">The options instance to configure.</param>
+        /// <inheritdoc/>
         public void PostConfigure(string name, JwtCookieOptions options)
         {
             if (string.IsNullOrEmpty(options.JwtCookieName))
@@ -36,7 +33,7 @@ namespace AltinnCore.Authentication.JwtCookie
                 }
 
                 options.MetadataAddress += ".well-known/openid-configuration";
-                options.ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                options.ConfigurationManager ??= new ConfigurationManager<OpenIdConnectConfiguration>(
                     options.MetadataAddress,
                     new OpenIdConnectConfigurationRetriever(),
                     new HttpDocumentRetriever { RequireHttps = options.RequireHttpsMetadata });
