@@ -55,7 +55,9 @@ public class SystemUserTokenTests
             $"&systemUserOwnerOrgNo={systemUserOwnerOrgNo}" +
             $"&externalRef={externalRef}";
 
-        var fullEndpoint = $"{UrlConstants.GetByExternalId}{queryString}";
+        var fullEndpoint = $"{ApiEndpoints.GetSystemUserByExternalId.Url()}{queryString}";
+        //Old
+        // fullEndpoint = $"{UrlConstants.GetByExternalId}{queryString}";
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);

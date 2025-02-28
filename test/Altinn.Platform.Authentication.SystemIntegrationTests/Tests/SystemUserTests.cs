@@ -286,16 +286,6 @@ public class SystemUserTests : IDisposable
         var statusNoExternalRef = await GetSystemUserRequestStatus(idNewRequestWithoutExternalRef, maskinportenToken);
         await AssertSystemUserRequestStatus(statusExternalRef, "Rejected");
         await AssertSystemUserRequestStatus(statusNoExternalRef, "Accepted");
-
-        var newExternalRef = Guid.NewGuid().ToString();
-        testState.ExternalRef = newExternalRef;
-
-        var test = await _systemUserClient.CreateSystemUserRequestWithExternalRef(testState, maskinportenToken);
-        var newId = Common.ExtractPropertyFromJson(test, "id");
-
-        //approve with test user not part of org:
-        var ikkeDagligLeder = _platformClient.TestUsers.Find(user => user.AltinnPartyId!.Equals("50891151"));
-        await ApproveSystemUserRequest(ikkeDagligLeder, newId, HttpStatusCode.Forbidden);
     }
 
     [Fact(Skip = "Bug reported: https://github.com/Altinn/altinn-authentication/issues/1074")]

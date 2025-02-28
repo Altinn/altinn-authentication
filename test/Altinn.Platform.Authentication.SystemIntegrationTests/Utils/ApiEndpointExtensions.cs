@@ -11,12 +11,4 @@ public static class ApiEndpointExtensions
                    .GetCustomAttribute<EndpointInfoAttribute>()?.Url 
                ?? string.Empty;
     }
-
-    public static HttpMethod Method(this ApiEndpoints endpoint)
-    {
-        return endpoint.GetType()
-                   .GetField(endpoint.ToString())?
-                   .GetCustomAttribute<EndpointInfoAttribute>()?.Method 
-               ?? HttpMethod.Get;
-    }
 }

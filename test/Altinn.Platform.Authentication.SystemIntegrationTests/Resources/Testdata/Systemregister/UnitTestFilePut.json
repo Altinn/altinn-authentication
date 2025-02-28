@@ -18,11 +18,11 @@
       "resource": [
         {
           "id": "urn:altinn:resource",
-          "value": "ske-krav-og-HELLO"
+          "value": "authentication-e2e-test"
         },
         {
           "id": "urn:altinn:resource",
-          "value": "ske-krav-og-MOLO"
+          "value": "authentication-e2e-test"
         }
       ]
     }

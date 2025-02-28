@@ -210,7 +210,8 @@ public class SystemRegisterTests
             await _platformClient.PutAsync($"{ApiEndpoints.UpdateVendorSystemRegister.Url()}".Replace("{systemId}", teststate.SystemId), requestBody, maskinportenToken);
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await Common.AssertResponse(response, HttpStatusCode.OK);
+        // Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var get =
             await _platformClient.GetAsync($"{ApiEndpoints.GetSystemRegisterById.Url()}".Replace("{systemId}", teststate.SystemId), maskinportenToken);
