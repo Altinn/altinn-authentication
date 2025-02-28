@@ -48,7 +48,9 @@ namespace AltinnCore.Authentication.JwtCookie
         /// <returns></returns>
         public static AuthenticationBuilder AddJwtCookie(this AuthenticationBuilder builder, string authenticationScheme, string displayName, Action<JwtCookieOptions> configureOptions)
         {
+            builder.Services.AddOptions<JwtCookieOptions>();
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptions>());
+
             return builder.AddScheme<JwtCookieOptions, JwtCookieHandler>(authenticationScheme, displayName, configureOptions);
         }
     }
