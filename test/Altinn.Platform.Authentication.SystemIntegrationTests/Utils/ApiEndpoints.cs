@@ -127,7 +127,7 @@ public static class ApiEndpointHelper
     private static HttpMethod GetMethod(ApiEndpoints endpoint)
     {
         return endpoint.GetType()
-            .GetField(endpoint.ToString())
+            .GetField(endpoint.ToString())!
             .GetCustomAttribute<EndpointInfoAttribute>()?.Method ?? HttpMethod.Get;
     }
 }
@@ -143,7 +143,7 @@ public class ApiEndpoint
         Method = method;
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is not ApiEndpoint other) return false;
 

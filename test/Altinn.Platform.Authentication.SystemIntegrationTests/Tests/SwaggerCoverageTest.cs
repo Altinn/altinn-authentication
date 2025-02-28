@@ -15,7 +15,7 @@ public class SwaggerCoverageTest
 
     private static readonly HashSet<string> IgnoreEndpoints =
     [
-        "party",
+        "party", //Endpoints containing party are meant for BFF / Frontend and should not be prioritized and ignored from report and should be covered by Playwright tests
         "authentication",
         "refresh",
         "exchange/{param}",
@@ -67,7 +67,7 @@ public class SwaggerCoverageTest
 
         if (extraTestedEndpoints.Any())
         {
-            _outputHelper.WriteLine($"\n⚠️ Tested Endpoints that are NOT in Swagger in TT02");
+            _outputHelper.WriteLine("\n⚠️ Tested Endpoints that are NOT in Swagger in TT02");
             extraTestedEndpoints.ForEach(endpoint => _outputHelper.WriteLine($"- `{endpoint.Method} {endpoint.Url}`"));
         }
     }
