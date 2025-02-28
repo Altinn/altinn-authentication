@@ -24,7 +24,7 @@ public class SystemRegisterClient
     /// </summary>
     public async Task<HttpResponseMessage> PostSystem(string requestBody, string token)
     {
-        var response = await _platformClient.PostAsync(UrlConstants.PostSystemRegister, requestBody, token);
+        var response = await _platformClient.PostAsync(ApiEndpoints.CreateSystemRegister.Url(), requestBody, token);
 
         Assert.True(HttpStatusCode.OK == response.StatusCode, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
@@ -33,7 +33,7 @@ public class SystemRegisterClient
 
     public async Task<List<SystemDto>> GetSystemsAsync(string token)
     {
-        var response = await _platformClient.GetAsync(UrlConstants.GetSystemRegister, token);
+        var response = await _platformClient.GetAsync(ApiEndpoints.GetAllSystemsFromRegister.Url(), token);
 
         // Assert the response status is OK
         Assert.True(HttpStatusCode.OK == response.StatusCode,
@@ -47,7 +47,16 @@ public class SystemRegisterClient
 
     public async Task DeleteSystem(string SystemId, string token)
     {
-        var resp = await _platformClient.Delete($"{UrlConstants.DeleteSystemRegister}/{SystemId}", token);
+        var resp = await _platformClient.Delete($"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", SystemId), token);
         Assert.True(HttpStatusCode.OK == resp.StatusCode, $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
+    }
+
+    public async Task<HttpResponseMessage> UpdateRightsOnSystem(string systemId, string requestBody, string? token)
+    {
+        var putUrl = ApiEndpoints.UpdateRightsVendorSystemRegister.Url().Replace("{systemId}", systemId);
+        var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
+
+        await Common.AssertResponse(putResponse, HttpStatusCode.OK);
+        return putResponse;
     }
 }

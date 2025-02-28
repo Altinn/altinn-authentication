@@ -55,7 +55,9 @@ public class SystemUserTokenTests
             $"&systemUserOwnerOrgNo={systemUserOwnerOrgNo}" +
             $"&externalRef={externalRef}";
 
-        var fullEndpoint = $"{UrlConstants.GetByExternalId}{queryString}";
+        var fullEndpoint = $"{ApiEndpoints.GetSystemUserByExternalId.Url()}{queryString}";
+        //Old
+        // fullEndpoint = $"{UrlConstants.GetByExternalId}{queryString}";
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
@@ -147,7 +149,7 @@ public class SystemUserTokenTests
 
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
-        var teststate = new SystemRegisterHelper("Resources/Testdata/Systemregister/CreateNewSystem.json")
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(_platformClient.EnvironmentHelper.maskinportenClientId) //Creates System User With MaskinportenClientId
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
