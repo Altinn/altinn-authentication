@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -44,6 +45,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
+        public Task<List<AccessPackage>> GetAccessPackagesForRegisteredSystem(string systemId, CancellationToken cancellation = default)
+        {
+            return _systemRegisterRepository.GetAccessPackagesForRegisteredSystem(systemId);
+        }
+
+        /// <inheritdoc/>
         public Task<bool> CreateClient(string clientId, Guid systemInteralId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.CreateClient(clientId, systemInteralId);
@@ -76,6 +83,12 @@ namespace Altinn.Platform.Authentication.Services
         public Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
         {
             return _systemRegisterRepository.UpdateRightsForRegisteredSystem(rights, systemId);
+        }
+
+        /// <inheritdoc/>
+        public Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, CancellationToken cancellation = default)
+        {
+            return _systemRegisterRepository.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId);
         }
 
         /// <inheritdoc/>

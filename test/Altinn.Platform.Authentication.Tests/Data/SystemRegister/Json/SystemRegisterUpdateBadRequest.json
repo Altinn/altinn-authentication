@@ -17,6 +17,9 @@
   "accesspackages": [
     {
       "urn": "urn:altinn:accesspackage:sjøfart"
+    },
+    {
+      "urn": "urn:altinn:accesspackage:sjøfart"
     }
   ],
   "rights": [
@@ -24,7 +27,7 @@
       "resource": [
         {
           "id": "urn:altinn:resource",
-          "value": "ske-krav-og-betalinger"
+          "value": "ske-krav-og-betalinge"
         }
       ]
     }
