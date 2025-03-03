@@ -17,6 +17,11 @@ using Altinn.Authentication.Integration.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Altinn.Platform.Authentication.Core.Exceptions;
 using System.Net;
+using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
+using System.Net.Http;
+using System.Web;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -160,6 +165,30 @@ public class AccessManagementClient : IAccessManagementClient
         }
 
         return new Result<bool>(true);
+    }
+
+    public async Task<Package?> GetPackage(string packageId)
+    {
+        Package? package = null;
+
+        try
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+            };
+
+            string packagesData = File.OpenText("../Integration/MockData/packages.json").ReadToEnd();
+            List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
+            package = packages?.FirstOrDefault(p => p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetPackage // Exception");
+            throw;
+        }
+
+        return package;
     }
 
     /// <inheritdoc />
