@@ -24,7 +24,7 @@ public class Common
     public async Task<string> CreateAndApproveSystemUserRequest(string maskinportenToken, string externalRef,
         Testuser testuser, string clientId)
     {
-        var testState = new SystemRegisterHelper("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
+        var testState = new TestState("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
             .WithClientId(clientId)
             .WithVendor(testuser.Org)
             .WithRedirectUrl("https://altinn.no")
@@ -43,8 +43,7 @@ public class Common
             .Replace("{externalRef}", externalRef);
 
         // Act
-        var userResponse =
-            await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
+        var userResponse = await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();

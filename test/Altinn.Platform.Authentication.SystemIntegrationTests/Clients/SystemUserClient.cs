@@ -21,7 +21,7 @@ public class SystemUserClient
 
     public async Task<HttpResponseMessage> GetSystemuserForParty(string? party, string token)
     {
-        var urlGetBySystem = UrlConstants.GetSystemUserForParty
+        var urlGetBySystem = ApiEndpoints.GetSystemUsersByParty.Url()
             .Replace("{party}", party);
         var response = await _platformClient.GetAsync(urlGetBySystem, token);
 
@@ -43,21 +43,21 @@ public class SystemUserClient
 
     public async Task<HttpResponseMessage> GetSystemUserByExternalRef(string externalRef, string systemId, string maskinportenToken)
     {
-        var urlGetBySystem = UrlConstants.GetByExternalRef
-            .Replace("{externalRef}", externalRef)
-            .Replace("{systemId}", systemId)
-            .Replace("{orgNo}", _platformClient.EnvironmentHelper.Vendor);
+        var urlGetBySystem =
+            ApiEndpoints.GetSystemUserRequestByExternalRef.Url()
+                .Replace("{externalRef}", externalRef)
+                .Replace("{systemId}", systemId)
+                .Replace("{orgNo}", _platformClient.EnvironmentHelper.Vendor);
 
         return await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
     }
 
-    public async Task<string> CreateSystemUserRequestWithExternalRef(SystemRegisterHelper testState, string maskinportenToken)
+    public async Task<string> CreateSystemUserRequestWithoutExternalRef(TestState testState, string maskinportenToken)
     {
         // Prepare system user request
-        var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json"))
             .Replace("{systemId}", testState.SystemId)
-            .Replace("{redirectUrl}", testState.RedirectUrl)
-            .Replace("{externalRef}", _platformClient.EnvironmentHelper.Vendor);
+            .Replace("{redirectUrl}", testState.RedirectUrl);
 
         //Create system user request on the same rights that exist in the SystemRegister
         var rightsJson = JsonSerializer.Serialize(testState.Rights, Common.JsonSerializerOptions);
@@ -66,7 +66,31 @@ public class SystemUserClient
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync(UrlConstants.CreateSystemUserRequestBaseUrl, finalJson, maskinportenToken);
+            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
+
+        // Assert
+        var content = await userResponse.Content.ReadAsStringAsync();
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {userResponse.StatusCode} - {content}");
+
+        return content;
+    }
+
+    public async Task<string> CreateSystemUserRequestWithExternalRef(TestState testState, string maskinportenToken)
+    {
+        // Prepare system user request
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))
+            .Replace("{systemId}", testState.SystemId)
+            .Replace("{redirectUrl}", testState.RedirectUrl)
+            .Replace("{externalRef}", testState.ExternalRef);
+
+        //Create system user request on the same rights that exist in the SystemRegister
+        var rightsJson = JsonSerializer.Serialize(testState.Rights, Common.JsonSerializerOptions);
+
+        var finalJson = requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
+
+        // Act
+        var userResponse =
+            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -77,7 +101,7 @@ public class SystemUserClient
 
     public async Task ApproveSystemUserRequest(Testuser testuser, string requestId)
     {
-        var approveUrl = UrlConstants.ApproveSystemUserRequestUrlTemplate
+        var approveUrl = ApiEndpoints.ApproveSystemUserRequest.Url()
             .Replace("{partyId}", testuser.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
@@ -99,20 +123,19 @@ public class SystemUserClient
 
     public async Task DeleteSystemUser(string? altinnPartyId, string? systemUserId)
     {
-        var deleteUrl = UrlConstants.DeleteSystemUserUrlTemplate
-            .Replace("{partyId}", altinnPartyId)
+        var deleteUrl = ApiEndpoints.DeleteSystemUserById.Url()
+            .Replace("{party}", altinnPartyId)
             .Replace("{systemUserId}", systemUserId);
         var deleteResponse = await _platformClient.DeleteRequest(deleteUrl, _platformClient.GetTestUserForVendor());
 
         Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
     }
 
-    public async Task<HttpResponseMessage> PutSystemUser(string requestBody, string? token)
+    public async Task PutSystemUser(string requestBody, string? token)
     {
-        var putUrl = UrlConstants.PutSystemUserUrlTemplate;
+        var putUrl = ApiEndpoints.UpdateSystemUser.Url();
         var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
 
         Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);
-        return putResponse;
     }
 }
