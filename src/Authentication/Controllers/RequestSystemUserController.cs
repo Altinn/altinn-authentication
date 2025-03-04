@@ -123,6 +123,57 @@ public class RequestSystemUserController : ControllerBase
         return response.Problem.ToActionResult();
     }
 
+    /// <summary>
+    /// Creates a new Client-Delegation type Request based on a SystemId for a new ClientSystemUser.
+    /// </summary>
+    /// <param name="createClientRequest">The request model</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Response model of ClientRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [HttpPost("vendor/client")]
+    public async Task<ActionResult<RequestSystemResponse>> CreateClientRequest([FromBody] CreateClientRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
+    {
+        string platform = _generalSettings.PlatformEndpoint;
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
+        }
+
+        ExternalRequestId externalRequestId = new()
+        {
+            ExternalRef = createClientRequest.ExternalRef ?? createClientRequest.PartyOrgNo,
+            OrgNo = createClientRequest.PartyOrgNo,
+            SystemId = createClientRequest.SystemId,
+        };
+
+        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        if (existing is not null)
+        {
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
+        }
+
+        // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
+        Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
+        if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
+        {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Ok(response.Value);
+        }
+
+        // This is a new Request
+        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
+
+        if (response.IsSuccess)
+        {
+            string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Created(fullCreatedUri, response.Value);
+        }
+
+        return response.Problem.ToActionResult();
+    }
+
     private OrganisationNumber? RetrieveOrgNoFromToken()
     {
         string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName);
