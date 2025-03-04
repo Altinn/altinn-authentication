@@ -33,6 +33,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
+        public Task<Result<ClientRequestSystemResponse>> CreateClientRequest(CreateClientRequestSystemUser createClientRequest, OrganisationNumber vendorOrgNo)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<Result<RequestSystemResponse>> CreateRequest(CreateRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
