@@ -17,6 +17,7 @@ using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
@@ -407,6 +408,54 @@ public class RequestControllerTests(
         string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.True(res2 is not null);
+        Assert.Equal(testId, res2.Id);
+    }
+
+    [Fact]
+    public async Task Get_Client_Request_ByGuid_Ok()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        AccessPackage accessPackage = new AccessPackage();
+        accessPackage.Urn = "urn:altinn:accesspackage:skattnaering";
+
+        // Arrange
+        CreateClientRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackage = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        ClientRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<ClientRequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        //Get by Guid
+        HttpClient client2 = CreateClient();
+        AddSystemUserRequesReadTestTokenToClient(client2);
+        Guid testId = res.Id;
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/client/{testId}";
+
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
+        string debug = "pause_here";
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        ClientRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<ClientRequestSystemResponse>();
         Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
     }
