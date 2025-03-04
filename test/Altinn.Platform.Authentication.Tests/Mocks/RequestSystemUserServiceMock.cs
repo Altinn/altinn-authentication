@@ -23,6 +23,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {    
         }
 
+        public Task<Result<bool>> ApproveAndCreateClientSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
@@ -48,7 +53,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<ClientRequestSystemResponse>> GetClientRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+        public Task<Result<ClientRequestSystemResponse>> GetClientRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
         }
@@ -69,6 +74,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         public Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int party, Guid requestId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> RejectClientSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

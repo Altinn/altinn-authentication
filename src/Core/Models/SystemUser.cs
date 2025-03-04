@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
@@ -94,5 +95,10 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// </summary>
         [JsonPropertyName("externalRef")]
         public string ExternalRef { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The array of access packages versus System Provider's Resources needed to use this Registered System
+        /// </summary>
+        public List<AccessPackage> AccessPackages { get; set; } = [];
     }
 }

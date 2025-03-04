@@ -224,6 +224,38 @@ public class RequestSystemUserController : ControllerBase
 
     /// <summary>
     /// Retrieves the Status (Response model) for a Request
+    /// based only on the Request.Id GUID
+    /// </summary>
+    /// <param name="requestId">The UUID for the Request</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [HttpGet("vendor/client/{requestId}")]
+    public async Task<ActionResult<ClientRequestSystemResponse>> GetClientSystemUserRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByGuid(requestId, vendorOrgNo);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves the Status (Response model) for a Request
     /// based on the SystemId, OrgNo and the ExternalRef 
     /// ( which is enforced as a unique combination )
     /// </summary>
@@ -310,6 +342,33 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Approves the client systemuser requet and creates a system user
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="requestId">The UUID of the request to be approved</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("client/{party}/{requestId}/approve")]
+    public async Task<ActionResult<ClientRequestSystemResponse>> ApproveClientSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.ApproveAndCreateClientSystemUser(requestId, party, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has for a given system they own.
     /// </summary>
     /// <param name="systemId">The system the Vendor wants the list for</param>
@@ -372,6 +431,32 @@ public class RequestSystemUserController : ControllerBase
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.RejectSystemUser(requestId, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Rejects the systemuser request
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="requestId">The UUID of the request to be rejected</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("client/{party}/{requestId}/reject")]
+    public async Task<ActionResult<bool>> RejectClientSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.RejectClientSystemUser(requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

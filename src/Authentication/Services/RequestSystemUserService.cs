@@ -502,6 +502,33 @@ public class RequestSystemUserService(
         };
     }
 
+    /// <inheritdoc/>
+    public async Task<Result<ClientRequestSystemResponse>> GetClientRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
+    {
+        ClientRequestSystemResponse? res = await requestRepository.GetClientRequestByInternalId(requestId);
+        if (res is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        Result<bool> check = await RetrieveChosenSystemInfoAndValidateVendorOrgNo(res.SystemId, vendorOrgNo);
+        if (check.IsProblem)
+        {
+            return check.Problem;
+        }
+
+        return new ClientRequestSystemResponse()
+        {
+            Id = res.Id,
+            ExternalRef = res.ExternalRef,
+            SystemId = res.SystemId,
+            PartyOrgNo = res.PartyOrgNo,
+            AccessPackages = res.AccessPackages,
+            Status = res.Status,
+            RedirectUrl = res.RedirectUrl
+        };
+    }
+
     private async Task<Result<bool>> RetrieveChosenSystemInfoAndValidateVendorOrgNo(string systemId, OrganisationNumber vendorOrgNo)
     {
         RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
@@ -611,9 +638,83 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
+    public async Task<Result<bool>> ApproveAndCreateClientSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+    {
+        ClientRequestSystemResponse? systemUserRequest = await requestRepository.GetClientRequestByInternalId(requestId);
+        if (systemUserRequest is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        {
+            return Problem.RequestStatusNotNew;
+        }
+
+        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        if (regSystem is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        Result<SystemUser> toBeInserted = MapClientSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        if (toBeInserted.IsProblem)
+        {
+            return toBeInserted.Problem;
+        }
+
+        //DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserRequest.AccessPackages, false, cancellationToken);
+        //if (delegationCheckFinalResult.RightResponses is null)
+        //{
+        //    // This represents some problem with doing the delegation check beyond the rights not being delegable.
+        //    return Problem.UnableToDoDelegationCheck;
+        //}
+
+        //if (!delegationCheckFinalResult.CanDelegate)
+        //{
+        //    // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
+        //    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+        //}
+
+        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted.Value, userId, cancellationToken);
+
+        if (systemUserId is null)
+        {
+            return Problem.SystemUser_FailedToCreate;
+        }
+
+        //toBeInserted.Value.Id = systemUserId.ToString()!;
+
+        //Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted.Value, delegationCheckFinalResult.RightResponses);
+        //if (delegationSucceeded.IsProblem)
+        //{
+        //    return delegationSucceeded.Problem;
+        //}
+
+        return true;
+    }
+
+    /// <inheritdoc/>
     public async Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
     {
         RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        if (systemUserRequest is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        {
+            return Problem.RequestStatusNotNew;
+        }
+
+        return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> RejectClientSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    {
+        ClientRequestSystemResponse? systemUserRequest = await requestRepository.GetClientRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
             return Problem.RequestNotFound;
@@ -646,6 +747,32 @@ public class RequestSystemUserService(
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = systemUserRequest.PartyOrgNo,
                 ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo
+            };
+        }
+
+        return toBeInserted!;
+    }
+
+    private static Result<SystemUser> MapClientSystemUserRequestToSystemUser(ClientRequestSystemResponse clientSystemUserRequest, RegisteredSystem regSystem, int partyId)
+    {
+        SystemUser? toBeInserted = null;
+        regSystem.Name.TryGetValue("nb", out string? systemName);
+        if (systemName is null)
+        {
+            return Problem.SystemNameNotFound;
+        }
+
+        if (clientSystemUserRequest != null)
+        {
+            toBeInserted = new SystemUser
+            {
+                SystemId = clientSystemUserRequest.SystemId,
+                IntegrationTitle = systemName,
+                SystemInternalId = regSystem?.InternalId,
+                PartyId = partyId.ToString(),
+                ReporteeOrgNo = clientSystemUserRequest.PartyOrgNo,
+                ExternalRef = clientSystemUserRequest.ExternalRef ?? clientSystemUserRequest.PartyOrgNo,
+                AccessPackages = clientSystemUserRequest.AccessPackages
             };
         }
 

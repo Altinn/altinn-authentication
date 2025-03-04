@@ -22,6 +22,13 @@ public interface IRequestRepository
     Task<RequestSystemResponse?> GetRequestByInternalId (Guid internalId);
 
     /// <summary>
+    /// Gets a Request model by the internal Guid ( which later is repurposed as the SystemUser Id )
+    /// </summary>
+    /// <param name="internalId">Internal Request guid</param>
+    /// <returns>Create Client Request model</returns>
+    Task<ClientRequestSystemResponse?> GetClientRequestByInternalId(Guid internalId);
+
+    /// <summary>
     /// Gets a Request model by the three external references
     /// <param name="externalRequestId">Struct containing the three external references</param>
     /// <returns>Create Request model</returns>
