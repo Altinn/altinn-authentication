@@ -445,6 +445,32 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Rejects the systemuser request
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="requestId">The UUID of the request to be rejected</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("client/{party}/{requestId}/reject")]
+    public async Task<ActionResult<bool>> RejectClientSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.RejectClientSystemUser(requestId, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
     /// Used by the Vendors to delete the chosen Request by guid
     /// </summary>
     /// <returns></returns>

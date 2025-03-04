@@ -586,6 +586,23 @@ public class RequestSystemUserService(
         return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
     }
 
+    /// <inheritdoc/>
+    public async Task<Result<bool>> RejectClientSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    {
+        ClientRequestSystemResponse? systemUserRequest = await requestRepository.GetClientRequestByInternalId(requestId);
+        if (systemUserRequest is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        {
+            return Problem.RequestStatusNotNew;
+        }
+
+        return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
+    }
+
     private static Result<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
     {
         SystemUser? toBeInserted = null;
