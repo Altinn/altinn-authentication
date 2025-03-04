@@ -131,7 +131,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Response model of ClientRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor/client")]
-    public async Task<ActionResult<RequestSystemResponse>> CreateClientRequest([FromBody] CreateClientRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RequestSystemResponse>> CreateClientRequest([FromBody] CreateRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
@@ -162,7 +162,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
-        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
+        response = await _requestSystemUser.CreateRequest(createClientRequest, vendorOrgNo);
 
         if (response.IsSuccess)
         {
@@ -208,6 +208,38 @@ public class RequestSystemUserController : ControllerBase
         }
 
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByGuid(requestId, vendorOrgNo);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves the Status (Response model) for a Request
+    /// based only on the Request.Id GUID
+    /// </summary>
+    /// <param name="requestId">The UUID for the Request</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [HttpGet("vendor/client/{requestId}")]
+    public async Task<ActionResult<ClientRequestSystemResponse>> GetClientSystemUserRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByGuid(requestId, vendorOrgNo);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -296,6 +328,33 @@ public class RequestSystemUserController : ControllerBase
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Approves the client systemuser requet and creates a system user
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="requestId">The UUID of the request to be approved</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("client/{party}/{requestId}/approve")]
+    public async Task<ActionResult<ClientRequestSystemResponse>> ApproveClientSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.ApproveAndCreateClientSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

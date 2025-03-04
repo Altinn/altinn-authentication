@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Threading;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -157,6 +158,41 @@ public class RequestRepository : IRequestRepository
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<ClientRequestSystemResponse?> GetClientRequestByInternalId(Guid internalId)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                rights,
+                request_status,
+                redirect_urls,
+                created 
+            FROM business_application.request r
+            WHERE r.id = @request_id
+                and r.is_deleted = false;
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("request_id", internalId);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToClientRequest)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetClientRequestByInternalId // Exception");
+            throw;
+        }
+    }
+
     /// <inheritdoc/>  
     public async Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken = default)
     {
@@ -253,6 +289,35 @@ public class RequestRepository : IRequestRepository
         }
 
         return new ValueTask<RequestSystemResponse>(response);
+    }
+
+    private static ValueTask<ClientRequestSystemResponse> ConvertFromReaderToClientRequest(NpgsqlDataReader reader)
+    {
+        string? redirect_url = null;
+
+        if (!reader.IsDBNull("redirect_urls"))
+        {
+            redirect_url = reader.GetFieldValue<string?>("redirect_urls");
+        }
+
+        ClientRequestSystemResponse response = new()
+        {
+            Id = reader.GetFieldValue<Guid>("id"),
+            ExternalRef = reader.GetFieldValue<string>("external_ref"),
+            SystemId = reader.GetFieldValue<string>("system_id"),
+            PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
+            AccessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
+            Status = reader.GetFieldValue<string>("request_status"),
+            Created = reader.GetFieldValue<DateTime>("created"),
+            RedirectUrl = redirect_url
+        };
+
+        if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
+        {
+            response.Status = RequestStatus.Timedout.ToString();
+        }
+
+        return new ValueTask<ClientRequestSystemResponse>(response);
     }
 
     /// <inheritdoc/>  
