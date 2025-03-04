@@ -84,4 +84,5 @@ public interface IRequestRepository
     /// <param name="internalId">The guid as it was in the main tabble</param>
     /// <returns></returns>
     Task<RequestSystemResponse?> GetArchivedRequestByInternalId(Guid internalId);
+    Task<Result<bool>> CreateClientRequest(ClientRequestSystemResponse created);
 }

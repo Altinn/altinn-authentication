@@ -131,7 +131,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Response model of ClientRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor/client")]
-    public async Task<ActionResult<RequestSystemResponse>> CreateClientRequest([FromBody] CreateClientRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ClientRequestSystemResponse>> CreateClientRequest([FromBody] CreateClientRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
@@ -154,7 +154,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
-        Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
+        Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
             response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
@@ -162,7 +162,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
-        response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
+        response = await _requestSystemUser.CreateClientRequest(createClientRequest, vendorOrgNo);
 
         if (response.IsSuccess)
         {

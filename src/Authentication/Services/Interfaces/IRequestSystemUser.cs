@@ -90,4 +90,21 @@ public interface IRequestSystemUser
     /// <param name="requestId">The Request id</param>
     /// <returns></returns>
     Task<Result<string>> GetRedirectByRequestId(Guid requestId);
+
+    /// <summary>
+    /// A Vendor can generate a new Request for a Client-type SystemUser
+    /// </summary>
+    /// <param name="createClientRequest">the request</param>
+    /// <param name="vendorOrgNo">the orgno for the Vendor</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+    Task<Result<ClientRequestSystemResponse>> CreateClientRequest(CreateClientRequestSystemUser createClientRequest, OrganisationNumber vendorOrgNo);
+    
+    /// <summary>
+    /// Gets the status based on the External Request Id 
+    /// 
+    /// </summary>
+    /// <param name="externalRequestId">The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers. </param>
+    /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+    Task<Result<ClientRequestSystemResponse>> GetClientRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo);
 }

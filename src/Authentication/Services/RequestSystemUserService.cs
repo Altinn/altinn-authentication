@@ -7,6 +7,7 @@ using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -114,6 +115,130 @@ public class RequestSystemUserService(
         }
 
         return created;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<ClientRequestSystemResponse>> CreateClientRequest(CreateClientRequestSystemUser createClientRequest, OrganisationNumber vendorOrgNo)
+    {
+        // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
+        ExternalRequestId externalRequestId = new()
+        {
+            ExternalRef = createClientRequest.ExternalRef ?? createClientRequest.PartyOrgNo,
+            OrgNo = createClientRequest.PartyOrgNo,
+            SystemId = createClientRequest.SystemId,
+        };
+
+        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createClientRequest.SystemId);
+        if (systemInfo is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
+        if (valRef.IsProblem)
+        {
+            return valRef.Problem;
+        }
+
+        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
+        if (valVendor.IsProblem)
+        {
+            return valVendor.Problem;
+        }
+
+        Result<bool> valCust = await ValidateCustomerOrgNo(createClientRequest.PartyOrgNo);
+        if (valCust.IsProblem)
+        {
+            return valCust.Problem;
+        }
+
+        if (createClientRequest.RedirectUrl is not null && createClientRequest.RedirectUrl != string.Empty)
+        {
+            var valRedirect = ValidateRedirectUrl(createClientRequest.RedirectUrl, systemInfo);
+            if (valRedirect.IsProblem)
+            {
+                return valRedirect.Problem;
+            }
+        }
+
+        Result<bool> valPackages = ValidateAccessPackages(createClientRequest.AccessPackages, systemInfo);
+        if (valPackages.IsProblem)
+        {
+            return valPackages.Problem;
+        }
+
+        // Set an empty ExternalRef to be equal to the PartyOrgNo
+        if (createClientRequest.ExternalRef is null || createClientRequest.ExternalRef == string.Empty)
+        {
+            createClientRequest.ExternalRef = createClientRequest.PartyOrgNo;
+        }
+
+        Guid newId = Guid.NewGuid();
+
+        var created = new ClientRequestSystemResponse()
+        {
+            Id = newId,
+            ExternalRef = createClientRequest.ExternalRef,
+            SystemId = createClientRequest.SystemId,
+            PartyOrgNo = createClientRequest.PartyOrgNo,
+            AccessPackages = [],
+            Status = RequestStatus.New.ToString(),
+            RedirectUrl = createClientRequest.RedirectUrl
+        };
+
+        Result<bool> res = await requestRepository.CreateClientRequest(created);
+        if (res.IsProblem)
+        {
+            return Problem.RequestCouldNotBeStored;
+        }
+
+        return created;
+    }
+
+    /// <summary>
+    /// Validate that the Package is both a subset of the Default Packages registered on the System, and at least one Package is selected.
+    /// </summary>
+    /// <param name="accessPackages">the AccessPackages chosen for the Request</param>
+    /// <param name="systemInfo">The Vendor's Registered System</param>
+    /// <returns>Result or Problem</returns>
+    private static Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystem systemInfo)
+    {
+        if (systemInfo == null || systemInfo.AccessPackages == null)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        if (accessPackages.Count == 0 || systemInfo.AccessPackages.Count == 0)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        if (accessPackages.Count > systemInfo.AccessPackages.Count )
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        bool[] validate = new bool[accessPackages.Count];
+        foreach (AccessPackage accessPackage in accessPackages) 
+        {
+            foreach ( AccessPackage systemPackage in systemInfo.AccessPackages)
+            {
+                if (accessPackage.Urn == systemPackage.Urn) 
+                {
+                    validate[accessPackages.IndexOf(systemPackage)] = true;
+                }
+            }
+        }
+
+        foreach (bool package in validate)
+        {
+            if (!package)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -618,5 +743,11 @@ public class RequestSystemUserService(
         }
 
         return systemUserRequest.RedirectUrl;
+    }
+
+    /// <inheritdoc/>
+    public Task<Result<ClientRequestSystemResponse>> GetClientRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+    {
+        return null;
     }
 }

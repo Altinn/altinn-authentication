@@ -78,7 +78,57 @@ public class RequestRepository : IRequestRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // CreateRequest // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> CreateClientRequest(ClientRequestSystemResponse createClientRequest)
+    {
+        const string QUERY = /*strpsql*/@"
+            INSERT INTO business_application.request(
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                accessPackages,
+                request_status,
+                redirect_urls)
+            VALUES(
+                @id,
+                @external_ref,
+                @system_id,
+                @party_org_no,
+                @accessPackages,
+                @status,
+                @redirect_urls);";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("id", createClientRequest.Id);
+            command.Parameters.AddWithValue("external_ref", createClientRequest.ExternalRef!);
+            command.Parameters.AddWithValue("system_id", createClientRequest.SystemId);
+            command.Parameters.AddWithValue("party_org_no", createClientRequest.PartyOrgNo);
+            command.Parameters.Add(new("accessPackages", NpgsqlDbType.Jsonb) { Value = createClientRequest.AccessPackages });
+            command.Parameters.AddWithValue("status", createClientRequest.Status);
+
+            if (createClientRequest.RedirectUrl is not null)
+            {
+                command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = createClientRequest.RedirectUrl });
+            }
+            else
+            {
+                command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
+            }
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // CreateClientRequest // Exception");
             throw;
         }
     }

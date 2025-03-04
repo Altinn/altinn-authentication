@@ -41,7 +41,7 @@ public class CreateClientRequestSystemUser()
     /// </summary>
     [Required]
     [JsonPropertyName("accessPackages")]
-    public List<AccessPackage> AccessPackage { get; set; }
+    public List<AccessPackage> AccessPackages { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request
