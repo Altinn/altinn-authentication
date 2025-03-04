@@ -93,8 +93,9 @@ public class RequestRepository : IRequestRepository
                 external_ref,
                 system_id,
                 party_org_no,
-                accessPackages,
+                accesspackages,
                 request_status,
+                system_user_type,
                 redirect_urls)
             VALUES(
                 @id,
@@ -103,6 +104,7 @@ public class RequestRepository : IRequestRepository
                 @party_org_no,
                 @accessPackages,
                 @status,
+                @system_user_type,
                 @redirect_urls);";
 
         try
@@ -113,8 +115,9 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("external_ref", createClientRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createClientRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createClientRequest.PartyOrgNo);
-            command.Parameters.Add(new("accessPackages", NpgsqlDbType.Jsonb) { Value = createClientRequest.AccessPackages });
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createClientRequest.AccessPackages });
             command.Parameters.AddWithValue("status", createClientRequest.Status);
+            command.Parameters.AddWithValue("system_user_type", "client");
 
             if (createClientRequest.RedirectUrl is not null)
             {

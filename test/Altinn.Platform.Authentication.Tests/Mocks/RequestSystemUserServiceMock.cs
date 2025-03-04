@@ -53,6 +53,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
+        public Task<Result<ClientRequestSystemResponse>> GetClientRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<Result<ClientRequestSystemResponse>> GetClientRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();

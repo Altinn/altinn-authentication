@@ -873,8 +873,8 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public Task<Result<ClientRequestSystemResponse>> GetClientRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+    public async Task<Result<ClientRequestSystemResponse>> GetClientRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
     {
-        return null;
+        return Problem.RequestNotFound;
     }
 }

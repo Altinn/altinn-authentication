@@ -129,7 +129,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="createClientRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of ClientRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor/client")]
     public async Task<ActionResult<ClientRequestSystemResponse>> CreateClientRequest([FromBody] CreateClientRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
     {
@@ -147,22 +147,22 @@ public class RequestSystemUserController : ControllerBase
             SystemId = createClientRequest.SystemId,
         };
 
-        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
-        if (existing is not null)
-        {
-            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
-        }
+        //SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        //if (existing is not null)
+        //{
+        //    return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
+        //}
 
-        // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
-        Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByExternalRef(externalRequestId, vendorOrgNo);
-        if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
-        {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
-            return Ok(response.Value);
-        }
+        //// Check to see if the Request already exists, and is still active ( Status is not Timed Out)
+        //Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByExternalRef(externalRequestId, vendorOrgNo);
+        //if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
+        //{
+        //    response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+        //    return Ok(response.Value);
+        //}
 
         // This is a new Request
-        response = await _requestSystemUser.CreateClientRequest(createClientRequest, vendorOrgNo);
+        Result<ClientRequestSystemResponse> response = await _requestSystemUser.CreateClientRequest(createClientRequest, vendorOrgNo);
 
         if (response.IsSuccess)
         {

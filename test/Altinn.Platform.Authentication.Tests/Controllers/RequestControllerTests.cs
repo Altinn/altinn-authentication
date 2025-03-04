@@ -432,7 +432,7 @@ public class RequestControllerTests(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            AccessPackage = [accessPackage]
+            AccessPackages = [accessPackage]
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
