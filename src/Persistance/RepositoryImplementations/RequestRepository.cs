@@ -263,6 +263,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created 

@@ -181,7 +181,7 @@ public class RequestSystemUserService(
             ExternalRef = createClientRequest.ExternalRef,
             SystemId = createClientRequest.SystemId,
             PartyOrgNo = createClientRequest.PartyOrgNo,
-            AccessPackages = [],
+            AccessPackages = createClientRequest.AccessPackages,
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createClientRequest.RedirectUrl
         };

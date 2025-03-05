@@ -129,17 +129,17 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="createClientRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of ClientRequestSystemUserResponse</returns>
-    //[Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor/client")]
     public async Task<ActionResult<ClientRequestSystemResponse>> CreateClientRequest([FromBody] CreateClientRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
-        OrganisationNumber? vendorOrgNo = OrganisationNumber.CreateFromStringOrgNo("12345678901");
-        //OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
-        //if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
-        //{
-        //    return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
-        //}
+        
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
+        }
 
         ExternalRequestId externalRequestId = new()
         {
