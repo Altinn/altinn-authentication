@@ -134,11 +134,12 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<ClientRequestSystemResponse>> CreateClientRequest([FromBody] CreateClientRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
-        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
-        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
-        {
-            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
-        }
+        OrganisationNumber? vendorOrgNo = OrganisationNumber.CreateFromStringOrgNo("12345678901");
+        //OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        //if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        //{
+        //    return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
+        //}
 
         ExternalRequestId externalRequestId = new()
         {
@@ -147,22 +148,22 @@ public class RequestSystemUserController : ControllerBase
             SystemId = createClientRequest.SystemId,
         };
 
-        //SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
-        //if (existing is not null)
-        //{
-        //    return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
-        //}
+        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        if (existing is not null)
+        {
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
+        }
 
-        //// Check to see if the Request already exists, and is still active ( Status is not Timed Out)
-        //Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByExternalRef(externalRequestId, vendorOrgNo);
-        //if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
-        //{
-        //    response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
-        //    return Ok(response.Value);
-        //}
+        // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
+        Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByExternalRef(externalRequestId, vendorOrgNo);
+        if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
+        {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Ok(response.Value);
+        }
 
         // This is a new Request
-        Result<ClientRequestSystemResponse> response = await _requestSystemUser.CreateClientRequest(createClientRequest, vendorOrgNo);
+        response = await _requestSystemUser.CreateClientRequest(createClientRequest, vendorOrgNo);
 
         if (response.IsSuccess)
         {

@@ -875,6 +875,19 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ClientRequestSystemResponse>> GetClientRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
     {
-        return Problem.RequestNotFound;
+        ClientRequestSystemResponse? res = await requestRepository.GetClientRequestByExternalReferences(externalRequestId);
+
+        if (res is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        Result<bool> check = await RetrieveChosenSystemInfoAndValidateVendorOrgNo(externalRequestId.SystemId, vendorOrgNo);
+        if (check.IsProblem)
+        {
+            return check.Problem;
+        }
+
+        return res;
     }
 }

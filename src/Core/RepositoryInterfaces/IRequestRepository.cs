@@ -91,5 +91,17 @@ public interface IRequestRepository
     /// <param name="internalId">The guid as it was in the main tabble</param>
     /// <returns></returns>
     Task<RequestSystemResponse?> GetArchivedRequestByInternalId(Guid internalId);
+
+    /// <summary>
+    /// Inserts a new CreateRequest into the db
+    /// </summary>
+    /// <param name="createRequest">The validated Create Request model from the Service layer</param>
+    /// <returns>The same Request model</returns>
     Task<Result<bool>> CreateClientRequest(ClientRequestSystemResponse created);
+
+    /// <summary>
+    /// Gets a Request model by the three external references
+    /// <param name="externalRequestId">Struct containing the three external references</param>
+    /// <returns>Create Request model</returns>
+    Task<ClientRequestSystemResponse?> GetClientRequestByExternalReferences(ExternalRequestId externalRequestId);
 }

@@ -154,7 +154,48 @@ public class RequestRepository : IRequestRepository
             WHERE r.external_ref = @external_ref
                 and r.system_id = @system_id
                 and r.party_org_no = @party_org_no
-                and r.is_deleted = false;";
+                and r.is_deleted = false
+                and r.system_user_type != 'client' ;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
+            command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
+            command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);            
+
+            var dbres = await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToRequest)
+                .FirstOrDefaultAsync();
+            return dbres;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<ClientRequestSystemResponse?> GetClientRequestByExternalReferences(ExternalRequestId externalRequestId)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                created
+            FROM business_application.request r
+            WHERE r.external_ref = @external_ref
+                and r.system_id = @system_id
+                and r.party_org_no = @party_org_no
+                and r.is_deleted = false
+                and r.system_user_type = @system_user_type ;";
 
         try
         {
@@ -163,9 +204,10 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
+            command.Parameters.AddWithValue("system_user_type", "client");
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToRequest)
+                .SelectAwait(ConvertFromReaderToClientRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
