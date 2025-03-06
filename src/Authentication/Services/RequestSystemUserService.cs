@@ -146,11 +146,11 @@ public class RequestSystemUserService(
             return valVendor.Problem;
         }
 
-        //Result<bool> valCust = await ValidateCustomerOrgNo(createClientRequest.PartyOrgNo);
-        //if (valCust.IsProblem)
-        //{
-        //    return valCust.Problem;
-        //}
+        Result<bool> valCust = await ValidateCustomerOrgNo(createClientRequest.PartyOrgNo);
+        if (valCust.IsProblem)
+        {
+            return valCust.Problem;
+        }
 
         if (createClientRequest.RedirectUrl is not null && createClientRequest.RedirectUrl != string.Empty)
         {
