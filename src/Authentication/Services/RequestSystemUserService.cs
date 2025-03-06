@@ -146,11 +146,11 @@ public class RequestSystemUserService(
             return valVendor.Problem;
         }
 
-        Result<bool> valCust = await ValidateCustomerOrgNo(createClientRequest.PartyOrgNo);
-        if (valCust.IsProblem)
-        {
-            return valCust.Problem;
-        }
+        //Result<bool> valCust = await ValidateCustomerOrgNo(createClientRequest.PartyOrgNo);
+        //if (valCust.IsProblem)
+        //{
+        //    return valCust.Problem;
+        //}
 
         if (createClientRequest.RedirectUrl is not null && createClientRequest.RedirectUrl != string.Empty)
         {
@@ -183,7 +183,9 @@ public class RequestSystemUserService(
             PartyOrgNo = createClientRequest.PartyOrgNo,
             AccessPackages = createClientRequest.AccessPackages,
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createClientRequest.RedirectUrl
+            RedirectUrl = createClientRequest.RedirectUrl,
+            UserType = Core.Enums.SystemUserType.Client
+
         };
 
         Result<bool> res = await requestRepository.CreateClientRequest(created);
@@ -746,7 +748,8 @@ public class RequestSystemUserService(
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = systemUserRequest.PartyOrgNo,
-                ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo
+                ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo,
+                UserType = Core.Enums.SystemUserType.Default
             };
         }
 
@@ -772,7 +775,8 @@ public class RequestSystemUserService(
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = clientSystemUserRequest.PartyOrgNo,
                 ExternalRef = clientSystemUserRequest.ExternalRef ?? clientSystemUserRequest.PartyOrgNo,
-                AccessPackages = clientSystemUserRequest.AccessPackages
+                AccessPackages = clientSystemUserRequest.AccessPackages,
+                UserType = Core.Enums.SystemUserType.Client
             };
         }
 

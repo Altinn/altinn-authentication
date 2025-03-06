@@ -117,7 +117,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("party_org_no", createClientRequest.PartyOrgNo);
             command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createClientRequest.AccessPackages });
             command.Parameters.AddWithValue("status", createClientRequest.Status);
-            command.Parameters.AddWithValue("system_user_type", "client");
+            command.Parameters.AddWithValue("system_user_type", createClientRequest.UserType.ToString());
 
             if (createClientRequest.RedirectUrl is not null)
             {

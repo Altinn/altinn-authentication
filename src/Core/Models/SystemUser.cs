@@ -1,4 +1,5 @@
-﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+﻿using Altinn.Platform.Authentication.Core.Enums;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
@@ -100,5 +101,10 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The array of access packages versus System Provider's Resources needed to use this Registered System
         /// </summary>
         public List<AccessPackage> AccessPackages { get; set; } = [];
+
+        /// <summary>
+        /// The system user type
+        /// </summary>
+        public SystemUserType UserType { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+﻿using Altinn.Platform.Authentication.Core.Enums;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -78,4 +79,10 @@ public class ClientRequestSystemResponse()
     /// </summary>
     [JsonIgnore]
     public DateTime Created { get; set; }
+
+    /// <summary>
+    /// The system user type
+    /// </summary>
+    [JsonIgnore]
+    public SystemUserType UserType { get; set; }
 }

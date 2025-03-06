@@ -186,7 +186,8 @@ public class SystemUserRepository : ISystemUserRepository
                     reportee_org_no,
                     created_by,
                     external_ref,
-                    accesspackages)
+                    accesspackages,
+                    system_user_type)
                 VALUES(
                     @integration_title,
                     @system_internal_id,
@@ -194,7 +195,8 @@ public class SystemUserRepository : ISystemUserRepository
                     @reportee_org_no,
                     @created_by,
                     @external_ref,
-                    @accesspackages)
+                    @accesspackages,
+                    @system_user_type)
                 RETURNING system_user_profile_id;";
 
         string createdBy = "user_id:" + userId.ToString();
@@ -215,6 +217,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("created_by", createdBy);
             command.Parameters.AddWithValue("external_ref", ext_ref);
             command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
+            command.Parameters.AddWithValue("system_user_type", toBeInserted.UserType.ToString());
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)
