@@ -326,7 +326,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new ()
         {
-            Urn = "urn:altinn:accesspackage:skattenaering"
+            Urn = "urn:altinn:accesspackage:skattnaering"
         };
 
         // Arrange
@@ -460,7 +460,7 @@ public class RequestControllerTests(
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new AccessPackage();
-        accessPackage.Urn = "urn:altinn:accesspackage:skattenaering";
+        accessPackage.Urn = "urn:altinn:accesspackage:skattnaering";
 
         // Arrange
         CreateAgentRequestSystemUser req = new()
