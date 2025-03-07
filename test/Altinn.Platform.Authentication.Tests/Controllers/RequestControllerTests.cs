@@ -326,7 +326,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new ()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skattenaering"
         };
 
         // Arrange
