@@ -7,6 +7,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 
@@ -389,5 +390,84 @@ public class SystemUserRepository : ISystemUserRepository
             _logger.LogError(ex, "Authentication // SystemUserRepository // SetDeleteSystemUserById // Exception");
             throw;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<long> GetMaxSystemUserSequenceNo()
+    {
+        const string QUERY = /*strpsql*/"""
+            SELECT MAX(sequence_no) FROM business_application.system_user_profile
+            """;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleResult | CommandBehavior.SingleRow);
+
+            if (await reader.ReadAsync())
+            {
+                return await reader.GetFieldValueAsync<long>(0);
+            }
+            else
+            {
+                throw new InvalidOperationException("No resultset is currently being traversed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetSystemUserSequenceNo // Exception");
+            throw;
+        }        
+    }
+
+    /// <inheritdoc />
+    public async Task<List<SystemUserRegisterDTO>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/"""
+            SELECT 
+                sui.system_user_profile_id,
+                sui.integration_title,      
+                sui.created,        
+                sui.last_changed,
+                sui.sequence_no,
+                sui.is_deleted
+            FROM business_application.system_user_profile sui                
+            WHERE sui.sequence_no > @sequence_no
+                AND sui.sequence_no <= business_application.tx_max_safeval('business_application.systemuser_seq')
+            ORDER BY sui.sequence_no ASC
+            LIMIT @limit;
+            """
+        ;
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.Add(new("sequence_no", NpgsqlDbType.Bigint) { Value = (long)fromSequenceNo });
+            command.Parameters.AddWithValue("limit", limit);
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToSystemUserRegisterDTO)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllSystemUsers // Exception");
+            throw;
+        }
+    }
+
+    private static ValueTask<SystemUserRegisterDTO> ConvertFromReaderToSystemUserRegisterDTO(NpgsqlDataReader reader)
+    {
+        return new ValueTask<SystemUserRegisterDTO>(new SystemUserRegisterDTO
+        {
+            Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
+            IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
+            Created = reader.GetFieldValue<DateTime>("created"),
+            LastChanged = reader.GetFieldValue<DateTime>("last_changed"),
+            SequenceNo = reader.GetFieldValue<long>("sequence_no"),
+            IsDeleted = reader.GetFieldValue<bool>("is_deleted")
+        });
     }
 }

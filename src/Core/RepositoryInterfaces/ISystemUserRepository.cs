@@ -77,4 +77,16 @@ public interface ISystemUserRepository
     /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
     /// <returns>A SystemUser, if one is active.</returns>
     Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
+
+    /// <summary>
+    /// Returns a list of all SystemUsers    
+    /// </summary>
+    /// <returns>List of SystemUser</returns>
+    Task<List<SystemUserRegisterDTO>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the max sequence number for SystemUsers
+    /// </summary>
+    /// <returns>long</returns>
+    Task<long> GetMaxSystemUserSequenceNo();
 }

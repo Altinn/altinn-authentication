@@ -2,19 +2,14 @@
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace ArchiverService;
 
 /// <summary>
 /// IHost Service Worker to archive old data regurlarly
 /// </summary>
-/// <param name="hostApplicationLifetime">Interface to interact with service worker lifetime</param>
-/// <param name="logger">The logger</param>
-public sealed class Archiver(
-    IHostApplicationLifetime hostApplicationLifetime,
-    ILogger<Archiver> logger,
-    IRequestRepository requestRepository) : BackgroundService 
+/// <param name="requestRepository">The request repository class</param>
+public sealed class Archiver(IRequestRepository requestRepository) : BackgroundService
 {
     private const int SOFT_DELETE_TIMEOUT_DAYS = 28;
     private const int COPY_ARCHIVE_TIMEOUT_DAYS = 30;
