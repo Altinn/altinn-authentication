@@ -514,6 +514,11 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
+        if (res.AccessPackages == null)
+        {
+            return Problem.NotAnAgentRequest;
+        }
+
         Result<bool> check = await RetrieveChosenSystemInfoAndValidateVendorOrgNo(res.SystemId, vendorOrgNo);
         if (check.IsProblem)
         {
@@ -649,6 +654,11 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
+        if (systemUserRequest.AccessPackages == null)
+        {
+            return Problem.NotAnAgentRequest;
+        }
+
         if (systemUserRequest.Status != RequestStatus.New.ToString())
         {
             return Problem.RequestStatusNotNew;
@@ -666,33 +676,12 @@ public class RequestSystemUserService(
             return toBeInserted.Problem;
         }
 
-        //DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserRequest.AccessPackages, false, cancellationToken);
-        //if (delegationCheckFinalResult.RightResponses is null)
-        //{
-        //    // This represents some problem with doing the delegation check beyond the rights not being delegable.
-        //    return Problem.UnableToDoDelegationCheck;
-        //}
-
-        //if (!delegationCheckFinalResult.CanDelegate)
-        //{
-        //    // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-        //    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
-        //}
-
         Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted.Value, userId, cancellationToken);
 
         if (systemUserId is null)
         {
             return Problem.SystemUser_FailedToCreate;
         }
-
-        //toBeInserted.Value.Id = systemUserId.ToString()!;
-
-        //Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted.Value, delegationCheckFinalResult.RightResponses);
-        //if (delegationSucceeded.IsProblem)
-        //{
-        //    return delegationSucceeded.Problem;
-        //}
 
         return true;
     }
