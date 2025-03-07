@@ -23,7 +23,17 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {    
         }
 
+        public Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<AgentRequestSystemResponse>> CreateAgentRequest(CreateAgentRequestSystemUser createClientRequest, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
         }
@@ -39,6 +49,16 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         public Task<Result<Page<RequestSystemResponse, Guid>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, Page<Guid>.Request continueRequest, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<AgentRequestSystemResponse>> GetAgentRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<AgentRequestSystemResponse>> GetAgentRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
         }
@@ -59,6 +79,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         public Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int party, Guid requestId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> RejectAgentSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

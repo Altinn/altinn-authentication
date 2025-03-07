@@ -495,8 +495,10 @@ void ConfigurePostgreSql()
         }
 
         var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);
+        var userConStringBuilder = new NpgsqlConnectionStringBuilder(postgresUserConnectionString);
 
         var user = connectionStringBuilder.Username;
+        var appUser = userConStringBuilder.Username;
 
         app.UseYuniql(
             new PostgreSqlDataService(traceService),
@@ -509,7 +511,10 @@ void ConfigurePostgreSql()
                 ConnectionString = postgresAdminConnectionString,
                 IsAutoCreateDatabase = false,
                 IsDebug = true,
-                Tokens = [KeyValuePair.Create("YUNIQL-USER", user)]
+                Tokens = [
+                    KeyValuePair.Create("YUNIQL-USER", user),
+                    KeyValuePair.Create("APP-USER", user)
+                    ]
             });
     }
 }
