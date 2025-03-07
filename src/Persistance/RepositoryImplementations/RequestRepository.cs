@@ -46,6 +46,7 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
+                system_user_type,
                 redirect_urls)
             VALUES(
                 @id,
@@ -54,6 +55,7 @@ public class RequestRepository : IRequestRepository
                 @party_org_no,
                 @rights,
                 @status,
+                @system_user_type,
                 @redirect_urls);";
 
         try
@@ -66,6 +68,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = createRequest.Rights });
             command.Parameters.AddWithValue("status", createRequest.Status);
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Default.ToString());
 
             if (createRequest.RedirectUrl is not null)
             {
@@ -156,7 +159,7 @@ public class RequestRepository : IRequestRepository
                 and r.system_id = @system_id
                 and r.party_org_no = @party_org_no
                 and r.is_deleted = false
-                and r.system_user_type != @system_user_type;";
+                and r.system_user_type = @system_user_type;";
 
         try
         {

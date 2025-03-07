@@ -457,7 +457,7 @@ public class RequestControllerTests(
 
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new AccessPackage();
         accessPackage.Urn = "urn:altinn:accesspackage:skattenaering";
@@ -468,7 +468,7 @@ public class RequestControllerTests(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            AccessPackages = [accessPackage]
+            AccessPackages = [accessPackage]            
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
