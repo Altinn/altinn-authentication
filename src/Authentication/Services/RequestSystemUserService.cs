@@ -184,7 +184,7 @@ public class RequestSystemUserService(
             AccessPackages = createClientRequest.AccessPackages,
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createClientRequest.RedirectUrl,
-            UserType = Core.Enums.SystemUserType.Client
+            UserType = Core.Enums.SystemUserType.Agent
 
         };
 
@@ -777,7 +777,7 @@ public class RequestSystemUserService(
                 ReporteeOrgNo = clientSystemUserRequest.PartyOrgNo,
                 ExternalRef = clientSystemUserRequest.ExternalRef ?? clientSystemUserRequest.PartyOrgNo,
                 AccessPackages = clientSystemUserRequest.AccessPackages,
-                UserType = Core.Enums.SystemUserType.Client
+                UserType = Core.Enums.SystemUserType.Agent
             };
         }
 

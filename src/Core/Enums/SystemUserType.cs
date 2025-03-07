@@ -3,6 +3,6 @@
     public enum SystemUserType
     {
         Default,
-        Client
+        Agent
     }
 }
