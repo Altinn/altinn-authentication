@@ -10,6 +10,7 @@ using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Register.Models;
@@ -47,6 +48,20 @@ public class AccessManagementClientMock : IAccessManagementClient
         {
             return await Task.FromResult(true);
         }
+    }
+
+    public Task<Package> GetPackage(string packageId)
+    {
+        Package? package = null;
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
+        string packagesData = File.OpenText("Data/Packages/packages.json").ReadToEnd();
+        List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
+        package = packages?.FirstOrDefault(p => p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(package);
     }
 
     public Task<PartyExternal> GetParty(int partyId, string token)
