@@ -26,7 +26,7 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// The Title is by default the same as the System's Display Name
         /// </summary>
         [JsonPropertyName("integrationTitle")]
-        public string IntegrationTitle { get; set; } 
+        public string IntegrationTitle { get; set; } = string.Empty;
 
         /// <summary>
         /// Identifier for off the shelf systems, registered in the SystemRegister db.

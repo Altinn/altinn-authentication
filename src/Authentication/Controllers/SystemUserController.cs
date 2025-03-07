@@ -38,6 +38,11 @@ public class SystemUserController : ControllerBase
     private readonly IRequestSystemUser _requestSystemUser;
 
     /// <summary>
+    /// Route name for the internal stream of systemusers used by the Registry
+    /// </summary>
+    public const string ROUTE_GET_STREAM = "internal/systemusers/stream";
+
+    /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="systemUserService">The SystemUserService supports this API specifically.</param>
@@ -242,6 +247,46 @@ public class SystemUserController : ControllerBase
         }
 
         return NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves a list of all SystemUsers for internal use, 
+    /// called by the Register
+    /// </summary>
+    /// <param name="token">Optional continuation token</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Paginated list of all SystmUsers e</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_INTERNAL_OR_PLATFORM_ACCESS)]
+    [HttpGet("internal/systemusers/stream", Name = ROUTE_GET_STREAM)]
+    public async Task<ActionResult<ItemStream<SystemUserRegisterDTO>>> GetAllSystemUsers(
+        [FromQuery(Name = "token")] Opaque<long>? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        Result<IEnumerable<SystemUserRegisterDTO>> pageResult = await _systemUserService.GetAllSystemUsers(
+            token?.Value ?? 0,
+            cancellationToken);
+        if (pageResult.IsProblem)
+        {
+            return pageResult.Problem.ToActionResult();
+        }
+
+        List<SystemUserRegisterDTO> systemUserList = pageResult.Value.ToList();
+        long maxSeq = await _systemUserService.GetMaxSystemUserSequenceNo();
+        string? nextLink = null;
+
+        if (systemUserList.Count > 0)
+        {
+            nextLink = Url.Link(ROUTE_GET_STREAM, new
+            {
+                token = Opaque.Create(systemUserList[^1].SequenceNo)                
+            });    
+        }        
+
+        return ItemStream.Create(
+            pageResult.Value,
+            next: nextLink,
+            sequenceMax: maxSeq,
+            sequenceNumberFactory: static s => s.SequenceNo);            
     }
 
     private OrganisationNumber? RetrieveOrgNoFromToken()

@@ -1,5 +1,7 @@
-﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+﻿using Altinn.Platform.Authentication.Core.Enums;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models;
 
@@ -45,4 +47,9 @@ public record class RegisteredSystemDTO
     /// True if the registered system is visible to the user in the UI
     /// </summary>
     public bool IsVisible { get; set; }
+
+    /// <summary>
+    /// The system user type
+    /// </summary>
+    public SystemUserType UserType { get; set; } = SystemUserType.Default;
 }

@@ -348,6 +348,7 @@ public class RequestSystemUserService(
     /// Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
     /// </summary>
     /// <param name="redirectURL">the RedirectUrl chosen</param>
+    /// <param name="systemInfo">the SystemInfo</param>
     /// <returns>Result or Problem</returns>
     private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystem systemInfo)
     {
