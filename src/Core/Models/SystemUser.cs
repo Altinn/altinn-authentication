@@ -100,11 +100,13 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// <summary>
         /// The array of access packages versus System Provider's Resources needed to use this Registered System
         /// </summary>
+        [JsonPropertyName("accessPackages")]
         public List<AccessPackage> AccessPackages { get; set; } = [];
 
         /// <summary>
         /// The system user type
         /// </summary>
+        [JsonPropertyName("userType")]
         public SystemUserType UserType { get; set; }
     }
 }
