@@ -6,6 +6,8 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
+#nullable enable
+
 namespace Altinn.Platform.Authentication.Services.Interfaces
 {
     /// <summary>
@@ -45,7 +47,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System</param>
         /// <param name="cancellation">Cancellation token</param>
         /// <returns>List of Default Rights</returns>
-        Task<RegisteredSystem> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
+        Task<RegisteredSystem?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
 
         /// <summary>
         /// Inserts a new unique ClientId

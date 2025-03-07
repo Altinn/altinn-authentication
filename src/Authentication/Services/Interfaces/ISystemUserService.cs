@@ -26,13 +26,14 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="systemUserId">The db id for the SystemUser to be retrieved</param>
     /// <returns></returns>
-    Task<SystemUser> GetSingleSystemUserById(Guid systemUserId);
+    Task<SystemUser?> GetSingleSystemUserById(Guid systemUserId);
 
     /// <summary>
     /// Set the Delete flag on the identified SystemUser
     /// </summary>
     /// <param name="partyId">the party id of the reportee</param>
     /// <param name="systemUserId">The db id for the SystemUser to be deteled</param>
+    /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default);
 
@@ -86,6 +87,7 @@ public interface ISystemUserService
     /// <param name="party">the Reportee partyId</param>
     /// <param name="request">the requested SystemUser to be created</param>
     /// <param name="userId">the logged in user</param>
+    /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>The CreateSystemUserResponse response model, with either a new SystemUser model inside, or a list of errors.</returns>
     Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
 
@@ -95,4 +97,16 @@ public interface ISystemUserService
     /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
     /// <returns>A SystemUser, if one is active.</returns>
     Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
+
+    /// <summary>
+    /// Returns a list of all SystemUsers    
+    /// </summary>
+    /// <returns>List of SystemUser</returns>
+    Task<Result<IEnumerable<SystemUserRegisterDTO>>> GetAllSystemUsers(long continueFrom, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the max sequence no for SystemUsers
+    /// </summary>
+    /// <returns></returns>
+    Task<long> GetMaxSystemUserSequenceNo();
 }

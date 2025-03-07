@@ -15,6 +15,8 @@ using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
+#nullable enable
+
 namespace Altinn.Platform.Authentication.Helpers
 {
     /// <summary>
@@ -230,7 +232,12 @@ namespace Altinn.Platform.Authentication.Helpers
         {
             Console.WriteLine($"AuthorizationUtil // IsOwnerOfSystem // Checking organisation number in claims.");
 
-            string orgClaim = organisation?.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
+            string? orgClaim = organisation?.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
+
+            if (orgClaim is null)
+            {
+                return false;
+            }
 
             string orgNumber = GetOrganizationNumberFromClaim(orgClaim);
 
@@ -252,7 +259,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns>true if the given ClaimsPrincipal or on of its identities have contains the given scope.</returns>
         public static bool ContainsRequiredScope(List<string> requiredScope, ClaimsPrincipal user)
         {
-            string contextScope = user.Identities?
+            string? contextScope = user.Identities?
                .FirstOrDefault(i => i.AuthenticationType != null && i.AuthenticationType.Equals("AuthenticationTypes.Federation"))
                ?.Claims
                .Where(c => c.Type.Equals("urn:altinn:scope"))
@@ -296,7 +303,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns>true if the systemid starts with the orgnumber of the owner of the system</returns>
         public static bool DoesSystemIdStartWithOrgnumber(RegisteredSystem newSystem)
         {
-            string vendorOrgNumber = GetOrgNumber(newSystem.Vendor.ID);
+            string? vendorOrgNumber = GetOrgNumber(newSystem.Vendor.ID);
             string orgnumberInSystemId = newSystem.Id.Split("_")[0];
             bool doesSystemStartWithOrg = orgnumberInSystemId == vendorOrgNumber;
             return doesSystemStartWithOrg;
@@ -347,7 +354,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
         private static string GetOrganizationNumberFromClaim(string claim)
         {
-            ConsumerClaim consumerClaim;
+            ConsumerClaim? consumerClaim;
             try
             {
                 consumerClaim = JsonConvert.DeserializeObject<ConsumerClaim>(claim);
@@ -355,6 +362,11 @@ namespace Altinn.Platform.Authentication.Helpers
             catch (JsonReaderException)
             {
                 throw new ArgumentException("Invalid consumer claim: invalid JSON");
+            }
+
+            if (consumerClaim is null) 
+            {
+                throw new ArgumentException("Invalid consumer claim: null");
             }
 
             if (consumerClaim.Authority != "iso6523-actorid-upis")
