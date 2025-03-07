@@ -51,6 +51,5 @@ public record class RegisteredSystemDTO
     /// <summary>
     /// The system user type
     /// </summary>
-    [JsonIgnore]
-    public SystemUserType UserType { get; set; }
+    public SystemUserType UserType { get; set; } = SystemUserType.Default;
 }
