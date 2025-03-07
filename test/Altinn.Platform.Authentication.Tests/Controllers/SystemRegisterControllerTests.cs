@@ -9,6 +9,7 @@ using System.Net.Http.Json;
 using System.Security.Policy;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Altinn.Authentication.Tests.Mocks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -17,6 +18,7 @@ using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -93,6 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<ISystemUserService, SystemUserService>();    
             services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
+            services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
             SetupDateTimeMock();
             SetupGuidMock();
         }
@@ -191,6 +194,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_DoesNotExist.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
             Assert.Equal("One or all the resources in rights is not found in altinn's resource register", error.Detail);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_InvalidAccessPackages_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidAccessPackage.json";
+
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+            AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Single(problemDetails.Errors);
+            AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_DoesNotExist.ErrorCode);
+            Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
+            Assert.Equal("One or all the accesspackage(s) is not found in altinn's access packages", error.Detail);
         }
 
         [Fact]
@@ -771,7 +790,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/accesspackages");
                 HttpResponseMessage responseMessage = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 List<AccessPackage> list = JsonSerializer.Deserialize<List<AccessPackage>>(await responseMessage.Content.ReadAsStringAsync(), _options);
-                Assert.Equal("urn:altinn:accesspackage:sjøfart", list[0].Urn);
+                Assert.Equal("urn:altinn:accesspackage:skattenaering", list[0].Urn);
                 Assert.Single(list);
             }
         }

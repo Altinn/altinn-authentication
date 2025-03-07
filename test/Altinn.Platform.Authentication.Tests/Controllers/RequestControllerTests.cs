@@ -316,14 +316,14 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task ClientRequest_Create_Succeed()
+    public async Task AgentRequest_Create_Succeed()
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/client";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new()
         {
@@ -331,7 +331,7 @@ public class RequestControllerTests(
         };
 
         // Arrange
-        CreateClientRequestSystemUser req = new()
+        CreateAgentRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
@@ -347,7 +347,7 @@ public class RequestControllerTests(
 
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
-        ClientRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<ClientRequestSystemResponse>();
+        AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
@@ -450,7 +450,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Get_Client_Request_ByGuid_Ok()
+    public async Task Get_Agent_Request_ByGuid_Ok()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
@@ -458,18 +458,18 @@ public class RequestControllerTests(
 
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/client";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new AccessPackage();
         accessPackage.Urn = "urn:altinn:accesspackage:skattenaering";
 
         // Arrange
-        CreateClientRequestSystemUser req = new()
+        CreateAgentRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            AccessPackages = [accessPackage]
+            AccessPackages = [accessPackage]            
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -479,7 +479,7 @@ public class RequestControllerTests(
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
-        ClientRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<ClientRequestSystemResponse>();
+        AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
@@ -487,12 +487,12 @@ public class RequestControllerTests(
         HttpClient client2 = CreateClient();
         AddSystemUserRequesReadTestTokenToClient(client2);
         Guid testId = res.Id;
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/client/{testId}";
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
-        ClientRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<ClientRequestSystemResponse>();
+        AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
     }

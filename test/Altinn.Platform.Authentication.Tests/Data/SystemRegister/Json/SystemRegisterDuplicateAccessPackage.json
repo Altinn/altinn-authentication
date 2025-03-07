@@ -16,10 +16,10 @@
   },
   "accessPackages": [
     {
-      "urn": "urn:altinn:accesspackage:sjøfart"
+      "urn": "urn:altinn:accesspackage:skattnaering"
     },
     {
-      "urn": "urn:altinn:accesspackage:sjøfart"
+      "urn": "urn:altinn:accesspackage:skattnaering"
     }
   ],
   "rights": [

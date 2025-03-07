@@ -10,16 +10,13 @@
     "nn": "The Matrix"
   },
   "description": {
-    "nb": "The Matrix",
-    "en": "The Matrix",
-    "nn": "The Matrix"
+    "nb": "Test system",
+    "en": "Test system",
+    "nn": "Test system"
   },
-  "accesspackages": [
+  "accessPackages": [
     {
-      "urn": "urn:altinn:accesspackage:skattnaering"
-    },
-    {
-      "urn": "urn:altinn:accesspackage:skattnaering"
+      "urn": "urn:altinn:accesspackage:sjøfart"
     }
   ],
   "rights": [
@@ -27,7 +24,7 @@
       "resource": [
         {
           "id": "urn:altinn:resource",
-          "value": "ske-krav-og-betalinge"
+          "value": "ske-krav-og-betalinger"
         }
       ]
     }
@@ -36,8 +33,10 @@
   "clientId": [
     "32ef65ac-6e62-498d-880f-76c85c2052ae"
   ],
-  "isVisible": false,
   "allowedredirecturls": [
-    "https://vg.no"
-  ]
+    "https://vg.no",
+    "https://nrk.no",
+    "https://altinn.no"
+  ],
+  "isVisible": true
 }

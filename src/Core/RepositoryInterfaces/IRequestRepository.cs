@@ -25,8 +25,8 @@ public interface IRequestRepository
     /// Gets a Request model by the internal Guid ( which later is repurposed as the SystemUser Id )
     /// </summary>
     /// <param name="internalId">Internal Request guid</param>
-    /// <returns>Create Client Request model</returns>
-    Task<ClientRequestSystemResponse?> GetClientRequestByInternalId(Guid internalId);
+    /// <returns>Create Agent Request model</returns>
+    Task<AgentRequestSystemResponse?> GetAgentRequestByInternalId(Guid internalId);
 
     /// <summary>
     /// Gets a Request model by the three external references
@@ -97,11 +97,11 @@ public interface IRequestRepository
     /// </summary>
     /// <param name="createRequest">The validated Create Request model from the Service layer</param>
     /// <returns>The same Request model</returns>
-    Task<Result<bool>> CreateClientRequest(ClientRequestSystemResponse created);
+    Task<Result<bool>> CreateAgentRequest(AgentRequestSystemResponse created);
 
     /// <summary>
     /// Gets a Request model by the three external references
     /// <param name="externalRequestId">Struct containing the three external references</param>
     /// <returns>Create Request model</returns>
-    Task<ClientRequestSystemResponse?> GetClientRequestByExternalReferences(ExternalRequestId externalRequestId);
+    Task<AgentRequestSystemResponse?> GetAgentRequestByExternalReferences(ExternalRequestId externalRequestId);
 }
