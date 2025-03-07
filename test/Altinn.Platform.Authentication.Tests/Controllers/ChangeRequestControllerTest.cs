@@ -1106,7 +1106,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage statusChangeResponseMessage = await client3.SendAsync(statusChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, statusChangeResponseMessage.StatusCode);
         Assert.NotNull(statusChangeResponseMessage.Content);
-        ChangeRequestResponse statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
+        ChangeRequestResponse? statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(statusResponse);
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
     }
@@ -1238,7 +1238,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage statusChangeResponseMessage = await client3.SendAsync(statusChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, statusChangeResponseMessage.StatusCode);
         Assert.NotNull(statusChangeResponseMessage.Content);
-        ChangeRequestResponse statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
+        ChangeRequestResponse? statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(statusResponse);
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
     }
@@ -1366,7 +1366,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage statusChangeResponseMessage = await client2.SendAsync(statusChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, statusChangeResponseMessage.StatusCode);
         Assert.NotNull(statusChangeResponseMessage.Content);
-        ChangeRequestResponse statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
+        ChangeRequestResponse? statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(statusResponse);
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
     }
@@ -1659,8 +1659,8 @@ public class ChangeRequestControllerTest(
 
     private static string GetConfigPath()
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, $"../../../appsettings.json");
     }
 
     private void SetupDateTimeMock()

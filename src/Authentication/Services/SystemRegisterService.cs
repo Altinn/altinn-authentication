@@ -11,6 +11,8 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
+#nullable enable
+
 namespace Altinn.Platform.Authentication.Services
 {
     /// <summary>
@@ -74,7 +76,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="systemId">the system id</param>
         /// <param name="cancellation">the cancellation token</param>
         /// <returns></returns>
-        public Task<RegisteredSystem> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
+        public Task<RegisteredSystem?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetRegisteredSystemById(systemId);
         }

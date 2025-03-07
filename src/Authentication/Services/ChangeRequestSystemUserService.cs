@@ -23,10 +23,6 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
-using Altinn.Urn;
-using Altinn.Urn.Json;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -34,7 +30,6 @@ namespace Altinn.Platform.Authentication.Services;
 
 /// <inheritdoc/>
 public class ChangeRequestSystemUserService(
-    ILogger<ChangeRequestSystemUserService> logger,
     ISystemRegisterService systemRegisterService,
     IPartiesClient partiesClient,
     ISystemRegisterRepository systemRegisterRepository,
@@ -171,6 +166,7 @@ public class ChangeRequestSystemUserService(
     /// Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
     /// </summary>
     /// <param name="redirectURL">the RedirectUrl chosen</param>
+    /// <param name="systemInfo">The system info</param>
     /// <returns>Result or Problem</returns>
     private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystem systemInfo)
     {
@@ -515,7 +511,6 @@ public class ChangeRequestSystemUserService(
         };
 
         SystemUser? systemUser = await systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
-        var debug = " ";
         if (systemUser is null)
         {
             return Problem.SystemUserNotFound;

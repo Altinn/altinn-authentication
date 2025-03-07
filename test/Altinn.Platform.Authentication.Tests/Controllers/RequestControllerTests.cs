@@ -435,14 +435,13 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
-        //Get by Guid
+        // Get by Guid
         HttpClient client2 = CreateClient();
         AddSystemUserRequesReadTestTokenToClient(client2);
         Guid testId = res.Id;
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.True(res2 is not null);
@@ -660,7 +659,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3,true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
         int partyId = 500000;
 
@@ -902,14 +901,13 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
         // Vendor checks afterwards that the Request is approved
-        //Get by Guid
+        // Get by Guid
         HttpClient client3 = CreateClient();
         AddSystemUserRequesReadTestTokenToClient(client3);
         Guid testId = res.Id;
         string endpoint3 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
 
         HttpResponseMessage message3 = await client3.GetAsync(endpoint3);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
         RequestSystemResponse? res3 = await message3.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.True(res3 is not null);
@@ -1090,8 +1088,8 @@ public class RequestControllerTests(
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Forbidden, approveResponseMessage.StatusCode);
-        ProblemDetails problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("DelegationCheck failed with unknown error.", problem.Detail);
+        ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("DelegationCheck failed with unknown error.", problem!.Detail);
     }
 
     [Fact]
@@ -1156,8 +1154,8 @@ public class RequestControllerTests(
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
-        ProblemDetails problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Delegation failed.", problem.Detail);
+        ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("The Delegation failed.", problem!.Detail);
     }
 
     [Fact]
@@ -1374,7 +1372,6 @@ public class RequestControllerTests(
         // Delete by Guid
         string endpoint3 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
         HttpResponseMessage message3 = await client.DeleteAsync(endpoint3);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.Accepted, message3.StatusCode);
 
         // Get by Guid after delete return NotFound
@@ -1390,10 +1387,9 @@ public class RequestControllerTests(
 
         Guid testId = Guid.NewGuid();
 
-        //Delete by Guid
+        // Delete by Guid
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
         HttpResponseMessage message = await client.DeleteAsync(endpoint);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.Forbidden, message.StatusCode);
     }
 
@@ -1572,8 +1568,8 @@ public class RequestControllerTests(
 
     private static string GetConfigPath()
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, $"../../../appsettings.json");
     }
 
     private async Task<HttpResponseMessage> CreateSystemRegister(HttpClient client, string token)
