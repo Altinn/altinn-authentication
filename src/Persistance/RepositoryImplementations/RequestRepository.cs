@@ -2,6 +2,7 @@
 using System.Data.Common;
 using System.Threading;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -85,7 +86,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> CreateClientRequest(ClientRequestSystemResponse createClientRequest)
+    public async Task<Result<bool>> CreateAgentRequest(AgentRequestSystemResponse createAgentRequest)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.request(
@@ -111,17 +112,17 @@ public class RequestRepository : IRequestRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("id", createClientRequest.Id);
-            command.Parameters.AddWithValue("external_ref", createClientRequest.ExternalRef!);
-            command.Parameters.AddWithValue("system_id", createClientRequest.SystemId);
-            command.Parameters.AddWithValue("party_org_no", createClientRequest.PartyOrgNo);
-            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createClientRequest.AccessPackages });
-            command.Parameters.AddWithValue("status", createClientRequest.Status);
-            command.Parameters.AddWithValue("system_user_type", createClientRequest.UserType.ToString());
+            command.Parameters.AddWithValue("id", createAgentRequest.Id);
+            command.Parameters.AddWithValue("external_ref", createAgentRequest.ExternalRef!);
+            command.Parameters.AddWithValue("system_id", createAgentRequest.SystemId);
+            command.Parameters.AddWithValue("party_org_no", createAgentRequest.PartyOrgNo);
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createAgentRequest.AccessPackages });
+            command.Parameters.AddWithValue("status", createAgentRequest.Status);
+            command.Parameters.AddWithValue("system_user_type", createAgentRequest.UserType.ToString());
 
-            if (createClientRequest.RedirectUrl is not null)
+            if (createAgentRequest.RedirectUrl is not null)
             {
-                command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = createClientRequest.RedirectUrl });
+                command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = createAgentRequest.RedirectUrl });
             }
             else
             {
@@ -132,7 +133,7 @@ public class RequestRepository : IRequestRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // CreateClientRequest // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // CreateAgentRequest // Exception");
             throw;
         }
     }
@@ -155,7 +156,7 @@ public class RequestRepository : IRequestRepository
                 and r.system_id = @system_id
                 and r.party_org_no = @party_org_no
                 and r.is_deleted = false
-                and r.system_user_type != 'client' ;";
+                and r.system_user_type != @system_user_type;";
 
         try
         {
@@ -163,7 +164,8 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
-            command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);            
+            command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Default.ToString());
 
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
@@ -178,7 +180,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<ClientRequestSystemResponse?> GetClientRequestByExternalReferences(ExternalRequestId externalRequestId)
+    public async Task<AgentRequestSystemResponse?> GetAgentRequestByExternalReferences(ExternalRequestId externalRequestId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -204,16 +206,16 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
-            command.Parameters.AddWithValue("system_user_type", "client");
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Agent.ToString());
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToClientRequest)
+                .SelectAwait(ConvertFromReaderToAgentRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAgentRequestByExternalReferences // Exception");
             throw;
         }
     }
@@ -254,7 +256,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>
-    public async Task<ClientRequestSystemResponse?> GetClientRequestByInternalId(Guid internalId)
+    public async Task<AgentRequestSystemResponse?> GetAgentRequestByInternalId(Guid internalId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -279,12 +281,12 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("request_id", internalId);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToClientRequest)
+                .SelectAwait(ConvertFromReaderToAgentRequest)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetClientRequestByInternalId // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAgentRequestByInternalId // Exception");
             throw;
         }
     }
@@ -387,7 +389,7 @@ public class RequestRepository : IRequestRepository
         return new ValueTask<RequestSystemResponse>(response);
     }
 
-    private static ValueTask<ClientRequestSystemResponse> ConvertFromReaderToClientRequest(NpgsqlDataReader reader)
+    private static ValueTask<AgentRequestSystemResponse> ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
 
@@ -396,7 +398,7 @@ public class RequestRepository : IRequestRepository
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
-        ClientRequestSystemResponse response = new()
+        AgentRequestSystemResponse response = new()
         {
             Id = reader.GetFieldValue<Guid>("id"),
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
@@ -413,7 +415,7 @@ public class RequestRepository : IRequestRepository
             response.Status = RequestStatus.Timedout.ToString();
         }
 
-        return new ValueTask<ClientRequestSystemResponse>(response);
+        return new ValueTask<AgentRequestSystemResponse>(response);
     }
 
     /// <inheritdoc/>  

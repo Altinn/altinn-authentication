@@ -7,7 +7,7 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 /// <summary>
 /// DTO to create a new Request for a ClientSystemUser
 /// </summary>
-public class CreateClientRequestSystemUser()
+public class CreateAgentRequestSystemUser()
 {
     /// <summary>
     /// Either just the same as the PartyOrgNo for the customer, 

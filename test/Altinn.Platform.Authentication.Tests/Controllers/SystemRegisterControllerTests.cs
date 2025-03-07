@@ -771,7 +771,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/accesspackages");
                 HttpResponseMessage responseMessage = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 List<AccessPackage> list = JsonSerializer.Deserialize<List<AccessPackage>>(await responseMessage.Content.ReadAsStringAsync(), _options);
-                Assert.Equal("urn:altinn:accesspackage:sjøfart", list[0].Urn);
+                Assert.Equal("urn:altinn:accesspackage:skattenaering", list[0].Urn);
                 Assert.Single(list);
             }
         }

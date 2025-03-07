@@ -124,14 +124,14 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new Client-Delegation type Request based on a SystemId for a new ClientSystemUser.
+    /// Creates a new Agent-Delegation type Request based on a SystemId for a new AgentSystemUser.
     /// </summary>
-    /// <param name="createClientRequest">The request model</param>
+    /// <param name="createAgentRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Response model of ClientRequestSystemUserResponse</returns>
+    /// <returns>Response model of AgentRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
-    [HttpPost("vendor/client")]
-    public async Task<ActionResult<ClientRequestSystemResponse>> CreateClientRequest([FromBody] CreateClientRequestSystemUser createClientRequest, CancellationToken cancellationToken = default)
+    [HttpPost("vendor/agent")]
+    public async Task<ActionResult<AgentRequestSystemResponse>> CreateAgentRequest([FromBody] CreateAgentRequestSystemUser createAgentRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
         
@@ -143,9 +143,9 @@ public class RequestSystemUserController : ControllerBase
 
         ExternalRequestId externalRequestId = new()
         {
-            ExternalRef = createClientRequest.ExternalRef ?? createClientRequest.PartyOrgNo,
-            OrgNo = createClientRequest.PartyOrgNo,
-            SystemId = createClientRequest.SystemId,
+            ExternalRef = createAgentRequest.ExternalRef ?? createAgentRequest.PartyOrgNo,
+            OrgNo = createAgentRequest.PartyOrgNo,
+            SystemId = createAgentRequest.SystemId,
         };
 
         SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
@@ -155,7 +155,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
-        Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByExternalRef(externalRequestId, vendorOrgNo);
+        Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
             response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
@@ -163,7 +163,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
-        response = await _requestSystemUser.CreateClientRequest(createClientRequest, vendorOrgNo);
+        response = await _requestSystemUser.CreateAgentRequest(createAgentRequest, vendorOrgNo);
 
         if (response.IsSuccess)
         {
@@ -231,8 +231,8 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
-    [HttpGet("vendor/client/{requestId}")]
-    public async Task<ActionResult<ClientRequestSystemResponse>> GetClientSystemUserRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
+    [HttpGet("vendor/agent/{requestId}")]
+    public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentSystemUserRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
         if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
@@ -240,7 +240,7 @@ public class RequestSystemUserController : ControllerBase
             return Unauthorized();
         }
 
-        Result<ClientRequestSystemResponse> response = await _requestSystemUser.GetClientRequestByGuid(requestId, vendorOrgNo);
+        Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByGuid(requestId, vendorOrgNo);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -343,7 +343,7 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Approves the client systemuser requet and creates a system user
+    /// Approves the agent systemuser requet and creates a system user
     /// </summary>
     /// <param name="party">the partyId</param>
     /// <param name="requestId">The UUID of the request to be approved</param>
@@ -351,11 +351,11 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
-    [HttpPost("client/{party}/{requestId}/approve")]
-    public async Task<ActionResult<ClientRequestSystemResponse>> ApproveClientSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    [HttpPost("agent/{party}/{requestId}/approve")]
+    public async Task<ActionResult<AgentRequestSystemResponse>> ApproveAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _requestSystemUser.ApproveAndCreateClientSystemUser(requestId, party, userId, cancellationToken);
+        Result<bool> response = await _requestSystemUser.ApproveAndCreateAgentSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -453,11 +453,11 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
-    [HttpPost("client/{party}/{requestId}/reject")]
-    public async Task<ActionResult<bool>> RejectClientSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    [HttpPost("agent/{party}/{requestId}/reject")]
+    public async Task<ActionResult<bool>> RejectAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _requestSystemUser.RejectClientSystemUser(requestId, userId, cancellationToken);
+        Result<bool> response = await _requestSystemUser.RejectAgentSystemUser(requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

@@ -118,17 +118,17 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ClientRequestSystemResponse>> CreateClientRequest(CreateClientRequestSystemUser createClientRequest, OrganisationNumber vendorOrgNo)
+    public async Task<Result<AgentRequestSystemResponse>> CreateAgentRequest(CreateAgentRequestSystemUser createAgentRequest, OrganisationNumber vendorOrgNo)
     {
         // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
         ExternalRequestId externalRequestId = new()
         {
-            ExternalRef = createClientRequest.ExternalRef ?? createClientRequest.PartyOrgNo,
-            OrgNo = createClientRequest.PartyOrgNo,
-            SystemId = createClientRequest.SystemId,
+            ExternalRef = createAgentRequest.ExternalRef ?? createAgentRequest.PartyOrgNo,
+            OrgNo = createAgentRequest.PartyOrgNo,
+            SystemId = createAgentRequest.SystemId,
         };
 
-        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createClientRequest.SystemId);
+        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createAgentRequest.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -146,49 +146,49 @@ public class RequestSystemUserService(
             return valVendor.Problem;
         }
 
-        Result<bool> valCust = await ValidateCustomerOrgNo(createClientRequest.PartyOrgNo);
+        Result<bool> valCust = await ValidateCustomerOrgNo(createAgentRequest.PartyOrgNo);
         if (valCust.IsProblem)
         {
             return valCust.Problem;
         }
 
-        if (createClientRequest.RedirectUrl is not null && createClientRequest.RedirectUrl != string.Empty)
+        if (createAgentRequest.RedirectUrl is not null && createAgentRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = ValidateRedirectUrl(createClientRequest.RedirectUrl, systemInfo);
+            var valRedirect = ValidateRedirectUrl(createAgentRequest.RedirectUrl, systemInfo);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
             }
         }
 
-        Result<bool> valPackages = ValidateAccessPackages(createClientRequest.AccessPackages, systemInfo);
+        Result<bool> valPackages = ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
         if (valPackages.IsProblem)
         {
             return valPackages.Problem;
         }
 
         // Set an empty ExternalRef to be equal to the PartyOrgNo
-        if (createClientRequest.ExternalRef is null || createClientRequest.ExternalRef == string.Empty)
+        if (createAgentRequest.ExternalRef is null || createAgentRequest.ExternalRef == string.Empty)
         {
-            createClientRequest.ExternalRef = createClientRequest.PartyOrgNo;
+            createAgentRequest.ExternalRef = createAgentRequest.PartyOrgNo;
         }
 
         Guid newId = Guid.NewGuid();
 
-        var created = new ClientRequestSystemResponse()
+        var created = new AgentRequestSystemResponse()
         {
             Id = newId,
-            ExternalRef = createClientRequest.ExternalRef,
-            SystemId = createClientRequest.SystemId,
-            PartyOrgNo = createClientRequest.PartyOrgNo,
-            AccessPackages = createClientRequest.AccessPackages,
+            ExternalRef = createAgentRequest.ExternalRef,
+            SystemId = createAgentRequest.SystemId,
+            PartyOrgNo = createAgentRequest.PartyOrgNo,
+            AccessPackages = createAgentRequest.AccessPackages,
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createClientRequest.RedirectUrl,
+            RedirectUrl = createAgentRequest.RedirectUrl,
             UserType = Core.Enums.SystemUserType.Agent
 
         };
 
-        Result<bool> res = await requestRepository.CreateClientRequest(created);
+        Result<bool> res = await requestRepository.CreateAgentRequest(created);
         if (res.IsProblem)
         {
             return Problem.RequestCouldNotBeStored;
@@ -506,9 +506,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ClientRequestSystemResponse>> GetClientRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
+    public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
     {
-        ClientRequestSystemResponse? res = await requestRepository.GetClientRequestByInternalId(requestId);
+        AgentRequestSystemResponse? res = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (res is null)
         {
             return Problem.RequestNotFound;
@@ -520,7 +520,7 @@ public class RequestSystemUserService(
             return check.Problem;
         }
 
-        return new ClientRequestSystemResponse()
+        return new AgentRequestSystemResponse()
         {
             Id = res.Id,
             ExternalRef = res.ExternalRef,
@@ -641,9 +641,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> ApproveAndCreateClientSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        ClientRequestSystemResponse? systemUserRequest = await requestRepository.GetClientRequestByInternalId(requestId);
+        AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
             return Problem.RequestNotFound;
@@ -660,7 +660,7 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        Result<SystemUser> toBeInserted = MapClientSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        Result<SystemUser> toBeInserted = MapAgentSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
         if (toBeInserted.IsProblem)
         {
             return toBeInserted.Problem;
@@ -715,9 +715,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> RejectClientSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RejectAgentSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
     {
-        ClientRequestSystemResponse? systemUserRequest = await requestRepository.GetClientRequestByInternalId(requestId);
+        AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
             return Problem.RequestNotFound;
@@ -757,7 +757,7 @@ public class RequestSystemUserService(
         return toBeInserted!;
     }
 
-    private static Result<SystemUser> MapClientSystemUserRequestToSystemUser(ClientRequestSystemResponse clientSystemUserRequest, RegisteredSystem regSystem, int partyId)
+    private static Result<SystemUser> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystem regSystem, int partyId)
     {
         SystemUser? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
@@ -766,17 +766,17 @@ public class RequestSystemUserService(
             return Problem.SystemNameNotFound;
         }
 
-        if (clientSystemUserRequest != null)
+        if (agentSystemUserRequest != null)
         {
             toBeInserted = new SystemUser
             {
-                SystemId = clientSystemUserRequest.SystemId,
+                SystemId = agentSystemUserRequest.SystemId,
                 IntegrationTitle = systemName,
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
-                ReporteeOrgNo = clientSystemUserRequest.PartyOrgNo,
-                ExternalRef = clientSystemUserRequest.ExternalRef ?? clientSystemUserRequest.PartyOrgNo,
-                AccessPackages = clientSystemUserRequest.AccessPackages,
+                ReporteeOrgNo = agentSystemUserRequest.PartyOrgNo,
+                ExternalRef = agentSystemUserRequest.ExternalRef ?? agentSystemUserRequest.PartyOrgNo,
+                AccessPackages = agentSystemUserRequest.AccessPackages,
                 UserType = Core.Enums.SystemUserType.Agent
             };
         }
@@ -878,9 +878,9 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ClientRequestSystemResponse>> GetClientRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+    public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
     {
-        ClientRequestSystemResponse? res = await requestRepository.GetClientRequestByExternalReferences(externalRequestId);
+        AgentRequestSystemResponse? res = await requestRepository.GetAgentRequestByExternalReferences(externalRequestId);
 
         if (res is null)
         {
