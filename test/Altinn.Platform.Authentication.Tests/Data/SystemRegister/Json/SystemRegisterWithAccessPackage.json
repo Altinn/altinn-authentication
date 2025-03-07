@@ -16,7 +16,7 @@
   },
   "accessPackages": [
     {
-      "urn": "urn:altinn:accesspackage:skattenaering"
+      "urn": "urn:altinn:accesspackage:skattnaering"
     }
   ],
   "rights": [

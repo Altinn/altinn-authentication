@@ -320,6 +320,7 @@ public class RequestControllerTests(
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
@@ -327,7 +328,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattenaering"
+            Urn = "urn:altinn:accesspackage:skattnaering"
         };
 
         // Arrange
@@ -461,7 +462,7 @@ public class RequestControllerTests(
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new AccessPackage();
-        accessPackage.Urn = "urn:altinn:accesspackage:skattenaering";
+        accessPackage.Urn = "urn:altinn:accesspackage:skattnaering";
 
         // Arrange
         CreateAgentRequestSystemUser req = new()
@@ -536,7 +537,7 @@ public class RequestControllerTests(
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
-        ClientRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<ClientRequestSystemResponse>();
+        AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
@@ -544,7 +545,7 @@ public class RequestControllerTests(
         HttpClient client2 = CreateClient();
         AddSystemUserRequesReadTestTokenToClient(client2);
         Guid testId = res.Id;
-        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/client/{testId}";
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         string debug = "pause_here";
@@ -1288,15 +1289,15 @@ public class RequestControllerTests(
 
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/client";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattenaering"
+            Urn = "urn:altinn:accesspackage:skattnaering"
         };
 
         // Arrange
-        CreateClientRequestSystemUser req = new()
+        CreateAgentRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
@@ -1312,7 +1313,7 @@ public class RequestControllerTests(
 
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
-        ClientRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<ClientRequestSystemResponse>();
+        AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
@@ -1322,14 +1323,14 @@ public class RequestControllerTests(
 
         int partyId = 500000;
 
-        string approveEndpoint = $"/authentication/api/v1/systemuser/request/client/{partyId}/{res.Id}/approve";
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
     }
 
     [Fact]
-    public async Task Approve_ClientRequest_By_RequestId_Forbidden()
+    public async Task Approve_AgentRequest_By_RequestId_Forbidden()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
@@ -1337,15 +1338,15 @@ public class RequestControllerTests(
 
         HttpClient client = CreateClient();
         string token = AddSystemUserRequestWriteTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/client";
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattenaering"
+            Urn = "urn:altinn:accesspackage:skattnaering"
         };
 
         // Arrange
-        CreateClientRequestSystemUser req = new()
+        CreateAgentRequestSystemUser req = new()
         {
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
@@ -1361,7 +1362,7 @@ public class RequestControllerTests(
 
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
-        ClientRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<ClientRequestSystemResponse>();
+        AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
@@ -1371,7 +1372,7 @@ public class RequestControllerTests(
 
         int partyId = 500000;
 
-        string approveEndpoint = $"/authentication/api/v1/systemuser/request/client/{partyId}/{res.Id}/approve";
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Forbidden, approveResponseMessage.StatusCode);
@@ -1427,7 +1428,7 @@ public class RequestControllerTests(
 
         int partyId = 500000;
 
-        string approveEndpoint = $"/authentication/api/v1/systemuser/request/client/{partyId}/{res.Id}/approve";
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
