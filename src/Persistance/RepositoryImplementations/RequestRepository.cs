@@ -407,7 +407,7 @@ public class RequestRepository : IRequestRepository
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
-            AccessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
+            AccessPackages = reader.IsDBNull("accesspackages") ? null : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
