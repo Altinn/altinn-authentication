@@ -185,7 +185,6 @@ public class RequestSystemUserService(
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createAgentRequest.RedirectUrl,
             UserType = Core.Enums.SystemUserType.Agent
-
         };
 
         Result<bool> res = await requestRepository.CreateAgentRequest(created);
@@ -215,7 +214,7 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
-        if (accessPackages.Count > systemInfo.AccessPackages.Count )
+        if (accessPackages.Count > systemInfo.AccessPackages.Count)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }

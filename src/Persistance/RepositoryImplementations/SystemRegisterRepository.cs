@@ -206,8 +206,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToSystemRegister)
-                .FirstOrDefaultAsync();
-                        
+                .FirstOrDefaultAsync();                        
         }
         catch (Exception ex)
         {
@@ -492,7 +491,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             RegisteredSystem? systemInfo = await GetRegisteredSystemById(systemId);
 
-            List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo.InternalId);
+            List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo!.InternalId);
 
             if (existingClients != null)
             {
