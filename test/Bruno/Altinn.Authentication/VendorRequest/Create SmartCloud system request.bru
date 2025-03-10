@@ -37,6 +37,22 @@ vars:pre-request {
   partyOrgNo: 313641341
 }
 
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+  
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org","312605031");
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  
+  console.log(bru.getEnvVar("auth_tokenType"))
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+}
+
 docs {
   Required scope: altinn:authentication/systemuser.request.write
   
