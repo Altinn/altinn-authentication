@@ -843,6 +843,31 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
+    public async Task<Result<Page<AgentRequestSystemResponse, Guid>>> GetAllAgentRequestsForVendor(
+        OrganisationNumber vendorOrgNo,
+        string systemId,
+        Page<Guid>.Request continueRequest,
+        CancellationToken cancellationToken)
+    {
+        RegisteredSystem? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        if (system is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        // Verify that the orgno from the logged on token owns this system
+        if (OrganisationNumber.CreateFromStringOrgNo(system.SystemVendorOrgNumber) != vendorOrgNo)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        List<AgentRequestSystemResponse>? theList = await requestRepository.GetAllAgentRequestsBySystem(systemId, cancellationToken);
+        theList ??= [];
+
+        return Page.Create(theList, _paginationSize, static theList => theList.Id);
+    }
+
+    /// <inheritdoc/>
     public async Task<Result<bool>> DeleteRequestByRequestId(Guid requestId)
     {
         var result = await requestRepository.DeleteRequestByRequestId(requestId);

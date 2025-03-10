@@ -456,6 +456,42 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
+    public async Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                created
+            FROM business_application.request r
+            WHERE r.system_id = @system_id
+                and r.is_deleted = false
+                and system_user_type = @system_user_type;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Agent.ToString());
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllAgentRequestsBySystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
     public async Task<bool> DeleteRequestByRequestId(Guid requestId)
     {
         const string QUERY = /*strpsql*/"""          

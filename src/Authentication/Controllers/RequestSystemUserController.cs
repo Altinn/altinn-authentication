@@ -73,6 +73,12 @@ public class RequestSystemUserController : ControllerBase
     public const string ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM = "vendor/bysystem";
 
     /// <summary>
+    /// Route for the Get System by Vendor endpoint
+    /// which uses pagination.
+    /// </summary>
+    public const string ROUTE_VENDOR_GET_AGENT_REQUESTS_BY_SYSTEM = "vendor/bysystem/agent";
+
+    /// <summary>
     /// Creates a new Request based on a SystemId for a SystemUser.
     /// </summary>
     /// <param name="createRequest">The request model</param>
@@ -299,6 +305,49 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves the Status (Response model) for a Request
+    /// based on the SystemId, OrgNo and the ExternalRef 
+    /// ( which is enforced as a unique combination )
+    /// </summary>
+    /// <param name="systemId">The Id for the chosen Registered System.</param>
+    /// <param name="externalRef">The chosen external ref the Vendor sent in to the Create Request</param>
+    /// <param name="orgNo">The organisation number for the customer</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [HttpGet("vendor/agent/byexternalref/{systemId}/{orgNo}/{externalRef}")]
+    public async Task<ActionResult<RequestSystemResponse>> GetAgentRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        ExternalRequestId externalRequestId = new()
+        {
+            ExternalRef = externalRef,
+            OrgNo = orgNo,
+            SystemId = systemId,
+        };
+
+        Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
+
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Ok(response.Value);
+        }
+
+        return BadRequest();
+    }
+
+    /// <summary>
     /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
     /// </summary>
     /// <returns></returns>
@@ -405,6 +454,56 @@ public class RequestSystemUserController : ControllerBase
 
         var nextLink = pageResult.Value.ContinuationToken.HasValue
             ? Url.Link(ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM, new
+            {
+                systemId,
+                token = Opaque.Create(pageResult.Value.ContinuationToken.Value)
+            })
+            : null;
+
+        if (pageResult.IsSuccess)
+        {
+            return Paginated.Create(pageResult.Value.Items.ToList(), nextLink);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves a list of Status-Response-model for all Requests that the Vendor has for a given system they own.
+    /// </summary>
+    /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="token">Optional continuation token</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [HttpGet("vendor/agent/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_AGENT_REQUESTS_BY_SYSTEM)]
+    public async Task<ActionResult<Paginated<AgentRequestSystemResponse>>> GetAllAgentRequestsForVendor(
+        string systemId,
+        [FromQuery(Name = "token")] Opaque<Guid>? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Page<Guid>.Request continueFrom = null!;
+        if (token?.Value is not null)
+        {
+            continueFrom = Page.ContinueFrom(token!.Value);
+        }
+
+        Result<Page<AgentRequestSystemResponse, Guid>> pageResult =
+          await _requestSystemUser.GetAllAgentRequestsForVendor(
+              vendorOrgNo, systemId, continueFrom, cancellationToken);
+        if (pageResult.IsProblem)
+        {
+            return pageResult.Problem.ToActionResult();
+        }
+
+        var nextLink = pageResult.Value.ContinuationToken.HasValue
+            ? Url.Link(ROUTE_VENDOR_GET_AGENT_REQUESTS_BY_SYSTEM, new
             {
                 systemId,
                 token = Opaque.Create(pageResult.Value.ContinuationToken.Value)
