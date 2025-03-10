@@ -610,7 +610,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Get_Agent_Request_ByExternalRef_BadRequest()
+    public async Task Get_Agent_Request_ByExternalRef_NotFound()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
