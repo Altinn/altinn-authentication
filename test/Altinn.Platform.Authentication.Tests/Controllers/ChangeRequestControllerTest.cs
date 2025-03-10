@@ -1390,8 +1390,8 @@ public class ChangeRequestControllerTest(
 
         // Arrange
         string systemId = "991825827_the_matrix";
-
-        await CreateSeveralChangeRequest(_paginationSize, systemId);        
+                
+        await CreateSeveralChangeRequest(_paginationSize, systemId);
 
         // Get the Request
         HttpClient client2 = CreateClient();
@@ -1422,7 +1422,7 @@ public class ChangeRequestControllerTest(
 
     private async Task CreateSeveralChangeRequest(int paginationSize, string systemId)
     {
-        var tasks = Enumerable.Range(0, paginationSize + 1)
+        var tasks = Enumerable.Range(0, paginationSize +1)
                               .Select(i => CreateChangeRequest(i, systemId))
                               .ToList();
 

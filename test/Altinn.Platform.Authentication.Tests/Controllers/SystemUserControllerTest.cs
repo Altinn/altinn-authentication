@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing.Printing;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -59,6 +60,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IGuidService> guidService = new Mock<IGuidService>();
         private readonly Mock<IEventsQueueClient> _eventQueue = new Mock<IEventsQueueClient>();
 
+        private int _paginationSize = 10;
+
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
@@ -93,6 +96,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
+
+            // _paginationSize = configuration.GetValue<int>("PaginationOptions:Size");
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(timeProviderMock.Object);
             services.AddSingleton(guidService.Object);
@@ -857,7 +862,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(shouldBeCreated);
             Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);
 
-            await CreateSeveralSystemUsers(client, 103, systemId);
+            int numberOfTestCases = 13;
+
+            await CreateSeveralSystemUsers(client, numberOfTestCases, systemId);
 
             // Stream PAGE_SIZE (10)
             HttpClient streamClient = CreateClient();
@@ -872,7 +879,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(result);
             var list = result.Items.ToList();            
             Assert.Equal(list[0].IntegrationTitle, newSystemUser.IntegrationTitle);
-            Assert.Equal(100, list.Count);
+            Assert.Equal(_paginationSize, list.Count);
 
             // Stream some more, should get only 2
             streamEndpoint = result.Links.Next!;
@@ -882,7 +889,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result2 = await streamResponse2.Content.ReadFromJsonAsync<ItemStream<SystemUserRegisterDTO>>();            
             Assert.NotNull(result2);
             var list2 = result2.Items.ToList();
-            Assert.Equal(4, list2.Count);
+            Assert.Equal(numberOfTestCases - _paginationSize +1, list2.Count);
 
             // Stream yet again, should get 0 new 
             streamEndpoint = result2.Links.Next!;
