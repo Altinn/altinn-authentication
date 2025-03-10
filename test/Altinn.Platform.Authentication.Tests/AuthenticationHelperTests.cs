@@ -233,5 +233,77 @@ namespace Altinn.Platform.Authentication.Tests
             Assert.False(result.Value);
             Assert.Equal(Problem.RedirectUriNotFound, result.Problem);
         }
+
+        [Fact]
+        public void ValidateRedirectUrl_ValidUrlWithFragment_ReturnsTrue()
+        {
+            // Arrange
+            var systemInfo = new RegisteredSystem
+            {
+                Id = "system1",
+                Vendor = new VendorInfo { ID = "Vendor1" },
+                Name = new Dictionary<string, string> { { "en", "System 1" } },
+                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
+                AllowedRedirectUrls = new List<Uri>
+                {
+                    new Uri("https://example.com/callback")
+                }
+            };
+            string redirectURL = "https://example.com/callback#section";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+
+            // Assert
+            Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrl_ValidUrlWithDifferentPath_ReturnsFalse()
+        {
+            // Arrange
+            var systemInfo = new RegisteredSystem
+            {
+                Id = "system1",
+                Vendor = new VendorInfo { ID = "Vendor1" },
+                Name = new Dictionary<string, string> { { "en", "System 1" } },
+                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
+                AllowedRedirectUrls = new List<Uri>
+                {
+                    new Uri("https://example.com/callback")
+                }
+            };
+            string redirectURL = "https://example.com/callback/path";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+
+            // Assert
+            Assert.False(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrl_ValidUrlWithPort_ReturnsTrue()
+        {
+            // Arrange
+            var systemInfo = new RegisteredSystem
+            {
+                Id = "system1",
+                Vendor = new VendorInfo { ID = "Vendor1" },
+                Name = new Dictionary<string, string> { { "en", "System 1" } },
+                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
+                AllowedRedirectUrls = new List<Uri>
+                {
+                    new Uri("https://example.com:8080/callback")
+                }
+            };
+            string redirectURL = "https://example.com:8080/callback";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+
+            // Assert
+            Assert.True(result.Value);
+        }
     }
 }
