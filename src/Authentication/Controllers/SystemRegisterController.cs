@@ -186,7 +186,6 @@ public class SystemRegisterController : ControllerBase
         List<AccessPackage> lista = await _systemRegisterService.GetAccessPackagesForRegisteredSystem(systemId, cancellationToken);
 
         return Ok(lista);
-
     }
 
     /// <summary>

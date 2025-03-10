@@ -2,7 +2,9 @@
 using System.Data.Common;
 using System.Threading;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -44,6 +46,7 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
+                system_user_type,
                 redirect_urls)
             VALUES(
                 @id,
@@ -52,6 +55,7 @@ public class RequestRepository : IRequestRepository
                 @party_org_no,
                 @rights,
                 @status,
+                @system_user_type,
                 @redirect_urls);";
 
         try
@@ -64,6 +68,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = createRequest.Rights });
             command.Parameters.AddWithValue("status", createRequest.Status);
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Default.ToString());
 
             if (createRequest.RedirectUrl is not null)
             {
@@ -78,7 +83,60 @@ public class RequestRepository : IRequestRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // CreateRequest // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> CreateAgentRequest(AgentRequestSystemResponse createAgentRequest)
+    {
+        const string QUERY = /*strpsql*/@"
+            INSERT INTO business_application.request(
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                accesspackages,
+                request_status,
+                system_user_type,
+                redirect_urls)
+            VALUES(
+                @id,
+                @external_ref,
+                @system_id,
+                @party_org_no,
+                @accessPackages,
+                @status,
+                @system_user_type,
+                @redirect_urls);";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("id", createAgentRequest.Id);
+            command.Parameters.AddWithValue("external_ref", createAgentRequest.ExternalRef!);
+            command.Parameters.AddWithValue("system_id", createAgentRequest.SystemId);
+            command.Parameters.AddWithValue("party_org_no", createAgentRequest.PartyOrgNo);
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createAgentRequest.AccessPackages });
+            command.Parameters.AddWithValue("status", createAgentRequest.Status);
+            command.Parameters.AddWithValue("system_user_type", createAgentRequest.UserType.ToString());
+
+            if (createAgentRequest.RedirectUrl is not null)
+            {
+                command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = createAgentRequest.RedirectUrl });
+            }
+            else
+            {
+                command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
+            }
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // CreateAgentRequest // Exception");
             throw;
         }
     }
@@ -100,7 +158,8 @@ public class RequestRepository : IRequestRepository
             WHERE r.external_ref = @external_ref
                 and r.system_id = @system_id
                 and r.party_org_no = @party_org_no
-                and r.is_deleted = false;";
+                and r.is_deleted = false
+                and r.system_user_type = @system_user_type;";
 
         try
         {
@@ -109,6 +168,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Default.ToString());
 
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
@@ -118,6 +178,47 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<AgentRequestSystemResponse?> GetAgentRequestByExternalReferences(ExternalRequestId externalRequestId)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                created
+            FROM business_application.request r
+            WHERE r.external_ref = @external_ref
+                and r.system_id = @system_id
+                and r.party_org_no = @party_org_no
+                and r.is_deleted = false
+                and r.system_user_type = @system_user_type ;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
+            command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
+            command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Agent.ToString());
+
+            var dbres = await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .FirstOrDefaultAsync();
+            return dbres;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAgentRequestByExternalReferences // Exception");
             throw;
         }
     }
@@ -153,6 +254,42 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // GetRequestByInternalId // Exception"); 
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<AgentRequestSystemResponse?> GetAgentRequestByInternalId(Guid internalId)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                rights,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                created 
+            FROM business_application.request r
+            WHERE r.id = @request_id
+                and r.is_deleted = false;
+        ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("request_id", internalId);
+
+            return await command.ExecuteEnumerableAsync()
+                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAgentRequestByInternalId // Exception");
             throw;
         }
     }
@@ -255,6 +392,35 @@ public class RequestRepository : IRequestRepository
         return new ValueTask<RequestSystemResponse>(response);
     }
 
+    private static ValueTask<AgentRequestSystemResponse> ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
+    {
+        string? redirect_url = null;
+
+        if (!reader.IsDBNull("redirect_urls"))
+        {
+            redirect_url = reader.GetFieldValue<string?>("redirect_urls");
+        }
+
+        AgentRequestSystemResponse response = new()
+        {
+            Id = reader.GetFieldValue<Guid>("id"),
+            ExternalRef = reader.GetFieldValue<string>("external_ref"),
+            SystemId = reader.GetFieldValue<string>("system_id"),
+            PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
+            AccessPackages = reader.IsDBNull("accesspackages") ? null : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
+            Status = reader.GetFieldValue<string>("request_status"),
+            Created = reader.GetFieldValue<DateTime>("created"),
+            RedirectUrl = redirect_url
+        };
+
+        if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
+        {
+            response.Status = RequestStatus.Timedout.ToString();
+        }
+
+        return new ValueTask<AgentRequestSystemResponse>(response);
+    }
+
     /// <inheritdoc/>  
     public async Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken)
     {
@@ -285,6 +451,42 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // GetAllRequestsBySystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                external_ref,
+                system_id,
+                party_org_no,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                created
+            FROM business_application.request r
+            WHERE r.system_id = @system_id
+                and r.is_deleted = false
+                and system_user_type = @system_user_type;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Agent.ToString());
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllAgentRequestsBySystem // Exception");
             throw;
         }
     }

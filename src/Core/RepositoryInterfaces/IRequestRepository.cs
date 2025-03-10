@@ -22,6 +22,13 @@ public interface IRequestRepository
     Task<RequestSystemResponse?> GetRequestByInternalId (Guid internalId);
 
     /// <summary>
+    /// Gets a Request model by the internal Guid ( which later is repurposed as the SystemUser Id )
+    /// </summary>
+    /// <param name="internalId">Internal Request guid</param>
+    /// <returns>Create Agent Request model</returns>
+    Task<AgentRequestSystemResponse?> GetAgentRequestByInternalId(Guid internalId);
+
+    /// <summary>
     /// Gets a Request model by the three external references
     /// <param name="externalRequestId">Struct containing the three external references</param>
     /// <returns>Create Request model</returns>
@@ -44,6 +51,14 @@ public interface IRequestRepository
     /// <param name="cancellationToken">The cancellationToken</param>
     /// <returns></returns>
     Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves a list of Status-Response-model for all agent Requests that the Vendor has
+    /// </summary>    
+    /// <param name="systemId">The chosen system</param>
+    /// <param name="cancellationToken">The cancellationToken</param>
+    /// <returns>list of agent requests for a system the vendor has</returns>
+    Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Rejects the system user request
@@ -84,4 +99,17 @@ public interface IRequestRepository
     /// <param name="internalId">The guid as it was in the main tabble</param>
     /// <returns></returns>
     Task<RequestSystemResponse?> GetArchivedRequestByInternalId(Guid internalId);
+
+    /// <summary>
+    /// Inserts a new CreateRequest into the db
+    /// </summary>
+    /// <param name="createRequest">The validated Create Request model from the Service layer</param>
+    /// <returns>The same Request model</returns>
+    Task<Result<bool>> CreateAgentRequest(AgentRequestSystemResponse created);
+
+    /// <summary>
+    /// Gets a Request model by the three external references
+    /// <param name="externalRequestId">Struct containing the three external references</param>
+    /// <returns>Create Request model</returns>
+    Task<AgentRequestSystemResponse?> GetAgentRequestByExternalReferences(ExternalRequestId externalRequestId);
 }
