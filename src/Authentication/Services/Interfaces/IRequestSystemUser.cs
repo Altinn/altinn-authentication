@@ -89,6 +89,16 @@ public interface IRequestSystemUser
     Task<Result<Page<RequestSystemResponse, Guid>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, Page<Guid>.Request continueRequest, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Retrieves a list of Status-Response-model for all agent Requests that the Vendor has
+    /// </summary>
+    /// <param name="vendorOrgNo">The Vendor's organisation number, retrieved from the token</param>
+    /// <param name="systemId">The registered system this listing is for, must be owned by the Vendor</param>
+    /// <param name="continueRequest">The Guid denoting from where to continue with Pagination</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    Task<Result<Page<AgentRequestSystemResponse, Guid>>> GetAllAgentRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, Page<Guid>.Request continueRequest, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Rejects the request 
     /// </summary>
     /// <param name="requestId">the id of the request to be rejected</param>
