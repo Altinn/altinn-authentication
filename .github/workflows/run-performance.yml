@@ -1,21 +1,100 @@
 name: Run k6 performance test
 
 on:
-    push:
-        branches:
-            - 'performance/**'
+    workflow_dispatch:
+        inputs:
+            apiVersion:
+                description: 'API Version'
+                required: true
+                default: 'v1'
+            environment:
+                description: 'Environment'
+                required: true
+                default: 'yt01'
+                type: choice
+                options:
+                - at22
+                - tt02
+                - yt01
+            tag:
+                description: 'tag the performance test'
+                required: true
+                default: 'Performance test'
+                type: string
+            vus:
+                description: 'Number of VUS'
+                required: true
+                default: 1
+                type: number
+            duration:
+                description: 'Duration of test, ie 30s, 1m, 10m'
+                required: true
+                default: 1m
+                type: string
+            parallelism:
+                description: 'Number of parallel test runs'
+                required: true
+                default: 1
+                type: number  
+            testSuitePath:
+                description: 'Path to test suite to run'
+                required: true
+                default: 'test/k6/src/tests/orders_org_no.js'
+                type: choice
+                options:
+                - 'test/k6/src/tests/orders-org-no.js'
+                - 'test/k6/src/tests/orders-email.js'
+                - 'test/k6/src/tests/orders-sms.js'
 
+permissions:
+  id-token: write
+  contents: read
+run-name: ${{ inputs.tag }} ${{ inputs.vus }}/${{ inputs.duration }}/${{ inputs.parallelism }}
 jobs:
-    k6-performance:
-        runs-on: ubuntu-latest
+  k6-performance:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: OIDC Login to Azure Public Cloud
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        allow-no-subscriptions: true
+    - name: Populate kubeconfig with k6 context
+      id: populate_kubeconfig_with_k6_context
+      shell: bash
+      run: |
+        if ! az aks install-cli; then
+          echo "Failed to install kubectl CLI"
+          exit 1
+        fi
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v2
-            - name: Print
-              run:
-                  echo "Hello, world!"
+        if ! az aks get-credentials --resource-group k6tests-rg --name k6tests-cluster; then
+          echo "Failed to populate kubeconfig"
+          exit 1
+        fi
 
-
-            # Add your test steps here
-            # ...
+        if ! kubelogin convert-kubeconfig -l azurecli; then
+          echo "Failed to convert kubeconfig"
+          exit 1
+        fi
+    - name: Setup k6
+      uses: grafana/setup-k6-action@v1
+    - name: Run K6 tests (${{ inputs.testSuitePath }})
+      run: |
+        echo "Running k6 test suite ${{ inputs.testSuitePath }} with ${{ inputs.vus }} VUs for ${{ inputs.duration }} on ${{ inputs.parallelism }} parallelism"
+        k6configName=$(basename "${{ inputs.testSuitePath }}" .js)
+        k6configName="k6-${k6configName}"
+        ./test/k6/src/tests/run-test-in-k8s.sh \
+          -f "${{ inputs.testSuitePath }}" \
+          -c "$k6configName" \
+          -n "$k6configName" \
+          -v "${{ inputs.vus }}" \
+          -d "${{ inputs.duration }}" \
+          -p "${{ inputs.parallelism }}"
+      env:
+        API_ENVIRONMENT: ${{ inputs.environment }}
+        API_VERSION: ${{ inputs.apiVersion }}
