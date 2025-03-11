@@ -1,17 +1,13 @@
 meta {
   name: Create System in System Register
   type: http
-  seq: 5
+  seq: 2
 }
 
 post {
   url: {{baseUrl}}/authentication/api/v1/systemregister/vendor
   body: json
-  auth: none
-}
-
-headers {
-  Authorization: Bearer {{bearerToken}}
+  auth: inherit
 }
 
 body:json {
@@ -30,29 +26,12 @@ body:json {
       "nb": "Integrasjonstest. Noe er randomisert her, men mye blir likt.",
       "nn": "integrasjonstest på nynorsk. Noe er randomisert her, men mye blir likt."
     },
-    "rights": [
-      {
-        "action" : "read",
-        "resource": [
-          {
-            "value": "authentication-e2e-test",
-            "id": "urn:altinn:resource"
-          }
-        ]
-      },
-    {
-    "resource": [
-    {
-    "value": "vegardtestressurs",
-    "id": "urn:altinn:resource"
-    }
-    ]
-    }
-    ],
+    "accessPackages": [ 
+      { "urn": "urn:altinn:accesspackage:skattnaering" } ],
     "allowedRedirectUrls": [
       "https://altinn.no"
     ],
-    "isVisible": true,
+    "isVisible": false,
     "ClientId": [
       "{{system_name}}"
     ]

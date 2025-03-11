@@ -11,15 +11,18 @@ script:pre-request {
 }
 
 script:post-response {
-  // Reset request vars so auth token data does not bleed between requests.
-  // Probably better ways of doing this?
+  //  Reset request vars so auth token data does not bleed between requests.
+  
+  // Don't know why - but resetting these disallows you from setting them again in a pre request script for each .bru test? Why?
+  
+  //  Probably better ways of doing this?
   // bru.setVar("auth_tokenType", null);
-  // bru.setVar("auth_userId", null);
-  // bru.setVar("auth_partyId", null);
-  // bru.setVar("auth_ssn", null);
-  // bru.setVar("auth_scopes", null);
-  // bru.setVar("auth_org", null);
-  // bru.setVar("auth_orgNo", null);
-  // bru.setVar("auth_username", null);
-  // bru.setVar("bearerToken", null);
+  //  bru.setVar("auth_userId", null);
+  //  bru.setVar("auth_partyId", null);
+  //  bru.setVar("auth_ssn", null);
+  //  bru.setVar("auth_scopes", null);
+  //  bru.setVar("auth_org", null);
+  //  bru.setVar("auth_orgNo", null);
+  //  bru.setVar("auth_username", null);
+  //  bru.setVar("bearerToken", null);
 }
