@@ -76,7 +76,7 @@ public class RequestSystemUserService(
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
@@ -341,28 +341,6 @@ public class RequestSystemUserService(
         }
 
         return list;
-    }
-
-    /// <summary>
-    /// Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
-    /// </summary>
-    /// <param name="redirectURL">the RedirectUrl chosen</param>
-    /// <param name="systemInfo">the SystemInfo</param>
-    /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystem systemInfo)
-    {
-        List<Uri> redirectUrlsInSystem = systemInfo.AllowedRedirectUrls;
-        Uri chosenUri = new(redirectURL);
-
-        foreach (var uri in redirectUrlsInSystem)
-        {
-            if (uri.AbsoluteUri == chosenUri.AbsoluteUri)
-            {
-                return true;
-            }
-        }
-
-        return Problem.RedirectUriNotFound;
     }
 
     /// <summary>
