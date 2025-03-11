@@ -4,6 +4,7 @@ using System.Linq;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Persistance.Constants;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -184,14 +185,18 @@ public class SystemUserRepository : ISystemUserRepository
                     reportee_party_id,
                     reportee_org_no,
                     created_by,
-                    external_ref)
+                    external_ref,
+                    accesspackages,
+                    system_user_type)
                 VALUES(
                     @integration_title,
                     @system_internal_id,
                     @reportee_party_id,
                     @reportee_org_no,
                     @created_by,
-                    @external_ref)
+                    @external_ref,
+                    @accesspackages,
+                    @system_user_type)
                 RETURNING system_user_profile_id;";
 
         string createdBy = "user_id:" + userId.ToString();
@@ -211,6 +216,8 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("reportee_org_no", toBeInserted.ReporteeOrgNo);
             command.Parameters.AddWithValue("created_by", createdBy);
             command.Parameters.AddWithValue("external_ref", ext_ref);
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
+            command.Parameters.AddWithValue("system_user_type", toBeInserted.UserType.ToString());
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToGuid)

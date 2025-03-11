@@ -86,6 +86,7 @@ public class DbFixture
                     Environment = "integrationtest",
                     Tokens = [
                         KeyValuePair.Create("YUNIQL-USER", connectionStringBuilder.Username),
+                        KeyValuePair.Create("APP-USER", connectionStringBuilder.Username),
                     ],
                 };
 

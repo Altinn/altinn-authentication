@@ -185,7 +185,7 @@ public class SystemRegisterTests
         Assert.False(isFound);
     }
 
-    [Fact (Skip = "The working version of this test is different in the other branches")] //Relevant Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
+    [Fact] //Relevant Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
     public async Task UpdateRegisteredSystemReturns200Ok()
     {
         // Prepares
