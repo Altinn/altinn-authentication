@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing.Printing;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -95,6 +96,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
+
+            // _paginationSize = configuration.GetValue<int>("PaginationOptions:Size");
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(timeProviderMock.Object);
             services.AddSingleton(guidService.Object);
@@ -886,7 +889,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result2 = await streamResponse2.Content.ReadFromJsonAsync<ItemStream<SystemUserRegisterDTO>>();            
             Assert.NotNull(result2);
             var list2 = result2.Items.ToList();
-            Assert.Equal(numberOfTestCases - _paginationSize + 1, list2.Count);
+            Assert.Equal(numberOfTestCases - _paginationSize +1, list2.Count);
 
             // Stream yet again, should get 0 new 
             streamEndpoint = result2.Links.Next!;
