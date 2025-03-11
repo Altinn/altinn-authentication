@@ -40,7 +40,16 @@ public interface IRequestSystemUser
     /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
     /// <returns>The Status Response model</returns>
     Task<Result<RequestSystemResponse>> GetRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo);
-    
+
+    /// <summary>
+    /// Get the status by UUID Request Id
+    /// 
+    /// </summary>
+    /// <param name="requestId">The Request Id as a UUID</param>
+    /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
+    /// <returns>The Status Response model</returns>
+    Task<Result<AgentRequestSystemResponse>> GetAgentRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo);
+
     /// <summary>
     /// Get the Request response DTO for display in the FrontEnd
     /// </summary>
@@ -60,6 +69,16 @@ public interface IRequestSystemUser
     Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Approves the request and creates a agent system user
+    /// </summary>
+    /// <param name="requestId">the id of the request to be approved</param>
+    /// <param name="partyId">The partyId</param>
+    /// <param name="userId">The logged in user</param>
+    /// <param name="cancellationToken">The Cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
     /// </summary>
     /// <param name="vendorOrgNo">The Vendor's organisation number, retrieved from the token</param>
@@ -70,6 +89,16 @@ public interface IRequestSystemUser
     Task<Result<Page<RequestSystemResponse, Guid>>> GetAllRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, Page<Guid>.Request continueRequest, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Retrieves a list of Status-Response-model for all agent Requests that the Vendor has
+    /// </summary>
+    /// <param name="vendorOrgNo">The Vendor's organisation number, retrieved from the token</param>
+    /// <param name="systemId">The registered system this listing is for, must be owned by the Vendor</param>
+    /// <param name="continueRequest">The Guid denoting from where to continue with Pagination</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    Task<Result<Page<AgentRequestSystemResponse, Guid>>> GetAllAgentRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, Page<Guid>.Request continueRequest, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Rejects the request 
     /// </summary>
     /// <param name="requestId">the id of the request to be rejected</param>
@@ -77,6 +106,15 @@ public interface IRequestSystemUser
     /// <param name="cancellationToken">The cancelleation token</param>
     /// <returns>true if the request is rejected</returns>
     Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Rejects the request for agent system user
+    /// </summary>
+    /// <param name="requestId">the id of the request to be rejected</param>
+    /// <param name="userId">The logged in user</param>
+    /// <param name="cancellationToken">The cancelleation token</param>
+    /// <returns>true if the request is rejected</returns>
+    Task<Result<bool>> RejectAgentSystemUser(Guid requestId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Used by the Vendors to delete the chosen Request by guid
@@ -90,4 +128,21 @@ public interface IRequestSystemUser
     /// <param name="requestId">The Request id</param>
     /// <returns></returns>
     Task<Result<string>> GetRedirectByRequestId(Guid requestId);
+
+    /// <summary>
+    /// A Vendor can generate a new Request for a Agent-type SystemUser
+    /// </summary>
+    /// <param name="createAgentRequest">the request</param>
+    /// <param name="vendorOrgNo">the orgno for the Vendor</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+    Task<Result<AgentRequestSystemResponse>> CreateAgentRequest(CreateAgentRequestSystemUser createAgentRequest, OrganisationNumber vendorOrgNo);
+    
+    /// <summary>
+    /// Gets the status based on the External Request Id 
+    /// 
+    /// </summary>
+    /// <param name="externalRequestId">The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers. </param>
+    /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+    Task<Result<AgentRequestSystemResponse>> GetAgentRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo);
 }

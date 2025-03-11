@@ -7,6 +7,7 @@ using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -75,7 +76,7 @@ public class RequestSystemUserService(
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
@@ -114,6 +115,131 @@ public class RequestSystemUserService(
         }
 
         return created;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<AgentRequestSystemResponse>> CreateAgentRequest(CreateAgentRequestSystemUser createAgentRequest, OrganisationNumber vendorOrgNo)
+    {
+        // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
+        ExternalRequestId externalRequestId = new()
+        {
+            ExternalRef = createAgentRequest.ExternalRef ?? createAgentRequest.PartyOrgNo,
+            OrgNo = createAgentRequest.PartyOrgNo,
+            SystemId = createAgentRequest.SystemId,
+        };
+
+        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createAgentRequest.SystemId);
+        if (systemInfo is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
+        if (valRef.IsProblem)
+        {
+            return valRef.Problem;
+        }
+
+        Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
+        if (valVendor.IsProblem)
+        {
+            return valVendor.Problem;
+        }
+
+        Result<bool> valCust = await ValidateCustomerOrgNo(createAgentRequest.PartyOrgNo);
+        if (valCust.IsProblem)
+        {
+            return valCust.Problem;
+        }
+
+        if (createAgentRequest.RedirectUrl is not null && createAgentRequest.RedirectUrl != string.Empty)
+        {
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createAgentRequest.RedirectUrl, systemInfo);
+            if (valRedirect.IsProblem)
+            {
+                return valRedirect.Problem;
+            }
+        }
+
+        Result<bool> valPackages = ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
+        if (valPackages.IsProblem)
+        {
+            return valPackages.Problem;
+        }
+
+        // Set an empty ExternalRef to be equal to the PartyOrgNo
+        if (createAgentRequest.ExternalRef is null || createAgentRequest.ExternalRef == string.Empty)
+        {
+            createAgentRequest.ExternalRef = createAgentRequest.PartyOrgNo;
+        }
+
+        Guid newId = Guid.NewGuid();
+
+        var created = new AgentRequestSystemResponse()
+        {
+            Id = newId,
+            ExternalRef = createAgentRequest.ExternalRef,
+            SystemId = createAgentRequest.SystemId,
+            PartyOrgNo = createAgentRequest.PartyOrgNo,
+            AccessPackages = createAgentRequest.AccessPackages,
+            Status = RequestStatus.New.ToString(),
+            RedirectUrl = createAgentRequest.RedirectUrl,
+            UserType = Core.Enums.SystemUserType.Agent
+        };
+
+        Result<bool> res = await requestRepository.CreateAgentRequest(created);
+        if (res.IsProblem)
+        {
+            return Problem.RequestCouldNotBeStored;
+        }
+
+        return created;
+    }
+
+    /// <summary>
+    /// Validate that the Package is both a subset of the Default Packages registered on the System, and at least one Package is selected.
+    /// </summary>
+    /// <param name="accessPackages">the AccessPackages chosen for the Request</param>
+    /// <param name="systemInfo">The Vendor's Registered System</param>
+    /// <returns>Result or Problem</returns>
+    private static Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystem systemInfo)
+    {
+        if (systemInfo == null || systemInfo.AccessPackages == null)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        if (accessPackages.Count == 0 || systemInfo.AccessPackages.Count == 0)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        if (accessPackages.Count > systemInfo.AccessPackages.Count)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        bool[] validate = new bool[accessPackages.Count];
+        foreach (AccessPackage accessPackage in accessPackages) 
+        {
+            foreach ( AccessPackage systemPackage in systemInfo.AccessPackages)
+            {
+                if (accessPackage.Urn == systemPackage.Urn) 
+                {
+                    validate[accessPackages.IndexOf(systemPackage)] = true;
+                }
+            }
+        }
+
+        foreach (bool package in validate)
+        {
+            if (!package)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -215,28 +341,6 @@ public class RequestSystemUserService(
         }
 
         return list;
-    }
-
-    /// <summary>
-    /// Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
-    /// </summary>
-    /// <param name="redirectURL">the RedirectUrl chosen</param>
-    /// <param name="systemInfo">the SystemInfo</param>
-    /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystem systemInfo)
-    {
-        List<Uri> redirectUrlsInSystem = systemInfo.AllowedRedirectUrls;
-        Uri chosenUri = new(redirectURL);
-
-        foreach (var uri in redirectUrlsInSystem)
-        {
-            if (uri.AbsoluteUri == chosenUri.AbsoluteUri)
-            {
-                return true;
-            }
-        }
-
-        return Problem.RedirectUriNotFound;
     }
 
     /// <summary>
@@ -378,6 +482,38 @@ public class RequestSystemUserService(
         };
     }
 
+    /// <inheritdoc/>
+    public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
+    {
+        AgentRequestSystemResponse? res = await requestRepository.GetAgentRequestByInternalId(requestId);
+        if (res is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (res.AccessPackages == null)
+        {
+            return Problem.NotAnAgentRequest;
+        }
+
+        Result<bool> check = await RetrieveChosenSystemInfoAndValidateVendorOrgNo(res.SystemId, vendorOrgNo);
+        if (check.IsProblem)
+        {
+            return check.Problem;
+        }
+
+        return new AgentRequestSystemResponse()
+        {
+            Id = res.Id,
+            ExternalRef = res.ExternalRef,
+            SystemId = res.SystemId,
+            PartyOrgNo = res.PartyOrgNo,
+            AccessPackages = res.AccessPackages,
+            Status = res.Status,
+            RedirectUrl = res.RedirectUrl
+        };
+    }
+
     private async Task<Result<bool>> RetrieveChosenSystemInfoAndValidateVendorOrgNo(string systemId, OrganisationNumber vendorOrgNo)
     {
         RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
@@ -487,9 +623,67 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
+    public async Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+    {
+        AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
+        if (systemUserRequest is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (systemUserRequest.AccessPackages == null)
+        {
+            return Problem.NotAnAgentRequest;
+        }
+
+        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        {
+            return Problem.RequestStatusNotNew;
+        }
+
+        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        if (regSystem is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        Result<SystemUser> toBeInserted = MapAgentSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        if (toBeInserted.IsProblem)
+        {
+            return toBeInserted.Problem;
+        }
+
+        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted.Value, userId, cancellationToken);
+
+        if (systemUserId is null)
+        {
+            return Problem.SystemUser_FailedToCreate;
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc/>
     public async Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
     {
         RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
+        if (systemUserRequest is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (systemUserRequest.Status != RequestStatus.New.ToString())
+        {
+            return Problem.RequestStatusNotNew;
+        }
+
+        return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> RejectAgentSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    {
+        AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
             return Problem.RequestNotFound;
@@ -521,7 +715,35 @@ public class RequestSystemUserService(
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = systemUserRequest.PartyOrgNo,
-                ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo
+                ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo,
+                UserType = Core.Enums.SystemUserType.Default
+            };
+        }
+
+        return toBeInserted!;
+    }
+
+    private static Result<SystemUser> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystem regSystem, int partyId)
+    {
+        SystemUser? toBeInserted = null;
+        regSystem.Name.TryGetValue("nb", out string? systemName);
+        if (systemName is null)
+        {
+            return Problem.SystemNameNotFound;
+        }
+
+        if (agentSystemUserRequest != null)
+        {
+            toBeInserted = new SystemUser
+            {
+                SystemId = agentSystemUserRequest.SystemId,
+                IntegrationTitle = systemName,
+                SystemInternalId = regSystem?.InternalId,
+                PartyId = partyId.ToString(),
+                ReporteeOrgNo = agentSystemUserRequest.PartyOrgNo,
+                ExternalRef = agentSystemUserRequest.ExternalRef ?? agentSystemUserRequest.PartyOrgNo,
+                AccessPackages = agentSystemUserRequest.AccessPackages,
+                UserType = Core.Enums.SystemUserType.Agent
             };
         }
 
@@ -598,6 +820,31 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
+    public async Task<Result<Page<AgentRequestSystemResponse, Guid>>> GetAllAgentRequestsForVendor(
+        OrganisationNumber vendorOrgNo,
+        string systemId,
+        Page<Guid>.Request continueRequest,
+        CancellationToken cancellationToken)
+    {
+        RegisteredSystem? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        if (system is null)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        // Verify that the orgno from the logged on token owns this system
+        if (OrganisationNumber.CreateFromStringOrgNo(system.SystemVendorOrgNumber) != vendorOrgNo)
+        {
+            return Problem.SystemIdNotFound;
+        }
+
+        List<AgentRequestSystemResponse>? theList = await requestRepository.GetAllAgentRequestsBySystem(systemId, cancellationToken);
+        theList ??= [];
+
+        return Page.Create(theList, _paginationSize, static theList => theList.Id);
+    }
+
+    /// <inheritdoc/>
     public async Task<Result<bool>> DeleteRequestByRequestId(Guid requestId)
     {
         var result = await requestRepository.DeleteRequestByRequestId(requestId);
@@ -619,5 +866,24 @@ public class RequestSystemUserService(
         }
 
         return systemUserRequest.RedirectUrl;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
+    {
+        AgentRequestSystemResponse? res = await requestRepository.GetAgentRequestByExternalReferences(externalRequestId);
+
+        if (res is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        Result<bool> check = await RetrieveChosenSystemInfoAndValidateVendorOrgNo(externalRequestId.SystemId, vendorOrgNo);
+        if (check.IsProblem)
+        {
+            return check.Problem;
+        }
+
+        return res;
     }
 }
