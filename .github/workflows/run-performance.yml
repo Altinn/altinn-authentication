@@ -1,0 +1,21 @@
+name: Run k6 performance test
+
+on:
+    push:
+        branches:
+            - 'performance/**'
+
+jobs:
+    k6-performance:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
+            - name: Print
+              run:
+                  echo "Hello, world!"
+
+
+            # Add your test steps here
+            # ...
