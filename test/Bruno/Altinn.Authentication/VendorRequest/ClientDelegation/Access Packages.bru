@@ -1,0 +1,15 @@
+meta {
+  name: Access Packages
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemregister/{systemId}/accesspackages
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  systemId: 991825827_test_create_access_packages_02
+}
