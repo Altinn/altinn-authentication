@@ -154,7 +154,7 @@ public class RequestSystemUserService(
 
         if (createAgentRequest.RedirectUrl is not null && createAgentRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = ValidateRedirectUrl(createAgentRequest.RedirectUrl, systemInfo);
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createAgentRequest.RedirectUrl, systemInfo);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
