@@ -67,6 +67,11 @@ public class RequestSystemUserController : ControllerBase
     public const string CONFIRMURL2 = "/authfront/ui/auth/vendorrequest?id=";
 
     /// <summary>
+    /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Agent Request
+    /// </summary>
+    public const string CONFIRMURL3 = "/authfront/ui/auth/agentrequest?id=";
+
+    /// <summary>
     /// Route for the Get System by Vendor endpoint
     /// which uses pagination.
     /// </summary>
@@ -174,7 +179,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id;
             return Created(fullCreatedUri, response.Value);
         }
 
