@@ -5,6 +5,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Policy;
 using System.Text.RegularExpressions;
+using Altinn.Authentication.Core.Problems;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -14,6 +16,8 @@ using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+
+#nullable enable
 
 namespace Altinn.Platform.Authentication.Helpers
 {
@@ -230,7 +234,12 @@ namespace Altinn.Platform.Authentication.Helpers
         {
             Console.WriteLine($"AuthorizationUtil // IsOwnerOfSystem // Checking organisation number in claims.");
 
-            string orgClaim = organisation?.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
+            string? orgClaim = organisation?.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
+
+            if (orgClaim is null)
+            {
+                return false;
+            }
 
             string orgNumber = GetOrganizationNumberFromClaim(orgClaim);
 
@@ -252,7 +261,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns>true if the given ClaimsPrincipal or on of its identities have contains the given scope.</returns>
         public static bool ContainsRequiredScope(List<string> requiredScope, ClaimsPrincipal user)
         {
-            string contextScope = user.Identities?
+            string? contextScope = user.Identities?
                .FirstOrDefault(i => i.AuthenticationType != null && i.AuthenticationType.Equals("AuthenticationTypes.Federation"))
                ?.Claims
                .Where(c => c.Type.Equals("urn:altinn:scope"))
@@ -296,7 +305,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns>true if the systemid starts with the orgnumber of the owner of the system</returns>
         public static bool DoesSystemIdStartWithOrgnumber(RegisteredSystem newSystem)
         {
-            string vendorOrgNumber = GetOrgNumber(newSystem.Vendor.ID);
+            string? vendorOrgNumber = GetOrgNumber(newSystem.Vendor.ID);
             string orgnumberInSystemId = newSystem.Id.Split("_")[0];
             bool doesSystemStartWithOrg = orgnumberInSystemId == vendorOrgNumber;
             return doesSystemStartWithOrg;
@@ -347,7 +356,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
         private static string GetOrganizationNumberFromClaim(string claim)
         {
-            ConsumerClaim consumerClaim;
+            ConsumerClaim? consumerClaim;
             try
             {
                 consumerClaim = JsonConvert.DeserializeObject<ConsumerClaim>(claim);
@@ -355,6 +364,11 @@ namespace Altinn.Platform.Authentication.Helpers
             catch (JsonReaderException)
             {
                 throw new ArgumentException("Invalid consumer claim: invalid JSON");
+            }
+
+            if (consumerClaim is null) 
+            {
+                throw new ArgumentException("Invalid consumer claim: null");
             }
 
             if (consumerClaim.Authority != "iso6523-actorid-upis")
@@ -435,6 +449,28 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return false; // No duplicates
+        }
+
+        /// <summary>
+        /// Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
+        /// </summary>
+        /// <param name="redirectURL">the RedirectUrl chosen</param>
+        /// <param name="systemInfo">the SystemInfo</param>
+        /// <returns>Result or Problem</returns>
+        public static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystem systemInfo)
+        {
+            List<Uri> redirectUrlsInSystem = systemInfo.AllowedRedirectUrls;
+            Uri chosenUri = new(redirectURL);
+
+            foreach (var uri in redirectUrlsInSystem)
+            {
+                if (uri.AbsoluteUri == chosenUri?.GetLeftPart(UriPartial.Path))
+                {
+                    return true;
+                }
+            }
+
+            return Problem.RedirectUriNotFound;
         }
     }
 }

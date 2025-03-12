@@ -17,6 +17,13 @@ using Altinn.Authentication.Integration.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Altinn.Platform.Authentication.Core.Exceptions;
 using System.Net;
+using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
+using System.Net.Http;
+using System.Web;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -34,6 +41,7 @@ public class AccessManagementClient : IAccessManagementClient
     private readonly PlatformSettings _platformSettings;
     private readonly JsonSerializerOptions _serializerOptions =
         new() { PropertyNameCaseInsensitive = true };
+    private readonly IWebHostEnvironment _env;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LookupClient"/> class
@@ -47,7 +55,8 @@ public class AccessManagementClient : IAccessManagementClient
         ILogger<AccessManagementClient> logger,
         IHttpContextAccessor httpContextAccessor,
         IOptions<AccessManagementSettings> accessManagementSettings,
-        IOptions<PlatformSettings> platformSettings)
+        IOptions<PlatformSettings> platformSettings,
+        IWebHostEnvironment env)
     {
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
@@ -56,6 +65,7 @@ public class AccessManagementClient : IAccessManagementClient
         httpClient.BaseAddress = new Uri(_accessManagementSettings.ApiAccessManagementEndpoint!);
         _client = httpClient;
         _serializerOptions.Converters.Add(new JsonStringEnumConverter());
+        _env = env;
     }
 
     /// <inheritdoc/>
@@ -160,6 +170,36 @@ public class AccessManagementClient : IAccessManagementClient
         }
 
         return new Result<bool>(true);
+    }
+
+    public async Task<Package?> GetPackage(string packageId)
+    {
+        Package? package = null;
+
+        try
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+            };
+
+            string mockDataPath = Path.Combine(Environment.CurrentDirectory, "Integration/MockData/packages.json");
+            if (_env.IsDevelopment())
+            {
+                mockDataPath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, "Integration/MockData/packages.json");
+            }
+
+            string packagesData = File.OpenText(mockDataPath).ReadToEnd();
+            List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
+            package = packages?.FirstOrDefault(p => p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetPackage // Exception");
+            throw;
+        }
+
+        return package;
     }
 
     /// <inheritdoc />

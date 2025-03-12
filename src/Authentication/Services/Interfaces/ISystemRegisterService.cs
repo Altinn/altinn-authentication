@@ -6,6 +6,8 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
+#nullable enable
+
 namespace Altinn.Platform.Authentication.Services.Interfaces
 {
     /// <summary>
@@ -45,7 +47,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System</param>
         /// <param name="cancellation">Cancellation token</param>
         /// <returns>List of Default Rights</returns>
-        Task<RegisteredSystem> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
+        Task<RegisteredSystem?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
 
         /// <summary>
         /// Inserts a new unique ClientId
@@ -119,9 +121,17 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <summary>
         /// Checks if the resourceids are found in resource register
         /// </summary>
-        /// <param name="rights">the maskinporten client id</param>
+        /// <param name="rights">the list of resource ids</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>false when one of the resource idnot found</returns>
         Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Checks if the resourceids are found in resource register
+        /// </summary>
+        /// <param name="accessPackages">access packages</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns>false when one of the resource idnot found</returns>
+        Task<bool> DoesAccessPackageExists(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
     }
 }

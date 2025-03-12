@@ -11,6 +11,8 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
+#nullable enable
+
 namespace Altinn.Platform.Authentication.Services
 {
     /// <summary>
@@ -20,16 +22,19 @@ namespace Altinn.Platform.Authentication.Services
     {
         private readonly ISystemRegisterRepository _systemRegisterRepository;
         private readonly IResourceRegistryClient _resourceRegistryClient;
+        private readonly IAccessManagementClient _accessManagementClient;
 
         /// <summary>
         /// The constructor
         /// </summary>
         public SystemRegisterService(
             ISystemRegisterRepository systemRegisterRepository,
-            IResourceRegistryClient resourceRegistryClient)
+            IResourceRegistryClient resourceRegistryClient,
+            IAccessManagementClient accessManagementClient)
         {
             _systemRegisterRepository = systemRegisterRepository;
-            _resourceRegistryClient = resourceRegistryClient;   
+            _resourceRegistryClient = resourceRegistryClient;
+            _accessManagementClient = accessManagementClient;
         }
 
         /// <inheritdoc/>
@@ -74,7 +79,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="systemId">the system id</param>
         /// <param name="cancellation">the cancellation token</param>
         /// <returns></returns>
-        public Task<RegisteredSystem> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
+        public Task<RegisteredSystem?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetRegisteredSystemById(systemId);
         }
@@ -123,6 +128,22 @@ namespace Altinn.Platform.Authentication.Services
                         return false;
                     }
                 }                
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> DoesAccessPackageExists(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
+        {
+            Package? package = null;
+            foreach (AccessPackage accessPackage in accessPackages)
+            {
+                package = await _accessManagementClient.GetPackage(accessPackage.Urn);
+                if (package == null)
+                {
+                    return false;
+                }
             }
 
             return true;

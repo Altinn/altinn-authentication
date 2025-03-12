@@ -160,4 +160,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor Delete_SystemUser_NotOwned { get; }
         = _factory.Create(24, HttpStatusCode.Forbidden, "you don't have rights to delete this systemuser");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor NotAnAgentRequest { get; }
+        = _factory.Create(10, HttpStatusCode.BadRequest, "The request id is valid but its not a valid request for creating an agent system user");
 }

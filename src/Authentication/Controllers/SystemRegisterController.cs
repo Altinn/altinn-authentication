@@ -115,7 +115,7 @@ public class SystemRegisterController : ControllerBase
         RegisteredSystem systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
 
         ValidationErrorBuilder validateErrorRights = await ValidateRights(updateSystem.Rights, cancellationToken);
-        ValidationErrorBuilder validateErrorAccessPackages = ValidateAccessPackages(updateSystem.AccessPackages);
+        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(updateSystem.AccessPackages, cancellationToken);
         ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages);
 
         foreach (string clientId in updateSystem.ClientId)
@@ -186,7 +186,6 @@ public class SystemRegisterController : ControllerBase
         List<AccessPackage> lista = await _systemRegisterService.GetAccessPackagesForRegisteredSystem(systemId, cancellationToken);
 
         return Ok(lista);
-
     }
 
     /// <summary>
@@ -216,7 +215,7 @@ public class SystemRegisterController : ControllerBase
 
             ValidationErrorBuilder validationErrorRegisteredSystem = await ValidateRegisteredSystem(registerNewSystem, cancellationToken);
             ValidationErrorBuilder validationErrorRights = await ValidateRights(registerNewSystem.Rights, cancellationToken);
-            ValidationErrorBuilder validationErrorAccessPackages = ValidateAccessPackages(registerNewSystem.AccessPackages);
+            ValidationErrorBuilder validationErrorAccessPackages = await ValidateAccessPackages(registerNewSystem.AccessPackages, cancellationToken);
 
             errors = MergeValidationErrors(validationErrorRegisteredSystem, validationErrorRights, validationErrorAccessPackages);
 
@@ -251,6 +250,7 @@ public class SystemRegisterController : ControllerBase
     /// </summary>
     /// <param name="rights">A list of rights</param>
     /// <param name="systemId">The human readable string id</param>
+    /// <param name="cancellationToken">a cancellation token</param>
     /// <returns>true if changed</returns>
     [HttpPut("vendor/{systemId}/rights")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
@@ -296,7 +296,7 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
-        ValidationErrorBuilder errors = ValidateAccessPackages(accessPackages);
+        ValidationErrorBuilder errors = await ValidateAccessPackages(accessPackages, cancellationToken);
 
         if (errors.TryToActionResult(out var errorResult))
         {
@@ -323,7 +323,7 @@ public class SystemRegisterController : ControllerBase
     {
         RegisteredSystem registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
 
-        if(registerSystemResponse == null)
+        if (registerSystemResponse == null)
         {
             return BadRequest();
         }
@@ -362,9 +362,15 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private static ValidationErrorBuilder ValidateAccessPackages(List<AccessPackage> accessPackages)
+    private async Task<ValidationErrorBuilder> ValidateAccessPackages(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
+        if (!await _systemRegisterService.DoesAccessPackageExists(accessPackages, cancellationToken))
+        {
+            errors.Add(ValidationErrors.SystemRegister_AccessPackage_DoesNotExist, [
+                ErrorPathConstant.ACCESSPACKAGES
+            ]);
+        }
 
         if (AuthenticationHelper.HasDuplicateAccessPackage(accessPackages))
         {

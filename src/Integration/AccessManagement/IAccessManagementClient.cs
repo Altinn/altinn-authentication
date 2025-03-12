@@ -1,5 +1,6 @@
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -44,4 +45,11 @@ public interface IAccessManagementClient
     /// <param name="rights">The Rights to be revoked for the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser that misses the rights</param>
     Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights);
+
+    /// <summary>
+    /// Gets the package for the given packageId
+    /// </summary>
+    /// <param name="packageId">the package id</param>
+    /// <returns></returns>
+    Task<Package> GetPackage(string packageId);
 }

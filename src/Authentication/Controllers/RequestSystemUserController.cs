@@ -67,10 +67,21 @@ public class RequestSystemUserController : ControllerBase
     public const string CONFIRMURL2 = "/authfront/ui/auth/vendorrequest?id=";
 
     /// <summary>
+    /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Agent Request
+    /// </summary>
+    public const string CONFIRMURL3 = "/authfront/ui/auth/agentrequest?id=";
+
+    /// <summary>
     /// Route for the Get System by Vendor endpoint
     /// which uses pagination.
     /// </summary>
     public const string ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM = "vendor/bysystem";
+
+    /// <summary>
+    /// Route for the Get System by Vendor endpoint
+    /// which uses pagination.
+    /// </summary>
+    public const string ROUTE_VENDOR_GET_AGENT_REQUESTS_BY_SYSTEM = "vendor/bysystem/agent";
 
     /// <summary>
     /// Creates a new Request based on a SystemId for a SystemUser.
@@ -123,6 +134,58 @@ public class RequestSystemUserController : ControllerBase
         return response.Problem.ToActionResult();
     }
 
+    /// <summary>
+    /// Creates a new Agent-Delegation type Request based on a SystemId for a new AgentSystemUser.
+    /// </summary>
+    /// <param name="createAgentRequest">The request model</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Response model of AgentRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [HttpPost("vendor/agent")]
+    public async Task<ActionResult<AgentRequestSystemResponse>> CreateAgentRequest([FromBody] CreateAgentRequestSystemUser createAgentRequest, CancellationToken cancellationToken = default)
+    {
+        string platform = _generalSettings.PlatformEndpoint;
+        
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
+        }
+
+        ExternalRequestId externalRequestId = new()
+        {
+            ExternalRef = createAgentRequest.ExternalRef ?? createAgentRequest.PartyOrgNo,
+            OrgNo = createAgentRequest.PartyOrgNo,
+            SystemId = createAgentRequest.SystemId,
+        };
+
+        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        if (existing is not null)
+        {
+            return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
+        }
+
+        // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
+        Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
+        if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
+        {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Ok(response.Value);
+        }
+
+        // This is a new Request
+        response = await _requestSystemUser.CreateAgentRequest(createAgentRequest, vendorOrgNo);
+
+        if (response.IsSuccess)
+        {
+            string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id;
+            return Created(fullCreatedUri, response.Value);
+        }
+
+        return response.Problem.ToActionResult();
+    }
+
     private OrganisationNumber? RetrieveOrgNoFromToken()
     {
         string token = JwtTokenUtil.GetTokenFromContext(HttpContext, _generalSettings.JwtCookieName);
@@ -157,6 +220,38 @@ public class RequestSystemUserController : ControllerBase
         }
 
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByGuid(requestId, vendorOrgNo);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves the Status (Response model) for a Request
+    /// based only on the Request.Id GUID
+    /// </summary>
+    /// <param name="requestId">The UUID for the Request</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [HttpGet("vendor/agent/{requestId}")]
+    public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentSystemUserRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByGuid(requestId, vendorOrgNo);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -215,6 +310,49 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves the Status (Response model) for a Request
+    /// based on the SystemId, OrgNo and the ExternalRef 
+    /// ( which is enforced as a unique combination )
+    /// </summary>
+    /// <param name="systemId">The Id for the chosen Registered System.</param>
+    /// <param name="externalRef">The chosen external ref the Vendor sent in to the Create Request</param>
+    /// <param name="orgNo">The organisation number for the customer</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [HttpGet("vendor/agent/byexternalref/{systemId}/{orgNo}/{externalRef}")]
+    public async Task<ActionResult<RequestSystemResponse>> GetAgentRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        ExternalRequestId externalRequestId = new()
+        {
+            ExternalRef = externalRef,
+            OrgNo = orgNo,
+            SystemId = systemId,
+        };
+
+        Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
+
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            return Ok(response.Value);
+        }
+
+        return BadRequest();
+    }
+
+    /// <summary>
     /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
     /// </summary>
     /// <returns></returns>
@@ -245,6 +383,33 @@ public class RequestSystemUserController : ControllerBase
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Approves the agent systemuser requet and creates a system user
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="requestId">The UUID of the request to be approved</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("agent/{party}/{requestId}/approve")]
+    public async Task<ActionResult<AgentRequestSystemResponse>> ApproveAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.ApproveAndCreateAgentSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -309,6 +474,56 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves a list of Status-Response-model for all Requests that the Vendor has for a given system they own.
+    /// </summary>
+    /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="token">Optional continuation token</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
+    [HttpGet("vendor/agent/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_AGENT_REQUESTS_BY_SYSTEM)]
+    public async Task<ActionResult<Paginated<AgentRequestSystemResponse>>> GetAllAgentRequestsForVendor(
+        string systemId,
+        [FromQuery(Name = "token")] Opaque<Guid>? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        Page<Guid>.Request continueFrom = null!;
+        if (token?.Value is not null)
+        {
+            continueFrom = Page.ContinueFrom(token!.Value);
+        }
+
+        Result<Page<AgentRequestSystemResponse, Guid>> pageResult =
+          await _requestSystemUser.GetAllAgentRequestsForVendor(
+              vendorOrgNo, systemId, continueFrom, cancellationToken);
+        if (pageResult.IsProblem)
+        {
+            return pageResult.Problem.ToActionResult();
+        }
+
+        var nextLink = pageResult.Value.ContinuationToken.HasValue
+            ? Url.Link(ROUTE_VENDOR_GET_AGENT_REQUESTS_BY_SYSTEM, new
+            {
+                systemId,
+                token = Opaque.Create(pageResult.Value.ContinuationToken.Value)
+            })
+            : null;
+
+        if (pageResult.IsSuccess)
+        {
+            return Paginated.Create(pageResult.Value.Items.ToList(), nextLink);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
     /// Rejects the systemuser request
     /// </summary>
     /// <param name="party">the partyId</param>
@@ -321,6 +536,32 @@ public class RequestSystemUserController : ControllerBase
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.RejectSystemUser(requestId, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Rejects the systemuser request
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="requestId">The UUID of the request to be rejected</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("agent/{party}/{requestId}/reject")]
+    public async Task<ActionResult<bool>> RejectAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.RejectAgentSystemUser(requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

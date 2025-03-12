@@ -24,4 +24,9 @@
     <ProjectReference Include="..\Core\Altinn.Platform.Authentication.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="MockData\packages.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
