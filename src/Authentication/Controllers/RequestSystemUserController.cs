@@ -59,12 +59,12 @@ public class RequestSystemUserController : ControllerBase
     /// <summary>
     /// First part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL1 = "https://authn.ui.";
+    public const string CONFIRMURL1 = "https://am.ui.";
 
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL2 = "/authfront/ui/auth/vendorrequest?id=";
+    public const string CONFIRMURL2 = "/accessmanagement/ui/systemuser/request?id=";
 
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Agent Request
@@ -135,11 +135,11 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new Agent-Delegation type Request based on a SystemId for a new AgentSystemUser.
+    /// Creates a new system user request of type agent based on a specified system ID.
     /// </summary>
-    /// <param name="createAgentRequest">The request model</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Response model of AgentRequestSystemUserResponse</returns>
+    /// <param name="createAgentRequest">The request model containing details for the agent system user.</param>
+    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+    /// <returns>A response model containing the details of the created agent request.</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor/agent")]
     public async Task<ActionResult<AgentRequestSystemResponse>> CreateAgentRequest([FromBody] CreateAgentRequestSystemUser createAgentRequest, CancellationToken cancellationToken = default)
@@ -235,12 +235,11 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves the Status (Response model) for a Request
-    /// based only on the Request.Id GUID
+    /// Retrieves the status of an agent system user request based on the request's unique identifier (UUID).
     /// </summary>
-    /// <param name="requestId">The UUID for the Request</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    /// <param name="requestId">The unique identifier (UUID) of the agent system user request.</param>
+    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+    /// <returns>An action result containing the status response model of the agent system user request.</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/agent/{requestId}")]
     public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentSystemUserRequestByGuid(Guid requestId, CancellationToken cancellationToken = default)
@@ -310,15 +309,13 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves the Status (Response model) for a Request
-    /// based on the SystemId, OrgNo and the ExternalRef 
-    /// ( which is enforced as a unique combination )
+    /// Retrieves the status of an agent system user request based on the unique combination of identifiers (system ID, organization number, and external reference).
     /// </summary>
-    /// <param name="systemId">The Id for the chosen Registered System.</param>
-    /// <param name="externalRef">The chosen external ref the Vendor sent in to the Create Request</param>
-    /// <param name="orgNo">The organisation number for the customer</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    /// <param name="systemId">The ID of the registered system.</param>
+    /// <param name="externalRef">The external reference provided by the vendor.</param>
+    /// <param name="orgNo">The organization number of the customer.</param>
+    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+    /// <returns>An action result containing the status response model of the agent system user request.</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/agent/byexternalref/{systemId}/{orgNo}/{externalRef}")]
     public async Task<ActionResult<RequestSystemResponse>> GetAgentRequestByExternalRef(string systemId, string externalRef, string orgNo, CancellationToken cancellationToken = default)
@@ -397,7 +394,7 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Approves the agent systemuser requet and creates a system user
+    /// Approves the systemuser request of type agent and creates a system user of type agent
     /// </summary>
     /// <param name="party">the partyId</param>
     /// <param name="requestId">The UUID of the request to be approved</param>
@@ -474,12 +471,12 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves a list of Status-Response-model for all Requests that the Vendor has for a given system they own.
+    /// Retrieves a paginated list of all system user requests of type agent for a given system owned by the vendor.
     /// </summary>
-    /// <param name="systemId">The system the Vendor wants the list for</param>
+    /// <param name="systemId">The ID of the system the Vendor owns</param>
     /// <param name="token">Optional continuation token</param>
     /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    /// <returns>An action result containing a paginated list of agent system user requests</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_READ)]
     [HttpGet("vendor/agent/bysystem/{systemId}", Name = ROUTE_VENDOR_GET_AGENT_REQUESTS_BY_SYSTEM)]
     public async Task<ActionResult<Paginated<AgentRequestSystemResponse>>> GetAllAgentRequestsForVendor(
@@ -550,7 +547,7 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Rejects the systemuser request
+    /// Rejects the systemuser request of type agent
     /// </summary>
     /// <param name="party">the partyId</param>
     /// <param name="requestId">The UUID of the request to be rejected</param>

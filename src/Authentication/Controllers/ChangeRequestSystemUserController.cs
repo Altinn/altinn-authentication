@@ -50,12 +50,12 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <summary>
     /// First part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL1 = "https://authn.ui.";
+    public const string CONFIRMURL1 = "https://am.ui.";
 
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL2 = "/authfront/ui/auth/vendorchangerequest?id=";
+    public const string CONFIRMURL2 = "/accessmanagement/ui/systemuser/changerequest?id=";
 
     /// <summary>
     /// Route for the Get System by Vendor endpoint

@@ -1,0 +1,49 @@
+meta {
+  name: Create System User Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{bearerToken}}
+}
+
+body:json {
+  {
+    "systemId" : "991825827_test_create_access_packages_02",
+    "partyOrgNo" : "312655985",
+    "redirectUrl" : "https://altinn.no",
+      "accessPackages": [
+     { "urn": "urn:altinn:accesspackage:skattnaering" } ]
+  }
+  
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  
+  const { v4: uuidv4} = require('uuid')
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+  
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
+  
+  bru.setEnvVar("system_id","312605031_979f709e-1807-4334-9a80-8cd7bc6a3a17");
+  bru.setEnvVar("external_ref", "1234");
+  
+  
+  console.log(bru.getEnvVar("auth_tokenType"));
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  bru.setEnvVar("bearer_token", token);
+  
+}
