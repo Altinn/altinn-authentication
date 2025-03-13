@@ -69,7 +69,7 @@ public class RequestSystemUserController : ControllerBase
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Agent Request
     /// </summary>
-    public const string CONFIRMURL3 = "/authfront/ui/auth/agentrequest?id=";
+    public const string CONFIRMURL3 = "/accessmanagement/ui/systemuser/agentrequest?id=";
 
     /// <summary>
     /// Route for the Get System by Vendor endpoint
@@ -169,7 +169,7 @@ public class RequestSystemUserController : ControllerBase
         Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id;
             return Ok(response.Value);
         }
 
