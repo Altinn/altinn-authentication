@@ -1,11 +1,11 @@
 meta {
-  name: Create System User Request
+  name: Get status
   type: http
-  seq: 1
+  seq: 6
 }
 
-post {
-  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent/{{requestId}}
   body: json
   auth: none
 }
@@ -14,42 +14,10 @@ headers {
   Authorization: Bearer {{bearerToken}}
 }
 
-body:json {
-  {
-    "systemId": "{{system_id}}",
-    "partyOrgNo": "{{partyOrgNo}}",
-    "redirectUrl": "*",
-    "accessPackages": [
-      {
-        "urn": "urn:altinn:accesspackage:skattnaering"
-      }
-    ],
-    "rights": [
-      {
-        "resource": [
-          {
-            "value": "authentication-e2e-test",
-            "id": "urn:altinn:resource"
-          }
-        ]
-      },
-      {
-        "resource": [
-          {
-            "value": "vegardtestressurs",
-            "id": "urn:altinn:resource"
-          }
-        ]
-      }
-    ]
-  }
-  
-}
-
 vars:pre-request {
   auth_orgNo: 991825827
   auth_org: 991825827
-  system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
+  requestId: 5c897f3f-7f09-4c60-94e6-326a6c77ba21
   partyOrgNo: 312251604
 }
 
