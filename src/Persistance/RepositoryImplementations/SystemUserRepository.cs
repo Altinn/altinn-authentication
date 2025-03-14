@@ -534,7 +534,7 @@ public class SystemUserRepository : ISystemUserRepository
             LastChanged = reader.GetFieldValue<DateTime>("last_changed"),
             SequenceNo = reader.GetFieldValue<long>("sequence_no"),
             IsDeleted = reader.GetFieldValue<bool>("is_deleted"),
-            SystemUserType = reader.GetFieldValue<SystemUserType>("system_user_type").ToString()
+            SystemUserType = reader.GetFieldValue<string>("system_user_type")
         });
     }
 }
