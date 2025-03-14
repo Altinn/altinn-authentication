@@ -12,6 +12,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Register.Models;
 
@@ -36,6 +37,11 @@ public class AccessManagementClientMock : IAccessManagementClient
 
         string content = File.ReadAllText(dataFileName);
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
+    }
+
+    public Task<Result<bool>> DelegateCustomerToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> rights)
@@ -77,5 +83,10 @@ public class AccessManagementClientMock : IAccessManagementClient
     public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
     {
         return await Task.FromResult(true);
+    }
+
+    Task<Result<AgentDelegationResponseExternal>> IAccessManagementClient.DelegateCustomerToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }

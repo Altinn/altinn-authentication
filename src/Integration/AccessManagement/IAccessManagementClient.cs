@@ -2,6 +2,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
 
@@ -52,4 +53,15 @@ public interface IAccessManagementClient
     /// <param name="packageId">the package id</param>
     /// <returns></returns>
     Task<Package> GetPackage(string packageId);
+
+    /// <summary>
+    /// Delegate a customer to the Agent SystemUser
+    /// </summary>
+    /// <param name="party">The Facilitator</param>
+    /// <param name="systemUser">The Agent SystemUser</param>
+    /// <param name="request">Post Body from BFF containing customerId</param>
+    /// <param name="userId">Logged in user</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Success or Failure</returns>    
+    Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken);
 }
