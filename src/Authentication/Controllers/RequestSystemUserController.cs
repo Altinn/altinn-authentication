@@ -350,7 +350,7 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid    
+    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
