@@ -98,25 +98,6 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Delegates a customer to an Agent SystemUser the Facilitator owns
-    /// </summary>
-    /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpPost("agent/{party}/{systemUserId}")]
-    public async Task<ActionResult> GetSingleSystemUserById(int party, Guid systemUserId, string customerOrgNo)
-    {
-        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
-        if (systemUser is not null)
-        {
-            return Ok(systemUser);
-        }
-
-        return NotFound();
-    }
-
-    /// <summary>
     /// Used by MaskinPorten, to find if a given systemOrg owns a SystemUser Integration for a Vendor's Product, by an ExternalId
     /// </summary>
     /// <param name="clientId">The unique id maintained by MaskinPorten tying their clients to the Registered Systems the ServiceProivders have created in our db.</param>        
