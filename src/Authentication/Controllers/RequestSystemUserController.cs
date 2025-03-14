@@ -350,7 +350,7 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
+    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid    
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
@@ -358,6 +358,24 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
     {
         Result<RequestSystemResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(party, requestId);
+        if (res.IsProblem)
+        {
+            return res.Problem.ToActionResult();
+        }
+
+        return Ok(res.Value);
+    }
+
+    /// <summary>
+    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
+    /// Is different from the Vendor endpoint, since this authenticates the Facilitator and not the Vendor
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [HttpGet("agent/{party}/{requestId}")]
+    public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentRequestByPartyIdAndRequestId(int party, Guid requestId)
+    {
+        Result<AgentRequestSystemResponse> res = await _requestSystemUser.GetAgentRequestByPartyAndRequestId(party, requestId);
         if (res.IsProblem)
         {
             return res.Problem.ToActionResult();

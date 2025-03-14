@@ -566,6 +566,40 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
+    public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int partyId, Guid requestId)
+    {
+        Party party = await partiesClient.GetPartyAsync(partyId);
+        if (party is null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        AgentRequestSystemResponse? find = await requestRepository.GetAgentRequestByInternalId(requestId);
+        if (find is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (party.OrgNumber != find.PartyOrgNo)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        var request = new AgentRequestSystemResponse
+        {
+            Id = find.Id,
+            SystemId = find.SystemId,
+            ExternalRef = find.ExternalRef,
+            AccessPackages = find.AccessPackages,
+            PartyOrgNo = find.PartyOrgNo,
+            Status = find.Status,
+            RedirectUrl = find.RedirectUrl
+        };
+
+        return request;
+    }
+
+    /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
         RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
