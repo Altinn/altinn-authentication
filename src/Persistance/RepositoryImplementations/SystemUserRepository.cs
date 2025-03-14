@@ -1,7 +1,9 @@
 ﻿using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Constants;
@@ -72,12 +74,15 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
-                sui.external_ref
+                sui.external_ref,
+                sui.system_user_type,
+                sui.accesspackages
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
 	        WHERE sui.reportee_party_id = @reportee_party_id	
-	            AND sui.is_deleted = false;
+	            AND sui.is_deleted = false
+                AND system_user_type = @system_user_type;
                 ";
 
         try
@@ -85,6 +90,48 @@ public class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("reportee_party_id", partyId.ToString());
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Default.ToString());
+
+            IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
+            return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemUserRepository // GetAllActiveSystemUsersForParty // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+	    	    sui.system_user_profile_id,
+		        sui.integration_title,
+		        sui.system_internal_id,
+                sr.system_id,
+                sr.systemvendor_orgnumber,
+                sui.reportee_org_no,
+		        sui.reportee_party_id,
+		        sui.created,
+                sui.external_ref,
+                sui.system_user_type,
+                sui.accesspackages
+	        FROM business_application.system_user_profile sui 
+                JOIN business_application.system_register sr  
+                ON sui.system_internal_id = sr.system_internal_id
+	        WHERE sui.reportee_party_id = @reportee_party_id	
+	            AND sui.is_deleted = false
+                AND system_user_type = @system_user_type;
+                ";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("reportee_party_id", partyId.ToString());
+            command.Parameters.AddWithValue("system_user_type", SystemUserType.Agent.ToString());
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
             return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
@@ -109,7 +156,9 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
-                sui.external_ref
+                sui.external_ref,
+                sui.system_user_type,
+                sui.accesspackages
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -146,7 +195,9 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
                 sui.reportee_party_id,
                 sui.created,
-                sui.external_ref
+                sui.external_ref,
+                sui.system_user_type,
+                sui.accesspackages
             FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -276,7 +327,9 @@ public class SystemUserRepository : ISystemUserRepository
                 reportee_party_id,
                 sui.created,
                 systemvendor_orgnumber,
-                external_ref
+                external_ref,
+                sui.system_user_type,
+                sui.accesspackages
             FROM business_application.system_user_profile sui
                 JOIN business_application.system_register sr  
                 ON   sui.system_internal_id = sr.system_internal_id
@@ -322,6 +375,7 @@ public class SystemUserRepository : ISystemUserRepository
     {
         string? external_ref = reader.GetFieldValue<string>("external_ref");
         string orgno = reader.GetFieldValue<string>("reportee_org_no");
+        List<AccessPackage> accessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages") ?? new List<AccessPackage>();
 
         return new ValueTask<SystemUser>(new SystemUser
         {
@@ -333,7 +387,9 @@ public class SystemUserRepository : ISystemUserRepository
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
-            ExternalRef = external_ref ?? orgno
+            ExternalRef = external_ref ?? orgno,
+            UserType = Enum.Parse<SystemUserType>(reader.GetFieldValue<string>("system_user_type")),
+            AccessPackages = accessPackages
         });
     }
 
@@ -350,7 +406,9 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
 		        sui.created,
-                sui.external_ref
+                sui.external_ref,
+                sui.system_user_type,
+                sui.accesspackages
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -438,7 +496,8 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.created,        
                 sui.last_changed,
                 sui.sequence_no,
-                sui.is_deleted
+                sui.is_deleted,
+                sui.system_user_type                            
             FROM business_application.system_user_profile sui                
             WHERE sui.sequence_no > @sequence_no
                 AND sui.sequence_no <= business_application.tx_max_safeval('business_application.systemuser_seq')
@@ -474,7 +533,8 @@ public class SystemUserRepository : ISystemUserRepository
             Created = reader.GetFieldValue<DateTime>("created"),
             LastChanged = reader.GetFieldValue<DateTime>("last_changed"),
             SequenceNo = reader.GetFieldValue<long>("sequence_no"),
-            IsDeleted = reader.GetFieldValue<bool>("is_deleted")
+            IsDeleted = reader.GetFieldValue<bool>("is_deleted"),
+            SystemUserType = reader.GetFieldValue<string>("system_user_type")
         });
     }
 }
