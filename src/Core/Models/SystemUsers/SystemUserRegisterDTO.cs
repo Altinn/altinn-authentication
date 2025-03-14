@@ -45,5 +45,11 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers
         /// </summary>
         [JsonPropertyName("sequenceNo")]
         public long SequenceNo { get; set; } = 0;
+
+        /// <summary>
+        /// Either Agent or Default
+        /// </summary>
+        [JsonPropertyName("systemUserType")]
+        public string SystemUserType { get; set; }
     }
 }
