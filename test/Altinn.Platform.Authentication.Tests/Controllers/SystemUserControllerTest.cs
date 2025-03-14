@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.AccessManagement.Tests.Mocks;
@@ -41,6 +42,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Asn1.Ocsp;
 using Xunit;
 using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
@@ -858,6 +860,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
+            if (createSystemUserResponse.StatusCode != HttpStatusCode.OK)
+            {
+                await PrintResponse(createSystemUserResponse);
+            }                        
+
             Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
             Assert.NotNull(shouldBeCreated);
             Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);
@@ -902,6 +909,19 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Empty(list3);
         }
 
+        private async Task<string> PrintResponse(HttpResponseMessage message)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"HTTP/{message.Version} {message.StatusCode}");
+            foreach (var header in message.Headers)
+            {
+                sb.Append($"{header.Key}: ").AppendJoin(", ", header.Value).AppendLine();
+            }
+
+            sb.AppendLine().AppendLine(await message.Content.ReadAsStringAsync());
+            return sb.ToString();
+        }
+
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
         {
             var tasks = Enumerable.Range(0, paginationSize)
@@ -913,7 +933,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private async Task CreateSystemUser(HttpClient client, int externalRef, string systemId)
         {
-            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            AuthenticationHeaderValue authenticationHeaderValue = AddSystemUserRequestWriteTestTokenToClient();
 
             Right right = new()
             {
@@ -939,6 +959,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 Content = JsonContent.Create(req)
             };
+            request.Headers.Authorization = authenticationHeaderValue;
             HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
             Assert.Equal(HttpStatusCode.Created, message.StatusCode);
@@ -947,22 +968,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(req.ExternalRef, res.ExternalRef);
 
             HttpClient client2 = CreateClient();
-            client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
-
+            
             int partyId = 500000;
 
             string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
             HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
             HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
             Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
         }
 
-        private static string AddSystemUserRequestWriteTestTokenToClient(HttpClient client)
+        private static AuthenticationHeaderValue AddSystemUserRequestWriteTestTokenToClient()
         {
             string[] prefixes = ["altinn", "digdir"];
             string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes);
-            client.DefaultRequestHeaders.Authorization = new("Bearer", token);
-            return token;
+            return new("Bearer", token);
         }
 
         private static string GetConfigPath()
