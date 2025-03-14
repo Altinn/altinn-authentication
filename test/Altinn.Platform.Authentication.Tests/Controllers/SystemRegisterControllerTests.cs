@@ -543,8 +543,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
-                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                string orgToken = PrincipalUtil.GetOrgToken("skatt", "974761076", "altinn:authentication/systemregister.write", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", orgToken);
                 JsonSerializerOptions options = new JsonSerializerOptions()
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -554,11 +554,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
 
                 string systemId = "991825827_the_matrix";
-                HttpClient client2 = CreateClient();
-                string orgToken = PrincipalUtil.GetOrgToken("skatt", "974761076", "altinn:authentication/systemregister.write", prefixes);
-                client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", orgToken);
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
-                HttpResponseMessage getResponse = await client2.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 Assert.Equal(HttpStatusCode.Forbidden, getResponse.StatusCode);
             }
         }
