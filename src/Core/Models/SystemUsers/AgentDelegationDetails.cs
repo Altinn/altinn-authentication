@@ -1,6 +1,9 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 // Used together with 
+[ExcludeFromCodeCoverage]
 public class AgentDelegationDetails
 {
     public required string ClientRole { get; set; } // REGN // evt ny std "regnskapsfører"

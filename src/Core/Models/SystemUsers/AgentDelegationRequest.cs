@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 /// <summary>
 /// Input from the FrontEnd/BFF and sent to AccessManagement to Delegate the Faciliator's Customer to the Agent SystemUser
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class AgentDelegationRequest
 {
     public required Guid ClientId { get; set; } // Customer (PartyUuid)

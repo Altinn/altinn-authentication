@@ -1,6 +1,7 @@
 ﻿using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -9,6 +10,7 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 /// Response DTO through the API after Vendor calls to Create a new Request for a ClientSystemUser the first time,
 /// or in other status API until and after approval.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class AgentRequestSystemResponse()    
 {
     /// <summary>
