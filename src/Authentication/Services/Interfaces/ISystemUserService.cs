@@ -109,4 +109,12 @@ public interface ISystemUserService
     /// </summary>
     /// <returns></returns>
     Task<long> GetMaxSystemUserSequenceNo();
+
+    /// <summary>
+    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// The service is idempotent, and second attempts will return OK,
+    /// the first return Created.
+    /// </summary>
+    /// <returns>OK or Created</returns> 
+    Task<Result<bool>> DelegateToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken);
 }
