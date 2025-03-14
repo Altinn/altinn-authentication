@@ -352,7 +352,7 @@ public class RequestSystemUserController : ControllerBase
     /// <summary>
     /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
     /// </summary>
-    /// <returns></returns>
+    /// <returns>RequestSystemResponse model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [HttpGet("{party}/{requestId}")]
     public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
@@ -370,7 +370,7 @@ public class RequestSystemUserController : ControllerBase
     /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
     /// Is different from the Vendor endpoint, since this authenticates the Facilitator and not the Vendor
     /// </summary>
-    /// <returns></returns>
+    /// <returns>AgentRequestSystemResponse model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [HttpGet("agent/{party}/{requestId}")]
     public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentRequestByPartyIdAndRequestId(int party, Guid requestId)
