@@ -31,10 +31,7 @@
       ]
     }
   ],
-  "allowedRedirectUrls": [
-    "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback",
-    "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
-  ],
+    {allowedRedirectUrls},
   "isVisible": false,
   "ClientId": [
     "{clientId}"

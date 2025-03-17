@@ -105,6 +105,16 @@ public class TestState
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = false
         });
+        
+        // Serialize Allowed Redirect URLs
+        var allowedRedirectUrlsJson = AllowedRedirectUrls.Count != 0 
+            ? JsonSerializer.Serialize(AllowedRedirectUrls, new JsonSerializerOptions
+            {
+                WriteIndented = false
+            })
+            : "[]"; // Default empty array if no URLs are provided
+
+        requestBody = requestBody.Replace("{allowedRedirectUrls}", $"\"allowedRedirectUrls\": {allowedRedirectUrlsJson}");
 
         var finalJson = requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
 

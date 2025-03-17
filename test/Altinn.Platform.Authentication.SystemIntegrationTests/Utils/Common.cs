@@ -102,12 +102,12 @@ public class Common
 
     public async Task<object> CreateRequestWithManalExample(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
-        var testState = new TestState("Resources/Testdata/ChangeRequest/VendorExampleUrls.json")
+        var testState = new TestState("Resources/Testdata/Systemregister/VendorExampleUrls.json")
             .WithClientId(clientId)
             .WithVendor(testuser.Org)
             .WithAllowedRedirectUrls(
-                "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback",
-                "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
+                "https://www.cloud-booking.net/misc/integration.htm?integration=Altinn3&action=authCallback",
+                "https://test.cloud-booking.net/misc/integration.htm?integration=Altinn3&action=authCallback"
             )
             .WithToken(maskinportenToken);
 
@@ -122,7 +122,7 @@ public class Common
         var requestBody = (await Helper.ReadFile("Resources/Testdata/ChangeRequest/CreateSystemUserRequest.json"))
             .Replace("{systemId}", testState.SystemId)
             // .Replace("{redirectUrl}", testState.AllowedRedirectUrls.First())
-            .Replace("{redirectUrl}","https://www.cloud-booking.net")
+            .Replace("{redirectUrl}",testState.AllowedRedirectUrls.First() + "&clientId=123")
             .Replace("{externalRef}", externalRef);
         
         Output.WriteLine("Request body for system user request" + requestBody);
@@ -132,8 +132,6 @@ public class Common
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
-        
-        Output.WriteLine($"SystemId: {testState.SystemId}");
 
 
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
