@@ -196,9 +196,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             int partyId = 500000;
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            var list = await response.Content.ReadFromJsonAsync<List<SystemUser>>();
 
-            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-            Assert.False(response.IsSuccessStatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.NotNull(list);
+            Assert.Empty(list);
         }
 
         [Fact]
@@ -1002,7 +1004,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task AgentSystemUser_Get_ListForPartyId_ReturnsNotFound()
+        public async Task AgentSystemUser_Get_ListForPartyId_ReturnsEmptyList()
         {
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
@@ -1010,9 +1012,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             int partyId = 500000;
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            var list = await response.Content.ReadFromJsonAsync<List<SystemUser>>();
 
-            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-            Assert.False(response.IsSuccessStatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.NotNull(list);
+            Assert.Empty(list);
         }
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
