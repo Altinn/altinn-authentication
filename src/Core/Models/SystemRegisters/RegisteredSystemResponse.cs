@@ -86,7 +86,6 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
         /// <summary>
         /// Registered Systems can be set to Soft Deleted
         /// </summary>
-        [JsonIgnore]
         public bool IsDeleted { get; set; } = false;
 
         /// <summary>
