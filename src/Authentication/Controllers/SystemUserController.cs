@@ -65,18 +65,11 @@ public class SystemUserController : ControllerBase
     /// <returns>List of SystemUsers</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("{party}")]
-    public async Task<ActionResult> GetListOfSystemUsersPartyHas(int party)
+    public async Task<ActionResult<List<SystemUser>>> GetListOfSystemUsersPartyHas(int party)
     {
-        List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(party);
-
-        if (theList is not null && theList.Count > 0)
-        {
-            return Ok(theList);
-        }
-
-        return NotFound();
+        var result = await _systemUserService.GetListOfSystemUsersForParty(party) ?? [];
+        return Ok(result);
     }
 
     /// <summary>
@@ -85,18 +78,11 @@ public class SystemUserController : ControllerBase
     /// <returns>List of SystemUsers</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("agent/{party}")]
-    public async Task<ActionResult> GetListOfAgentSystemUsersPartyHas(int party)
+    public async Task<ActionResult<List<SystemUser>>> GetListOfAgentSystemUsersPartyHas(int party)
     {
-        List<SystemUser>? theList = await _systemUserService.GetListOfAgentSystemUsersForParty(party);
-
-        if (theList is not null && theList.Count > 0)
-        {
-            return Ok(theList);
-        }
-
-        return NotFound();
+        var result = await _systemUserService.GetListOfAgentSystemUsersForParty(party) ?? [];
+        return Ok(result);
     }
 
     /// <summary>
