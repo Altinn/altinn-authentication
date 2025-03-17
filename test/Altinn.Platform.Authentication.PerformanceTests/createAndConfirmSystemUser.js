@@ -30,7 +30,7 @@ for (var label of labels) {
 
 export function setup() {
     const systemUsersParts = splitSystemUsers();
-    const [token, clientId] = getSystemOwnerToken(systemOwner);
+    const [token, clientId] = getSystemOwnerTokenAndClientId(systemOwner);
     const resource = randomItem(resources);
     const systemId = `${systemOwner}_${uuidv4()}`;
     createSystem(systemOwner, systemId, resource, token, clientId);
@@ -145,7 +145,7 @@ function approveSystemUser(organization, systemUserId) {
 
 }
 
-function getSystemOwnerToken(systemOwner) {
+function getSystemOwnerTokenAndClientId(systemOwner) {
     const tokenOptions = {
         scopes: "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemuser.request.read altinn:authorization/authorize",
         orgno: systemOwner
