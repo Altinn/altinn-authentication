@@ -57,11 +57,11 @@ public interface IAccessManagementClient
     /// <summary>
     /// Delegate a customer to the Agent SystemUser
     /// </summary>
-    /// <param name="party">The Facilitator</param>
+    /// <param name="facilitatorId">The Facilitator</param>
     /// <param name="systemUser">The Agent SystemUser</param>
     /// <param name="request">Post Body from BFF containing customerId</param>
     /// <param name="userId">Logged in user</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken);
+    Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(Guid facilitatorId, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken);
 }

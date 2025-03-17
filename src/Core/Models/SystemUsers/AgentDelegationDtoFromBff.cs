@@ -9,4 +9,5 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 public class AgentDelegationDtoFromBff
 {
     public required string CustomerId { get; set; }
+    public required string FaciliatorId { get; set; }
 }

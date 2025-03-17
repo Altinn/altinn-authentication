@@ -9,6 +9,7 @@ using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -327,7 +328,7 @@ public class SystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> DelegateToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
     {
-        Result<AgentDelegationResponseExternal> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(party, systemUser, request, userId, cancellationToken);
+        Result<AgentDelegationResponseExternal> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(Guid.Parse(request.FaciliatorId), systemUser, request, userId, cancellationToken);
         if (result.IsSuccess)
         {
             return true;

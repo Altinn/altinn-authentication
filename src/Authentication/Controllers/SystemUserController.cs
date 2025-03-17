@@ -335,15 +335,15 @@ public class SystemUserController : ControllerBase
     /// <returns>OK or Created</returns>    
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/delegation/")]
-    public async Task<ActionResult> CreateAndDelegateSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationDtoFromBff request, CancellationToken cancellationToken)
+    public async Task<ActionResult> CreateAndDelegateAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationDtoFromBff request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
         SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
-        if (systemUser == null)
+        if (systemUser is null)
         {
             return NotFound();
         }
@@ -351,7 +351,7 @@ public class SystemUserController : ControllerBase
         Result<bool> delegationResult = await _systemUserService.DelegateToAgentSystemUser(party, systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
-            return Created();
+            return Ok();
         }
 
         return delegationResult.Problem.ToActionResult();
