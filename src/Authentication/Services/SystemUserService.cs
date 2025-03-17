@@ -127,6 +127,17 @@ namespace Altinn.Platform.Authentication.Services
             return await _repository.GetAllActiveSystemUsersForParty(partyId);
         }
 
+        /// <inheritdoc/>
+        public async Task<List<SystemUser>> GetListOfAgentSystemUsersForParty(int partyId)
+        {
+            if (partyId < 1)
+            {
+                return [];
+            }
+
+            return await _repository.GetAllActiveAgentSystemUsersForParty(partyId);
+        }
+
         /// <summary>
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
