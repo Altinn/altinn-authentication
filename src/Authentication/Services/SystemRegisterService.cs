@@ -38,7 +38,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<List<RegisteredSystemResponse>> GetListRegSys(CancellationToken cancellation = default)
+        public Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetAllActiveSystems();
         }
@@ -68,7 +68,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.CreateRegisteredSystem(system);
         }
@@ -79,7 +79,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="systemId">the system id</param>
         /// <param name="cancellation">the cancellation token</param>
         /// <returns></returns>
-        public Task<RegisteredSystemResponse?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
+        public Task<RegisteredSystem?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
             return _systemRegisterRepository.GetRegisteredSystemById(systemId);
         }
@@ -103,7 +103,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        public Task<bool> UpdateWholeRegisteredSystem(RegisteredSystem updateSystem, string systemId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
         }

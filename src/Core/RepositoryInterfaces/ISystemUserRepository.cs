@@ -89,11 +89,4 @@ public interface ISystemUserRepository
     /// </summary>
     /// <returns>long</returns>
     Task<long> GetMaxSystemUserSequenceNo();
-
-    /// <summary>
-    /// Returns the list of all active agent system user integration for the given party id
-    /// </summary>
-    /// <param name="partyId">The party id</param>
-    /// <returns>List of Agent SystemUsers</returns>
-    Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId);
 }

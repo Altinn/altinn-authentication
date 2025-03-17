@@ -32,7 +32,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>    
-    public async Task<List<RegisteredSystemResponse>> GetAllActiveSystems()
+    public async Task<List<RegisteredSystem>> GetAllActiveSystems()
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -67,7 +67,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted)
+    public async Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted)
     {
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.system_register(
@@ -127,7 +127,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateRegisteredSystem(RegisteredSystem updatedSystem, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/"""
             UPDATE business_application.system_register
@@ -135,6 +135,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 name = @name,
                 description = @description,
                 is_visible = @is_visible,
+                is_deleted = @is_deleted,
                 rights = @rights,
                 accesspackages = @accesspackages,
                 last_changed = CURRENT_TIMESTAMP,
@@ -155,6 +156,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_NAME, updatedSystem.Name);
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_DESCRIPTION, updatedSystem.Description);
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE, updatedSystem.IsVisible);
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_DELETED, updatedSystem.IsDeleted);
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
@@ -176,7 +178,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id)
+    public async Task<RegisteredSystem?> GetRegisteredSystemById(string id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -404,7 +406,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    private static ValueTask<RegisteredSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
+    private static ValueTask<RegisteredSystem> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         string[] stringGuids = reader.GetFieldValue<string[]>(SystemRegisterFieldConstants.SYSTEM_CLIENTID);                
         List<Right>? rights = reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_RIGHTS) ? null : reader.GetFieldValue<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);
@@ -433,7 +435,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             allowedRedirectUrls = reader.GetFieldValue<List<string>>(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS).ConvertAll<Uri>(delegate(string u) { return new Uri(u); });
         }
             
-        return new ValueTask<RegisteredSystemResponse>(new RegisteredSystemResponse
+        return new ValueTask<RegisteredSystem>(new RegisteredSystem
         {
             InternalId = reader.GetFieldValue<Guid>(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID),
             Id = reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_ID),
@@ -487,7 +489,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         try
         {
-            RegisteredSystemResponse? systemInfo = await GetRegisteredSystemById(systemId);
+            RegisteredSystem? systemInfo = await GetRegisteredSystemById(systemId);
 
             List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo!.InternalId);
 

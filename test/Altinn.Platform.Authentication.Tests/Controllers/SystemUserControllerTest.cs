@@ -21,7 +21,6 @@ using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
-using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
@@ -196,11 +195,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             int partyId = 500000;
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            var list = await response.Content.ReadFromJsonAsync<List<SystemUser>>();
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.NotNull(list);
-            Assert.Empty(list);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.False(response.IsSuccessStatusCode);
         }
 
         [Fact]
@@ -905,120 +902,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Empty(list3);
         }
 
-        // Agent Tests
-        [Fact]
-        public async Task AgentSystemUser_Get_ListForPartyId_ReturnsListOK()
-        {
-            // Create System used for test
-            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
-
-            HttpClient client = CreateClient();
-            string token = AddSystemUserRequestWriteTestTokenToClient(client);
-            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
-
-            AccessPackage accessPackage = new()
-            {
-                Urn = "urn:altinn:accesspackage:skattnaering"
-            };
-
-            // Arrange
-            CreateAgentRequestSystemUser req = new()
-            {
-                ExternalRef = "external",
-                SystemId = "991825827_the_matrix",
-                PartyOrgNo = "910493353",
-                AccessPackages = [accessPackage]
-            };
-
-            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
-            {
-                Content = JsonContent.Create(req)
-            };
-            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
-
-            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
-            Assert.NotNull(res);
-            Assert.Equal(req.ExternalRef, res.ExternalRef);
-
-            //// Party Get Request
-            HttpClient client2 = CreateClient();
-
-            int partyId = 500000;
-
-            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
-            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
-            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
-            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
-            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
-
-            HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
-            listSystemUserRequst.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpResponseMessage listSystemUserResponse = await client2.SendAsync(listSystemUserRequst, HttpCompletionOption.ResponseContentRead);
-            List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await listSystemUserResponse.Content.ReadAsStringAsync(), _options);
-
-            Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
-            Assert.True(list is not null);
-            Assert.True(list.Count == 1);
-        }
-
-        /// <summary>
-        /// Scenario where user is not authorized to view list of system users
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        public async Task AgentSystemUser_Get_ListForPartyId_ReturnsForbidden()
-        {
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-
-            int partyId = 500801;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-            Assert.False(response.IsSuccessStatusCode);
-        }
-
-        /// <summary>
-        /// Scenario where user does not have a valid token
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        public async Task AgentSystemUser_Get_ListForPartyId_ReturnsUnathorized()
-        {
-            HttpClient client = CreateClient();
-
-            int partyId = 500801;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-
-            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-            Assert.False(response.IsSuccessStatusCode);
-        }
-
-        /// <summary>
-        /// Scenario where user does not have a valid token
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        public async Task AgentSystemUser_Get_ListForPartyId_ReturnsEmptyList()
-        {
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-
-            int partyId = 500000;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            var list = await response.Content.ReadFromJsonAsync<List<SystemUser>>();
-
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.NotNull(list);
-            Assert.Empty(list);
-        }
-
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
         {
             var tasks = Enumerable.Range(0, paginationSize)
@@ -1080,13 +963,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes);
             client.DefaultRequestHeaders.Authorization = new("Bearer", token);
             return token;
-        }
-
-        private static AuthenticationHeaderValue AddAuthorizationTestTokenToRequest(string orgno)
-        {
-            string[] prefixes = ["altinn", "digdir"];
-            string token = PrincipalUtil.GetOrgToken("digdir", orgno, "altinn:authentication/systemuser.request.write", prefixes);
-            return new("Bearer", token);
         }
 
         private static string GetConfigPath()

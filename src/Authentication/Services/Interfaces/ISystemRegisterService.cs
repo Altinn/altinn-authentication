@@ -20,7 +20,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="cancellation">The cancellation token</param>
         /// <returns></returns>
-        Task<List<RegisteredSystemResponse>> GetListRegSys(CancellationToken cancellation = default);
+        Task<List<RegisteredSystem>> GetListRegSys(CancellationToken cancellation = default);
 
         /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider
@@ -47,7 +47,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System</param>
         /// <param name="cancellation">Cancellation token</param>
         /// <returns>List of Default Rights</returns>
-        Task<RegisteredSystemResponse?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
+        Task<RegisteredSystem?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
 
         /// <summary>
         /// Inserts a new unique ClientId
@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="system">The descriptor DTO for a new System</param>
         /// <param name="cancellation">The Cancelation token</param>
         /// <returns></returns>
-        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default);
+        Task<Guid?> CreateRegisteredSystem(RegisteredSystem system, CancellationToken cancellation = default);
 
         /// <summary>
         /// Updates the rights on a registered system
@@ -100,7 +100,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="systemId">The Id of the Registered System </param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns></returns>
-        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken);
+        Task<bool> UpdateWholeRegisteredSystem(RegisteredSystem updateSystem, string systemId, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if one of the clientid exists
