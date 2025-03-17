@@ -39,12 +39,7 @@ public class AccessManagementClientMock : IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public Task<Result<bool>> DelegateCustomerToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(Guid facilitatorId, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
+    public Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

@@ -355,7 +355,7 @@ public class SystemUserController : ControllerBase
             return NotFound();
         }
 
-        Result<bool> delegationResult = await _systemUserService.DelegateToAgentSystemUser(party, systemUser, request, userId, cancellationToken);
+        Result<bool> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok();

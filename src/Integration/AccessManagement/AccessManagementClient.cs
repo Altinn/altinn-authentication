@@ -311,7 +311,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(Guid facilitatorId, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -334,22 +334,23 @@ public class AccessManagementClient : IAccessManagementClient
             AgentName = systemUser.IntegrationTitle,
             AgentRole = "Agent", 
             ClientId = Guid.Parse(request.CustomerId),
-            FacilitatorId = facilitatorId,
+            FacilitatorId = Guid.Parse(request.FaciliatorId),
             Delegations = delegations
         };
 
         try
         {
-            string endpointUrl = $"internal/{facilitatorId}/agent/delegation/offered";            
+            string endpointUrl = $"internal/delegation/systemagent";            
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
 
-            if (response.IsSuccessStatusCode && response.Content is not null)
-            {                
-                return await response.Content.ReadFromJsonAsync<AgentDelegationResponseExternal>(_serializerOptions, cancellationToken) 
-                    ?? new Result<AgentDelegationResponseExternal>(Problem.Rights_FailedToDelegate);                
-            }
+            AgentDelegationResponseExternal? result = null;
 
-            return new Result<AgentDelegationResponseExternal>(Problem.Rights_FailedToDelegate);
+            if (response.IsSuccessStatusCode && response.Content is not null)
+            {
+                result = await response.Content.ReadFromJsonAsync<AgentDelegationResponseExternal>(_serializerOptions, cancellationToken);
+            }            
+
+            return result ?? new Result<AgentDelegationResponseExternal>(Problem.Rights_FailedToDelegate);
 
         }
         catch (Exception ex)

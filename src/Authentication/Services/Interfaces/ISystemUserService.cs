@@ -123,5 +123,5 @@ public interface ISystemUserService
     /// the first return Created.
     /// </summary>
     /// <returns>OK or Created</returns> 
-    Task<Result<bool>> DelegateToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken);
 }
