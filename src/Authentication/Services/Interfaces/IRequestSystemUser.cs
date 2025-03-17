@@ -145,4 +145,13 @@ public interface IRequestSystemUser
     /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
     Task<Result<AgentRequestSystemResponse>> GetAgentRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo);
+
+    /// <summary>
+    /// Get the AgentRequest response DTO for display in the FrontEnd
+    /// Endpoint has PEP validation of the PartyId for the end user - the Faciliator
+    /// </summary>
+    /// <param name="party">The partyId for the end user</param>
+    /// <param name="requestId">The Guid Id for the Request</param>
+    /// <returns>The AgentRequest model</returns>
+    Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int party, Guid requestId);
 }
