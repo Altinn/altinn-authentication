@@ -143,21 +143,15 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithoutQuery_ReturnsTrue()
         {
             // Arrange
-            var systemInfo = new RegisteredSystem
-            {
-                Id = "system1",
-                Vendor = new VendorInfo { ID = "Vendor1" },
-                Name = new Dictionary<string, string> { { "en", "System 1" } },
-                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
-                AllowedRedirectUrls = new List<Uri>
+
+            List<Uri> allowedRedirectUrls = new List<Uri>
                     {
                         new Uri("https://example.com/callback")
-                    }
-            };
+                    };
             string redirectURL = "https://example.com/callback";
 
             // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
 
             // Assert
             Assert.True(result.Value);
@@ -167,21 +161,14 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithQuery_ReturnsTrue()
         {
             // Arrange
-            var systemInfo = new RegisteredSystem
-            {
-                Id = "system1",
-                Vendor = new VendorInfo { ID = "Vendor1" },
-                Name = new Dictionary<string, string> { { "en", "System 1" } },
-                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
-                AllowedRedirectUrls = new List<Uri>
+            List<Uri> allowedRedirectUrls = new List<Uri>
                     {
                         new Uri("https://example.com/callback")
-                    }
-            };
+                    };
             string redirectURL = "https://example.com/callback?param=value";
 
             // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
 
             // Assert
             Assert.True(result.Value);
@@ -191,21 +178,14 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_InvalidUrl_ReturnsProblem()
         {
             // Arrange
-            var systemInfo = new RegisteredSystem
-            {
-                Id = "system1",
-                Vendor = new VendorInfo { ID = "Vendor1" },
-                Name = new Dictionary<string, string> { { "en", "System 1" } },
-                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
-                AllowedRedirectUrls = new List<Uri>
+            List<Uri> allowedRedirectUrls = new List<Uri>
                     {
                         new Uri("https://example.com/callback")
-                    }
-            };
+                    };
             string redirectURL = "https://invalid.com/callback";
 
             // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
 
             // Assert
             Assert.False(result.Value);
@@ -216,18 +196,12 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_EmptyAllowedRedirectUrls_ReturnsProblem()
         {
             // Arrange
-            var systemInfo = new RegisteredSystem
-            {
-                Id = "system1",
-                Vendor = new VendorInfo { ID = "Vendor1" },
-                Name = new Dictionary<string, string> { { "en", "System 1" } },
-                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
-                AllowedRedirectUrls = new List<Uri>()
-            };
+
+            List<Uri> allowedRedirectUrls = new List<Uri>();
             string redirectURL = "https://example.com/callback";
 
             // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
 
             // Assert
             Assert.False(result.Value);
@@ -238,21 +212,15 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithFragment_ReturnsTrue()
         {
             // Arrange
-            var systemInfo = new RegisteredSystem
-            {
-                Id = "system1",
-                Vendor = new VendorInfo { ID = "Vendor1" },
-                Name = new Dictionary<string, string> { { "en", "System 1" } },
-                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
-                AllowedRedirectUrls = new List<Uri>
+
+            List<Uri> allowedRedirectUrls = new List<Uri>
                 {
                     new Uri("https://example.com/callback")
-                }
-            };
+                };
             string redirectURL = "https://example.com/callback#section";
 
             // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
 
             // Assert
             Assert.True(result.Value);
@@ -262,21 +230,14 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithDifferentPath_ReturnsFalse()
         {
             // Arrange
-            var systemInfo = new RegisteredSystem
-            {
-                Id = "system1",
-                Vendor = new VendorInfo { ID = "Vendor1" },
-                Name = new Dictionary<string, string> { { "en", "System 1" } },
-                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
-                AllowedRedirectUrls = new List<Uri>
+            List<Uri> allowedRedirectUrls = new List<Uri>
                 {
                     new Uri("https://example.com/callback")
-                }
-            };
+                };
             string redirectURL = "https://example.com/callback/path";
 
             // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
 
             // Assert
             Assert.False(result.Value);
@@ -286,21 +247,14 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithPort_ReturnsTrue()
         {
             // Arrange
-            var systemInfo = new RegisteredSystem
-            {
-                Id = "system1",
-                Vendor = new VendorInfo { ID = "Vendor1" },
-                Name = new Dictionary<string, string> { { "en", "System 1" } },
-                Description = new Dictionary<string, string> { { "en", "Description of System 1" } },
-                AllowedRedirectUrls = new List<Uri>
+            List<Uri> allowedRedirectUrls = new List<Uri>
                 {
                     new Uri("https://example.com:8080/callback")
-                }
-            };
+                };
             string redirectURL = "https://example.com:8080/callback";
 
             // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, systemInfo);
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
 
             // Assert
             Assert.True(result.Value);

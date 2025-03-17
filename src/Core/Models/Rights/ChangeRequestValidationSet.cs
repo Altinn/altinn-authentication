@@ -7,7 +7,7 @@ public class ChangeRequestValidationSet
 {
     public ExternalRequestId ExternalRequestId { get; set; }
 
-    public RegisteredSystem RegisteredSystem { get; set; }
+    public RegisteredSystemResponse RegisteredSystem { get; set; }
 
     public SystemUser SystemUser { get; set; }
 }
