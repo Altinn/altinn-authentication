@@ -116,6 +116,8 @@ public interface ISystemUserService
     /// <param name="party">The User id for the Facilitator for the Agent SystemUser currently logged in at the FrontEnd.</param> 
     /// <returns>List of Agent SystemUsers</returns>
     Task<List<SystemUser>?> GetListOfAgentSystemUsersForParty(int party);
+
+    /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
     /// The service is idempotent, and second attempts will return OK,
     /// the first return Created.
