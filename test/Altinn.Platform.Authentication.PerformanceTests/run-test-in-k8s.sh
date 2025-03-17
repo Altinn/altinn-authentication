@@ -4,7 +4,7 @@ API_VERSION=${API_VERSION:-v1}
 API_ENVIRONMENT=${API_ENVIRONMENT:-yt01}
 NUMBER_OF_ENDUSERS=${NUMBER_OF_ENDUSERS:-2799}
 failed=0
-kubectl config set-context --current --namespace=dialogporten
+kubectl config set-context --current --namespace=authentication
 
 help() {
     echo "Usage: $0 [OPTIONS]"
@@ -146,7 +146,7 @@ apiVersion: k6.io/v1alpha1
 kind: TestRun
 metadata:
   name: $name
-  namespace: dialogporten
+  namespace: authentication
 spec:
   arguments: $arguments 
   parallelism: $parallelism
