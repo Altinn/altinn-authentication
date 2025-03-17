@@ -303,10 +303,10 @@ namespace Altinn.Platform.Authentication.Helpers
         /// Checks if the system id starts with the orgnumber of the owner
         /// </summary>
         /// <returns>true if the systemid starts with the orgnumber of the owner of the system</returns>
-        public static bool DoesSystemIdStartWithOrgnumber(RegisteredSystem newSystem)
+        public static bool DoesSystemIdStartWithOrgnumber(string vendorId, string systemId)
         {
-            string? vendorOrgNumber = GetOrgNumber(newSystem.Vendor.ID);
-            string orgnumberInSystemId = newSystem.Id.Split("_")[0];
+            string? vendorOrgNumber = GetOrgNumber(vendorId);
+            string orgnumberInSystemId = systemId.Split("_")[0];
             bool doesSystemStartWithOrg = orgnumberInSystemId == vendorOrgNumber;
             return doesSystemStartWithOrg;
         }
@@ -339,7 +339,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="registeredSystem">the RegisteredSystem object to convert to RegisteredSystemDTO</param>
         /// <returns>RegisteredSystemDTO of RegisteredSystem</returns>
-        public static RegisteredSystemDTO MapRegisteredSystemToRegisteredSystemDTO(RegisteredSystem registeredSystem) 
+        public static RegisteredSystemDTO MapRegisteredSystemToRegisteredSystemDTO(RegisteredSystemResponse registeredSystem) 
         {
             return new RegisteredSystemDTO 
             { 
@@ -455,11 +455,11 @@ namespace Altinn.Platform.Authentication.Helpers
         /// Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
         /// </summary>
         /// <param name="redirectURL">the RedirectUrl chosen</param>
-        /// <param name="systemInfo">the SystemInfo</param>
+        /// <param name="allowedRedirectUrls">the list of allowed redirect urls</param>
         /// <returns>Result or Problem</returns>
-        public static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystem systemInfo)
+        public static Result<bool> ValidateRedirectUrl(string redirectURL, List<Uri> allowedRedirectUrls)
         {
-            List<Uri> redirectUrlsInSystem = systemInfo.AllowedRedirectUrls;
+            List<Uri> redirectUrlsInSystem = allowedRedirectUrls;
             Uri chosenUri = new(redirectURL);
 
             foreach (var uri in redirectUrlsInSystem)
