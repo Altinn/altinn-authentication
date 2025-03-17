@@ -21,6 +21,7 @@ public class SystemUserTests : IDisposable
     private readonly PlatformAuthenticationClient _platformClient;
     private string? _systemUserId;
     private Testuser? _testperson;
+    private Common _common;
 
     /// <summary>
     /// Testing System user endpoints
@@ -33,6 +34,20 @@ public class SystemUserTests : IDisposable
         _platformClient = new PlatformAuthenticationClient();
         _systemUserClient = new SystemUserClient(_platformClient);
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
+        _common = new Common(_platformClient, outputHelper);
+    }
+    
+    
+    // https://github.com/Altinn/altinn-authentication/issues/1123
+    [Fact]
+    public async Task TestRedirectUrlCase()
+    {
+        // Prepare
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+        var externalRef = Guid.NewGuid().ToString();
+        var clientId = Guid.NewGuid().ToString();
+        var testperson = _platformClient.GetTestUserForVendor();
+        var systemId = await _common.CreateRequestWithManalExample(maskinportenToken, externalRef, testperson, clientId);
     }
 
     /// <summary>

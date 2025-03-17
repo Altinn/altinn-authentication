@@ -56,6 +56,9 @@
       <None Update="Resources\Environment\environment.dev.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Resources\Testdata\ChangeRequest\VendorExampleUrls.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

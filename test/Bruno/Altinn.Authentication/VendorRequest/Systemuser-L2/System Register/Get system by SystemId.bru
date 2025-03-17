@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/310574775_Tøysekopp
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/312605031_121d6eb4-1eca-49aa-91f4-26de0c59f8c0
   body: json
   auth: inherit
 }
@@ -24,8 +24,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","310574775");
-  bru.setEnvVar("auth_org", "310574775");
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

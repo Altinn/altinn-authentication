@@ -12,6 +12,8 @@ public class TestState
     public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
     public string? RedirectUrl { get; private set; }
     
+    public List<string> AllowedRedirectUrls { get; private set; } = new();
+
     public string? ExternalRef { get; set; }
 
     private readonly string _templateContent;
@@ -53,6 +55,17 @@ public class TestState
     public TestState WithRedirectUrl(string? redirectUrl)
     {
         RedirectUrl = redirectUrl;
+        return this;
+    }
+    
+    public TestState WithAllowedRedirectUrls(params string[] urls)
+    {
+        if (urls == null || urls.Length == 0)
+        {
+            throw new ArgumentException("At least one URL must be provided.", nameof(urls));
+        }
+
+        AllowedRedirectUrls.AddRange(urls);
         return this;
     }
     

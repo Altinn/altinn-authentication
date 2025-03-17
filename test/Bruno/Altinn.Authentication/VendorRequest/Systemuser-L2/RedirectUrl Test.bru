@@ -1,0 +1,59 @@
+meta {
+  name: RedirectUrl Test
+  type: http
+  seq: 3
+}
+
+post {
+  url: "rights" : [ {
+{{baseUrl}}/authentication/api/v1/systemuser/request/vendor
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{bearerToken}}
+}
+
+body:json {
+  {
+    "systemId" : "310574775_06f500ea-7039-41ad-863e-3bb057939acc",
+    "partyOrgNo" : "312655985",
+    "rights" : [ {
+    "rights" : [ {
+      "resource" : [ {
+        "value" : "authentication-e2e-test",
+        "id" : "urn:altinn:resource"
+      } ]
+    }, {
+      "resource" : [ {
+        "value" : "vegardtestressurs",
+        "id" : "urn:altinn:resource"
+      } ]
+    } ],
+    "redirectUrl" : "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
+  }
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  
+  const { v4: uuidv4} = require('uuid')
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+  
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
+  
+  bru.setEnvVar("system_id","312605031_979f709e-1807-4334-9a80-8cd7bc6a3a17");
+  bru.setEnvVar("external_ref", "1234");
+  
+  
+  console.log(bru.getEnvVar("auth_tokenType"));
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  bru.setEnvVar("bearer_token", token);
+  
+}

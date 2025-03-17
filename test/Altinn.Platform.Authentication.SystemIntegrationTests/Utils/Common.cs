@@ -21,8 +21,7 @@ public class Common
         Output = output;
     }
 
-    public async Task<string> CreateAndApproveSystemUserRequest(string maskinportenToken, string externalRef,
-        Testuser testuser, string clientId)
+    public async Task<string> CreateAndApproveSystemUserRequest(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
         var testState = new TestState("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
             .WithClientId(clientId)
@@ -99,5 +98,57 @@ public class Common
     public static async Task AssertResponse(HttpResponseMessage response, HttpStatusCode statusCode)
     {
         Assert.True(statusCode == response.StatusCode, $"[Response was {response.StatusCode} : Response body was: {await response.Content.ReadAsStringAsync()}]");
+    }
+
+    public async Task<object> CreateRequestWithManalExample(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
+    {
+        var testState = new TestState("Resources/Testdata/ChangeRequest/VendorExampleUrls.json")
+            .WithClientId(clientId)
+            .WithVendor(testuser.Org)
+            .WithAllowedRedirectUrls(
+                "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback",
+                "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
+            )
+            .WithToken(maskinportenToken);
+
+        var requestBodySystemRegister = testState.GenerateRequestBody();
+        Output.WriteLine("request body from Register: " + requestBodySystemRegister);
+
+        // Register system
+        var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
+
+        // Prepare system user request
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/ChangeRequest/CreateSystemUserRequest.json"))
+            .Replace("{systemId}", testState.SystemId)
+            // .Replace("{redirectUrl}", testState.AllowedRedirectUrls.First())
+            .Replace("{redirectUrl}","https://www.cloud-booking.net")
+            .Replace("{externalRef}", externalRef);
+        
+        Output.WriteLine("Request body for system user request" + requestBody);
+
+        // Act
+        var userResponse = await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
+
+        // Assert
+        var content = await userResponse.Content.ReadAsStringAsync();
+        
+        Output.WriteLine($"SystemId: {testState.SystemId}");
+
+
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
+            $"Unexpected status code: {userResponse.StatusCode} - {content}");
+
+        using var jsonDocSystemRequestResponse = JsonDocument.Parse(content);
+        var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
+
+        // Approve
+        var approveResp =
+            await ApproveRequest($"v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve", testuser);
+
+        Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
+            "Received status code " + approveResp.StatusCode + "when attempting to approve");
+
+        return testState.SystemId;
     }
 }

@@ -1,0 +1,18 @@
+meta {
+  name: Get System by {{SystemId}}
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{systemId}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  systemId: 310574775_06f500ea-7039-41ad-863e-3bb057939acc
+  ~systemId: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
+  ~systemId: 310574775_UrlQueryPathTesIsvisibleTest
+  ~systemId: 310574775_TwoRedirectUrlsTest
+}
