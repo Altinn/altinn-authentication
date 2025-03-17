@@ -44,6 +44,11 @@ public class AccessManagementClientMock : IAccessManagementClient
         throw new NotImplementedException();
     }
 
+    public Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(Guid facilitatorId, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> rights)
     {
         if (partyId == "500005")
@@ -85,8 +90,4 @@ public class AccessManagementClientMock : IAccessManagementClient
         return await Task.FromResult(true);
     }
 
-    Task<Result<AgentDelegationResponseExternal>> IAccessManagementClient.DelegateCustomerToAgentSystemUser(string party, SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
 }
