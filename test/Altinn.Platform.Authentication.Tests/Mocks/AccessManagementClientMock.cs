@@ -20,7 +20,7 @@ namespace Altinn.Authentication.Tests.Mocks;
 /// <summary>
 /// Mock class for <see cref="IPartiesClient"></see> interface
 /// </summary>
-public class AccessManagementClientMock : IAccessManagementClient
+public class AccessManagementClientMock : IAccessManagementClient 
 {
     public Task<List<DelegationResponseData>> CheckDelegationAccess(string partyId, DelegationCheckRequest request)
     {
