@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.SystemRegister.Models
     /// it may need Rights to use or acccess Resources at a Service Provider.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public class RegisteredSystem
+    public class RegisteredSystemResponse
     {
         /// <summary>
         /// The System Id is a unique External Id for this System, in human-readable string format. (SLUG)
