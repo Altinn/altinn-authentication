@@ -171,8 +171,6 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
 
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Default;
-            
-            // command.Parameters.Add(new("systemuser_type", NpgsqlDbType.Unknown) { Value = SystemUserType.Default, DataTypeName = "systemuser_type" });
 
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)

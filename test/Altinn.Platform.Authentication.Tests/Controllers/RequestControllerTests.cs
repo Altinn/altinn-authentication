@@ -723,7 +723,7 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
-        //Get by Guid
+        // Get by Guid
         HttpClient client2 = CreateClient();
         AddSystemUserRequesReadTestTokenToClient(client2);
         Guid testId = res.Id;

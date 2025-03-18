@@ -63,12 +63,9 @@ public static class PersistanceDependencyInjection
 
             var builder = new NpgsqlDataSourceBuilder(connectionString);
             builder.EnableDynamicJson();
-            builder.EnableUnmappedTypes();
-            builder.MapEnum<SystemUserType>();
+            builder.MapEnum<SystemUserType>("business_application.systemuser_type");
             builder.UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>());
-            var ret = builder.Build();
-            ret.ReloadTypes();
-            return ret;
+            return builder.Build();            
         });
 
         services.TryAddTransient((IServiceProvider sp) => sp.GetRequiredService<NpgsqlDataSource>().CreateConnection());
