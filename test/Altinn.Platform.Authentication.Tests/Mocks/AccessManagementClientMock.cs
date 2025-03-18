@@ -180,4 +180,18 @@ public class AccessManagementClientMock: IAccessManagementClient
     {
         return await Task.FromResult(true);
     }
+
+    public async Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser systemUser, Guid facilitator, CancellationToken cancellationToken)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+
+        if (token == null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+                
+        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
+
+        return new AgentDelegationResponseExternal();
+    }
 }

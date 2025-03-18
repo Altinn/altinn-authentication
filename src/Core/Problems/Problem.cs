@@ -165,5 +165,17 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor NotAnAgentRequest { get; }
-        = _factory.Create(10, HttpStatusCode.BadRequest, "The request id is valid but its not a valid request for creating an agent system user");
+        = _factory.Create(25, HttpStatusCode.BadRequest, "The request id is valid but its not a valid request for creating an agent system user");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RoleNotFoundForPackage { get; }
+        = _factory.Create(27, HttpStatusCode.BadRequest, "The accesspackage provided in the request can't be mapped to a valid role.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor CustomerIdNotFound { get; }
+        = _factory.Create(28, HttpStatusCode.BadRequest, "The customer id was not provided or did not validate.");
 }

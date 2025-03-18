@@ -313,39 +313,57 @@ public class AccessManagementClient : IAccessManagementClient
     /// <inheritdoc />
     public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        const string AGENT = "AGENT";
+
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
+        if ( ! Guid.TryParse(request.FacilitatorId, out Guid facilitator))
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        if (!Guid.TryParse(request.CustomerId, out Guid clientId))
+        {
+            return Problem.CustomerIdNotFound;
+        }
+
+        if (!Guid.TryParse(systemUser.Id, out Guid agentSystemUserId))
+        {
+            return Problem.SystemUserNotFound;
+        }
 
         List<AgentDelegationDetails> delegations = [];
 
         foreach (var pac in systemUser.AccessPackages) 
         {
+            var role = GetRoleFromAccessPackage(pac.Urn!);
+
+            if ( role is null )
+            {
+                return Problem.RoleNotFoundForPackage;
+            }
+
             AgentDelegationDetails delegation = new()
             {
-                ClientRole = GetRoleFromAccessPackage(pac.Urn!) ?? "NOTFOUND",
+                ClientRole = role,
                 AccessPackage = pac.Urn!.ToString()
             };
-
-            if (delegation.ClientRole == "NOTFOUND")
-            {
-                return Problem.Rights_FailedToDelegate;
-            }
 
             delegations.Add(delegation);
         }        
 
         AgentDelegationRequest agentDelegationRequest = new()
         {
-            AgentId = Guid.Parse(systemUser.Id),
+            AgentId = agentSystemUserId,
             AgentName = systemUser.IntegrationTitle,
-            AgentRole = "Agent", 
-            ClientId = Guid.Parse(request.CustomerId),
-            FacilitatorId = Guid.Parse(request.FacilitatorId),
+            AgentRole = AGENT, 
+            ClientId = clientId,
+            FacilitatorId = facilitator,
             Delegations = delegations
         };
 
         try
         {
-            string endpointUrl = $"internal/delegation/systemagent";            
+            string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
 
             AgentDelegationResponseExternal? result = null;
@@ -383,5 +401,11 @@ public class AccessManagementClient : IAccessManagementClient
 
         hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
         return found;
+    }
+
+    public async Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default)
+    {
+        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
+        throw new NotImplementedException();
     }
 }

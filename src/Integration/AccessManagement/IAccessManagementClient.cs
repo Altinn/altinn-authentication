@@ -63,4 +63,13 @@ public interface IAccessManagementClient
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
     Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the list of all delegationIds 
+    /// </summary>
+    /// <param name="system"></param>
+    /// <param name="facilitator"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default);
 }
