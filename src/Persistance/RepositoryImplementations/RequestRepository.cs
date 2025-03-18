@@ -122,7 +122,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("party_org_no", createAgentRequest.PartyOrgNo);
             command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createAgentRequest.AccessPackages });
             command.Parameters.AddWithValue("status", createAgentRequest.Status);
-            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = createAgentRequest.UserType;
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             if (createAgentRequest.RedirectUrl is not null)
             {
@@ -240,7 +240,8 @@ public class RequestRepository : IRequestRepository
                 created 
             FROM business_application.request r
             WHERE r.id = @request_id
-                and r.is_deleted = false;
+                and r.is_deleted = false
+                and r.systemuser_type = @systemuser_type;
         ";
 
         try
@@ -248,6 +249,7 @@ public class RequestRepository : IRequestRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("request_id", internalId);
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Default;
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
@@ -276,7 +278,8 @@ public class RequestRepository : IRequestRepository
                 created 
             FROM business_application.request r
             WHERE r.id = @request_id
-                and r.is_deleted = false;
+                and r.is_deleted = false
+                and r.systemuser_type = @systemuser_type;
         ";
 
         try
@@ -284,6 +287,7 @@ public class RequestRepository : IRequestRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("request_id", internalId);
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToAgentRequest)

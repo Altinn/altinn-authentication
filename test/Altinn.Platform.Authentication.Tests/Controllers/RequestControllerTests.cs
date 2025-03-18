@@ -731,9 +731,9 @@ public class RequestControllerTests(
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         string debug = "pause_here";
-        Assert.Equal(HttpStatusCode.BadRequest, message2.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, message2.StatusCode);
         ProblemDetails? problem = await message2.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The request id is valid but its not a valid request for creating an agent system user", problem!.Detail);
+        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Detail);
     }
 
     [Fact]
@@ -1761,7 +1761,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Approve_ClientRequest_By_RequestId_BadRequests()
+    public async Task Approve_ClientRequest_By_RequestId_NotFound()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -1813,9 +1813,9 @@ public class RequestControllerTests(
         string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The request id is valid but its not a valid request for creating an agent system user", problem!.Detail);
+        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Detail);
     }
 
     [Fact]
