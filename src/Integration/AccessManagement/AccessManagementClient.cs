@@ -368,9 +368,10 @@ public class AccessManagementClient : IAccessManagementClient
 
             AgentDelegationResponseExternal? result = null;
 
-            if (response.IsSuccessStatusCode && response.Content is not null)
+            if (response.IsSuccessStatusCode) // && response.Content is not null)
             {
-                result = await response.Content.ReadFromJsonAsync<AgentDelegationResponseExternal>(_serializerOptions, cancellationToken);
+                // result = await response.Content.ReadFromJsonAsync<AgentDelegationResponseExternal>(_serializerOptions, cancellationToken);
+                result = new (); // short-cut until AccessManagement can populate the response model in a future PR
             }            
 
             return result ?? new Result<AgentDelegationResponseExternal>(Problem.Rights_FailedToDelegate);
