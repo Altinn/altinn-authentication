@@ -13,8 +13,6 @@ on:
                 default: 'yt01'
                 type: choice
                 options:
-                - at22
-                - tt02
                 - yt01
             tag:
                 description: 'tag the performance test'

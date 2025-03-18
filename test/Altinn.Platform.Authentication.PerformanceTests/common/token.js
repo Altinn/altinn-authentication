@@ -82,7 +82,6 @@ export function getPersonalTokenForServiceOwner(serviceOwner) {
         scopes: endUser.scopes, 
         userId: endUser.userId
     }
-    //http://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env=yt01&userId=1348534&scopes=altinn:portal/enduser&ttl=3600
     const url = `https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken?env=${tokenGeneratorEnv}&userId=${tokenOptions.userId}&scopes=${encodeURIComponent(tokenOptions.scopes)}&ttl=${tokenTtl}`;
     return fetchToken(url, tokenOptions, `end user (userId:${tokenOptions.userId}, tokenGeneratorEnv:${tokenGeneratorEnv})`);
   }
