@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
@@ -30,7 +30,6 @@ public static class PersistanceDependencyInjection
         AddSystemRegisterRepository(services);
         AddRequestRepository(services);
         AddChangeRequestRepository(services);
-
         return services;
     }
 
@@ -64,8 +63,12 @@ public static class PersistanceDependencyInjection
 
             var builder = new NpgsqlDataSourceBuilder(connectionString);
             builder.EnableDynamicJson();
+            builder.EnableUnmappedTypes();
+            builder.MapEnum<SystemUserType>();
             builder.UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>());
-            return builder.Build();
+            var ret = builder.Build();
+            ret.ReloadTypes();
+            return ret;
         });
 
         services.TryAddTransient((IServiceProvider sp) => sp.GetRequiredService<NpgsqlDataSource>().CreateConnection());

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Altinn.Platform.Authentication.Persistance.Extensions;
 
@@ -10,6 +11,40 @@ namespace Altinn.Platform.Authentication.Persistance.Extensions;
 [ExcludeFromCodeCoverage]
 internal static class NpgSqlExtensions
 {
+    /// <summary>
+    /// Adds a typed parameter to the collection.
+    /// </summary>
+    /// <typeparam name="T">The parameter type.</typeparam>
+    /// <param name="collection">The parameter collection.</param>
+    /// <param name="parameterName">The parameter name.</param>
+    /// <returns>The newly created parameter.</returns>
+    public static NpgsqlParameter<T> Add<T>(this NpgsqlParameterCollection collection, string parameterName)
+    {
+        var parameter = new NpgsqlParameter<T>()
+        {
+            ParameterName = parameterName,
+        };
+
+        collection.Add(parameter);
+        return parameter;
+    }
+
+    /// <summary>
+    /// Adds a typed parameter to the collection.
+    /// </summary>
+    /// <typeparam name="T">The parameter type.</typeparam>
+    /// <param name="collection">The parameter collection.</param>
+    /// <param name="parameterName">The parameter name.</param>
+    /// <param name="dbType">The parameter <see cref="NpgsqlDbType"/>.</param>
+    /// <returns>The newly created parameter.</returns>
+    public static NpgsqlParameter<T> Add<T>(this NpgsqlParameterCollection collection, string parameterName, NpgsqlDbType dbType)
+    {
+        var parameter = new NpgsqlParameter<T>(parameterName, dbType);
+
+        collection.Add(parameter);
+        return parameter;
+    }
+
     /// <summary>
     /// Executes a command against the database, returning a <see cref="IAsyncEnumerable{T}"/>
     /// that can be easily mapped over.
