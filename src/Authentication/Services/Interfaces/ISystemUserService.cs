@@ -119,9 +119,8 @@ public interface ISystemUserService
 
     /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
-    /// The service is idempotent, and second attempts will return OK,
-    /// the first return Created.
+    /// The service is idempotent.
     /// </summary>
-    /// <returns>OK or Created</returns> 
+    /// <returns>Result of True or False</returns> 
     Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken);
 }

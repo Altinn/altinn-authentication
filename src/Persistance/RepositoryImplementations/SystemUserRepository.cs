@@ -375,7 +375,8 @@ public class SystemUserRepository : ISystemUserRepository
     {
         string? external_ref = reader.GetFieldValue<string>("external_ref");
         string orgno = reader.GetFieldValue<string>("reportee_org_no");
-        List<AccessPackage> accessPackages = reader.GetFieldValue<List<AccessPackage>>("accesspackages") ?? new List<AccessPackage>();
+
+        List<AccessPackage> accessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages");
 
         return new ValueTask<SystemUser>(new SystemUser
         {
