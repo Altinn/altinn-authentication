@@ -377,6 +377,7 @@ public class SystemUserRepository : ISystemUserRepository
         string orgno = reader.GetFieldValue<string>("reportee_org_no");
 
         List<AccessPackage> accessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages");
+        string systemUserType = reader.IsDBNull("system_user_type") ? "Default" : reader.GetFieldValue<string>("system_user_type");
 
         return new ValueTask<SystemUser>(new SystemUser
         {
@@ -389,7 +390,7 @@ public class SystemUserRepository : ISystemUserRepository
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             ExternalRef = external_ref ?? orgno,
-            UserType = Enum.Parse<SystemUserType>(reader.GetFieldValue<string>("system_user_type")),
+            UserType = Enum.Parse<SystemUserType>(systemUserType),
             AccessPackages = accessPackages
         });
     }
@@ -527,6 +528,8 @@ public class SystemUserRepository : ISystemUserRepository
 
     private static ValueTask<SystemUserRegisterDTO> ConvertFromReaderToSystemUserRegisterDTO(NpgsqlDataReader reader)
     {
+        string systemUserType = reader.IsDBNull("system_user_type") ? "Default" : reader.GetFieldValue<string>("system_user_type");
+
         return new ValueTask<SystemUserRegisterDTO>(new SystemUserRegisterDTO
         {
             Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
@@ -535,7 +538,7 @@ public class SystemUserRepository : ISystemUserRepository
             LastChanged = reader.GetFieldValue<DateTime>("last_changed"),
             SequenceNo = reader.GetFieldValue<long>("sequence_no"),
             IsDeleted = reader.GetFieldValue<bool>("is_deleted"),
-            SystemUserType = reader.GetFieldValue<string>("system_user_type")
+            SystemUserType = systemUserType
         });
     }
 }
