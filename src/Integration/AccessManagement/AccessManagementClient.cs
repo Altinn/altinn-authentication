@@ -311,7 +311,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -339,7 +339,7 @@ public class AccessManagementClient : IAccessManagementClient
             AgentName = systemUser.IntegrationTitle,
             AgentRole = "Agent", 
             ClientId = Guid.Parse(request.CustomerId),
-            FacilitatorId = Guid.Parse(request.FaciliatorId),
+            FacilitatorId = Guid.Parse(request.FacilitatorId),
             Delegations = delegations
         };
 

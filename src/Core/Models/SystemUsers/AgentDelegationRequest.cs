@@ -3,7 +3,7 @@
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 /// <summary>
-/// Input from the FrontEnd/BFF and sent to AccessManagement to Delegate the Faciliator's Customer to the Agent SystemUser
+/// Input from the FrontEnd/BFF and sent to AccessManagement to Delegate the Facilitator's Customer to the Agent SystemUser
 /// </summary>
 [ExcludeFromCodeCoverage]
 public class AgentDelegationRequest

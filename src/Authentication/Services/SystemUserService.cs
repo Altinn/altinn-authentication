@@ -336,7 +336,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
         {
             Result<AgentDelegationResponseExternal> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
             if (result.IsSuccess)

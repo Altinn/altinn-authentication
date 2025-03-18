@@ -344,7 +344,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/delegation/")]
-    public async Task<ActionResult> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationDtoFromBff request, CancellationToken cancellationToken)
+    public async Task<ActionResult> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 

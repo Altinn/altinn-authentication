@@ -62,5 +62,5 @@ public interface IAccessManagementClient
     /// <param name="userId">Logged in user</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken);
+    Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 }
