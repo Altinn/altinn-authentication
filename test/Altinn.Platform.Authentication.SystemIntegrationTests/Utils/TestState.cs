@@ -7,6 +7,8 @@ public class TestState
 {
     private string? Token { get; set; }
     public string? VendorId { get; set; }
+    
+    public string? AccessPackage { get; set; }
     public string? Name { get; private set; }
     public string? ClientId { get; private set; }
     public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
@@ -31,6 +33,12 @@ public class TestState
     public TestState WithVendor(string? vendorId)
     {
         VendorId = vendorId;
+        return this;
+    }
+    
+    public TestState WithAccessPackage(string? accessPackageId)
+    {
+        AccessPackage = accessPackageId;
         return this;
     }
 
@@ -98,7 +106,9 @@ public class TestState
             .Replace("{Name}", Name ?? string.Empty)
             .Replace("{clientId}", ClientId ?? string.Empty)
             .Replace("{redirectUrl}", RedirectUrl)
-            .Replace("{token}", Token ?? string.Empty);
+            .Replace("{token}", Token ?? string.Empty)
+            .Replace("{accessPackage}", AccessPackage ?? string.Empty)
+            ;
 
         var rightsJson = JsonSerializer.Serialize(Rights, new JsonSerializerOptions
         {

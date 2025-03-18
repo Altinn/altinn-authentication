@@ -1,0 +1,21 @@
+{
+  "externalRef": "{externalRef}",
+  "systemId": "{systemId}",
+  "partyOrgNo": "{partyOrgNo}",
+  "accessPackages": [
+    {
+      "urn": "{accessPackage}"
+    },
+  ],
+  "rights": [
+    {
+      "resource": [
+        {
+          "value": "authentication-e2e-test",
+          "id": "urn:altinn:resource"
+        }
+      ]
+    }
+  ],
+  "redirectUrl": "https://altinn.no"
+}

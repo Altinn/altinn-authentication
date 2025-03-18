@@ -91,7 +91,29 @@ public enum ApiEndpoints
     GetChangeRequestByRequestIdUrl,
     
     [EndpointInfo("v1/systemuser/changerequest/{partyId}/{requestId}/approve", "POST")]
-    ApproveChangeRequest
+    ApproveChangeRequest,
+    
+    // <!--- CLIENT DELEGATION ENDPOINTS -->
+    [EndpointInfo("v1/systemuser/request/vendor/agent", "POST")]
+    PostAgentClientRequest,
+    
+    [EndpointInfo("v1/systemuser/request/vendor/agent/{requestId}", "GET")]
+    GetVendorAgentRequestById, // Retrieves a specific vendor agent request by request ID
+
+    [EndpointInfo("v1/systemuser/request/vendor/agent/byexternalref/{systemId}/{orgNo}/{externalRef}", "GET")]
+    GetVendorAgentRequestByExternalRef, // Retrieves a vendor agent request using an external reference
+
+    [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}", "GET")]
+    GetAgentRequestById, // Retrieves a specific agent request by party and request ID (BFF)
+
+    [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}/approve", "POST")]
+    ApproveAgentRequest, // Approves an agent request for a specific party
+
+    [EndpointInfo("v1/systemuser/request/vendor/agent/bysystem/{systemId}", "GET")]
+    GetVendorAgentRequestsBySystemId, // Retrieves all vendor agent requests associated with a system ID
+
+    [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}/reject", "POST")]
+    RejectAgentRequest // Rejects an agent request for a specific party
 }
 
 [AttributeUsage(AttributeTargets.Field)]

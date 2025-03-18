@@ -71,6 +71,15 @@ public class Common
             "Did not get OK, but: " + resp.StatusCode + " for endpoint:  " + endpoint);
         return resp.Content;
     }
+    
+    public async Task<HttpContent> GetSystemUserForVendorAgent(string systemId, string maskinportenToken)
+    {
+        var endpoint = "ApiEndpoints.GetSystt";
+        var resp = await _platformClient.GetAsync(endpoint, maskinportenToken);
+        Assert.True(resp.StatusCode == HttpStatusCode.OK,
+            "Did not get OK, but: " + resp.StatusCode + " for endpoint:  " + endpoint);
+        return resp.Content;
+    }
 
     public async Task<HttpResponseMessage> ApproveRequest(string endpoint, Testuser testperson)
     {

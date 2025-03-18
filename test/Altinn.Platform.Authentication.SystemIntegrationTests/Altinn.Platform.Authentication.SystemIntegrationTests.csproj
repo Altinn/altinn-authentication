@@ -59,6 +59,12 @@
       <None Update="Resources\Testdata\Systemregister\VendorExampleUrls.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Resources\Testdata\ClientDelegation\CreateRequest.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testdata\ClientDelegation\AccessPackage.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
