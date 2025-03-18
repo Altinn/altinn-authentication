@@ -24,6 +24,10 @@ using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Register.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Azure;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -304,5 +308,105 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
         }
 
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    {
+        const string AGENT = "AGENT";
+
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
+        if ( ! Guid.TryParse(request.FacilitatorId, out Guid facilitator))
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        if (!Guid.TryParse(request.CustomerId, out Guid clientId))
+        {
+            return Problem.CustomerIdNotFound;
+        }
+
+        if (!Guid.TryParse(systemUser.Id, out Guid agentSystemUserId))
+        {
+            return Problem.SystemUserNotFound;
+        }
+
+        List<AgentDelegationDetails> delegations = [];
+
+        foreach (var pac in systemUser.AccessPackages) 
+        {
+            var role = GetRoleFromAccessPackage(pac.Urn!);
+
+            if ( role is null )
+            {
+                return Problem.RoleNotFoundForPackage;
+            }
+
+            AgentDelegationDetails delegation = new()
+            {
+                ClientRole = role,
+                AccessPackage = pac.Urn!.ToString()
+            };
+
+            delegations.Add(delegation);
+        }        
+
+        AgentDelegationRequest agentDelegationRequest = new()
+        {
+            AgentId = agentSystemUserId,
+            AgentName = systemUser.IntegrationTitle,
+            AgentRole = AGENT, 
+            ClientId = clientId,
+            FacilitatorId = facilitator,
+            Delegations = delegations
+        };
+
+        try
+        {
+            string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
+
+            AgentDelegationResponseExternal? result = null;
+
+            if (response.IsSuccessStatusCode) // && response.Content is not null)
+            {
+                // result = await response.Content.ReadFromJsonAsync<AgentDelegationResponseExternal>(_serializerOptions, cancellationToken);
+                result = new (); // short-cut until AccessManagement can populate the response model in a future PR
+            }            
+
+            return result ?? new Result<AgentDelegationResponseExternal>(Problem.Rights_FailedToDelegate);
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateCustomerToAgentSystemUser // Exception");
+            throw;
+        }
+    }
+
+    /// <summary>
+    ///  Only for use in the PILOT test in tt02
+    /// </summary>
+    /// <param name="accessPackages">The accesspackage requested on the system user</param>
+    /// <returns></returns>
+    private static string? GetRoleFromAccessPackage(string accessPackage)
+    {
+        Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
+
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "REGN");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "REGN");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "REGN");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "REVI");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattegrunnlag", "FFOR");
+
+        hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
+        return found;
+    }
+
+    public async Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default)
+    {
+        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
+        throw new NotImplementedException();
     }
 }

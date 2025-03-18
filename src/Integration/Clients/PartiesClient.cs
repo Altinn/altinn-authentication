@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Altinn.Authentication.Integration.Clients;
 
@@ -70,12 +71,12 @@ public class PartiesClient : IPartiesClient
                 return JsonSerializer.Deserialize<Party>(responseContent, _serializerOptions);
             }
             
-            _logger.LogError("AccessManagement // PartiesClient // GetPartyAsync // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
+            _logger.LogError("Authentication // PartiesClient // GetPartyAsync // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
             return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "AccessManagement // PartiesClient // GetPartyAsync // Exception");
+            _logger.LogError(ex, "Authentication // PartiesClient // GetPartyAsync // Exception");
             throw;
         }
     }
@@ -99,12 +100,12 @@ public class PartiesClient : IPartiesClient
                 return JsonSerializer.Deserialize<Organization>(responseContent, _serializerOptions);
             }
 
-            _logger.LogError("AccessManagement // PartiesClient // GetOrganizationAsync // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
+            _logger.LogError("Authentication // PartiesClient // GetOrganizationAsync // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
             return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "AccessManagement // PartiesClient // GetOrganizationAsync // Exception");
+            _logger.LogError(ex, "Authentication // PartiesClient // GetOrganizationAsync // Exception");
             throw;
         }
     }
