@@ -351,7 +351,7 @@ public class SystemUserController : ControllerBase
         SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
         if (systemUser is null)
         {
-            ModelState.AddModelError("return", "Unable to return List");
+            ModelState.AddModelError("return", $"SystemUser with Id {systemUserId} Not Found");
             return ValidationProblem(ModelState);
         }
 

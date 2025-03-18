@@ -321,9 +321,14 @@ public class AccessManagementClient : IAccessManagementClient
         {
             AgentDelegationDetails delegation = new()
             {
-                ClientRole = GetRoleFromAccessPackage(pac.Urn!),
+                ClientRole = GetRoleFromAccessPackage(pac.Urn!) ?? "NOTFOUND",
                 AccessPackage = pac.Urn!.ToString()
             };
+
+            if (delegation.ClientRole == "NOTFOUND")
+            {
+                return Problem.Rights_FailedToDelegate;
+            }
 
             delegations.Add(delegation);
         }        
@@ -365,7 +370,7 @@ public class AccessManagementClient : IAccessManagementClient
     /// </summary>
     /// <param name="accessPackages">The accesspackage requested on the system user</param>
     /// <returns></returns>
-    private static string GetRoleFromAccessPackage(string accessPackage)
+    private static string? GetRoleFromAccessPackage(string accessPackage)
     {
         Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
 
@@ -376,6 +381,7 @@ public class AccessManagementClient : IAccessManagementClient
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattegrunnlag", "FFOR");
 
-        return hardcodingOfAccessPackageToRole[accessPackage]; 
+        hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
+        return found;
     }
 }

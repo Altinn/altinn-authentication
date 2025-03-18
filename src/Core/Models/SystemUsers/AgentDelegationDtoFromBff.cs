@@ -8,6 +8,16 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 [ExcludeFromCodeCoverage]
 public class AgentDelegationDtoFromBff
 {
+    /// <summary>
+    /// The Uuid for the client/customer of the Facilitator, 
+    /// which will be assigned to the Agent SystemUser    
+    /// </summary>
     public required string CustomerId { get; set; }
+
+    /// <summary>
+    /// The Uuid for the facilitator, the organisation 
+    /// or person that "owns" the Agent SystemUser
+    /// and is administrating it from the FrontEnd.
+    /// </summary>
     public required string FaciliatorId { get; set; }
 }
