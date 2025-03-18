@@ -13,7 +13,7 @@ public interface ISystemRegisterRepository
     /// Returns the list of currently available (is_deleted = false ) Registered Systems
     /// </summary>
     /// <returns>List of SystemRegister</returns>
-    Task<List<RegisteredSystem>> GetAllActiveSystems();
+    Task<List<RegisteredSystemResponse>> GetAllActiveSystems();
 
     /// <summary>
     /// Inserts a new Registered System, using an optimistic choice for the ID
@@ -25,14 +25,14 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="toBeInserted">The newly created Product to be inserted</param>
     /// <returns>Returns the hidden system Guid</returns>
-    Task<Guid?> CreateRegisteredSystem(RegisteredSystem toBeInserted);
+    Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest toBeInserted);
 
     /// <summary>
     /// Returns a single RegisteredSystem, even if it was set to deleted.
     /// </summary>
     /// <param name="id">The human readable string Id</param>
     /// <returns>The Registered System</returns>
-    Task<RegisteredSystem?> GetRegisteredSystemById(string id);
+    Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id);
 
     /// <summary>
     /// The registered systems may be renamed,
@@ -107,7 +107,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
-    Task<bool> UpdateRegisteredSystem(RegisteredSystem updatedSystem, CancellationToken cancellationToken = default);
+    Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default);
 
     /// Checks if the client id exists
     /// </summary>

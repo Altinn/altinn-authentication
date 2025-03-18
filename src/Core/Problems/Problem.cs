@@ -165,5 +165,11 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor NotAnAgentRequest { get; }
-        = _factory.Create(10, HttpStatusCode.BadRequest, "The request id is valid but its not a valid request for creating an agent system user");
+        = _factory.Create(25, HttpStatusCode.BadRequest, "The request id is valid but its not a valid request for creating an agent system user");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>    
+    public static ProblemDescriptor NoRedirectUrisFoundOnSystem { get; }
+        = _factory.Create(26, HttpStatusCode.BadRequest, "No redirect uris are set for the system");
 }

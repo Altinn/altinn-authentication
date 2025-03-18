@@ -107,7 +107,7 @@ public class ChangeRequestSystemUserService(
     /// <param name="rights">the Rights chosen for the Request</param>
     /// <param name="systemInfo">the System</param>
     /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
+    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
     {
         if (rights.Count == 0 || systemInfo.Rights.Count == 0)
         {
@@ -168,7 +168,7 @@ public class ChangeRequestSystemUserService(
     /// <param name="redirectURL">the RedirectUrl chosen</param>
     /// <param name="systemInfo">The system info</param>
     /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystem systemInfo)
+    private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystemResponse systemInfo)
     {
         List<Uri> redirectUrlsInSystem = systemInfo.AllowedRedirectUrls;
         Uri chosenUri = new(redirectURL);
@@ -225,7 +225,7 @@ public class ChangeRequestSystemUserService(
     /// <param name="vendorOrgNo">Vendor's OrgNo</param>
     /// <param name="sys">The chosen System Info</param>
     /// <returns>Result or Problem</returns>
-    private Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisteredSystem sys)
+    private Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisteredSystemResponse sys)
     {
         OrganisationNumber? systemOrgNo = null;
 
@@ -329,7 +329,7 @@ public class ChangeRequestSystemUserService(
 
     private async Task<Result<bool>> RetrieveChosenSystemInfoAndValidateVendorOrgNo(string systemId, OrganisationNumber vendorOrgNo)
     {
-        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
+        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -394,7 +394,7 @@ public class ChangeRequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserChangeRequest.SystemId);
+        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserChangeRequest.SystemId);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
@@ -452,7 +452,7 @@ public class ChangeRequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystem? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
         if (system is null)
         {
             return Problem.SystemIdNotFound;
@@ -516,7 +516,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
+        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
