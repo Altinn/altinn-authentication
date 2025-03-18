@@ -459,6 +459,11 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns>Result or Problem</returns>
         public static Result<bool> ValidateRedirectUrl(string redirectURL, List<Uri> allowedRedirectUrls)
         {
+            if (allowedRedirectUrls == null || allowedRedirectUrls.Count == 0)
+            {
+                return Problem.NoRedirectUrisFoundOnSystem;
+            }
+
             List<Uri> redirectUrlsInSystem = allowedRedirectUrls;
             Uri chosenUri = new(redirectURL);
 

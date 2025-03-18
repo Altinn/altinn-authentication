@@ -270,22 +270,6 @@ namespace Altinn.Platform.Authentication.Tests
         }
 
         [Fact]
-        public void ValidateRedirectUrl_EmptyAllowedRedirectUrls_ReturnsProblem()
-        {
-            // Arrange
-
-            List<Uri> allowedRedirectUrls = new List<Uri>();
-            string redirectURL = "https://example.com/callback";
-
-            // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
-
-            // Assert
-            Assert.False(result.Value);
-            Assert.Equal(Problem.RedirectUriNotFound, result.Problem);
-        }
-
-        [Fact]
         public void ValidateRedirectUrl_ValidUrlWithFragment_ReturnsTrue()
         {
             // Arrange
@@ -335,6 +319,36 @@ namespace Altinn.Platform.Authentication.Tests
 
             // Assert
             Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrl_NullAllowedRedirectUrls_ReturnsProblem()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = null;
+            string redirectURL = "https://example.com/callback";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.False(result.Value);
+            Assert.Equal(Problem.NoRedirectUrisFoundOnSystem, result.Problem);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrl_EmptyAllowedRedirectUrls_ReturnsProblem()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>();
+            string redirectURL = "https://example.com/callback";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.False(result.Value);
+            Assert.Equal(Problem.NoRedirectUrisFoundOnSystem, result.Problem);
         }
     }
 }
