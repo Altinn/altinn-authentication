@@ -662,7 +662,7 @@ public class RequestSystemUserService(
         AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
-            return Problem.RequestNotFound;
+            return Problem.AgentRequestNotFound;
         }
 
         if (systemUserRequest.AccessPackages == null)
