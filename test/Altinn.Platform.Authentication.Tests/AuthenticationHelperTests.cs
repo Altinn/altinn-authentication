@@ -5,6 +5,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Xunit;
+using static System.Net.WebRequestMethods;
 
 namespace Altinn.Platform.Authentication.Tests
 {
@@ -175,6 +176,82 @@ namespace Altinn.Platform.Authentication.Tests
         }
 
         [Fact]
+        public void ValidateAbsoluteRedirectUrl_ValidUrlWithQueryInRegister_ReturnsTrue()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>
+                    {
+                        new Uri("https://example.com/callback"),
+                        new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
+                        new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
+                    };
+            string redirectURL = "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrl_ValidUrlWithQueryInRegister_ReturnsTrue()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>
+                    {
+                        new Uri("https://example.com/callback"),
+                        new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
+                        new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
+                    };
+            string redirectURL = "https://test.cloud-booking.net/_/misc/integration.htm";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrlWithDiffQuery_ValidUrlWithQueryInRegister_ReturnsTrue()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>
+                    {
+                        new Uri("https://example.com/callback"),
+                        new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
+                        new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
+                    };
+            string redirectURL = "https://test.cloud-booking.net/_/misc/integration.htm?test=anyqueryparam";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrlWithDiffPath_ValidUrlWithQueryInRegister_ReturnsFalse()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>
+                    {
+                        new Uri("https://example.com/callback"),
+                        new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
+                        new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
+                    };
+            string redirectURL = "https://test.cloud-booking.net/_/misc/ichangedthepath.htm?test=anyqueryparam";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.False(result.Value);
+        }
+
+        [Fact]
         public void ValidateRedirectUrl_InvalidUrl_ReturnsProblem()
         {
             // Arrange
@@ -183,22 +260,6 @@ namespace Altinn.Platform.Authentication.Tests
                         new Uri("https://example.com/callback")
                     };
             string redirectURL = "https://invalid.com/callback";
-
-            // Act
-            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
-
-            // Assert
-            Assert.False(result.Value);
-            Assert.Equal(Problem.RedirectUriNotFound, result.Problem);
-        }
-
-        [Fact]
-        public void ValidateRedirectUrl_EmptyAllowedRedirectUrls_ReturnsProblem()
-        {
-            // Arrange
-
-            List<Uri> allowedRedirectUrls = new List<Uri>();
-            string redirectURL = "https://example.com/callback";
 
             // Act
             var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
@@ -258,6 +319,36 @@ namespace Altinn.Platform.Authentication.Tests
 
             // Assert
             Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrl_NullAllowedRedirectUrls_ReturnsProblem()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = null;
+            string redirectURL = "https://example.com/callback";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.False(result.Value);
+            Assert.Equal(Problem.NoRedirectUrisFoundOnSystem, result.Problem);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrl_EmptyAllowedRedirectUrls_ReturnsProblem()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>();
+            string redirectURL = "https://example.com/callback";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.False(result.Value);
+            Assert.Equal(Problem.NoRedirectUrisFoundOnSystem, result.Problem);
         }
     }
 }
