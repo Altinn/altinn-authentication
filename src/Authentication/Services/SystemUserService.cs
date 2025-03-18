@@ -334,5 +334,17 @@ namespace Altinn.Platform.Authentication.Services
         {
             return await _repository.GetMaxSystemUserSequenceNo();
         }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+        {
+            Result<AgentDelegationResponseExternal> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return true;
+            }
+
+            return result.Problem;
+        }
     }
 }
