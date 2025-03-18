@@ -5,6 +5,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Xunit;
+using static System.Net.WebRequestMethods;
 
 namespace Altinn.Platform.Authentication.Tests
 {
@@ -172,6 +173,82 @@ namespace Altinn.Platform.Authentication.Tests
 
             // Assert
             Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateAbsoluteRedirectUrl_ValidUrlWithQueryInRegister_ReturnsTrue()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>
+                    {
+                        new Uri("https://example.com/callback"),
+                        new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
+                        new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
+                    };
+            string redirectURL = "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrl_ValidUrlWithQueryInRegister_ReturnsTrue()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>
+                    {
+                        new Uri("https://example.com/callback"),
+                        new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
+                        new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
+                    };
+            string redirectURL = "https://test.cloud-booking.net/_/misc/integration.htm";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrlWithDiffQuery_ValidUrlWithQueryInRegister_ReturnsTrue()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>
+                    {
+                        new Uri("https://example.com/callback"),
+                        new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
+                        new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
+                    };
+            string redirectURL = "https://test.cloud-booking.net/_/misc/integration.htm?test=anyqueryparam";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.True(result.Value);
+        }
+
+        [Fact]
+        public void ValidateRedirectUrlWithDiffPath_ValidUrlWithQueryInRegister_ReturnsFalse()
+        {
+            // Arrange
+            List<Uri> allowedRedirectUrls = new List<Uri>
+                    {
+                        new Uri("https://example.com/callback"),
+                        new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
+                        new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
+                    };
+            string redirectURL = "https://test.cloud-booking.net/_/misc/integrations.htm?test=anyqueryparam";
+
+            // Act
+            var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
+
+            // Assert
+            Assert.False(result.Value);
         }
 
         [Fact]

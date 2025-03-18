@@ -464,7 +464,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
             foreach (var uri in redirectUrlsInSystem)
             {
-                if (uri.AbsoluteUri == chosenUri?.GetLeftPart(UriPartial.Path))
+                if (uri?.GetLeftPart(UriPartial.Path) == chosenUri?.GetLeftPart(UriPartial.Path))
                 {
                     return true;
                 }
