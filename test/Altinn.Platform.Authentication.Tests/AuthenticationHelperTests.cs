@@ -242,7 +242,7 @@ namespace Altinn.Platform.Authentication.Tests
                         new Uri("https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"),
                         new Uri("https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback")
                     };
-            string redirectURL = "https://test.cloud-booking.net/_/misc/integrations.htm?test=anyqueryparam";
+            string redirectURL = "https://test.cloud-booking.net/_/misc/ichangedthepath.htm?test=anyqueryparam";
 
             // Act
             var result = AuthenticationHelper.ValidateRedirectUrl(redirectURL, allowedRedirectUrls);
