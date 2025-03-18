@@ -2,18 +2,18 @@
 
 -- Enum: business_application.systemuser_type
 CREATE TYPE business_application.systemuser_type AS ENUM(
-  'default',
+  'standard',
   'agent'
 );
 
 ALTER TABLE business_application.system_user_profile
-ADD COLUMN systemuser_type business_application.systemuser_type NOT NULL default 'default'::business_application.systemuser_type;
+ADD COLUMN systemuser_type business_application.systemuser_type NOT NULL default 'standard'::business_application.systemuser_type;
 
 ALTER TABLE business_application.request
-ADD COLUMN systemuser_type business_application.systemuser_type NOT NULL default 'default'::business_application.systemuser_type;
+ADD COLUMN systemuser_type business_application.systemuser_type NOT NULL default 'standard'::business_application.systemuser_type;
 
 ALTER TABLE business_application.request_archive
-ADD COLUMN systemuser_type business_application.systemuser_type NOT NULL default 'default'::business_application.systemuser_type;
+ADD COLUMN systemuser_type business_application.systemuser_type NOT NULL default 'standard'::business_application.systemuser_type;
 
 UPDATE business_application.system_user_profile 
 SET systemuser_type = 'agent' 

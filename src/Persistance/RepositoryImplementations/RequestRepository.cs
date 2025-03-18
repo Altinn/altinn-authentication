@@ -69,7 +69,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = createRequest.Rights });
             command.Parameters.AddWithValue("status", createRequest.Status);
 
-            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Default;
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             if (createRequest.RedirectUrl is not null)
             {
@@ -170,7 +170,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
 
-            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Default;
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
@@ -249,7 +249,7 @@ public class RequestRepository : IRequestRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("request_id", internalId);
-            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Default;
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)

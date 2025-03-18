@@ -51,5 +51,5 @@ public record class RegisteredSystemDTO
     /// <summary>
     /// The system user type
     /// </summary>
-    public SystemUserType UserType { get; set; } = SystemUserType.Default;
+    public SystemUserType UserType { get; set; } = SystemUserType.Standard;
 }

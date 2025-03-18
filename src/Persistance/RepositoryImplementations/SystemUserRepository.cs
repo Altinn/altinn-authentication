@@ -90,7 +90,7 @@ public class SystemUserRepository : ISystemUserRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("reportee_party_id", partyId.ToString());
-            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Default;
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
             return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
@@ -378,7 +378,7 @@ public class SystemUserRepository : ISystemUserRepository
         string orgno = reader.GetFieldValue<string>("reportee_org_no");
 
         List<AccessPackage> accessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages");
-        SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Default : reader.GetFieldValue<SystemUserType>("systemuser_type");
+        SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Standard : reader.GetFieldValue<SystemUserType>("systemuser_type");
 
         return new ValueTask<SystemUser>(new SystemUser
         {
@@ -529,7 +529,7 @@ public class SystemUserRepository : ISystemUserRepository
 
     private static ValueTask<SystemUserRegisterDTO> ConvertFromReaderToSystemUserRegisterDTO(NpgsqlDataReader reader)
     {
-        SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Default : reader.GetFieldValue<SystemUserType>("systemuser_type");
+        SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Standard : reader.GetFieldValue<SystemUserType>("systemuser_type");
 
         return new ValueTask<SystemUserRegisterDTO>(new SystemUserRegisterDTO
         {

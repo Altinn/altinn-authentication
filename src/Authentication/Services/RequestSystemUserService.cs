@@ -750,7 +750,7 @@ public class RequestSystemUserService(
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = systemUserRequest.PartyOrgNo,
                 ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo,
-                UserType = Core.Enums.SystemUserType.Default
+                UserType = Core.Enums.SystemUserType.Standard
             };
         }
 
