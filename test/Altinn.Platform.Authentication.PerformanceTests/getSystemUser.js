@@ -123,7 +123,6 @@ function getSystemOwnerToken(systemOwner) {
     return token;   
 }
 
-//https://altinn-testtools-token-generator.azurewebsites.net/api/GetEnterpriseToken?env=yt01&orgNo=713431400&ttl=86400&scopes=altinn:maskinporten/systemuser.read
 function getSystemUserToken(systemOwner) {
     const tokenOptions = {
         scopes: "altinn:maskinporten/systemuser.read",
