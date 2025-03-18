@@ -64,6 +64,7 @@ public class SystemRegisterTests
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
         var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));

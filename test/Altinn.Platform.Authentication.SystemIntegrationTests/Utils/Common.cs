@@ -74,10 +74,10 @@ public class Common
     
     public async Task<HttpContent> GetSystemUserForVendorAgent(string systemId, string maskinportenToken)
     {
-        var endpoint = "ApiEndpoints.GetSystt";
-        var resp = await _platformClient.GetAsync(endpoint, maskinportenToken);
+        var url = ApiEndpoints.GetVendorAgentRequestsBySystemId.Url().Replace("{systemId}", systemId);
+        var resp = await _platformClient.GetAsync(url, maskinportenToken);
         Assert.True(resp.StatusCode == HttpStatusCode.OK,
-            "Did not get OK, but: " + resp.StatusCode + " for endpoint:  " + endpoint);
+            "Did not get OK, but: " + resp.StatusCode + " for endpoint:  " + url);
         return resp.Content;
     }
 
@@ -109,7 +109,7 @@ public class Common
         Assert.True(statusCode == response.StatusCode, $"[Response was {response.StatusCode} : Response body was: {await response.Content.ReadAsStringAsync()}]");
     }
 
-    public async Task<object> CreateRequestWithManalExample(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
+    public async Task CreateRequestWithManalExample(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/VendorExampleUrls.json")
             .WithClientId(clientId)
@@ -131,13 +131,15 @@ public class Common
         var requestBody = (await Helper.ReadFile("Resources/Testdata/ChangeRequest/CreateSystemUserRequest.json"))
             .Replace("{systemId}", testState.SystemId)
             // .Replace("{redirectUrl}", testState.AllowedRedirectUrls.First())
-            .Replace("{redirectUrl}",testState.AllowedRedirectUrls.First() + "&clientId=123")
+            // .Replace("{redirectUrl}",testState.AllowedRedirectUrls.First() + "&clientId=123")
+            .Replace("{redirectUrl}","")
             .Replace("{externalRef}", externalRef);
         
         Output.WriteLine("Request body for system user request" + requestBody);
-
         // Act
         var userResponse = await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
+        Output.WriteLine(await userResponse.Content.ReadAsStringAsync());
+
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -155,7 +157,5 @@ public class Common
 
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
-
-        return testState.SystemId;
     }
 }

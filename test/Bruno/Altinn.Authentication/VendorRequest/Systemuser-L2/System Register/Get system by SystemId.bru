@@ -5,13 +5,15 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/312605031_7a673cfe-7aa9-4a0d-b119-4c2c3bcdbb6a
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{system_id}}
   body: json
   auth: inherit
 }
 
 vars:pre-request {
-  system_id: 310574775_TwoRedirectUrlsTest
+  system_id: 310574775_isDeletedTestDontSet
+  ~system_id: 310574775_isDeletedTest
+  ~system_id: 310574775_TwoRedirectUrlsTest
   ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
   ~system_id: 310574775_UrlQueryPathTesIsvisibleTest
 }
@@ -24,8 +26,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","312605031");
-  bru.setEnvVar("auth_org", "312605031");
+  bru.setEnvVar("auth_orgNo","310574775");
+  bru.setEnvVar("auth_org", "310574775");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

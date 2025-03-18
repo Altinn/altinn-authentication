@@ -47,7 +47,7 @@ public class SystemUserTests : IDisposable
         var externalRef = Guid.NewGuid().ToString();
         var clientId = Guid.NewGuid().ToString();
         var testperson = _platformClient.GetTestUserForVendor();
-        var systemId = await _common.CreateRequestWithManalExample(maskinportenToken, externalRef, testperson, clientId);
+        await _common.CreateRequestWithManalExample(maskinportenToken, externalRef, testperson, clientId);
     }
 
     /// <summary>

@@ -1,11 +1,11 @@
 meta {
-  name: Create System with Single Rights
+  name: Put system
   type: http
-  seq: 1
+  seq: 3
 }
 
-post {
-  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor
+put {
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{system_id}}
   body: json
   auth: inherit
 }
@@ -44,6 +44,7 @@ body:json {
         ]
       }
     ],
+      "isDeleted" : true,
     "allowedRedirectUrls": [
       "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback",
                 "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
@@ -53,6 +54,13 @@ body:json {
       "{{system_name}}"
     ]
   }
+}
+
+vars:pre-request {
+  system_id: 310574775_isDeletedTest
+  ~system_id: 310574775_TwoRedirectUrlsTest
+  ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
+  ~system_id: 310574775_UrlQueryPathTesIsvisibleTest
 }
 
 script:pre-request {
@@ -68,7 +76,7 @@ script:pre-request {
   
   // const systemName = "QueryParamMustWorkSingle"
   // 
-  bru.setEnvVar("system_name","isDeletedTestDontSet");
+  bru.setEnvVar("system_name","isDeletedTest");
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);

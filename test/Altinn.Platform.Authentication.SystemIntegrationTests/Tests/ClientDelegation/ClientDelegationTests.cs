@@ -12,8 +12,10 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDele
 // Tilgangspakker foreløpig: https://github.com/Altinn/altinn-authentication/blob/main/src/Integration/MockData/packages.json
 public class ClientDelegationTests
 {
-    private string _accessPackageName = "urn:altinn:accesspackage:skattnaering";
+    // private string _accessPackageName = "urn:altinn:accesspackage:skattnaering";
+    private string _accessPackageName = "urn:altinn:accesspackage:revisormedarbeider";
     private readonly ITestOutputHelper _outputHelper;
+    
     private readonly PlatformAuthenticationClient _platformClient;
     private readonly SystemRegisterClient _systemRegisterClient;
     private readonly Common _common;
@@ -34,14 +36,12 @@ public class ClientDelegationTests
     [Fact]
     public async Task CreateClientRequest()
     {
-        _accessPackageName = "urn:altinn:accesspackage:skattnaering";
-        
         // Prepare
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var externalRef = Guid.NewGuid().ToString();
         var clientId = Guid.NewGuid().ToString();
         var testperson = _platformClient.GetTestUserForVendor();
-        var testState = new TestState("Resources/Testdata/ClientDelegation/AccessPackage.json")
+        var testState = new TestState("Resources/Testdata/ClientDelegation/AccessPackageSystemRegister.json")
             .WithClientId(clientId)
             .WithVendor(testperson.Org)
             .WithAccessPackage("skattnaering")
@@ -49,6 +49,7 @@ public class ClientDelegationTests
 
         var requestBodySystemRegister = testState.GenerateRequestBody();
         var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+        _outputHelper.WriteLine(testState.SystemId);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
 
         // Prepare system user request
@@ -63,16 +64,18 @@ public class ClientDelegationTests
         
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
-
-        Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
-            $"Unexpected status code: {userResponse.StatusCode} - {content}");
+        
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {userResponse.StatusCode} - {content}");
 
         var requestId = Common.ExtractPropertyFromJson(content, "id");
 
         //Assert status is new
         await AssertStatusSystemUserRequest(requestId, "New", maskinportenToken);
 
-        var agentUser = await _common.GetSystemUserForVendor(testState.SystemId, maskinportenToken);
+        var agentUser = await _common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
+        Assert.NotNull(agentUser);
+        Assert.Contains(testState.SystemId, await agentUser.ReadAsStringAsync());
+        
         _outputHelper.WriteLine($"Agent user response {await agentUser.ReadAsStringAsync()}");
 
         var user = _platformClient.GetTestUserForVendor();

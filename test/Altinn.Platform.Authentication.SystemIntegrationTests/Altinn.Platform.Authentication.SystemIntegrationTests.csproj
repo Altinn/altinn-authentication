@@ -62,7 +62,7 @@
       <None Update="Resources\Testdata\ClientDelegation\CreateRequest.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Resources\Testdata\ClientDelegation\AccessPackage.json">
+      <None Update="Resources\Testdata\ClientDelegation\AccessPackageSystemRegister.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>

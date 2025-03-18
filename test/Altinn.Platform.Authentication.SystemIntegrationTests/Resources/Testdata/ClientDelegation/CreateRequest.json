@@ -6,6 +6,9 @@
     {
       "urn": "{accessPackage}"
     },
+    {
+      "urn": "urn:altinn:accesspackage:ansvarlig-revisor"
+    }
   ],
   "rights": [
     {
