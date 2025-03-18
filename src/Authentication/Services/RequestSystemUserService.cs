@@ -662,7 +662,7 @@ public class RequestSystemUserService(
         AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
-            return Problem.RequestNotFound;
+            return Problem.AgentRequestNotFound;
         }
 
         if (systemUserRequest.AccessPackages == null)
@@ -750,7 +750,7 @@ public class RequestSystemUserService(
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = systemUserRequest.PartyOrgNo,
                 ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo,
-                UserType = Core.Enums.SystemUserType.Default
+                UserType = Core.Enums.SystemUserType.Standard
             };
         }
 

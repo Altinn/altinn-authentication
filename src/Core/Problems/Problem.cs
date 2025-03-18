@@ -172,4 +172,10 @@ public static class Problem
     /// </summary>    
     public static ProblemDescriptor NoRedirectUrisFoundOnSystem { get; }
         = _factory.Create(26, HttpStatusCode.BadRequest, "No redirect uris are set for the system");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentRequestNotFound { get; }
+        = _factory.Create(30, HttpStatusCode.NotFound, "The Id does not refer to an AgentRequest in our system.");
 }
