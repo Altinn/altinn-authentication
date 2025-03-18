@@ -344,7 +344,7 @@ namespace Altinn.Platform.Authentication.Services
                 return true;
             }
 
-            return false;
+            return result.Problem;
         }
     }
 }

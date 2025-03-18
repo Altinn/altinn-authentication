@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.AccessManagement.Core.Helpers;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
+using Altinn.Authentication.Integration.Configuration;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -15,14 +19,48 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Register.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
+using Npgsql.Internal;
 
 namespace Altinn.Authentication.Tests.Mocks;
-
+#nullable enable
 /// <summary>
 /// Mock class for <see cref="IPartiesClient"></see> interface
 /// </summary>
-public class AccessManagementClientMock : IAccessManagementClient 
+public class AccessManagementClientMock: IAccessManagementClient    
 {
+    private readonly ILogger _logger;
+    private readonly HttpClient _client;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly AccessManagementSettings _accessManagementSettings;
+    private readonly PlatformSettings _platformSettings;
+    private readonly JsonSerializerOptions _serializerOptions =
+        new() { PropertyNameCaseInsensitive = true };
+
+    private readonly IWebHostEnvironment _env;
+
+    public AccessManagementClientMock(
+        HttpClient httpClient,
+        ILogger<AccessManagementClient> logger,
+        IHttpContextAccessor httpContextAccessor,
+        IOptions<AccessManagementSettings> accessManagementSettings,
+        IOptions<PlatformSettings> platformSettings,
+        IWebHostEnvironment env)
+    {
+        _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
+        _accessManagementSettings = accessManagementSettings.Value;
+        _platformSettings = platformSettings.Value;
+        httpClient.BaseAddress = new Uri(_accessManagementSettings.ApiAccessManagementEndpoint!);
+        _client = httpClient;
+        _serializerOptions.Converters.Add(new JsonStringEnumConverter());
+        _env = env;
+    }
+
     public Task<List<DelegationResponseData>> CheckDelegationAccess(string partyId, DelegationCheckRequest request)
     {
         string dataFileName;
@@ -39,9 +77,67 @@ public class AccessManagementClientMock : IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationDtoFromBff request, int userId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+
+        if (token == null) 
+        { 
+            return Problem.Rights_FailedToDelegate; 
+        }
+
+        List<AgentDelegationDetails> delegations = [];
+
+        foreach (var pac in systemUser.AccessPackages)
+        {
+            AgentDelegationDetails delegation = new()
+            {
+                ClientRole = GetRoleFromAccessPackage(pac.Urn!) ?? "NOTFOUND",
+                AccessPackage = pac.Urn!.ToString()
+            };
+
+            if (delegation.ClientRole == "NOTFOUND")
+            {
+                return Problem.Rights_FailedToDelegate;
+            }
+
+            delegations.Add(delegation);
+        }
+
+        AgentDelegationRequest agentDelegationRequest = new()
+        {
+            AgentId = Guid.Parse(systemUser.Id),
+            AgentName = systemUser.IntegrationTitle,
+            AgentRole = "Agent",
+            ClientId = Guid.Parse(request.CustomerId),
+            FacilitatorId = Guid.Parse(request.FaciliatorId),
+            Delegations = delegations
+        };
+
+        string endpointUrl = $"internal/delegation/systemagent";
+
+        return new AgentDelegationResponseExternal();
+    }
+
+    /// <summary>
+    ///  Only for use in the PILOT test in tt02
+    /// </summary>
+    /// <param name="accessPackage">The accesspackage requested on the system user</param>
+    /// <returns></returns>
+    private static string? GetRoleFromAccessPackage(string accessPackage)
+    {
+        Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
+
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "REGN");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "REGN");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "REGN");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "REVI");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattegrunnlag", "FFOR");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattnaering", "FFOR");
+
+        hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);        
+        return found;   
     }
 
     public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> rights)
