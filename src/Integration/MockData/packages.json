@@ -58,5 +58,35 @@
     "urn": "urn:altinn:accesspackage:toll",
     "name": "Toll",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til toll og fortolling. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir."
+  },
+  {
+    "id": "955d5779-3e2b-4098-b11d-0431dc41ddbe",
+    "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet",
+    "name": "Regnskapsfører med signeringsrettighet",
+    "description": "Denne fullmakten gir tilgang til regnskapfører å kunne signere på vegne av kunden for alle tjenester som krever signeringsrett. Dette er tjenester som man har vurdert det som naturlig at en regnskapsfører utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte regnskapsførere. Fullmakt hos regnskapfører oppstår når kunden registrerer regnskapsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir."
+  },
+  {
+    "id": "a5f7f72a-9b89-445d-85bb-06f678a3d4d1",
+    "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet",
+    "name": "Regnskapsfører uten signeringsrettighet",
+    "description": "Denne fullmakten gir tilgang til å kunne utføre alle tjenester som ikke krever signeringsrett. Dette er tjenester som man har vurdert det som naturlig at en regnskapsfører utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte regnskapsførere. Fullmakt hos regnskapfører oppstår når kunden registrerer regnskapsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir."
+  },
+  {
+    "id": "43becc6a-8c6c-4e9e-bb2f-08fe588ada21",
+    "urn": "urn:altinn:accesspackage:regnskapsforer-lonn",
+    "name": "Regnskapsfører lønn",
+    "description": "Denne fullmakten gir tilgang til regnskapsfører å rapportere lønn for sin kunde. Dette er tjenester som man har vurdert det som naturlig at en regnskapsfører utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte regnskapsførere. Fullmakt hos regnskapfører oppstår når kunden registrerer regnskapsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir."
+  },
+  {
+    "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+    "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+    "name": "Ansvarlig revisor",
+    "description": "Denne fullmakten gir revisor tilgang til å opptre som ansvarlig revisor for en kunde og utføre alle tjenester som krever denne fullmakten. Dette er tjenester som tjenestetilbyder har vurdert det som naturlig at en revisor utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte revisorer. Fullmakt hos revisor oppstår når kunden registrerer regnskapsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir."
+  },
+  {
+    "id": "96120c32-389d-46eb-8212-0a6540540c25",
+    "urn": "urn:altinn:accesspackage:revisormedarbeider",
+    "name": "Revisormedarbeider",
+    "description": "Denne fullmakten gir revisor tilgang til å opptre som revisormedarbeider for en kunde og utføre alle tjenester som krever denne fullmakten. Dette er tjenester som tjenestetilbyder har vurdert det som naturlig at en revisor utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte revisorer. Fullmakt hos revisor oppstår når kunden registrerer regnskapsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir."
   }
 ]
