@@ -130,6 +130,13 @@ public interface IRequestSystemUser
     Task<Result<string>> GetRedirectByRequestId(Guid requestId);
 
     /// <summary>
+    /// Returns only the RedirectUrl for the Agent Request
+    /// </summary>
+    /// <param name="requestId">The Agent Request id</param>
+    /// <returns></returns>
+    Task<Result<string>> GetRedirectByAgentRequestId(Guid requestId);
+
+    /// <summary>
     /// A Vendor can generate a new Request for a Agent-type SystemUser
     /// </summary>
     /// <param name="createAgentRequest">the request</param>
