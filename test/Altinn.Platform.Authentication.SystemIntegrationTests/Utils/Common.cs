@@ -96,12 +96,33 @@ public class Common
         Assert.True(response.IsSuccessStatusCode,
             $"{message}. Received: {response.StatusCode} and response text was: {response.Content.ReadAsStringAsync().Result}");
     }
-
+    
     public static string ExtractPropertyFromJson(string json, string propertyName)
     {
         using var jsonDoc = JsonDocument.Parse(json);
-        return jsonDoc.RootElement.GetProperty(propertyName).GetString()
-               ?? throw new Exception($"Property '{propertyName}' not found in JSON: {json}");
+        var root = jsonDoc.RootElement;
+
+        // If the property is directly at the root level
+        if (root.TryGetProperty(propertyName, out var directProperty))
+        {
+            return directProperty.GetString()
+                   ?? throw new Exception($"Property '{propertyName}' is null in JSON: {json}");
+        }
+
+        // If the property is inside an array under "data"
+        if (root.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in dataElement.EnumerateArray())
+            {
+                if (item.TryGetProperty(propertyName, out var arrayProperty))
+                {
+                    return arrayProperty.GetString()
+                           ?? throw new Exception($"Property '{propertyName}' is null in JSON array: {json}");
+                }
+            }
+        }
+
+        throw new Exception($"Property '{propertyName}' not found in JSON: {json}");
     }
 
     public static async Task AssertResponse(HttpResponseMessage response, HttpStatusCode statusCode)
@@ -138,12 +159,9 @@ public class Common
         Output.WriteLine("Request body for system user request" + requestBody);
         // Act
         var userResponse = await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
-        Output.WriteLine(await userResponse.Content.ReadAsStringAsync());
-
-
+        
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
-
 
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
             $"Unexpected status code: {userResponse.StatusCode} - {content}");

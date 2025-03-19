@@ -86,7 +86,7 @@ public class ClientDelegationTests
         Assert.NotNull(agentUser);
         Assert.Contains(testState.SystemId, await agentUser.ReadAsStringAsync());
 
-        _outputHelper.WriteLine($"Agent user response {await agentUser.ReadAsStringAsync()}");
+        var agentUserResponse = await agentUser.ReadAsStringAsync();
 
         var user = _platformClient.GetTestUserForVendor();
 
@@ -113,9 +113,8 @@ public class ClientDelegationTests
             facilitatorId = systemOwner.AltinnPartyUuid
         });
 
-        var systemuserId = "1aa8c2ae-3b88-457f-855a-6be5bd628cc0";
-        await performDelegation(requestBodyDelegation, customer, systemuserId);
-        
+        var systemUserId = Common.ExtractPropertyFromJson(agentUserResponse, "id");
+        await PerformDelegation(requestBodyDelegation, customer, systemUserId);
     }
 
     
@@ -130,7 +129,7 @@ public class ClientDelegationTests
     // For å slå opp i kundelista til eieren, bruk dette oppslaget:
     //https://platform.at22.altinn.cloud/register/api/v1/internal/parties/cc90e65a-1fa9-4631-8d6e-384cd144317d/customers/ccr/revisor
     // party-uuid er uuid til organisasjonen som approver systembrukeren (agent)
-    private async Task performDelegation(string requestBodyDelegation, Testuser customer, string systemUserId)
+    private async Task PerformDelegation(string requestBodyDelegation, Testuser customer, string systemUserId)
     {
         // [EndpointInfo("/authentication/api/v1/systemuser/agent/{customerPartyId}/{systemUserId}/delegation", "POST")]
         var token = await _platformClient.GetPersonalAltinnToken(customer);
@@ -140,6 +139,7 @@ public class ClientDelegationTests
             ;
         
         var responsDelegation = await _platformClient.PostAsync(url, requestBodyDelegation, token);
+        _outputHelper.WriteLine($"Delegation response: {await responsDelegation.Content.ReadAsStringAsync()}");
         Assert.Equal(HttpStatusCode.OK, responsDelegation.StatusCode);
     }
 
