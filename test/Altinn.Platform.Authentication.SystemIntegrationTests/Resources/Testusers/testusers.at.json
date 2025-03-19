@@ -12,7 +12,8 @@
     "altinnPartyId": "51428801",
     "pid": "05848998356",
     "userId": "20012695",
-    "org": "312605031"
+    "org": "312605031",
+    "altinnPartyUuid" : "db6bb2f6-06a2-494a-9e51-717e3962c630"
   },
   {
     "role" : "Ikke daglig leder lol",
@@ -22,11 +23,12 @@
     "org": ""
   },
   {
-    "role" : "Bruno",
+    "role" : "Customer",
     "altinnPartyId": "51188771",
     "pid": "20924199971",
     "userId": "20013163",
-    "org": "312251604"
+    "org": "312251604",
+    "altinnPartyUuid" : "0066ab2c-c64e-4e1c-94c2-a361b5d92ae6"
   }
 ]
 

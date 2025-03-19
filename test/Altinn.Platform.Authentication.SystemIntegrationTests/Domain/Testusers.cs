@@ -13,4 +13,5 @@ public class Testuser
     [JsonPropertyName("role")] public string? Role { get; set; }
 
     [JsonPropertyName("org")] public string? Org { get; set; }
+    [JsonPropertyName("altinnPartyUuid")] public string? AltinnPartyUuid { get; set; }
 }

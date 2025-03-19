@@ -42,12 +42,11 @@ public enum ApiEndpoints
 
     [EndpointInfo("v1/systemuser/{party}/{systemUserId}", "DELETE")]
     DeleteSystemUserById,
-    
+
     [EndpointInfo("v1/systemuser/byExternalId", "GET")]
     GetSystemUserByExternalId,
 
-    [EndpointInfo("v1/systemuser", "PUT")] 
-    UpdateSystemUser,
+    [EndpointInfo("v1/systemuser", "PUT")] UpdateSystemUser,
 
     [EndpointInfo("v1/systemuser/vendor/bysystem/{systemId}", "GET")]
     GetSystemUsersBySystemForVendor,
@@ -80,7 +79,7 @@ public enum ApiEndpoints
     //Change request endpoints
     [EndpointInfo("v1/systemuser/changerequest/vendor", "POST")]
     PostChangeRequestVendor,
-    
+
     [EndpointInfo("v1/systemuser/changerequest/vendor/{requestId}", "GET")]
     GetChangeRequestByRequestId,
 
@@ -89,14 +88,14 @@ public enum ApiEndpoints
 
     [EndpointInfo("v1/systemuser/changerequest/vendor/{requestId}", "GET")]
     GetChangeRequestByRequestIdUrl,
-    
+
     [EndpointInfo("v1/systemuser/changerequest/{partyId}/{requestId}/approve", "POST")]
     ApproveChangeRequest,
-    
+
     // <!--- CLIENT DELEGATION ENDPOINTS -->
     [EndpointInfo("v1/systemuser/request/vendor/agent", "POST")]
     PostAgentClientRequest,
-    
+
     [EndpointInfo("v1/systemuser/request/vendor/agent/{requestId}", "GET")]
     GetVendorAgentRequestById, // Retrieves a specific vendor agent request by request ID
 
@@ -113,7 +112,10 @@ public enum ApiEndpoints
     GetVendorAgentRequestsBySystemId, // Retrieves all vendor agent requests associated with a system ID
 
     [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}/reject", "POST")]
-    RejectAgentRequest // Rejects an agent request for a specific party
+    RejectAgentRequest, // Rejects an agent request for a specific party
+
+    [EndpointInfo("v1/systemuser/agent/{customerPartyId}/{systemUserId}/delegation", "POST")]
+    DelegationAgentRequest,
 }
 
 [AttributeUsage(AttributeTargets.Field)]
