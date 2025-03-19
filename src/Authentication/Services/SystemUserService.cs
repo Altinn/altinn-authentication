@@ -63,7 +63,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>The SystemUser created</returns>    
         public async Task<Result<SystemUser>> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
         {
-            RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
             {
                 return Problem.SystemIdNotFound;
@@ -125,6 +125,17 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return await _repository.GetAllActiveSystemUsersForParty(partyId);
+        }
+
+        /// <inheritdoc/>
+        public async Task<List<SystemUser>> GetListOfAgentSystemUsersForParty(int partyId)
+        {
+            if (partyId < 1)
+            {
+                return [];
+            }
+
+            return await _repository.GetAllActiveAgentSystemUsersForParty(partyId);
         }
 
         /// <summary>
@@ -213,7 +224,7 @@ namespace Altinn.Platform.Authentication.Services
             Page<string>.Request continueRequest, 
             CancellationToken cancellationToken)
         {
-            RegisteredSystem? system = await _registerRepository.GetRegisteredSystemById(systemId);
+            RegisteredSystemResponse? system = await _registerRepository.GetRegisteredSystemById(systemId);
             if (system is null)
             {
                 return Problem.SystemIdNotFound;
@@ -234,7 +245,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
-            RegisteredSystem? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
             {
                 return Problem.SystemIdNotFound;
@@ -322,6 +333,18 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<long> GetMaxSystemUserSequenceNo()
         {
             return await _repository.GetMaxSystemUserSequenceNo();
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+        {
+            Result<AgentDelegationResponseExternal> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return true;
+            }
+
+            return result.Problem;
         }
     }
 }

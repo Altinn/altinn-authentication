@@ -46,7 +46,7 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 rights,
                 request_status,
-                system_user_type,
+                systemuser_type,
                 redirect_urls)
             VALUES(
                 @id,
@@ -55,7 +55,7 @@ public class RequestRepository : IRequestRepository
                 @party_org_no,
                 @rights,
                 @status,
-                @system_user_type,
+                @systemuser_type,
                 @redirect_urls);";
 
         try
@@ -68,7 +68,8 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = createRequest.Rights });
             command.Parameters.AddWithValue("status", createRequest.Status);
-            command.Parameters.AddWithValue("system_user_type", SystemUserType.Default.ToString());
+
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             if (createRequest.RedirectUrl is not null)
             {
@@ -99,7 +100,7 @@ public class RequestRepository : IRequestRepository
                 party_org_no,
                 accesspackages,
                 request_status,
-                system_user_type,
+                systemuser_type,
                 redirect_urls)
             VALUES(
                 @id,
@@ -108,7 +109,7 @@ public class RequestRepository : IRequestRepository
                 @party_org_no,
                 @accessPackages,
                 @status,
-                @system_user_type,
+                @systemuser_type,
                 @redirect_urls);";
 
         try
@@ -121,7 +122,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("party_org_no", createAgentRequest.PartyOrgNo);
             command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createAgentRequest.AccessPackages });
             command.Parameters.AddWithValue("status", createAgentRequest.Status);
-            command.Parameters.AddWithValue("system_user_type", createAgentRequest.UserType.ToString());
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             if (createAgentRequest.RedirectUrl is not null)
             {
@@ -159,7 +160,7 @@ public class RequestRepository : IRequestRepository
                 and r.system_id = @system_id
                 and r.party_org_no = @party_org_no
                 and r.is_deleted = false
-                and r.system_user_type = @system_user_type;";
+                and r.systemuser_type = @systemuser_type;";
 
         try
         {
@@ -168,7 +169,8 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
-            command.Parameters.AddWithValue("system_user_type", SystemUserType.Default.ToString());
+
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
@@ -200,7 +202,7 @@ public class RequestRepository : IRequestRepository
                 and r.system_id = @system_id
                 and r.party_org_no = @party_org_no
                 and r.is_deleted = false
-                and r.system_user_type = @system_user_type ;";
+                and r.systemuser_type = @systemuser_type ;";
 
         try
         {
@@ -209,7 +211,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("external_ref", externalRequestId.ExternalRef);
             command.Parameters.AddWithValue("system_id", externalRequestId.SystemId);
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
-            command.Parameters.AddWithValue("system_user_type", SystemUserType.Agent.ToString());
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToAgentRequest)
@@ -238,7 +240,8 @@ public class RequestRepository : IRequestRepository
                 created 
             FROM business_application.request r
             WHERE r.id = @request_id
-                and r.is_deleted = false;
+                and r.is_deleted = false
+                and r.systemuser_type = @systemuser_type;
         ";
 
         try
@@ -246,6 +249,7 @@ public class RequestRepository : IRequestRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("request_id", internalId);
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToRequest)
@@ -274,7 +278,8 @@ public class RequestRepository : IRequestRepository
                 created 
             FROM business_application.request r
             WHERE r.id = @request_id
-                and r.is_deleted = false;
+                and r.is_deleted = false
+                and r.systemuser_type = @systemuser_type;
         ";
 
         try
@@ -282,6 +287,7 @@ public class RequestRepository : IRequestRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("request_id", internalId);
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             return await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToAgentRequest)
@@ -407,7 +413,7 @@ public class RequestRepository : IRequestRepository
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
-            AccessPackages = reader.IsDBNull("accesspackages") ? null : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
+            AccessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
@@ -471,14 +477,14 @@ public class RequestRepository : IRequestRepository
             FROM business_application.request r
             WHERE r.system_id = @system_id
                 and r.is_deleted = false
-                and system_user_type = @system_user_type;";
+                and systemuser_type = @systemuser_type;";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("system_id", systemId);
-            command.Parameters.AddWithValue("system_user_type", SystemUserType.Agent.ToString());
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToAgentRequest)

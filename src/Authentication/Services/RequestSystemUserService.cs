@@ -50,7 +50,7 @@ public class RequestSystemUserService(
             SystemId = createRequest.SystemId,
         };
 
-        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId);
+        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createRequest.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -76,7 +76,7 @@ public class RequestSystemUserService(
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo);
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createRequest.RedirectUrl, systemInfo.AllowedRedirectUrls);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
@@ -128,7 +128,7 @@ public class RequestSystemUserService(
             SystemId = createAgentRequest.SystemId,
         };
 
-        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createAgentRequest.SystemId);
+        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(createAgentRequest.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -154,7 +154,7 @@ public class RequestSystemUserService(
 
         if (createAgentRequest.RedirectUrl is not null && createAgentRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createAgentRequest.RedirectUrl, systemInfo);
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(createAgentRequest.RedirectUrl, systemInfo.AllowedRedirectUrls);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
@@ -202,7 +202,7 @@ public class RequestSystemUserService(
     /// <param name="accessPackages">the AccessPackages chosen for the Request</param>
     /// <param name="systemInfo">The Vendor's Registered System</param>
     /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystem systemInfo)
+    private static Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo)
     {
         if (systemInfo == null || systemInfo.AccessPackages == null)
         {
@@ -249,7 +249,7 @@ public class RequestSystemUserService(
     /// <param name="rights">the Rights chosen for the Request</param>
     /// <param name="systemInfo">The Vendor's Registered System</param>
     /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystem systemInfo)
+    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
     {
         if (rights.Count == 0 || systemInfo.Rights.Count == 0)
         {
@@ -384,7 +384,7 @@ public class RequestSystemUserService(
     /// <param name="vendorOrgNo">Vendor's OrgNo</param>
     /// <param name="sys">The chosen System Info</param>
     /// <returns>Result or Problem</returns>
-    private Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisteredSystem sys)
+    private Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisteredSystemResponse sys)
     {
         OrganisationNumber? systemOrgNo = null;
 
@@ -516,7 +516,7 @@ public class RequestSystemUserService(
 
     private async Task<Result<bool>> RetrieveChosenSystemInfoAndValidateVendorOrgNo(string systemId, OrganisationNumber vendorOrgNo)
     {
-        RegisteredSystem? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
+        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(systemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
@@ -566,6 +566,40 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
+    public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int partyId, Guid requestId)
+    {
+        Party party = await partiesClient.GetPartyAsync(partyId);
+        if (party is null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        AgentRequestSystemResponse? find = await requestRepository.GetAgentRequestByInternalId(requestId);
+        if (find is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (party.OrgNumber != find.PartyOrgNo)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        var request = new AgentRequestSystemResponse
+        {
+            Id = find.Id,
+            SystemId = find.SystemId,
+            ExternalRef = find.ExternalRef,
+            AccessPackages = find.AccessPackages,
+            PartyOrgNo = find.PartyOrgNo,
+            Status = find.Status,
+            RedirectUrl = find.RedirectUrl
+        };
+
+        return request;
+    }
+
+    /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
         RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
@@ -579,7 +613,7 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
@@ -628,7 +662,7 @@ public class RequestSystemUserService(
         AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
-            return Problem.RequestNotFound;
+            return Problem.AgentRequestNotFound;
         }
 
         if (systemUserRequest.AccessPackages == null)
@@ -641,7 +675,7 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystem? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
@@ -697,7 +731,7 @@ public class RequestSystemUserService(
         return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
     }
 
-    private static Result<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystem regSystem, int partyId)
+    private static Result<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystemResponse regSystem, int partyId)
     {
         SystemUser? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
@@ -716,14 +750,14 @@ public class RequestSystemUserService(
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = systemUserRequest.PartyOrgNo,
                 ExternalRef = systemUserRequest.ExternalRef ?? systemUserRequest.PartyOrgNo,
-                UserType = Core.Enums.SystemUserType.Default
+                UserType = Core.Enums.SystemUserType.Standard
             };
         }
 
         return toBeInserted!;
     }
 
-    private static Result<SystemUser> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystem regSystem, int partyId)
+    private static Result<SystemUser> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystemResponse regSystem, int partyId)
     {
         SystemUser? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
@@ -801,7 +835,7 @@ public class RequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystem? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
         if (system is null)
         {
             return Problem.SystemIdNotFound;
@@ -826,7 +860,7 @@ public class RequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystem? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
         if (system is null)
         {
             return Problem.SystemIdNotFound;

@@ -501,7 +501,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
             HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            List<RegisteredSystem> list = JsonSerializer.Deserialize<List<RegisteredSystem>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
+            List<RegisteredSystemResponse> list = JsonSerializer.Deserialize<List<RegisteredSystemResponse>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
             Assert.True(list.Count == 0);
         }
 
@@ -523,13 +523,40 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 };
 
                 string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterResponse.json").ReadToEnd();
-                RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
+                RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
 
                 string systemId = "991825827_the_matrix";
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
                 HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                RegisteredSystem actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(await getResponse.Content.ReadAsStringAsync(), _options);
+                RegisteredSystemResponse actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getResponse.Content.ReadAsStringAsync(), _options);
                 AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Get_Forbid_IfNotOwner()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string orgToken = PrincipalUtil.GetOrgToken("skatt", "974761076", "altinn:authentication/systemregister.write", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", orgToken);
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterResponse.json").ReadToEnd();
+                RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
+
+                string systemId = "991825827_the_matrix";
+                HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
+                HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                Assert.Equal(HttpStatusCode.Forbidden, getResponse.StatusCode);
             }
         }
 
@@ -574,7 +601,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             };
 
             string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegister.json").ReadToEnd();
-            RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
+            RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
 
             string systemId = "991825827_the_matrix";
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
@@ -942,9 +969,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
                 HttpResponseMessage getResponse = await GetSystemRegister(systemId);
-                RegisteredSystem actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(await getResponse.Content.ReadAsStringAsync(), _options);
+                RegisteredSystemResponse actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getResponse.Content.ReadAsStringAsync(), _options);
                 string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.json").ReadToEnd();
-                RegisteredSystem expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystem>(systemRegister, options);
+                RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
                 AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
                 Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
             }

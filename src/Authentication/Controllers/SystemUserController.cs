@@ -59,23 +59,30 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Returns the list of SystemUsers this PartyID has registered
+    /// Returns the list of Default SystemUsers this PartyID has registered.
+    /// No Agent SystemUsers are returned, use the other endpoint for them.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>List of SystemUsers</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("{party}")]
-    public async Task<ActionResult> GetListOfSystemUsersPartyHas(int party)
+    public async Task<ActionResult<List<SystemUser>>> GetListOfSystemUsersPartyHas(int party)
     {
-        List<SystemUser>? theList = await _systemUserService.GetListOfSystemUsersForParty(party);
+        var result = await _systemUserService.GetListOfSystemUsersForParty(party) ?? [];
+        return Ok(result);
+    }
 
-        if (theList is not null && theList.Count > 0)
-        {
-            return Ok(theList);
-        }
-
-        return NotFound();
+    /// <summary>
+    /// Returns the list of SystemUsers this PartyID has registered
+    /// </summary>
+    /// <returns>List of SystemUsers</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("agent/{party}")]
+    public async Task<ActionResult<List<SystemUser>>> GetListOfAgentSystemUsersPartyHas(int party)
+    {
+        var result = await _systemUserService.GetListOfAgentSystemUsersForParty(party) ?? [];
+        return Ok(result);
     }
 
     /// <summary>
@@ -325,5 +332,35 @@ public class SystemUserController : ControllerBase
         }
 
         return createdSystemUser.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// The endpoint is idempotent.
+    /// </summary>
+    /// <returns>OK</returns>    
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpPost("agent/{party}/{systemUserId}/delegation/")]
+    public async Task<ActionResult> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
+    {
+        var userId = AuthenticationHelper.GetUserId(HttpContext);
+
+        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
+        if (systemUser is null)
+        {
+            ModelState.AddModelError("return", $"SystemUser with Id {systemUserId} Not Found");
+            return ValidationProblem(ModelState);
+        }
+
+        Result<bool> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        if (delegationResult.IsSuccess)
+        {
+            return Ok();
+        }
+
+        return delegationResult.Problem.ToActionResult();
     }
 }    

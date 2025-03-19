@@ -15,7 +15,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces;
 public interface ISystemUserService
 {
     /// <summary>
-    /// Returns the list of SystemUsers this PartyID has registered
+    /// Returns the list of Default SystemUsers this PartyID has registered
     /// </summary>
     /// <param name="partyId">The User id for the Legal Entity (Organisation or Person) the Caller represent.</param> 
     /// <returns></returns>
@@ -109,4 +109,18 @@ public interface ISystemUserService
     /// </summary>
     /// <returns></returns>
     Task<long> GetMaxSystemUserSequenceNo();
+
+    /// <summary>
+    /// Returns the list of Agent SystemUsers this PartyID has registered
+    /// </summary>
+    /// <param name="party">The User id for the Facilitator for the Agent SystemUser currently logged in at the FrontEnd.</param> 
+    /// <returns>List of Agent SystemUsers</returns>
+    Task<List<SystemUser>?> GetListOfAgentSystemUsersForParty(int party);
+
+    /// <summary>
+    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// The service is idempotent.
+    /// </summary>
+    /// <returns>Result of True or False</returns> 
+    Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 }
