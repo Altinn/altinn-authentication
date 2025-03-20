@@ -134,13 +134,13 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<bool> DoesAccessPackageExists(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
+        public async Task<bool> DoesAccessPackageExistsAndDelegable(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
         {
             Package? package = null;
             foreach (AccessPackage accessPackage in accessPackages)
             {
-                package = await _accessManagementClient.GetPackage(accessPackage.Urn);
-                if (package == null)
+                package = await _accessManagementClient.GetAccessPackage(accessPackage.Urn);
+                if (package == null || !package.IsDelegable)
                 {
                     return false;
                 }

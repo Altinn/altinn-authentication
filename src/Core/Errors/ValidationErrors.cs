@@ -55,20 +55,14 @@ public static class ValidationErrors
         = _factory.Create(6, "One or more duplicate rights found");
 
     /// <summary>
-    /// Gets a validation error descriptor for already existing resource(rights) id
-    /// </summary>
-    public static ValidationErrorDescriptor SystemRegister_ResourceId_AlreadyExists { get; }
-        = _factory.Create(7, "One or all the resources in rights to be updated is already found in the system");
-
-    /// <summary>
     /// Gets a validation error descriptor for duplicate resource(rights) id
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_AccessPackage_Duplicates { get; }
-        = _factory.Create(8, "One or more duplicate access package(s) found");
+        = _factory.Create(7, "One or more duplicate access package(s) found");
 
     /// <summary>
     /// Gets a validation error descriptor for non existing accesspackage id
     /// </summary>
-    public static ValidationErrorDescriptor SystemRegister_AccessPackage_DoesNotExist { get; }
-        = _factory.Create(9, "One or all the accesspackage(s) is not found in altinn's access packages");
+    public static ValidationErrorDescriptor SystemRegister_AccessPackage_NotValid { get; }
+        = _factory.Create(8, "One or all the accesspackage(s) is not found in altinn's access packages or is not delegable because they are not part of REGN/REVI/Forretningsfører roller");
 }

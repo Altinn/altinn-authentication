@@ -172,26 +172,24 @@ public class AccessManagementClient : IAccessManagementClient
         return new Result<bool>(true);
     }
 
-    public async Task<Package?> GetPackage(string packageId)
+    public async Task<Package?> GetAccessPackage(string resourceId)
     {
-        Package? package = null;
+        Package package = null;
 
         try
         {
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-            };
+            string endpointUrl = $"meta/info/accesspackages/package/urn";
 
-            string mockDataPath = Path.Combine(Environment.CurrentDirectory, "Integration/MockData/packages.json");
-            if (_env.IsDevelopment())
+            HttpResponseMessage response = await _client.GetAsync(endpointUrl);
+            if (response.StatusCode == HttpStatusCode.OK)
             {
-                mockDataPath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, "Integration/MockData/packages.json");
+                JsonSerializerOptions options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                };
+                string content = await response.Content.ReadAsStringAsync();
+                package = JsonSerializer.Deserialize<Package>(content, options);
             }
-
-            string packagesData = File.OpenText(mockDataPath).ReadToEnd();
-            List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
-            package = packages?.FirstOrDefault(p => p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
         }
         catch (Exception ex)
         {

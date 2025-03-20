@@ -370,9 +370,9 @@ public class SystemRegisterController : ControllerBase
     private async Task<ValidationErrorBuilder> ValidateAccessPackages(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
-        if (!await _systemRegisterService.DoesAccessPackageExists(accessPackages, cancellationToken))
+        if (!await _systemRegisterService.DoesAccessPackageExistsAndDelegable(accessPackages, cancellationToken))
         {
-            errors.Add(ValidationErrors.SystemRegister_AccessPackage_DoesNotExist, [
+            errors.Add(ValidationErrors.SystemRegister_AccessPackage_NotValid, [
                 ErrorPathConstant.ACCESSPACKAGES
             ]);
         }

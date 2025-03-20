@@ -51,5 +51,5 @@ public interface IAccessManagementClient
     /// </summary>
     /// <param name="packageId">the package id</param>
     /// <returns></returns>
-    Task<Package> GetPackage(string packageId);
+    Task<Package> GetAccessPackage(string urnValue);
 }
