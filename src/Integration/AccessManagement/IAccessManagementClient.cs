@@ -48,13 +48,6 @@ public interface IAccessManagementClient
     Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights);
 
     /// <summary>
-    /// Gets the package for the given packageId
-    /// </summary>
-    /// <param name="packageId">the package id</param>
-    /// <returns></returns>
-    Task<Package> GetPackage(string packageId);
-
-    /// <summary>
     /// Delegate a customer to the Agent SystemUser
     /// </summary>    
     /// <param name="systemUser">The Agent SystemUser</param>
@@ -72,4 +65,11 @@ public interface IAccessManagementClient
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the access package for the given urn value
+    /// </summary>
+    /// <param name="urnValue">the urn for the package</param>
+    /// <returns>package</returns>
+    Task<Package> GetAccessPackage(string urnValue);
 }

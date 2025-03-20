@@ -148,6 +148,9 @@
     <None Update="Data\SystemRegister\Json\SystemRegisterWithAccessPackageAgent.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterWithNotDelegableAccessPackage.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterWithAccessPackageNull.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

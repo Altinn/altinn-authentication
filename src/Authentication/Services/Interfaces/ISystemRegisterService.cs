@@ -132,6 +132,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="accessPackages">access packages</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>false when one of the resource idnot found</returns>
-        Task<bool> DoesAccessPackageExists(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
+        Task<bool> DoesAccessPackageExistsAndDelegable(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
     }
 }

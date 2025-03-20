@@ -152,6 +152,20 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
+    public Task<Package> GetAccessPackage(string urnValue)
+    {
+        Package? package = null;
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
+        string packagesData = File.OpenText("Data/Packages/packages.json").ReadToEnd();
+        List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
+        package = packages?.FirstOrDefault(p => p.Urn.Contains(urnValue, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(package);
+    }
+
     public Task<Package> GetPackage(string packageId)
     {
         Package? package = null;
