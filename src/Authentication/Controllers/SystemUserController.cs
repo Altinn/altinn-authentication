@@ -333,4 +333,34 @@ public class SystemUserController : ControllerBase
 
         return createdSystemUser.Problem.ToActionResult();
     }
+
+    /// <summary>
+    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// The endpoint is idempotent.
+    /// </summary>
+    /// <returns>OK</returns>    
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpPost("agent/{party}/{systemUserId}/delegation/")]
+    public async Task<ActionResult> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
+    {
+        var userId = AuthenticationHelper.GetUserId(HttpContext);
+
+        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
+        if (systemUser is null)
+        {
+            ModelState.AddModelError("return", $"SystemUser with Id {systemUserId} Not Found");
+            return ValidationProblem(ModelState);
+        }
+
+        Result<bool> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        if (delegationResult.IsSuccess)
+        {
+            return Ok();
+        }
+
+        return delegationResult.Problem.ToActionResult();
+    }
 }    

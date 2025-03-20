@@ -961,7 +961,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
             Assert.True(list is not null);
-            Assert.True(list.Count == 1);
+            Assert.True(list.Count == 1);            
         }
 
         /// <summary>
@@ -1017,6 +1017,292 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.NotNull(list);
             Assert.Empty(list);
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_Delegate_Post_OK()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skattnaering"
+
+            };
+
+            // Arrange
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+            Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+            //// Party Get Request
+            HttpClient client2 = CreateClient();
+
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            listSystemUserRequst.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpResponseMessage listSystemUserResponse = await client2.SendAsync(listSystemUserRequst, HttpCompletionOption.ResponseContentRead);
+            List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await listSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.True(list is not null);
+            Assert.True(list.Count == 1);
+
+            // Delegation of a Customer to the empty Agent System User
+            string systemUserId = list[0].Id;
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
+
+            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
+
+            HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
+            delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+            delegateMessage.Content = JsonContent.Create(delegationRequest);
+            HttpResponseMessage delegationResponse = await client2.SendAsync(delegateMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_Delegate_Post_SystemUser_BadRequest()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skattnaering"
+
+            };
+
+            // Arrange
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+            Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+            //// Party Get Request
+            HttpClient client2 = CreateClient();
+
+            int partyId = 500000;
+
+            HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            listSystemUserRequst.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpResponseMessage listSystemUserResponse = await client2.SendAsync(listSystemUserRequst, HttpCompletionOption.ResponseContentRead);
+            List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await listSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.True(list is not null);
+            Assert.True(list.Count == 0);
+
+            // Delegation of a Customer to the empty Agent System User
+            string systemUserId = Guid.NewGuid().ToString();
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
+
+            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
+
+            HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
+            delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+            delegateMessage.Content = JsonContent.Create(delegationRequest);
+            HttpResponseMessage delegationResponse = await client2.SendAsync(delegateMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.BadRequest, delegationResponse.StatusCode);            
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_Delegate_Post_Unauthorized()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skattnaering"
+
+            };
+
+            // Arrange
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+            Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+            //// Party Get Request
+            HttpClient client2 = CreateClient();
+
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            listSystemUserRequst.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpResponseMessage listSystemUserResponse = await client2.SendAsync(listSystemUserRequst, HttpCompletionOption.ResponseContentRead);
+            List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await listSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.True(list is not null);
+            Assert.True(list.Count == 1);
+
+            // Delegation of a Customer to the empty Agent System User
+            string systemUserId = list[0].Id;
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
+
+            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
+
+            HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
+
+            // delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+            delegateMessage.Content = JsonContent.Create(delegationRequest);
+            HttpResponseMessage delegationResponse = await client2.SendAsync(delegateMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, delegationResponse.StatusCode);
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_Delegate_Post_BadRequest()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skattnaerin" // Missing g
+
+            };
+
+            // Arrange
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_Delegate_Post_NotFound()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageAgent.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+
+            };
+
+            // Arrange
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            Assert.Equal(HttpStatusCode.NotFound, message.StatusCode);
         }
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)

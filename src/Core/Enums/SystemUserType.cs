@@ -1,8 +1,14 @@
-﻿namespace Altinn.Platform.Authentication.Core.Enums
+﻿using System.Text.Json.Serialization;
+
+namespace Altinn.Platform.Authentication.Core.Enums
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum SystemUserType
     {
-        Default,
+        [JsonStringEnumMemberName("standard")]
+        Standard,
+
+        [JsonStringEnumMemberName("agent")]
         Agent
     }
 }

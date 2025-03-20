@@ -121,6 +121,12 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Redirect(redirectUrl.Value);
             }
 
+            if (cookieValues != null && cookieValues.TryGetValue("SystemuserAgentRequestId", out string agentRequestId) && Guid.TryParse(agentRequestId, out Guid agentRequestGuid))
+            {
+                Result<string> redirectUrl = await _requestSystemUser.GetRedirectByAgentRequestId(agentRequestGuid);
+                return Redirect(redirectUrl.Value);
+            }
+
             return Redirect(_generalSettings.SBLLogoutEndpoint);
         }
 

@@ -2,6 +2,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
 
@@ -47,9 +48,28 @@ public interface IAccessManagementClient
     Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights);
 
     /// <summary>
-    /// Gets the package for the given packageId
+    /// Delegate a customer to the Agent SystemUser
+    /// </summary>    
+    /// <param name="systemUser">The Agent SystemUser</param>
+    /// <param name="request">Post Body from BFF containing customerId</param>
+    /// <param name="userId">Logged in user</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Success or Failure</returns>    
+    Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the list of all delegationIds 
     /// </summary>
-    /// <param name="packageId">the package id</param>
+    /// <param name="system"></param>
+    /// <param name="facilitator"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
+    Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the access package for the given urn value
+    /// </summary>
+    /// <param name="urnValue">the urn for the package</param>
+    /// <returns>package</returns>
     Task<Package> GetAccessPackage(string urnValue);
 }

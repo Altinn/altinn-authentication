@@ -68,6 +68,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return await Task.FromResult("https://smartcloudaltinn.azurewebsites.net/request");
         }
 
+        public async Task<Result<string>> GetRedirectByAgentRequestId(Guid agentRequestId)
+        {
+            return await Task.FromResult("https://smartcloudaltinn.azurewebsites.net/agentrequest");
+        }
+
         public Task<Result<RequestSystemResponse>> GetRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
