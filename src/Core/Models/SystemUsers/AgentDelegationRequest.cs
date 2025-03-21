@@ -34,7 +34,12 @@ public class AgentDelegationRequest
     /// <summary>
     /// The Agent SystemUser always has the Role AGENT in this context
     /// </summary>
-    public required string AgentRole { get; set; } 
+    public required string AgentRole { get; set; }
+
+    /// <summary>
+    /// Packages to be delegated to Agent
+    /// </summary>
+    public List<CreateSystemDelegationRolePackageDto> RolePackages { get; set; } = [];
 
     /// <summary>
     /// One or more AccessPackages are to be delegated, each with an 
@@ -43,3 +48,25 @@ public class AgentDelegationRequest
     public List<AgentDelegationDetails> Delegations { get; set; } = [];
 }
 
+/// <summary>
+/// Role and packages
+/// </summary>
+public class CreateSystemDelegationRolePackageDto
+{
+    /// <summary>
+    /// REGN, REVI, FFOR
+    /// The Role the Client has delegated to the Facilitator, 
+    /// providing the AccessPackage,
+    /// through which the faciliator now wants to further Delegate
+    /// to the Agent SystemUser.
+    /// </summary>
+    public required string RoleIdentifier { get; set; }
+
+    /// <summary>
+    /// The AccessPackage is a child of one or more Roles, 
+    /// and contains one or several Rights.    
+    /// This field uses the urn notation, such as:
+    /// urn:altinn:accesspackage:ansvarlig-revisor
+    /// </summary>
+    public required string PackageUrn { get; set; }
+}
