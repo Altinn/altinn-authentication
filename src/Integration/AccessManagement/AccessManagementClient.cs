@@ -311,7 +311,7 @@ public class AccessManagementClient : IAccessManagementClient
     /// <inheritdoc />
     public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
-        const string AGENT = "AGENT";
+        const string AGENT = "agent";
 
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
         if ( ! Guid.TryParse(request.FacilitatorId, out Guid facilitator))
