@@ -329,7 +329,7 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.SystemUserNotFound;
         }
 
-        List<AgentDelegationDetails> delegations = [];
+        List<CreateSystemDelegationRolePackageDto> rolePackages = [];
 
         foreach (var pac in systemUser.AccessPackages) 
         {
@@ -340,13 +340,13 @@ public class AccessManagementClient : IAccessManagementClient
                 return Problem.RoleNotFoundForPackage;
             }
 
-            AgentDelegationDetails delegation = new()
+            CreateSystemDelegationRolePackageDto rolePackage = new()
             {
-                ClientRole = role,
-                AccessPackage = pac.Urn!.ToString()
+                RoleIdentifier = role,
+                PackageUrn = pac.Urn!.ToString()
             };
 
-            delegations.Add(delegation);
+            rolePackages.Add(rolePackage);
         }        
 
         AgentDelegationRequest agentDelegationRequest = new()
@@ -356,7 +356,7 @@ public class AccessManagementClient : IAccessManagementClient
             AgentRole = AGENT, 
             ClientId = clientId,
             FacilitatorId = facilitator,
-            Delegations = delegations
+            RolePackages = rolePackages
         };
 
         try
@@ -391,11 +391,11 @@ public class AccessManagementClient : IAccessManagementClient
     {
         Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
 
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "REGN");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "REGN");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "REGN");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "REVI");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "revisor");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "revisor");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattegrunnlag", "FFOR");
 
         hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
