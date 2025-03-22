@@ -208,4 +208,9 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         return new AgentDelegationResponseExternal();
     }
+
+    public Task<Result<List<AgentDelegationResponseExternal>>> GetDelegationsForAgent(Guid system, Guid facilitator, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }
