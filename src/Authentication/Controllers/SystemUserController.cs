@@ -86,6 +86,25 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Returns the list of SystemUsers this PartyID has registered
+    /// </summary>
+    /// <returns>List of SystemUsers</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
+    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
+    {
+        List<DelegationResponse> ret = [];
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
+        if (result.IsSuccess) 
+        {
+            ret = result.Value;
+        }
+
+        return Ok(ret);
+    }
+
+    /// <summary>
     /// Return a single SystemUser by PartyId and SystemUserId
     /// </summary>
     /// <returns></returns>

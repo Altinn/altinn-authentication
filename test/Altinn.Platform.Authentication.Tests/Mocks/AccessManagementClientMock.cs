@@ -208,4 +208,30 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         return new AgentDelegationResponseExternal();
     }
+
+    public async Task<Result<List<AgentDelegationResponseExternal>>> GetDelegationsForAgent(Guid system, Guid facilitator, CancellationToken cancellationToken = default)
+    {
+        List<AgentDelegationResponseExternal> delegations = [];
+        delegations.Add(new AgentDelegationResponseExternal() 
+        { 
+            From = new DelegationAssignment()
+            {
+                FromId = Guid.NewGuid(),
+                ToId = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
+                RoleId = Guid.NewGuid(),
+            },
+            To = new DelegationAssignment()
+            {
+                FromId = Guid.NewGuid(),
+                ToId = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
+                RoleId = Guid.NewGuid(),
+            },
+            FacilitatorId = facilitator,
+            Id = system
+        });
+
+        return delegations;
+    }
 }

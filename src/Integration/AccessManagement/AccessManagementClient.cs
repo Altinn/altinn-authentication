@@ -402,9 +402,39 @@ public class AccessManagementClient : IAccessManagementClient
         return found;
     }
 
-    public async Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default)
+    public async Task<Result<List<AgentDelegationResponseExternal>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
     {
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
-        throw new NotImplementedException();
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        if (facilitator == Guid.Empty)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+        
+        if( systemUserId == Guid.Empty)
+        {
+            return Problem.SystemUserNotFound;
+        };
+
+        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}";
+
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<AgentDelegationResponseExternal>>(_serializerOptions, cancellationToken) ?? [];
+            }
+        
+            return Problem.UnableToDoDelegationCheck;
+
+        }
+        catch (Exception ex) 
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetDelegationsForAgent // Exception");
+            throw;
+
+        }
+
     }
 }

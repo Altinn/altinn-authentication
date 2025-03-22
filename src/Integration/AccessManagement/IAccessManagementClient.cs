@@ -64,7 +64,7 @@ public interface IAccessManagementClient
     /// <param name="facilitator"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default);
+    Task<Result<List<AgentDelegationResponseExternal>>> GetDelegationsForAgent(Guid system, Guid facilitator, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the access package for the given urn value

@@ -346,5 +346,36 @@ namespace Altinn.Platform.Authentication.Services
 
             return result.Problem;
         }
+
+        /// <inheritdoc/>
+        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
+        {
+            var res = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitator);
+            if (res.IsSuccess)
+            {
+                return ConvertExtDelegationToDTO(res.Value);
+            }
+
+            return res.Problem ?? Problem.UnableToDoDelegationCheck;
+        }
+
+        private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<AgentDelegationResponseExternal> value)
+        {
+            List<DelegationResponse> result = [];
+
+            foreach (var item in value)
+            {
+                var newDel = new DelegationResponse()
+                {
+                    AgentSystemUserId = item.To.ToId,
+                    DelegationId = item.Id,
+                    ClientUuid = item.From.FromId
+                };
+
+                result.Add(newDel);
+            }
+
+            return result;
+        }
     }
 }
