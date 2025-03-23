@@ -182,7 +182,7 @@ public class AccessManagementClient : IAccessManagementClient
 
         try
         {
-            string endpointUrl = $"meta/info/accesspackages/package/urn/{urnValue}";
+            string endpointUrl = $"meta/info/accesspackages/package/urn/{HttpUtility.UrlEncode(urnValue)}";
 
             HttpResponseMessage response = await _client.GetAsync(endpointUrl);
             if (response.StatusCode == HttpStatusCode.OK)
