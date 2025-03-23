@@ -60,11 +60,11 @@ public interface IAccessManagementClient
     /// <summary>
     /// Retrieves the list of all delegationIds 
     /// </summary>
-    /// <param name="system"></param>
-    /// <param name="facilitator"></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="systemUserId">The Guid Id for the Agent SystemUser</param>
+    /// <param name="facilitator">The Guid Id for the Facilitator</param>
+    /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<List<AgentDelegationResponseExternal>>> GetDelegationsForAgent(Guid system, Guid facilitator, CancellationToken cancellationToken = default);
+    Task<Result<List<AgentDelegationResponseExternal>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the access package for the given urn value
