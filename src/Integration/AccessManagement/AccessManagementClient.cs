@@ -309,9 +309,9 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<DelegationResponse>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
-        const string AGENT = "agent";
+        const string AGENT = "Agent";
 
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
         if ( ! Guid.TryParse(request.FacilitatorId, out Guid facilitator))
@@ -364,15 +364,19 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
 
-            AgentDelegationResponseExternal? result = null;
+            ExtConnection? found = await response.Content.ReadFromJsonAsync<ExtConnection>(cancellationToken);
 
-            if (response.IsSuccessStatusCode) // && response.Content is not null)
+            if (response.IsSuccessStatusCode && found is not null)
             {
-                // result = await response.Content.ReadFromJsonAsync<AgentDelegationResponseExternal>(_serializerOptions, cancellationToken);
-                result = new (); // short-cut until AccessManagement can populate the response model in a future PR
+                return new DelegationResponse
+                {
+                    AgentSystemUserId = found.To.Id,
+                    DelegationId = found.Id,
+                    ClientUuid = found.From.Id
+                };
             }            
 
-            return result ?? new Result<AgentDelegationResponseExternal>(Problem.Rights_FailedToDelegate);
+            return new Result<DelegationResponse>(Problem.Rights_FailedToDelegate);
 
         }
         catch (Exception ex)
@@ -402,7 +406,7 @@ public class AccessManagementClient : IAccessManagementClient
         return found;
     }
 
-    public async Task<Result<List<AgentDelegationResponseExternal>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ExtConnection>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitator == Guid.Empty)
@@ -423,7 +427,7 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<AgentDelegationResponseExternal>>(_serializerOptions, cancellationToken) ?? [];
+                return await response.Content.ReadFromJsonAsync<List<ExtConnection>>(_serializerOptions, cancellationToken) ?? [];
             }
         
             return Problem.UnableToDoDelegationCheck;

@@ -336,12 +336,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<DelegationResponse>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
         {
-            Result<AgentDelegationResponseExternal> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+            Result<DelegationResponse> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
             if (result.IsSuccess)
             {
-                return true;
+                return result;
             }
 
             return result.Problem;
@@ -359,7 +359,7 @@ namespace Altinn.Platform.Authentication.Services
             return res.Problem ?? Problem.UnableToDoDelegationCheck;
         }
 
-        private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<AgentDelegationResponseExternal> value)
+        private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ExtConnection> value)
         {
             List<DelegationResponse> result = [];
 
@@ -367,9 +367,9 @@ namespace Altinn.Platform.Authentication.Services
             {
                 var newDel = new DelegationResponse()
                 {
-                    AgentSystemUserId = item.To.ToId,
+                    AgentSystemUserId = item.To.Id,
                     DelegationId = item.Id,
-                    ClientUuid = item.From.FromId
+                    ClientUuid = item.From.Id
                 };
 
                 result.Add(newDel);

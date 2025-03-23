@@ -122,7 +122,7 @@ public interface ISystemUserService
     /// The service is idempotent.
     /// </summary>
     /// <returns>Result of True or False</returns> 
-    Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<DelegationResponse>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,

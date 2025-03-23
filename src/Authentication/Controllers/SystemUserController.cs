@@ -363,7 +363,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/delegation/")]
-    public async Task<ActionResult> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<DelegationResponse>> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -374,7 +374,7 @@ public class SystemUserController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        Result<bool> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        Result<DelegationResponse> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok();

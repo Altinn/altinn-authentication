@@ -55,7 +55,7 @@ public interface IAccessManagementClient
     /// <param name="userId">Logged in user</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<DelegationResponse>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list of all delegationIds 
@@ -64,7 +64,7 @@ public interface IAccessManagementClient
     /// <param name="facilitator">The Guid Id for the Facilitator</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<List<AgentDelegationResponseExternal>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default);
+    Task<Result<List<ExtConnection>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the access package for the given urn value
