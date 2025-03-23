@@ -176,13 +176,13 @@ public class AccessManagementClient : IAccessManagementClient
         return new Result<bool>(true);
     }
 
-    public async Task<Package?> GetAccessPackage(string resourceId)
+    public async Task<Package?> GetAccessPackage(string urnValue)
     {
         Package package = null;
 
         try
         {
-            string endpointUrl = $"meta/info/accesspackages/package/urn";
+            string endpointUrl = $"meta/info/accesspackages/package/urn/{urnValue}";
 
             HttpResponseMessage response = await _client.GetAsync(endpointUrl);
             if (response.StatusCode == HttpStatusCode.OK)
