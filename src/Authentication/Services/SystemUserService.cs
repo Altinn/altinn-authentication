@@ -336,12 +336,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<DelegationResponse>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
         {
-            Result<DelegationResponse> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+            Result<List<ExtConnection>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
             if (result.IsSuccess)
             {
-                return result;
+                return ConvertExtDelegationToDTO(result.Value);
             }
 
             return result.Problem;
