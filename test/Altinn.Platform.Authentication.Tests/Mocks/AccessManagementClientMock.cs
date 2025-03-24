@@ -139,7 +139,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             AgentSystemUserId = ext.To.Id,
             DelegationId = ext.Id,
-            CustomerID = ext.From.Id
+            CustomerId = ext.From.Id
         };
     }
 
