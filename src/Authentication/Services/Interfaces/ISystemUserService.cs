@@ -122,6 +122,16 @@ public interface ISystemUserService
     /// The service is idempotent.
     /// </summary>
     /// <returns>Result of True or False</returns> 
+    Task<Result<DelegationResponse>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
+    /// retrieved in turn from the AccessManagement db.
+    /// </summary>
+    /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
+    /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
+    /// <returns>List of Client Delegations</returns>
+    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId);
     Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
