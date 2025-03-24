@@ -1377,6 +1377,34 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(list.Count == 1);
         }
 
+        [Fact]
+        public async Task AgentSystemUser_DeleteCustomer_ReturnsOk()
+        {
+            int partyId = 500000;
+            Guid delegationId = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{delegationId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest()
+        {
+            int partyId = 500005;
+            Guid delegationId = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{delegationId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.Equal(Problem.CustomerDelegation_FailedToRevoke.Detail, problemDetails?.Detail);
+        }
+
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
         {
             var tasks = Enumerable.Range(0, paginationSize)

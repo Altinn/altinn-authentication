@@ -359,6 +359,18 @@ namespace Altinn.Platform.Authentication.Services
             return res.Problem ?? Problem.UnableToDoDelegationCheck;
         }
 
+        /// <inheritdoc/>
+        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default)
+        {
+            Result<bool> result = await _accessManagementClient.RevokeDelegatedAccessPackageToSystemUser(partyId, delegationId, cancellationToken);
+            if (result.IsProblem)
+            {
+                return result.Problem;
+            }
+
+            return true;
+        }
+
         private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ExtConnection> value)
         {
             List<DelegationResponse> result = [];

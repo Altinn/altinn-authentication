@@ -72,4 +72,11 @@ public interface IAccessManagementClient
     /// <param name="urnValue">the urn for the package</param>
     /// <returns>package</returns>
     Task<Package> GetAccessPackage(string urnValue);
+
+    /// <summary>
+    /// Revokes the Delegated access package from a client to the systemuser
+    /// </summary>
+    /// <param name="partyId">The party id of the  user that represents the facilitator for delegation</param>
+    /// <param name="delegationId">The delegation id</param>
+    Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default);
 }

@@ -132,4 +132,13 @@ public interface ISystemUserService
     /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
     /// <returns>List of Client Delegations</returns>
     Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId);
+
+    /// <summary>
+    /// Delete the client delegation to the Agent SystemUser
+    /// </summary>
+    /// <param name="partyId">the party id of the facilitator</param>
+    /// <param name="delegationId">the id of the delegation between customer and agent system user</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default);
 }
