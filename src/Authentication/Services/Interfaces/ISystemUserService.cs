@@ -132,7 +132,6 @@ public interface ISystemUserService
     /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
     /// <returns>List of Client Delegations</returns>
     Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId);
-    Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Delete the client delegation to the Agent SystemUser

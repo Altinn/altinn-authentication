@@ -418,12 +418,6 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default)
-    {
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
-        throw new NotImplementedException();
-    }
-
     /// <summary>
     ///  Only for use in the PILOT test in tt02
     /// </summary>
