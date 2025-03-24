@@ -77,7 +77,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public async Task<Result<DelegationResponse>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<ExtConnection>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -85,6 +85,8 @@ public class AccessManagementClientMock: IAccessManagementClient
         { 
             return Problem.Rights_FailedToDelegate; 
         }
+
+        List<ExtConnection> delegationResult = [];
 
         List<AgentDelegationDetails> delegations = [];
 
@@ -135,12 +137,9 @@ public class AccessManagementClientMock: IAccessManagementClient
             Id = Guid.NewGuid()
         };
 
-        return new DelegationResponse()
-        {
-            AgentSystemUserId = ext.To.Id,
-            DelegationId = ext.Id,
-            CustomerId = ext.From.Id
-        };
+        delegationResult.Add(ext);
+
+        return delegationResult;
     }
 
     /// <summary>
@@ -219,38 +218,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return await Task.FromResult(true);
     }
 
-    public async Task<Result<ExtConnection>> GetDelegationsForAgent(SystemUser systemUser, Guid facilitator, CancellationToken cancellationToken)
-    {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-
-        if (token == null)
-        {
-            return Problem.Reportee_Orgno_NotFound;
-        }
-                
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
-
-        return new ExtConnection()
-        {
-            From = new EntityParty()
-            {
-                Id = Guid.NewGuid(),
-            },
-            To = new EntityParty()
-            {
-                Id = Guid.NewGuid()
-            },
-            Facilitator = new EntityParty()
-            {
-                Id = facilitator
-            },
-
-            // DelegationId
-            Id = Guid.NewGuid()
-        };
-    }
-
-    public async Task<Result<List<ExtConnection>>> GetDelegationsForAgent(Guid system, Guid facilitator, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ExtConnection>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
     {
         List<ExtConnection> delegations = [];
         delegations.Add(new ExtConnection() 
@@ -268,7 +236,7 @@ public class AccessManagementClientMock: IAccessManagementClient
                 Id = facilitator 
             },
 
-            Id = system
+            Id = systemUserId
         });
 
         return delegations;
