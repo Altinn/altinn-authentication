@@ -213,7 +213,7 @@ public static class Problem
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
-    public static ProblemDescriptor AgentSystemUser_InvalidSystemUserType { get; }
+    public static ProblemDescriptor AgentSystemUser_ExpectedAgentUserType { get; }
         = _factory.Create(33, HttpStatusCode.BadRequest, "The system user type of the provided system user GUID is not an agent.");
 
     /// <summary>
@@ -221,5 +221,11 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_HasDelegations { get; }
         = _factory.Create(33, HttpStatusCode.BadRequest, "The system user has delegations from customer. Remove the delegations before deleting the system user");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_ExpectedStandardUserType { get; }
+        = _factory.Create(34, HttpStatusCode.BadRequest, "The system user type of the provided system user GUID is not standard.");
 
 }

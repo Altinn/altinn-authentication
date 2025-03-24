@@ -76,14 +76,14 @@ public interface IAccessManagementClient
     /// <summary>
     /// Revokes the Delegated access package from a client to the systemuser
     /// </summary>
-    /// <param name="partyUUId">The party id of the  user that represents the facilitator for delegation</param>
+    /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="delegationId">The delegation id</param>
-    Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Revokes the assignment of
     /// </summary>
-    /// <param name="partyUUId">The party id of the  user that represents the facilitator for delegation</param>
+    /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="assignmentId">The delegation id</param>
-    Task<Result<bool>> DeleteSystemUserAssignment(Guid partyUUId, Guid assignmentId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid assignmentId, CancellationToken cancellationToken = default);
 }

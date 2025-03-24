@@ -1436,12 +1436,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
 
-            Guid partyUUId = new Guid("0af0688f-4743-4697-acdd-8b2c13884f65");
+            Guid facilitatorId = new Guid("0af0688f-4743-4697-acdd-8b2c13884f65");
             Guid delegationId = Guid.NewGuid();
 
             HttpClient client3 = CreateClient();
             client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?partyUUId={partyUUId}");
+            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
         }
@@ -1450,12 +1450,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest()
         {
             int partyId = 500005;
-            Guid partyUUId = new Guid("02ba44dc-d80b-4493-a942-9b355d491da0");
+            Guid facilitatorId = new Guid("02ba44dc-d80b-4493-a942-9b355d491da0");
             Guid delegationId = Guid.NewGuid();
 
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?partyUUId={partyUUId}");
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
@@ -1521,11 +1521,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
 
-            Guid partyUUId = new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651");
+            Guid facilitatorId = new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651");
 
             HttpClient client3 = CreateClient();
             client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?partyUUId={partyUUId}");
+            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?facilitatorId={facilitatorId}");
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
         }
@@ -1589,11 +1589,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
 
-            Guid partyUUId = new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232");
+            Guid facilitatorId = new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232");
 
             HttpClient client3 = CreateClient();
             client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?partyUUId={partyUUId}");
+            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?facilitatorId={facilitatorId}");
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();
@@ -1659,11 +1659,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
 
-            Guid partyUUId = Guid.NewGuid();
+            Guid facilitatorId = Guid.NewGuid();
 
             HttpClient client3 = CreateClient();
             client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?partyUUId={partyUUId}");
+            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?facilitatorId={facilitatorId}");
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();

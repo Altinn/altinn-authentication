@@ -166,6 +166,11 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.Delete_SystemUser_NotOwned;
             }
 
+            if (systemUser.UserType != Core.Enums.SystemUserType.Standard)
+            {
+                return Problem.AgentSystemUser_ExpectedStandardUserType;
+            }
+
             await _repository.SetDeleteSystemUserById(systemUserId);
 
             List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
@@ -372,7 +377,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid partyUUId, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default)
         {
             SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
             if (systemUser is null)
@@ -387,17 +392,17 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
             {
-                return Problem.AgentSystemUser_InvalidSystemUserType;
+                return Problem.AgentSystemUser_ExpectedAgentUserType;
             }
 
-            Result<List<ExtConnection>> delegations = await _accessManagementClient.GetDelegationsForAgent(systemUserId, partyUUId);
+            Result<List<ExtConnection>> delegations = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitatorId);
             if (delegations.IsSuccess && delegations.Value.Count > 0)
             {
                 return Problem.AgentSystemUser_HasDelegations;
             }
             else
             {
-                Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(partyUUId, systemUserId, cancellationToken);
+                Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
                 if (result.IsProblem)
                 {
                     return result.Problem;

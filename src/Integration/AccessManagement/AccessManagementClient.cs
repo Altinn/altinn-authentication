@@ -387,11 +387,11 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid partyUUId, Guid delegationId,CancellationToken cancellationToken)
+    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid facilitatorId, Guid delegationId,CancellationToken cancellationToken)
     {
         try
         {
-            string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(partyUUId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
+            string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
@@ -419,11 +419,11 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> DeleteSystemUserAssignment(Guid partyUUId, Guid assignmentId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid assignmentId, CancellationToken cancellationToken)
     {
         try
         {
-            string endpointUrl = $"internal/systemuserclientdelegation/deleteassignment?party={HttpUtility.UrlEncode(partyUUId.ToString())}&assignmentid={HttpUtility.UrlEncode(assignmentId.ToString())}";
+            string endpointUrl = $"internal/systemuserclientdelegation/deleteassignment?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&assignmentid={HttpUtility.UrlEncode(assignmentId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
