@@ -372,7 +372,7 @@ public class AccessManagementClient : IAccessManagementClient
                 {
                     AgentSystemUserId = found.To.Id,
                     DelegationId = found.Id,
-                    ConsumerId = found.From.Id
+                    CustomerID = found.From.Id
                 };
             }            
 
