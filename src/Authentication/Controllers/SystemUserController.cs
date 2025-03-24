@@ -391,10 +391,29 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpDelete("agent/{party}/{delegationId}")]
-    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(string party, Guid delegationId, CancellationToken cancellationToken = default)
+    [HttpDelete("agent/{party}/delegation/{delegationId}")]
+    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(string party, Guid delegationId, [FromQuery]Guid partyUUId, CancellationToken cancellationToken = default)
     {
-        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, cancellationToken);
+        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, partyUUId, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok();
+        }
+
+        return result.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Delete a customer from an Agent SystemUser.
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpDelete("agent/{party}/{systemUserId}")]
+    public async Task<ActionResult> DeleteAgentSystemUser(string party, Guid systemUserId, [FromQuery]Guid partyUUId, CancellationToken cancellationToken = default)
+    {
+        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, systemUserId, partyUUId, cancellationToken);
         if (result.IsSuccess)
         {
             return Ok();

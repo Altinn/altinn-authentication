@@ -198,4 +198,28 @@ public static class Problem
     public static ProblemDescriptor CustomerDelegation_FailedToRevoke { get; }
         = _factory.Create(31, HttpStatusCode.BadRequest, "Party does not match delegation facilitator.");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_AssignmentNotFound { get; }
+        = _factory.Create(32, HttpStatusCode.BadRequest, "Assignment not found.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_InvalidAssignmentId { get; }
+        = _factory.Create(32, HttpStatusCode.BadRequest, "Assignment not Connected to party.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_InvalidSystemUserType { get; }
+        = _factory.Create(33, HttpStatusCode.BadRequest, "The system user type of the provided system user GUID is not an agent.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_HasDelegations { get; }
+        = _factory.Create(33, HttpStatusCode.BadRequest, "The system user has delegations from customer. Remove the delegations before deleting the system user");
+
 }

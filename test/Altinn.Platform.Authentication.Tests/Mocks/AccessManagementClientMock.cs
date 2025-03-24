@@ -274,9 +274,9 @@ public class AccessManagementClientMock: IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
     {
-        if (partyId == "500005")
+        if (partyUUId == new Guid("02ba44dc-d80b-4493-a942-9b355d491da0"))
         {
             return Problem.CustomerDelegation_FailedToRevoke;
         }
@@ -284,5 +284,10 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             return await Task.FromResult(true);
         }
+    }
+
+    public Task<Result<bool>> DeleteSystemUserAssignment(Guid partyUUId, Guid assignmentId, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }

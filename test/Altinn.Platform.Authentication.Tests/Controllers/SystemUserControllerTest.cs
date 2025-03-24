@@ -1381,11 +1381,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AgentSystemUser_DeleteCustomer_ReturnsOk()
         {
             int partyId = 500000;
+            Guid partyUUId = new Guid("0af0688f-4743-4697-acdd-8b2c13884f65");
             Guid delegationId = Guid.NewGuid();
 
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{delegationId}");
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{delegationId}?partyUUId={partyUUId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -1394,11 +1395,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest()
         {
             int partyId = 500005;
+            Guid partyUUId = new Guid("02ba44dc-d80b-4493-a942-9b355d491da0");
             Guid delegationId = Guid.NewGuid();
 
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{delegationId}");
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{delegationId}?partyUUId={partyUUId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
