@@ -413,7 +413,7 @@ public class SystemUserController : ControllerBase
     [HttpDelete("agent/{party}/{systemUserId}")]
     public async Task<ActionResult> DeleteAgentSystemUser(string party, Guid systemUserId, [FromQuery]Guid partyUUId, CancellationToken cancellationToken = default)
     {
-        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, systemUserId, partyUUId, cancellationToken);
+        Result<bool> result = await _systemUserService.DeleteAgentSystemUser(party, systemUserId, partyUUId, cancellationToken);
         if (result.IsSuccess)
         {
             return Ok();

@@ -397,7 +397,12 @@ namespace Altinn.Platform.Authentication.Services
             }
             else
             {
-                await _accessManagementClient.DeleteSystemUserAssignment(partyUUId, systemUserId, cancellationToken);
+                Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(partyUUId, systemUserId, cancellationToken);
+                if (result.IsProblem)
+                {
+                    return result.Problem;
+                }
+
                 await _repository.SetDeleteSystemUserById(systemUserId);
                 return true;
             }

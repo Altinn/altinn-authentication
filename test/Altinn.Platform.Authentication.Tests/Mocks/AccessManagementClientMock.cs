@@ -253,6 +253,12 @@ public class AccessManagementClientMock: IAccessManagementClient
     public async Task<Result<List<ExtConnection>>> GetDelegationsForAgent(Guid system, Guid facilitator, CancellationToken cancellationToken = default)
     {
         List<ExtConnection> delegations = [];
+        
+        if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232"))
+        {
+            return delegations;
+        }
+
         delegations.Add(new ExtConnection() 
         { 
             From = new EntityParty()
@@ -286,8 +292,17 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public Task<Result<bool>> DeleteSystemUserAssignment(Guid partyUUId, Guid assignmentId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> DeleteSystemUserAssignment(Guid partyUUId, Guid assignmentId, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        {
+            if (partyUUId == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232"))
+            {
+                return Problem.AgentSystemUser_InvalidAssignmentId;
+            }
+            else
+            {
+                return await Task.FromResult(true);
+            }
+        }
     }
 }
