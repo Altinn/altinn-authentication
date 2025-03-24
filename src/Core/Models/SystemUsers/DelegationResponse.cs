@@ -15,8 +15,8 @@ public class DelegationResponse
     [JsonPropertyName("delegationId")]
     public required Guid DelegationId { get; set; }
 
-    [JsonPropertyName("consumerId")]
-    public Guid? ConsumerId { get; set; }       
+    [JsonPropertyName("customerId")]
+    public Guid? CustomerId { get; set; }       
 
 }
 
