@@ -1,4 +1,6 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
+﻿using System.Text.Json.Serialization;
+
+namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 /// <summary>
 /// The DTO used between the Authtentication Core and the BFF/FrontEnd.
@@ -7,11 +9,14 @@
 /// </summary>
 public class DelegationResponse
 {
+    [JsonPropertyName("agentSystemUserId")]
     public required Guid AgentSystemUserId { get; set; }
 
+    [JsonPropertyName("delegationId")]
     public required Guid DelegationId { get; set; }
 
-    public Guid? ClientUuid { get; set; }       
+    [JsonPropertyName("consumerId")]
+    public Guid? ConsumerId { get; set; }       
 
 }
 
