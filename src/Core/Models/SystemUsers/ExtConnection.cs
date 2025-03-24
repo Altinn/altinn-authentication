@@ -1,4 +1,5 @@
 ﻿using Authorization.Platform.Authorization.Models;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
@@ -6,6 +7,7 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 /// Model lifted from the AM
 /// This is the response model from two endpoints
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class ExtConnection
 {
     /// <summary>
@@ -44,6 +46,7 @@ public class ExtConnection
 /// Model lifted from AM
 /// Only appear in the above ExtConnection in our repo
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class EntityParty
 {
     public Guid Id { get; set; }
