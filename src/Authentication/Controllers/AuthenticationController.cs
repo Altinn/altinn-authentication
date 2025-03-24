@@ -237,14 +237,15 @@ namespace Altinn.Platform.Authentication.Controllers
             }
             else
             {
-                if (Request.Cookies[_generalSettings.SblAuthCookieName] == null)
+                if (Request.Cookies[_generalSettings.SblAuthCookieName] == null && Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] == null)
                 {
                     return Redirect(sblRedirectUrl);
                 }
 
                 try
                 {
-                    string encryptedTicket = Request.Cookies[_generalSettings.SblAuthCookieName];
+                    string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
+                    string encryptedTicket = Request.Cookies[cookieName];
                     userAuthentication = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
                 }
                 catch (SblBridgeResponseException sblBridgeException)
