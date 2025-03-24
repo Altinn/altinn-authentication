@@ -192,4 +192,10 @@ public static class Problem
     public static ProblemDescriptor AgentRequestNotFound { get; }
         = _factory.Create(30, HttpStatusCode.NotFound, "The Id does not refer to an AgentRequest in our system.");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor CustomerDelegation_FailedToRevoke { get; }
+        = _factory.Create(31, HttpStatusCode.BadRequest, "Party does not match delegation facilitator.");
+
 }

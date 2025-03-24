@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.Mvc;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace Altinn.Platform.Authentication.Controllers;
 
@@ -362,5 +363,24 @@ public class SystemUserController : ControllerBase
         }
 
         return delegationResult.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Delete a customer from an Agent SystemUser.
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpDelete("agent/{party}/{delegationId}")]
+    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(string party, Guid delegationId, CancellationToken cancellationToken = default)
+    {
+        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok();
+        }
+
+        return result.Problem.ToActionResult();
     }
 }    

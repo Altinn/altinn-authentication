@@ -123,4 +123,13 @@ public interface ISystemUserService
     /// </summary>
     /// <returns>Result of True or False</returns> 
     Task<Result<bool>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Delete the client delegation to the Agent SystemUser
+    /// </summary>
+    /// <param name="partyId">the party id of the facilitator</param>
+    /// <param name="delegationId">the id of the delegation between customer and agent system user</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default);
 }

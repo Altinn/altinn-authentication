@@ -208,4 +208,16 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         return new AgentDelegationResponseExternal();
     }
+
+    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default)
+    {
+        if (partyId == "500005")
+        {
+            return Problem.CustomerDelegation_FailedToRevoke;
+        }
+        else
+        {
+            return await Task.FromResult(true);
+        }
+    }
 }

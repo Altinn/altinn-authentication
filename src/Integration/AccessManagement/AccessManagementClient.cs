@@ -382,6 +382,44 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
+    /// <inheritdoc />
+    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(partyId)}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+            else
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                _logger.LogError($"Authentication.UI // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+
+                ProblemInstance problemInstance = ProblemInstance.Create(Problem.CustomerDelegation_FailedToRevoke);
+                return new Result<bool>(problemInstance);
+            }
+
+            
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
+            throw;
+        }
+    }
+
+    public async Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default)
+    {
+        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     ///  Only for use in the PILOT test in tt02
     /// </summary>
@@ -400,11 +438,5 @@ public class AccessManagementClient : IAccessManagementClient
 
         hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
         return found;
-    }
-
-    public async Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser system, Guid facilitator, CancellationToken cancellationToken = default)
-    {
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
-        throw new NotImplementedException();
     }
 }
