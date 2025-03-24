@@ -86,6 +86,25 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Returns the list of SystemUsers this PartyID has registered
+    /// </summary>
+    /// <returns>List of SystemUsers</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
+    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
+    {
+        List<DelegationResponse> ret = [];
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
+        if (result.IsSuccess) 
+        {
+            ret = result.Value;
+        }
+
+        return Ok(ret);
+    }
+
+    /// <summary>
     /// Return a single SystemUser by PartyId and SystemUserId
     /// </summary>
     /// <returns></returns>
@@ -344,7 +363,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/delegation/")]
-    public async Task<ActionResult> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<DelegationResponse>> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -355,7 +374,7 @@ public class SystemUserController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        Result<bool> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        Result<DelegationResponse> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok();
