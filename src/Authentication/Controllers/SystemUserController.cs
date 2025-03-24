@@ -87,7 +87,7 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Returns the list of SystemUsers this PartyID has registered
+    /// Get list of delegations to this agent systemuser
     /// </summary>
     /// <returns>List of SystemUsers</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
