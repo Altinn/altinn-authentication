@@ -378,7 +378,7 @@ public class SystemUserController : ControllerBase
         Result<DelegationResponse> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
-            return Ok();
+            return Ok(delegationResult.Value);
         }
 
         return delegationResult.Problem.ToActionResult();
