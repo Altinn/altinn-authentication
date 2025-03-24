@@ -87,9 +87,9 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Returns the list of SystemUsers this PartyID has registered
+    /// Get list of delegations to this agent systemuser
     /// </summary>
-    /// <returns>List of SystemUsers</returns>
+    /// <returns>List of DelegationResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
