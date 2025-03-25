@@ -118,6 +118,8 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         string endpointUrl = $"internal/delegation/systemagent";
 
+        var delegationId = Guid.NewGuid();
+
         var ext = new ConnectionDto()
         {
             From = new EntityParty()
@@ -131,10 +133,15 @@ public class AccessManagementClientMock: IAccessManagementClient
             Facilitator = new EntityParty()
             {
                 Id = Guid.Parse(request.FacilitatorId)
-            },
-
-            // DelegationId
-            Id = Guid.NewGuid()
+            },            
+            Id = delegationId,
+            Delegation = new Delegation()
+            {
+                Id = delegationId,
+                FacilitatorId = Guid.Parse(request.FacilitatorId),
+                FromId = Guid.NewGuid(),// value not from our input
+                ToId = Guid.NewGuid() // the Assignment Id
+            }
         };
 
         delegationResult.Add(ext);
@@ -227,6 +234,8 @@ public class AccessManagementClientMock: IAccessManagementClient
             return delegations;
         }
 
+        var delegationId = Guid.NewGuid();       
+
         delegations.Add(new ConnectionDto() 
         { 
             From = new EntityParty()
@@ -242,7 +251,14 @@ public class AccessManagementClientMock: IAccessManagementClient
                 Id = facilitator 
             },
 
-            Id = systemUserId
+            Id = delegationId,
+            Delegation = new Delegation()
+            {
+                Id = delegationId,
+                FacilitatorId = facilitator,
+                FromId = Guid.NewGuid(),// value not from our input
+                ToId = Guid.NewGuid() // the Assignment Id
+            }
         });
 
         return delegations;
