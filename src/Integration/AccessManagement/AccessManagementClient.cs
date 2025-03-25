@@ -414,11 +414,11 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid assignmentId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid systemUserId, CancellationToken cancellationToken)
     {
         try
         {
-            string endpointUrl = $"internal/systemuserclientdelegation/deleteassignment?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&assignmentid={HttpUtility.UrlEncode(assignmentId.ToString())}";
+            string endpointUrl = $"internal/systemuserclientdelegation/deleteagentassignment?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&agentid={HttpUtility.UrlEncode(systemUserId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
@@ -432,7 +432,12 @@ public class AccessManagementClient : IAccessManagementClient
                 ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
                 _logger.LogError($"Authentication.UI // AccessManagementClient // DeleteSystemUserAssignment // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
-                ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_InvalidAssignmentId);
+                var problemExtensionData = ProblemExtensionData.Create(new[]
+                {
+                    new KeyValuePair<string, string>("Problem Detail", problemDetails.Detail)
+                });
+
+                ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
                 return new Result<bool>(problemInstance);
             }
 

@@ -404,7 +404,7 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a customer from an Agent SystemUser.
+    /// Delete an Agent SystemUser.
     /// </summary>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]

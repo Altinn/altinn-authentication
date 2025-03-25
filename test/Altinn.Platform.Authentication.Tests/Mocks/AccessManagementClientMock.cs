@@ -281,7 +281,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             if (partyUUId == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232"))
             {
-                return Problem.AgentSystemUser_InvalidAssignmentId;
+                return Problem.AgentSystemUser_FailedToDeleteAgent;
             }
             else
             {

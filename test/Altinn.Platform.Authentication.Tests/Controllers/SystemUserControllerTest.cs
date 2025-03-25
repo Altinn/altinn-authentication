@@ -1597,7 +1597,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_InvalidAssignmentId.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AgentSystemUser_FailedToDeleteAgent.Detail, problemDetails?.Detail);
         }
 
         [Fact]

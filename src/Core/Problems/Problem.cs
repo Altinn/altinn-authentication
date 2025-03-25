@@ -207,8 +207,8 @@ public static class Problem
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
-    public static ProblemDescriptor AgentSystemUser_InvalidAssignmentId { get; }
-        = _factory.Create(32, HttpStatusCode.BadRequest, "Assignment not Connected to party.");
+    public static ProblemDescriptor AgentSystemUser_FailedToDeleteAgent { get; }
+        = _factory.Create(32, HttpStatusCode.BadRequest, "Failed to delete the agent system user");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
