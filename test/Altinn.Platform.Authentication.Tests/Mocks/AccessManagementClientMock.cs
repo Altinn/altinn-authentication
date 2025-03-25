@@ -229,7 +229,7 @@ public class AccessManagementClientMock: IAccessManagementClient
     {
         List<ConnectionDto> delegations = [];
         
-        if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232") || facilitator == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17"))
+        if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232") || facilitator == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17") || facilitator == new Guid("23478729-1ffa-49c7-a3d0-6e0d08540e9a"))
         {
             return delegations;
         }
@@ -283,9 +283,13 @@ public class AccessManagementClientMock: IAccessManagementClient
             {
                 return Problem.AgentSystemUser_FailedToDeleteAgent;
             }
-            else if(partyUUId == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17"))
+            else if (partyUUId == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17"))
             {
                 return Problem.AgentSystemUser_AssignmentNotFound;
+            }
+            else if (partyUUId == new Guid("23478729-1ffa-49c7-a3d0-6e0d08540e9a"))
+            {
+                return Problem.AgentSystemUser_TooManyAssignments;
             }
             else
             {
