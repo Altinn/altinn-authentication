@@ -228,4 +228,10 @@ public static class Problem
     public static ProblemDescriptor AgentSystemUser_ExpectedStandardUserType { get; }
         = _factory.Create(34, HttpStatusCode.BadRequest, "The system user type of the provided system user GUID is not standard.");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_TooManyAssignments { get; }
+        = _factory.Create(35, HttpStatusCode.BadRequest, "To many assignment found");
+
 }
