@@ -309,7 +309,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<ExtConnection>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<ConnectionDto>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         const string AGENT = "agent";
 
@@ -364,14 +364,14 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
 
-            List<ExtConnection> found = await response.Content.ReadFromJsonAsync<List<ExtConnection>>(_serializerOptions, cancellationToken) ?? [];
+            List<ConnectionDto> found = await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
 
             if (response.IsSuccessStatusCode && found is not null)
             {
                 return found;
             }            
 
-            return new Result<List<ExtConnection>>(Problem.Rights_FailedToDelegate);
+            return new Result<List<ConnectionDto>>(Problem.Rights_FailedToDelegate);
 
         }
         catch (Exception ex)
@@ -465,7 +465,7 @@ public class AccessManagementClient : IAccessManagementClient
         return found;
     }
 
-    public async Task<Result<List<ExtConnection>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitator == Guid.Empty)
@@ -486,7 +486,7 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<ExtConnection>>(_serializerOptions, cancellationToken) ?? [];
+                return await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
             }
         
             return Problem.UnableToDoDelegationCheck;

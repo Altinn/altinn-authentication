@@ -343,7 +343,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
         {
-            Result<List<ExtConnection>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+            Result<List<ConnectionDto>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
             if (result.IsSuccess)
             {
                 return ConvertExtDelegationToDTO(result.Value);
@@ -395,7 +395,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_ExpectedAgentUserType;
             }
 
-            Result<List<ExtConnection>> delegations = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitatorId);
+            Result<List<ConnectionDto>> delegations = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitatorId);
             if (delegations.IsSuccess && delegations.Value.Count > 0)
             {
                 return Problem.AgentSystemUser_HasDelegations;
@@ -413,7 +413,7 @@ namespace Altinn.Platform.Authentication.Services
             }
         }
 
-        private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ExtConnection> value)
+        private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
         {
             List<DelegationResponse> result = [];
 
@@ -423,7 +423,8 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     AgentSystemUserId = item.To.Id,
                     DelegationId = item.Id,
-                    CustomerId = item.From.Id
+                    CustomerId = item.From.Id,
+                    AssignmentId = item.Delegation.ToId
                 };
 
                 result.Add(newDel);

@@ -77,7 +77,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public async Task<Result<List<ExtConnection>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<ConnectionDto>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -86,7 +86,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             return Problem.Rights_FailedToDelegate; 
         }
 
-        List<ExtConnection> delegationResult = [];
+        List<ConnectionDto> delegationResult = [];
 
         List<AgentDelegationDetails> delegations = [];
 
@@ -118,7 +118,9 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         string endpointUrl = $"internal/delegation/systemagent";
 
-        var ext = new ExtConnection()
+        var delegationId = Guid.NewGuid();
+
+        var ext = new ConnectionDto()
         {
             From = new EntityParty()
             {
@@ -131,10 +133,15 @@ public class AccessManagementClientMock: IAccessManagementClient
             Facilitator = new EntityParty()
             {
                 Id = Guid.Parse(request.FacilitatorId)
-            },
-
-            // DelegationId
-            Id = Guid.NewGuid()
+            },            
+            Id = delegationId,
+            Delegation = new Delegation()
+            {
+                Id = delegationId,
+                FacilitatorId = Guid.Parse(request.FacilitatorId),
+                FromId = Guid.NewGuid(),// value not from our input
+                ToId = Guid.NewGuid() // the Assignment Id
+            }
         };
 
         delegationResult.Add(ext);
@@ -218,16 +225,18 @@ public class AccessManagementClientMock: IAccessManagementClient
         return await Task.FromResult(true);
     }
 
-    public async Task<Result<List<ExtConnection>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
     {
-        List<ExtConnection> delegations = [];
+        List<ConnectionDto> delegations = [];
         
         if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232"))
         {
             return delegations;
         }
 
-        delegations.Add(new ExtConnection() 
+        var delegationId = Guid.NewGuid();       
+
+        delegations.Add(new ConnectionDto() 
         { 
             From = new EntityParty()
             {
@@ -242,7 +251,14 @@ public class AccessManagementClientMock: IAccessManagementClient
                 Id = facilitator 
             },
 
-            Id = systemUserId
+            Id = delegationId,
+            Delegation = new Delegation()
+            {
+                Id = delegationId,
+                FacilitatorId = facilitator,
+                FromId = Guid.NewGuid(),// value not from our input
+                ToId = Guid.NewGuid() // the Assignment Id
+            }
         });
 
         return delegations;
