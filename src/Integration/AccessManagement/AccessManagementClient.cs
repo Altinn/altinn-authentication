@@ -426,15 +426,41 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 return true;
             }
+            else if(response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError($"Authentication // AccessManagementClient // DeleteSystemUserAssignment // BadRequest: {responseContent}");
+                var problemExtensionData = ProblemExtensionData.Create(new[]
+{
+                    new KeyValuePair<string, string>("Problem Detail : ", responseContent)
+                });
+
+                ProblemInstance problemInstance;
+
+                if (responseContent.Contains("Assignment not found"))
+                {
+                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_AssignmentNotFound, problemExtensionData);
+                }
+                else if(responseContent.Contains("To many assignment found"))
+                {
+                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_TooManyAssignments, problemExtensionData);
+                }
+                else
+                {
+                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
+                }
+
+                return new Result<bool>(problemInstance);
+            }
             else
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError($"Authentication.UI // AccessManagementClient // DeleteSystemUserAssignment // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+                _logger.LogError($"Authentication // AccessManagementClient // DeleteSystemUserAssignment // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
                 var problemExtensionData = ProblemExtensionData.Create(new[]
                 {
-                    new KeyValuePair<string, string>("Problem Detail", problemDetails.Detail)
+                    new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail)
                 });
 
                 ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);

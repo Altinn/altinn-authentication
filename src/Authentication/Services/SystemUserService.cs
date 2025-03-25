@@ -405,7 +405,15 @@ namespace Altinn.Platform.Authentication.Services
                 Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
                 if (result.IsProblem)
                 {
-                    return result.Problem;
+                    if (result.Problem == Problem.AgentSystemUser_AssignmentNotFound)
+                    {
+                        await _repository.SetDeleteSystemUserById(systemUserId);
+                        return true;
+                    }
+                    else
+                    {
+                        return result.Problem;
+                    }                    
                 }
 
                 await _repository.SetDeleteSystemUserById(systemUserId);
