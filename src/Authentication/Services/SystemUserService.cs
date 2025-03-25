@@ -423,7 +423,8 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     AgentSystemUserId = item.To.Id,
                     DelegationId = item.Id,
-                    CustomerId = item.From.Id
+                    CustomerId = item.From.Id,
+                    AssignmentId = item.Delegation.ToId
                 };
 
                 result.Add(newDel);
