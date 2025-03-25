@@ -382,11 +382,11 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid facilitatorId, Guid delegationId,CancellationToken cancellationToken)
     {
         try
         {
-            string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(partyId)}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
+            string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
@@ -405,6 +405,38 @@ public class AccessManagementClient : IAccessManagementClient
             }
 
             
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid assignmentId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string endpointUrl = $"internal/systemuserclientdelegation/deleteassignment?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&assignmentid={HttpUtility.UrlEncode(assignmentId.ToString())}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+            else
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                _logger.LogError($"Authentication.UI // AccessManagementClient // DeleteSystemUserAssignment // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+
+                ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_InvalidAssignmentId);
+                return new Result<bool>(problemInstance);
+            }
+
+
         }
         catch (Exception ex)
         {

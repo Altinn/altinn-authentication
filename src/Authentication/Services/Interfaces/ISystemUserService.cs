@@ -138,7 +138,18 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="partyId">the party id of the facilitator</param>
     /// <param name="delegationId">the id of the delegation between customer and agent system user</param>
+    /// <param name="facilitatorId">the guid of facilitator</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid facilitatorId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Delete the agent system user (soft delete)
+    /// </summary>
+    /// <param name="partyId">the party id of the reportee</param>
+    /// <param name="systemUserId">The db id for the SystemUser to be deteled</param>
+    /// <param name="facilitatorId">the guid of facilitator</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default);
 }

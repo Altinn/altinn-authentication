@@ -221,6 +221,12 @@ public class AccessManagementClientMock: IAccessManagementClient
     public async Task<Result<List<ExtConnection>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
     {
         List<ExtConnection> delegations = [];
+        
+        if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232"))
+        {
+            return delegations;
+        }
+
         delegations.Add(new ExtConnection() 
         { 
             From = new EntityParty()
@@ -242,15 +248,29 @@ public class AccessManagementClientMock: IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
     {
-        if (partyId == "500005")
+        if (partyUUId == new Guid("02ba44dc-d80b-4493-a942-9b355d491da0"))
         {
             return Problem.CustomerDelegation_FailedToRevoke;
         }
         else
         {
             return await Task.FromResult(true);
+        }
+    }
+
+    public async Task<Result<bool>> DeleteSystemUserAssignment(Guid partyUUId, Guid assignmentId, CancellationToken cancellationToken = default)
+    {
+        {
+            if (partyUUId == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232"))
+            {
+                return Problem.AgentSystemUser_InvalidAssignmentId;
+            }
+            else
+            {
+                return await Task.FromResult(true);
+            }
         }
     }
 }

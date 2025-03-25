@@ -166,6 +166,11 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.Delete_SystemUser_NotOwned;
             }
 
+            if (systemUser.UserType != Core.Enums.SystemUserType.Standard)
+            {
+                return Problem.AgentSystemUser_ExpectedStandardUserType;
+            }
+
             await _repository.SetDeleteSystemUserById(systemUserId);
 
             List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
@@ -360,15 +365,52 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
         {
-            Result<bool> result = await _accessManagementClient.RevokeDelegatedAccessPackageToSystemUser(partyId, delegationId, cancellationToken);
+            Result<bool> result = await _accessManagementClient.RevokeDelegatedAccessPackageToSystemUser(partyUUId, delegationId, cancellationToken);
             if (result.IsProblem)
             {
                 return result.Problem;
             }
 
             return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default)
+        {
+            SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
+            if (systemUser is null)
+            {
+                return Problem.SystemUserNotFound;
+            }
+
+            if (systemUser.PartyId != partyId)
+            {
+                return Problem.Delete_SystemUser_NotOwned;
+            }
+
+            if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
+            {
+                return Problem.AgentSystemUser_ExpectedAgentUserType;
+            }
+
+            Result<List<ExtConnection>> delegations = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitatorId);
+            if (delegations.IsSuccess && delegations.Value.Count > 0)
+            {
+                return Problem.AgentSystemUser_HasDelegations;
+            }
+            else
+            {
+                Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
+                if (result.IsProblem)
+                {
+                    return result.Problem;
+                }
+
+                await _repository.SetDeleteSystemUserById(systemUserId);
+                return true;
+            }
         }
 
         private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ExtConnection> value)
