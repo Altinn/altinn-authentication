@@ -903,6 +903,18 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
+    public async Task<Result<string>> GetRedirectByAgentRequestId(Guid requestId)
+    {
+        AgentRequestSystemResponse? agentRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
+        if (agentRequest is null || agentRequest.RedirectUrl is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        return agentRequest.RedirectUrl;
+    }
+
+    /// <inheritdoc/>
     public async Task<Result<AgentRequestSystemResponse>> GetAgentRequestByExternalRef(ExternalRequestId externalRequestId, OrganisationNumber vendorOrgNo)
     {
         AgentRequestSystemResponse? res = await requestRepository.GetAgentRequestByExternalReferences(externalRequestId);

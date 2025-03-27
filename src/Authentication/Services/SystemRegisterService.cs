@@ -134,13 +134,15 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<bool> DoesAccessPackageExists(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
+        public async Task<bool> DoesAccessPackageExistsAndDelegable(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
         {
             Package? package = null;
             foreach (AccessPackage accessPackage in accessPackages)
             {
-                package = await _accessManagementClient.GetPackage(accessPackage.Urn);
-                if (package == null)
+                // get the urn value from the access package f.eks get regnskapsforer-med-signeringsrettighet from urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet
+                string urnValue = accessPackage.Urn.Split(":")[3];
+                package = await _accessManagementClient.GetAccessPackage(urnValue);
+                if (package == null || !package.IsDelegable)
                 {
                     return false;
                 }

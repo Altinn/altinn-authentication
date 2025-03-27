@@ -42,7 +42,7 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         public string Description { get; set; }
 
         /// <summary>
-        /// IsDelegable
+        /// True if the package is one of "REGN", "REVI", "Forretningsfører" roller
         /// </summary>
         public bool IsDelegable { get; set; }
 

@@ -13,9 +13,6 @@ COPY --from=build /app/app_output .
 
 COPY src/Persistance/Migration /app/Persistance/Migration 
 
-# Copy the MockData folder
-COPY src/Integration/MockData /app/Integration/MockData
-
 # setup the user and group
 # the user will have no password, using shell /bin/false and using the group dotnet
 RUN addgroup -g 3000 dotnet && adduser -u 1000 -G dotnet -D -s /bin/false dotnet

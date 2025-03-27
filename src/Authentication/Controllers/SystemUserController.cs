@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement.Mvc;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace Altinn.Platform.Authentication.Controllers;
 
@@ -83,6 +84,25 @@ public class SystemUserController : ControllerBase
     {
         var result = await _systemUserService.GetListOfAgentSystemUsersForParty(party) ?? [];
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Get list of delegations to this agent systemuser
+    /// </summary>
+    /// <returns>List of DelegationResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
+    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
+    {
+        List<DelegationResponse> ret = [];
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
+        if (result.IsSuccess) 
+        {
+            ret = result.Value;
+        }
+
+        return Ok(ret);
     }
 
     /// <summary>
@@ -344,7 +364,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/delegation/")]
-    public async Task<ActionResult> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -355,12 +375,50 @@ public class SystemUserController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        Result<bool> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
+        {
+            return Ok(delegationResult.Value);
+        }
+
+        return delegationResult.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Delete a customer from an Agent SystemUser.
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpDelete("agent/{party}/delegation/{delegationId}")]
+    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(string party, Guid delegationId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
+    {
+        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, facilitatorId, cancellationToken);
+        if (result.IsSuccess)
         {
             return Ok();
         }
 
-        return delegationResult.Problem.ToActionResult();
+        return result.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Delete an Agent SystemUser.
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpDelete("agent/{party}/{systemUserId}")]
+    public async Task<ActionResult> DeleteAgentSystemUser(string party, Guid systemUserId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
+    {
+        Result<bool> result = await _systemUserService.DeleteAgentSystemUser(party, systemUserId, facilitatorId, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok();
+        }
+
+        return result.Problem.ToActionResult();
     }
 }    

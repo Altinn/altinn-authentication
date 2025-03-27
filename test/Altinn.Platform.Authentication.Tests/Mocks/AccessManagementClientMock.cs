@@ -77,7 +77,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public async Task<Result<AgentDelegationResponseExternal>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<ConnectionDto>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -85,6 +85,8 @@ public class AccessManagementClientMock: IAccessManagementClient
         { 
             return Problem.Rights_FailedToDelegate; 
         }
+
+        List<ConnectionDto> delegationResult = [];
 
         List<AgentDelegationDetails> delegations = [];
 
@@ -116,7 +118,35 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         string endpointUrl = $"internal/delegation/systemagent";
 
-        return new AgentDelegationResponseExternal();
+        var delegationId = Guid.NewGuid();
+
+        var ext = new ConnectionDto()
+        {
+            From = new EntityParty()
+            {
+                Id = Guid.Parse(request.CustomerId),
+            },
+            To = new EntityParty()
+            {
+                Id = Guid.Parse(systemUser?.Id),
+            },
+            Facilitator = new EntityParty()
+            {
+                Id = Guid.Parse(request.FacilitatorId)
+            },            
+            Id = delegationId,
+            Delegation = new Delegation()
+            {
+                Id = delegationId,
+                FacilitatorId = Guid.Parse(request.FacilitatorId),
+                FromId = Guid.NewGuid(),// value not from our input
+                ToId = Guid.NewGuid() // the Assignment Id
+            }
+        };
+
+        delegationResult.Add(ext);
+
+        return delegationResult;
     }
 
     /// <summary>
@@ -152,6 +182,20 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
+    public Task<Package> GetAccessPackage(string urnValue)
+    {
+        Package? package = null;
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
+        string packagesData = File.OpenText("Data/Packages/packages.json").ReadToEnd();
+        List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
+        package = packages?.FirstOrDefault(p => p.Urn.Contains(urnValue, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(package);
+    }
+
     public Task<Package> GetPackage(string packageId)
     {
         Package? package = null;
@@ -181,17 +225,76 @@ public class AccessManagementClientMock: IAccessManagementClient
         return await Task.FromResult(true);
     }
 
-    public async Task<Result<AgentDelegationResponseExternal>> GetDelegationsForAgent(SystemUser systemUser, Guid facilitator, CancellationToken cancellationToken)
+    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
     {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-
-        if (token == null)
+        List<ConnectionDto> delegations = [];
+        
+        if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232") || facilitator == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17") || facilitator == new Guid("23478729-1ffa-49c7-a3d0-6e0d08540e9a"))
         {
-            return Problem.Reportee_Orgno_NotFound;
+            return delegations;
         }
-                
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
 
-        return new AgentDelegationResponseExternal();
+        var delegationId = Guid.NewGuid();       
+
+        delegations.Add(new ConnectionDto() 
+        { 
+            From = new EntityParty()
+            {
+                Id = Guid.NewGuid(),
+            },
+            To = new EntityParty()
+            {
+                Id = Guid.NewGuid()
+            },
+            Facilitator = new EntityParty() 
+            { 
+                Id = facilitator 
+            },
+
+            Id = delegationId,
+            Delegation = new Delegation()
+            {
+                Id = delegationId,
+                FacilitatorId = facilitator,
+                FromId = Guid.NewGuid(),// value not from our input
+                ToId = Guid.NewGuid() // the Assignment Id
+            }
+        });
+
+        return delegations;
+    }
+
+    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
+    {
+        if (partyUUId == new Guid("02ba44dc-d80b-4493-a942-9b355d491da0"))
+        {
+            return Problem.CustomerDelegation_FailedToRevoke;
+        }
+        else
+        {
+            return await Task.FromResult(true);
+        }
+    }
+
+    public async Task<Result<bool>> DeleteSystemUserAssignment(Guid partyUUId, Guid assignmentId, CancellationToken cancellationToken = default)
+    {
+        {
+            if (partyUUId == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232"))
+            {
+                return Problem.AgentSystemUser_FailedToDeleteAgent;
+            }
+            else if (partyUUId == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17"))
+            {
+                return Problem.AgentSystemUser_AssignmentNotFound;
+            }
+            else if (partyUUId == new Guid("23478729-1ffa-49c7-a3d0-6e0d08540e9a"))
+            {
+                return Problem.AgentSystemUser_TooManyAssignments;
+            }
+            else
+            {
+                return await Task.FromResult(true);
+            }
+        }
     }
 }
