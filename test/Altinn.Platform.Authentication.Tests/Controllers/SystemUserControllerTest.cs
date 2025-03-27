@@ -1463,6 +1463,54 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_DelegationNotFound()
+        {
+            int partyId = 500005;
+            Guid facilitatorId = new Guid("199912a2-86e1-4c8e-b010-c8c3956535a7");
+            Guid delegationId = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.Equal(Problem.AgentSystemUser_DelegationNotFound.Detail, problemDetails?.Detail);
+        }
+
+        [Fact]
+        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_PartyMismatch()
+        {
+            int partyId = 500005;
+            Guid facilitatorId = new Guid("1765cf28-2554-4f3c-90c6-a269a01f46c8");
+            Guid delegationId = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.Equal(Problem.AgentSystemUser_DeleteDelegation_PartyMismatch.Detail, problemDetails?.Detail);
+        }
+
+        [Fact]
+        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_InvalidDelegationFacilitator()
+        {
+            int partyId = 500005;
+            Guid facilitatorId = new Guid("cf814a90-1a14-4323-ae8b-72738abaab49");
+            Guid delegationId = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.Equal(Problem.AgentSystemUser_InvalidDelegationFacilitator.Detail, problemDetails?.Detail);
+        }
+
+        [Fact]
         public async Task AgentSystemUser_DeleteAgent_ReturnsOk()
         {
             // Create System used for test

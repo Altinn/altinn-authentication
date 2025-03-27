@@ -234,4 +234,22 @@ public static class Problem
     public static ProblemDescriptor AgentSystemUser_TooManyAssignments { get; }
         = _factory.Create(35, HttpStatusCode.BadRequest, "To many assignment found");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_DelegationNotFound { get; }
+        = _factory.Create(36, HttpStatusCode.BadRequest, "Delegation not found");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_InvalidDelegationFacilitator { get; }
+        = _factory.Create(37, HttpStatusCode.BadRequest, "Party does not match delegation facilitator");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_DeleteDelegation_PartyMismatch { get; }
+        = _factory.Create(37, HttpStatusCode.BadRequest, "Party does not match delegation assignments");
+
 }

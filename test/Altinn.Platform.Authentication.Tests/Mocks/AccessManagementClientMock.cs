@@ -264,15 +264,20 @@ public class AccessManagementClientMock: IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
     {
-        if (partyUUId == new Guid("02ba44dc-d80b-4493-a942-9b355d491da0"))
+        switch (partyUUId.ToString())
         {
-            return Problem.CustomerDelegation_FailedToRevoke;
-        }
-        else
-        {
-            return await Task.FromResult(true);
+            case "02ba44dc-d80b-4493-a942-9b355d491da0":
+                return Problem.CustomerDelegation_FailedToRevoke;
+            case "199912a2-86e1-4c8e-b010-c8c3956535a7":
+                return Problem.AgentSystemUser_DelegationNotFound;
+            case "cf814a90-1a14-4323-ae8b-72738abaab49":
+                return Problem.AgentSystemUser_InvalidDelegationFacilitator;
+            case "1765cf28-2554-4f3c-90c6-a269a01f46c8":
+                return Problem.AgentSystemUser_DeleteDelegation_PartyMismatch;
+            default:
+                return await Task.FromResult(true);
         }
     }
 
