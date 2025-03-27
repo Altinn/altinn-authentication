@@ -1,0 +1,11 @@
+{
+  "externalRef": "{externalRef}",
+  "systemId": "{systemId}",
+  "partyOrgNo": "{partyOrgNo}", // Regnskapsfører AS
+  "accessPackages": [
+    {
+      "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+    }
+  ],
+  "redirectUrl": "https://vg.no"
+}

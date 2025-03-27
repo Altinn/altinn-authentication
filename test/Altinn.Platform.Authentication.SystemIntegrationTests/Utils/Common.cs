@@ -10,14 +10,16 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 public class Common
 {
     private readonly SystemRegisterClient _systemRegisterClient;
+    private readonly SystemUserClient _systemUserClient;
     private readonly PlatformAuthenticationClient _platformClient;
     public readonly ITestOutputHelper Output;
     public static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true };
 
     public Common(PlatformAuthenticationClient platformClient, ITestOutputHelper output)
     {
-        _platformClient = new PlatformAuthenticationClient();
+        _platformClient = platformClient;
         _systemRegisterClient = new SystemRegisterClient(platformClient);
+        _systemUserClient = new SystemUserClient(platformClient);
         Output = output;
     }
 
@@ -175,5 +177,11 @@ public class Common
 
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
+    }
+    
+    public async Task<SystemUser?> GetSystemUserOnSystemIdForOrg(string systemId, Testuser testuser)
+    {
+        var systemUsers = await _systemUserClient.GetSystemUsersForTestUser(testuser);
+        return systemUsers.Find(user => user.SystemId == systemId);
     }
 }

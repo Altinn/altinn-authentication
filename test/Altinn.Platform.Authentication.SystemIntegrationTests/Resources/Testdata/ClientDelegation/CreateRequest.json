@@ -1,24 +1,11 @@
 {
   "externalRef": "{externalRef}",
   "systemId": "{systemId}",
-  "partyOrgNo": "{partyOrgNo}",
+  "partyOrgNo": "{facilitatorPartyOrgNo}",
   "accessPackages": [
     {
-      "urn": "{accessPackage}"
-    },
-    {
-      "urn": "urn:altinn:accesspackage:ansvarlig-revisor"
+      "urn" : "urn:altinn:accesspackage:ansvarlig-revisor"
     }
   ],
-  "rights": [
-    {
-      "resource": [
-        {
-          "value": "authentication-e2e-test",
-          "id": "urn:altinn:resource"
-        }
-      ]
-    }
-  ],
-  "redirectUrl": "https://altinn.no"
+  "redirectUrl": "https://www.vg.no"
 }

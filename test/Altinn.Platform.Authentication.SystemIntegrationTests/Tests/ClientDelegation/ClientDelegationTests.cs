@@ -8,9 +8,8 @@ using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDelegation;
 
-// Fasilitatoren = partyid til partyorg for client (agent) request. 
-// org til system id = kan f.eks være Visma
-// Tilgangspakker foreløpig: https://github.com/Altinn/altinn-authentication/blob/main/src/Integration/MockData/packages.json
+
+// Tilgangspakker: https://platform.at22.altinn.cloud/accessmanagement/api/v1/meta/info/accesspackages/export
 
 // Delegation request
 // customerId : kundens party UUID
@@ -20,13 +19,20 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDele
 //https://platform.at22.altinn.cloud/register/api/v1/internal/parties/cc90e65a-1fa9-4631-8d6e-384cd144317d/customers/ccr/revisor
 // party-uuid er uuid til organisasjonen som approver systembrukeren (agent)
 
+// https://github.com/Altinn/altinn-authentication/issues/548
 public class ClientDelegationTests
 {
-    private const string AccesspackageRevisor = "urn:altinn:accesspackage:revisormedarbeider";
+    //private const string AccessPackage = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet";
+    // private const string AccessPackage = "urn:altinn:accesspackage:skattegrunnlag";
+    //private const string AccessPackage = "urn:altinn:accesspackage:ansvarlig-revisor";
+    private const string AccessPackage = "urn:altinn:accesspackage:revisormedarbeider";
+
+    
     private readonly ITestOutputHelper _outputHelper;
 
     private readonly PlatformAuthenticationClient _platformClient;
     private readonly SystemRegisterClient _systemRegisterClient;
+    private readonly SystemUserClient _systemUserClient;
     private readonly Common _common;
 
     /// <summary>
@@ -38,44 +44,53 @@ public class ClientDelegationTests
         _outputHelper = outputHelper;
         _platformClient = new PlatformAuthenticationClient();
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
+        _systemUserClient = new SystemUserClient(_platformClient);
         _common = new Common(_platformClient, outputHelper);
     }
-
 
     [Fact]
     public async Task CreateClientRequest()
     {
-        // Prepare
+        // Fasilitator - Virksomhet som utfører tjenester på vegne av annen virksomhet (tidligere omtalt som hjelper).
+        // Når fasilitator går inn på en systembruker skal han kunne videredelegere kunder som har delegert samme tilgangspakke som systembruker er satt opp med
+        //var facilitator = _platformClient.GetFacilitator();
+        var facilitator = _platformClient.GetTestUserWithName("facilitator-large-category-list");
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-        var externalRef = Guid.NewGuid().ToString();
         var clientId = Guid.NewGuid().ToString();
+        
+        _outputHelper.WriteLine($"Client Id: {clientId}");
 
         var systemOwner = _platformClient.GetTestUserForVendor();
 
         var testState = new TestState("Resources/Testdata/ClientDelegation/AccessPackageSystemRegister.json")
             .WithClientId(clientId)
             .WithVendor(systemOwner.Org)
-            .WithAccessPackage("skattnaering")
+            .WithName("E2E test - " + AccessPackage + "Ansvarlig Revisor" + Guid.NewGuid())
             .WithToken(maskinportenToken);
 
+        //Post system med én pakke for Bedrift "BDO". 
         var requestBodySystemRegister = testState.GenerateRequestBody();
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
-        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
+        await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+        
+        // Prepare system user request
+        var externalRef = Guid.NewGuid().ToString();
 
-        // Prepare system user request for Vendor / Visma
         var requestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
             .Replace("{systemId}", testState.SystemId)
-            .Replace("{accessPackage}", AccesspackageRevisor)
             .Replace("{externalRef}", externalRef)
-            .Replace("{partyOrgNo}", systemOwner.Org);
-
+            .Replace("{accessPackage}", AccessPackage)
+            .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
+            // .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
+        
+        
         // Act
         var userResponse = await _platformClient.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(), requestBody, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
 
-        Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {userResponse.StatusCode} - {content}");
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {userResponse.StatusCode} - " +
+                                                                       $"{content} for attempted request body:" + requestBody);
 
         var requestId = Common.ExtractPropertyFromJson(content, "id");
 
@@ -86,61 +101,80 @@ public class ClientDelegationTests
         Assert.NotNull(agentUser);
         Assert.Contains(testState.SystemId, await agentUser.ReadAsStringAsync());
 
-        var agentUserResponse = await agentUser.ReadAsStringAsync();
 
-        var user = _platformClient.GetTestUserForVendor();
-
-        //Approve system user agent request
-        var approveResp =
-            await _common.ApproveRequest(ApiEndpoints.ApproveAgentRequest.Url()
-                    .Replace("{party}", user.AltinnPartyId)
-                    .Replace("{requestId}", requestId),
-                user);
-
-        Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
-            "Received status code " + approveResp.StatusCode + "when attempting to approve");
-
+         var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
+             .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+             .Replace("{requestId}", requestId);
+         
+         var approveResp =
+             await _common.ApproveRequest(approveUrl, facilitator);
+         
+         _outputHelper.WriteLine($"Approved request: {await approveResp.Content.ReadAsStringAsync()}");
+        
+         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
+             "Received status code " + approveResp.StatusCode + "when attempting to approve");
+        
         await AssertStatusSystemUserRequest(requestId, "Accepted", maskinportenToken);
 
-        //Kjør delegation
-        // customerId
-        // Her må customerId være en faktisk kunde, som ideelt sett må / bør hentes ut fra Register sitt API, i fremtiden kanskje Authentication.
-        var customer = _platformClient.FindTestUserByRole("Customer");
-
+        const string customerId = "0015e9ea-5993-4f13-bdd6-1e6b17f00604";
+        
         var requestBodyDelegation = JsonSerializer.Serialize(new
         {
-            customerId = customer.AltinnPartyUuid,
-            facilitatorId = systemOwner.AltinnPartyUuid
+            customerId,
+            facilitatorId = facilitator.AltinnPartyUuid
         });
-
-        var systemUserId = Common.ExtractPropertyFromJson(agentUserResponse, "id");
-        await PerformDelegation(requestBodyDelegation, customer, systemUserId);
+        
+        var systemUserId = await _common.GetSystemUserOnSystemIdForOrg(testState.SystemId, facilitator);
+        _outputHelper.WriteLine($"SystemUserId: {systemUserId?.SystemId}");
+        _outputHelper.WriteLine($"SystemUserId: {systemUserId?.Id}");
+        
+        await PerformDelegation(requestBodyDelegation, systemUserId?.Id, facilitator);
     }
 
-    
-    // Fasilitatoren = partyid til partyorg for client (agent) request. 
-    // org til system id = kan f.eks være Visma
-    // Tilgangspakker foreløpig: https://github.com/Altinn/altinn-authentication/blob/main/src/Integration/MockData/packages.json
-
-    // Delegation request
-    // customerId : kundens party UUID
-    // facilitatorId: party UUID til party som eier systembrukeren (samme som party i url query parameter)
-
-    // For å slå opp i kundelista til eieren, bruk dette oppslaget:
-    //https://platform.at22.altinn.cloud/register/api/v1/internal/parties/cc90e65a-1fa9-4631-8d6e-384cd144317d/customers/ccr/revisor
-    // party-uuid er uuid til organisasjonen som approver systembrukeren (agent)
-    private async Task PerformDelegation(string requestBodyDelegation, Testuser customer, string systemUserId)
+    [Fact]
+    public async Task getTokenForFacilitatorReturnsOk()
     {
-        // [EndpointInfo("/authentication/api/v1/systemuser/agent/{customerPartyId}/{systemUserId}/delegation", "POST")]
-        var token = await _platformClient.GetPersonalAltinnToken(customer);
-        var url = ApiEndpoints.DelegationAgentRequest.Url()
-                .Replace("{customerPartyId}", customer.AltinnPartyUuid)
-                .Replace("{systemUserId}", systemUserId);
-            ;
+        const string systemId = "312605031_E2E test - urn:altinn:accesspackage:revisormedarbeider verify maskinporten";
         
+        //Only way to use this token is by using the "fake" altinn token service, not allowed to configure this in samarbeidsportalen
+        const string scopes = "altinn:maskinporten/systemuser.read";
+        const string clientId = "ebfa9b1f-ac36-4479-af1d-17d915c59fba"; // Stored in System register
+        const string facilitatorOrgNo = "313588270";
+        const string externalRef = "7ccd82c8-da69-4632-b0b8-850daf835262";
+        
+        var systemProviderOrgNo = _platformClient.EnvironmentHelper.Vendor;
+        
+        var altinnEnterpriseToken =
+            await _platformClient.GetEnterpriseAltinnToken(systemProviderOrgNo, scopes);
+
+        var queryString =
+            $"?clientId={clientId}" +
+            $"&systemProviderOrgNo={systemProviderOrgNo}" +
+            $"&systemUserOwnerOrgNo={facilitatorOrgNo}" +
+            $"&externalRef={externalRef}";
+
+        var fullEndpoint = $"{ApiEndpoints.GetSystemUserByExternalId.Url()}{queryString}";
+
+        var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
+        Assert.NotNull(resp);
+
+        _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
+        Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
+    }
+    
+    private async Task PerformDelegation(string requestBodyDelegation, string? systemUserId, Testuser facilitator)
+    {
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator);
+        var url = ApiEndpoints.DelegationAgentAuthentication.Url()
+            .Replace("{facilitatorPartyid}", facilitator.AltinnPartyId)
+            .Replace("{systemuserUuid}", systemUserId);
+        
+        _outputHelper.WriteLine("url used: " + _platformClient.BaseUrl + url);
+        _outputHelper.WriteLine("request body: " + requestBodyDelegation);
+
         var responsDelegation = await _platformClient.PostAsync(url, requestBodyDelegation, token);
         _outputHelper.WriteLine($"Delegation response: {await responsDelegation.Content.ReadAsStringAsync()}");
-        Assert.Equal(HttpStatusCode.OK, responsDelegation.StatusCode);
+        Assert.True(HttpStatusCode.OK == responsDelegation.StatusCode);
     }
 
     private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string maskinportenToken)
@@ -148,7 +182,7 @@ public class ClientDelegationTests
         var getRequestByIdUrl = ApiEndpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
         var responseGetByRequestId = await _platformClient.GetAsync(getRequestByIdUrl, maskinportenToken);
 
-        Assert.Equal(HttpStatusCode.OK, responseGetByRequestId.StatusCode);
+        Assert.True(HttpStatusCode.OK == responseGetByRequestId.StatusCode);
         Assert.Contains(requestId, await responseGetByRequestId.Content.ReadAsStringAsync());
 
         var status = Common.ExtractPropertyFromJson(await responseGetByRequestId.Content.ReadAsStringAsync(), "status");

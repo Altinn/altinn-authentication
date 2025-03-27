@@ -1,0 +1,36 @@
+meta {
+  name: AM - delegation
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/accessmanagement/api/v1/internal/systemuserclientdelegation?party=368f5a82-97f5-4f33-b372-ac998a4d6b22
+  body: json
+  auth: none
+}
+
+params:query {
+  party: 368f5a82-97f5-4f33-b372-ac998a4d6b22
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjFENUEzN0I0NDMzNzlCOThDMTQ2NkQ4OUZDRkMzRTQ2MTU2NUM5RDEiLCJ4NXQiOiJIVm8zdEVNM201akJSbTJKX1B3LVJoVmx5ZEUiLCJ0eXAiOiJKV1QifQ.eyJuYW1laWQiOiIyMDAxMzE4MyIsInVybjphbHRpbm46dXNlcmlkIjoiMjAwMTMxODMiLCJ1cm46YWx0aW5uOnBhcnR5OnV1aWQiOiI2OGM1YjhkMi0zNjAwLTRhNzUtYmNjOC0zMmQzYWE4NjgwZWUiLCJ1cm46YWx0aW5uOnBhcnR5aWQiOjUwMzA0MzEwLCJ1cm46YWx0aW5uOmF1dGhlbnRpY2F0ZW1ldGhvZCI6IklkcG9ydGVuVGVzdElkIiwidXJuOmFsdGlubjphdXRobGV2ZWwiOjMsImp0aSI6IjU3MDU3Y2RlLTE2YjgtNDZjNS05ODZhLTJjZjg1MTI0YzIzMCIsInNjb3BlIjoiYWx0aW5uOnBvcnRhbC9lbmR1c2VyIiwibmJmIjoxNzQyODI0NzgzLCJleHAiOjE3NDI4MjY1ODMsImlhdCI6MTc0MjgyNDc4M30.f8lVcSLs2Onf8LO7L3dQkt9pJ-FOQb3IAGz0wkAsN-ClCWwd-vTq86yk1AWUI2kOT2cGS2ZFdDd1z7eX3ZdPWC_99CpXoi2PpN_3PtkaBcLMVF-pg-9wOaL0_IZdnx2ee8auCPp1mSE3UHR0gPecuyfGcSTwykchMl2TlSzf12ozj5xxR8BxBuQE8iEcP3MxYDR_gv623s3SZaeAfOvJwXlZGCzpNmZE4MIIuQVH49lUy5smYAxXrhsDSKtT0YXSWVDQbVnRoZooFdRm6v2ZbYH2n-Ez0jorDNX4xF0-X8mu8yebeNowG0Xh1_cbR_ht70b8DBltmatTBxab6xc7RQ
+}
+
+body:json {
+  {
+    "clientId": "f1c7ca59-5bf9-4036-bdb8-15062d992eaa", 
+    "agentId": "41856122-b68c-4451-b7bf-67c8279169ab", //Systembruker UUID
+    "agentName": "Gjenskape delegation for Authentication",
+    "agentRole": "agent",
+    "rolePackages": [
+      {
+        "roleIdentifier": "regnskapsforer",
+        "packageUrn": "urn:altinn:accesspackage:regnskapsforer-lonn"
+      }
+    ]
+  }
+  
+  
+}

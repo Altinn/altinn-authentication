@@ -81,6 +81,7 @@ public class SystemUserTests : IDisposable
         // Registering system to System Register
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid().ToString())
+            .WithName(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")

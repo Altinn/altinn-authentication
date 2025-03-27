@@ -19,9 +19,9 @@ public class SystemUserClient
         _platformClient = platformClient;
     }
 
-    public async Task<HttpResponseMessage> GetSystemuserForParty(string? party, string token)
+    public async Task<HttpResponseMessage> GetSystemuserForPartyAgent(string? party, string token)
     {
-        var urlGetBySystem = ApiEndpoints.GetSystemUsersByParty.Url()
+        var urlGetBySystem = ApiEndpoints.GetSystemUsersByPartyAgent.Url()
             .Replace("{party}", party);
         var response = await _platformClient.GetAsync(urlGetBySystem, token);
 
@@ -34,7 +34,7 @@ public class SystemUserClient
     public async Task<List<SystemUser>> GetSystemUsersForTestUser(Testuser testuser)
     {
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
-        var resp = await GetSystemuserForParty(testuser.AltinnPartyId, altinnToken);
+        var resp = await GetSystemuserForPartyAgent(testuser.AltinnPartyId, altinnToken);
 
         var content = await resp.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<List<SystemUser>>(content, Common.JsonSerializerOptions) ?? [];

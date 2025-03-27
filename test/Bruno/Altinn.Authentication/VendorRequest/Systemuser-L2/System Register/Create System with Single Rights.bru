@@ -68,7 +68,7 @@ script:pre-request {
   
   // const systemName = "QueryParamMustWorkSingle"
   // 
-  bru.setEnvVar("system_name","isDeletedTestDontSet");
+  bru.setEnvVar("system_name","SystemNew");
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);

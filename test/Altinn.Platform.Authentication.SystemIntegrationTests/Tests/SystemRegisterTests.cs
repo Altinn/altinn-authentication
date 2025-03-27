@@ -239,6 +239,58 @@ public class SystemRegisterTests
     }
 
     [Fact]
+    public async Task GetBySystemIdReturns200Ok()
+    {
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithRedirectUrl("https://altinn.no")
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
+            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            .WithName(Guid.NewGuid().ToString())
+            .WithToken(maskinportenToken);
+        
+        await _systemRegisterClient.PostSystem(teststate.GenerateRequestBody(), maskinportenToken);
+
+        var resp = await _systemRegisterClient.getBySystemId(teststate.SystemId, maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
+        
+        //Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
+    }
+
+    [Fact]
+    public async Task GetBySystemIdReturns403IfNotValidOrg()
+    {
+        // Prepares
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithRedirectUrl("https://altinn.no")
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
+            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            .WithName(Guid.NewGuid().ToString())
+            .WithToken(maskinportenToken);
+
+        var requestBodySystemRegister = teststate.GenerateRequestBody();
+        await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+        
+        //Fetch token for different org
+        var illegalOrgToken = await _platformClient.GetEnterpriseAltinnToken("214270102", "altinn:authentication/systemregister.write");
+        
+        // Get system
+        var resp = await _systemRegisterClient.getBySystemId(teststate.SystemId, illegalOrgToken);
+        Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+        _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
+        
+        // Cleanup
+        await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
+    }
+
+    [Fact]
     public async Task UpdateRightsInSystemForVendorReturns200Ok()
     {
         // Prepare
@@ -284,5 +336,25 @@ public class SystemRegisterTests
         Assert.Contains("authentication-e2e-test",stringBody);
         Assert.Contains("vegardtestressurs",stringBody);
         Assert.DoesNotContain("resource_nonDelegable_enkeltrettighet", stringBody);
+    }
+
+    [Fact]
+    public async Task PostSystemWithAccessPackage()
+    {
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+        
+        var teststate = new TestState("Resources/Testdata/Systemregister/AccessPackageSystemRegister.json")
+            .WithRedirectUrl("https://altinn.no")
+            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
+            .WithName(Guid.NewGuid().ToString())
+            .WithToken(maskinportenToken);
+        
+        var resp = await _systemRegisterClient.PostSystem(teststate.GenerateRequestBody(), maskinportenToken);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+  
+        
+        _outputHelper.WriteLine(teststate.SystemId);
+
     }
 }

@@ -12,6 +12,7 @@ get {
 
 vars:pre-request {
   systemId: 312605031_78f336c7-3a71-4910-b131-9e42f086d6c9
+  ~systemId: 312605031_AlleRelevanteKlientDelegeringsPakker
   ~systemId: 310574775_TwoRedirectUrlsTest
   ~systemId: 312605031_e78335f7-930f-4412-9dd9-223d65c12eec
   ~systemId: 310574775_06f500ea-7039-41ad-863e-3bb057939acc
@@ -32,6 +33,8 @@ script:pre-request {
   
   // const systemName = "QueryParamMustWorkSingle"
   // 
+  
+  
   bru.setEnvVar("system_name","Tøysekopp");
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

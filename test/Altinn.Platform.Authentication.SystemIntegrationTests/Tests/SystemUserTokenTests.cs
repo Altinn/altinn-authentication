@@ -56,8 +56,6 @@ public class SystemUserTokenTests
             $"&externalRef={externalRef}";
 
         var fullEndpoint = $"{ApiEndpoints.GetSystemUserByExternalId.Url()}{queryString}";
-        //Old
-        // fullEndpoint = $"{UrlConstants.GetByExternalId}{queryString}";
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
@@ -72,6 +70,7 @@ public class SystemUserTokenTests
         var systemUser = await GetSystemUserOnSystemId(SystemId);
         Assert.NotNull(systemUser);
         Assert.NotNull(systemUser.ExternalRef);
+        _outputHelper.WriteLine(systemUser.ExternalRef);
 
         var maskinportenToken = await _platformClient.GetSystemUserToken(systemUser.ExternalRef);
         Assert.NotNull(maskinportenToken);
@@ -170,7 +169,7 @@ public class SystemUserTokenTests
         //Return system user and make sure it was created
         return await GetSystemUserOnSystemId(systemId);
     }
-
+    
     private async Task<SystemUser?> GetSystemUserOnSystemId(string systemId)
     {
         var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
@@ -180,6 +179,7 @@ public class SystemUserTokenTests
 
         return systemUsers.Find(user => user.SystemId == systemId);
     }
+    
 
     // Utility function to properly pad Base64 strings before decoding
     private static string PadBase64(string base64)

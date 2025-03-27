@@ -1,5 +1,6 @@
 [
   {
+    "category": "",
     "role": "DAGL",
     "altinnPartyId": "50891151",
     "pid": "04855195742",
@@ -7,6 +8,7 @@
     "org": ""
   },
   {
+    "category": "",
     "info": "test user in same org as Vendor Org for System user Requests to approve",
     "role": "DAGL",
     "altinnPartyId": "51428801",
@@ -16,19 +18,37 @@
     "altinnPartyUuid" : "db6bb2f6-06a2-494a-9e51-717e3962c630"
   },
   {
-    "role" : "Ikke daglig leder lol",
+    "category": "",
+    "role" : "Ikke daglig leder",
     "altinnPartyId": "50335411",
     "pid": "08907798543",
     "userId": "20013094",
     "org": ""
   },
   {
+    "category": "",
     "role" : "Customer",
     "altinnPartyId": "51188771",
     "pid": "20924199971",
     "userId": "20013163",
     "org": "312251604",
     "altinnPartyUuid" : "0066ab2c-c64e-4e1c-94c2-a361b5d92ae6"
+  },
+  {
+    "category": "facilitator",
+    "altinnPartyId": "51243526",
+    "pid": "06857897380",
+    "userId": "20013183",
+    "org": "314250052",
+    "altinnPartyUuid" : "368f5a82-97f5-4f33-b372-ac998a4d6b22"
+  },
+  {
+    "category": "facilitator-large-category-list",
+    "altinnPartyId": "51235098",
+    "pid": "23812849735",
+    "userId": "20013170",
+    "org": "313588270",
+    "altinnPartyUuid" : "ea9611a5-65bf-4635-8ff5-0f03a44dd022"
   }
 ]
 

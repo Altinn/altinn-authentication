@@ -1,0 +1,34 @@
+// Slett delegering / fjern kunde
+
+/DELETE: api/v1/systemuser/agentdelegation/{facilitatorPartyId}/{facilitatorAltinnPartyUuid}/{systemUserUuid}/delegation/{delegationId}
+Eksempelvis: accessmanagement/api/v1/systemuser/agentdelegation/51243526/368f5a82-97f5-4f33-b372-ac998a4d6b22/4549c4c9-d190-4200-9267-2e68cff58af2/delegation/0195cd62-50b4-7497-90d1-ccddc994c995aZqEBPIb-KuvZpCgJBg
+
+
+delegationId = må hentes via /GET delegations som gir følgende respons:
+
+[{
+    "agentSystemUserId": "4549c4c9-d190-4200-9267-2e68cff58af2",
+    "delegationId": "0195cd62-50b4-7497-90d1-ccddc994c995",
+    "customerId": "0099ada4-7491-4765-919d-4006daabeb7d"
+}, {
+    "agentSystemUserId": "4549c4c9-d190-4200-9267-2e68cff58af2",
+    "delegationId": "0195cd67-0a63-7707-9aee-de59c8005cab",
+    "customerId": "01571c81-80e4-47b3-a253-67a70c3d3132"
+}, {
+    "agentSystemUserId": "4549c4c9-d190-4200-9267-2e68cff58af2",
+    "delegationId": "0195cd67-1351-79e8-9a02-431a379836fe",
+    "customerId": "024a0fdd-294c-45ce-9a12-262b11983f2d"
+}]
+
+ELLER når du oppretter et kundeforhold /delegation:
+
+/POST delegation
+gir tilbake:
+{
+    "agentSystemUserId": "4549c4c9-d190-4200-9267-2e68cff58af2",
+    "delegationId": "0195cd70-93f0-7a9d-8b4f-703548ed4423",
+    "customerId": "03d79c06-a9f9-4b02-9888-88e900efc8a9"
+}
+
+
+https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/51243526/368f5a82-97f5-4f33-b372-ac998a4d6b22/4549c4c9-d190-4200-9267-2e68cff58af2/customers

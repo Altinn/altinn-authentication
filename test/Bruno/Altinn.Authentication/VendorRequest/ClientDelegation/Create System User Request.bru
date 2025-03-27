@@ -7,39 +7,21 @@ meta {
 post {
   url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent
   body: json
-  auth: none
+  auth: inherit
 }
 
 headers {
-  Authorization: Bearer {{bearerToken}}
+  ~Authorization: Bearer {{bearerToken}}
 }
 
 body:json {
   {
-    "systemId": "{{system_id}}",
-    "partyOrgNo": "{{partyOrgNo}}",
-    "redirectUrl": "*",
-    "accessPackages": [
+    "systemId": "312605031_E2E test - urn:altinn:accesspackage:ansvarlig-revisor",
+    "partyOrgNo": "310990418",
+    "redirectUrl": "",
+   "accessPackages": [
       {
-        "urn": "urn:altinn:accesspackage:skattnaering"
-      }
-    ],
-    "rights": [
-      {
-        "resource": [
-          {
-            "value": "authentication-e2e-test",
-            "id": "urn:altinn:resource"
-          }
-        ]
-      },
-      {
-        "resource": [
-          {
-            "value": "vegardtestressurs",
-            "id": "urn:altinn:resource"
-          }
-        ]
+        "urn": "urn:altinn:accesspackage:ansvarlig-revisor"
       }
     ]
   }
@@ -49,8 +31,9 @@ body:json {
 vars:pre-request {
   auth_orgNo: 991825827
   auth_org: 991825827
-  system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
-  partyOrgNo: 312251604
+  partyOrgNo: 310990418
+  ~system_id: 312605031_E2E test - urn:altinn:accesspackage:revisormedarbeiderAnsvarlig Revisor
+  ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
 }
 
 script:pre-request {
@@ -58,9 +41,14 @@ script:pre-request {
   
   const { v4: uuidv4} = require('uuid')
   
+  
   //Set token type
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+  
+  bru.setEnvVar("auth_orgNo","310990418");
+  bru.setEnvVar("auth_org", "310990418");
+  
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);

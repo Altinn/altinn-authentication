@@ -53,8 +53,8 @@ public class PlatformAuthenticationClient
     private string GetEnvironment(string environmentHelperTestenvironment)
     {
         // Define base URLs for tt02 and all "at" environments
-        const string tt02 = "https://platform.tt02.altinn.no/authentication/api/";
-        const string atBaseUrl = "https://platform.{env}.altinn.cloud/authentication/api/";
+        const string tt02 = "https://platform.tt02.altinn.no/";
+        const string atBaseUrl = "https://platform.{env}.altinn.cloud/";
 
         // Handle case-insensitive input and return the correct URL
         environmentHelperTestenvironment = environmentHelperTestenvironment.ToLower();
@@ -301,5 +301,10 @@ public class PlatformAuthenticationClient
 
         return TestUsers.Find(testUser => testUser.Org!.Equals(vendor))
                ?? throw new Exception($"Test user not found for organization: {vendor}");
+    }
+
+    public Testuser GetTestUserWithName(String name)
+    {
+        return TestUsers.Find(user => user.Category!.Equals(name)) ?? throw new Exception("Unable to find testuser");
     }
 }

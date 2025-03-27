@@ -1,0 +1,29 @@
+meta {
+  name: Add Client - Authentication
+  type: http
+  seq: 9
+}
+
+post {
+  url: https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{{party}}/{{facilitatorId}}/{{systemUserId}}/delegation
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjFENUEzN0I0NDMzNzlCOThDMTQ2NkQ4OUZDRkMzRTQ2MTU2NUM5RDEiLCJ4NXQiOiJIVm8zdEVNM201akJSbTJKX1B3LVJoVmx5ZEUiLCJ0eXAiOiJKV1QifQ.eyJuYW1laWQiOiIyMDAxMzE3MCIsInVybjphbHRpbm46dXNlcmlkIjoiMjAwMTMxNzAiLCJ1cm46YWx0aW5uOnBhcnR5OnV1aWQiOiI4ZGUzZjI0ZC1lYzcyLTRhMDAtOGU4OS0xODFmZDgxM2Q0MTAiLCJ1cm46YWx0aW5uOnBhcnR5aWQiOjUxMTY3OTQwLCJ1cm46YWx0aW5uOmF1dGhlbnRpY2F0ZW1ldGhvZCI6IklkcG9ydGVuVGVzdElkIiwidXJuOmFsdGlubjphdXRobGV2ZWwiOjMsImp0aSI6Ijk0ZDZkM2UxLTI2NmUtNDZkMC04YzJmLTdhODEzMzVjZjI3NyIsInNjb3BlIjoiYWx0aW5uOnBvcnRhbC9lbmR1c2VyIiwibmJmIjoxNzQyOTgxMzIxLCJleHAiOjE3NDI5ODMxMjEsImlhdCI6MTc0Mjk4MTMyMX0.SK6FOmpKyEIeTbTLczd1yr4nS138tR339ynsZHEJQc99gr0l1Rhk_Ak7m1Y2WGAcx_9NBXxV3VtJP8DSmXakhoVOy5Gk1pcWOHGjce9prOIgaRblQ-NrM3D7NXYQj-TsbdcRTzRsSVS3mEVxeMzFyOLe0xKu2RmtNcnVHq5TwNsyuuvd4RF0NBKRlEGINGj8jmslKj6iasPcSxLKHEGF408HJKtgqdca_BWrF1vNj9kpjYnhBGUORuKkJts2J88yPndTpI-Pb93D3O2yWk9mlFXqcfHNPrliOIDf5kua0tUBL5jSa0MMEXSyIqhXZnZbq4YLQuFoRSBw_dLtwjZA5w
+}
+
+body:json {
+  {
+    "customerId": "{{customerId}}",
+    "facilitatorId":"{{facilitatorId}}"
+  }
+}
+
+vars:pre-request {
+  party: 51235098
+  systemUserId: 4408377e-1f5e-4b71-a572-0f862244f6a8
+  facilitatorId: ea9611a5-65bf-4635-8ff5-0f03a44dd022
+  customerId: f3f40c86-d758-4cdc-a439-c9ce1a0c9ade
+}

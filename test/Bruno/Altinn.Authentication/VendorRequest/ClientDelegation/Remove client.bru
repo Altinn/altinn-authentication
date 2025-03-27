@@ -1,0 +1,17 @@
+meta {
+  name: Remove client
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/accessmanagement/api/v1/internal/systemuserclientdelegation/delete?party={{party}}&systemUser={{systemUser}}&client={{clientId}}
+  body: none
+  auth: none
+}
+
+params:query {
+  party: {{party}}
+  systemUser: {{systemUser}}
+  client: {{clientId}}
+}

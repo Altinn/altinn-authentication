@@ -65,6 +65,15 @@
       <None Update="Resources\Testdata\ClientDelegation\AccessPackageSystemRegister.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Resources\Testdata\ClientDelegation\Documentation\AccessPackageSystemRegister.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testdata\ClientDelegation\Documentation\CreateRequest.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testdata\Systemregister\AccessPackageSystemRegister.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

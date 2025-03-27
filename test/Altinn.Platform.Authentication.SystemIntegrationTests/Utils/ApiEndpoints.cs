@@ -6,38 +6,38 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 public enum ApiEndpoints
 {
     // System Register Endpoints
-    [EndpointInfo("v1/systemregister", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister", "GET")]
     GetAllSystemsFromRegister,
 
-    [EndpointInfo("v1/systemregister/{systemId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/{systemId}", "GET")]
     GetSystemRegisterById,
 
-    [EndpointInfo("v1/systemregister/vendor/{systemId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "GET")]
     GetVendorSystemRegisterById,
 
-    [EndpointInfo("v1/systemregister/vendor/{systemId}", "PUT")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "PUT")]
     UpdateVendorSystemRegister,
 
-    [EndpointInfo("v1/systemregister/vendor/{systemId}/rights", "PUT")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}/rights", "PUT")]
     UpdateRightsVendorSystemRegister,
 
-    [EndpointInfo("v1/systemregister/vendor/{systemId}", "DELETE")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "DELETE")]
     DeleteSystemSystemRegister,
 
-    [EndpointInfo("v1/systemregister/{systemId}/rights", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/{systemId}/rights", "GET")]
     GetSystemRegisterRights,
 
-    [EndpointInfo("v1/systemregister/vendor", "POST")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor", "POST")]
     CreateSystemRegister,
 
     // System User Endpoints
-    [EndpointInfo("v1/systemuser/{party}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/{party}", "GET")]
     GetSystemUsersByParty,
 
-    [EndpointInfo("v1/systemuser/{party}", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/{party}", "POST")]
     CreateSystemUser,
 
-    [EndpointInfo("v1/systemuser/{party}/{systemUserId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/{party}/{systemUserId}", "GET")]
     GetSystemUserById,
 
     [EndpointInfo("v1/systemuser/{party}/{systemUserId}", "DELETE")]
@@ -93,10 +93,10 @@ public enum ApiEndpoints
     ApproveChangeRequest,
 
     // <!--- CLIENT DELEGATION ENDPOINTS -->
-    [EndpointInfo("v1/systemuser/request/vendor/agent", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor/agent", "POST")]
     PostAgentClientRequest,
 
-    [EndpointInfo("v1/systemuser/request/vendor/agent/{requestId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor/agent/{requestId}", "GET")]
     GetVendorAgentRequestById, // Retrieves a specific vendor agent request by request ID
 
     [EndpointInfo("v1/systemuser/request/vendor/agent/byexternalref/{systemId}/{orgNo}/{externalRef}", "GET")]
@@ -105,17 +105,25 @@ public enum ApiEndpoints
     [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}", "GET")]
     GetAgentRequestById, // Retrieves a specific agent request by party and request ID (BFF)
 
-    [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}/approve", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/agent/{facilitatorPartyId}/{requestId}/approve", "POST")]
     ApproveAgentRequest, // Approves an agent request for a specific party
 
-    [EndpointInfo("v1/systemuser/request/vendor/agent/bysystem/{systemId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor/agent/bysystem/{systemId}", "GET")]
     GetVendorAgentRequestsBySystemId, // Retrieves all vendor agent requests associated with a system ID
 
     [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}/reject", "POST")]
     RejectAgentRequest, // Rejects an agent request for a specific party
 
-    [EndpointInfo("v1/systemuser/agent/{customerPartyId}/{systemUserId}/delegation", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/agentdelegation/{facilitatorPartyid}/{facilitatorPartyUuid}/{systemuserUuid}/delegation", "POST")]
     DelegationAgentRequest,
+    
+    [EndpointInfo("authentication/api/v1/systemuser/agent/{facilitatorPartyid}/{systemuserUuid}/delegation", "POST")]
+    DelegationAgentAuthentication,
+    
+    [EndpointInfo("authentication/api/v1/systemuser/agent/{party}", "GET")]
+    GetSystemUsersByPartyAgent,
+    
+    
 }
 
 [AttributeUsage(AttributeTargets.Field)]
