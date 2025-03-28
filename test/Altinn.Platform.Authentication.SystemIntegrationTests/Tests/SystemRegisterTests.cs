@@ -55,6 +55,7 @@ public class SystemRegisterTests
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
+            .WithName("SystemRegister e2e Tests: " + Guid.NewGuid())
             .WithToken(maskinportenToken);
 
         var requestBody = teststate.GenerateRequestBody();
@@ -86,6 +87,7 @@ public class SystemRegisterTests
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests With App: " + Guid.NewGuid())
             .WithClientId(Guid.NewGuid()
                 .ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor) //Matches the maskinporten settings
@@ -132,6 +134,7 @@ public class SystemRegisterTests
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests For Validating Rights " + Guid.NewGuid())
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
@@ -166,6 +169,7 @@ public class SystemRegisterTests
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests - Delete" + Guid.NewGuid())
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
@@ -193,6 +197,7 @@ public class SystemRegisterTests
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests Put " + Guid.NewGuid())
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
@@ -297,6 +302,7 @@ public class SystemRegisterTests
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
 
         var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests: Update rights: " + Guid.NewGuid())
             .WithRedirectUrl("https://altinn.no")
             .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)

@@ -112,6 +112,7 @@ public class SystemUserTests : IDisposable
 
         // Registering system to System Register
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("E2E tests - App " + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
@@ -187,6 +188,7 @@ public class SystemUserTests : IDisposable
     private async Task<TestState> CreateSystemInSystemRegister(string maskinportenToken)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests Approve Requests" + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
@@ -250,6 +252,7 @@ public class SystemUserTests : IDisposable
         var externalRef = Guid.NewGuid().ToString();
 
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("E2E tests - Delete System User Test " + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
@@ -362,7 +365,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync("v1/systemuser/request/vendor", finalJson, maskinportenToken);
+            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -375,6 +378,7 @@ public class SystemUserTests : IDisposable
     public async Task<string> CreateSystemAndSystemUserRequest(string maskinportenToken, bool withApp = false)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests" + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")

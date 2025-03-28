@@ -40,56 +40,56 @@ public enum ApiEndpoints
     [EndpointInfo("authentication/api/v1/systemuser/{party}/{systemUserId}", "GET")]
     GetSystemUserById,
 
-    [EndpointInfo("v1/systemuser/{party}/{systemUserId}", "DELETE")]
+    [EndpointInfo("authentication/api/v1/systemuser/{party}/{systemUserId}", "DELETE")]
     DeleteSystemUserById,
 
-    [EndpointInfo("v1/systemuser/byExternalId", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/byExternalId", "GET")]
     GetSystemUserByExternalId,
 
-    [EndpointInfo("v1/systemuser", "PUT")] UpdateSystemUser,
+    [EndpointInfo("authentication/api/v1/systemuser", "PUT")] UpdateSystemUser,
 
-    [EndpointInfo("v1/systemuser/vendor/bysystem/{systemId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/vendor/bysystem/{systemId}", "GET")]
     GetSystemUsersBySystemForVendor,
 
     // System User Request Endpoints
-    [EndpointInfo("v1/systemuser/request/vendor", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor", "POST")]
     CreateSystemUserRequest,
 
-    [EndpointInfo("v1/systemuser/request/vendor/{requestId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor/{requestId}", "GET")]
     GetSystemUserRequestStatus,
 
-    [EndpointInfo("v1/systemuser/request/vendor/{requestId}", "DELETE")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor/{requestId}", "DELETE")]
     DeleteSystemUserRequest,
 
-    [EndpointInfo("v1/systemuser/request/vendor/byexternalref/{systemId}/{orgNo}/{externalRef}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor/byexternalref/{systemId}/{orgNo}/{externalRef}", "GET")]
     GetSystemUserRequestByExternalRef,
 
-    [EndpointInfo("v1/systemuser/request/{party}/{requestId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/{party}/{requestId}", "GET")]
     GetSystemUserRequestByParty,
 
-    [EndpointInfo("v1/systemuser/request/{party}/{requestId}/approve", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/{party}/{requestId}/approve", "POST")]
     ApproveSystemUserRequest,
 
-    [EndpointInfo("v1/systemuser/request/vendor/bysystem/{systemId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}", "GET")]
     GetSystemUserRequestsBySystem,
 
-    [EndpointInfo("v1/systemuser/request/{party}/{requestId}/reject", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/{party}/{requestId}/reject", "POST")]
     RejectSystemUserRequest,
 
     //Change request endpoints
-    [EndpointInfo("v1/systemuser/changerequest/vendor", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/changerequest/vendor", "POST")]
     PostChangeRequestVendor,
 
-    [EndpointInfo("v1/systemuser/changerequest/vendor/{requestId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/changerequest/vendor/{requestId}", "GET")]
     GetChangeRequestByRequestId,
 
-    [EndpointInfo("v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{vendor}/{externalRef}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{vendor}/{externalRef}", "GET")]
     GetChangeRequestByExternalRef,
 
-    [EndpointInfo("v1/systemuser/changerequest/vendor/{requestId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/changerequest/vendor/{requestId}", "GET")]
     GetChangeRequestByRequestIdUrl,
 
-    [EndpointInfo("v1/systemuser/changerequest/{partyId}/{requestId}/approve", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}/approve", "POST")]
     ApproveChangeRequest,
 
     // <!--- CLIENT DELEGATION ENDPOINTS -->
@@ -99,10 +99,10 @@ public enum ApiEndpoints
     [EndpointInfo("authentication/api/v1/systemuser/request/vendor/agent/{requestId}", "GET")]
     GetVendorAgentRequestById, // Retrieves a specific vendor agent request by request ID
 
-    [EndpointInfo("v1/systemuser/request/vendor/agent/byexternalref/{systemId}/{orgNo}/{externalRef}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/vendor/agent/byexternalref/{systemId}/{orgNo}/{externalRef}", "GET")]
     GetVendorAgentRequestByExternalRef, // Retrieves a vendor agent request using an external reference
 
-    [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/agent/{party}/{requestId}", "GET")]
     GetAgentRequestById, // Retrieves a specific agent request by party and request ID (BFF)
 
     [EndpointInfo("authentication/api/v1/systemuser/request/agent/{facilitatorPartyId}/{requestId}/approve", "POST")]
@@ -111,11 +111,8 @@ public enum ApiEndpoints
     [EndpointInfo("authentication/api/v1/systemuser/request/vendor/agent/bysystem/{systemId}", "GET")]
     GetVendorAgentRequestsBySystemId, // Retrieves all vendor agent requests associated with a system ID
 
-    [EndpointInfo("v1/systemuser/request/agent/{party}/{requestId}/reject", "POST")]
+    [EndpointInfo("authentication/api/v1/systemuser/request/agent/{party}/{requestId}/reject", "POST")]
     RejectAgentRequest, // Rejects an agent request for a specific party
-
-    [EndpointInfo("authentication/api/v1/systemuser/agentdelegation/{facilitatorPartyid}/{facilitatorPartyUuid}/{systemuserUuid}/delegation", "POST")]
-    DelegationAgentRequest,
     
     [EndpointInfo("authentication/api/v1/systemuser/agent/{facilitatorPartyid}/{systemuserUuid}/delegation", "POST")]
     DelegationAgentAuthentication,
@@ -123,7 +120,8 @@ public enum ApiEndpoints
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}", "GET")]
     GetSystemUsersByPartyAgent,
     
-    
+    [EndpointInfo("accessmanagement/api/v1/systemuser/agentdelegation/{facilitatorPartyId}/{facilitatorPartyUuid}/{systemUserUuid}/customers", "GET")]
+    Customers,
 }
 
 [AttributeUsage(AttributeTargets.Field)]

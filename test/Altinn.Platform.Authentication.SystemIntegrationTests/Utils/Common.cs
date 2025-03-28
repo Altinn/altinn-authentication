@@ -29,6 +29,7 @@ public class Common
             .WithClientId(clientId)
             .WithVendor(testuser.Org)
             .WithRedirectUrl("https://altinn.no")
+            .WithName("Change Request-test: " + Guid.NewGuid())
             .WithToken(maskinportenToken);
 
         var requestBodySystemREgister = testState.GenerateRequestBody();
@@ -44,7 +45,7 @@ public class Common
             .Replace("{externalRef}", externalRef);
 
         // Act
-        var userResponse = await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
+        var userResponse = await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -55,9 +56,10 @@ public class Common
         using var jsonDocSystemRequestResponse = JsonDocument.Parse(content);
         var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
 
+     
         // Approve
         var approveResp =
-            await ApproveRequest($"v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve", testuser);
+            await ApproveRequest($"authentication/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve", testuser);
 
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
@@ -67,7 +69,7 @@ public class Common
 
     public async Task<HttpContent> GetSystemUserForVendor(string systemId, string maskinportenToken)
     {
-        var endpoint = $"v1/systemuser/vendor/bysystem/{systemId}";
+        var endpoint = $"authentication/api/v1/systemuser/vendor/bysystem/{systemId}";
         var resp = await _platformClient.GetAsync(endpoint, maskinportenToken);
         Assert.True(resp.StatusCode == HttpStatusCode.OK,
             "Did not get OK, but: " + resp.StatusCode + " for endpoint:  " + endpoint);
@@ -135,6 +137,7 @@ public class Common
     public async Task CreateRequestWithManalExample(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/VendorExampleUrls.json")
+            .WithName("E2E tests - Redirect URL" + Guid.NewGuid())
             .WithClientId(clientId)
             .WithVendor(testuser.Org)
             .WithAllowedRedirectUrls(
@@ -160,7 +163,7 @@ public class Common
         
         Output.WriteLine("Request body for system user request" + requestBody);
         // Act
-        var userResponse = await _platformClient.PostAsync("v1/systemuser/request/vendor", requestBody, maskinportenToken);
+        var userResponse = await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
         
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -170,10 +173,13 @@ public class Common
 
         using var jsonDocSystemRequestResponse = JsonDocument.Parse(content);
         var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
-
+        
+        var url = ApiEndpoints.ApproveSystemUserRequest.Url()
+            .Replace("{party}", testuser.AltinnPartyId)
+            .Replace("{requestId}", id);
         // Approve
         var approveResp =
-            await ApproveRequest($"v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve", testuser);
+            await ApproveRequest(url, testuser);
 
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");

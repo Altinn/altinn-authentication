@@ -19,7 +19,9 @@ public class PlatformAuthenticationClient
     /// <summary>
     /// baseUrl for api
     /// </summary>
-    public readonly string? BaseUrl;
+    public readonly string? BaseUrlAuthentication;
+
+    public readonly string? BaseUrlBff;
 
     /// <summary>
     /// Base class for running requests
@@ -27,7 +29,8 @@ public class PlatformAuthenticationClient
     public PlatformAuthenticationClient()
     {
         EnvironmentHelper = LoadEnvironment();
-        BaseUrl = GetEnvironment(EnvironmentHelper.Testenvironment);
+        BaseUrlAuthentication = GetEnvironment(EnvironmentHelper.Testenvironment);
+        BaseUrlBff = GetEnvironment(EnvironmentHelper.Testenvironment);
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
     }
@@ -50,7 +53,7 @@ public class PlatformAuthenticationClient
                ?? throw new InvalidOperationException("Failed to deserialize test users.");
     }
 
-    private string GetEnvironment(string environmentHelperTestenvironment)
+    public static string GetEnvironment(string environmentHelperTestenvironment)
     {
         // Define base URLs for tt02 and all "at" environments
         const string tt02 = "https://platform.tt02.altinn.no/";
@@ -84,7 +87,7 @@ public class PlatformAuthenticationClient
             ? null
             : new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync($"{BaseUrl}/{endpoint}", content);
+        var response = await client.PostAsync($"{BaseUrlAuthentication}/{endpoint}", content);
         return response;
     }
 
@@ -99,7 +102,7 @@ public class PlatformAuthenticationClient
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
-        return await client.GetAsync($"{BaseUrl}/{endpoint}");
+        return await client.GetAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
 
     public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string? token)
@@ -110,7 +113,7 @@ public class PlatformAuthenticationClient
 
         HttpContent content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
 
-        return await client.PutAsync($"{BaseUrl}/{path}", content);
+        return await client.PutAsync($"{BaseUrlAuthentication}/{path}", content);
     }
 
     /// <summary>
@@ -124,7 +127,7 @@ public class PlatformAuthenticationClient
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
-        return await client.DeleteAsync($"{BaseUrl}/{endpoint}");
+        return await client.DeleteAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
 
     /// <summary>
@@ -137,7 +140,7 @@ public class PlatformAuthenticationClient
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await client.GetAsync(BaseUrl + "v1/exchange/maskinporten?test=true");
+        var response = await client.GetAsync(BaseUrlAuthentication + "authentication/api/v1/exchange/maskinporten?test=true");
 
         if (response.IsSuccessStatusCode)
         {
@@ -230,7 +233,7 @@ public class PlatformAuthenticationClient
         return null;
     }
 
-    private static EnvironmentHelper LoadEnvironment()
+    public static EnvironmentHelper LoadEnvironment()
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
         const string environmentVariable = "TEST_ENVIRONMENT";
@@ -258,7 +261,7 @@ public class PlatformAuthenticationClient
         return LoadEnvironmentFromFile();
     }
 
-    private static EnvironmentHelper LoadEnvironmentFromFile()
+    public static EnvironmentHelper LoadEnvironmentFromFile()
     {
         //Todo fix support for dev
         var localFilePath = "Resources/Environment/environment.json";
@@ -303,8 +306,22 @@ public class PlatformAuthenticationClient
                ?? throw new Exception($"Test user not found for organization: {vendor}");
     }
 
-    public Testuser GetTestUserWithName(String name)
+    public Testuser GetTestUserWithCategory(String category)
     {
-        return TestUsers.Find(user => user.Category!.Equals(name)) ?? throw new Exception("Unable to find testuser");
+        return TestUsers.Find(user => user.Category!.Equals(category)) ?? throw new Exception("Unable to find testuser");
+    }
+
+    public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string systemUserUuid)
+    {
+        // Get the Altinn token
+        var altinnToken = await GetPersonalAltinnToken(testuser);
+        
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", altinnToken);
+
+        var endpoint = $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers";
+
+        return await client.GetAsync(endpoint);
     }
 }

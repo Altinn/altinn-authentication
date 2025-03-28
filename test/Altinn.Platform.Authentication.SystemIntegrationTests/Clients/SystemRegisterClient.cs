@@ -22,7 +22,7 @@ public class SystemRegisterClient
     /// <summary>
     /// Creates a new system in Systemregister. Requires Bearer token from Maskinporten
     /// </summary>
-    public async Task<HttpResponseMessage> PostSystem(string requestBody, string token, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
+    public async Task<HttpResponseMessage> PostSystem(string requestBody, string token)
     {
         var response = await _platformClient.PostAsync(ApiEndpoints.CreateSystemRegister.Url(), requestBody, token);
 
