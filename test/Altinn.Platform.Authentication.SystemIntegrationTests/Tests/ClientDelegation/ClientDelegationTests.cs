@@ -62,7 +62,7 @@ public class ClientDelegationTests
             Assert.True(deleteResponse.IsSuccessStatusCode, $"Failed to delete delegation {delegation.delegationId}");
         }
 
-        var systemUser = await _common.GetSystemUserOnSystemIdForOrg(systemId, facilitator);
+        var systemUser = await _common.GetSystemUserOnSystemIdForAgenOnOrg(systemId, facilitator);
 
         // Delete System user
         var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
@@ -175,7 +175,7 @@ public class ClientDelegationTests
 
     private async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser facilitator, string systemId, bool allCustomers = false)
     {
-        var systemUser = await _common.GetSystemUserOnSystemIdForOrg(systemId, facilitator);
+        var systemUser = await _common.GetSystemUserOnSystemIdForAgenOnOrg(systemId, facilitator);
         var customerListResp = await _platformClient.GetCustomerList(facilitator, systemUser?.Id, _outputHelper);
         var customerContent = await customerListResp.Content.ReadAsStringAsync();
 

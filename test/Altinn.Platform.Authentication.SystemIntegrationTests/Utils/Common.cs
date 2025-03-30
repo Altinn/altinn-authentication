@@ -185,9 +185,9 @@ public class Common
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
     }
     
-    public async Task<SystemUser?> GetSystemUserOnSystemIdForOrg(string systemId, Testuser testuser)
+    public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser)
     {
-        var systemUsers = await _systemUserClient.GetSystemUsersForTestUser(testuser);
+        var systemUsers = await _systemUserClient.GetSystemUsersForAgentTestUser(testuser);
         return systemUsers.Find(user => user.SystemId == systemId);
     }
 }
