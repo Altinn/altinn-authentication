@@ -390,51 +390,7 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
-            return await HandleErrors(response);
-
-            //            if (response.IsSuccessStatusCode)
-            //            {
-            //                return true;
-            //            }
-            //            else if (response.StatusCode == HttpStatusCode.BadRequest)
-            //            {
-            //                string responseContent = await response.Content.ReadAsStringAsync();
-            //                _logger.LogError($"Authentication // AccessManagementClient // DeleteCustomerDelegationToAgent // BadRequest: {responseContent}");
-            //                var problemExtensionData = ProblemExtensionData.Create(new[]
-            //{
-            //                    new KeyValuePair<string, string>("Problem Detail : ", responseContent)
-            //                });
-
-            //                ProblemInstance problemInstance;
-
-            //                if (responseContent.Contains("Delegation not found"))
-            //                {
-            //                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_DelegationNotFound, problemExtensionData);
-            //                }
-            //                else if (responseContent.Contains("Party does not match delegation facilitator"))
-            //                {
-            //                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_InvalidDelegationFacilitator, problemExtensionData);
-            //                }
-            //                else if (responseContent.Contains("Party does not match delegation assignments"))
-            //                {
-            //                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_DeleteDelegation_PartyMismatch, problemExtensionData);
-            //                }
-            //                else
-            //                {
-            //                    problemInstance = ProblemInstance.Create(Problem.CustomerDelegation_FailedToRevoke, problemExtensionData);
-            //                }
-
-            //                return new Result<bool>(problemInstance);
-            //            }
-            //            else
-            //            {
-            //                string responseContent = await response.Content.ReadAsStringAsync();
-            //                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-            //                _logger.LogError($"Authentication // AccessManagementClient // DeleteCustomerDelegationToAgent // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
-
-            //                ProblemInstance problemInstance = ProblemInstance.Create(Problem.CustomerDelegation_FailedToRevoke);
-            //                return new Result<bool>(problemInstance);
-            //            }            
+            return await HandleErrors(response);    
         }
         catch (Exception ex)
         {
@@ -453,53 +409,6 @@ public class AccessManagementClient : IAccessManagementClient
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
             return await HandleErrors(response, true);
-
-            //            if (response.IsSuccessStatusCode)
-            //            {
-            //                return true;
-            //            }
-            //            else if(response.StatusCode == HttpStatusCode.BadRequest)
-            //            {
-            //                string responseContent = await response.Content.ReadAsStringAsync();
-            //                _logger.LogError($"Authentication // AccessManagementClient // DeleteSystemUserAssignment // BadRequest: {responseContent}");
-            //                var problemExtensionData = ProblemExtensionData.Create(new[]
-            //{
-            //                    new KeyValuePair<string, string>("Problem Detail : ", responseContent)
-            //                });
-
-            //                ProblemInstance problemInstance;
-
-            //                if (responseContent.Contains("Assignment not found"))
-            //                {
-            //                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_AssignmentNotFound, problemExtensionData);
-            //                }
-            //                else if(responseContent.Contains("To many assignment found"))
-            //                {
-            //                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_TooManyAssignments, problemExtensionData);
-            //                }
-            //                else
-            //                {
-            //                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
-            //                }
-
-            //                return new Result<bool>(problemInstance);
-            //            }
-            //            else
-            //            {
-            //                string responseContent = await response.Content.ReadAsStringAsync();
-            //                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-            //                _logger.LogError($"Authentication // AccessManagementClient // DeleteSystemUserAssignment // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
-
-            //                var problemExtensionData = ProblemExtensionData.Create(new[]
-            //                {
-            //                    new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail)
-            //                });
-
-            //                ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
-            //                return new Result<bool>(problemInstance);
-            //            }
-
-
         }
         catch (Exception ex)
         {
