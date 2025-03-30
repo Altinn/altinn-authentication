@@ -122,6 +122,9 @@ public enum ApiEndpoints
     
     [EndpointInfo("accessmanagement/api/v1/systemuser/agentdelegation/{facilitatorPartyId}/{facilitatorPartyUuid}/{systemUserUuid}/customers", "GET")]
     Customers,
+    
+    [EndpointInfo("authentication/api/v1/systemuser/agent/{facilitatorPartyId}/{systemUserUuid}/delegation","POST")]
+    DelegationAuthentication,
 }
 
 [AttributeUsage(AttributeTargets.Field)]
@@ -133,7 +136,7 @@ public class EndpointInfoAttribute : Attribute
     public EndpointInfoAttribute(string url, string method)
     {
         Url = url;
-        Method = new HttpMethod(method.ToUpper()); // ✅ Normalize method case
+        Method = new HttpMethod(method.ToUpper());
     }
 }
 

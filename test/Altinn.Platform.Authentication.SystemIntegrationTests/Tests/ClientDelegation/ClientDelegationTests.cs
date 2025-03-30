@@ -52,8 +52,6 @@ public class ClientDelegationTests
     {
         // Fasilitator - Virksomhet som utfører tjenester på vegne av annen virksomhet (tidligere omtalt som hjelper).
         // Når fasilitator går inn på en systembruker skal han kunne videredelegere kunder som har delegert samme tilgangspakke som systembruker er satt opp med
-        //var facilitator = _platformClient.GetFacilitator();
-        // var facilitator = _platformClient.GetTestUserWithName("facilitator-large-customer-list");
         var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var clientId = Guid.NewGuid().ToString();
@@ -65,7 +63,7 @@ public class ClientDelegationTests
         var testState = new TestState("Resources/Testdata/ClientDelegation/AccessPackageSystemRegister.json")
             .WithClientId(clientId)
             .WithVendor(systemOwner.Org)
-            .WithName("E2E test - " + AccessPackage + "Ansvarlig Revisor" + Guid.NewGuid())
+            .WithName("MoreDebug " + Guid.NewGuid())
             .WithToken(maskinportenToken);
 
         //Post system med én pakke for Bedrift "BDO". 
@@ -80,17 +78,12 @@ public class ClientDelegationTests
             .Replace("{externalRef}", externalRef)
             .Replace("{accessPackage}", AccessPackage)
             .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
-        // .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
-
 
         // Act
         var userResponse = await _platformClient.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(), requestBody, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
-
-        _outputHelper.WriteLine(content);
-
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {userResponse.StatusCode} - " +
                                                                        $"{content} for attempted request body:" + requestBody);
 
@@ -102,8 +95,7 @@ public class ClientDelegationTests
         var agentUser = await _common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
         Assert.NotNull(agentUser);
         Assert.Contains(testState.SystemId, await agentUser.ReadAsStringAsync());
-
-
+        
         var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
             .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
@@ -111,65 +103,49 @@ public class ClientDelegationTests
         var approveResp =
             await _common.ApproveRequest(approveUrl, facilitator);
 
-        _outputHelper.WriteLine($"Approved request: {await approveResp.Content.ReadAsStringAsync()}");
-
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
 
         await AssertStatusSystemUserRequest(requestId, "Accepted", maskinportenToken);
 
-        // const string customerId = "0015e9ea-5993-4f13-bdd6-1e6b17f00604";
-        const string customerId = "0099ada4-7491-4765-919d-4006daabeb7d";
+        var systemuser = await _common.GetSystemUserOnSystemIdForOrg(testState.SystemId, facilitator);
+
+        var customerList = await _platformClient.GetCustomerList(facilitator, systemuser?.Id,_outputHelper);
+        var customers = JsonSerializer.Deserialize<List<CustomerListDto>>(await customerList.Content.ReadAsStringAsync());
 
         var requestBodyDelegation = JsonSerializer.Serialize(new
         {
-            customerId,
+            customerId = customers?.Last().id,
             facilitatorId = facilitator.AltinnPartyUuid
         });
-
-        var systemUserId = await _common.GetSystemUserOnSystemIdForOrg(testState.SystemId, facilitator);
-
-        _outputHelper.WriteLine($"SystemId: {systemUserId?.SystemId}");
-        _outputHelper.WriteLine($"SystemUserId: {systemUserId?.Id}");
-
-
-        await PerformDelegation(requestBodyDelegation, systemUserId?.Id, facilitator);
+        
+        var resp = await _platformClient.DelegateFromAuthentication(facilitator, systemuser?.Id, requestBodyDelegation, _outputHelper);
+        Assert.NotNull(resp);
+        Assert.True(resp.StatusCode == HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task DelegateClient()
+    public async Task DelegateClientTest()
     {
-        // var systemId = "312605031_E2E test - urn:altinn:accesspackage:revisormedarbeiderAnsvarlig Revisorfcf2dfba-21d6-401f-839a-1876eacd8707";
+        var facilitator = _platformClient.GetTestUserWithCategory("debug");
 
-        var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
-        //Get client list
-
-        const string systemUserId = "3484dd67-b78e-46f3-9d73-955e671f37d5";
-
-        // Unvalid customerId: 0015e9ea-5993-4f13-bdd6-1e6b17f00604
-
-        var customerList = await _platformClient.GetCustomerList(facilitator, systemUserId);
-        var organizations = JsonSerializer.Deserialize<List<CustomerListDto>>(await customerList.Content.ReadAsStringAsync());
+        const string? systemUserId = "78622673-e991-4337-b81e-4005dae8707b";
 
         var requestBodyDelegation = JsonSerializer.Serialize(new
         {
-            customerId = organizations.Last().id,
+            customerId = "02cc9fee-6bf7-4dd1-8d37-a8af2045ee19",
             facilitatorId = facilitator.AltinnPartyUuid
         });
 
-        // var sustemuser = await _common.GetSystemUserOnSystemIdForOrg(systemId, facilitator);
+        //await PerformDelegation(requestBodyDelegation, systemUserId, facilitator);
+        var resp = await _platformClient.DelegateFromAuthentication(facilitator, systemUserId, requestBodyDelegation, _outputHelper);
 
-        // _outputHelper.WriteLine($"SystemId: {systemUserId?.SystemId}");
-        // _outputHelper.WriteLine($"SystemUserId: {systemUserId?.Id}");
-
-        await PerformDelegation(requestBodyDelegation, systemUserId, facilitator);
+        Assert.True(resp.StatusCode == HttpStatusCode.OK, "Resp was: " + await resp.Content.ReadAsStringAsync());
     }
 
     [Fact]
-    public async Task getTokenForFacilitatorReturnsOk()
+    public async Task GetTokenForFacilitatorReturnsOkTest()
     {
-        const string systemId = "312605031_E2E test - urn:altinn:accesspackage:revisormedarbeider verify maskinporten";
-
         //Only way to use this token is by using the "fake" altinn token service, not allowed to configure this in samarbeidsportalen
         const string scopes = "altinn:maskinporten/systemuser.read";
         const string clientId = "ebfa9b1f-ac36-4479-af1d-17d915c59fba"; // Stored in System register
@@ -191,26 +167,7 @@ public class ClientDelegationTests
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
-
-        _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
         Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
-    }
-
-    private async Task PerformDelegation(string requestBodyDelegation, string? systemUserId, Testuser facilitator)
-    {
-        var token = await _platformClient.GetPersonalAltinnToken(facilitator);
-        var url = ApiEndpoints.DelegationAgentAuthentication.Url()
-            .Replace("{facilitatorPartyid}", facilitator.AltinnPartyId)
-            .Replace("{systemuserUuid}", systemUserId);
-
-        _outputHelper.WriteLine("url used: " + _platformClient.BaseUrlAuthentication + url);
-        _outputHelper.WriteLine("request body: " + requestBodyDelegation);
-
-        var responsDelegation = await _platformClient.PostAsync(url, requestBodyDelegation, token);
-        _outputHelper.WriteLine($"Delegation response: {await responsDelegation.Content.ReadAsStringAsync()}");
-        _outputHelper.WriteLine($"Delegation response: {responsDelegation.StatusCode}");
-
-        // Assert.True(HttpStatusCode.OK == responsDelegation.StatusCode);
     }
 
     private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string maskinportenToken)

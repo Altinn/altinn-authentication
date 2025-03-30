@@ -4,6 +4,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 
@@ -38,8 +39,8 @@ public class PlatformAuthenticationClient
     private static List<Testuser> LoadTestUsers(string testenvironment)
     {
         // Determine the file to load based on the environment
-        var fileName = testenvironment.StartsWith("at")
-            ? "Resources/Testusers/testusers.at.json"
+        var fileName = testenvironment.Equals("at22")
+            ? "Resources/Testusers/testusers.at22.json"
             : "Resources/Testusers/testusers.tt02.json";
 
         if (!File.Exists(fileName))
@@ -192,6 +193,7 @@ public class PlatformAuthenticationClient
             $"&pid={user.Pid}" +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
+            $"&partyuuid={user.AltinnPartyUuid}" +
             $"&authLvl=3&ttl=3000";
 
         // Retrieve the token
@@ -311,17 +313,29 @@ public class PlatformAuthenticationClient
         return TestUsers.Find(user => user.Category!.Equals(category)) ?? throw new Exception("Unable to find testuser");
     }
 
-    public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string systemUserUuid)
+    public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string? systemUserUuid, ITestOutputHelper outputHelper)
     {
         // Get the Altinn token
         var altinnToken = await GetPersonalAltinnToken(testuser);
-        
+
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", altinnToken);
+        
+        var endpoint = EnvironmentHelper.Testenvironment == "tt02" ? $"https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers" : $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers";
 
-        var endpoint = $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers";
-
+        outputHelper.WriteLine("url used " + endpoint);
         return await client.GetAsync(endpoint);
+    }
+
+    public async Task<HttpResponseMessage> DelegateFromAuthentication(Testuser facilitator, string? systemUserUuid, string requestBodyDelegation, ITestOutputHelper outputHelper)
+    {
+        var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
+
+        var url = ApiEndpoints.DelegationAuthentication.Url()
+            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            .Replace("{systemUserUuid}", systemUserUuid);
+
+        return await PostAsync(url, requestBodyDelegation, tokenFacilitator);
     }
 }

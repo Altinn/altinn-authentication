@@ -1,0 +1,28 @@
+meta {
+  name: DelegateFromBff
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/agent/{{facilitatorPartyId}}/{{systemUserUuid}}/delegation
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJSUzI1NiIsImtpZCI6IjFENUEzN0I0NDMzNzlCOThDMTQ2NkQ4OUZDRkMzRTQ2MTU2NUM5RDEiLCJ4NXQiOiJIVm8zdEVNM201akJSbTJKX1B3LVJoVmx5ZEUiLCJ0eXAiOiJKV1QifQ.eyJuYW1laWQiOiIyMDAxMzIxMyIsInVybjphbHRpbm46dXNlcmlkIjoiMjAwMTMyMTMiLCJ1cm46YWx0aW5uOnBhcnR5OnV1aWQiOiI5OTgwNWNlNy0yZjZmLTRhOGUtYjg5YS03NjdlODc3ODM1MjciLCJ1cm46YWx0aW5uOnBhcnR5aWQiOjUwNTg4OTM3LCJ1cm46YWx0aW5uOmF1dGhlbnRpY2F0ZW1ldGhvZCI6IklkcG9ydGVuVGVzdElkIiwidXJuOmFsdGlubjphdXRobGV2ZWwiOjMsImp0aSI6ImRhYzZhMmMxLThlNzQtNDNhZC05YzQyLWIzYTNmN2Y1NTYxNiIsInNjb3BlIjoiYWx0aW5uOnBvcnRhbC9lbmR1c2VyIiwibmJmIjoxNzQzMjQ5MjQ0LCJleHAiOjE3NDMyNTEwNDQsImlhdCI6MTc0MzI0OTI0NH0.O8T3L0-BfLHnxpboTanFBzRxMaly9wdxOFQRLpRcyy2RpweVLaIhnkc4VugqXKHnSHRUpUEp7GNTjgt14ElRe9mAFf70Ymy5h2ldc1aqClXPgjJelPZJbgBIdv2tFfy_8ZkiXa4RAGAw8-n7eyGFjyIiM_5pEG12w8A3D9IvDLlCwj4dvA2_-ZCoUuCd2UuYGyJQAYDiV7pMfEWhG4ia2HPUcqUBHlKvUTKb0GJCJlz3fPBew6DfJvJEC1ytTkpWnCuzrZ-1NPmwDDFOY-3mGDs6mWhEFurBVHZCdHmWBhpsi1N95z5sVJOLG7jObhpUklVKb_0e-0HNZWoc9a82jg
+}
+
+body:json {
+  {
+    "customerId" : "02cc9fee-6bf7-4dd1-8d37-a8af2045ee19",
+    "facilitatorId" :"04a90b1f-9cd3-44e2-a32d-1329c6ac6855"
+  }
+}
+
+vars:pre-request {
+  systemUserUuid: 78622673-e991-4337-b81e-4005dae8707b
+  facilitatorPartyId: 50588937
+  : 
+}
