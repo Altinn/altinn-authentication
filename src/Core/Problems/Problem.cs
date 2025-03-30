@@ -208,30 +208,48 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_FailedToDeleteAgent { get; }
-        = _factory.Create(32, HttpStatusCode.BadRequest, "Failed to delete the agent system user");
+        = _factory.Create(33, HttpStatusCode.BadRequest, "Failed to delete the agent system user");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_ExpectedAgentUserType { get; }
-        = _factory.Create(33, HttpStatusCode.BadRequest, "The system user type of the provided system user GUID is not an agent.");
+        = _factory.Create(34, HttpStatusCode.BadRequest, "The system user type of the provided system user GUID is not an agent.");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_HasDelegations { get; }
-        = _factory.Create(33, HttpStatusCode.BadRequest, "The system user has delegations from customer. Remove the delegations before deleting the system user");
+        = _factory.Create(35, HttpStatusCode.BadRequest, "The system user has delegations from customer. Remove the delegations before deleting the system user");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_ExpectedStandardUserType { get; }
-        = _factory.Create(34, HttpStatusCode.BadRequest, "The system user type of the provided system user GUID is not standard.");
+        = _factory.Create(36, HttpStatusCode.BadRequest, "The system user type of the provided system user GUID is not standard.");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_TooManyAssignments { get; }
-        = _factory.Create(35, HttpStatusCode.BadRequest, "To many assignment found");
+        = _factory.Create(37, HttpStatusCode.BadRequest, "To many assignment found");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_DelegationNotFound { get; }
+        = _factory.Create(38, HttpStatusCode.BadRequest, "Delegation not found");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_InvalidDelegationFacilitator { get; }
+        = _factory.Create(39, HttpStatusCode.BadRequest, "Party does not match delegation facilitator");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_DeleteDelegation_PartyMismatch { get; }
+        = _factory.Create(40, HttpStatusCode.BadRequest, "Party does not match delegation assignments");
 
 }
