@@ -65,4 +65,10 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_AccessPackage_NotValid { get; }
         = _factory.Create(8, "One or all the accesspackage(s) is not found in altinn's access packages or is not delegable because they are not part of REGN/REVI/Forretningsfører roller");
+
+    /// <summary>
+    /// Gets a validation error descriptor for invalid resource id format
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_ResourceId_InvalidFormat { get; }
+        = _factory.Create(9, "One or more resource id is in wrong format. The vlaid format is urn:altinn:resource");
 }

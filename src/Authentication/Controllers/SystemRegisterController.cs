@@ -350,6 +350,13 @@ public class SystemRegisterController : ControllerBase
     private async Task<ValidationErrorBuilder> ValidateRights(List<Right> rights, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
+        if (!AuthenticationHelper.IsResourceIdFormatValid(rights))
+        {
+            errors.Add(ValidationErrors.SystemRegister_ResourceId_InvalidFormat, [
+                ErrorPathConstant.RESOURCERIGHTS
+            ]);
+        }
+
         if (!await _systemRegisterService.DoesResourceIdExists(rights, cancellationToken))
         {
             errors.Add(ValidationErrors.SystemRegister_ResourceId_DoesNotExist, [
