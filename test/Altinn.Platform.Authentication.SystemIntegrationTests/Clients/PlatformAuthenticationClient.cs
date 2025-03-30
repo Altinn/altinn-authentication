@@ -349,8 +349,16 @@ public class PlatformAuthenticationClient
         return await Delete(url, tokenFacilitator);
     }
 
-    public async Task<object> DeleteSystemUser(string? systemUserId, Testuser facilitator)
+    public async Task<HttpResponseMessage> DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
     {
-        throw new NotImplementedException();
+        var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
+        var url = ApiEndpoints.DeleteAgentSystemUser.Url()
+            .Replace("{party}", facilitator.AltinnPartyId)
+            .Replace("{systemUserId}", systemUserId);
+        
+        url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
+
+        return await Delete(url, tokenFacilitator);
+        
     }
 }

@@ -127,6 +127,10 @@ public class ClientDelegationTests
         // Cleanup: Delete delegation
         var deleteDelegationResponse = await _platformClient.DeleteDelegation(facilitator, parsedDelegation);
         Assert.True(deleteDelegationResponse.IsSuccessStatusCode, $"Failed to delete delegation: {await deleteDelegationResponse.Content.ReadAsStringAsync()}");
+        
+        // Delete System user
+        var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
+        Assert.Equal(HttpStatusCode.OK, deleteAgentUserResponse.StatusCode);
 
         // Cleanup: Delete system user
         //var deleteUserResponse = await _platformClient.DeleteSystemUser(systemUser?.Id, facilitator);
@@ -211,5 +215,29 @@ public class ClientDelegationTests
             .Replace("{externalRef}", externalRef);
 
         return await _platformClient.GetAsync(url, maskinportenToken);
+    }
+    
+    private async Task<(TestState TestState, string ClientRequestBody, string MaskinportenToken)> SetupTestState(
+        string systemNamePrefix,
+        Testuser facilitator)
+    {
+        var systemOwner = _platformClient.GetTestUserForVendor();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+        var externalRef = Guid.NewGuid().ToString();
+
+        var testState = new TestState("Resources/Testdata/ClientDelegation/AccessPackageSystemRegister.json")
+            .WithVendor(systemOwner.Org)
+            .WithName($"{systemNamePrefix} {Guid.NewGuid()}");
+
+        var systemPayload = testState.GenerateRequestBody();
+        await _systemRegisterClient.PostSystem(systemPayload, maskinportenToken);
+
+        var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
+            .Replace("{systemId}", testState.SystemId)
+            .Replace("{externalRef}", externalRef)
+            .Replace("{accessPackage}", AccessPackage)
+            .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
+
+        return (testState, clientRequestBody, maskinportenToken);
     }
 }

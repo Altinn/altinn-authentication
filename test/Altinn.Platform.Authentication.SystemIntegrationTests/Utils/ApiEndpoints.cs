@@ -46,7 +46,8 @@ public enum ApiEndpoints
     [EndpointInfo("authentication/api/v1/systemuser/byExternalId", "GET")]
     GetSystemUserByExternalId,
 
-    [EndpointInfo("authentication/api/v1/systemuser", "PUT")] UpdateSystemUser,
+    [EndpointInfo("authentication/api/v1/systemuser", "PUT")]
+    UpdateSystemUser,
 
     [EndpointInfo("authentication/api/v1/systemuser/vendor/bysystem/{systemId}", "GET")]
     GetSystemUsersBySystemForVendor,
@@ -113,18 +114,21 @@ public enum ApiEndpoints
 
     [EndpointInfo("authentication/api/v1/systemuser/request/agent/{party}/{requestId}/reject", "POST")]
     RejectAgentRequest, // Rejects an agent request for a specific party
-    
+
     [EndpointInfo("authentication/api/v1/systemuser/agent/{facilitatorPartyid}/{systemuserUuid}/delegation", "POST")]
     DelegationAgentAuthentication,
-    
+
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}", "GET")]
     GetSystemUsersByPartyAgent,
-    
-    [EndpointInfo("authentication/api/v1/systemuser/agent/{facilitatorPartyId}/{systemUserUuid}/delegation","POST")]
+
+    [EndpointInfo("authentication/api/v1/systemuser/agent/{facilitatorPartyId}/{systemUserUuid}/delegation", "POST")]
     DelegationAuthentication,
-    
+
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/delegation/{delegationId}", "DELETE")]
-    DeleteCustomer
+    DeleteCustomer,
+
+    [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/{systemUserId}", "DELETE")]
+    DeleteAgentSystemUser
 }
 
 [AttributeUsage(AttributeTargets.Field)]
