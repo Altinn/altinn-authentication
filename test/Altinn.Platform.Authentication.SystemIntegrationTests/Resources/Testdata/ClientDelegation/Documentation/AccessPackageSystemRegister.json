@@ -36,7 +36,7 @@
   "allowedRedirectUrls": [
     "https://vg.no/test"
   ],
-  "isVisible": true,
+  "isVisible": false,
   "ClientId": [
     "{clientId}"
   ]

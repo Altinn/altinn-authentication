@@ -8,17 +8,6 @@ using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDelegation;
 
-// Tilgangspakker: https://platform.at22.altinn.cloud/accessmanagement/api/v1/meta/info/accesspackages/export
-
-// Delegation request
-// customerId : kundens party UUID
-// facilitatorId: party UUID til party som eier systembrukeren (samme som party i url query parameter)
-
-// For å slå opp i kundelista til eieren, bruk dette oppslaget:
-//https://platform.at22.altinn.cloud/register/api/v1/internal/parties/cc90e65a-1fa9-4631-8d6e-384cd144317d/customers/ccr/revisor
-// party-uuid er uuid til organisasjonen som approver systembrukeren (agent)
-
-// https://github.com/Altinn/altinn-authentication/issues/548
 public class ClientDelegationTests
 {
     //private const string AccessPackage = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet";
@@ -28,7 +17,6 @@ public class ClientDelegationTests
 
 
     private readonly ITestOutputHelper _outputHelper;
-
     private readonly PlatformAuthenticationClient _platformClient;
     private readonly SystemRegisterClient _systemRegisterClient;
     private readonly SystemUserClient _systemUserClient;
@@ -48,116 +36,41 @@ public class ClientDelegationTests
     }
 
     [Fact]
-    public async Task CreateClientRequest()
+    public async Task CreateSystemUserClientRequestTest()
     {
+        // Formål:
+        // Denne testen dekker brukstilfeller der en sluttbruker (f.eks. et selskap) engasjerer en "fasilitator" – regnskapsfører eller revisor –
+        // til å utføre handlinger i Altinn på deres vegne. Det er behov for å opprette en systembruker og knytte riktige kunder til denne.
+        //
+        // I Altinn 2 skjer dette via GUI/Excel-opplasting. I Altinn 3 skal det gjøres via API.
+        // Regnskapsfører og revisor hentes som roller fra Enhetsregisteret (REGN/REVI),
+        // og daglig leder i slike virksomheter har rettigheter til å gjøre dette på vegne av kundene sine.
+        
+        const string accessPackage = "urn:altinn:accesspackage:revisormedarbeider";
+
         // Arrange
         var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
-        var systemOwner = _platformClient.GetTestUserForVendor();
-        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-        var externalRef = Guid.NewGuid().ToString();
-
-        var testState = new TestState("Resources/Testdata/ClientDelegation/AccessPackageSystemRegister.json")
-            .WithVendor(systemOwner.Org)
-            .WithName("Handelsbanken " + Guid.NewGuid());
-
-        var systemRegisterPayload = testState.GenerateRequestBody();
-        await _systemRegisterClient.PostSystem(systemRegisterPayload, maskinportenToken);
-
-        var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
-            .Replace("{systemId}", testState.SystemId)
-            .Replace("{externalRef}", externalRef)
-            .Replace("{accessPackage}", AccessPackage)
-            .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
-
-        // Act: Create system user request
-        var userResponse = await _platformClient.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(), clientRequestBody, maskinportenToken);
-        var userResponseContent = await userResponse.Content.ReadAsStringAsync();
-
-        Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status: {userResponse.StatusCode} - {userResponseContent}");
-
-        var requestId = Common.ExtractPropertyFromJson(userResponseContent, "id");
-
-        await AssertStatusSystemUserRequest(requestId, "New", maskinportenToken);
-
-        var agentUserResponse = await _common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
-        Assert.NotNull(agentUserResponse);
-        Assert.Contains(testState.SystemId, await agentUserResponse.ReadAsStringAsync());
-
-        // Approve request
-        var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
-            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
-            .Replace("{requestId}", requestId);
-
-        var approveResponse = await _common.ApproveRequest(approveUrl, facilitator);
-        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
-
-        await AssertStatusSystemUserRequest(requestId, "Accepted", maskinportenToken);
+        var systemId = await SetupAndApproveSystemUser(facilitator, "NothingToSeeHere", accessPackage);
 
         // Act: Delegate customer
-        var systemUser = await _common.GetSystemUserOnSystemIdForOrg(testState.SystemId, facilitator);
-        var customerListResp = await _platformClient.GetCustomerList(facilitator, systemUser?.Id, _outputHelper);
-        var customerContent = await customerListResp.Content.ReadAsStringAsync();
-        var customers = JsonSerializer.Deserialize<List<CustomerListDto>>(customerContent);
-        
-        Assert.NotNull(customers);
-        Assert.NotEmpty(customers);
-        
-        var selectedCustomer = customers.First();
-        
-        var delegationRequestBody = JsonSerializer.Serialize(new
+        var allDelegations = await DelegateCustomerToSystemUser(facilitator, systemId, false);
+
+        // Cleanup: Delete delegation(s)
+        foreach (var delegation in allDelegations)
         {
-            customerId = selectedCustomer.id,
-            facilitatorId = facilitator.AltinnPartyUuid
-        });
+            var deleteResponse = await _platformClient.DeleteDelegation(facilitator, delegation);
+            Assert.True(deleteResponse.IsSuccessStatusCode, $"Failed to delete delegation {delegation.delegationId}");
+        }
 
-        var delegationResponse = await _platformClient.DelegateFromAuthentication(facilitator, systemUser?.Id, delegationRequestBody, _outputHelper);
-        Assert.NotNull(delegationResponse);
-        var delegationContent = await delegationResponse.Content.ReadAsStringAsync();
-        var parsedDelegationList = JsonSerializer.Deserialize<List<DelegationResponseDto>>(delegationContent);
-        var parsedDelegation = parsedDelegationList?.FirstOrDefault();
+        var systemUser = await _common.GetSystemUserOnSystemIdForOrg(systemId, facilitator);
 
-        Assert.NotNull(parsedDelegation);
-        Assert.False(string.IsNullOrEmpty(parsedDelegation.agentSystemUserId));
-        Assert.False(string.IsNullOrEmpty(parsedDelegation.delegationId));
-        Assert.False(string.IsNullOrEmpty(parsedDelegation.customerId));
-        Assert.False(string.IsNullOrEmpty(parsedDelegation.assignmentId));
-
-        Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
-
-        // Cleanup: Delete delegation
-        var deleteDelegationResponse = await _platformClient.DeleteDelegation(facilitator, parsedDelegation);
-        Assert.True(deleteDelegationResponse.IsSuccessStatusCode, $"Failed to delete delegation: {await deleteDelegationResponse.Content.ReadAsStringAsync()}");
-        
         // Delete System user
         var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
         Assert.Equal(HttpStatusCode.OK, deleteAgentUserResponse.StatusCode);
-
-        // Cleanup: Delete system user
-        //var deleteUserResponse = await _platformClient.DeleteSystemUser(systemUser?.Id, facilitator);
-        //Assert.True(deleteUserResponse.IsSuccessStatusCode, $"Failed to delete system user: {await deleteUserResponse.Content.ReadAsStringAsync()}");
     }
+    
 
-
-    [Fact]
-    public async Task DelegateClientTest()
-    {
-        var facilitator = _platformClient.GetTestUserWithCategory("debug");
-
-        const string? systemUserId = "78622673-e991-4337-b81e-4005dae8707b";
-
-        var requestBodyDelegation = JsonSerializer.Serialize(new
-        {
-            customerId = "02cc9fee-6bf7-4dd1-8d37-a8af2045ee19",
-            facilitatorId = facilitator.AltinnPartyUuid
-        });
-
-        //await PerformDelegation(requestBodyDelegation, systemUserId, facilitator);
-        var resp = await _platformClient.DelegateFromAuthentication(facilitator, systemUserId, requestBodyDelegation, _outputHelper);
-
-        Assert.True(resp.StatusCode == HttpStatusCode.OK, "Resp was: " + await resp.Content.ReadAsStringAsync());
-    }
-
-    [Fact]
+    [Fact(Skip = "Skip until you have some safe data that's never deleted, store for now until later (runs in AT22)")]
     public async Task GetTokenForFacilitatorReturnsOkTest()
     {
         //Only way to use this token is by using the "fake" altinn token service, not allowed to configure this in samarbeidsportalen
@@ -216,10 +129,9 @@ public class ClientDelegationTests
 
         return await _platformClient.GetAsync(url, maskinportenToken);
     }
-    
-    private async Task<(TestState TestState, string ClientRequestBody, string MaskinportenToken)> SetupTestState(
-        string systemNamePrefix,
-        Testuser facilitator)
+
+
+    private async Task<string> SetupAndApproveSystemUser(Testuser facilitator, string systemNamePrefix, string accessPackage)
     {
         var systemOwner = _platformClient.GetTestUserForVendor();
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
@@ -235,9 +147,73 @@ public class ClientDelegationTests
         var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
             .Replace("{systemId}", testState.SystemId)
             .Replace("{externalRef}", externalRef)
-            .Replace("{accessPackage}", AccessPackage)
+            .Replace("{accessPackage}", accessPackage)
             .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
 
-        return (testState, clientRequestBody, maskinportenToken);
+        var userResponse = await _platformClient.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(), clientRequestBody, maskinportenToken);
+        var userResponseContent = await userResponse.Content.ReadAsStringAsync();
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status: {userResponse.StatusCode} - {userResponseContent}");
+
+        var requestId = Common.ExtractPropertyFromJson(userResponseContent, "id");
+        await AssertStatusSystemUserRequest(requestId, "New", maskinportenToken);
+
+        var systemUserResponse = await _common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
+        Assert.NotNull(systemUserResponse);
+        Assert.Contains(testState.SystemId, await systemUserResponse.ReadAsStringAsync());
+
+        var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
+            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            .Replace("{requestId}", requestId);
+
+        var approveResponse = await _common.ApproveRequest(approveUrl, facilitator);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        await AssertStatusSystemUserRequest(requestId, "Accepted", maskinportenToken);
+
+        return testState.SystemId;
+    }
+
+    private async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser facilitator, string systemId, bool allCustomers = false)
+    {
+        var systemUser = await _common.GetSystemUserOnSystemIdForOrg(systemId, facilitator);
+        var customerListResp = await _platformClient.GetCustomerList(facilitator, systemUser?.Id, _outputHelper);
+        var customerContent = await customerListResp.Content.ReadAsStringAsync();
+
+        var customers = JsonSerializer.Deserialize<List<CustomerListDto>>(customerContent);
+        Assert.NotNull(customers);
+        Assert.NotEmpty(customers);
+
+        var responses = new List<DelegationResponseDto>();
+
+        var customersToDelegate = allCustomers ? customers : customers.Take(1);
+        _outputHelper.WriteLine($"Found {customers.Count} customers");
+
+        foreach (var customer in customersToDelegate)
+        {
+            _outputHelper.WriteLine($"Attempting to delegate to customer {customer.id}");
+            var requestBody = JsonSerializer.Serialize(new
+            {
+                customerId = customer.id,
+                facilitatorId = facilitator.AltinnPartyUuid
+            });
+
+            var delegationResponse = await _platformClient.DelegateFromAuthentication(facilitator, systemUser?.Id, requestBody, _outputHelper);
+            Assert.NotNull(delegationResponse);
+            Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
+
+            var delegationContent = await delegationResponse.Content.ReadAsStringAsync();
+            var parsedList = JsonSerializer.Deserialize<List<DelegationResponseDto>>(delegationContent);
+            var parsedDelegation = parsedList?.FirstOrDefault();
+
+            Assert.NotNull(parsedDelegation);
+            Assert.False(string.IsNullOrEmpty(parsedDelegation.agentSystemUserId));
+            Assert.False(string.IsNullOrEmpty(parsedDelegation.delegationId));
+            Assert.False(string.IsNullOrEmpty(parsedDelegation.customerId));
+            Assert.False(string.IsNullOrEmpty(parsedDelegation.assignmentId));
+
+            responses.Add(parsedDelegation);
+        }
+
+        return responses;
     }
 }
