@@ -45,7 +45,7 @@ public class ClientDelegationTests
         // I Altinn 2 skjer dette via GUI/Excel-opplasting. I Altinn 3 skal det gjøres via API.
         // Regnskapsfører og revisor hentes som roller fra Enhetsregisteret (REGN/REVI),
         // og daglig leder i slike virksomheter har rettigheter til å gjøre dette på vegne av kundene sine.
-        
+
         const string accessPackage = "urn:altinn:accesspackage:revisormedarbeider";
 
         // Arrange
@@ -67,8 +67,13 @@ public class ClientDelegationTests
         // Delete System user
         var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
         Assert.Equal(HttpStatusCode.OK, deleteAgentUserResponse.StatusCode);
+
+        var token = await _platformClient.GetMaskinportenTokenForVendor();
+
+        //Cleanup
+        await _systemRegisterClient.DeleteSystem(systemId, token);
     }
-    
+
 
     [Fact(Skip = "Skip until you have some safe data that's never deleted, store for now until later (runs in AT22)")]
     public async Task GetTokenForFacilitatorReturnsOkTest()

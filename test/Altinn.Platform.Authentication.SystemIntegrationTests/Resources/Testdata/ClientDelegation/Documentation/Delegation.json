@@ -1,8 +1,0 @@
-//"v1/systemuser/agent/{customerPartyId}/{systemUserId}/delegation
-
-{
-  "customerId": "{customerPartyId}",    //Baker Hansen sitt party uuid (organisasjons partyUUID)
-  "facilitatorId": "{AltinnPartyUuid}"// Regnskapsfører AS - partyUUID til orgnummeret
-}
-
-
