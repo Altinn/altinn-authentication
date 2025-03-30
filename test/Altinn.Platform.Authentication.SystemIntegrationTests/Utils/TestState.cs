@@ -118,7 +118,7 @@ public class TestState
         var requestBody = _templateContent
                 .Replace("{vendorId}", VendorId ?? string.Empty)
                 .Replace("{Name}", Name ?? string.Empty)
-                .Replace("{clientId}", ClientId ?? string.Empty)
+                .Replace("{clientId}", ClientId ?? Guid.NewGuid().ToString())
                 .Replace("{redirectUrl}", RedirectUrl)
                 .Replace("{token}", Token ?? string.Empty)
                 // .Replace("{isVisible}", IsVisible ?? false)

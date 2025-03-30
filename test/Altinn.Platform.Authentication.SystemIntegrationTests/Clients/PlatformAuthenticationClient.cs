@@ -323,8 +323,6 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", altinnToken);
         
         var endpoint = EnvironmentHelper.Testenvironment == "tt02" ? $"https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers" : $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers";
-
-        outputHelper.WriteLine("url used " + endpoint);
         return await client.GetAsync(endpoint);
     }
 
@@ -337,5 +335,22 @@ public class PlatformAuthenticationClient
             .Replace("{systemUserUuid}", systemUserUuid);
 
         return await PostAsync(url, requestBodyDelegation, tokenFacilitator);
+    }
+
+    public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer)
+    {
+        var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
+
+        var url = ApiEndpoints.DeleteCustomer.Url()
+            .Replace("{party}", facilitator.AltinnPartyId)
+            .Replace("{delegationId}", selectedCustomer.delegationId);
+        url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
+
+        return await Delete(url, tokenFacilitator);
+    }
+
+    public async Task<object> DeleteSystemUser(string? systemUserId, Testuser facilitator)
+    {
+        throw new NotImplementedException();
     }
 }

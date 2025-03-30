@@ -120,11 +120,11 @@ public enum ApiEndpoints
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}", "GET")]
     GetSystemUsersByPartyAgent,
     
-    [EndpointInfo("accessmanagement/api/v1/systemuser/agentdelegation/{facilitatorPartyId}/{facilitatorPartyUuid}/{systemUserUuid}/customers", "GET")]
-    Customers,
-    
     [EndpointInfo("authentication/api/v1/systemuser/agent/{facilitatorPartyId}/{systemUserUuid}/delegation","POST")]
     DelegationAuthentication,
+    
+    [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/delegation/{delegationId}", "DELETE")]
+    DeleteCustomer
 }
 
 [AttributeUsage(AttributeTargets.Field)]
