@@ -550,7 +550,7 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<RequestSystemResponse>> RejectSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _requestSystemUser.RejectSystemUser(requestId, userId, cancellationToken);
+        Result<bool> response = await _requestSystemUser.RejectSystemUser(party, requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -576,7 +576,7 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<bool>> RejectAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _requestSystemUser.RejectAgentSystemUser(requestId, userId, cancellationToken);
+        Result<bool> response = await _requestSystemUser.RejectAgentSystemUser(party, requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

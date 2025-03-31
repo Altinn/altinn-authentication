@@ -258,4 +258,10 @@ public static class Problem
     public static ProblemDescriptor PartyId_Request_Mismatch { get; }
         = _factory.Create(41, HttpStatusCode.Forbidden, "Party does not match request's orgno");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor PartyId_AgentRequest_Mismatch { get; }
+        = _factory.Create(42, HttpStatusCode.Forbidden, "Party does not match agent request's orgno");
+
 }

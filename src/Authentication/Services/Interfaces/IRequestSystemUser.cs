@@ -101,20 +101,22 @@ public interface IRequestSystemUser
     /// <summary>
     /// Rejects the request 
     /// </summary>
+    /// <param name="partyId">the int valued PartyId of the reportee</param>
     /// <param name="requestId">the id of the request to be rejected</param>
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The cancelleation token</param>
     /// <returns>true if the request is rejected</returns>
-    Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> RejectSystemUser(int partyId, Guid requestId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Rejects the request for agent system user
     /// </summary>
+    /// <param name="partyId">the int valued PartyId of the reportee</param>
     /// <param name="requestId">the id of the request to be rejected</param>
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The cancelleation token</param>
     /// <returns>true if the request is rejected</returns>
-    Task<Result<bool>> RejectAgentSystemUser(Guid requestId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> RejectAgentSystemUser(int partyId, Guid requestId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Used by the Vendors to delete the chosen Request by guid

@@ -711,8 +711,14 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RejectSystemUser(int partyId, Guid requestId, int userId, CancellationToken cancellationToken)
     {
+        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
+        if (validatePartyRequest.IsProblem)
+        {
+            return validatePartyRequest.Problem;
+        }
+
         RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
@@ -728,8 +734,14 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> RejectAgentSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RejectAgentSystemUser(int partyId, Guid requestId, int userId, CancellationToken cancellationToken)
     {
+        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Agent, cancellationToken);
+        if (validatePartyRequest.IsProblem)
+        {
+            return validatePartyRequest.Problem;
+        }
+
         AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
@@ -948,7 +960,7 @@ public class RequestSystemUserService(
 
     private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType,CancellationToken cancellationToken)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -964,7 +976,7 @@ public class RequestSystemUserService(
 
             if (party.OrgNumber != find.PartyOrgNo)
             {
-                return Problem.PartyId_Request_Mismatch;
+                return Problem.PartyId_AgentRequest_Mismatch;
             }
         }
 
