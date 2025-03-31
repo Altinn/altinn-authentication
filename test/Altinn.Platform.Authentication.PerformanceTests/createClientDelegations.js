@@ -1,14 +1,14 @@
 import http from 'k6/http';
-import encoding from 'k6/encoding';
 import exec from 'k6/execution';
 import { randomItem, uuidv4, URL} from './common/k6-utils.js';
 import { expect, expectStatusFor } from "./common/testimports.js";
 import { describe } from './common/describe.js';
 import { splitSystemUsers, regnskapsforerUrns, forretningsforerUrns, revisorUrns } from './common/readTestdata.js';
-import { getEnterpriseToken, getAmToken } from './common/token.js';
-import { getCustomerListUrl, getSystemUsersUrl, postDelegationUrl, postAmDelegationUrl } from './common/config.js';
-import { getDelegationBody, getAmDelegationBody } from './testdata/postData.js';
-import { createSystem, createSystemUser, approveSystemUser, getParams, createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, getSystemOwnerTokenAndClientId } from './commonSystemUser.js';
+import { getEnterpriseToken } from './common/token.js';
+import { getCustomerListUrl, getSystemUsersUrl } from './common/config.js';
+import { createSystem, createSystemUser, approveSystemUser, getParams, getSystemOwnerTokenAndClientId, delegateSystemUser } from './commonSystemUser.js';
+import { createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, postDelegationLabel } from './commonSystemUser.js';
+
 
 const subscription_key = __ENV.subscription_key;
 
@@ -16,7 +16,6 @@ const systemOwner = "713431400";
 
 const getCustormerListLabel = "Get customer list";
 const getSystemUsersLabel = "Get system users";
-const postDelegationLabel = "Delegate system user";
 const labels = [createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, getCustormerListLabel, getSystemUsersLabel, postDelegationLabel];
 
 export let options = {
@@ -60,12 +59,11 @@ export default function(data) {
                 let noOfDelegations = 0;
                 if (customerList && systemUserId) {
                     for (let customer of customerList.data) {
-                        let delegationId = delegateSystemUser(customer, organization, systemUserId);
+                        let delegationId = delegateSystemUser(customer, organization, systemUserId, resources);
                         noOfDelegations++;
                         if (noOfDelegations >=10) {
                             break;
                         }
-                        //delegateAmSystemUser(customer, organization, systemUserId, data.resource);
                     }
                 }
                 else {
@@ -121,38 +119,6 @@ function getSystemUserId(systemId, token) {
         return systemUsers.data[0].id;
     }
     return null;
-}
-
-function delegateSystemUser(customer, organization, systemUserId) {
-    const params = getParams(postDelegationLabel);
-    params.headers.Authorization = "Bearer " + getAmToken(organization);
-    const url = `${postDelegationUrl}${organization.partyId}/${systemUserId}/delegation`;
-    const body = getDelegationBody(customer.partyUuid, organization.orgUuid);
-    console.log(body);
-    console.log(url); 
-    let id = null;
-    describe('Delegate system user', () => {
-        let r = http.post(url, JSON.stringify(body), params);
-        expectStatusFor(r).to.equal(200);
-        expect(r, 'response').to.have.validJsonBody();
-        id = r.json().map((x) => x.delegationId);
-    });
-    return id;
-}
-
-function delegateAmSystemUser(customer, organization, systemUserId, resource) {
-    const params = getParams(postDelegationLabel);
-    params.headers.Authorization = "Bearer " + getAmToken(organization);
-
-    const url = new URL(postAmDelegationUrl);
-    url.searchParams.append('party', organization.orgUuid);
-    const rolePackages = [{ "roleIdentifier": organization.orgType, "packageUrn": resource }];
-    const body = getAmDelegationBody(customer.partyUuid, systemUserId, rolePackages);
-    describe('Delegate system user', () => {
-        let r = http.post(url.toString(), JSON.stringify(body), params);
-        expectStatusFor(r).to.equal(200);
-        expect(r, 'response').to.have.validJsonBody();
-    });
 }
 
 function getPackages(type) {

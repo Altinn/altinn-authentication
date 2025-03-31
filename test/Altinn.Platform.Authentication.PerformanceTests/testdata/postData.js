@@ -92,7 +92,7 @@ export function getDelegationBody(customerPartyId, facilitatorId) {
     return body;
 }
 
-export function getAmDelegationBody(clientId, agentId, resources) {
+export function getAmDelegationBody(clientId, agentId, resources, orgtype) {
     const body = {
       "clientId": clientId,
       "agentId": agentId,
@@ -100,10 +100,11 @@ export function getAmDelegationBody(clientId, agentId, resources) {
       "agentRole": "agent",
       "rolePackages": []
     };
+
     for (var resource of resources) {
         body.rolePackages.push({
-            "roleIdentifier": resource.roleIdentifier,
-            "packageUrn": resource.packageUrn
+            "roleIdentifier": orgtype,
+            "packageUrn": resource
         });
     } 
 

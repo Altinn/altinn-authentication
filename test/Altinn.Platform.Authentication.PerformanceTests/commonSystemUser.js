@@ -3,15 +3,18 @@ import encoding from 'k6/encoding';
 import { uuidv4, URL} from './common/k6-utils.js';
 import { expect, expectStatusFor } from "./common/testimports.js";
 import { describe } from './common/describe.js';
-import { registerSystemUrl, requestSystemUserUrl, approveSystemUserUrl } from './common/config.js';
+import { registerSystemUrl, requestSystemUserUrl, approveSystemUserUrl, postDelegationUrl, postAmDelegationUrl } from './common/config.js';
 import { getCreateSystemBody, getCreateSystemUserBody } from './testdata/postData.js';
 import { getPersonalToken, getEnterpriseTokenWithType } from './common/token.js';
+import { getDelegationBody, getAmDelegationBody } from './testdata/postData.js';
+import { getAmToken } from './common/token.js';
 
 const traceCalls = (__ENV.traceCalls ?? 'false') === 'true';
 
 export const createSystemOwnerLabel = "Create system";
 export const createSystemUserLabel = "Create system user";
 export const approveSystemUserLabel = "Approve system user";
+export const postDelegationLabel = "Delegate system user";
 
 export function createSystem(systemOwner, systemId, resource, token, clientId, type) {
     const params = getParams(createSystemOwnerLabel);
@@ -77,6 +80,36 @@ export function getParams(label) {
     }
     return params;
 }
+
+export function delegateSystemUser(customer, organization, systemUserId) {
+    const params = getParams(postDelegationLabel);
+    params.headers.Authorization = "Bearer " + getAmToken(organization);
+    const url = `${postDelegationUrl}${organization.partyId}/${systemUserId}/delegation`;
+    const body = getDelegationBody(customer.partyUuid, organization.orgUuid);
+    let id = null;
+    describe('Delegate system user', () => {
+        let r = http.post(url, JSON.stringify(body), params);
+        expectStatusFor(r).to.equal(200);
+        expect(r, 'response').to.have.validJsonBody();
+        id = r.json().map((x) => x.delegationId);
+    });
+    return id;
+}
+
+export function delegateAmSystemUser(customer, organization, systemUserId, resources) {
+    const params = getParams(postDelegationLabel);
+    params.headers.Authorization = "Bearer " + getAmToken(organization);
+
+    const url = new URL(postAmDelegationUrl);
+    url.searchParams.append('party', organization.orgUuid);
+    const body = getAmDelegationBody(customer.partyUuid, systemUserId, resources, organization.orgType);
+    describe('Delegate system user', () => {
+        let r = http.post(url.toString(), JSON.stringify(body), params);
+        expectStatusFor(r).to.equal(200);
+        expect(r, 'response').to.have.validJsonBody();
+    });
+}
+
 
 export function getSystemOwnerTokenAndClientId(systemOwner, iteration) {
     const tokenOptions = {
