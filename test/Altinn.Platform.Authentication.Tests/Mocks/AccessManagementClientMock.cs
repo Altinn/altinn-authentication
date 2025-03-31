@@ -77,7 +77,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public async Task<Result<List<ConnectionDto>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -86,7 +86,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             return Problem.Rights_FailedToDelegate; 
         }
 
-        List<ConnectionDto> delegationResult = [];
+        List<AgentDelegationResponse> delegationResult = [];
 
         List<AgentDelegationDetails> delegations = [];
 
@@ -120,28 +120,10 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         var delegationId = Guid.NewGuid();
 
-        var ext = new ConnectionDto()
+        var ext = new AgentDelegationResponse()
         {
-            From = new EntityParty()
-            {
-                Id = Guid.Parse(request.CustomerId),
-            },
-            To = new EntityParty()
-            {
-                Id = Guid.Parse(systemUser?.Id),
-            },
-            Facilitator = new EntityParty()
-            {
-                Id = Guid.Parse(request.FacilitatorId)
-            },            
-            Id = delegationId,
-            Delegation = new Delegation()
-            {
-                Id = delegationId,
-                FacilitatorId = Guid.Parse(request.FacilitatorId),
-                FromId = Guid.NewGuid(),// value not from our input
-                ToId = Guid.NewGuid() // the Assignment Id
-            }
+            DelegationId = delegationId,
+            FromEntityId = Guid.Parse(request.CustomerId)
         };
 
         delegationResult.Add(ext);
