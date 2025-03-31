@@ -50,7 +50,7 @@ public class ClientDelegationTests
 
         // Arrange
         var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
-        var systemId = await SetupAndApproveSystemUser(facilitator, "NothingToSeeHere", accessPackage);
+        var systemId = await SetupAndApproveSystemUser(facilitator, "TripleTexSuperPackage1", accessPackage);
 
         // Act: Delegate customer
         var allDelegations = await DelegateCustomerToSystemUser(facilitator, systemId, false);
@@ -165,10 +165,10 @@ public class ClientDelegationTests
         var systemUserResponse = await _common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
         Assert.NotNull(systemUserResponse);
         Assert.Contains(testState.SystemId, await systemUserResponse.ReadAsStringAsync());
-
         var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
             .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
+
 
         var approveResponse = await _common.ApproveRequest(approveUrl, facilitator);
         Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);

@@ -1,7 +1,7 @@
 meta {
   name: Create System with Access Package
   type: http
-  seq: 3
+  seq: 2
 }
 
 post {
@@ -17,17 +17,35 @@ body:json {
       "ID": "0192:{{auth_org}}"
     },
     "Name": {
-      "en": "System with Access package, app and single rights",
-      "nb": "System with Access package, app and single rights",
-      "nn": "System with Access package, app and single rights"
+      "en": "Visma",
+      "nb": "Visma",
+      "nn": "Visma"
     },
     "Description": {
       "en": "Bruno test",
       "nb": "Bruno test",
       "nn": "Bruno test."
     },
-    "accessPackages": [ 
-      { "urn": "urn:altinn:accesspackage:skattnaering" } ],
+    "accessPackages": [
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-lonn"
+      },
+      {
+        "urn" : "urn:altinn:accesspackage:ansvarlig-revisor"
+      },
+      {
+        "urn" : "urn:altinn:accesspackage:revisormedarbeider"
+      },
+      {
+        "urn" : "urn:altinn:accesspackage:skattegrunnlag"
+      }
+    ],
      "rights": [
       {
         "resource": [
@@ -71,7 +89,7 @@ script:pre-request {
   bru.setEnvVar("auth_orgNo","310574775");
   bru.setEnvVar("auth_org", "310574775");
   
-  const systemName = "SystemIdWithSingleRightAndAccessPackagesAndApp"
+  const systemName = "Visma"
   
   bru.setEnvVar("system_name",systemName);
   

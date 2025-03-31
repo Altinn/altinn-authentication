@@ -16,12 +16,13 @@ headers {
 
 body:json {
   {
-    "systemId": "312605031_E2E test - urn:altinn:accesspackage:ansvarlig-revisor",
-    "partyOrgNo": "310990418",
+    "systemId": "310574775_Visma",
+    "partyOrgNo": "314239679",
+    "externalRef" : "1234",
     "redirectUrl": "",
    "accessPackages": [
       {
-        "urn": "urn:altinn:accesspackage:ansvarlig-revisor"
+        "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
       }
     ]
   }
@@ -29,8 +30,8 @@ body:json {
 }
 
 vars:pre-request {
-  auth_orgNo: 991825827
-  auth_org: 991825827
+  auth_orgNo: 310574775
+  auth_org: 310574775
   partyOrgNo: 310990418
   ~system_id: 312605031_E2E test - urn:altinn:accesspackage:revisormedarbeiderAnsvarlig Revisor
   ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
@@ -46,8 +47,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
   
-  bru.setEnvVar("auth_orgNo","310990418");
-  bru.setEnvVar("auth_org", "310990418");
+  bru.setEnvVar("auth_orgNo","310574775");
+  bru.setEnvVar("auth_org", "310574775");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
