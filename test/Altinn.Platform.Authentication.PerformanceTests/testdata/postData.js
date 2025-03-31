@@ -1,6 +1,6 @@
 //
 
-export function getCreateSystemBody(systemOwner, systemId, clientId, resources) {
+export function getCreateSystemBody(systemOwner, systemId, clientId, resources, type) {
     let body = {
         "id": systemId,
         "vendor": {
@@ -31,17 +31,27 @@ export function getCreateSystemBody(systemOwner, systemId, clientId, resources) 
         "allowedRedirectUrls": [ "https://digdir.no"
         ]
       };
-    for (var resource of resources) {
-        body.rights[0].resource.push({
-            "id": "urn:altinn:resource",
-            "value": resource
-        });
+    if (type === "accessPackage") {
+      body.accessPackages = [];
+      for (var resource of resources) {
+          body.accessPackages.push({
+            "urn": resource,
+          });
+      }     
+    }
+    else {
+      for (var resource of resources) {
+          body.rights[0].resource.push({
+              "id": "urn:altinn:resource",
+              "value": resource
+          });
+      }
     }
     return body;
 
 }
 
-export function getCreateSystemUserBody(systemId, partyOrgNo, resources) {
+export function getCreateSystemUserBody(systemId, partyOrgNo, resources, type) {
     const body = {
         "systemId": systemId,
         "partyOrgNo":partyOrgNo,
@@ -52,13 +62,50 @@ export function getCreateSystemUserBody(systemId, partyOrgNo, resources) {
             ]
           }
           ],
+          //"accessPackages": [],
           "redirectUrl": ""
       };
-    for (var resource of resources) {
-        body.rights[0].resource.push({
-            "id": "urn:altinn:resource",
-            "value": resource
-        });
+      if (type === "accessPackage") {
+        body.accessPackages = [];
+        for (var resource of resources) {
+            body.accessPackages.push({
+              "urn": resource,
+            });
+        }     
+      }
+      else {
+        for (var resource of resources) {
+            body.rights[0].resource.push({
+                "id": "urn:altinn:resource",
+                "value": resource
+            });
+        }
+      }
+    return body;
+}
+
+export function getDelegationBody(customerPartyId, facilitatorId) {
+    const body = {
+      "customerId": customerPartyId,   
+      "facilitatorId": facilitatorId
     };
+    return body;
+}
+
+export function getAmDelegationBody(clientId, agentId, resources) {
+    const body = {
+      "clientId": clientId,
+      "agentId": agentId,
+      "agentName": "Performance test",
+      "agentRole": "agent",
+      "rolePackages": []
+    };
+    for (var resource of resources) {
+        body.rolePackages.push({
+            "roleIdentifier": resource.roleIdentifier,
+            "packageUrn": resource.packageUrn
+        });
+    } 
+
     return body;
 }

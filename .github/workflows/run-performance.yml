@@ -41,6 +41,7 @@ on:
                 type: choice
                 options:
                 - 'test/Altinn.Platform.Authentication.PerformanceTests/createAndConfirmSystemUser.js'
+                - 'test/Altinn.Platform.Authentication.PerformanceTests/createCLientDelegations.js'
                 - 'test/Altinn.Platform.Authentication.PerformanceTests/getSystemUser.js'
 
 permissions:
