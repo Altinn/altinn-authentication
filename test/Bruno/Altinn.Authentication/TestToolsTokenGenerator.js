@@ -7,6 +7,7 @@ exports.getToken = async function () {
     "https://altinn-testtools-token-generator.azurewebsites.net";
   const basicAuthUser = bru.getEnvVar("tokenBasicAuthUser");
   const basicAuthPw = bru.getEnvVar("tokenBasicAuthPw");
+  console.log(basicAuthUser);
   const Authorization = "Basic " + btoa(`${basicAuthUser}:${basicAuthPw}`);
 
   const tokenEnv = bru.getEnvVar("tokenEnv");
@@ -18,6 +19,8 @@ exports.getToken = async function () {
   const tokenOrg = bru.getEnvVar("auth_org");
   const tokenOrgNo = bru.getEnvVar("auth_orgNo");
   const tokenUsername = bru.getEnvVar("auth_username");
+
+  console.log(tokenType);
 
   console.log({
     tokenEnv,
@@ -32,7 +35,7 @@ exports.getToken = async function () {
 
   let tokenUrl;
   if (tokenType == "Personal") {
-    tokenUrl = `${tokenBaseUrl}/api/Get${tokenType}Token?env=${tokenEnv}&scopes=${tokenScopes}&pid=${tokenPid}&userid=${tokenUser}&partyid=${tokenParty}&authLvl=3&ttl=3000`;
+    tokenUrl = `${tokenBaseUrl}/api/Get${tokenType}Token?env=${tokenEnv}&scopes=${tokenScopes}&pid=${tokenPid}&userId=${tokenUser}&partyid=${tokenParty}&authLvl=3&ttl=3000`;
   } else if (tokenType == "Enterprise") {
     tokenUrl = `${tokenBaseUrl}/api/Get${tokenType}Token?env=${tokenEnv}&scopes=${tokenScopes}&org=${tokenOrg}&orgNo=${tokenOrgNo}&ttl=30`;
   } else if (tokenType == "EnterpriseUser") {
@@ -41,7 +44,8 @@ exports.getToken = async function () {
     throw new Error("Unknown tokenType: " + tokenType);
   }
 
-  console.log("tokenUrl:" + tokenUrl);
+  console.log("FINAL TOKEN URL:");
+  console.log(tokenUrl);
 
   const response = await axios.get(tokenUrl, {
     headers: { Authorization },

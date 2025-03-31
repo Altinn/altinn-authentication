@@ -26,7 +26,7 @@ public class SystemRegisterClient
     {
         var response = await _platformClient.PostAsync(ApiEndpoints.CreateSystemRegister.Url(), requestBody, token);
 
-        Assert.True(HttpStatusCode.OK == response.StatusCode, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+        Assert.True(response.StatusCode is HttpStatusCode.OK, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
         return response;
     }
@@ -58,5 +58,12 @@ public class SystemRegisterClient
 
         await Common.AssertResponse(putResponse, HttpStatusCode.OK);
         return putResponse;
+    }
+
+    public async Task<HttpResponseMessage> getBySystemId(string systemId, string token)
+    {
+        var getUrl = ApiEndpoints.GetVendorSystemRegisterById.Url().Replace("{systemId}", systemId);
+        var getResponse = await _platformClient.GetAsync(getUrl, token);
+        return getResponse;
     }
 }

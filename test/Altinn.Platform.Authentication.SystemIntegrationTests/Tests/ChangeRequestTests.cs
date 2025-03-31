@@ -96,7 +96,7 @@ public class ChangeRequestTests
         Assert.Contains(externalRef, await responsGetByRequestId.Content.ReadAsStringAsync());
     }
 
-    private async Task<string> AssertSystemUserUpdated(string systemId, string externalRef, string maskinportenToken)
+    private async Task AssertSystemUserUpdated(string systemId, string externalRef, string maskinportenToken)
     {
         // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
         var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);
@@ -105,8 +105,6 @@ public class ChangeRequestTests
         // Assert systemId
         Assert.Contains(systemId, systemusersRespons);
         Assert.Contains(externalRef, systemusersRespons);
-
-        return systemusersRespons;
     }
 
     private async Task<HttpResponseMessage> ApproveChangeRequest(string requestId, Testuser testperson)

@@ -30,7 +30,29 @@ public class SystemUserClient
 
         return response;
     }
+ 
 
+    public async Task<HttpResponseMessage> GetSystemuserForPartyAgent(string? party, string token)
+    {
+        var urlGetBySystem = ApiEndpoints.GetSystemUsersByPartyAgent.Url()
+            .Replace("{party}", party);
+        var response = await _platformClient.GetAsync(urlGetBySystem, token);
+
+        Assert.True(HttpStatusCode.OK == response.StatusCode,
+            $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+
+        return response;
+    }
+
+    public async Task<List<SystemUser>> GetSystemUsersForAgentTestUser(Testuser testuser)
+    {
+        var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
+        var resp = await GetSystemuserForPartyAgent(testuser.AltinnPartyId, altinnToken);
+
+        var content = await resp.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<List<SystemUser>>(content, Common.JsonSerializerOptions) ?? [];
+    }
+    
     public async Task<List<SystemUser>> GetSystemUsersForTestUser(Testuser testuser)
     {
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);

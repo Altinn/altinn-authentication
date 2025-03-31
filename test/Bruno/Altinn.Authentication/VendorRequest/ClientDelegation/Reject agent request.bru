@@ -1,0 +1,46 @@
+meta {
+  name: Reject agent request
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/agent/{{auth_partyId}}/{{requestId}}/reject
+  body: none
+  auth: inherit
+}
+
+headers {
+  ~Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjFENUEzN0I0NDMzNzlCOThDMTQ2NkQ4OUZDRkMzRTQ2MTU2NUM5RDEiLCJ0eXAiOiJKV1QiLCJ4NWMiOiIxRDVBMzdCNDQzMzc5Qjk4QzE0NjZEODlGQ0ZDM0U0NjE1NjVDOUQxIn0.eyJ1cm46YWx0aW5uOmF1dGhlbnRpY2F0ZW1ldGhvZCI6Ik5vdERlZmluZWQiLCJ1cm46YWx0aW5uOmF1dGhsZXZlbCI6IjMiLCJjbGllbnRfYW1yIjoidmlya3NvbWhldHNzZXJ0aWZpa2F0IiwicGlkIjoiMjA5MjQxOTk5NzEiLCJ0b2tlbl90eXBlIjoiQmVhcmVyIiwiY2xpZW50X2lkIjoiNDMwOWRmNjctMjgxZS00NzI1LWI4ZDMtMGY0YzA3YjU3MTE4IiwiYWNyIjoiaWRwb3J0ZW4tbG9hLXN1YnN0YW50aWFsIiwic2NvcGUiOiJhbHRpbm46cG9ydGFsL2VuZHVzZXIiLCJleHAiOjE3NDE4NzY2NDMsImlhdCI6MTc0MTg3MzY0MywiY2xpZW50X29yZ25vIjoiOTkxODI1ODI3IiwiY29uc3VtZXIiOnsiYXV0aG9yaXR5IjoiaXNvNjUyMy1hY3RvcmlkLXVwaXMiLCJJRCI6IjAxOTI6OTkxODI1ODI3In0sImlzcyI6Imh0dHBzOi8vcGxhdGZvcm0uYXQyMi5hbHRpbm4uY2xvdWQvYXV0aGVudGljYXRpb24vYXBpL3YxL29wZW5pZC8iLCJhY3R1YWxfaXNzIjoiYWx0aW5uLXRlc3QtdG9vbHMiLCJuYmYiOjE3NDE4NzM2NDMsIm5hbWVpZCI6MjAwMTMxNjMsInVybjphbHRpbm46dXNlcmlkIjoyMDAxMzE2MywidXJuOmFsdGlubjpwYXJ0eWlkIjo1MTE4ODc3MX0.mfSGzKE5E1cHlnAjv0NpjvLLfJdb7F5Y6hd_xnuxEqdpLo1MqZpu9juOA7WzNRFQFRanim0z-6v9gExZqfy7IQoqE5ehEzNMfTEx06j7tzH-yjYW6SHrnuKH83WJULCIOgAytUXgN_lppN2zC_7ZkG_kjLaQwaO8Xlbz1Ky899a8a-DWokiFklUg53k2REaKZbT_032QEqCydnujy8w5So33OPYTEJb6xwY5CY1mXEak6XoytVo5IP0IDwAq-0RKX-IWDuFmYv1rFm5rJHKRFRDZCQ0-stjtDw6LOIH-qJmAWsyoGwWahjZdZHBS12YbXutTac7GHxUoC87UfFt23w
+}
+
+vars:pre-request {
+  requestId: 5e55df9e-80c8-43b4-b70c-42df7e7cf7bf
+}
+
+script:pre-request {
+  //Print variable 
+  
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  const { v4: uuidv4} = require('uuid')
+  
+  bru.setEnvVar("auth_tokenType","Personal");
+  bru.setEnvVar("auth_scopes","altinn:portal/enduser");
+  bru.setEnvVar("tokenEnv","at22");
+  bru.setEnvVar("auth_userId","20013163");
+  bru.setEnvVar("auth_partyId","51188771");
+  bru.setEnvVar("auth_ssn","20924199971");
+  
+  var token = await TestToolsTokenGenerator.getToken();
+  
+}
+
+script:post-response {
+    // tokenUrl = `${tokenBaseUrl}/api/Get${tokenType}Token?env=${tokenEnv}&scopes=${tokenScopes}&pid=${tokenPid}&userid=${tokenUser}&partyid=${tokenParty}&authLvl=3&ttl=3000`;
+  // 
+}
+
+docs {
+  Party id rett fra parameter i chrome var: 51237060
+  
+}

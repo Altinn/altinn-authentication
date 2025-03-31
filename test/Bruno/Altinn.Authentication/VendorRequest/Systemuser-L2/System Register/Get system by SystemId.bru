@@ -1,0 +1,44 @@
+meta {
+  name: Get system by SystemId
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{system_id}}
+  body: json
+  auth: inherit
+}
+
+vars:pre-request {
+  system_id: 310574775_isDeletedTestDontSet
+  ~system_id: 310574775_isDeletedTest
+  ~system_id: 310574775_TwoRedirectUrlsTest
+  ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
+  ~system_id: 310574775_UrlQueryPathTesIsvisibleTest
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  const { v4: uuidv4} = require('uuid')
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
+  
+  bru.setEnvVar("auth_orgNo","310574775");
+  bru.setEnvVar("auth_org", "310574775");
+  
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  bru.setEnvVar("bearer_token", token);
+  
+  const auth_orgNo = bru.getEnvVar("auth_orgNo"); // Retrieve it from the environment
+  
+  
+}
+
+docs {
+  SystemId med tilgangspakke i AT22:
+  - 310574775_KlientDelegeringManuellTest: urn:altinn:accesspackage:skattnaering" (isVisible: false)
+}

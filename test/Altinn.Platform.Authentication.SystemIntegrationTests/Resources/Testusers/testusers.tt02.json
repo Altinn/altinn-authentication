@@ -1,5 +1,6 @@
 [
   {
+    "category": "daglig leder",
     "altinnPartyId": "51808847",
     "pid": "01907195356",
     "userId": "1314848",
@@ -7,20 +8,30 @@
     "org": ""
   },
   {
+    "category": "test user in same org as Vendor Org for System user Requests to approve",
     "info": "test user in same org as Vendor Org for System user Requests to approve",
     "role": "DAGL",
     "altinnPartyId": "51642319",
     "pid": "05848998356",
     "userId": "1416269",
     "org": "312605031"
+  },
+  {
+    "category": "facilitator-large-category-list",
+    "altinnPartyId": "123",
+    "pid": "23812849735",
+    "userId": "123",
+    "org": "313588270",
+    "altinnPartyUuid" : "ea9611a5-65bf-4635-8ff5-0f03a44dd022"
+  },
+  {
+    "category": "facilitator",
+    "altinnPartyId": "51457050",
+    "pid": "06857897380",
+    "userId": "341895",
+    "org": "314250052",
+    "altinnPartyUuid" : "81aa7f84-b5b8-47bf-b17c-35cf85410ffb"
   }
 ]
-  
-
-
-
-
-
-
 
 

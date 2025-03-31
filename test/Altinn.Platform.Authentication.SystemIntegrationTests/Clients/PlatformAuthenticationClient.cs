@@ -4,6 +4,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 
@@ -19,7 +20,9 @@ public class PlatformAuthenticationClient
     /// <summary>
     /// baseUrl for api
     /// </summary>
-    public readonly string? BaseUrl;
+    public readonly string? BaseUrlAuthentication;
+
+    public readonly string? BaseUrlBff;
 
     /// <summary>
     /// Base class for running requests
@@ -27,7 +30,8 @@ public class PlatformAuthenticationClient
     public PlatformAuthenticationClient()
     {
         EnvironmentHelper = LoadEnvironment();
-        BaseUrl = GetEnvironment(EnvironmentHelper.Testenvironment);
+        BaseUrlAuthentication = GetEnvironment(EnvironmentHelper.Testenvironment);
+        BaseUrlBff = GetEnvironment(EnvironmentHelper.Testenvironment);
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
     }
@@ -35,8 +39,8 @@ public class PlatformAuthenticationClient
     private static List<Testuser> LoadTestUsers(string testenvironment)
     {
         // Determine the file to load based on the environment
-        var fileName = testenvironment.StartsWith("at")
-            ? "Resources/Testusers/testusers.at.json"
+        var fileName = testenvironment.Equals("at22")
+            ? "Resources/Testusers/testusers.at22.json"
             : "Resources/Testusers/testusers.tt02.json";
 
         if (!File.Exists(fileName))
@@ -50,11 +54,11 @@ public class PlatformAuthenticationClient
                ?? throw new InvalidOperationException("Failed to deserialize test users.");
     }
 
-    private string GetEnvironment(string environmentHelperTestenvironment)
+    public static string GetEnvironment(string environmentHelperTestenvironment)
     {
         // Define base URLs for tt02 and all "at" environments
-        const string tt02 = "https://platform.tt02.altinn.no/authentication/api/";
-        const string atBaseUrl = "https://platform.{env}.altinn.cloud/authentication/api/";
+        const string tt02 = "https://platform.tt02.altinn.no/";
+        const string atBaseUrl = "https://platform.{env}.altinn.cloud/";
 
         // Handle case-insensitive input and return the correct URL
         environmentHelperTestenvironment = environmentHelperTestenvironment.ToLower();
@@ -84,7 +88,7 @@ public class PlatformAuthenticationClient
             ? null
             : new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync($"{BaseUrl}/{endpoint}", content);
+        var response = await client.PostAsync($"{BaseUrlAuthentication}/{endpoint}", content);
         return response;
     }
 
@@ -99,7 +103,7 @@ public class PlatformAuthenticationClient
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
-        return await client.GetAsync($"{BaseUrl}/{endpoint}");
+        return await client.GetAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
 
     public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string? token)
@@ -110,7 +114,7 @@ public class PlatformAuthenticationClient
 
         HttpContent content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
 
-        return await client.PutAsync($"{BaseUrl}/{path}", content);
+        return await client.PutAsync($"{BaseUrlAuthentication}/{path}", content);
     }
 
     /// <summary>
@@ -124,7 +128,7 @@ public class PlatformAuthenticationClient
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
-        return await client.DeleteAsync($"{BaseUrl}/{endpoint}");
+        return await client.DeleteAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
 
     /// <summary>
@@ -137,7 +141,7 @@ public class PlatformAuthenticationClient
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await client.GetAsync(BaseUrl + "v1/exchange/maskinporten?test=true");
+        var response = await client.GetAsync(BaseUrlAuthentication + "authentication/api/v1/exchange/maskinporten?test=true");
 
         if (response.IsSuccessStatusCode)
         {
@@ -189,6 +193,7 @@ public class PlatformAuthenticationClient
             $"&pid={user.Pid}" +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
+            $"&partyuuid={user.AltinnPartyUuid}" +
             $"&authLvl=3&ttl=3000";
 
         // Retrieve the token
@@ -230,7 +235,7 @@ public class PlatformAuthenticationClient
         return null;
     }
 
-    private static EnvironmentHelper LoadEnvironment()
+    public static EnvironmentHelper LoadEnvironment()
     {
         const string githubVariable = "SYSTEMINTEGRATIONTEST_JSON";
         const string environmentVariable = "TEST_ENVIRONMENT";
@@ -258,7 +263,7 @@ public class PlatformAuthenticationClient
         return LoadEnvironmentFromFile();
     }
 
-    private static EnvironmentHelper LoadEnvironmentFromFile()
+    public static EnvironmentHelper LoadEnvironmentFromFile()
     {
         //Todo fix support for dev
         var localFilePath = "Resources/Environment/environment.json";
@@ -301,5 +306,59 @@ public class PlatformAuthenticationClient
 
         return TestUsers.Find(testUser => testUser.Org!.Equals(vendor))
                ?? throw new Exception($"Test user not found for organization: {vendor}");
+    }
+
+    public Testuser GetTestUserWithCategory(String category)
+    {
+        return TestUsers.Find(user => user.Category!.Equals(category)) ?? throw new Exception("Unable to find testuser");
+    }
+
+    public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string? systemUserUuid, ITestOutputHelper outputHelper)
+    {
+        // Get the Altinn token
+        var altinnToken = await GetPersonalAltinnToken(testuser);
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", altinnToken);
+        
+        var endpoint = EnvironmentHelper.Testenvironment == "tt02" ? $"https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers" : $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers";
+        return await client.GetAsync(endpoint);
+    }
+
+    public async Task<HttpResponseMessage> DelegateFromAuthentication(Testuser facilitator, string? systemUserUuid, string requestBodyDelegation, ITestOutputHelper outputHelper)
+    {
+        var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
+
+        var url = ApiEndpoints.DelegationAuthentication.Url()
+            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            .Replace("{systemUserUuid}", systemUserUuid);
+
+        return await PostAsync(url, requestBodyDelegation, tokenFacilitator);
+    }
+
+    public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer)
+    {
+        var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
+
+        var url = ApiEndpoints.DeleteCustomer.Url()
+            .Replace("{party}", facilitator.AltinnPartyId)
+            .Replace("{delegationId}", selectedCustomer.delegationId);
+        url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
+
+        return await Delete(url, tokenFacilitator);
+    }
+
+    public async Task<HttpResponseMessage> DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
+    {
+        var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
+        var url = ApiEndpoints.DeleteAgentSystemUser.Url()
+            .Replace("{party}", facilitator.AltinnPartyId)
+            .Replace("{systemUserId}", systemUserId);
+        
+        url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
+
+        return await Delete(url, tokenFacilitator);
+        
     }
 }

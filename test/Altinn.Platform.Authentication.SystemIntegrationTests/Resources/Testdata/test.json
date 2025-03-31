@@ -1,0 +1,15 @@
+{
+  "clientId"  : "{clientId}",
+  "agentId" : "{systemUserId}",
+  "agentName" : "agent",
+  "rolePackages" : [
+    {
+      "roleIdentifiser" : "regnskapsforer",
+      "packageUrn" : "{packageToDelegate}"
+    }
+  ]
+}
+
+{{AM-baseurl}}/accessmanagement/api/v1/internal/systemuserclientdelegation?party={party}
+
+Party = innlogget bruker / facilitator som står som eier av systembrukeren. 

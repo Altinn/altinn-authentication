@@ -1,7 +1,7 @@
 meta {
-  name: Create System in System Register
+  name: Create System with Single Rights
   type: http
-  seq: 2
+  seq: 1
 }
 
 post {
@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-    "Id": "{{auth_org}}_{{system_name}}",
+    "Id": "{{system_id}}",
     "Vendor": {
       "ID": "0192:{{auth_org}}"
     },
@@ -26,10 +26,27 @@ body:json {
       "nb": "Integrasjonstest. Noe er randomisert her, men mye blir likt.",
       "nn": "integrasjonstest på nynorsk. Noe er randomisert her, men mye blir likt."
     },
-    "accessPackages": [ 
-      { "urn": "urn:altinn:accesspackage:skattnaering" } ],
+   "rights": [
+      {
+        "resource": [
+          {
+            "value": "authentication-e2e-test",
+            "id": "urn:altinn:resource"
+          }
+        ]
+      },
+      {
+        "resource": [
+          {
+            "value": "vegardtestressurs",
+            "id": "urn:altinn:resource"
+          }
+        ]
+      }
+    ],
     "allowedRedirectUrls": [
-      "https://altinn.no"
+      "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback",
+                "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
     ],
     "isVisible": false,
     "ClientId": [
@@ -49,12 +66,22 @@ script:pre-request {
   bru.setEnvVar("auth_orgNo","310574775");
   bru.setEnvVar("auth_org", "310574775");
   
-  const systemName = uuidv4();
-  bru.setEnvVar("system_name",systemName);
-  
-  console.log(bru.getEnvVar("auth_tokenType"));
+  // const systemName = "QueryParamMustWorkSingle"
+  // 
+  bru.setEnvVar("system_name","SystemNew");
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);
   
+  const auth_orgNo = bru.getEnvVar("auth_orgNo"); // Retrieve it from the environment
+  const system_name = bru.getEnvVar("system_name"); // Retrieve system_name as well
+  console.log(system_name)
+  
+  bru.setEnvVar("system_id", `${auth_orgNo}_${system_name}`);
+  
+}
+
+docs {
+  SystemId med tilgangspakke i AT22:
+  - 310574775_KlientDelegeringManuellTest: urn:altinn:accesspackage:skattnaering" (isVisible: false)
 }
