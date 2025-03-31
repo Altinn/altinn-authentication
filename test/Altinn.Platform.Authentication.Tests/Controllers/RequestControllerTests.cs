@@ -1761,7 +1761,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Approve_ClientRequest_By_RequestId_NotFound()
+    public async Task Approve_AgentClientRequest_By_RequestId_NotFound()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -1815,7 +1815,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.NotFound, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Detail);
+        Assert.Equal("The Id does not refer to an AgentRequest in our system.", problem!.Detail);
     }
 
     [Fact]

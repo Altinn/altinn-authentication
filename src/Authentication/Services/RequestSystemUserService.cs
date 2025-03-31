@@ -971,7 +971,7 @@ public class RequestSystemUserService(
             AgentRequestSystemResponse? find = await requestRepository.GetAgentRequestByInternalId(requestId);
             if (find is null)
             {
-                return Problem.RequestNotFound;
+                return Problem.AgentRequestNotFound;
             }
 
             if (party.OrgNumber != find.PartyOrgNo)
