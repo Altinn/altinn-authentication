@@ -602,6 +602,12 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
+        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, cancellationToken);
+        if (validatePartyRequest.IsProblem)
+        {
+            return validatePartyRequest.Problem;
+        }
+
         RequestSystemResponse? systemUserRequest = await requestRepository.GetRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
@@ -659,6 +665,12 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
+        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, cancellationToken);
+        if (validatePartyRequest.IsProblem)
+        {
+            return validatePartyRequest.Problem;
+        }
+
         AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
         {
@@ -931,5 +943,27 @@ public class RequestSystemUserService(
         }
 
         return res;
+    }
+
+    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, CancellationToken cancellationToken)
+    {
+        Party party = await partiesClient.GetPartyAsync(partyId);
+        if (party is null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        AgentRequestSystemResponse? find = await requestRepository.GetAgentRequestByInternalId(requestId);
+        if (find is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (party.OrgNumber != find.PartyOrgNo)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        return true;
     }
 }
