@@ -88,12 +88,12 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<bool>> RejectAgentSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+        public Task<Result<bool>> RejectAgentSystemUser(int party, Guid requestId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public Task<Result<bool>> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+        public Task<Result<bool>> RejectSystemUser(int party, Guid requestId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
