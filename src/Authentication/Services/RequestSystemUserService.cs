@@ -603,7 +603,7 @@ public class RequestSystemUserService(
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
         Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, cancellationToken);
-        if (validatePartyRequest.IsProblem)
+        if (validatePartyRequest.IsProblem) 
         {
             return validatePartyRequest.Problem;
         }
