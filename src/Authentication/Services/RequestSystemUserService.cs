@@ -6,6 +6,7 @@ using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
@@ -602,7 +603,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, cancellationToken);
+        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
         if (validatePartyRequest.IsProblem) 
         {
             return validatePartyRequest.Problem;
@@ -665,7 +666,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, cancellationToken);
+        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Agent, cancellationToken);
         if (validatePartyRequest.IsProblem)
         {
             return validatePartyRequest.Problem;
@@ -945,7 +946,7 @@ public class RequestSystemUserService(
         return res;
     }
 
-    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, CancellationToken cancellationToken)
+    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType,CancellationToken cancellationToken)
     {
         Party party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
@@ -953,15 +954,32 @@ public class RequestSystemUserService(
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        AgentRequestSystemResponse? find = await requestRepository.GetAgentRequestByInternalId(requestId);
-        if (find is null)
+        if (userType == SystemUserType.Agent)
         {
-            return Problem.RequestNotFound;
+            AgentRequestSystemResponse? find = await requestRepository.GetAgentRequestByInternalId(requestId);
+            if (find is null)
+            {
+                return Problem.RequestNotFound;
+            }
+
+            if (party.OrgNumber != find.PartyOrgNo)
+            {
+                return Problem.PartyId_Request_Mismatch;
+            }
         }
 
-        if (party.OrgNumber != find.PartyOrgNo)
+        if (userType == SystemUserType.Standard)
         {
-            return Problem.RequestNotFound;
+            RequestSystemResponse? find = await requestRepository.GetRequestByInternalId(requestId);
+            if (find is null)
+            {
+                return Problem.RequestNotFound;
+            }
+
+            if (party.OrgNumber != find.PartyOrgNo)
+            {
+                return Problem.PartyId_Request_Mismatch;
+            }
         }
 
         return true;

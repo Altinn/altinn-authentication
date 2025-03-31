@@ -1475,7 +1475,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Approve_Request_By_RequestId_Fail()
+    public async Task Approve_Request_By_RequestId_Wrong_PartyId_Fail()
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -1529,7 +1529,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Forbidden, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("DelegationCheck failed with unknown error.", problem!.Detail);
+        Assert.Equal("Party does not match request's orgno", problem!.Detail);
     }
 
     [Fact]
@@ -1815,7 +1815,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.NotFound, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Id does not refer to an AgentRequest in our system.", problem!.Detail);
+        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Detail);
     }
 
     [Fact]
