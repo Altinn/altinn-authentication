@@ -142,6 +142,9 @@
     <None Update="Data\SystemRegister\Json\SystemRegisterInvalidAccessPackage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterInvalidResourceIdFormat.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterUpdateBadRequest.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
