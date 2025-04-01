@@ -70,5 +70,5 @@ public static class ValidationErrors
     /// Gets a validation error descriptor for invalid resource id format
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_ResourceId_InvalidFormat { get; }
-        = _factory.Create(9, "One or more resource id is in wrong format. The vlaid format is urn:altinn:resource");
+        = _factory.Create(9, "One or more resource id is in wrong format. The valid format is urn:altinn:resource");
 }
