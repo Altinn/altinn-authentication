@@ -89,7 +89,6 @@ public class Common
     {
         // Get the Altinn token
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
-
         // Use the PostAsync method for the approval request
         var response = await _platformClient.PostAsync(endpoint, string.Empty, altinnToken);
         return response;

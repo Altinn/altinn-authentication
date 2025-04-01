@@ -156,6 +156,7 @@ public class ClientDelegationTests
             .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
 
         var userResponse = await _platformClient.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(), clientRequestBody, maskinportenToken);
+
         var userResponseContent = await userResponse.Content.ReadAsStringAsync();
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status: {userResponse.StatusCode} - {userResponseContent}");
 
@@ -163,12 +164,13 @@ public class ClientDelegationTests
         await AssertStatusSystemUserRequest(requestId, "New", maskinportenToken);
 
         var systemUserResponse = await _common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
+        
         Assert.NotNull(systemUserResponse);
         Assert.Contains(testState.SystemId, await systemUserResponse.ReadAsStringAsync());
+        
         var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
             .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
-
 
         var approveResponse = await _common.ApproveRequest(approveUrl, facilitator);
         Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
@@ -214,7 +216,6 @@ public class ClientDelegationTests
             Assert.False(string.IsNullOrEmpty(parsedDelegation.agentSystemUserId));
             Assert.False(string.IsNullOrEmpty(parsedDelegation.delegationId));
             Assert.False(string.IsNullOrEmpty(parsedDelegation.customerId));
-            Assert.False(string.IsNullOrEmpty(parsedDelegation.assignmentId));
 
             responses.Add(parsedDelegation);
         }

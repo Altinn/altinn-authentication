@@ -190,7 +190,6 @@ public class PlatformAuthenticationClient
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
             $"?env={EnvironmentHelper.Testenvironment}" +
             $"&scopes=altinn:portal/enduser" +
-            $"&pid={user.Pid}" +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
             $"&partyuuid={user.AltinnPartyUuid}" +
@@ -322,7 +321,7 @@ public class PlatformAuthenticationClient
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", altinnToken);
         
-        var endpoint = EnvironmentHelper.Testenvironment == "tt02" ? $"https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers" : $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{testuser.AltinnPartyUuid}/{systemUserUuid}/customers";
+        var endpoint = EnvironmentHelper.Testenvironment == "tt02" ? $"https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{systemUserUuid}/customers" : $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{systemUserUuid}/customers";
         return await client.GetAsync(endpoint);
     }
 
