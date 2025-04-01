@@ -310,7 +310,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<ConnectionDto>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         const string AGENT = "agent";
 
@@ -365,14 +365,14 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
 
-            List<ConnectionDto> found = await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
+            List<AgentDelegationResponse> found = await response.Content.ReadFromJsonAsync<List<AgentDelegationResponse>>(_serializerOptions, cancellationToken) ?? [];
 
             if (response.IsSuccessStatusCode && found is not null)
             {
                 return found;
             }            
 
-            return new Result<List<ConnectionDto>>(Problem.Rights_FailedToDelegate);
+            return new Result<List<AgentDelegationResponse>>(Problem.Rights_FailedToDelegate);
 
         }
         catch (Exception ex)

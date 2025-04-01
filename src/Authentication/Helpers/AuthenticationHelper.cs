@@ -402,6 +402,33 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
+        /// Validate the resource id attribute "id"
+        /// </summary>
+        /// <param name="rights">the resources that the system gives rights to</param>
+        /// <returns>true if resource id is valid</returns>
+        public static bool IsResourceIdFormatValid(List<Right> rights)
+        {
+            var uniqueRights = new HashSet<string>();
+            string pattern = @"^urn:altinn:resource$";
+
+            if (rights != null)
+            {
+                foreach (var right in rights)
+                {
+                    foreach (AttributePair resourceId in right.Resource)
+                    {
+                        if (!Regex.IsMatch(resourceId.Id, pattern))
+                        {
+                            return false; // Invalid format
+                        }
+                    }
+                }
+            }
+
+            return true; // All resourceids are in valid format
+        }
+
+        /// <summary>
         /// Check for duplicates in the rights
         /// </summary>
         /// <param name="rights">the resources that the system gives rights to</param>
