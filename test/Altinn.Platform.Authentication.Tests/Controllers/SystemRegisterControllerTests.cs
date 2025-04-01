@@ -193,7 +193,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_InvalidFormat.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
-            Assert.Equal("One or more resource id is in wrong format. The vlaid format is urn:altinn:resource", error.Detail);
+            Assert.Equal("One or more resource id is in wrong format. The valid format is urn:altinn:resource", error.Detail);
         }
 
         [Fact]
