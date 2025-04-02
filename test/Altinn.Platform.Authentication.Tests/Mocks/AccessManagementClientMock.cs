@@ -220,15 +220,15 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         delegations.Add(new ConnectionDto() 
         { 
-            From = new EntityParty()
+            From = new Entity()
             {
                 Id = Guid.NewGuid(),
             },
-            To = new EntityParty()
+            To = new Entity()
             {
                 Id = Guid.NewGuid()
             },
-            Facilitator = new EntityParty() 
+            Facilitator = new Entity() 
             { 
                 Id = facilitator 
             },

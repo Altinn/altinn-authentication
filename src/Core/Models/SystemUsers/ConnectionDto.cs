@@ -23,7 +23,7 @@ public class ConnectionDto
     /// <summary>
     /// The entity identity the connection is from (origin, client, source etc) 
     /// </summary>
-    public EntityParty From { get; set; } 
+    public Entity From { get; set; } 
 
     /// <summary>
     /// The role To identifies as
@@ -33,12 +33,12 @@ public class ConnectionDto
     /// <summary>
     /// The entity identity the connection is to (destination, agent, etc)
     /// </summary>
-    public EntityParty To { get; set; } 
+    public Entity To { get; set; } 
 
     /// <summary>
     /// The entity betweeen from and to. When connection is delegated.
     /// </summary>
-    public EntityParty Facilitator { get; set; } 
+    public Entity Facilitator { get; set; } 
 
     /// <summary>
     /// The role the facilitator has to the client 
@@ -96,7 +96,7 @@ public class Delegation
 /// Only appear in the above ExtConnection in our repo
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class EntityParty
+public class Entity
 {
     public Guid Id { get; set; }
     public string Name { get; set; }
