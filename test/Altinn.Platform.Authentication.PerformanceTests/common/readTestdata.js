@@ -27,7 +27,7 @@ function readCsv(filename) {
 if (!__ENV.API_ENVIRONMENT) {
   throw new Error('API_ENVIRONMENT must be set');
 }
-const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-random-customers.csv`;
+const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-random-customers-no-ffor.csv`;
 
 /**
  * SharedArray variable that stores the service owners data.
