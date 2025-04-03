@@ -19,7 +19,7 @@ public class SystemUserClient
         _platformClient = platformClient;
     }
 
-    public async Task<HttpResponseMessage> GetSystemuserForParty(string? party, string token)
+    public async Task<HttpResponseMessage> GetSystemuserForParty(string? party, string? token)
     {
         var urlGetBySystem = ApiEndpoints.GetSystemUsersByParty.Url()
             .Replace("{party}", party);
@@ -32,7 +32,7 @@ public class SystemUserClient
     }
  
 
-    public async Task<HttpResponseMessage> GetSystemuserForPartyAgent(string? party, string token)
+    public async Task<HttpResponseMessage> GetSystemuserForPartyAgent(string? party, string? token)
     {
         var urlGetBySystem = ApiEndpoints.GetSystemUsersByPartyAgent.Url()
             .Replace("{party}", party);
@@ -46,8 +46,7 @@ public class SystemUserClient
 
     public async Task<List<SystemUser>> GetSystemUsersForAgentTestUser(Testuser testuser)
     {
-        var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
-        var resp = await GetSystemuserForPartyAgent(testuser.AltinnPartyId, altinnToken);
+        var resp = await GetSystemuserForPartyAgent(testuser.AltinnPartyId, testuser.AltinnToken);
 
         var content = await resp.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<List<SystemUser>>(content, Common.JsonSerializerOptions) ?? [];
@@ -63,7 +62,7 @@ public class SystemUserClient
     }
 
 
-    public async Task<HttpResponseMessage> GetSystemUserByExternalRef(string externalRef, string systemId, string maskinportenToken)
+    public async Task<HttpResponseMessage> GetSystemUserByExternalRef(string externalRef, string systemId, string? maskinportenToken)
     {
         var urlGetBySystem =
             ApiEndpoints.GetSystemUserRequestByExternalRef.Url()
@@ -74,7 +73,7 @@ public class SystemUserClient
         return await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
     }
 
-    public async Task<string> CreateSystemUserRequestWithoutExternalRef(TestState testState, string maskinportenToken)
+    public async Task<string> CreateSystemUserRequestWithoutExternalRef(TestState testState, string? maskinportenToken)
     {
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequest.json"))
@@ -97,7 +96,7 @@ public class SystemUserClient
         return content;
     }
 
-    public async Task<string> CreateSystemUserRequestWithExternalRef(TestState testState, string maskinportenToken)
+    public async Task<string> CreateSystemUserRequestWithExternalRef(TestState testState, string? maskinportenToken)
     {
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))

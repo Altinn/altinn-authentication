@@ -16,9 +16,9 @@ headers {
 
 body:json {
   {
-    "systemId": "310574775_Visma",
-    "partyOrgNo": "314239679",
-    "externalRef" : "1234",
+    "systemId": "312605031_TripleTexSuperPackage",
+    "partyOrgNo": "314239458",
+    "externalRef" : "12346789",
     "redirectUrl": "",
    "accessPackages": [
       {
@@ -47,8 +47,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
   
-  bru.setEnvVar("auth_orgNo","310574775");
-  bru.setEnvVar("auth_org", "310574775");
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

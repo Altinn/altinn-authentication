@@ -47,6 +47,7 @@ public class SystemUserTests : IDisposable
         var externalRef = Guid.NewGuid().ToString();
         var clientId = Guid.NewGuid().ToString();
         var testperson = _platformClient.GetTestUserForVendor();
+        testperson.AltinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
         await _common.CreateRequestWithManalExample(maskinportenToken, externalRef, testperson, clientId);
     }
 
@@ -185,7 +186,7 @@ public class SystemUserTests : IDisposable
         Assert.Contains(systemId, await responseByExternalRef.Content.ReadAsStringAsync());
     }
 
-    private async Task<TestState> CreateSystemInSystemRegister(string maskinportenToken)
+    private async Task<TestState> CreateSystemInSystemRegister(string? maskinportenToken)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithName("SystemRegister e2e Tests Approve Requests" + Guid.NewGuid())
@@ -344,7 +345,7 @@ public class SystemUserTests : IDisposable
         await _systemUserClient.PutSystemUser(jsonBody, maskinportenToken);
     }
 
-    public async Task<string> CreateSystemAndSystemUserRequest(TestState testState, string maskinportenToken)
+    public async Task<string> CreateSystemAndSystemUserRequest(TestState testState, string? maskinportenToken)
     {
         var requestBodySystemREgister = testState.GenerateRequestBody();
 
@@ -375,7 +376,7 @@ public class SystemUserTests : IDisposable
     }
 
 
-    public async Task<string> CreateSystemAndSystemUserRequest(string maskinportenToken, bool withApp = false)
+    public async Task<string> CreateSystemAndSystemUserRequest(string? maskinportenToken, bool withApp = false)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithName("SystemRegister e2e Tests" + Guid.NewGuid())
@@ -439,7 +440,7 @@ public class SystemUserTests : IDisposable
         return response;
     }
 
-    private async Task RegisterSystem(TestState testState, string maskinportenToken)
+    private async Task RegisterSystem(TestState testState, string? maskinportenToken)
     {
         var requestBodySystemRegister = testState.GenerateRequestBody();
         var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
@@ -465,7 +466,7 @@ public class SystemUserTests : IDisposable
             $"Unexpected status code: {response.StatusCode} - {content}");
     }
 
-    private async Task<HttpResponseMessage> GetSystemUserRequestStatus(string requestId, string token)
+    private async Task<HttpResponseMessage> GetSystemUserRequestStatus(string requestId, string? token)
     {
         var url = ApiEndpoints.GetSystemUserRequestStatus.Url().Replace("requestId", requestId);
         return await _platformClient.GetAsync(url, token);
@@ -504,7 +505,7 @@ public class SystemUserTests : IDisposable
             $"Approval failed with status code: {approveResponse.StatusCode}");
     }
 
-    private async Task<HttpResponseMessage> GetSystemUserById(string systemId, string token)
+    private async Task<HttpResponseMessage> GetSystemUserById(string systemId, string? token)
     {
         var urlGetBySystem = ApiEndpoints.GetSystemUsersBySystemForVendor.Url().Replace("{systemId}", systemId);
         return await _platformClient.GetAsync(urlGetBySystem, token);
