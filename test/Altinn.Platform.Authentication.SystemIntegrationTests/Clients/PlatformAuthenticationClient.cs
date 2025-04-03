@@ -78,7 +78,7 @@ public class PlatformAuthenticationClient
     /// <param name="body">Request body, see Swagger documentation for reference</param>
     /// <param name="token">Bearer token</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> PostAsync(string endpoint, string body, string token)
+    public async Task<HttpResponseMessage> PostAsync(string endpoint, string body, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -165,7 +165,7 @@ public class PlatformAuthenticationClient
     /// <param name="org"></param>
     /// <param name="scopes"></param>
     /// <returns>The Altinn test token as a string</returns>
-    public async Task<string> GetEnterpriseAltinnToken(string? org, string scopes)
+    public async Task<string?> GetEnterpriseAltinnToken(string? org, string scopes)
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetEnterpriseToken?env={EnvironmentHelper.Testenvironment}&orgNo={org}" +
@@ -183,7 +183,7 @@ public class PlatformAuthenticationClient
     /// </summary>
     /// <param name="user">User read from test config (testusers.at.json)</param>
     /// <returns>The Altinn test token as a string</returns>
-    public async Task<string> GetPersonalAltinnToken(Testuser user)
+    public async Task<string?> GetPersonalAltinnToken(Testuser user)
     {
         // Construct the URL for fetching the Altinn test token
         var url =
@@ -275,7 +275,7 @@ public class PlatformAuthenticationClient
     /// <summary>
     /// </summary>
     /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
-    public async Task<string> GetMaskinportenTokenForVendor()
+    public async Task<string?> GetMaskinportenTokenForVendor()
     {
         var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
@@ -314,14 +314,11 @@ public class PlatformAuthenticationClient
 
     public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string? systemUserUuid, ITestOutputHelper outputHelper)
     {
-        // Get the Altinn token
-        var altinnToken = await GetPersonalAltinnToken(testuser);
-
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", altinnToken);
-        
-        var endpoint = EnvironmentHelper.Testenvironment == "tt02" ? $"https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{systemUserUuid}/customers" : $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{systemUserUuid}/customers";
+            new AuthenticationHeaderValue("Bearer", testuser.AltinnToken);
+
+        var endpoint = EnvironmentHelper.Testenvironment == "tt02" ? $"https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{systemUserUuid}/customers?partyuuid={testuser.AltinnPartyUuid}" : $"https://am.ui.at22.altinn.cloud/accessmanagement/api/v1/systemuser/agentdelegation/{testuser.AltinnPartyId}/{systemUserUuid}/customers?partyuuid={testuser.AltinnPartyUuid}";
         return await client.GetAsync(endpoint);
     }
 
@@ -338,26 +335,22 @@ public class PlatformAuthenticationClient
 
     public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer)
     {
-        var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
-
         var url = ApiEndpoints.DeleteCustomer.Url()
             .Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{delegationId}", selectedCustomer.delegationId);
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
 
-        return await Delete(url, tokenFacilitator);
+        return await Delete(url, facilitator.AltinnToken);
     }
 
     public async Task<HttpResponseMessage> DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
     {
-        var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
         var url = ApiEndpoints.DeleteAgentSystemUser.Url()
             .Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{systemUserId}", systemUserId);
-        
+
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
 
-        return await Delete(url, tokenFacilitator);
-        
+        return await Delete(url, facilitator.AltinnToken);
     }
 }

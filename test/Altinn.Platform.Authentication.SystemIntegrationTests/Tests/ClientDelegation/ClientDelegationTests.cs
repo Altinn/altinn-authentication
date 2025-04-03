@@ -50,6 +50,8 @@ public class ClientDelegationTests
 
         // Arrange
         var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
+        facilitator.AltinnToken = await _platformClient.GetPersonalAltinnToken(facilitator);
+        
         var systemId = await SetupAndApproveSystemUser(facilitator, "TripleTexSuperPackage1", accessPackage);
 
         // Act: Delegate customer
@@ -66,7 +68,7 @@ public class ClientDelegationTests
 
         // Delete System user
         var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
-        Assert.Equal(HttpStatusCode.OK, deleteAgentUserResponse.StatusCode);
+        Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode, "Was unable to delete System User" + deleteAgentUserResponse.StatusCode);
 
         var token = await _platformClient.GetMaskinportenTokenForVendor();
 
@@ -102,7 +104,7 @@ public class ClientDelegationTests
         Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
     }
 
-    private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string maskinportenToken)
+    private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string? maskinportenToken)
     {
         var getRequestByIdUrl = ApiEndpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
         var responseGetByRequestId = await _platformClient.GetAsync(getRequestByIdUrl, maskinportenToken);
@@ -114,7 +116,7 @@ public class ClientDelegationTests
         Assert.True(expectedStatus.Equals(status), $"Status is not {expectedStatus} but: {status}");
     }
 
-    private async Task AssertSystemUserAgentCreated(string systemId, string externalRef, string maskinportenToken)
+    private async Task AssertSystemUserAgentCreated(string systemId, string externalRef, string? maskinportenToken)
     {
         // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
         var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);

@@ -23,7 +23,7 @@ public class Common
         Output = output;
     }
 
-    public async Task<string> CreateAndApproveSystemUserRequest(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
+    public async Task<string> CreateAndApproveSystemUserRequest(string? maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
         var testState = new TestState("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
             .WithClientId(clientId)
@@ -67,7 +67,7 @@ public class Common
         return testState.SystemId;
     }
 
-    public async Task<HttpContent> GetSystemUserForVendor(string systemId, string maskinportenToken)
+    public async Task<HttpContent> GetSystemUserForVendor(string systemId, string? maskinportenToken)
     {
         var endpoint = $"authentication/api/v1/systemuser/vendor/bysystem/{systemId}";
         var resp = await _platformClient.GetAsync(endpoint, maskinportenToken);
@@ -76,7 +76,7 @@ public class Common
         return resp.Content;
     }
     
-    public async Task<HttpContent> GetSystemUserForVendorAgent(string systemId, string maskinportenToken)
+    public async Task<HttpContent> GetSystemUserForVendorAgent(string systemId, string? maskinportenToken)
     {
         var url = ApiEndpoints.GetVendorAgentRequestsBySystemId.Url().Replace("{systemId}", systemId);
         var resp = await _platformClient.GetAsync(url, maskinportenToken);
@@ -87,10 +87,8 @@ public class Common
 
     public async Task<HttpResponseMessage> ApproveRequest(string endpoint, Testuser testperson)
     {
-        // Get the Altinn token
-        var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
         // Use the PostAsync method for the approval request
-        var response = await _platformClient.PostAsync(endpoint, string.Empty, altinnToken);
+        var response = await _platformClient.PostAsync(endpoint, string.Empty, testperson.AltinnToken);
         return response;
     }
 
@@ -133,7 +131,7 @@ public class Common
         Assert.True(statusCode == response.StatusCode, $"[Response was {response.StatusCode} : Response body was: {await response.Content.ReadAsStringAsync()}]");
     }
 
-    public async Task CreateRequestWithManalExample(string maskinportenToken, string externalRef, Testuser testuser, string clientId)
+    public async Task CreateRequestWithManalExample(string? maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/VendorExampleUrls.json")
             .WithName("E2E tests - Redirect URL" + Guid.NewGuid())
