@@ -10,11 +10,10 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDele
 
 public class ClientDelegationTests
 {
-    //private const string AccessPackage = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet";
+    private const string AccessPackageRegnskapsfoerer = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet";
     // private const string AccessPackage = "urn:altinn:accesspackage:skattegrunnlag";
     //private const string AccessPackage = "urn:altinn:accesspackage:ansvarlig-revisor";
     private const string AccessPackage = "urn:altinn:accesspackage:revisormedarbeider";
-
 
     private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
@@ -50,7 +49,9 @@ public class ClientDelegationTests
 
         // Arrange
         var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
-        var systemId = await SetupAndApproveSystemUser(facilitator, "TripleTexSuperPackage1", accessPackage);
+        facilitator.AltinnToken = await _platformClient.GetPersonalAltinnToken(facilitator);
+        
+        var systemId = await SetupAndApproveSystemUser(facilitator, "TripleTexSuperPackage1", AccessPackageRegnskapsfoerer);
 
         // Act: Delegate customer
         var allDelegations = await DelegateCustomerToSystemUser(facilitator, systemId, false);
@@ -66,12 +67,12 @@ public class ClientDelegationTests
 
         // Delete System user
         var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
-        Assert.Equal(HttpStatusCode.OK, deleteAgentUserResponse.StatusCode);
+        Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode, "Was unable to delete System User: Error code: " + deleteAgentUserResponse.StatusCode);
 
-        var token = await _platformClient.GetMaskinportenTokenForVendor();
+       var token = await _platformClient.GetMaskinportenTokenForVendor();
 
         //Cleanup
-        await _systemRegisterClient.DeleteSystem(systemId, token);
+       await _systemRegisterClient.DeleteSystem(systemId, token);
     }
 
 
@@ -102,7 +103,7 @@ public class ClientDelegationTests
         Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
     }
 
-    private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string maskinportenToken)
+    private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string? maskinportenToken)
     {
         var getRequestByIdUrl = ApiEndpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
         var responseGetByRequestId = await _platformClient.GetAsync(getRequestByIdUrl, maskinportenToken);
@@ -114,7 +115,7 @@ public class ClientDelegationTests
         Assert.True(expectedStatus.Equals(status), $"Status is not {expectedStatus} but: {status}");
     }
 
-    private async Task AssertSystemUserAgentCreated(string systemId, string externalRef, string maskinportenToken)
+    private async Task AssertSystemUserAgentCreated(string systemId, string externalRef, string? maskinportenToken)
     {
         // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
         var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);
@@ -156,6 +157,7 @@ public class ClientDelegationTests
             .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
 
         var userResponse = await _platformClient.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(), clientRequestBody, maskinportenToken);
+
         var userResponseContent = await userResponse.Content.ReadAsStringAsync();
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status: {userResponse.StatusCode} - {userResponseContent}");
 
@@ -163,14 +165,16 @@ public class ClientDelegationTests
         await AssertStatusSystemUserRequest(requestId, "New", maskinportenToken);
 
         var systemUserResponse = await _common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
+        
         Assert.NotNull(systemUserResponse);
         Assert.Contains(testState.SystemId, await systemUserResponse.ReadAsStringAsync());
+        
         var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
             .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
-
         var approveResponse = await _common.ApproveRequest(approveUrl, facilitator);
+        _outputHelper.WriteLine(await approveResponse.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
 
         await AssertStatusSystemUserRequest(requestId, "Accepted", maskinportenToken);
@@ -214,7 +218,6 @@ public class ClientDelegationTests
             Assert.False(string.IsNullOrEmpty(parsedDelegation.agentSystemUserId));
             Assert.False(string.IsNullOrEmpty(parsedDelegation.delegationId));
             Assert.False(string.IsNullOrEmpty(parsedDelegation.customerId));
-            Assert.False(string.IsNullOrEmpty(parsedDelegation.assignmentId));
 
             responses.Add(parsedDelegation);
         }

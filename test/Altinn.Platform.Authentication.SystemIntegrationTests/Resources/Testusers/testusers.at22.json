@@ -36,7 +36,7 @@
   },
   {
     "category": "facilitator",
-    "altinnPartyId": "50304310",
+    "altinnPartyId": "51243526",
     "pid": "06857897380",
     "userId": "20013183",
     "org": "314250052",
@@ -51,7 +51,7 @@
     "altinnPartyUuid": "ea9611a5-65bf-4635-8ff5-0f03a44dd022"
   },
   {
-    "category": "debug",
+    "category": "debug (must update party)",
     "altinnPartyId": "50588937",
     "pid": "01836497151",
     "userId": "20013213",

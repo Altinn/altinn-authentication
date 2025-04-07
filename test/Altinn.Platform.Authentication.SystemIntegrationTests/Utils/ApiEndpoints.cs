@@ -129,6 +129,7 @@ public enum ApiEndpoints
 
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/{systemUserId}", "DELETE")]
     DeleteAgentSystemUser
+
 }
 
 [AttributeUsage(AttributeTargets.Field)]

@@ -37,6 +37,7 @@ public class ChangeRequestTests
         var externalRef = Guid.NewGuid().ToString();
         var clientId = Guid.NewGuid().ToString();
         var testperson = _platformAuthentication.GetTestUserForVendor();
+        testperson.AltinnToken = await _platformAuthentication.GetPersonalAltinnToken(testperson);
         var systemId = await _common.CreateAndApproveSystemUserRequest(maskinportenToken, externalRef, testperson, clientId);
 
         // Act
@@ -62,7 +63,7 @@ public class ChangeRequestTests
         await _systemUserClient.DeleteSystemUser(testperson.AltinnPartyId, systemUsers.FirstOrDefault()?.Id);
     }
 
-    private async Task AssertStatusChangeRequest(string requestId, string expectedStatus, string maskinportenToken)
+    private async Task AssertStatusChangeRequest(string requestId, string expectedStatus, string? maskinportenToken)
     {
         var getRequestByIdUrl = ApiEndpoints.GetChangeRequestByRequestIdUrl.Url().Replace("{requestId}", requestId);
         var responsGetByRequestId = await _platformAuthentication.GetAsync(getRequestByIdUrl, maskinportenToken);
@@ -73,7 +74,7 @@ public class ChangeRequestTests
         Assert.True(expectedStatus.Equals(status), $"Status is not {expectedStatus} but: " + status);
     }
 
-    private async Task AssertRequestRetrievalByExternalRef(string systemId, string externalRef, string maskinportenToken)
+    private async Task AssertRequestRetrievalByExternalRef(string systemId, string externalRef, string? maskinportenToken)
     {
         var getByExternalRefUrl = ApiEndpoints.GetChangeRequestByExternalRef.Url()
             .Replace("{systemId}", systemId)
@@ -86,7 +87,7 @@ public class ChangeRequestTests
         Assert.Contains(systemId, await respByExternalRef.Content.ReadAsStringAsync());
     }
 
-    private async Task AssertRequestRetrievalById(string requestId, string systemId, string externalRef, string maskinportenToken)
+    private async Task AssertRequestRetrievalById(string requestId, string systemId, string externalRef, string? maskinportenToken)
     {
         var getRequestByIdUrl = ApiEndpoints.GetChangeRequestByRequestId.Url()
             .Replace("{requestId}", requestId);
@@ -96,7 +97,7 @@ public class ChangeRequestTests
         Assert.Contains(externalRef, await responsGetByRequestId.Content.ReadAsStringAsync());
     }
 
-    private async Task AssertSystemUserUpdated(string systemId, string externalRef, string maskinportenToken)
+    private async Task AssertSystemUserUpdated(string systemId, string externalRef, string? maskinportenToken)
     {
         // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
         var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);
@@ -119,7 +120,7 @@ public class ChangeRequestTests
         return approvalResp;
     }
 
-    private async Task<HttpResponseMessage> SubmitChangeRequest(string systemId, string externalRef, string maskinportenToken)
+    private async Task<HttpResponseMessage> SubmitChangeRequest(string systemId, string externalRef, string? maskinportenToken)
     {
         var changeRequestBody =
             (await Helper.ReadFile("Resources/Testdata/ChangeRequest/ChangeRequest.json"))
