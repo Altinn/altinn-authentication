@@ -185,7 +185,6 @@ public class PlatformAuthenticationClient
     /// <returns>The Altinn test token as a string</returns>
     public async Task<string?> GetPersonalAltinnToken(Testuser user)
     {
-        // Construct the URL for fetching the Altinn test token
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
             $"?env={EnvironmentHelper.Testenvironment}" +
@@ -195,7 +194,6 @@ public class PlatformAuthenticationClient
             $"&partyuuid={user.AltinnPartyUuid}" +
             $"&authLvl=3&ttl=3000";
 
-        // Retrieve the token
         var token = await GetAltinnToken(url);
         Assert.True(token != null, "Token retrieval failed for Altinn token");
         return token;

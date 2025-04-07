@@ -10,11 +10,10 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDele
 
 public class ClientDelegationTests
 {
-    //private const string AccessPackage = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet";
+    private const string AccessPackageRegnskapsfoerer = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet";
     // private const string AccessPackage = "urn:altinn:accesspackage:skattegrunnlag";
     //private const string AccessPackage = "urn:altinn:accesspackage:ansvarlig-revisor";
     private const string AccessPackage = "urn:altinn:accesspackage:revisormedarbeider";
-
 
     private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
@@ -52,7 +51,7 @@ public class ClientDelegationTests
         var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
         facilitator.AltinnToken = await _platformClient.GetPersonalAltinnToken(facilitator);
         
-        var systemId = await SetupAndApproveSystemUser(facilitator, "TripleTexSuperPackage1", accessPackage);
+        var systemId = await SetupAndApproveSystemUser(facilitator, "TripleTexSuperPackage1", AccessPackageRegnskapsfoerer);
 
         // Act: Delegate customer
         var allDelegations = await DelegateCustomerToSystemUser(facilitator, systemId, false);
@@ -68,12 +67,12 @@ public class ClientDelegationTests
 
         // Delete System user
         var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
-        Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode, "Was unable to delete System User" + deleteAgentUserResponse.StatusCode);
+        Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode, "Was unable to delete System User: Error code: " + deleteAgentUserResponse.StatusCode);
 
-        var token = await _platformClient.GetMaskinportenTokenForVendor();
+       var token = await _platformClient.GetMaskinportenTokenForVendor();
 
         //Cleanup
-        await _systemRegisterClient.DeleteSystem(systemId, token);
+       await _systemRegisterClient.DeleteSystem(systemId, token);
     }
 
 
@@ -175,6 +174,7 @@ public class ClientDelegationTests
             .Replace("{requestId}", requestId);
 
         var approveResponse = await _common.ApproveRequest(approveUrl, facilitator);
+        _outputHelper.WriteLine(await approveResponse.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
 
         await AssertStatusSystemUserRequest(requestId, "Accepted", maskinportenToken);
