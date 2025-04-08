@@ -9,8 +9,8 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 public class SystemUserDTO
 {
     /// <summary>
-    /// The GUID Id is the primary key for the SystemUser in the Authentication db.
-    /// It also occurs as the PartyUuid when the SystemUser is an Entity in the Access Management APIs
+    /// The GUID Id is the primary key for the SystemUser in the Authentication db 
+    /// and is the PartyUuid for the SystemUser
     /// </summary>
     [JsonPropertyName("id")]
     public required string Id { get; set; }
@@ -21,18 +21,6 @@ public class SystemUserDTO
     /// </summary>
     [JsonPropertyName("systemId")]
     public required string SystemId { get; set; }
-
-    /// <summary>
-    /// The PartyUuid identifies the end-user/Customer Organisation, and is fetched from the login Context and
-    /// user party serivces. 
-    /// 
-    /// Is of the form GUID PartyUuid
-    /// 
-    /// The PartyUuid is an id created by Altin.Authentication/AccessManagement.
-    /// It is used as an umbrella over SSN, OrgNo, SystemUserId and similar external Ids.
-    /// </summary>
-    [JsonPropertyName("partyUuid")]
-    public required string PartyUuid { get; set; }
 
     /// <summary>
     /// The Organisation Number for the end-user/Customer Organisation as it is stored in the ER Registry            
