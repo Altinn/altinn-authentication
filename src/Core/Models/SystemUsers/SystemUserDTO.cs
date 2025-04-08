@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
@@ -6,6 +7,7 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 /// A DTO for SystemUser without internal fields,
 /// in use for instance on the Maskinporten Endpoint
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class SystemUserDTO
 {
     /// <summary>
