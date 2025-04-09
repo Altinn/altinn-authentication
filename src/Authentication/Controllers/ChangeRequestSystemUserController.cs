@@ -266,7 +266,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [HttpGet("{party}/{requestId}")]
-    public async Task<ActionResult<ChangeRequestResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
+    public async Task<ActionResult<ChangeRequestResponse>> GetRequestByPartyIdAndRequestId(Guid party, Guid requestId)
     {
         Result<ChangeRequestResponse> res = await _changeRequestService.GetChangeRequestByPartyAndRequestId(party, requestId);
         if (res.IsProblem)
@@ -286,7 +286,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/approve")]
-    public async Task<ActionResult<ChangeRequestResponse>> ApproveSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ChangeRequestResponse>> ApproveSystemUserChangeRequest(Guid party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _changeRequestService.ApproveAndDelegateChangeOnSystemUser(requestId, party, userId, cancellationToken);
@@ -362,10 +362,10 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/reject")]
-    public async Task<ActionResult<ChangeRequestResponse>> RejectSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ChangeRequestResponse>> RejectSystemUserChangeRequest(Guid party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _changeRequestService.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
+        Result<bool> response = await _changeRequestService.RejectChangeOnSystemUser(party, requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

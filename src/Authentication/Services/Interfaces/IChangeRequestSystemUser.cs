@@ -28,7 +28,7 @@ public interface IChangeRequestSystemUser
     /// <param name="party">The partyId for the end user</param>
     /// <param name="requestId">The Guid Id for the Request</param>
     /// <returns>The Request model</returns>
-    Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(int party, Guid requestId);
+    Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(Guid party, Guid requestId);
 
     /// <summary>
     /// Approves the request and creates a system user
@@ -38,7 +38,7 @@ public interface IChangeRequestSystemUser
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The Cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, Guid partyId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
@@ -53,11 +53,12 @@ public interface IChangeRequestSystemUser
     /// <summary>
     /// Rejects the request 
     /// </summary>
+    /// <param name="partyUuid">The Party Uuid</param>
     /// <param name="requestId">the id of the request to be rejected</param>
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The cancelleation token</param>
     /// <returns>true if the request is rejected</returns>
-    Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> RejectChangeOnSystemUser(Guid partyUuid, Guid requestId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Used by the Vendors to delete the chosen Request by guid

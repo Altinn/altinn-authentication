@@ -21,14 +21,14 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="partyId">The party id</param>
     /// <returns></returns>
-    Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId);
+    Task<List<SystemUser>> GetAllActiveSystemUsersForParty(Guid partyId);
 
     /// <summary>
     /// Returns a single System User integration by its id
     /// </summary>
     /// <param name="id">The Guid id</param>
     /// <returns>Returns a System User Integration</returns>
-    Task<SystemUser?> GetSystemUserById(Guid id);
+    Task<SystemUser?> GetSystemUserById(Guid partyUuid, Guid id);
 
     /// <summary>
     /// Sets the id'ed System User Integration's IsDeleted flag to true in the db, and returns true if it succeeds
@@ -95,5 +95,5 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="partyId">The party id</param>
     /// <returns>List of Agent SystemUsers</returns>
-    Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId);
+    Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(Guid partyId);
 }

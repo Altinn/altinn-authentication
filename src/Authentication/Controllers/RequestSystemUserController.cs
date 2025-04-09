@@ -355,7 +355,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>RequestSystemResponse model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [HttpGet("{party}/{requestId}")]
-    public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
+    public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(Guid party, Guid requestId)
     {
         Result<RequestSystemResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(party, requestId);
         if (res.IsProblem)
@@ -373,7 +373,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>AgentRequestSystemResponse model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [HttpGet("agent/{party}/{requestId}")]
-    public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentRequestByPartyIdAndRequestId(int party, Guid requestId)
+    public async Task<ActionResult<AgentRequestSystemResponse>> GetAgentRequestByPartyIdAndRequestId(Guid party, Guid requestId)
     {
         Result<AgentRequestSystemResponse> res = await _requestSystemUser.GetAgentRequestByPartyAndRequestId(party, requestId);
         if (res.IsProblem)
@@ -394,7 +394,7 @@ public class RequestSystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]    
     [HttpPost("{party}/{requestId}/approve")]
-    public async Task<ActionResult<RequestSystemResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RequestSystemResponse>> ApproveSystemUserRequest(Guid party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, userId, cancellationToken);
@@ -421,7 +421,7 @@ public class RequestSystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("agent/{party}/{requestId}/approve")]
-    public async Task<ActionResult<AgentRequestSystemResponse>> ApproveAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<AgentRequestSystemResponse>> ApproveAgentSystemUserRequest(Guid party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.ApproveAndCreateAgentSystemUser(requestId, party, userId, cancellationToken);
@@ -547,7 +547,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/reject")]
-    public async Task<ActionResult<RequestSystemResponse>> RejectSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<RequestSystemResponse>> RejectSystemUserRequest(Guid party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.RejectSystemUser(party, requestId, userId, cancellationToken);
@@ -573,7 +573,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("agent/{party}/{requestId}/reject")]
-    public async Task<ActionResult<bool>> RejectAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<bool>> RejectAgentSystemUserRequest(Guid party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.RejectAgentSystemUser(party, requestId, userId, cancellationToken);

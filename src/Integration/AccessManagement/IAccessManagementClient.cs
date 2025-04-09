@@ -55,7 +55,7 @@ public interface IAccessManagementClient
     /// <param name="userId">Logged in user</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(Guid partyUuid, SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list of all delegationIds 

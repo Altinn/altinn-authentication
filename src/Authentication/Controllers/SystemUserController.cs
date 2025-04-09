@@ -67,7 +67,7 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("{party}")]
-    public async Task<ActionResult<List<SystemUser>>> GetListOfSystemUsersPartyHas(int party)
+    public async Task<ActionResult<List<SystemUser>>> GetListOfSystemUsersPartyHas(Guid party)
     {
         var result = await _systemUserService.GetListOfSystemUsersForParty(party) ?? [];
         return Ok(result);
@@ -80,7 +80,7 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}")]
-    public async Task<ActionResult<List<SystemUser>>> GetListOfAgentSystemUsersPartyHas(int party)
+    public async Task<ActionResult<List<SystemUser>>> GetListOfAgentSystemUsersPartyHas(Guid party)
     {
         var result = await _systemUserService.GetListOfAgentSystemUsersForParty(party) ?? [];
         return Ok(result);
@@ -92,11 +92,11 @@ public class SystemUserController : ControllerBase
     /// <returns>List of DelegationResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
-    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
+    [HttpGet("agent/{party}/{systemUserId}/delegations")]
+    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid party, Guid systemUserId)
     {
         List<DelegationResponse> ret = [];
-        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(party, systemUserId);
         if (result.IsSuccess) 
         {
             ret = result.Value;
@@ -113,9 +113,9 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("{party}/{systemUserId}")]
-    public async Task<ActionResult> GetSingleSystemUserById(int party, Guid systemUserId)
+    public async Task<ActionResult> GetSingleSystemUserById(Guid party, Guid systemUserId)
     {
-        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
+        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(party, systemUserId);
         if (systemUser is not null)
         {
             return Ok(systemUser);
@@ -182,9 +182,9 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("{party}/{systemUserId}")]
-    public async Task<ActionResult> SetDeleteFlagOnSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> SetDeleteFlagOnSystemUser(Guid party, Guid systemUserId, CancellationToken cancellationToken = default)
     {
-        SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
+        SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(party, systemUserId);
         if (toBeDeleted is not null)
         {
             await _systemUserService.SetDeleteFlagOnSystemUser(party, systemUserId, cancellationToken);
@@ -216,14 +216,6 @@ public class SystemUserController : ControllerBase
     [HttpPut]
     public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUserUpdateDto request)
     {
-        SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
-        if (toBeUpdated is not null)
-        {
-            // Need to verify that the partyId is the same as the one in the request
-            // await _systemUserService.UpdateSystemUserById(request);
-            return Ok();
-        }
-
         return NotFound();
     }
 
@@ -341,7 +333,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("{party}/create")]
-    public async Task<ActionResult<SystemUser>> CreateAndDelegateSystemUser(string party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<SystemUser>> CreateAndDelegateSystemUser(Guid party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -364,18 +356,23 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/delegation/")]
-    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser(Guid party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
-        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
+        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(party, systemUserId);
         if (systemUser is null)
         {
             ModelState.AddModelError("return", $"SystemUser with Id {systemUserId} Not Found");
             return ValidationProblem(ModelState);
         }
 
-        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        if (systemUser.ReporteePartyUuid != party.ToString())
+        {
+            return Forbid();
+        }
+
+        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(party, systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok(delegationResult.Value);
@@ -392,9 +389,9 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("agent/{party}/delegation/{delegationId}")]
-    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(string party, Guid delegationId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(Guid party, Guid delegationId, CancellationToken cancellationToken = default)
     {
-        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, facilitatorId, cancellationToken);
+        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, cancellationToken);
         if (result.IsSuccess)
         {
             return Ok();
@@ -411,9 +408,9 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("agent/{party}/{systemUserId}")]
-    public async Task<ActionResult> DeleteAgentSystemUser(string party, Guid systemUserId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> DeleteAgentSystemUser(Guid party, Guid systemUserId, CancellationToken cancellationToken = default)
     {
-        Result<bool> result = await _systemUserService.DeleteAgentSystemUser(party, systemUserId, facilitatorId, cancellationToken);
+        Result<bool> result = await _systemUserService.DeleteAgentSystemUser(party, systemUserId, cancellationToken);
         if (result.IsSuccess)
         {
             return Ok();

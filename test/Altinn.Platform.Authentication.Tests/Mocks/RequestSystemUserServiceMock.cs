@@ -23,16 +23,6 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {    
         }
 
-        public Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<Result<AgentRequestSystemResponse>> CreateAgentRequest(CreateAgentRequestSystemUser createClientRequest, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
@@ -83,27 +73,37 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int party, Guid requestId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Result<bool>> RejectAgentSystemUser(int party, Guid requestId, int userId, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Result<bool>> RejectSystemUser(int party, Guid requestId, int userId, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<Result<Page<AgentRequestSystemResponse, Guid>>> GetAllAgentRequestsForVendor(OrganisationNumber vendorOrgNo, string systemId, Page<Guid>.Request continueRequest, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int party, Guid requestId)
+        public Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(Guid party, Guid requestId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, Guid partyId, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, Guid partyId, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> RejectSystemUser(Guid partyId, Guid requestId, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> RejectAgentSystemUser(Guid partyId, Guid requestId, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(Guid party, Guid requestId)
         {
             throw new NotImplementedException();
         }

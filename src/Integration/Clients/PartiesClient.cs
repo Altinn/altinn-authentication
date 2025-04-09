@@ -55,11 +55,11 @@ public class PartiesClient : IPartiesClient
     }
 
     /// <inheritdoc/>
-    public async Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
+    public async Task<Party> GetPartyAsync(Guid partyId, CancellationToken cancellationToken = default)
     {
         try
         {
-            string endpointUrl = $"parties/{partyId}";
+            string endpointUrl = $"parties/byuuid/{partyId}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 

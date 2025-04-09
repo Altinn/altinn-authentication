@@ -77,7 +77,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(Guid party, SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -112,7 +112,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             AgentName = systemUser.IntegrationTitle,
             AgentRole = "Agent",
             ClientId = Guid.Parse(request.CustomerId),
-            FacilitatorId = Guid.Parse(request.FacilitatorId),
+            FacilitatorId = party,
             Delegations = delegations
         };
 
