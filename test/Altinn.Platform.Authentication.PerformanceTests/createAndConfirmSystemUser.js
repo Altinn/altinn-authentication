@@ -20,37 +20,23 @@ for (var label of labels) {
 }
 
 export function setup() {
-    const systemUsersParts = splitSystemUsers();
-    const [token, clientId] = getSystemOwnerTokenAndClientId(systemOwner);
-    const resource = randomItem(resources);
-    const systemId = `${systemOwner}_${uuidv4()}`;
-    createSystem(systemOwner, systemId, [resource], token, clientId, "resource");
-    const data = {
-        systemId: systemId,
-        clientId: clientId, 
-        token: token,
-        resource: resource,
-        organizationParts: systemUsersParts
-    };
-    return data;
+    return splitSystemUsers();
 }
 
 export default function(data) {
-    let mySystemUsers = data.organizationParts[exec.vu.idInTest - 1];
-    if (mySystemUsers.length > 0) {
-        const organization = randomItem(mySystemUsers);
-        data.organizationParts[exec.vu.idInTest - 1] = data.organizationParts[exec.vu.idInTest - 1].filter(item => item.orgNo != organization.orgNo);
-        let systemUserId = createSystemUser(data.systemId, organization, [data.resource], data.token, "resource");
-        if (systemUserId) {
-            approveSystemUser(organization, systemUserId, "resource");
-        }
-        else {
-            console.log("System user not created");
-        }
-    }
-    else {
+    let mySystemUsers = data[exec.vu.idInTest - 1];
+    if (mySystemUsers.length == 0) {
         console.log("No more system users to create");
+        return;
     }
+    const [token, clientId] = getSystemOwnerTokenAndClientId(systemOwner, __ITER);
+    const resource = randomItem(resources);
+    const systemId = `${systemOwner}_${uuidv4()}`;
+    const systemResponse = createSystem(systemOwner, systemId, [resource], token, clientId, "resource");
+    const organization = randomItem(mySystemUsers);
+    data[exec.vu.idInTest - 1] = data[exec.vu.idInTest - 1].filter(item => item.orgNo != organization.orgNo);
+    let systemUserId = createSystemUser(systemId, organization, [resource], token, "resource", systemResponse);
+    approveSystemUser(organization, systemUserId, "resource", systemUserId);
 }
 
 

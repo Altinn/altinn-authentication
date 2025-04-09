@@ -28,17 +28,10 @@ export function fetchToken(url, tokenOptions, type) {
   const cacheKey = getCacheKey(type, tokenOptions);
 
   if (!cachedTokens[cacheKey] || (currentTime - cachedTokensIssuedAt[cacheKey] >= tokenTtl - tokenMargin)) {
-    if (__VU == 0) {
-      console.info(`Fetching ${type} token from token generator during setup stage`);
-    }
-    else {
-      console.info(`Fetching ${type} token from token generator during VU stage for VU #${__VU}`);
-    }
     
     let response = http.get(url, tokenRequestOptions);
 
     if (response.status != 200) {
-        console.log(url);
         throw new Error(`Failed getting ${type} token: ${response.status_text}`);
     }
     cachedTokens[cacheKey] = response.body;

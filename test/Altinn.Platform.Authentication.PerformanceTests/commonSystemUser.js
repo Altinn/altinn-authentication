@@ -31,7 +31,11 @@ export function createSystem(systemOwner, systemId, resource, token, clientId, t
     return id;
 }
 
-export function createSystemUser(systemId, organization, resources, token, type) {
+export function createSystemUser(systemId, organization, resources, token, type, systemResponse) {
+    if (!systemResponse) {
+        console.log("System response is null");
+        return null;
+    }
     const params = getParams(createSystemUserLabel);
     params.headers.Authorization = "Bearer " + token;
     let url = requestSystemUserUrl;
@@ -50,16 +54,21 @@ export function createSystemUser(systemId, organization, resources, token, type)
 } 
 
 export function approveSystemUser(organization, systemUserId, type) {
+    if (!systemUserId) {
+        console.log("System user id is null");
+        return false;
+    }
     const approveToken = getApproveSystemUserToken(organization.userId);
     const params = getParams(approveSystemUserLabel);
     params.headers.Authorization = "Bearer " + approveToken;
     let url = `${approveSystemUserUrl}${organization.partyId}/${systemUserId}/approve`;
     if (type === 'accessPackage') {
         url = `${approveSystemUserUrl}agent/${organization.partyId}/${systemUserId}/approve`; 
-    }  
-    describe('Approve system user', () => {
-        let r = http.post(url, null, params);
+    } 
+    return describe('Approve system user', () => {
+        let r = http.post(url, null, params); 
         expectStatusFor(r).to.equal(200);
+        expect(r.body).to.equal("true");
     });
 }
 

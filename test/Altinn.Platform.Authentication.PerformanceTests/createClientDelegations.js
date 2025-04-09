@@ -6,7 +6,7 @@ import { describe } from './common/describe.js';
 import { splitSystemUsers, regnskapsforerUrns, forretningsforerUrns, revisorUrns } from './common/readTestdata.js';
 import { getEnterpriseToken } from './common/token.js';
 import { getCustomerListUrl, getSystemUsersUrl } from './common/config.js';
-import { createSystem, createSystemUser, approveSystemUser, getParams, getSystemOwnerTokenAndClientId, delegateSystemUser } from './commonSystemUser.js';
+import { createSystem, createSystemUser, approveSystemUser, getParams, getSystemOwnerTokenAndClientId, delegateAmSystemUser as delegateSystemUser } from './commonSystemUser.js';
 import { createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, postDelegationLabel } from './commonSystemUser.js';
 
 
@@ -35,53 +35,51 @@ export function setup() {
 
 export default function(data) {
     let mySystemUsers = data[exec.vu.idInTest - 1];
-    if (mySystemUsers.length > 0) {
-        const organization = randomItem(mySystemUsers);
-        // Remove the organization from the list
-        data[exec.vu.idInTest - 1] = data[exec.vu.idInTest - 1].filter(item => item.orgNo != organization.orgNo);
-        const systemId = `${systemOwner}_${uuidv4()}`;
+    if (mySystemUsers.length == 0) {
+        console.log("No more system users to create");
+        return;
+    }
+    const organization = randomItem(mySystemUsers);
+    // Remove the organization from the list
+    data[exec.vu.idInTest - 1] = data[exec.vu.idInTest - 1].filter(item => item.orgNo != organization.orgNo);
+    const systemId = `${systemOwner}_${uuidv4()}`;
 
-        // get token to create system, systemuser and read systemid.
-        // clientId used to create system
-        const [token, clientId] = getSystemOwnerTokenAndClientId(systemOwner, __ITER);
-        const resources = getPackages(organization.orgType);
+    // get token to create system, systemuser and read systemid.
+    // clientId used to create system
+    const [token, clientId] = getSystemOwnerTokenAndClientId(systemOwner, __ITER);
+    const resources = getPackages(organization.orgType);
 
         // create system and system user
-        const systemResponse = createSystem(systemOwner, systemId, resources, token, clientId, "accessPackage");
-        if (systemResponse) {
+    const systemResponse = createSystem(systemOwner, systemId, resources, token, clientId, "accessPackage");
 
-            // create system user, approve, get customer list and delegate system user
-            let approveSystemUserId = createSystemUser(systemId, organization, resources, token, "accessPackage");
-            if (approveSystemUserId) {
-                approveSystemUser(organization, approveSystemUserId, "accessPackage");
-                let customerList = getCustomerList(systemOwner, organization.orgUuid, organization.orgType);
-                let systemUserId = getSystemUserId(systemId, token);
-                let noOfDelegations = 0;
-                if (customerList && systemUserId) {
-                    for (let customer of customerList.data) {
-                        let delegationId = delegateSystemUser(customer, organization, systemUserId, resources);
-                        noOfDelegations++;
-                        if (noOfDelegations >=10) {
-                            break;
-                        }
-                    }
-                }
-                else {
-                    console.log("No customer list or system user id", customerList, systemUserId);
-                }
-            }
-            else {
-                console.log("System user not created");
-            }
-        }
-        else {
-            console.log("System not created");
+    // create system user, approve, get customer list and delegate system user
+    const approveSystemUserId = createSystemUser(systemId, organization, resources, token, "accessPackage", systemResponse);
+    if (!approveSystemUserId) {
+        console.log("System user not created");
+        return;
+    }
+    if (!approveSystemUser(organization, approveSystemUserId, "accessPackage")) {
+        console.log("System user not approved");
+        return;
+    }
+
+    let customerList = getCustomerList(systemOwner, organization.orgUuid, organization.orgType);
+    let systemUserId = getSystemUserId(systemId, token);
+    if (!systemUserId || !customerList) {
+        console.log("No customer list or system user id");
+        return;
+    }
+    let noOfDelegations = 0;
+    // delegate system user to 10 customers
+    for (let customer of customerList.data) {
+        let delegationId = delegateSystemUser(customer, organization, systemUserId, resources);
+        noOfDelegations++;
+        if (noOfDelegations >=10) {
+            break;
         }
     }
-    else {
-        console.log("No more system users to create");
-    }
-}        
+}
+       
 
 function getCustomerList(systemOwner, orgUuid, orgType) {
     const tokenOptions = {
@@ -93,7 +91,6 @@ function getCustomerList(systemOwner, orgUuid, orgType) {
     params.headers.Authorization = "Bearer " + token;
     params.headers['Ocp-Apim-Subscription-Key'] = subscription_key;
     const url = `${getCustomerListUrl}${orgUuid}/customers/ccr/${orgType}`;
-    console.log(url);
     let customer_list = null;
     describe('Get customer list', () => {
         let r = http.get(url, params);
