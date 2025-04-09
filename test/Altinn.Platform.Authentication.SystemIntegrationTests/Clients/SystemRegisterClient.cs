@@ -45,9 +45,9 @@ public class SystemRegisterClient
         return systems ?? [];
     }
 
-    public async Task DeleteSystem(string SystemId, string? token)
+    public async Task DeleteSystem(string systemId, string? token)
     {
-        var resp = await _platformClient.Delete($"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", SystemId), token);
+        var resp = await _platformClient.Delete($"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", systemId), token);
         Assert.True(HttpStatusCode.OK == resp.StatusCode, $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
     }
 

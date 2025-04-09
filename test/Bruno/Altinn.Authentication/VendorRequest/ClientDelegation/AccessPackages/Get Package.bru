@@ -13,3 +13,10 @@ get {
 script:pre-request {
   var pakkeEksempel = "regnskapsforer-med-signeringsrettighet"
 }
+
+tests {
+  test("Should get specific package on package name", function () {
+    const data = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+  });
+}

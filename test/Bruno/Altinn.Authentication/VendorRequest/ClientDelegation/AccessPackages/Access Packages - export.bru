@@ -33,3 +33,10 @@ script:post-response {
   
   
 }
+
+tests {
+  test("Access Packages should load", function () {
+    const data = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+  });
+}

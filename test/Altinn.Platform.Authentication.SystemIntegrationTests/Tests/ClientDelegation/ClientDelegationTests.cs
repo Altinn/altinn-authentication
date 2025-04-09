@@ -10,21 +10,12 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDele
 
 public class ClientDelegationTests
 {
-    private const string AccessPackageRegnskapsfoerer = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet";
-    // private const string AccessPackage = "urn:altinn:accesspackage:skattegrunnlag";
-    //private const string AccessPackage = "urn:altinn:accesspackage:ansvarlig-revisor";
-    private const string AccessPackage = "urn:altinn:accesspackage:revisormedarbeider";
-
     private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
     private readonly SystemRegisterClient _systemRegisterClient;
     private readonly SystemUserClient _systemUserClient;
     private readonly Common _common;
 
-    /// <summary>
-    /// Systemregister tests
-    /// </summary>
-    /// <param name="outputHelper">For test logging purposes</param>
     public ClientDelegationTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
@@ -34,8 +25,15 @@ public class ClientDelegationTests
         _common = new Common(_platformClient, outputHelper);
     }
 
-    [Fact]
-    public async Task CreateSystemUserClientRequestTest()
+    [Theory]
+    [InlineData("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet")]
+    [InlineData("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet")]
+    [InlineData("urn:altinn:accesspackage:regnskapsforer-lonn")]
+    [InlineData("urn:altinn:accesspackage:ansvarlig-revisor")]
+    [InlineData("urn:altinn:accesspackage:revisormedarbeider")]
+    [InlineData("urn:altinn:accesspackage:skattegrunnlag")]
+    // [InlineData("urn:altinn:accesspackage:eksplisitt")]
+    public async Task CreateSystemUserClientRequestTest(string accessPackage)
     {
         // Formål:
         // Denne testen dekker brukstilfeller der en sluttbruker (f.eks. et selskap) engasjerer en "fasilitator" – regnskapsfører eller revisor –
@@ -44,14 +42,11 @@ public class ClientDelegationTests
         // I Altinn 2 skjer dette via GUI/Excel-opplasting. I Altinn 3 skal det gjøres via API.
         // Regnskapsfører og revisor hentes som roller fra Enhetsregisteret (REGN/REVI),
         // og daglig leder i slike virksomheter har rettigheter til å gjøre dette på vegne av kundene sine.
-
-        const string accessPackage = "urn:altinn:accesspackage:revisormedarbeider";
-
         // Arrange
-        var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
+        var facilitator = _platformClient.GetTestUserWithCategory("facilitator-large-customer-list");
         facilitator.AltinnToken = await _platformClient.GetPersonalAltinnToken(facilitator);
-        
-        var systemId = await SetupAndApproveSystemUser(facilitator, "TripleTexSuperPackage1", AccessPackageRegnskapsfoerer);
+
+        var systemId = await SetupAndApproveSystemUser(facilitator, "TripleTexSuperPackage " + accessPackage, accessPackage);
 
         // Act: Delegate customer
         var allDelegations = await DelegateCustomerToSystemUser(facilitator, systemId, false);
@@ -69,10 +64,10 @@ public class ClientDelegationTests
         var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
         Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode, "Was unable to delete System User: Error code: " + deleteAgentUserResponse.StatusCode);
 
-       var token = await _platformClient.GetMaskinportenTokenForVendor();
+        var token = await _platformClient.GetMaskinportenTokenForVendor();
 
         //Cleanup
-       await _systemRegisterClient.DeleteSystem(systemId, token);
+        await _systemRegisterClient.DeleteSystem(systemId, token);
     }
 
 
@@ -165,10 +160,10 @@ public class ClientDelegationTests
         await AssertStatusSystemUserRequest(requestId, "New", maskinportenToken);
 
         var systemUserResponse = await _common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
-        
+
         Assert.NotNull(systemUserResponse);
         Assert.Contains(testState.SystemId, await systemUserResponse.ReadAsStringAsync());
-        
+
         var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
             .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
@@ -186,8 +181,10 @@ public class ClientDelegationTests
     {
         var systemUser = await _common.GetSystemUserOnSystemIdForAgenOnOrg(systemId, facilitator);
         var customerListResp = await _platformClient.GetCustomerList(facilitator, systemUser?.Id, _outputHelper);
-        var customerContent = await customerListResp.Content.ReadAsStringAsync();
 
+        Assert.True(customerListResp.StatusCode == HttpStatusCode.OK, $"Unable to get customer list, returned status code: {customerListResp.StatusCode} for system: {systemId}");
+
+        var customerContent = await customerListResp.Content.ReadAsStringAsync();
         var customers = JsonSerializer.Deserialize<List<CustomerListDto>>(customerContent);
         Assert.NotNull(customers);
         Assert.NotEmpty(customers);
