@@ -1,11 +1,20 @@
 const testBaseUrl = "https://platform.at22.altinn.cloud/authentication/";
 const yt01BaseUrl = "https://platform.yt01.altinn.cloud/authentication/";
+const testRegisterBaseUrl = "https://platform.at22.altinn.cloud/register/";
+const yt01RegisterBaseUrl = "https://platform.yt01.altinn.cloud/register/";
+const testAmBaseUrl = "https://platform.at22.altinn.cloud/accessmanagement/";
+const yt01AmBaseUrl = "https://platform.yt01.altinn.cloud/accessmanagement/";
+
 const systemRegister = "api/v1/systemregister/vendor";
 const systemUserRequest = "api/v1/systemuser/request/vendor";
 const systemUserApprove = "api/v1/systemuser/request/";
 const systemUrl = "api/v1/systemregister"
 const systemUsersUrl = "api/v1/systemuser/vendor/bysystem/"
 const systemUserByExternalIdUrl = "api/v1/systemuser/byExternalId"
+const customerList = "api/v1/internal/parties/"
+const delegationUrl = "api/v1/systemuser/agent/"
+const amDelegationUrl = "api/v1/internal/systemuserclientdelegation"
+
 export const urls = {
     v1: {
         registerSystem: {
@@ -33,6 +42,18 @@ export const urls = {
         systemUserByExternalIdUrl: {
             test: testBaseUrl + systemUserByExternalIdUrl,
             yt01: yt01BaseUrl + systemUserByExternalIdUrl
+        },
+        getCustomerList: {
+            test: testRegisterBaseUrl + customerList,
+            yt01: yt01RegisterBaseUrl + customerList
+        },
+        delegationUrl: {
+            test: testBaseUrl + delegationUrl,
+            yt01: yt01BaseUrl + delegationUrl
+        },
+        amDelegationUrl: {
+            test: testAmBaseUrl + amDelegationUrl,
+            yt01: yt01AmBaseUrl + amDelegationUrl
         }
     }
 };
@@ -51,4 +72,7 @@ export const approveSystemUserUrl = urls[__ENV.API_VERSION]["approveSystemUser"]
 export const getSystemUrl = urls[__ENV.API_VERSION]["systemUrl"][__ENV.API_ENVIRONMENT];
 export const getSystemUsersUrl = urls[__ENV.API_VERSION]["systemUsersUrl"][__ENV.API_ENVIRONMENT];
 export const getSystemUserByExternalIdUrl = urls[__ENV.API_VERSION]["systemUserByExternalIdUrl"][__ENV.API_ENVIRONMENT];
+export const getCustomerListUrl = urls[__ENV.API_VERSION]["getCustomerList"][__ENV.API_ENVIRONMENT];
+export const postDelegationUrl = urls[__ENV.API_VERSION]["delegationUrl"][__ENV.API_ENVIRONMENT];
+export const postAmDelegationUrl = urls[__ENV.API_VERSION]["amDelegationUrl"][__ENV.API_ENVIRONMENT];
 export const tokenGeneratorEnv = __ENV.API_ENVIRONMENT == "yt01" ? "yt01" : "tt02"; // yt01 is the only environment that has a separate token generator environment
