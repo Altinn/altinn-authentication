@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/accessmanagement/api/v1/meta/info/accesspackages/package/urn/regnskapsforer-med-signeringsrettighet
+  url: {{baseUrl}}/accessmanagement/api/v1/meta/info/accesspackages/package/urn/{{packageId}}
   body: none
   auth: none
+}
+
+script:pre-request {
+  var pakkeEksempel = "regnskapsforer-med-signeringsrettighet"
 }

@@ -145,7 +145,7 @@ public class ClientDelegationTests
 
         var testState = new TestState("Resources/Testdata/ClientDelegation/AccessPackageSystemRegister.json")
             .WithVendor(systemOwner.Org)
-            .WithName($"{systemNamePrefix} {Guid.NewGuid()}");
+            .WithName($"{systemNamePrefix}-{Guid.NewGuid()}");
 
         var systemPayload = testState.GenerateRequestBody();
         await _systemRegisterClient.PostSystem(systemPayload, maskinportenToken);

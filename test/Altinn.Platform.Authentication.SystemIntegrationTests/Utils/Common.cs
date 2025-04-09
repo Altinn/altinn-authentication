@@ -153,12 +153,9 @@ public class Common
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/ChangeRequest/CreateSystemUserRequest.json"))
             .Replace("{systemId}", testState.SystemId)
-            // .Replace("{redirectUrl}", testState.AllowedRedirectUrls.First())
-            // .Replace("{redirectUrl}",testState.AllowedRedirectUrls.First() + "&clientId=123")
             .Replace("{redirectUrl}","")
             .Replace("{externalRef}", externalRef);
         
-        Output.WriteLine("Request body for system user request" + requestBody);
         // Act
         var userResponse = await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
         

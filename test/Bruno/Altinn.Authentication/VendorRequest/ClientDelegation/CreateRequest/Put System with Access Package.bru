@@ -1,11 +1,11 @@
 meta {
-  name: Create System with Access Package
+  name: Put System with Access Package
   type: http
-  seq: 2
+  seq: 3
 }
 
-post {
-  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor
+put {
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{system_id}}
   body: json
   auth: inherit
 }
@@ -26,6 +26,24 @@ body:json {
       "nb": "Bruno test",
       "nn": "Bruno test."
     },
+     "rights": [
+      {
+        "resource": [
+          {
+            "value": "authentication-e2e-test",
+            "id": "urn:altinn:resource"
+          }
+        ]
+      },
+      {
+        "resource": [
+          {
+            "value": "vegardtestressurs",
+            "id": "urn:altinn:resource"
+          }
+        ]
+      }
+    ],
     "accessPackages": [
       {
         "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
@@ -41,19 +59,23 @@ body:json {
       },
       {
         "urn" : "urn:altinn:accesspackage:revisormedarbeider"
-      },
-      {
-        "urn" : "urn:altinn:accesspackage:skattegrunnlag"
       }
     ],
     "allowedRedirectUrls": [
-      "https://fiken.no"
+      "https://www.tripletex.no"
     ],
     "isVisible": false,
     "ClientId": [
       "{{system_name}}"
     ]
   }
+  
+  
+  //app_ttd_endring-av-navn-v2
+}
+
+vars:pre-request {
+  system_id: 314239458_Tripletex C
 }
 
 script:pre-request {
@@ -64,10 +86,10 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","314126181");
-  bru.setEnvVar("auth_org", "314126181");
+  bru.setEnvVar("auth_orgNo","314239458");
+  bru.setEnvVar("auth_org", "314239458");
   
-  const systemName = "Fiken Sluttbrukersystem"
+  const systemName = "Tripletex C"
   
   bru.setEnvVar("system_name",systemName);
   
