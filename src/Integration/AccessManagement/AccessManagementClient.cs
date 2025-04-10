@@ -310,15 +310,11 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(Guid partyuuid, SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         const string AGENT = "agent";
 
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
-        if ( ! Guid.TryParse(request.FacilitatorId, out Guid facilitator))
-        {
-            return Problem.Reportee_Orgno_NotFound;
-        }
 
         if (!Guid.TryParse(request.CustomerId, out Guid clientId))
         {
@@ -356,13 +352,13 @@ public class AccessManagementClient : IAccessManagementClient
             AgentName = systemUser.IntegrationTitle,
             AgentRole = AGENT, 
             ClientId = clientId,
-            FacilitatorId = facilitator,
+            FacilitatorId = partyuuid,
             RolePackages = rolePackages
         };
 
         try
         {
-            string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
+            string endpointUrl = $"internal/systemuserclientdelegation?party={partyuuid}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
 
             List<AgentDelegationResponse> found = await response.Content.ReadFromJsonAsync<List<AgentDelegationResponse>>(_serializerOptions, cancellationToken) ?? [];

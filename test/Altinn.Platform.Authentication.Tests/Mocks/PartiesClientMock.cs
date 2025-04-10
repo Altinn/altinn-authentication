@@ -16,9 +16,9 @@ namespace Altinn.Authentication.Tests.Mocks;
 public class PartiesClientMock : IPartiesClient
 {
     /// <inheritdoc/>
-    public Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
+    public Task<Party> GetPartyAsync(Guid partyId, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(GetTestDataParties().Find(p => p.PartyId == partyId));
+        return Task.FromResult(GetTestDataParties().Find(p => p.PartyUuid == partyId));
     }
 
     private static List<Party> GetTestDataParties()

@@ -56,7 +56,7 @@ public interface IRequestSystemUser
     /// <param name="party">The partyId for the end user</param>
     /// <param name="requestId">The Guid Id for the Request</param>
     /// <returns>The Request model</returns>
-    Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(int party, Guid requestId);
+    Task<Result<RequestSystemResponse>> GetRequestByPartyAndRequestId(Guid party, Guid requestId);
 
     /// <summary>
     /// Approves the request and creates a system user
@@ -66,7 +66,7 @@ public interface IRequestSystemUser
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The Cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, Guid partyId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Approves the request and creates a agent system user
@@ -76,7 +76,7 @@ public interface IRequestSystemUser
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The Cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, Guid partyId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has
@@ -106,7 +106,7 @@ public interface IRequestSystemUser
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The cancelleation token</param>
     /// <returns>true if the request is rejected</returns>
-    Task<Result<bool>> RejectSystemUser(int partyId, Guid requestId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> RejectSystemUser(Guid partyId, Guid requestId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Rejects the request for agent system user
@@ -116,7 +116,7 @@ public interface IRequestSystemUser
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The cancelleation token</param>
     /// <returns>true if the request is rejected</returns>
-    Task<Result<bool>> RejectAgentSystemUser(int partyId, Guid requestId, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> RejectAgentSystemUser(Guid partyId, Guid requestId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Used by the Vendors to delete the chosen Request by guid
@@ -162,5 +162,5 @@ public interface IRequestSystemUser
     /// <param name="party">The partyId for the end user</param>
     /// <param name="requestId">The Guid Id for the Request</param>
     /// <returns>The AgentRequest model</returns>
-    Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int party, Guid requestId);
+    Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(Guid party, Guid requestId);
 }

@@ -13,11 +13,4 @@ public class AgentDelegationInputDto
     /// which will be assigned to the Agent SystemUser    
     /// </summary>
     public required string CustomerId { get; set; }
-
-    /// <summary>
-    /// The Uuid for the facilitator, the organisation 
-    /// or person that "owns" the Agent SystemUser
-    /// and is administrating it from the FrontEnd.
-    /// </summary>
-    public required string FacilitatorId { get; set; }
 }
