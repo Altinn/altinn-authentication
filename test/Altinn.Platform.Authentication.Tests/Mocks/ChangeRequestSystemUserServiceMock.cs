@@ -23,7 +23,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {    
         }
 
-        public Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+        public Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, Guid partyId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
@@ -53,7 +53,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(int party, Guid requestId)
+        public Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(Guid party, Guid requestId)
         {
             throw new NotImplementedException();
         }
@@ -63,7 +63,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return await Task.FromResult("https://smartcloudaltinn.azurewebsites.net/changerequest");
         }
 
-        public Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+        public Task<Result<bool>> RejectChangeOnSystemUser(Guid partyUuid, Guid requestId, int userId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
