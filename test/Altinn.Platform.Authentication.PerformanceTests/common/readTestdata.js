@@ -28,7 +28,7 @@ function readCsv(filename) {
 if (!__ENV.API_ENVIRONMENT) {
   throw new Error('API_ENVIRONMENT must be set');
 }
-const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-random-customers-no-ffor.csv`;
+const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-random-customers.csv`;
 
 /**
  * SharedArray variable that stores the service owners data.
@@ -63,7 +63,7 @@ export const revisorUrns = [
   'urn:altinn:accesspackage:ansvarlig-revisor',
   'urn:altinn:accesspackage:revisormedarbeider',
 ];
-export const forretningsforerUrns = ['urn:altinn:accesspackage:skattegrunnlag'];
+export const forretningsforerUrns = ['urn:altinn:accesspackage:forretningsforer-eiendom'];
 
 function systemUsersPart(totalVus, vuId) {
   const systemUsersLength = systemUsers.length;
