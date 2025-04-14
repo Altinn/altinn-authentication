@@ -16,6 +16,13 @@ export const createSystemUserLabel = "Create system user";
 export const approveSystemUserLabel = "Approve system user";
 export const postDelegationLabel = "Delegate system user";
 
+export let options = {
+    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.5)', 'p(99.9)', 'count'],
+    thresholds: {
+        checks: ['rate>=1.0']
+    }
+};
+
 export function createSystem(systemOwner, systemId, resource, token, clientId, type) {
     const params = getParams(createSystemOwnerLabel);
     params.headers.Authorization = "Bearer " + token;

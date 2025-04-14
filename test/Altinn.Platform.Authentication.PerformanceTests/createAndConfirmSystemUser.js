@@ -1,19 +1,23 @@
 import exec from 'k6/execution';
 import { randomItem, uuidv4 } from './common/k6-utils.js';
 import { splitSystemUsers, resources } from './common/readTestdata.js';
-import { createSystem, approveSystemUser, createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, getSystemOwnerTokenAndClientId, createSystemUser } from './commonSystemUser.js';
-
-
+import { 
+    createSystem, 
+    approveSystemUser, 
+    getSystemOwnerTokenAndClientId, 
+    createSystemUser 
+} from './commonSystemUser.js';
+import { 
+    createSystemOwnerLabel, 
+    createSystemUserLabel, 
+    approveSystemUserLabel, 
+} from './commonSystemUser.js';
+import { options as _options } from './commonSystemUser.js';
 
 const systemOwner = "713431400"; 
 const labels = [createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel];
 
-export let options = {
-    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.5)', 'p(99.9)', 'count'],
-    thresholds: {
-        checks: ['rate>=1.0']
-    }
-};
+export let options = _options;
 for (var label of labels) {
     options.thresholds[[`http_req_duration{name:${label}}`]] = [];
     options.thresholds[[`http_req_failed{name:${label}}`]] = ['rate<=0.0'];

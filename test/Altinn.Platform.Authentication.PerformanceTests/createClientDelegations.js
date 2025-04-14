@@ -8,7 +8,7 @@ import { getEnterpriseToken } from './common/token.js';
 import { getCustomerListUrl, getSystemUsersUrl } from './common/config.js';
 import { createSystem, createSystemUser, approveSystemUser, getParams, getSystemOwnerTokenAndClientId, delegateAmSystemUser as delegateSystemUser } from './commonSystemUser.js';
 import { createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, postDelegationLabel } from './commonSystemUser.js';
-
+import { options as _options } from './commonSystemUser.js';
 
 const subscription_key = __ENV.subscription_key;
 
@@ -18,12 +18,7 @@ const getCustormerListLabel = "Get customer list";
 const getSystemUsersLabel = "Get system users";
 const labels = [createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, getCustormerListLabel, getSystemUsersLabel, postDelegationLabel];
 
-export let options = {
-    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.5)', 'p(99.9)', 'count'],
-    thresholds: {
-        checks: ['rate>=1.0']
-    }
-};
+export let options = _options;
 for (var label of labels) {
     options.thresholds[[`http_req_duration{name:${label}}`]] = [];
     options.thresholds[[`http_req_failed{name:${label}}`]] = ['rate<=0.0'];
