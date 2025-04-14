@@ -9,6 +9,7 @@
 import papaparse from 'https://jslib.k6.io/papaparse/5.1.1/index.js';
 import { SharedArray } from "k6/data";
 import exec from 'k6/execution';
+//
 
 /**
  * Function to read the CSV file specified by the filename parameter.
@@ -27,7 +28,7 @@ function readCsv(filename) {
 if (!__ENV.API_ENVIRONMENT) {
   throw new Error('API_ENVIRONMENT must be set');
 }
-const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}.csv`;
+const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-random-customers.csv`;
 
 /**
  * SharedArray variable that stores the service owners data.
@@ -52,6 +53,17 @@ export const resources = [
   "ttd-dialogporten-performance-test-09", 
   "ttd-dialogporten-performance-test-10"
 ];
+
+export const regnskapsforerUrns = [
+  'urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet',
+  'urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet',
+  'urn:altinn:accesspackage:regnskapsforer-lonn',
+];
+export const revisorUrns = [
+  'urn:altinn:accesspackage:ansvarlig-revisor',
+  'urn:altinn:accesspackage:revisormedarbeider',
+];
+export const forretningsforerUrns = ['urn:altinn:accesspackage:forretningsforer-eiendom'];
 
 function systemUsersPart(totalVus, vuId) {
   const systemUsersLength = systemUsers.length;
