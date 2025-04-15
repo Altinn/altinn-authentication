@@ -34,10 +34,10 @@ public class SystemUserTests : IDisposable
         _platformClient = new PlatformAuthenticationClient();
         _systemUserClient = new SystemUserClient(_platformClient);
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
-        _common = new Common(_platformClient, outputHelper);
+        _common = new Common(_platformClient, outputHelper, _systemRegisterClient, _systemUserClient);
     }
-    
-    
+
+
     // https://github.com/Altinn/altinn-authentication/issues/1123
     [Fact]
     public async Task TestRedirectUrlCase()
@@ -173,7 +173,6 @@ public class SystemUserTests : IDisposable
         var statusResponse = await GetSystemUserRequestStatus(id, maskinportenToken);
         var systemUserResponseContent = await GetSystemUserById(systemId, maskinportenToken);
         var responseByExternalRef = await _systemUserClient.GetSystemUserByExternalRef(externalRef, systemId, maskinportenToken);
-
 
         // Assert response codes
         await Common.AssertResponse(responseByExternalRef, HttpStatusCode.OK);
@@ -341,7 +340,7 @@ public class SystemUserTests : IDisposable
           ""integrationTitle"": ""Hei, ny integration title"",
           ""systemId"": ""{systemId}""
         }}";
-        
+
         await _systemUserClient.PutSystemUser(jsonBody, maskinportenToken);
     }
 

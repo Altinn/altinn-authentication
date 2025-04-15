@@ -20,13 +20,15 @@ public class ChangeRequestTests
     private readonly Common _common;
     private readonly PlatformAuthenticationClient _platformAuthentication;
     private readonly SystemUserClient _systemUserClient;
+    private readonly SystemRegisterClient _systemRegisterClient;
 
     public ChangeRequestTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
         _platformAuthentication = new PlatformAuthenticationClient();
         _systemUserClient = new SystemUserClient(_platformAuthentication);
-        _common = new Common(_platformAuthentication, outputHelper);
+        _systemRegisterClient = new SystemRegisterClient(_platformAuthentication);
+        _common = new Common(_platformAuthentication, outputHelper,_systemRegisterClient, _systemUserClient);
     }
 
     [Fact]

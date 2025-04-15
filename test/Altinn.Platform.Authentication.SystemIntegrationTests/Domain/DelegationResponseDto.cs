@@ -7,4 +7,5 @@ public class DelegationResponseDto
     public string customerId { get; set; }
 
     public string assignmentId { get; set; }
+    
 }

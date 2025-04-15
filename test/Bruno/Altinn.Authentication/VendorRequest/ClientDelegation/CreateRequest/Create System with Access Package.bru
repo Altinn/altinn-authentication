@@ -22,19 +22,17 @@ body:json {
       "nn": "{{system_name}}"
     },
     "Description": {
-      "en": "Bruno test",
-      "nb": "Bruno test",
-      "nn": "Bruno test."
+      "en": "{{description}}",
+      "nb": "{{description}}",
+      "nn": "{{description}}"
     },
-    "accessPackages": [
-      {
-        "urn" : "urn:altinn:accesspackage:eksplisitt"
-      }
-    ],
     "allowedRedirectUrls": [
       "https://fiken.no"
     ],
-    "isVisible": false,
+    "accessPackage" : {
+      "packageId": ["urn:altinn:accesspackage:forretningsforer-eiendom"]
+    },
+    "isVisible": true,
     "ClientId": [
       "{{system_name}}"
     ]
@@ -52,12 +50,17 @@ script:pre-request {
   bru.setEnvVar("auth_orgNo","314126181");
   bru.setEnvVar("auth_org", "314126181");
   
-  const systemName = "Fiken Sluttbrukersystem Test"
+  //Test js input
+  const systemName = "HEI SYSTEM 22"
+  const description = "<div id='xss-test'></div><script>document.getElementById('xss-test').innerHTML='<img src=x onerror=alert(`💥`)> 1'</script>";
   
   bru.setEnvVar("system_name",systemName);
+  bru.setEnvVar("description",description);
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);
+  
+  
   
   const auth_orgNo = bru.getEnvVar("auth_orgNo"); // Retrieve it from the environment
   const system_name = bru.getEnvVar("system_name"); // Retrieve system_name as well

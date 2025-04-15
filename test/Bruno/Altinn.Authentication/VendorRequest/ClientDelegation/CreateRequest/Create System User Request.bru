@@ -16,13 +16,13 @@ headers {
 
 body:json {
   {
-    "systemId": "314126181_Fiken Sluttbrukersystem",
-    "partyOrgNo": "314239458",
-    "externalRef" : "1",
-    "redirectUrl": "https://fiken.no",
+    "systemId": "312605031_TripleTexSuperPackage urn:altinn:accesspackage:forretningsforer-eiendom-20c44d89-23c6-4183-ab06-ea61bf467aa9",
+    "partyOrgNo": "314239431",
+    "externalRef" : "1234",
+    "redirectUrl": "",
    "accessPackages": [
       {
-        "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+        "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
       }
     ]
   }
@@ -47,8 +47,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
   
-  bru.setEnvVar("auth_orgNo","314126181");
-  bru.setEnvVar("auth_org", "314126181");
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

@@ -18,7 +18,7 @@ public class SystemUserTokenTests
     private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
     private readonly SystemUserClient _systemUserClient;
-    private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
+    private string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
 
     /// <summary>
     /// Testing System user endpoints
@@ -59,8 +59,6 @@ public class SystemUserTokenTests
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
-
-        _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
         Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
     }
 
@@ -70,7 +68,6 @@ public class SystemUserTokenTests
         var systemUser = await GetSystemUserOnSystemId(SystemId);
         Assert.NotNull(systemUser);
         Assert.NotNull(systemUser.ExternalRef);
-        _outputHelper.WriteLine(systemUser.ExternalRef);
 
         var maskinportenToken = await _platformClient.GetSystemUserToken(systemUser.ExternalRef);
         Assert.NotNull(maskinportenToken);

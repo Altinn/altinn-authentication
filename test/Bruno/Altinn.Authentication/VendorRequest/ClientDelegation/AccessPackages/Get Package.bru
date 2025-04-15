@@ -11,7 +11,11 @@ get {
 }
 
 script:pre-request {
-  var pakkeEksempel = "regnskapsforer-med-signeringsrettighet"
+  var pakkeEksempel = "forretningsforer-eiendom"
+  
+  
+  bru.setEnvVar("packageId","urn:altinn:accesspackage:regnskapsforer-lonn")
+  
 }
 
 tests {

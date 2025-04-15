@@ -15,11 +15,15 @@ public class Common
     public readonly ITestOutputHelper Output;
     public static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true };
 
-    public Common(PlatformAuthenticationClient platformClient, ITestOutputHelper output)
+    public Common(
+        PlatformAuthenticationClient platformClient,
+        ITestOutputHelper output,
+        SystemRegisterClient systemRegisterClient,
+        SystemUserClient systemUserClient)
     {
         _platformClient = platformClient;
-        _systemRegisterClient = new SystemRegisterClient(platformClient);
-        _systemUserClient = new SystemUserClient(platformClient);
+        _systemRegisterClient = systemRegisterClient;
+        _systemUserClient = systemUserClient;
         Output = output;
     }
 
@@ -56,7 +60,7 @@ public class Common
         using var jsonDocSystemRequestResponse = JsonDocument.Parse(content);
         var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
 
-     
+
         // Approve
         var approveResp =
             await ApproveRequest($"authentication/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve", testuser);
@@ -75,7 +79,7 @@ public class Common
             "Did not get OK, but: " + resp.StatusCode + " for endpoint:  " + endpoint);
         return resp.Content;
     }
-    
+
     public async Task<HttpContent> GetSystemUserForVendorAgent(string systemId, string? maskinportenToken)
     {
         var url = ApiEndpoints.GetVendorAgentRequestsBySystemId.Url().Replace("{systemId}", systemId);
@@ -97,7 +101,7 @@ public class Common
         Assert.True(response.IsSuccessStatusCode,
             $"{message}. Received: {response.StatusCode} and response text was: {response.Content.ReadAsStringAsync().Result}");
     }
-    
+
     public static string ExtractPropertyFromJson(string json, string propertyName)
     {
         using var jsonDoc = JsonDocument.Parse(json);
@@ -153,12 +157,12 @@ public class Common
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/ChangeRequest/CreateSystemUserRequest.json"))
             .Replace("{systemId}", testState.SystemId)
-            .Replace("{redirectUrl}","")
+            .Replace("{redirectUrl}", "")
             .Replace("{externalRef}", externalRef);
-        
+
         // Act
         var userResponse = await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
-        
+
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
 
@@ -167,7 +171,7 @@ public class Common
 
         using var jsonDocSystemRequestResponse = JsonDocument.Parse(content);
         var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
-        
+
         var url = ApiEndpoints.ApproveSystemUserRequest.Url()
             .Replace("{party}", testuser.AltinnPartyId)
             .Replace("{requestId}", id);
@@ -178,10 +182,31 @@ public class Common
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
     }
-    
+
     public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser)
     {
         var systemUsers = await _systemUserClient.GetSystemUsersForAgentTestUser(testuser);
         return systemUsers.Find(user => user.SystemId == systemId);
+    }
+
+    public async Task GetTokenForSystemUser(string? clientId, string? systemUserOwnerOrgNo, string? externalRef)
+    {
+        const string scopes = "altinn:maskinporten/systemuser.read";
+        var systemProviderOrgNo = _platformClient.EnvironmentHelper.Vendor;
+
+        var altinnEnterpriseToken =
+            await _platformClient.GetEnterpriseAltinnToken(systemProviderOrgNo, scopes);
+
+        var queryString =
+            $"?clientId={clientId}" +
+            $"&systemProviderOrgNo={systemProviderOrgNo}" +
+            $"&systemUserOwnerOrgNo={systemUserOwnerOrgNo}" +
+            $"&externalRef={externalRef}";
+
+        var fullEndpoint = $"{ApiEndpoints.GetSystemUserByExternalId.Url()}{queryString}";
+
+        var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
+        Assert.NotNull(resp);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 }

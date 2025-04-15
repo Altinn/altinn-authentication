@@ -32,6 +32,9 @@ public class EnvironmentHelper
     public required string maskinportenClientId { get; set; }
 
     public required string? Vendor { get; set; }
+    
+    [JsonPropertyName("AuthorizationSubscriptionKey")]
+    public required string AuthorizationSubscriptionKey { get; set; }
 
     /// <summary>
     /// Credentials for test api

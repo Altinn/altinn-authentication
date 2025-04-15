@@ -336,8 +336,9 @@ public class PlatformAuthenticationClient
         var url = ApiEndpoints.DeleteCustomer.Url()
             .Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{delegationId}", selectedCustomer.delegationId);
+        
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
-
+        
         return await Delete(url, facilitator.AltinnToken);
     }
 

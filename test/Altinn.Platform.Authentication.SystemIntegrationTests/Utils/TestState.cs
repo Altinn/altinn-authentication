@@ -5,7 +5,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 public class TestState
 {
-    private string? Token { get; set; }
+    public string? Token { get; set; }
     public string? VendorId { get; set; }
 
     public string? AccessPackage { get; set; }
