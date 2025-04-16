@@ -18,6 +18,7 @@ export function describe(name, fn) {
       }
       catch (error) {
         handleError(name, error);
+        success = false;
       }
     });
   
