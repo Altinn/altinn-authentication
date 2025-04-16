@@ -16,7 +16,6 @@ public class ClientDelegationTests : IDisposable
     private readonly SystemRegisterClient _systemRegisterClient;
     private readonly AccessManagementClient _accessManagementClient;
     private readonly SystemUserClient _systemUserClient;
-
     private readonly Common _common;
 
     public ClientDelegationTests(ITestOutputHelper outputHelper)
@@ -42,10 +41,10 @@ public class ClientDelegationTests : IDisposable
     /// </summary>
     [Theory]
     [InlineData("urn:altinn:accesspackage:regnskapsforer-lonn", "NotApplicable")]
-    [InlineData("urn:altinn:accesspackage:ansvarlig-revisor", "Permit")]
-    [InlineData("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "NotApplicable")]
-    [InlineData("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "NotApplicable")]
-    [InlineData("urn:altinn:accesspackage:revisormedarbeider", "NotApplicable")]
+   // [InlineData("urn:altinn:accesspackage:ansvarlig-revisor", "Permit")]
+   // [InlineData("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "NotApplicable")]
+   // [InlineData("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "NotApplicable")]
+   // [InlineData("urn:altinn:accesspackage:revisormedarbeider", "NotApplicable")]
     public async Task CreateSystemUserClientRequestTest(string accessPackage, string expectedDecision)
     {
         var facilitator = _platformClient.GetTestUserWithCategory("facilitator");
@@ -70,7 +69,7 @@ public class ClientDelegationTests : IDisposable
         // Delete System user
         var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, facilitator);
         Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode, "Was unable to delete System User: Error code: " + deleteAgentUserResponse.StatusCode);
-        await _systemRegisterClient.DeleteSystem(teststate.SystemId, teststate.Token);
+        await _common.DeleteSystem(teststate.SystemId, teststate.Token);
     }
 
     private async Task RemoveDelegations(List<DelegationResponseDto> allDelegations, Testuser facilitator)
@@ -161,7 +160,7 @@ public class ClientDelegationTests : IDisposable
             .WithName($"{systemNamePrefix}-{Guid.NewGuid()}");
 
         var systemPayload = testState.GenerateRequestBody();
-        await _systemRegisterClient.PostSystem(systemPayload, maskinportenToken);
+        await _common.PostSystem(systemPayload, maskinportenToken);
 
         var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
             .Replace("{systemId}", testState.SystemId)

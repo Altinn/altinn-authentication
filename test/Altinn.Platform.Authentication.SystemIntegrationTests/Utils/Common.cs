@@ -209,4 +209,20 @@ public class Common
         Assert.NotNull(resp);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
+    
+    public async Task DeleteSystem(string systemId, string? token)
+    {
+        var resp = await _platformClient.Delete($"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", systemId), token);
+        Assert.True(HttpStatusCode.OK == resp.StatusCode, $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
+    }
+    
+    /// <summary>
+    /// Creates a new system in Systemregister. Requires Bearer token from Maskinporten
+    /// </summary>
+    public async Task<HttpResponseMessage> PostSystem(string requestBody, string? token)
+    {
+        var response = await _platformClient.PostAsync(ApiEndpoints.CreateSystemRegister.Url(), requestBody, token);
+        Assert.True(response.StatusCode is HttpStatusCode.OK, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+        return response;
+    }
 }

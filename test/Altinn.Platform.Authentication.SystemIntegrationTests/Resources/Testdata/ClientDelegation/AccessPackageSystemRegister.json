@@ -33,7 +33,7 @@
       "urn" : "urn:altinn:accesspackage:skattegrunnlag"
     },
     {
-      "urn" : "urn:altinn:accesspackage:forretningsforer-eiendom"
+        "urn" : "urn:altinn:accesspackage:forretningsforer-eiendom"
     }
   ],
   "allowedRedirectUrls": [

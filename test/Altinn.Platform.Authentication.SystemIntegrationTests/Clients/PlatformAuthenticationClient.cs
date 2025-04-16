@@ -23,6 +23,8 @@ public class PlatformAuthenticationClient
     public readonly string? BaseUrlAuthentication;
 
     public readonly string? BaseUrlBff;
+    
+    public SystemRegisterClient SystemRegisterClient { get; set; }
 
     /// <summary>
     /// Base class for running requests
@@ -34,6 +36,7 @@ public class PlatformAuthenticationClient
         BaseUrlBff = GetEnvironment(EnvironmentHelper.Testenvironment);
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
+        
     }
 
     private static List<Testuser> LoadTestUsers(string testenvironment)
