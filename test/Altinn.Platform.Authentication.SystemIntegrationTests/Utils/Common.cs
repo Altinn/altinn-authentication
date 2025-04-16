@@ -9,23 +9,21 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 public class Common
 {
-    private readonly SystemRegisterClient _systemRegisterClient;
-    private readonly SystemUserClient _systemUserClient;
     private readonly PlatformAuthenticationClient _platformClient;
-    public readonly ITestOutputHelper Output;
-    public static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true };
 
-    public Common(
-        PlatformAuthenticationClient platformClient,
-        ITestOutputHelper output,
-        SystemRegisterClient systemRegisterClient,
-        SystemUserClient systemUserClient)
+    public static readonly JsonSerializerOptions JsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
+
+    public Common(PlatformAuthenticationClient platformClient)
     {
         _platformClient = platformClient;
-        _systemRegisterClient = systemRegisterClient;
-        _systemUserClient = systemUserClient;
-        Output = output;
     }
+
+    private SystemRegisterClient SystemRegisterClient => _platformClient.SystemRegisterClient;
+    private SystemUserClient SystemUserClient => _platformClient.SystemUserClient;
 
     public async Task<string> CreateAndApproveSystemUserRequest(string? maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
@@ -39,7 +37,7 @@ public class Common
         var requestBodySystemREgister = testState.GenerateRequestBody();
 
         // Register system
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
+        var response = await SystemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
 
         // Prepare system user request
@@ -148,10 +146,9 @@ public class Common
             .WithToken(maskinportenToken);
 
         var requestBodySystemRegister = testState.GenerateRequestBody();
-        Output.WriteLine("request body from Register: " + requestBodySystemRegister);
 
         // Register system
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+        var response = await SystemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
 
         // Prepare system user request
@@ -185,7 +182,7 @@ public class Common
 
     public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser)
     {
-        var systemUsers = await _systemUserClient.GetSystemUsersForAgentTestUser(testuser);
+        var systemUsers = await SystemUserClient.GetSystemUsersForAgentTestUser(testuser);
         return systemUsers.Find(user => user.SystemId == systemId);
     }
 

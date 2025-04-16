@@ -16,12 +16,9 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 public class SystemUserTests : IDisposable
 {
     private readonly ITestOutputHelper _outputHelper;
-    private readonly SystemRegisterClient _systemRegisterClient;
-    private readonly SystemUserClient _systemUserClient;
     private readonly PlatformAuthenticationClient _platformClient;
     private string? _systemUserId;
     private Testuser? _testperson;
-    private Common _common;
 
     /// <summary>
     /// Testing System user endpoints
@@ -32,9 +29,6 @@ public class SystemUserTests : IDisposable
     {
         _outputHelper = outputHelper;
         _platformClient = new PlatformAuthenticationClient();
-        _systemUserClient = new SystemUserClient(_platformClient);
-        _systemRegisterClient = new SystemRegisterClient(_platformClient);
-        _common = new Common(_platformClient, outputHelper, _systemRegisterClient, _systemUserClient);
     }
 
 
@@ -48,7 +42,7 @@ public class SystemUserTests : IDisposable
         var clientId = Guid.NewGuid().ToString();
         var testperson = _platformClient.GetTestUserForVendor();
         testperson.AltinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
-        await _common.CreateRequestWithManalExample(maskinportenToken, externalRef, testperson, clientId);
+        await _platformClient.Common.CreateRequestWithManalExample(maskinportenToken, externalRef, testperson, clientId);
     }
 
     /// <summary>
@@ -133,7 +127,7 @@ public class SystemUserTests : IDisposable
         await AssertSystemUserRequestCreated(userResponse);
 
         // Cleanup
-        await _systemRegisterClient.DeleteSystem(testState.SystemId, maskinportenToken);
+        await _platformClient.SystemRegisterClient.DeleteSystem(testState.SystemId, maskinportenToken);
     }
 
     /// <summary>
@@ -161,7 +155,7 @@ public class SystemUserTests : IDisposable
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systemInSystemRegister = await CreateSystemInSystemRegister(maskinportenToken);
-        var systemUserResponse = await _systemUserClient.CreateSystemUserRequestWithExternalRef(systemInSystemRegister, maskinportenToken);
+        var systemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(systemInSystemRegister, maskinportenToken);
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
@@ -172,7 +166,7 @@ public class SystemUserTests : IDisposable
         await ApproveSystemUserRequest(_testperson, id);
         var statusResponse = await GetSystemUserRequestStatus(id, maskinportenToken);
         var systemUserResponseContent = await GetSystemUserById(systemId, maskinportenToken);
-        var responseByExternalRef = await _systemUserClient.GetSystemUserByExternalRef(externalRef, systemId, maskinportenToken);
+        var responseByExternalRef = await _platformClient.SystemUserClient.GetSystemUserByExternalRef(externalRef, systemId, maskinportenToken);
 
         // Assert response codes
         await Common.AssertResponse(responseByExternalRef, HttpStatusCode.OK);
@@ -199,7 +193,7 @@ public class SystemUserTests : IDisposable
         var requestBodySystemREgister = testState.GenerateRequestBody();
 
         // Register system
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
+        var response = await _platformClient.SystemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
         return testState;
     }
@@ -281,7 +275,7 @@ public class SystemUserTests : IDisposable
         var systemUserId = ExtractSystemUserId(content);
 
         // Act - Delete the system user
-        await _systemUserClient.DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
+        await _platformClient.SystemUserClient.DeleteSystemUser(testperson.AltinnPartyId, systemUserId);
 
         // Assert - Verify system user is deleted
         var deleteVerificationResponse = await GetSystemUserById(systemId, maskinportenToken);
@@ -293,8 +287,8 @@ public class SystemUserTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, statusResponseAfterDelete.StatusCode);
 
         //Verify that you can create a new System User Request
-        var respExternalRef = await _systemUserClient.CreateSystemUserRequestWithExternalRef(testState, maskinportenToken);
-        var respNoExternalRef = await _systemUserClient.CreateSystemUserRequestWithoutExternalRef(testState, maskinportenToken);
+        var respExternalRef = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(testState, maskinportenToken);
+        var respNoExternalRef = await _platformClient.SystemUserClient.CreateSystemUserRequestWithoutExternalRef(testState, maskinportenToken);
         var idNewRequestWithExternalRef = Common.ExtractPropertyFromJson(respExternalRef, "id");
         var idNewRequestWithoutExternalRef = Common.ExtractPropertyFromJson(respNoExternalRef, "id");
 
@@ -341,7 +335,7 @@ public class SystemUserTests : IDisposable
           ""systemId"": ""{systemId}""
         }}";
 
-        await _systemUserClient.PutSystemUser(jsonBody, maskinportenToken);
+        await _platformClient.SystemUserClient.PutSystemUser(jsonBody, maskinportenToken);
     }
 
     public async Task<string> CreateSystemAndSystemUserRequest(TestState testState, string? maskinportenToken)
@@ -349,7 +343,7 @@ public class SystemUserTests : IDisposable
         var requestBodySystemREgister = testState.GenerateRequestBody();
 
         // Register system
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
+        var response = await _platformClient.SystemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
 
         // Prepare system user request
@@ -405,7 +399,7 @@ public class SystemUserTests : IDisposable
         var requestBodySystemREgister = testState.GenerateRequestBody();
 
         // Register system
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
+        var response = await _platformClient.SystemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
 
         // Prepare system user request
@@ -442,7 +436,7 @@ public class SystemUserTests : IDisposable
     private async Task RegisterSystem(TestState testState, string? maskinportenToken)
     {
         var requestBodySystemRegister = testState.GenerateRequestBody();
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+        var response = await _platformClient.SystemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
     }
 
@@ -529,9 +523,8 @@ public class SystemUserTests : IDisposable
         if (!string.IsNullOrEmpty(_systemUserId) && !string.IsNullOrEmpty(_testperson?.AltinnPartyId))
         {
             _outputHelper.WriteLine($"Cleaning up system user: {_systemUserId}");
-            _systemUserClient.DeleteSystemUser(_testperson.AltinnPartyId, _systemUserId).GetAwaiter().GetResult();
+            _platformClient.SystemUserClient.DeleteSystemUser(_testperson.AltinnPartyId, _systemUserId).GetAwaiter().GetResult();
         }
-
         GC.SuppressFinalize(this);
     }
 }

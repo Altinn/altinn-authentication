@@ -25,6 +25,9 @@ public class PlatformAuthenticationClient
     public readonly string? BaseUrlBff;
     
     public SystemRegisterClient SystemRegisterClient { get; set; }
+    public SystemUserClient SystemUserClient { get; set; }
+    public AccessManagementClient AccessManagementClient { get; set; }
+    public Common Common { get; set; }
 
     /// <summary>
     /// Base class for running requests
@@ -37,6 +40,11 @@ public class PlatformAuthenticationClient
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
         
+        // Instantiate client dependencies
+        SystemRegisterClient = new SystemRegisterClient(this);
+        SystemUserClient = new SystemUserClient(this);
+        AccessManagementClient = new AccessManagementClient(this);
+        Common = new Common(this);
     }
 
     private static List<Testuser> LoadTestUsers(string testenvironment)
