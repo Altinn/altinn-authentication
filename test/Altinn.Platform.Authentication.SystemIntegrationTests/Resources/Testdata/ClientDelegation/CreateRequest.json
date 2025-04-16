@@ -4,7 +4,7 @@
   "partyOrgNo": "{facilitatorPartyOrgNo}",
   "accessPackages": [
     {
-      "urn" : "{accessPackage}"
+      "urn" : "urn:altinn:accesspackage:{accessPackage}"
     }
   ],
   "redirectUrl": ""

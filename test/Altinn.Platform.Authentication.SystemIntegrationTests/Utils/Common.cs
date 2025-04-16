@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.Builders;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -222,4 +223,5 @@ public class Common
         Assert.True(response.StatusCode is HttpStatusCode.OK, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
         return response;
     }
+    
 }

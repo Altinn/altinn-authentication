@@ -69,7 +69,7 @@ public class PlatformAuthenticationClient
     {
         // Define base URLs for tt02 and all "at" environments
         const string tt02 = "https://platform.tt02.altinn.no/";
-        const string atBaseUrl = "https://platform.{env}.altinn.cloud/";
+            const string atBaseUrl = "https://platform.{env}.altinn.cloud/";
 
         // Handle case-insensitive input and return the correct URL
         environmentHelperTestenvironment = environmentHelperTestenvironment.ToLower();

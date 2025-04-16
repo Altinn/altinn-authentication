@@ -1,23 +1,23 @@
 using System.Net;
 using System.Text.Json;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.Authorization;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDelegation;
 
-public class ClientDelegationTests : TestFixture
+public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 {
     private readonly ITestOutputHelper _outputHelper;
-    private readonly PlatformAuthenticationClient _platformClient;
+    private readonly ClientDelegationFixture _fixture;
 
-    public ClientDelegationTests(ITestOutputHelper outputHelper)
+    public ClientDelegationTests(ClientDelegationFixture fixture, ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
-        _platformClient = new PlatformAuthenticationClient();
+        _fixture = fixture;
     }
 
     /// <summary>
@@ -32,40 +32,42 @@ public class ClientDelegationTests : TestFixture
     /// - Other packages result in "NotApplicable" if access is not valid for the facilitator's relation
     /// </summary>
     [Theory]
-    [InlineData("urn:altinn:accesspackage:regnskapsforer-lonn", "NotApplicable")]
-    [InlineData("urn:altinn:accesspackage:ansvarlig-revisor", "Permit")]
-    [InlineData("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "NotApplicable")]
-    [InlineData("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "NotApplicable")]
-    [InlineData("urn:altinn:accesspackage:revisormedarbeider", "NotApplicable")]
+    [InlineData("regnskapsforer-lonn", "NotApplicable")]
+    [InlineData("ansvarlig-revisor", "Permit")]
+    [InlineData("regnskapsforer-med-signeringsrettighet", "NotApplicable")]
+    [InlineData("regnskapsforer-uten-signeringsrettighet", "NotApplicable")]
+    [InlineData("revisormedarbeider", "NotApplicable")]
     public async Task CreateSystemUserClientRequestTest(string accessPackage, string expectedDecision)
     {
-        var teststate = await SetupAndApproveSystemUser(Facilitator, "TripleTexSuperPackage " + accessPackage, accessPackage);
-        var systemUser = await  _platformClient.Common.GetSystemUserOnSystemIdForAgenOnOrg(teststate.SystemId, Facilitator);
-        var customers = await GetCustomers(Facilitator, systemUser?.Id, false);
+        var externalRef = Guid.NewGuid().ToString();
+        
+        await SetupAndApproveSystemUser(_fixture.Facilitator, accessPackage,externalRef);
+        var systemUser = await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, _fixture.Facilitator);
+        var customers = await GetCustomers(_fixture.Facilitator, systemUser?.Id, false);
 
         // Act: Delegate customer
-        var allDelegations = await DelegateCustomerToSystemUser(Facilitator, systemUser?.Id, customers);
+        var allDelegations = await DelegateCustomerToSystemUser(_fixture.Facilitator, systemUser?.Id, customers);
 
         // Verify decision end point to verify Rights given
-        var decision = await PerformDecision(Facilitator, systemUser?.Id, customers);
-        Assert.True(decision == expectedDecision, $"Decision was not permit but: {decision}");
+        var decision = await PerformDecision(_fixture.Facilitator, systemUser?.Id, customers);
+        Assert.True(decision == expectedDecision, $"Decision was not {expectedDecision} but: {decision}");
 
         // Cleanup: Delete delegation(s)
         await RemoveDelegations(allDelegations);
 
-        await _platformClient.Common.GetTokenForSystemUser(teststate.ClientId, Facilitator.Org, teststate.ExternalRef);
+        // Verify maskinporten endpoint, externalRef set to name of access package
+        await _fixture.Platform.Common.GetTokenForSystemUser(_fixture.ClientId, _fixture.Facilitator.Org, externalRef);
 
-        // Delete System user
-        var deleteAgentUserResponse = await _platformClient.DeleteAgentSystemUser(systemUser?.Id, Facilitator);
+        // Delete System user and System
+        var deleteAgentUserResponse = await _fixture.Platform.DeleteAgentSystemUser(systemUser?.Id, _fixture.Facilitator);
         Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode, "Was unable to delete System User: Error code: " + deleteAgentUserResponse.StatusCode);
-        await _platformClient.Common.DeleteSystem(teststate.SystemId, teststate.Token);
     }
 
     private async Task RemoveDelegations(List<DelegationResponseDto> allDelegations)
     {
         foreach (var delegation in allDelegations)
         {
-            var deleteResponse = await _platformClient.DeleteDelegation(Facilitator, delegation);
+            var deleteResponse = await _fixture.Platform.DeleteDelegation(_fixture.Facilitator, delegation);
             Assert.True(deleteResponse.IsSuccessStatusCode, $"Failed to delete delegation {delegation.delegationId}");
         }
     }
@@ -78,7 +80,7 @@ public class ClientDelegationTests : TestFixture
             .Replace("{subjectSystemUser}", systemUserId)
             .Replace("{ResourceId}", "klientdelegeringressurse2e");
 
-        var response = await _platformClient.AccessManagementClient.PostDecision(requestBody, facilitator.AltinnToken);
+        var response = await _fixture.Platform.AccessManagementClient.PostDecision(requestBody, facilitator.AltinnToken);
         Assert.True(response.StatusCode == HttpStatusCode.OK, $"Decision endpoint failed with: {response.StatusCode}");
 
         var json = await response.Content.ReadAsStringAsync();
@@ -88,7 +90,7 @@ public class ClientDelegationTests : TestFixture
 
     private async Task<List<CustomerListDto>> GetCustomers(Testuser facilitator, string? systemUserId, bool allCustomers = false)
     {
-        var customerListResp = await _platformClient.GetCustomerList(facilitator, systemUserId, _outputHelper);
+        var customerListResp = await _fixture.Platform.GetCustomerList(facilitator, systemUserId, _outputHelper);
 
         Assert.True(customerListResp.StatusCode == HttpStatusCode.OK, $"Unable to get customer list, returned status code: {customerListResp.StatusCode} for system: {systemUserId}");
 
@@ -104,7 +106,7 @@ public class ClientDelegationTests : TestFixture
     private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string? maskinportenToken)
     {
         var getRequestByIdUrl = ApiEndpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
-        var responseGetByRequestId = await _platformClient.GetAsync(getRequestByIdUrl, maskinportenToken);
+        var responseGetByRequestId = await _fixture.Platform.GetAsync(getRequestByIdUrl, maskinportenToken);
 
         Assert.True(HttpStatusCode.OK == responseGetByRequestId.StatusCode);
         Assert.Contains(requestId, await responseGetByRequestId.Content.ReadAsStringAsync());
@@ -116,7 +118,7 @@ public class ClientDelegationTests : TestFixture
     private async Task AssertSystemUserAgentCreated(string systemId, string externalRef, string? maskinportenToken)
     {
         // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
-        var respGetSystemUsersForVendor = await _platformClient.Common.GetSystemUserForVendor(systemId, maskinportenToken);
+        var respGetSystemUsersForVendor = await _fixture.Platform.Common.GetSystemUserForVendor(systemId, maskinportenToken);
         var systemusersRespons = await respGetSystemUsersForVendor.ReadAsStringAsync();
 
         // Assert systemId
@@ -131,55 +133,39 @@ public class ClientDelegationTests : TestFixture
             .Replace("{orgNo}", orgNo)
             .Replace("{externalRef}", externalRef);
 
-        return await _platformClient.GetAsync(url, maskinportenToken);
+        return await _fixture.Platform.GetAsync(url, maskinportenToken);
     }
 
 
-    private async Task<TestState> SetupAndApproveSystemUser(Testuser facilitator, string systemNamePrefix, string accessPackage)
+    private async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef)
     {
-        var systemOwner = _platformClient.GetTestUserForVendor();
-        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-        var externalRef = Guid.NewGuid().ToString();
-
-        var testState = new TestState("Resources/Testdata/ClientDelegation/AccessPackageSystemRegister.json")
-            .WithVendor(systemOwner.Org)
-            .WithClientId(externalRef)
-            .WithExternalRef(externalRef)
-            .WithToken(maskinportenToken)
-            .WithName($"{systemNamePrefix}-{Guid.NewGuid()}");
-
-        var systemPayload = testState.GenerateRequestBody();
-        await _platformClient.Common.PostSystem(systemPayload, maskinportenToken);
-
         var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
-            .Replace("{systemId}", testState.SystemId)
+            .Replace("{systemId}", _fixture.SystemId)
             .Replace("{externalRef}", externalRef)
             .Replace("{accessPackage}", accessPackage)
             .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
 
-        var userResponse = await _platformClient.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(), clientRequestBody, maskinportenToken);
+        var userResponse = await _fixture.Platform.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(), clientRequestBody, _fixture.VendorTokenMaskinporten);
 
         var userResponseContent = await userResponse.Content.ReadAsStringAsync();
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created, $"Unexpected status: {userResponse.StatusCode} - {userResponseContent}");
 
         var requestId = Common.ExtractPropertyFromJson(userResponseContent, "id");
-        await AssertStatusSystemUserRequest(requestId, "New", maskinportenToken);
+        await AssertStatusSystemUserRequest(requestId, "New", _fixture.VendorTokenMaskinporten);
 
-        var systemUserResponse = await _platformClient.Common.GetSystemUserForVendorAgent(testState.SystemId, maskinportenToken);
+        var systemUserResponse = await _fixture.Platform.Common.GetSystemUserForVendorAgent(_fixture.SystemId, _fixture.VendorTokenMaskinporten);
 
         Assert.NotNull(systemUserResponse);
-        Assert.Contains(testState.SystemId, await systemUserResponse.ReadAsStringAsync());
+        Assert.Contains(_fixture.SystemId, await systemUserResponse.ReadAsStringAsync());
 
         var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
             .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
-        var approveResponse = await _platformClient.Common.ApproveRequest(approveUrl, facilitator);
+        var approveResponse = await _fixture.Platform.Common.ApproveRequest(approveUrl, facilitator);
         Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
 
-        await AssertStatusSystemUserRequest(requestId, "Accepted", maskinportenToken);
-
-        return testState;
+        await AssertStatusSystemUserRequest(requestId, "Accepted", _fixture.VendorTokenMaskinporten);
     }
 
     private async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser facilitator, string? systemUserId, List<CustomerListDto> customersToDelegate)
@@ -194,7 +180,7 @@ public class ClientDelegationTests : TestFixture
                 facilitatorId = facilitator.AltinnPartyUuid
             });
 
-            var delegationResponse = await _platformClient.DelegateFromAuthentication(facilitator, systemUserId, requestBody, _outputHelper);
+            var delegationResponse = await _fixture.Platform.DelegateFromAuthentication(facilitator, systemUserId, requestBody, _outputHelper);
             Assert.NotNull(delegationResponse);
             Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
 
@@ -206,10 +192,5 @@ public class ClientDelegationTests : TestFixture
         }
 
         return responses;
-    }
-
-    public void Dispose()
-    {
-        //clean up even if test fails. Delete System User and System in System Register
     }
 }

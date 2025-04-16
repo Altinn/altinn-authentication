@@ -31,7 +31,7 @@ public class SystemRegisterClient
         return response;
     }
 
-    public async Task<List<SystemDto>> GetSystemsAsync(string? token)
+    public async Task<List<SystemResponseDto>> GetSystemsAsync(string? token)
     {
         var response = await _platformClient.GetAsync(ApiEndpoints.GetAllSystemsFromRegister.Url(), token);
 
@@ -41,7 +41,7 @@ public class SystemRegisterClient
 
         // Deserialize the JSON content to a list of SystemDto
         var jsonContent = await response.Content.ReadAsStringAsync();
-        var systems = JsonSerializer.Deserialize<List<SystemDto>>(jsonContent, Common.JsonSerializerOptions);
+        var systems = JsonSerializer.Deserialize<List<SystemResponseDto>>(jsonContent, Common.JsonSerializerOptions);
         return systems ?? [];
     }
 
@@ -65,5 +65,10 @@ public class SystemRegisterClient
         var getUrl = ApiEndpoints.GetVendorSystemRegisterById.Url().Replace("{systemId}", systemId);
         var getResponse = await _platformClient.GetAsync(getUrl, token);
         return getResponse;
+    }
+
+    public async Task<HttpResponseMessage>  CreateSystemWithAccessPackages(string tripletexclientdelegationsystem, string[] accessPackages)
+    {
+        throw new NotImplementedException();
     }
 }

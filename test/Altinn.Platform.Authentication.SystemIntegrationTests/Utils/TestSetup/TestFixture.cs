@@ -1,15 +1,12 @@
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
-using Xunit.Abstractions;
 
-namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 
 public class TestFixture : IDisposable
 {
     public PlatformAuthenticationClient Platform { get; }
-    
     public Testuser Facilitator { get; }
-    public string? FacilitatorToken { get; }
 
     public TestFixture()
     {
@@ -17,8 +14,7 @@ public class TestFixture : IDisposable
         
         // Load facilitator and token once for all tests
         Facilitator = Platform.GetTestUserWithCategory("facilitator");
-        FacilitatorToken = Platform.GetPersonalAltinnToken(Facilitator).Result;
-        Facilitator.AltinnToken = FacilitatorToken;
+        Facilitator.AltinnToken = Platform.GetPersonalAltinnToken(Facilitator).Result;;
     }
 
     public void Dispose()
