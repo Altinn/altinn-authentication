@@ -68,5 +68,15 @@
     "name": "Toll",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til toll og fortolling. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
     "IsDelegable": true
+  },
+  {
+    "id": "0195efb8-7c80-7cf2-bcc8-720a3fb39d44",
+    "name": "Forretningsforer eiendom",
+    "urn": "urn:altinn:accesspackage:forretningsforer-eiendom",
+    "description": "Denne fullmakten gir forretningsfører for Borettslag og Eierseksjonssameie tilgang til å opptre på vegne av kunde, og utføre alle tjenester som krever denne fullmakten. Dette er tjenester som tjenestetilbyder har vurdert det som naturlig at en forretningsfører utfører på vegne av sin kunde. Fullmakt hos forretningsfører oppstår når Borettslaget eller Eierseksjonssameiet registrerer forretningsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
+    "isDelegable": true,
+    "isAssignable": false,
+    "area": null,
+    "resources": null
   }
 ]

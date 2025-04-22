@@ -1024,7 +1024,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AgentSystemUser_Delegate_Post_OK()
         {
             // Create System used for test
-            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageAgent.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
             HttpClient client = CreateClient();
@@ -1033,7 +1033,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:forretningsforer-eiendom"
 
             };
 
