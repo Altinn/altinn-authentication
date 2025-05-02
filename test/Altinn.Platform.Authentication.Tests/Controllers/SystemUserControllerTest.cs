@@ -1082,7 +1082,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string systemUserId = list[0].Id;
             string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
 
-            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
+            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString() };
 
             HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
@@ -1149,7 +1149,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string systemUserId = Guid.NewGuid().ToString();
             string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
 
-            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
+            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString() };
 
             HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
@@ -1222,7 +1222,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string systemUserId = list[0].Id;
             string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
 
-            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
+            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString() };
 
             HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
 

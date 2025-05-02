@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -12,6 +13,7 @@ using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
@@ -21,6 +23,7 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
+using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Microsoft.Extensions.Options;
@@ -345,7 +348,7 @@ public class ChangeRequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(int partyId, Guid requestId)
+    public async Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(Guid partyId, Guid requestId)
     {
         Party party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
@@ -381,7 +384,7 @@ public class ChangeRequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, Guid partyUuid, int userId, CancellationToken cancellationToken)
     {
         ChangeRequestResponse? systemUserChangeRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
         if (systemUserChangeRequest is null)
@@ -400,13 +403,15 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
+        Party? party = await partiesClient.GetPartyAsync(partyUuid, cancellationToken);
+
+        SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(partyUuid, systemUserChangeRequest.SystemUserId);
         if (toBeChanged is null)
         {
             return Problem.SystemUserNotFound;
         }
 
-        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
+        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(party.PartyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
@@ -419,7 +424,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUser_FailedToCreate;
         }
 
-        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
+        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(party.PartyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
         if (delegationSucceeded.IsProblem)
         {
             return delegationSucceeded.Problem;
@@ -429,7 +434,7 @@ public class ChangeRequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RejectChangeOnSystemUser(Guid partyUuid, Guid requestId, int userId, CancellationToken cancellationToken)
     {
         ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
         if (systemUserRequest is null)
@@ -440,6 +445,17 @@ public class ChangeRequestSystemUserService(
         if (systemUserRequest.Status != RequestStatus.New.ToString())
         {
             return Problem.RequestStatusNotNew;
+        }
+
+        var validate = await ValidatePartyChangeRequest(partyUuid, requestId, SystemUserType.Standard, cancellationToken);
+        if (validate.IsProblem)
+        {
+            return validate.Problem;
+        }
+
+        if (validate.Value.PartyUuid != partyUuid)
+        {
+            return Problem.Reportee_Orgno_NotFound;
         }
 
         return await changeRequestRepository.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
@@ -767,5 +783,44 @@ public class ChangeRequestSystemUserService(
         };
 
         return await PDPClient.GetDecisionForRequest(request);
+    }
+
+    private async Task<Result<Party>> ValidatePartyChangeRequest(Guid partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
+    {
+        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+        if (party is null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        if (userType == SystemUserType.Agent)
+        {
+            var find = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+            if (find is null)
+            {
+                return Problem.AgentRequestNotFound;
+            }
+
+            if (party.OrgNumber != find.PartyOrgNo)
+            {
+                return Problem.PartyId_AgentRequest_Mismatch;
+            }
+        }
+
+        if (userType == SystemUserType.Standard)
+        {
+            var find = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+            if (find is null)
+            {
+                return Problem.RequestNotFound;
+            }
+
+            if (party.OrgNumber != find.PartyOrgNo)
+            {
+                return Problem.PartyId_Request_Mismatch;
+            }
+        }
+
+        return party;
     }
 }

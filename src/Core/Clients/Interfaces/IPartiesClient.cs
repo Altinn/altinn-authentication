@@ -21,5 +21,5 @@ public interface IPartiesClient
     /// <param name="partyId">The party ID to lookup</param>
     /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
     /// <returns>party information</returns>
-    Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default);
+    Task<Party> GetPartyAsync(Guid partyId, CancellationToken cancellationToken = default);
 }

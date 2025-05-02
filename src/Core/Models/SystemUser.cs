@@ -57,6 +57,12 @@ namespace Altinn.Platform.Authentication.Core.Models
         public string PartyId { get; set; } = string.Empty;
 
         /// <summary>
+        /// The PartyUuid identifies the Reportee Organisation, there is a 1 to 1 mapping with the Reportee OrgNo
+        /// </summary>
+        [JsonPropertyName("partyUuid")]
+        public string ReporteePartyUuid { get; set; } = string.Empty;
+
+        /// <summary>
         /// The Organisation Number for the end-user as it is stored in ER Registry        
         /// </summary>
         [JsonPropertyName("reporteeOrgNo")]

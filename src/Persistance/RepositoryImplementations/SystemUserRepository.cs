@@ -62,7 +62,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId)
+    public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(Guid partyId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -103,7 +103,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId)
+    public async Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(Guid partyUuid)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -113,7 +113,8 @@ public class SystemUserRepository : ISystemUserRepository
                 sr.system_id,
                 sr.systemvendor_orgnumber,
                 sui.reportee_org_no,
-		        sui.reportee_party_id,
+                sui.reportee_party_id,
+		        sui.reportee_party_uuid,
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
@@ -121,7 +122,7 @@ public class SystemUserRepository : ISystemUserRepository
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
-	        WHERE sui.reportee_party_id = @reportee_party_id	
+	        WHERE sui.reportee_party_uuid = @reportee_party_uuid	
 	            AND sui.is_deleted = false
                 AND systemuser_type = @systemuser_type;
                 ";
@@ -130,7 +131,7 @@ public class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("reportee_party_id", partyId.ToString());
+            command.Parameters.AddWithValue("reportee_party_uuid", partyUuid.ToString());
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
@@ -144,7 +145,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> GetSystemUserById(Guid id)
+    public async Task<SystemUser?> GetSystemUserById(Guid partyUuid, Guid id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -155,6 +156,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sr.systemvendor_orgnumber,
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
+                sui.reportee_party_uuid,
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
@@ -163,12 +165,14 @@ public class SystemUserRepository : ISystemUserRepository
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
 	        WHERE sui.system_user_profile_id = @system_user_profile_id
+                AND sui.reportee_party_uuid = @party_uuid
 	            AND sui.is_deleted = false;
             ";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+            command.Parameters.AddWithValue($"party_uuid", partyUuid);
             command.Parameters.AddWithValue("system_user_profile_id", id);
 
             return await command.ExecuteEnumerableAsync()
@@ -234,6 +238,7 @@ public class SystemUserRepository : ISystemUserRepository
                     integration_title,
                     system_internal_id,
                     reportee_party_id,
+                    reportee_party_uuid,
                     reportee_org_no,
                     created_by,
                     external_ref,
@@ -243,6 +248,7 @@ public class SystemUserRepository : ISystemUserRepository
                     @integration_title,
                     @system_internal_id,
                     @reportee_party_id,
+                    @reportee_party_uuid,
                     @reportee_org_no,
                     @created_by,
                     @external_ref,
@@ -264,6 +270,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
             command.Parameters.AddWithValue("system_internal_id", toBeInserted.SystemInternalId!);
             command.Parameters.AddWithValue("reportee_party_id", toBeInserted.PartyId);
+            command.Parameters.AddWithValue("reportee_party_uuid", toBeInserted.ReporteePartyUuid);
             command.Parameters.AddWithValue("reportee_org_no", toBeInserted.ReporteeOrgNo);
             command.Parameters.AddWithValue("created_by", createdBy);
             command.Parameters.AddWithValue("external_ref", ext_ref);
@@ -326,6 +333,7 @@ public class SystemUserRepository : ISystemUserRepository
                 reportee_org_no,
                 sui.system_internal_id,
                 reportee_party_id,
+                reportee_party_uuid,
                 sui.created,
                 systemvendor_orgnumber,
                 external_ref,
@@ -392,7 +400,8 @@ public class SystemUserRepository : ISystemUserRepository
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             ExternalRef = external_ref ?? orgno,
             UserType = systemUserType,
-            AccessPackages = accessPackages
+            AccessPackages = accessPackages,
+            ReporteePartyUuid = reader.GetFieldValue<Guid>("reportee_party_uuid").ToString()
         });
     }
 
@@ -408,6 +417,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sr.systemvendor_orgnumber,
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
+                sui.reportee_party_uuid,
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
