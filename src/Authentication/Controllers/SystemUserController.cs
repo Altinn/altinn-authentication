@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -420,5 +421,25 @@ public class SystemUserController : ControllerBase
         }
 
         return result.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Get list of clients for a facilitator
+    /// </summary>
+    /// <returns>List of Clients</returns>
+    //[Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("agent/{party}/clients")]
+    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, CancellationToken cancellationToken = default)
+    {
+        List<Customer> ret = [];
+        var result = await _systemUserService.GetClientsForFacilitator(facilitator, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            ret = result.Value;
+        }
+
+        return Ok(ret);
     }
 }    

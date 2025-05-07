@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
@@ -152,4 +153,11 @@ public interface ISystemUserService
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a list of clients available for a facilitator,
+    /// </summary>
+    /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
+    /// <returns>List of Clients</returns>
+    Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, CancellationToken cancellationToken = default);
 }

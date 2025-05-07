@@ -539,4 +539,34 @@ public class AccessManagementClient : IAccessManagementClient
             return new Result<bool>(problemInstance);
         }
     }
+
+    public async Task<Result<List<ConnectionDto>>> GetClientsForFacilitator(Guid facilitatorId, CancellationToken cancellationToken = default)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        if (facilitatorId == Guid.Empty)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
+
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
+            }
+
+            return Problem.UnableToDoDelegationCheck;
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetClientsForFacilitator // Exception");
+            throw;
+
+        }
+    }
 }

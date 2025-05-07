@@ -86,4 +86,10 @@ public interface IAccessManagementClient
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="assignmentId">The delegation id</param>
     Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid assignmentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get clients for a facilitator
+    /// </summary>
+    /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
+    Task<Result<List<ConnectionDto>>> GetClientsForFacilitator(Guid facilitatorId, CancellationToken cancellationToken = default);
 }

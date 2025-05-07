@@ -436,6 +436,18 @@ namespace Altinn.Platform.Authentication.Services
             }
         }
 
+        /// <inheritdoc/>
+        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, CancellationToken cancellationToken)
+        {
+            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, cancellationToken);
+            if (res.IsSuccess)
+            {
+                return ConvertConnectionDTOToClient(res.Value);
+            }
+
+            return res.Problem ?? Problem.UnableToDoDelegationCheck;
+        }
+
         private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
         {
             List<DelegationResponse> result = [];
@@ -451,6 +463,24 @@ namespace Altinn.Platform.Authentication.Services
                 };
 
                 result.Add(newDel);
+            }
+
+            return result;
+        }
+
+        private static Result<List<Customer>> ConvertConnectionDTOToClient(List<ConnectionDto> value)
+        {
+            List<Customer> result = [];
+            foreach (var item in value)
+            {
+                var newCustomer = new Customer()
+                {
+                    DisplayName = item.From.Name,
+                    PartyType = item.From.Type,
+                    OrganizationIdentifier = item.From.RefId,
+                    PartyUUId = item.From.Id
+                };
+                result.Add(newCustomer);
             }
 
             return result;
