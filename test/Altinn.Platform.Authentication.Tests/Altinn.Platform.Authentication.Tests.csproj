@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Altinn.Authorization.ABAC" Version="0.0.8" />
-    <PackageReference Include="Altinn.Platform.Storage.Interface" Version="4.0.9" />
+    <PackageReference Include="Altinn.Platform.Storage.Interface" Version="4.0.10" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.4" />
     <PackageReference Include="Testcontainers" Version="4.4.0" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.4.0" />
