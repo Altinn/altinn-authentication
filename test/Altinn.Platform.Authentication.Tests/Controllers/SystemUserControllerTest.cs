@@ -1024,7 +1024,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AgentSystemUser_Delegate_Post_OK()
         {
             // Create System used for test
-            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageAgent.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
             HttpClient client = CreateClient();
@@ -1033,7 +1033,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:forretningsforer-eiendom"
 
             };
 
@@ -1267,42 +1267,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
-        }
-
-        // Agent Tests
-        [Fact]
-        public async Task AgentSystemUser_Delegate_Post_NotFound()
-        {
-            // Create System used for test
-            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageAgent.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
-
-            HttpClient client = CreateClient();
-            string token = AddSystemUserRequestWriteTestTokenToClient(client);
-            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
-
-            AccessPackage accessPackage = new()
-            {
-                Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
-
-            };
-
-            // Arrange
-            CreateAgentRequestSystemUser req = new()
-            {
-                ExternalRef = "external",
-                SystemId = "991825827_the_matrix",
-                PartyOrgNo = "910493353",
-                AccessPackages = [accessPackage]
-            };
-
-            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
-            {
-                Content = JsonContent.Create(req)
-            };
-            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-            Assert.Equal(HttpStatusCode.NotFound, message.StatusCode);
         }
 
         [Fact]
