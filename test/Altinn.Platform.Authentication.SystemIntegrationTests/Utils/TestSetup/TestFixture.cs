@@ -6,15 +6,14 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 public class TestFixture : IDisposable
 {
     public PlatformAuthenticationClient Platform { get; }
-    public Testuser Facilitator { get; set; }
 
-    public TestFixture()
+    protected TestFixture()
     {
         Platform = new PlatformAuthenticationClient();
-        // Load facilitator and token once for all tests
     }
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
     }
 }

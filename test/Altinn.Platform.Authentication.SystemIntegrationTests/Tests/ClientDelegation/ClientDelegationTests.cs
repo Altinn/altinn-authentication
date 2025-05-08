@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
@@ -95,7 +96,8 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 
         var json = await response.Content.ReadAsStringAsync();
         var dto = JsonSerializer.Deserialize<DecisionResponseDto>(json);
-        return dto?.Response.FirstOrDefault()?.Decision;
+        Assert.True(dto?.Response != null, "Response is null for deserialization of decision");
+        return dto.Response.FirstOrDefault()?.Decision;
     }
 
     private async Task<List<CustomerListDto>> GetCustomers(Testuser facilitator, string? systemUserId,

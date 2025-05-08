@@ -5,11 +5,11 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Domain.Authoriza
 public class DecisionResponseDto
 {
     [JsonPropertyName("response")]
-    public List<DecisionItem> Response { get; set; }
+    public List<DecisionItem>? Response { get; set; }
 }
 
 public class DecisionItem
 {
     [JsonPropertyName("decision")]
-    public string Decision { get; set; }
+    public string? Decision { get; set; }
 }

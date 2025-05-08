@@ -51,13 +51,12 @@ public class SystemRegisterClient
         Assert.True(HttpStatusCode.OK == resp.StatusCode, $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
     }
 
-    public async Task<HttpResponseMessage> UpdateRightsOnSystem(string systemId, string requestBody, string? token)
+    public async Task UpdateRightsOnSystem(string systemId, string requestBody, string? token)
     {
         var putUrl = ApiEndpoints.UpdateRightsVendorSystemRegister.Url().Replace("{systemId}", systemId);
         var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
 
         await Common.AssertResponse(putResponse, HttpStatusCode.OK);
-        return putResponse;
     }
 
     public async Task<HttpResponseMessage> getBySystemId(string systemId, string? token)
@@ -65,10 +64,5 @@ public class SystemRegisterClient
         var getUrl = ApiEndpoints.GetVendorSystemRegisterById.Url().Replace("{systemId}", systemId);
         var getResponse = await _platformClient.GetAsync(getUrl, token);
         return getResponse;
-    }
-
-    public async Task<HttpResponseMessage>  CreateSystemWithAccessPackages(string tripletexclientdelegationsystem, string[] accessPackages)
-    {
-        throw new NotImplementedException();
     }
 }
