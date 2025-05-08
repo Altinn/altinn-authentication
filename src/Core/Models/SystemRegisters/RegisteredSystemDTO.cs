@@ -47,9 +47,4 @@ public record class RegisteredSystemDTO
     /// True if the registered system is visible to the user in the UI
     /// </summary>
     public bool IsVisible { get; set; }
-
-    /// <summary>
-    /// The system user type
-    /// </summary>
-    public SystemUserType UserType { get; set; } = SystemUserType.Standard;
 }

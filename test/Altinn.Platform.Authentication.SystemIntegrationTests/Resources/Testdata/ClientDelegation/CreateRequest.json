@@ -1,0 +1,11 @@
+{
+  "externalRef": "{externalRef}",
+  "systemId": "{systemId}",
+  "partyOrgNo": "{facilitatorPartyOrgNo}",
+  "accessPackages": [
+    {
+      "urn" : "urn:altinn:accesspackage:ansvarlig-revisor"
+    }
+  ],
+  "redirectUrl": ""
+}

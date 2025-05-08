@@ -21,6 +21,7 @@ public class SystemUserTests : IDisposable
     private readonly PlatformAuthenticationClient _platformClient;
     private string? _systemUserId;
     private Testuser? _testperson;
+    private Common _common;
 
     /// <summary>
     /// Testing System user endpoints
@@ -33,6 +34,21 @@ public class SystemUserTests : IDisposable
         _platformClient = new PlatformAuthenticationClient();
         _systemUserClient = new SystemUserClient(_platformClient);
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
+        _common = new Common(_platformClient, outputHelper);
+    }
+    
+    
+    // https://github.com/Altinn/altinn-authentication/issues/1123
+    [Fact]
+    public async Task TestRedirectUrlCase()
+    {
+        // Prepare
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+        var externalRef = Guid.NewGuid().ToString();
+        var clientId = Guid.NewGuid().ToString();
+        var testperson = _platformClient.GetTestUserForVendor();
+        testperson.AltinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
+        await _common.CreateRequestWithManalExample(maskinportenToken, externalRef, testperson, clientId);
     }
 
     /// <summary>
@@ -66,6 +82,7 @@ public class SystemUserTests : IDisposable
         // Registering system to System Register
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithClientId(Guid.NewGuid().ToString())
+            .WithName(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
             .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
@@ -96,6 +113,7 @@ public class SystemUserTests : IDisposable
 
         // Registering system to System Register
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("E2E tests - App " + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
@@ -168,9 +186,10 @@ public class SystemUserTests : IDisposable
         Assert.Contains(systemId, await responseByExternalRef.Content.ReadAsStringAsync());
     }
 
-    private async Task<TestState> CreateSystemInSystemRegister(string maskinportenToken)
+    private async Task<TestState> CreateSystemInSystemRegister(string? maskinportenToken)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests Approve Requests" + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
@@ -234,6 +253,7 @@ public class SystemUserTests : IDisposable
         var externalRef = Guid.NewGuid().ToString();
 
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("E2E tests - Delete System User Test " + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
@@ -325,7 +345,7 @@ public class SystemUserTests : IDisposable
         await _systemUserClient.PutSystemUser(jsonBody, maskinportenToken);
     }
 
-    public async Task<string> CreateSystemAndSystemUserRequest(TestState testState, string maskinportenToken)
+    public async Task<string> CreateSystemAndSystemUserRequest(TestState testState, string? maskinportenToken)
     {
         var requestBodySystemREgister = testState.GenerateRequestBody();
 
@@ -346,7 +366,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync("v1/systemuser/request/vendor", finalJson, maskinportenToken);
+            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -356,9 +376,10 @@ public class SystemUserTests : IDisposable
     }
 
 
-    public async Task<string> CreateSystemAndSystemUserRequest(string maskinportenToken, bool withApp = false)
+    public async Task<string> CreateSystemAndSystemUserRequest(string? maskinportenToken, bool withApp = false)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithName("SystemRegister e2e Tests" + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
             .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
@@ -419,7 +440,7 @@ public class SystemUserTests : IDisposable
         return response;
     }
 
-    private async Task RegisterSystem(TestState testState, string maskinportenToken)
+    private async Task RegisterSystem(TestState testState, string? maskinportenToken)
     {
         var requestBodySystemRegister = testState.GenerateRequestBody();
         var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
@@ -445,7 +466,7 @@ public class SystemUserTests : IDisposable
             $"Unexpected status code: {response.StatusCode} - {content}");
     }
 
-    private async Task<HttpResponseMessage> GetSystemUserRequestStatus(string requestId, string token)
+    private async Task<HttpResponseMessage> GetSystemUserRequestStatus(string requestId, string? token)
     {
         var url = ApiEndpoints.GetSystemUserRequestStatus.Url().Replace("requestId", requestId);
         return await _platformClient.GetAsync(url, token);
@@ -484,7 +505,7 @@ public class SystemUserTests : IDisposable
             $"Approval failed with status code: {approveResponse.StatusCode}");
     }
 
-    private async Task<HttpResponseMessage> GetSystemUserById(string systemId, string token)
+    private async Task<HttpResponseMessage> GetSystemUserById(string systemId, string? token)
     {
         var urlGetBySystem = ApiEndpoints.GetSystemUsersBySystemForVendor.Url().Replace("{systemId}", systemId);
         return await _platformClient.GetAsync(urlGetBySystem, token);

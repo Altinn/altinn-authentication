@@ -1,0 +1,71 @@
+meta {
+  name: Create System User Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent
+  body: json
+  auth: inherit
+}
+
+headers {
+  ~Authorization: Bearer {{bearerToken}}
+}
+
+body:json {
+  {
+    "systemId": "312605031_TripleTexSuperPackage",
+    "partyOrgNo": "314239458",
+    "externalRef" : "12346789",
+    "redirectUrl": "",
+   "accessPackages": [
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+      }
+    ]
+  }
+  
+}
+
+vars:pre-request {
+  auth_orgNo: 310574775
+  auth_org: 310574775
+  partyOrgNo: 310990418
+  ~system_id: 312605031_E2E test - urn:altinn:accesspackage:revisormedarbeiderAnsvarlig Revisor
+  ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  
+  const { v4: uuidv4} = require('uuid')
+  
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+  
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
+  
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  bru.setEnvVar("bearer_token", token);
+  
+}
+
+docs {
+  # oversikt over SystemIder opprettet av ulike Orger
+  
+  310574775_KlientDelegeringManuellTest
+  
+  # Testdata
+  
+  OrgNumber_AK Fnumber_AK (No column name) 314239458 22877497392 11984 310495670 13886499404 6216 313588270 23812849735 5878 312939053 24856398710 5762 314239822 11866598926 5489 310990361 25877799797 2750 210707832 27827297548 2211 314242246 08815697562 751 314239385 10876398783 620 314242211 30896797138 577 314242211 12887498871 577 310267511 25848395245 564
+  
+  Litt "Snillere testdata":
+  
+  OrgNumber_AK Fnumber_AK (No column name) 910982613 08070100054 131 910918842 15070100875 131 910325930 13050101449 131 910647520 26060101093 131 312251604 20924199971 130 910073214 06030101233 129 910921908 21080101411 1
+}

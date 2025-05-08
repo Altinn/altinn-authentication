@@ -16,7 +16,8 @@ headers {
 
 body:json {
   {
-    "systemId" : "312605031_689cc11a-eba0-4f0d-a8c6-245bcc536b95",
+    "systemId" : "312605031_TripleTexSuperPackage1 aef4f62b-7e19-4988-a7ea-7d50b2ae1bdc",
+    "externalRef": "adas",
     "partyOrgNo" : "312655985",
     "rights" : [ {
       "resource" : [ {
@@ -29,8 +30,18 @@ body:json {
         "id" : "urn:altinn:resource"
       } ]
     } ],
-    "redirectUrl" : "https://altinn.no"
+    "redirectUrl" : "*"
   }
+  
+  
+  //Redirect URLs defined in System Register
+    // "allowedRedirectUrls": [
+    // "https://www.domain.com/?utm_source=newsletter&utm_medium=email",
+    // "https://www.domain.com/?utm_source=newsletter"
+    // ],
+  
+  
+  //
 }
 
 script:pre-request {
@@ -45,7 +56,7 @@ script:pre-request {
   bru.setEnvVar("auth_orgNo","312605031");
   bru.setEnvVar("auth_org", "312605031");
   
-  bru.setEnvVar("system_id","312605031_979f709e-1807-4334-9a80-8cd7bc6a3a17");
+  bru.setEnvVar("system_id","310574775_UrlQueryPathTesIsvisible");
   bru.setEnvVar("external_ref", "1234");
   
   
@@ -54,4 +65,35 @@ script:pre-request {
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);
   
+}
+
+docs {
+  Testdata du kan benytte i AT/TT:
+  
+  OrgNumber_AK Fnumber_AK (No column name)
+  314239458 22877497392 11984
+  310495670 13886499404 6216
+  313588270 23812849735 5878
+  312939053 24856398710 5762
+  314239822 11866598926 5489
+  310990361 25877799797 2750
+  210707832 27827297548 2211
+  314242246 08815697562 751
+  314239385 10876398783 620
+  314242211 30896797138 577
+  314242211 12887498871 577
+  310267511 25848395245 564
+  
+  
+  
+  Litt "Snillere testdata":
+  
+  OrgNumber_AK Fnumber_AK (No column name)
+  910982613 08070100054 131
+  910918842 15070100875 131
+  910325930 13050101449 131
+  910647520 26060101093 131
+  312251604 20924199971 130
+  910073214 06030101233 129
+  910921908 21080101411 1
 }

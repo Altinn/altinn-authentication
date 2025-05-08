@@ -1,11 +1,12 @@
 meta {
-  name: Create System User Request
+  name: RedirectUrl Test
   type: http
-  seq: 1
+  seq: 3
 }
 
 post {
-  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent
+  url: "rights" : [ {
+{{baseUrl}}/authentication/api/v1/systemuser/request/vendor
   body: json
   auth: none
 }
@@ -16,13 +17,22 @@ headers {
 
 body:json {
   {
-    "systemId" : "991825827_test_create_access_packages_02",
+    "systemId" : "310574775_06f500ea-7039-41ad-863e-3bb057939acc",
     "partyOrgNo" : "312655985",
-    "redirectUrl" : "https://altinn.no",
-      "accessPackages": [
-     { "urn": "urn:altinn:accesspackage:skattnaering" } ]
+    "rights" : [ {
+    "rights" : [ {
+      "resource" : [ {
+        "value" : "authentication-e2e-test",
+        "id" : "urn:altinn:resource"
+      } ]
+    }, {
+      "resource" : [ {
+        "value" : "vegardtestressurs",
+        "id" : "urn:altinn:resource"
+      } ]
+    } ],
+    "redirectUrl" : "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
   }
-  
 }
 
 script:pre-request {

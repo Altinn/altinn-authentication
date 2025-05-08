@@ -55,7 +55,7 @@ public interface IAccessManagementClient
     /// <param name="userId">Logged in user</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<List<ConnectionDto>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list of all delegationIds 
@@ -74,11 +74,11 @@ public interface IAccessManagementClient
     Task<Package> GetAccessPackage(string urnValue);
 
     /// <summary>
-    /// Revokes the Delegated access package from a client to the systemuser
+    /// Deletes the customer delegation to the agent systemuser
     /// </summary>
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="delegationId">The delegation id</param>
-    Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Revokes the assignment of

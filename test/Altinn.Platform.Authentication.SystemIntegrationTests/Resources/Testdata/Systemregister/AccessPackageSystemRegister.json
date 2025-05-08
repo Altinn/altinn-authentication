@@ -1,0 +1,28 @@
+{
+  "Id": "{vendorId}_{Name}",
+  "Vendor": {
+    "ID": "0192:{vendorId}"
+  },
+  "Name": {
+    "en": "{Name}",
+    "nb": "{Name}",
+    "nn": "{Name}"
+  },
+  "Description": {
+    "en": "Integrasjonstest Authentication",
+    "nb": "Integrasjonstest Authentication",
+    "nn": "Integrasjonstest Authentication"
+  },
+  "accessPackages": [
+    {
+      "urn": "urn:altinn:accesspackage:krav-og-utlegg"
+    }
+  ],
+  "allowedRedirectUrls": [
+    "https://altinn.no"
+  ],
+  "isVisible": false,
+  "ClientId": [
+    "{clientId}"
+  ]
+}

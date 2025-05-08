@@ -28,6 +28,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Register.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Azure;
+using Azure;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -309,7 +310,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<ConnectionDto>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         const string AGENT = "agent";
 
@@ -364,14 +365,14 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
 
-            List<ConnectionDto> found = await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
+            List<AgentDelegationResponse> found = await response.Content.ReadFromJsonAsync<List<AgentDelegationResponse>>(_serializerOptions, cancellationToken) ?? [];
 
             if (response.IsSuccessStatusCode && found is not null)
             {
                 return found;
             }            
 
-            return new Result<List<ConnectionDto>>(Problem.Rights_FailedToDelegate);
+            return new Result<List<AgentDelegationResponse>>(Problem.Rights_FailedToDelegate);
 
         }
         catch (Exception ex)
@@ -382,29 +383,14 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid facilitatorId, Guid delegationId,CancellationToken cancellationToken)
+    public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId,CancellationToken cancellationToken)
     {
         try
         {
             string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
-
-            if (response.IsSuccessStatusCode)
-            {
-                return true;
-            }
-            else
-            {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError($"Authentication.UI // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
-
-                ProblemInstance problemInstance = ProblemInstance.Create(Problem.CustomerDelegation_FailedToRevoke);
-                return new Result<bool>(problemInstance);
-            }
-
-            
+            return await HandleErrors(response);    
         }
         catch (Exception ex)
         {
@@ -422,52 +408,7 @@ public class AccessManagementClient : IAccessManagementClient
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
-            if (response.IsSuccessStatusCode)
-            {
-                return true;
-            }
-            else if(response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError($"Authentication // AccessManagementClient // DeleteSystemUserAssignment // BadRequest: {responseContent}");
-                var problemExtensionData = ProblemExtensionData.Create(new[]
-{
-                    new KeyValuePair<string, string>("Problem Detail : ", responseContent)
-                });
-
-                ProblemInstance problemInstance;
-
-                if (responseContent.Contains("Assignment not found"))
-                {
-                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_AssignmentNotFound, problemExtensionData);
-                }
-                else if(responseContent.Contains("To many assignment found"))
-                {
-                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_TooManyAssignments, problemExtensionData);
-                }
-                else
-                {
-                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
-                }
-
-                return new Result<bool>(problemInstance);
-            }
-            else
-            {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError($"Authentication // AccessManagementClient // DeleteSystemUserAssignment // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
-
-                var problemExtensionData = ProblemExtensionData.Create(new[]
-                {
-                    new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail)
-                });
-
-                ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
-                return new Result<bool>(problemInstance);
-            }
-
-
+            return await HandleErrors(response, true);
         }
         catch (Exception ex)
         {
@@ -490,7 +431,7 @@ public class AccessManagementClient : IAccessManagementClient
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "regnskapsforer");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "revisor");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "revisor");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattegrunnlag", "FFOR");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
 
         hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
         return found;
@@ -529,6 +470,73 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
 
         }
+    }
 
+    private async Task<Result<bool>> HandleErrors(HttpResponseMessage response, bool isDeleteAgent = false)
+    {
+        string deleteString = isDeleteAgent ? "DeleteAgentAssignment" : "DeleteDelegation";
+        if (response.IsSuccessStatusCode)
+        {
+            return true;
+        }
+        else if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
+            string responseContent = await response.Content.ReadAsStringAsync();
+            _logger.LogError($"Authentication // AccessManagementClient // {deleteString} // BadRequest: {responseContent}");
+            var problemExtensionData = ProblemExtensionData.Create(new[]
+{
+                    new KeyValuePair<string, string>("Problem Detail : ", responseContent)
+                });
+
+            ProblemInstance problemInstance;
+
+            if (responseContent.Contains("Assignment not found"))
+            {
+                problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_AssignmentNotFound, problemExtensionData);
+            }
+            else if (responseContent.Contains("To many assignment found"))
+            {
+                problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_TooManyAssignments, problemExtensionData);
+            }
+            else if (responseContent.Contains("Delegation not found"))
+            {
+                problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_DelegationNotFound, problemExtensionData);
+            }
+            else if (responseContent.Contains("Party does not match delegation facilitator"))
+            {
+                problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_InvalidDelegationFacilitator, problemExtensionData);
+            }
+            else if (responseContent.Contains("Party does not match delegation assignments"))
+            {
+                problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_DeleteDelegation_PartyMismatch, problemExtensionData);
+            }
+            else
+            {
+                if(isDeleteAgent)
+                {
+                    problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
+                }
+                else
+                {
+                    problemInstance = ProblemInstance.Create(Problem.CustomerDelegation_FailedToRevoke, problemExtensionData);
+                }                
+            }
+
+            return new Result<bool>(problemInstance);
+        }
+        else
+        {
+            string responseContent = await response.Content.ReadAsStringAsync();
+            ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+            _logger.LogError($"Authentication // AccessManagementClient // {deleteString} // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+
+            var problemExtensionData = ProblemExtensionData.Create(new[]
+            {
+                    new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail)
+                });
+
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
+            return new Result<bool>(problemInstance);
+        }
     }
 }

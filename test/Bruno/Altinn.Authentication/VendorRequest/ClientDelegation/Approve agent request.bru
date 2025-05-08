@@ -1,0 +1,44 @@
+meta {
+  name: Approve agent request
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/agent/{{auth_partyId}}/{{requestId}}/approve
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  requestId: 5c897f3f-7f09-4c60-94e6-326a6c77ba21
+}
+
+script:pre-request {
+  //Print variable 
+  
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  const { v4: uuidv4} = require('uuid')
+  
+  bru.setEnvVar("auth_tokenType","Personal");
+  bru.setEnvVar("auth_scopes","altinn:portal/enduser");
+  bru.setEnvVar("tokenEnv","at22");
+  bru.setEnvVar("auth_userId","20013163");
+  bru.setEnvVar("auth_partyId","51188771");
+  bru.setEnvVar("auth_ssn","20924199971");
+  
+  var token = await TestToolsTokenGenerator.getToken();
+  
+  bru.setEnvVar("bearer_token",token)
+  
+}
+
+script:post-response {
+    // tokenUrl = `${tokenBaseUrl}/api/Get${tokenType}Token?env=${tokenEnv}&scopes=${tokenScopes}&pid=${tokenPid}&userid=${tokenUser}&partyid=${tokenParty}&authLvl=3&ttl=3000`;
+  // 
+}
+
+docs {
+  Party id rett fra parameter i chrome var: 51237060
+  
+}

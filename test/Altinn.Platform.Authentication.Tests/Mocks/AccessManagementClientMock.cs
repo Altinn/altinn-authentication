@@ -77,7 +77,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public async Task<Result<List<ConnectionDto>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -86,7 +86,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             return Problem.Rights_FailedToDelegate; 
         }
 
-        List<ConnectionDto> delegationResult = [];
+        List<AgentDelegationResponse> delegationResult = [];
 
         List<AgentDelegationDetails> delegations = [];
 
@@ -120,28 +120,10 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         var delegationId = Guid.NewGuid();
 
-        var ext = new ConnectionDto()
+        var ext = new AgentDelegationResponse()
         {
-            From = new EntityParty()
-            {
-                Id = Guid.Parse(request.CustomerId),
-            },
-            To = new EntityParty()
-            {
-                Id = Guid.Parse(systemUser?.Id),
-            },
-            Facilitator = new EntityParty()
-            {
-                Id = Guid.Parse(request.FacilitatorId)
-            },            
-            Id = delegationId,
-            Delegation = new Delegation()
-            {
-                Id = delegationId,
-                FacilitatorId = Guid.Parse(request.FacilitatorId),
-                FromId = Guid.NewGuid(),// value not from our input
-                ToId = Guid.NewGuid() // the Assignment Id
-            }
+            DelegationId = delegationId,
+            FromEntityId = Guid.Parse(request.CustomerId)
         };
 
         delegationResult.Add(ext);
@@ -163,8 +145,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "REGN");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "REVI");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattegrunnlag", "FFOR");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattnaering", "FFOR");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
 
         hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);        
         return found;   
@@ -264,15 +245,20 @@ public class AccessManagementClientMock: IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<bool>> RevokeDelegatedAccessPackageToSystemUser(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
     {
-        if (partyUUId == new Guid("02ba44dc-d80b-4493-a942-9b355d491da0"))
+        switch (partyUUId.ToString())
         {
-            return Problem.CustomerDelegation_FailedToRevoke;
-        }
-        else
-        {
-            return await Task.FromResult(true);
+            case "02ba44dc-d80b-4493-a942-9b355d491da0":
+                return Problem.CustomerDelegation_FailedToRevoke;
+            case "199912a2-86e1-4c8e-b010-c8c3956535a7":
+                return Problem.AgentSystemUser_DelegationNotFound;
+            case "cf814a90-1a14-4323-ae8b-72738abaab49":
+                return Problem.AgentSystemUser_InvalidDelegationFacilitator;
+            case "1765cf28-2554-4f3c-90c6-a269a01f46c8":
+                return Problem.AgentSystemUser_DeleteDelegation_PartyMismatch;
+            default:
+                return await Task.FromResult(true);
         }
     }
 

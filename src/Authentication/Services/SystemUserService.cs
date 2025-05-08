@@ -20,6 +20,7 @@ using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Services
@@ -343,10 +344,24 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
         {
-            Result<List<ConnectionDto>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
             if (result.IsSuccess)
             {
-                return ConvertExtDelegationToDTO(result.Value);
+                List<DelegationResponse> theList = [];
+
+                foreach (var item in result.Value)
+                {
+                    var newDel = new DelegationResponse()
+                    {
+                        DelegationId = item.DelegationId,
+                        CustomerId = item.FromEntityId,
+                        AgentSystemUserId = (Guid)systemUser.SystemInternalId!
+                    };
+
+                    theList.Add(newDel);
+                }
+
+                return theList;
             }
 
             return result.Problem;
@@ -367,7 +382,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
         {
-            Result<bool> result = await _accessManagementClient.RevokeDelegatedAccessPackageToSystemUser(partyUUId, delegationId, cancellationToken);
+            Result<bool> result = await _accessManagementClient.DeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
             if (result.IsProblem)
             {
                 return result.Problem;

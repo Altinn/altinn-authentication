@@ -22,16 +22,16 @@ public class SystemRegisterClient
     /// <summary>
     /// Creates a new system in Systemregister. Requires Bearer token from Maskinporten
     /// </summary>
-    public async Task<HttpResponseMessage> PostSystem(string requestBody, string token)
+    public async Task<HttpResponseMessage> PostSystem(string requestBody, string? token)
     {
         var response = await _platformClient.PostAsync(ApiEndpoints.CreateSystemRegister.Url(), requestBody, token);
 
-        Assert.True(HttpStatusCode.OK == response.StatusCode, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+        Assert.True(response.StatusCode is HttpStatusCode.OK, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
         return response;
     }
 
-    public async Task<List<SystemDto>> GetSystemsAsync(string token)
+    public async Task<List<SystemDto>> GetSystemsAsync(string? token)
     {
         var response = await _platformClient.GetAsync(ApiEndpoints.GetAllSystemsFromRegister.Url(), token);
 
@@ -45,7 +45,7 @@ public class SystemRegisterClient
         return systems ?? [];
     }
 
-    public async Task DeleteSystem(string SystemId, string token)
+    public async Task DeleteSystem(string SystemId, string? token)
     {
         var resp = await _platformClient.Delete($"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", SystemId), token);
         Assert.True(HttpStatusCode.OK == resp.StatusCode, $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
@@ -58,5 +58,12 @@ public class SystemRegisterClient
 
         await Common.AssertResponse(putResponse, HttpStatusCode.OK);
         return putResponse;
+    }
+
+    public async Task<HttpResponseMessage> getBySystemId(string systemId, string? token)
+    {
+        var getUrl = ApiEndpoints.GetVendorSystemRegisterById.Url().Replace("{systemId}", systemId);
+        var getResponse = await _platformClient.GetAsync(getUrl, token);
+        return getResponse;
     }
 }

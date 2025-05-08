@@ -7,11 +7,22 @@ public class TestState
 {
     private string? Token { get; set; }
     public string? VendorId { get; set; }
-    public string? Name { get; private set; }
+
+    public string? AccessPackage { get; set; }
+    public string? Name { get; set; }
+
+    public bool? IsVisible { get; set; }
     public string? ClientId { get; private set; }
-    public string SystemId => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
+
+    public string SystemId
+    {
+        get => $"{VendorId}_{Name}"; // Combination of vendorId and randomNames
+    }
+
     public string? RedirectUrl { get; private set; }
-    
+
+    public List<string> AllowedRedirectUrls { get; private set; } = new();
+
     public string? ExternalRef { get; set; }
 
     private readonly string _templateContent;
@@ -23,12 +34,18 @@ public class TestState
         _templateContent = File.Exists(filepath)
             ? File.ReadAllText(filepath)
             : throw new FileNotFoundException($"Template file not found: {filepath}");
-        Name = Guid.NewGuid().ToString();
+        Name = Name;
     }
 
     public TestState WithVendor(string? vendorId)
     {
         VendorId = vendorId;
+        return this;
+    }
+
+    public TestState WithAccessPackage(string? accessPackageId)
+    {
+        AccessPackage = accessPackageId;
         return this;
     }
 
@@ -49,13 +66,31 @@ public class TestState
         ExternalRef = externalRef;
         return this;
     }
-    
+
     public TestState WithRedirectUrl(string? redirectUrl)
     {
         RedirectUrl = redirectUrl;
         return this;
     }
-    
+
+    public TestState WithAllowedRedirectUrls(params string[] urls)
+    {
+        if (urls == null || urls.Length == 0)
+        {
+            throw new ArgumentException("At least one URL must be provided.", nameof(urls));
+        }
+
+        AllowedRedirectUrls.AddRange(urls);
+        return this;
+    }
+
+    public TestState WithIsVisible(bool isVisible)
+    {
+        IsVisible = isVisible;
+        return this;
+    }
+
+
     public TestState WithName(string name)
     {
         Name = name;
@@ -81,17 +116,30 @@ public class TestState
     {
         // Perform placeholder replacements
         var requestBody = _templateContent
-            .Replace("{vendorId}", VendorId ?? string.Empty)
-            .Replace("{Name}", Name ?? string.Empty)
-            .Replace("{clientId}", ClientId ?? string.Empty)
-            .Replace("{redirectUrl}", RedirectUrl)
-            .Replace("{token}", Token ?? string.Empty);
+                .Replace("{vendorId}", VendorId ?? string.Empty)
+                .Replace("{Name}", Name ?? string.Empty)
+                .Replace("{clientId}", ClientId ?? Guid.NewGuid().ToString())
+                .Replace("{redirectUrl}", RedirectUrl)
+                .Replace("{token}", Token ?? string.Empty)
+                // .Replace("{isVisible}", IsVisible ?? false)
+                .Replace("{accessPackage}", AccessPackage ?? string.Empty)
+            ;
 
         var rightsJson = JsonSerializer.Serialize(Rights, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = false
         });
+
+        // Serialize Allowed Redirect URLs
+        var allowedRedirectUrlsJson = AllowedRedirectUrls.Count != 0
+            ? JsonSerializer.Serialize(AllowedRedirectUrls, new JsonSerializerOptions
+            {
+                WriteIndented = false
+            })
+            : "[]"; // Default empty array if no URLs are provided
+
+        requestBody = requestBody.Replace("{allowedRedirectUrls}", $"\"allowedRedirectUrls\": {allowedRedirectUrlsJson}");
 
         var finalJson = requestBody.Replace("{rights}", $"\"rights\": {rightsJson},");
 
@@ -106,5 +154,4 @@ public class TestState
             throw new InvalidOperationException("Generated JSON is invalid.", ex);
         }
     }
-    
 }

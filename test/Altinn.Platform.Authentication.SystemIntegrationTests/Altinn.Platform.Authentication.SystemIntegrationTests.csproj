@@ -9,13 +9,13 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
-      <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.6.1" />
+      <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.9.0" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
       <PackageReference Include="more.xunit.runner.visualstudio" Version="2.3.1">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.6.1" />
+      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
       <PackageReference Include="xunit" Version="2.9.3" />
     </ItemGroup>
 
@@ -38,7 +38,7 @@
       <None Update="Resources\Testusers\testusers.tt02.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Resources\Testusers\testusers.at.json">
+      <None Update="Resources\Testusers\testusers.at22.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Resources\Testdata\ChangeRequest\CreateNewSystem.json">
@@ -54,6 +54,18 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Resources\Environment\environment.dev.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testdata\Systemregister\VendorExampleUrls.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testdata\ClientDelegation\CreateRequest.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testdata\ClientDelegation\AccessPackageSystemRegister.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testdata\Systemregister\AccessPackageSystemRegister.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
