@@ -29,9 +29,21 @@ body:json {
     "allowedRedirectUrls": [
       "https://fiken.no"
     ],
-    "accessPackage" : {
-      "packageId": ["urn:altinn:accesspackage:forretningsforer-eiendom"]
-    },
+  "accessPackages" : [ {
+      "urn" : "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+    }, {
+      "urn" : "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet"
+    }, {
+      "urn" : "urn:altinn:accesspackage:regnskapsforer-lonn"
+    }, {
+      "urn" : "urn:altinn:accesspackage:ansvarlig-revisor"
+    }, {
+      "urn" : "urn:altinn:accesspackage:revisormedarbeider"
+    }, {
+      "urn" : "urn:altinn:accesspackage:skattegrunnlag"
+    }, {
+      "urn" : "urn:altinn:accesspackage:forretningsforer-eiendom"
+    } ],
     "isVisible": true,
     "ClientId": [
       "{{system_name}}"
@@ -51,8 +63,8 @@ script:pre-request {
   bru.setEnvVar("auth_org", "314126181");
   
   //Test js input
-  const systemName = "HEI SYSTEM 22"
-  const description = "<div id='xss-test'></div><script>document.getElementById('xss-test').innerHTML='<img src=x onerror=alert(`💥`)> 1'</script>";
+  const systemName = "Forretningsfører 1"
+  const description = "System med forretningsfører";
   
   bru.setEnvVar("system_name",systemName);
   bru.setEnvVar("description",description);

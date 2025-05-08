@@ -16,9 +16,9 @@ headers {
 
 body:json {
   {
-    "systemId": "312605031_TripleTexSuperPackage urn:altinn:accesspackage:forretningsforer-eiendom-20c44d89-23c6-4183-ab06-ea61bf467aa9",
-    "partyOrgNo": "314239431",
-    "externalRef" : "1234",
+    "systemId": "314126181_Forretningsfører 1",
+    "partyOrgNo": "314250052",
+    "externalRef" : "2",
     "redirectUrl": "",
    "accessPackages": [
       {
@@ -47,8 +47,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
   
-  bru.setEnvVar("auth_orgNo","312605031");
-  bru.setEnvVar("auth_org", "312605031");
+  bru.setEnvVar("auth_orgNo","314126181");
+  bru.setEnvVar("auth_org", "314126181");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

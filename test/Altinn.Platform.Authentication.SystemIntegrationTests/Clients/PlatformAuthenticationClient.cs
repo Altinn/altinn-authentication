@@ -40,7 +40,6 @@ public class PlatformAuthenticationClient
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
         
-        // Instantiate client dependencies
         SystemRegisterClient = new SystemRegisterClient(this);
         SystemUserClient = new SystemUserClient(this);
         AccessManagementClient = new AccessManagementClient(this);
@@ -167,7 +166,7 @@ public class PlatformAuthenticationClient
     public Testuser FindTestUserByRole(string role)
     {
         var testUser = TestUsers.LastOrDefault(user => user.Role?.Equals(role, StringComparison.OrdinalIgnoreCase) == true);
-        return testUser ?? throw new Exception($"Unable to find test user by role: {role}");
+        return testUser ?? throw new Exception($"Unable to find test user with role: {role}");
     }
 
     /// <summary>
@@ -193,13 +192,14 @@ public class PlatformAuthenticationClient
     /// Used for fetching an Altinn test token for a specific role
     /// </summary>
     /// <param name="user">User read from test config (testusers.at.json)</param>
+    /// <param name="scopes">space separated list of scopes</param>
     /// <returns>The Altinn test token as a string</returns>
-    public async Task<string?> GetPersonalAltinnToken(Testuser user)
+    public async Task<string?> GetPersonalAltinnToken(Testuser user, string scopes = "")
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
-            $"?env={EnvironmentHelper.Testenvironment}" +
-            $"&scopes=altinn:portal/enduser" +
+                $"?env={EnvironmentHelper.Testenvironment}" +
+                $"&scopes=altinn:portal/enduser " + scopes +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
             $"&partyuuid={user.AltinnPartyUuid}" +
@@ -315,10 +315,12 @@ public class PlatformAuthenticationClient
         return TestUsers.Find(testUser => testUser.Org!.Equals(vendor))
                ?? throw new Exception($"Test user not found for organization: {vendor}");
     }
-
-    public Testuser GetTestUserWithCategory(String category)
+    
+    public async Task<Testuser> GetTestUserAndTokenForCategory(String category)
     {
-        return TestUsers.Find(user => user.Category!.Equals(category)) ?? throw new Exception("Unable to find testuser");
+        var testuser = TestUsers.Find(user => user.Category!.Equals(category)) ?? throw new Exception("Unable to find testuser with category");
+        testuser.AltinnToken = await GetPersonalAltinnToken(testuser);
+        return testuser;
     }
 
     public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string? systemUserUuid, ITestOutputHelper outputHelper)
@@ -342,12 +344,13 @@ public class PlatformAuthenticationClient
         return await PostAsync(url, requestBodyDelegation, tokenFacilitator);
     }
 
-    public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer)
+    public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer, ITestOutputHelper outputHelper)
     {
+        
         var url = ApiEndpoints.DeleteCustomer.Url()
             .Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{delegationId}", selectedCustomer.delegationId);
-        
+
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
         
         return await Delete(url, facilitator.AltinnToken);

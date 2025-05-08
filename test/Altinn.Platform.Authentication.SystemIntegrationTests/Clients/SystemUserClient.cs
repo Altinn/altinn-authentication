@@ -44,7 +44,7 @@ public class SystemUserClient
         return response;
     }
 
-    public async Task<List<SystemUser>> GetSystemUsersForAgentTestUser(Testuser testuser)
+    public async Task<List<SystemUser>> GetSystemUsersForAgentTestUser(Testuser testuser, String externalRef = "")
     {
         var resp = await GetSystemuserForPartyAgent(testuser.AltinnPartyId, testuser.AltinnToken);
 

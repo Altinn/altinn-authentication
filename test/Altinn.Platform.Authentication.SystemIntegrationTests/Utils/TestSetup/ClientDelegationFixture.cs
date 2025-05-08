@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.Json;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.Builders;
 using Xunit;
+// ReSharper disable ClassNeverInstantiated.Global
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 
@@ -12,12 +12,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
     public string? VendorTokenMaskinporten;
     public string? ClientId { get; set; }
 
-    public ClientDelegationFixture()
-    {
-        
-    }
-
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
         VendorTokenMaskinporten = Platform.GetMaskinportenTokenForVendor().Result;
         //Creates System in System Register with these access packages
@@ -31,16 +26,14 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
             "urn:altinn:accesspackage:skattegrunnlag",
             "urn:altinn:accesspackage:forretningsforer-eiendom"
         ];
-        SystemId = CreateSystemWithAccessPackages(accessPackages).Result;
-        return Task.CompletedTask;
+        
+        SystemId = await CreateSystemWithAccessPackages(accessPackages);
     }
 
     public async Task DisposeAsync()
     {
-        Console.WriteLine("🧹 Cleaning up system: " + SystemId);
         await Platform.Common.DeleteSystem(SystemId, VendorTokenMaskinporten);
     }
-    
     
     // Consider moving this to Common
     private async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)

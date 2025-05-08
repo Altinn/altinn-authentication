@@ -22,30 +22,12 @@ body:json {
       "nn": "{{system_name}}"
     },
     "Description": {
-      "en": "Bruno test",
+      "en": "Bruno tesTt",
       "nb": "Bruno test",
       "nn": "Bruno test."
     },
-     "rights": [
-      {
-        "resource": [
-          {
-            "value": "authentication-e2e-test",
-            "id": "urn:altinn:resource"
-          }
-        ]
-      },
-      {
-        "resource": [
-          {
-            "value": "vegardtestressurs",
-            "id": "urn:altinn:resource"
-          }
-        ]
-      }
-    ],
     "accessPackages": [
-      {
+          {
         "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
       },
       {
@@ -75,7 +57,7 @@ body:json {
 }
 
 vars:pre-request {
-  system_id: 314239458_Tripletex C
+  system_id: 312605031_9d12e130-4c35-45ed-adb8-3d0d0df55867
 }
 
 script:pre-request {
@@ -86,8 +68,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","314239458");
-  bru.setEnvVar("auth_org", "314239458");
+  bru.setEnvVar("auth_orgNo","314239457");
+  bru.setEnvVar("auth_org", "314239457");
   
   const systemName = "Tripletex C"
   
