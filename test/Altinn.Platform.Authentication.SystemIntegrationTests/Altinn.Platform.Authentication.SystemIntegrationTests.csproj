@@ -68,6 +68,9 @@
       <None Update="Resources\Testdata\Systemregister\AccessPackageSystemRegister.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Resources\Testdata\AccessManagement\systemUserDecision.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

@@ -5,7 +5,38 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/accessmanagement/api/v1/meta/info/accesspackages/
+  url: {{baseUrl}}/accessmanagement/api/v1/meta/info/accesspackages/export
   body: none
   auth: none
+}
+
+script:post-response {
+  let data = typeof res.body === "string" ? JSON.parse(res.body) : res.body;
+  let allPackages = [];
+  
+  // Collect all packages from all areas
+  for (const group of data) {
+    for (const area of group.areas || []) {
+      for (const pkg of area.packages || []) {
+        allPackages.push(pkg);
+      }
+    }
+  }
+  
+  // Pick a random package and set it as an env var
+  if (allPackages.length > 0) {
+    const randomIndex = Math.floor(Math.random() * allPackages.length);
+    const randomPackage = allPackages[randomIndex];
+    bru.setEnvVar("packageId", randomPackage.urn);
+    console.log("Selected package URN:", randomPackage.urn);
+  }
+  
+  
+}
+
+tests {
+  test("Access Packages should load", function () {
+    const data = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+  });
 }

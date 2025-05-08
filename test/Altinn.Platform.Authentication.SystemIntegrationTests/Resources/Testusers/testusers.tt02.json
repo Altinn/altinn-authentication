@@ -25,12 +25,20 @@
     "altinnPartyUuid" : "ea9611a5-65bf-4635-8ff5-0f03a44dd022"
   },
   {
-    "category": "facilitator",
+    "category": "facilitator-regn-og-revisor",
     "altinnPartyId": "51457050",
     "pid": "06857897380",
     "userId": "341895",
     "org": "314250052",
     "altinnPartyUuid" : "81aa7f84-b5b8-47bf-b17c-35cf85410ffb"
+  },
+  {
+    "category": "facilitator-forretningsfoerer",
+    "altinnPartyId": "51458282",
+    "pid": "02895998748",
+    "userId": "1422213",
+    "org": "313351203",
+    "altinnPartyUuid": "53610741-e95f-468b-b995-02d7175e8985"
   },
   {
     "category": "dagfinn",
