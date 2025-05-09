@@ -51,5 +51,15 @@ public enum DetailCodeExternal
     /// <summary>
     /// The receiver already has the right
     /// </summary>
-    AlreadyDelegated = 8
+    AlreadyDelegated = 8,
+
+    /// <summary>
+    ///  The receiver has the right based on Access List delegation
+    /// </summary>
+    AccessListValidationPass = 9,
+
+    /// <summary>
+    ///  The receiver does not have the right based on Access List delegation
+    /// </summary>
+    AccessListValidationFail = 10,
 }
