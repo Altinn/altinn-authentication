@@ -22,6 +22,24 @@ public class DecisionHelper
 
     private const string PolicyObligationMinAuthnLevel = "urn:altinn:minimum-authenticationlevel";
 
+    /// <summary>
+    /// SystemUser id
+    /// Should be exported to the AltinnCoreClaimTypes class
+    /// </summary>
+    public const string SystemUserUuid = "urn:altinn:systemuser:uuid";
+
+    /// <summary>
+    /// Resource Registry attribute match indentifier 
+    /// Should be exported to the AltinnCoreClaimTypes class
+    /// </summary>
+    public const string ResourceRegistryAttribute = "urn:altinn:resource";
+
+    /// <summary>
+    /// Attribute Matching Identity.
+    /// Should be exported to the AltinnCoreClaimTypes class
+    /// </summary>
+    public const string ActionId = "urn:oasis:names:tc:xacml:1.0:action:action-id";
+
     private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
     /// <summary>
@@ -45,7 +63,7 @@ public class DecisionHelper
 
         if (Guid.TryParse(party, out Guid partyUuid))
         {
-            resource.Attribute.Add(CreateXacmlJsonAttribute(MatchAttributeIdentifiers.PartyUuidAttribute, partyUuid.ToString(), DefaultType, DefaultIssuer));
+            resource.Attribute.Add(CreateXacmlJsonAttribute(AltinnCoreClaimTypes.PartyUUID, partyUuid.ToString(), DefaultType, DefaultIssuer));
         }
         else
         {
@@ -217,15 +235,15 @@ public class DecisionHelper
         {
             if (IsSystemUserClaim(claim, out SystemUserClaim userClaim))
             {
-                attributes.Add(CreateXacmlJsonAttribute(MatchAttributeIdentifiers.SystemUserUuid, userClaim.Systemuser_id[0], DefaultType, claim.Issuer));
+                attributes.Add(CreateXacmlJsonAttribute(SystemUserUuid, userClaim.Systemuser_id[0], DefaultType, claim.Issuer));
             }
             else if (IsUserIdClaim(claim.Type))
             {
-                attributes.Add(CreateXacmlJsonAttribute(MatchAttributeIdentifiers.UserAttribute, claim.Value, DefaultType, claim.Issuer));
+                attributes.Add(CreateXacmlJsonAttribute(AltinnCoreClaimTypes.UserId, claim.Value, DefaultType, claim.Issuer));
             }
             else if (IsPartyUuidClaim(claim.Type))
             {
-                attributes.Add(CreateXacmlJsonAttribute(MatchAttributeIdentifiers.PartyUuidAttribute, claim.Value, DefaultType, claim.Issuer));
+                attributes.Add(CreateXacmlJsonAttribute(AltinnCoreClaimTypes.PartyUUID, claim.Value, DefaultType, claim.Issuer));
             }
         }
 
@@ -237,7 +255,7 @@ public class DecisionHelper
         XacmlJsonCategory resourceCategory = new XacmlJsonCategory();
         resourceCategory.Attribute =
         [
-            CreateXacmlJsonAttribute(MatchAttributeIdentifiers.ResourceRegistryAttribute, resourceId, DefaultType, DefaultIssuer, includeResult),
+            CreateXacmlJsonAttribute(ResourceRegistryAttribute, resourceId, DefaultType, DefaultIssuer, includeResult),
         ];
 
         return resourceCategory;
@@ -279,7 +297,7 @@ public class DecisionHelper
         XacmlJsonCategory actionAttributes = new XacmlJsonCategory();
         actionAttributes.Attribute =
         [
-            CreateXacmlJsonAttribute(MatchAttributeIdentifiers.ActionId, actionType, DefaultType, DefaultIssuer, includeResult),
+            CreateXacmlJsonAttribute(ActionId, actionType, DefaultType, DefaultIssuer, includeResult),
         ];
         return actionAttributes;
     }
@@ -305,11 +323,11 @@ public class DecisionHelper
 
     private static bool IsUserIdClaim(string name)
     {
-        return name.Equals(MatchAttributeIdentifiers.UserAttribute);
+        return name.Equals(AltinnCoreClaimTypes.UserId);
     }
 
     private static bool IsPartyUuidClaim(string name)
     {
-        return name.Equals(MatchAttributeIdentifiers.PartyUuidAttribute);
+        return name.Equals(AltinnCoreClaimTypes.PartyUUID);
     }
 }
