@@ -95,5 +95,15 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Used for internal SystemUser APIs
         /// </summary>
         public const string SCOPE_INTERNAL_OR_PLATFORM_ACCESS = "altinn:authentication/systemuser.admin";
+
+        /// <summary>
+        /// Used for authenticating the PartyUuid has read from AM, from the query-param via PDP
+        /// </summary>
+        public const string POLICY_ACCESS_MANAGEMENT_READ_PARTY_QUERY = "PolicyAccessManagementReadPartyQuery";
+
+        /// <summary>
+        /// Used for authenticating the PartyUuid has write to AM, from the query-param via PDP
+        /// </summary>
+        public const string POLICY_ACCESS_MANAGEMENT_WRITE_PARTY_QUERY = "PolicyAccessManagementWritePartyQuery";
     }
 }

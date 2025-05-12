@@ -435,7 +435,11 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
                 policy.Requirements.Add(new InternalScopeOrAccessTokenRequirement(
                     AuthzConstants.SCOPE_INTERNAL_OR_PLATFORM_ACCESS)))
         .AddPolicy(AuthzConstants.POLICY_SCOPE_PORTAL, policy =>
-            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_PORTAL));
+            policy.RequireScopeAnyOf(AuthzConstants.SCOPE_PORTAL))
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ_PARTY_QUERY, policy => 
+            policy.Requirements.Add(new EndUserResourceAccessRequirement("read","altinn_access_management")))
+        .AddPolicy(AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE_PARTY_QUERY, policy =>
+            policy.Requirements.Add(new EndUserResourceAccessRequirement("write", "altinn_access_management"))); 
 
     services.AddFeatureManagement();
 }

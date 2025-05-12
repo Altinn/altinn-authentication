@@ -12,7 +12,7 @@ namespace Altinn.Platform.Authentication.Core.Authorization;
 /// <summary>
 /// Helper class for decision
 /// </summary>
-public class DecisionHelper
+public class SpecificDecisionHelper
 {
     private const string ParamParty = "party";
     private const string ParamFrom = "from";

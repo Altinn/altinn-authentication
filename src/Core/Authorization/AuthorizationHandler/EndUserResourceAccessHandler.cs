@@ -49,11 +49,11 @@ public class EndUserResourceAccessHandler : AuthorizationHandler<EndUserResource
             return;
         }
 
-        XacmlJsonRequestRoot request = DecisionHelper.CreateDecisionRequest(context, requirement, httpContext.Request.Query);
+        XacmlJsonRequestRoot request = SpecificDecisionHelper.CreateDecisionRequest(context, requirement, httpContext.Request.Query);
 
         XacmlJsonResponse response = await _pdp.GetDecisionForRequest(request);
 
-        bool userHasRequestedPartyAccess = DecisionHelper.ValidatePdpDecision(response, context.User);
+        bool userHasRequestedPartyAccess = SpecificDecisionHelper.ValidatePdpDecision(response, context.User);
 
         if (userHasRequestedPartyAccess)
         {
