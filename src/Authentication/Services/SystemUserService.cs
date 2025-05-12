@@ -118,14 +118,9 @@ namespace Altinn.Platform.Authentication.Services
         /// Returns the list of SystemUsers this PartyID has registered.
         /// </summary>
         /// <returns>list of SystemUsers</returns>
-        public async Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId)
+        public async Task<List<SystemUser>> GetListOfSystemUsersForParty(Guid partyUuid)
         {
-            if (partyId < 1)
-            {
-                return [];
-            }
-
-            return await _repository.GetAllActiveSystemUsersForParty(partyId);
+            return await _repository.GetAllActiveSystemUsersForParty(partyUuid) ?? [];
         }
 
         /// <inheritdoc/>

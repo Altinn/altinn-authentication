@@ -62,7 +62,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId)
+    public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(Guid partyUuid)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -76,11 +76,12 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.reportee_party_uuid
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
-	        WHERE sui.reportee_party_id = @reportee_party_id	
+	        WHERE sui.reportee_party_uuid = @reportee_party_uuid	
 	            AND sui.is_deleted = false
                 AND systemuser_type = @systemuser_type;
                 ";
@@ -89,7 +90,7 @@ public class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("reportee_party_id", partyId.ToString());
+            command.Parameters.AddWithValue("reportee_party_id", partyUuid);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
@@ -386,13 +387,13 @@ public class SystemUserRepository : ISystemUserRepository
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             ReporteeOrgNo = orgno,
-            PartyId = reader.GetFieldValue<string>("reportee_party_id"),
+            PartyId = reader.GetFieldValue<Guid>("reportee_party_uuid").ToString(),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             ExternalRef = external_ref ?? orgno,
             UserType = systemUserType,
-            AccessPackages = accessPackages
+            AccessPackages = accessPackages            
         });
     }
 

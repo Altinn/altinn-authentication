@@ -21,7 +21,7 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="partyId">The party id</param>
     /// <returns></returns>
-    Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId);
+    Task<List<SystemUser>> GetAllActiveSystemUsersForParty(Guid partyUuid);
 
     /// <summary>
     /// Returns a single System User integration by its id

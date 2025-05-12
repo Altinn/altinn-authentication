@@ -17,9 +17,9 @@ public interface ISystemUserService
     /// <summary>
     /// Returns the list of Default SystemUsers this PartyID has registered
     /// </summary>
-    /// <param name="partyId">The User id for the Legal Entity (Organisation or Person) the Caller represent.</param> 
+    /// <param name="partyUuid">The User id for the Legal Entity (Organisation or Person) the Caller represent.</param> 
     /// <returns></returns>
-    Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId);
+    Task<List<SystemUser>> GetListOfSystemUsersForParty(Guid partyUuid);
 
     /// <summary>
     /// Return a single SystemUser by PartyId and SystemUserId

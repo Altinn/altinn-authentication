@@ -64,10 +64,10 @@ public class SystemUserController : ControllerBase
     /// No Agent SystemUsers are returned, use the other endpoint for them.
     /// </summary>
     /// <returns>List of SystemUsers</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ_PARTY_QUERY)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [HttpGet("{party}")]
-    public async Task<ActionResult<List<SystemUser>>> GetListOfSystemUsersPartyHas(int party)
+    [HttpGet("party")]
+    public async Task<ActionResult<List<SystemUser>>> GetListOfSystemUsersPartyHas([FromQuery] Guid party)
     {
         var result = await _systemUserService.GetListOfSystemUsersForParty(party) ?? [];
         return Ok(result);
