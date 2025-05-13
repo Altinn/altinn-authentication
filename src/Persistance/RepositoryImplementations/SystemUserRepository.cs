@@ -118,7 +118,8 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.reportee_party_uuid
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -159,7 +160,8 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.reportee_party_uuid
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -198,7 +200,8 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.reportee_party_uuid
             FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -331,7 +334,8 @@ public class SystemUserRepository : ISystemUserRepository
                 systemvendor_orgnumber,
                 external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.reportee_party_uuid
             FROM business_application.system_user_profile sui
                 JOIN business_application.system_register sr  
                 ON   sui.system_internal_id = sr.system_internal_id
@@ -412,7 +416,8 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.reportee_party_uuid
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
