@@ -427,19 +427,19 @@ public class SystemUserController : ControllerBase
     /// Get list of clients for a facilitator
     /// </summary>
     /// <returns>List of Clients</returns>
-    //[Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/clients")]
-    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] string[] packages = null, CancellationToken cancellationToken = default)
     {
         List<Customer> ret = [];
-        var result = await _systemUserService.GetClientsForFacilitator(facilitator, cancellationToken);
+        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, cancellationToken);
 
         if (result.IsSuccess)
         {
-            ret = result.Value;
+            return Ok(result.Value);
         }
 
-        return Ok(ret);
+        return result.Problem.ToActionResult();
     }
 }    

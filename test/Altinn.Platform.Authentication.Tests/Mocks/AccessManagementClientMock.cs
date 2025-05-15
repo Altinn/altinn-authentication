@@ -283,4 +283,21 @@ public class AccessManagementClientMock: IAccessManagementClient
             }
         }
     }
+
+    public async Task<Result<List<ConnectionDto>>> GetClientsForFacilitator(Guid facilitatorId, string[] packages, CancellationToken cancellationToken = default)
+    {
+        if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
+        {
+            return Problem.AgentSystemUser_FailedToGetClients_Forbidden;
+        }
+
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
+        string clientData = File.OpenText("Data/Customers/customerlist.json").ReadToEnd();
+        List<ConnectionDto>? clients = JsonSerializer.Deserialize<List<ConnectionDto>>(clientData, options);
+        return await Task.FromResult(clients);
+    }
 }

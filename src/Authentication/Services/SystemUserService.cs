@@ -437,9 +437,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, CancellationToken cancellationToken)
+        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, string[] packages, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, cancellationToken);
+            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
             if (res.IsSuccess)
             {
                 return ConvertConnectionDTOToClient(res.Value);

@@ -540,7 +540,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ConnectionDto>>> GetClientsForFacilitator(Guid facilitatorId, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ConnectionDto>>> GetClientsForFacilitator(Guid facilitatorId, string[] packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -549,6 +549,11 @@ public class AccessManagementClient : IAccessManagementClient
         }
 
         string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
+        
+        if (packages != null && packages.Length > 0)
+        {
+            endpointUrl = $"{endpointUrl}&packages={packages}";
+        }
 
         try
         {
@@ -558,9 +563,32 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 return await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
             }
+            else
+            {
+                if(response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
+                    return new Result<List<ConnectionDto>>(problemInstance);
+                }
+                else if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+                    return new Result<List<ConnectionDto>>(problemInstance);
+                }
+                else
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
 
-            return Problem.UnableToDoDelegationCheck;
-
+                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                    _logger.LogError($"Authentication // AccessManagementClient // GetClientsForFacilitator // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+                    var problemExtensionData = ProblemExtensionData.Create(new[]
+                    {
+                    new KeyValuePair<string, string>("Problem Detail : ", problemDetails.Detail)
+                    });
+                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
+                    return new Result<List<ConnectionDto>>(problemInstance);
+                }
+            }
         }
         catch (Exception ex)
         {
