@@ -1,14 +1,29 @@
 import http from 'k6/http';
 import exec from 'k6/execution';
-import { randomItem, uuidv4, URL} from './common/k6-utils.js';
-import { expect, expectStatusFor } from "./common/testimports.js";
-import { describe } from './common/describe.js';
+import { 
+    expect, 
+    expectStatusFor, 
+    randomItem, 
+    uuidv4, 
+    URL, 
+    describe, 
+    getEnterpriseToken 
+} from "./common/testimports.js";
 import { splitSystemUsers, regnskapsforerUrns, forretningsforerUrns, revisorUrns } from './common/readTestdata.js';
-import { getEnterpriseToken } from './common/token.js';
 import { getCustomerListUrl, getSystemUsersUrl } from './common/config.js';
-import { createSystem, createSystemUser, approveSystemUser, getParams, getSystemOwnerTokenAndClientId, delegateAmSystemUser as delegateSystemUser } from './commonSystemUser.js';
-import { createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, postDelegationLabel } from './commonSystemUser.js';
-import { options as _options } from './commonSystemUser.js';
+import { 
+    createSystem, 
+    createSystemUser, 
+    approveSystemUser, 
+    getParams, 
+    getSystemOwnerTokenAndClientId, 
+    delegateAmSystemUser as delegateSystemUser,
+    createSystemOwnerLabel, 
+    createSystemUserLabel, 
+    approveSystemUserLabel, 
+    postDelegationLabel,
+    options as _options 
+} from './commonSystemUser.js';
 
 const subscription_key = __ENV.subscription_key;
 
@@ -31,12 +46,12 @@ export function setup() {
 export default function(data) {
     let mySystemUsers = data[exec.vu.idInTest - 1];
     if (mySystemUsers.length == 0) {
-        console.log("No more system users to create");
-        return;
+        //console.log("No more system users to create");
+        exec.test.abort("No more system users to create");
     }
     const organization = randomItem(mySystemUsers);
     // Remove the organization from the list
-    data[exec.vu.idInTest - 1] = data[exec.vu.idInTest - 1].filter(item => item.orgNo != organization.orgNo);
+    //data[exec.vu.idInTest - 1] = data[exec.vu.idInTest - 1].filter(item => item.orgNo != organization.orgNo);
     const systemId = `${systemOwner}_${uuidv4()}`;
 
     // get token to create system, systemuser and read systemid.
@@ -69,7 +84,7 @@ export default function(data) {
     for (let customer of customerList.data) {
         let delegationId = delegateSystemUser(customer, organization, systemUserId, resources);
         noOfDelegations++;
-        if (noOfDelegations >=10) {
+        if (noOfDelegations >=1) {
             break;
         }
     }

@@ -1,5 +1,5 @@
 import exec from 'k6/execution';
-import { randomItem, uuidv4 } from './common/k6-utils.js';
+import { randomItem, uuidv4 } from './common/testimports.js';
 import { splitSystemUsers, resources } from './common/readTestdata.js';
 import { 
     createSystem, 

@@ -1,8 +1,5 @@
 import http from 'k6/http';
-import { randomItem, uuidv4, URL} from './common/k6-utils.js';
-import { expect, expectStatusFor } from "./common/testimports.js";
-import { describe } from './common/describe.js';
-import { getEnterpriseToken } from './common/token.js';
+import { expect, expectStatusFor, randomItem, uuidv4, URL, describe, getEnterpriseToken } from "./common/testimports.js";
 import { getSystemUrl, getSystemUsersUrl, getSystemUserByExternalIdUrl} from './common/config.js';
 
 const traceCalls = (__ENV.traceCalls ?? 'false') === 'true';
