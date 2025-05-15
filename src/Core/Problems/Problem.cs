@@ -264,4 +264,22 @@ public static class Problem
     public static ProblemDescriptor PartyId_AgentRequest_Mismatch { get; }
         = _factory.Create(42, HttpStatusCode.Forbidden, "Party does not match agent request's orgno");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_FailedToGetClients_Unauthorized { get; }
+        = _factory.Create(43, HttpStatusCode.Unauthorized, "Unauthorized");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_FailedToGetClients_Forbidden { get; }
+        = _factory.Create(43, HttpStatusCode.Forbidden, "Forbidden");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AgentSystemUser_FailedToGetClients { get; }
+        = _factory.Create(43, HttpStatusCode.BadRequest, "Failed to get clients");
+
 }
