@@ -104,7 +104,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId)
+    public async Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(Guid partyId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -123,7 +123,7 @@ public class SystemUserRepository : ISystemUserRepository
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
-	        WHERE sui.reportee_party_id = @reportee_party_id	
+	        WHERE sui.reportee_party_uuid = @reportee_party_id	
 	            AND sui.is_deleted = false
                 AND systemuser_type = @systemuser_type;
                 ";
@@ -132,7 +132,7 @@ public class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("reportee_party_id", partyId.ToString());
+            command.Parameters.AddWithValue("reportee_party_id", partyId);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();

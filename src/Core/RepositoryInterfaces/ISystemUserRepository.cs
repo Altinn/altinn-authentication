@@ -95,5 +95,5 @@ public interface ISystemUserRepository
     /// </summary>
     /// <param name="partyId">The party id</param>
     /// <returns>List of Agent SystemUsers</returns>
-    Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId);
+    Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(Guid partyId);
 }

@@ -124,13 +124,8 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<List<SystemUser>> GetListOfAgentSystemUsersForParty(int partyId)
+        public async Task<List<SystemUser>> GetListOfAgentSystemUsersForParty(Guid partyId)
         {
-            if (partyId < 1)
-            {
-                return [];
-            }
-
             return await _repository.GetAllActiveAgentSystemUsersForParty(partyId);
         }
 
@@ -149,7 +144,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Set the Delete flag on the identified SystemUser
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
-        public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> SetDeleteFlagOnSystemUser(Guid partyId, Guid systemUserId, CancellationToken cancellationToken = default)
         {
             SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
             if (systemUser is null) 
@@ -157,7 +152,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUserNotFound;   
             }
 
-            if (systemUser.PartyId != partyId)
+            if (systemUser.PartyUuid != partyId)
             {
                 return Problem.Delete_SystemUser_NotOwned;
             }
@@ -244,7 +239,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(Guid partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
             RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
@@ -375,7 +370,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(Guid partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
         {
             Result<bool> result = await _accessManagementClient.DeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
             if (result.IsProblem)
@@ -387,7 +382,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> DeleteAgentSystemUser(Guid partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default)
         {
             SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
             if (systemUser is null)
@@ -395,7 +390,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUserNotFound;
             }
 
-            if (systemUser.PartyId != partyId)
+            if (systemUser.PartyUuid != partyId)
             {
                 return Problem.Delete_SystemUser_NotOwned;
             }

@@ -22,4 +22,12 @@ public interface IPartiesClient
     /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
     /// <returns>party information</returns>
     Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns partyInfo
+    /// </summary>
+    /// <param name="partyId">The party ID to lookup in UUID format</param>
+    /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
+    /// <returns>party information</returns>
+    Task<Party> GetPartyByUuidAsync(Guid partyId, CancellationToken cancellationToken = default);
 }
