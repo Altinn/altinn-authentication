@@ -133,7 +133,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
 
         private async Task<XacmlContextRequest> Enrich(XacmlContextRequest request)
         {
-            await EnrichResourceAttributes(request);
+                await EnrichResourceAttributes(request);
 
             return request;
         }

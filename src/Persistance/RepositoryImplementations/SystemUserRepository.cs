@@ -391,7 +391,7 @@ public class SystemUserRepository : ISystemUserRepository
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             ReporteeOrgNo = orgno,
-            PartyId = reader.GetFieldValue<Guid>("reportee_party_uuid").ToString(),
+            PartyId = reader.GetFieldValue<string>("reportee_party_id"),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
             Created = reader.GetFieldValue<DateTime>("created"),
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
