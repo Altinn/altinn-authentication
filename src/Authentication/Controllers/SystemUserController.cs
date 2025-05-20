@@ -66,7 +66,7 @@ public class SystemUserController : ControllerBase
     /// <returns>List of SystemUsers</returns>
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ_PARTY_QUERY)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [HttpGet("party")]
+    [HttpGet("internal")]
     public async Task<ActionResult<List<SystemUser>>> GetListOfSystemUsersPartyHas([FromQuery] Guid party)
     {
         var result = await _systemUserService.GetListOfSystemUsersForParty(party) ?? [];
@@ -77,10 +77,10 @@ public class SystemUserController : ControllerBase
     /// Returns the list of SystemUsers this PartyID has registered
     /// </summary>
     /// <returns>List of SystemUsers</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ_PARTY_QUERY)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [HttpGet("agent/{party}")]
-    public async Task<ActionResult<List<SystemUser>>> GetListOfAgentSystemUsersPartyHas(int party)
+    [HttpGet("internal/agent")]
+    public async Task<ActionResult<List<SystemUser>>> GetListOfAgentSystemUsersPartyHas([FromQuery] Guid party)
     {
         var result = await _systemUserService.GetListOfAgentSystemUsersForParty(party) ?? [];
         return Ok(result);
@@ -90,10 +90,10 @@ public class SystemUserController : ControllerBase
     /// Get list of delegations to this agent systemuser
     /// </summary>
     /// <returns>List of DelegationResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ_PARTY_QUERY)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
-    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
+    [HttpGet("internal/agent/delegations")]
+    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid facilitator, [FromQuery] Guid systemUserId)
     {
         List<DelegationResponse> ret = [];
         var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
@@ -109,11 +109,11 @@ public class SystemUserController : ControllerBase
     /// Return a single SystemUser by PartyId and SystemUserId
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ_PARTY_QUERY)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpGet("{party}/{systemUserId}")]
-    public async Task<ActionResult> GetSingleSystemUserById(int party, Guid systemUserId)
+    [HttpGet("internal/single")]
+    public async Task<ActionResult> GetSingleSystemUserById([FromQuery] Guid party, [FromQuery] Guid systemUserId)
     {
         SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
         if (systemUser is not null)
@@ -178,11 +178,11 @@ public class SystemUserController : ControllerBase
     /// Set the Delete flag on the identified SystemUser
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE_PARTY_QUERY)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpDelete("{party}/{systemUserId}")]
-    public async Task<ActionResult> SetDeleteFlagOnSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken = default)
+    [HttpDelete("internal")]
+    public async Task<ActionResult> SetDeleteFlagOnSystemUser([FromQuery] Guid party, [FromQuery] Guid systemUserId, CancellationToken cancellationToken = default)
     {
         SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
         if (toBeDeleted is not null)
@@ -214,7 +214,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPut]
-    public async Task<ActionResult> UpdateSystemUserById([FromBody] SystemUserUpdateDto request)
+    public async Task<ActionResult> UpdateSystemUserTitleById([FromBody] SystemUserUpdateDto request)
     {
         SystemUser? toBeUpdated = await _systemUserService.GetSingleSystemUserById(Guid.Parse(request.Id));
         if (toBeUpdated is not null)
@@ -336,12 +336,12 @@ public class SystemUserController : ControllerBase
     /// Creates a new SystemUser.
     /// </summary>
     /// <returns>SystemUser response model</returns>    
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE_PARTY_QUERY)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(SystemUser), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpPost("{party}/create")]
-    public async Task<ActionResult<SystemUser>> CreateAndDelegateSystemUser(string party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
+    [HttpPost("internal/create")]
+    public async Task<ActionResult<SystemUser>> CreateAndDelegateSystemUser([FromQuery] Guid party, [FromBody] SystemUserRequestDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -359,12 +359,12 @@ public class SystemUserController : ControllerBase
     /// The endpoint is idempotent.
     /// </summary>
     /// <returns>OK</returns>    
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE_PARTY_QUERY)]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpPost("agent/{party}/{systemUserId}/delegation/")]
-    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
+    [HttpPost("internal/agent/delegation/")]
+    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -391,8 +391,8 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpDelete("agent/{party}/delegation/{delegationId}")]
-    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(string party, Guid delegationId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
+    [HttpDelete("internal/agent/delegation/")]
+    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid delegationId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
     {
         Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, facilitatorId, cancellationToken);
         if (result.IsSuccess)
@@ -410,8 +410,8 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpDelete("agent/{party}/{systemUserId}")]
-    public async Task<ActionResult> DeleteAgentSystemUser(string party, Guid systemUserId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
+    [HttpDelete("internal/agent/")]
+    public async Task<ActionResult> DeleteAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid systemUserId, [FromQuery] Guid facilitatorId, CancellationToken cancellationToken = default)
     {
         Result<bool> result = await _systemUserService.DeleteAgentSystemUser(party, systemUserId, facilitatorId, cancellationToken);
         if (result.IsSuccess)
