@@ -168,10 +168,16 @@ public class SystemUserController : ControllerBase
             return NotFound();
         }
 
-        // Temporary fix until Maskinporten changes their integration
-        res.ProductName = res.SystemId;
+        SystemUserDTO dto = new()
+        { 
+            Id = res.Id,
+            SystemId = res.SystemId,
+            ReporteeOrgNo = res.ReporteeOrgNo,
+            SupplierOrgNo = res.SupplierOrgNo,
+            ExternalRef = res.ExternalRef
+        };
 
-        return Ok(res);
+        return Ok(dto);
     }
 
     /// <summary>
