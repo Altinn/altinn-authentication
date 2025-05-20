@@ -173,8 +173,32 @@ namespace Altinn.Platform.Authentication.Services
                 right.Resource = resource;
             }
 
-            await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
+            int partyInt = await VerifySystemUserHasIntPartyId(partyId, systemUser);
+
+            await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyInt.ToString(), systemUser, rights);
             return true; // if it can't be found, there is no need to delete it.
+        }
+
+        /// <summary>
+        /// Needed during the Migration period between int PartyId and Guid PartyUuid
+        /// Some of AM API still use the int PartyId
+        /// </summary>
+        private async Task<int> VerifySystemUserHasIntPartyId(Guid partyUuid, SystemUser systemUser)
+        {
+            if (int.TryParse(systemUser.PartyId, out int partyInt))
+            {
+                return partyInt;
+            }
+            else 
+            {
+                Party? party = await _partiesClient.GetPartyByUuidAsync(partyUuid);
+                if (party is null)
+                {
+                    return 0;
+                }
+
+                return party.PartyId;
+            }
         }
 
         /// <summary>
@@ -247,7 +271,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+            Party party = await _partiesClient.GetPartyByUuidAsync(partyId, cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -265,9 +289,9 @@ namespace Altinn.Platform.Authentication.Services
             if (existing is not null)
             {
                 return Problem.SystemUser_AlreadyExists;
-            }
+            }                       
 
-            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(party.PartyId, regSystem.Id, [], true, cancellationToken);
             if (delegationCheckFinalResult.RightResponses is null)
             {
                 // This represents some problem with doing the delegation check beyond the rights not being delegable.
@@ -286,7 +310,8 @@ namespace Altinn.Platform.Authentication.Services
                 SystemInternalId = regSystem.InternalId,
                 IntegrationTitle = request.IntegrationTitle,
                 SystemId = request.SystemId,
-                PartyId = partyId
+                PartyId = party.PartyId.ToString(),
+                PartyUuid = partyId
             };
 
             Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);

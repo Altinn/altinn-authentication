@@ -62,4 +62,9 @@ public class PartiesClientMock : IPartiesClient
 
         return Task.FromResult<Organization>(organization);
     }
+
+    public Task<Party> GetPartyByUuidAsync(Guid partyId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetTestDataParties().Find(p => p.PartyUuid == partyId));
+    }
 }

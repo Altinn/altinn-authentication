@@ -45,7 +45,7 @@ public interface IAccessManagementClient
     /// <param name="token">The authorization header bearer token</param>
     /// <param name="rights">The Rights to be revoked for the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser that misses the rights</param>
-    Task<Result<bool>> RevokeDelegatedRightToSystemUser(Guid partyId, SystemUser systemUser, List<Right> rights);
+    Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights);
 
     /// <summary>
     /// Delegate a customer to the Agent SystemUser
