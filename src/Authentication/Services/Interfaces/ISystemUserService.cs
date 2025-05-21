@@ -115,7 +115,7 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="party">The User id for the Facilitator for the Agent SystemUser currently logged in at the FrontEnd.</param> 
     /// <returns>List of Agent SystemUsers</returns>
-    Task<List<SystemUser>?> GetListOfAgentSystemUsersForParty(Guid party);
+    Task<List<SystemUser>> GetListOfAgentSystemUsersForParty(Guid party);
 
     /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.

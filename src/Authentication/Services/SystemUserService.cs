@@ -126,7 +126,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<List<SystemUser>> GetListOfAgentSystemUsersForParty(Guid partyId)
         {
-            return await _repository.GetAllActiveAgentSystemUsersForParty(partyId);
+            return await _repository.GetAllActiveAgentSystemUsersForParty(partyId) ?? [];
         }
 
         /// <summary>
@@ -183,9 +183,9 @@ namespace Altinn.Platform.Authentication.Services
         /// Needed during the Migration period between int PartyId and Guid PartyUuid
         /// Some of AM API still use the int PartyId
         /// </summary>
-        private async Task<int> VerifySystemUserHasIntPartyId(Guid partyUuid, SystemUser systemUser)
+        private async Task<int> VerifySystemUserHasIntPartyId(Guid partyUuid, SystemUser? systemUser = default)
         {
-            if (int.TryParse(systemUser.PartyId, out int partyInt))
+            if (systemUser is not null && int.TryParse(systemUser.PartyId, out int partyInt))
             {
                 return partyInt;
             }

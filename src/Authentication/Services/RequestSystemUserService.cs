@@ -603,7 +603,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
+        Result<Guid> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
         if (validatePartyRequest.IsProblem) 
         {
             return validatePartyRequest.Problem;
@@ -666,11 +666,22 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndCreateAgentSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Agent, cancellationToken);
+        // Validates the Party, and converts the int partyId to Guid PartyUuid
+        Guid partyUuid;
+        Result<Guid> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Agent, cancellationToken);
         if (validatePartyRequest.IsProblem)
         {
             return validatePartyRequest.Problem;
         }
+
+        if (validatePartyRequest.Value == Guid.Empty)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+        else
+        {
+            partyUuid = validatePartyRequest.Value;
+        }           
 
         AgentRequestSystemResponse? systemUserRequest = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (systemUserRequest is null)
@@ -694,7 +705,7 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        Result<SystemUser> toBeInserted = MapAgentSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        Result<SystemUser> toBeInserted = MapAgentSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId, partyUuid);
         if (toBeInserted.IsProblem)
         {
             return toBeInserted.Problem;
@@ -713,7 +724,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> RejectSystemUser(int partyId, Guid requestId, int userId, CancellationToken cancellationToken)
     {
-        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
+        Result<Guid> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Standard, cancellationToken);
         if (validatePartyRequest.IsProblem)
         {
             return validatePartyRequest.Problem;
@@ -736,7 +747,7 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> RejectAgentSystemUser(int partyId, Guid requestId, int userId, CancellationToken cancellationToken)
     {
-        Result<bool> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Agent, cancellationToken);
+        Result<Guid> validatePartyRequest = await ValidatePartyRequest(partyId, requestId, SystemUserType.Agent, cancellationToken);
         if (validatePartyRequest.IsProblem)
         {
             return validatePartyRequest.Problem;
@@ -782,7 +793,7 @@ public class RequestSystemUserService(
         return toBeInserted!;
     }
 
-    private static Result<SystemUser> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystemResponse regSystem, int partyId)
+    private static Result<SystemUser> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystemResponse regSystem, int partyId, Guid partyUuid)
     {
         SystemUser? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
@@ -799,6 +810,7 @@ public class RequestSystemUserService(
                 IntegrationTitle = systemName,
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
+                PartyUuid = partyUuid,
                 ReporteeOrgNo = agentSystemUserRequest.PartyOrgNo,
                 ExternalRef = agentSystemUserRequest.ExternalRef ?? agentSystemUserRequest.PartyOrgNo,
                 AccessPackages = agentSystemUserRequest.AccessPackages,
@@ -958,13 +970,20 @@ public class RequestSystemUserService(
         return res;
     }
 
-    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType,CancellationToken cancellationToken)
+    private async Task<Result<Guid>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
     {
+        Guid guid = Guid.Empty;
+
         Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
-        }
+        }        
+
+        if (party.PartyUuid is not null) 
+        {
+            guid = (Guid)party.PartyUuid;
+        }        
 
         if (userType == SystemUserType.Agent)
         {
@@ -994,6 +1013,6 @@ public class RequestSystemUserService(
             }
         }
 
-        return true;
+        return guid;
     }
 }

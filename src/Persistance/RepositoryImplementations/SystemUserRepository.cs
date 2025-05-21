@@ -238,6 +238,7 @@ public class SystemUserRepository : ISystemUserRepository
                     integration_title,
                     system_internal_id,
                     reportee_party_id,
+                    reportee_party_uuid,
                     reportee_org_no,
                     created_by,
                     external_ref,
@@ -247,6 +248,7 @@ public class SystemUserRepository : ISystemUserRepository
                     @integration_title,
                     @system_internal_id,
                     @reportee_party_id,
+                    @reportee_party_uuid,
                     @reportee_org_no,
                     @created_by,
                     @external_ref,
@@ -268,6 +270,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
             command.Parameters.AddWithValue("system_internal_id", toBeInserted.SystemInternalId!);
             command.Parameters.AddWithValue("reportee_party_id", toBeInserted.PartyId);
+            command.Parameters.AddWithValue("reportee_party_uuid", toBeInserted.PartyUuid);
             command.Parameters.AddWithValue("reportee_org_no", toBeInserted.ReporteeOrgNo);
             command.Parameters.AddWithValue("created_by", createdBy);
             command.Parameters.AddWithValue("external_ref", ext_ref);

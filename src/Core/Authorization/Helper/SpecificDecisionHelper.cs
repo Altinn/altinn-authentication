@@ -14,12 +14,21 @@ namespace Altinn.Platform.Authentication.Core.Authorization;
 /// </summary>
 public class SpecificDecisionHelper
 {
+    private const string ParamInstanceOwnerPartyId = "instanceOwnerPartyId";
+    private const string ParamInstanceGuid = "instanceGuid";
+    private const string ParamApp = "app";
+    private const string ParamOrg = "org";
+    private const string ParamAppId = "appId";
     private const string ParamParty = "party";
     private const string ParamFrom = "from";
     private const string ParamTo = "to";
     private const string DefaultIssuer = "Altinn";
     private const string DefaultType = "string";
-
+    private const string PersonHeaderTrigger = "person";
+    private const string OrganizationHeaderTrigger = "organization";
+    private const string PersonHeader = "Altinn-Party-SocialSecurityNumber";
+    private const string OrganizationNumberHeader = "Altinn-Party-OrganizationNumber";
+    private const string PolicyObligationMinAuthnLevelOrg = "urn:altinn:minimum-authenticationlevel-org";
     private const string PolicyObligationMinAuthnLevel = "urn:altinn:minimum-authenticationlevel";
 
     /// <summary>
@@ -58,7 +67,7 @@ public class SpecificDecisionHelper
         request.AccessSubject.Add(CreateSubjectCategory(context.User.Claims));
         request.Action.Add(CreateActionCategory(requirement.ActionType));
 
-        XacmlJsonCategory resource = CreateResourceCategoryForResource(requirement.ResourceId);
+        XacmlJsonCategory resource = CreateResourceCategoryForResource(requirement.ResourceId); 
         request.Resource.Add(resource);
 
         if (Guid.TryParse(party, out Guid partyUuid))
