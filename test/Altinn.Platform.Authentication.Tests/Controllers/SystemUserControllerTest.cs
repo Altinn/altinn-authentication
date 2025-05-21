@@ -1329,7 +1329,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
 
             Guid clientId = Guid.NewGuid();
-            Guid facilitator = Guid.NewGuid();
+            Guid facilitator = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
             HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/{facilitator}/{systemUserId}/delegations");
             listSystemUserRequst.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
