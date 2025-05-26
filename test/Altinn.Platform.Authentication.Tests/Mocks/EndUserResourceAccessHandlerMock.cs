@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Common.PEP.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -50,11 +51,20 @@ public class EndUserResourceAccessHandlerMock : AuthorizationHandler<EndUserReso
             return;
         }
 
-        // XacmlJsonRequestRoot request = SpecificDecisionHelper.CreateDecisionRequest(context, requirement, httpContext.Request.Query);
+        string? party = httpContext.Request.Query.FirstOrDefault(p => p.Key == "party").Value.FirstOrDefault();                
+
+        XacmlJsonRequestRoot request = SpecificDecisionHelper.CreateDecisionRequest(context, requirement, httpContext.Request.Query);
 
         // XacmlJsonResponse response = await _pdp.GetDecisionForRequest(request);
 
-        bool userHasRequestedPartyAccess = true; // SpecificDecisionHelper.ValidatePdpDecision(response, context.User);
+        bool userHasRequestedPartyAccess = false;
+
+        if (party == "00000000-0000-0000-0005-000000000000")
+        {
+            userHasRequestedPartyAccess = true;
+        }
+
+        // SpecificDecisionHelper.ValidatePdpDecision(response, context.User);
 
         if (userHasRequestedPartyAccess)
         {

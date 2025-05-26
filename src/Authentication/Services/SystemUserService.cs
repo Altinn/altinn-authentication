@@ -383,15 +383,8 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId)
+        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
         {
-            Party party = await _partiesClient.GetPartyAsync(partyId);
-
-            if (party.PartyUuid != facilitator)
-            {
-                return Problem.AgentSystemUser_DelegationNotFound;
-            }
-
             var res = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitator);
             if (res.IsSuccess)
             {
