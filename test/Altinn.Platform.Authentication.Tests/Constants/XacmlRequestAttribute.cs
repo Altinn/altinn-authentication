@@ -41,6 +41,11 @@
         public const string PartyAttribute = "urn:altinn:partyid";
 
         /// <summary>
+        /// xacml string that represents party uuid
+        /// </summary>
+        public const string PartyUuidAttribute = "urn:altinn:party:uuid";
+
+        /// <summary>
         /// xacml string that represents organization number 
         /// </summary>
         public const string OrganizationNumberAttribute = "urn:altinn:organizationnumber";

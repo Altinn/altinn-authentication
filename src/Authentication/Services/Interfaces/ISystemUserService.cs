@@ -17,9 +17,9 @@ public interface ISystemUserService
     /// <summary>
     /// Returns the list of Default SystemUsers this PartyID has registered
     /// </summary>
-    /// <param name="partyId">The User id for the Legal Entity (Organisation or Person) the Caller represent.</param> 
+    /// <param name="partyUuid">The User id for the Legal Entity (Organisation or Person) the Caller represent.</param> 
     /// <returns></returns>
-    Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId);
+    Task<List<SystemUser>> GetListOfSystemUsersForParty(Guid partyUuid);
 
     /// <summary>
     /// Return a single SystemUser by PartyId and SystemUserId
@@ -35,7 +35,7 @@ public interface ISystemUserService
     /// <param name="systemUserId">The db id for the SystemUser to be deteled</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> SetDeleteFlagOnSystemUser(Guid partyId, Guid systemUserId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new SystemUser
@@ -89,7 +89,7 @@ public interface ISystemUserService
     /// <param name="userId">the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>The CreateSystemUserResponse response model, with either a new SystemUser model inside, or a list of errors.</returns>
-    Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<SystemUser>> CreateAndDelegateSystemUser(Guid party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Fetches a SystemUser by the ExternalRequestId    /// 
@@ -115,7 +115,7 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="party">The User id for the Facilitator for the Agent SystemUser currently logged in at the FrontEnd.</param> 
     /// <returns>List of Agent SystemUsers</returns>
-    Task<List<SystemUser>?> GetListOfAgentSystemUsersForParty(int party);
+    Task<List<SystemUser>> GetListOfAgentSystemUsersForParty(Guid party);
 
     /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
@@ -128,11 +128,10 @@ public interface ISystemUserService
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
     /// retrieved in turn from the AccessManagement db.
     /// </summary>
-    /// <param name="party">int party</param>
     /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
     /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
     /// <returns>List of Client Delegations</returns>
-    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId);
+    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId);
 
     /// <summary>
     /// Delete the client delegation to the Agent SystemUser
@@ -142,15 +141,14 @@ public interface ISystemUserService
     /// <param name="facilitatorId">the guid of facilitator</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid facilitatorId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(Guid partyId, Guid delegationId, Guid facilitatorId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete the agent system user (soft delete)
     /// </summary>
-    /// <param name="partyId">the party id of the reportee</param>
     /// <param name="systemUserId">The db id for the SystemUser to be deteled</param>
     /// <param name="facilitatorId">the guid of facilitator</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> DeleteAgentSystemUser(Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default);
 }

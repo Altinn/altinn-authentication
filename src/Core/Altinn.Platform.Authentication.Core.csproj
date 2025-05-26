@@ -26,4 +26,10 @@
     <Folder Include="Services\Interfaces\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Altinn.Common.Authentication">
+      <HintPath>..\jwtcookie\Authentication\obj\Debug\net9.0\ref\Altinn.Common.Authentication.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

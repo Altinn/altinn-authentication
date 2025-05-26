@@ -1,3 +1,5 @@
+using System;
+
 namespace Altinn.AccessManagement.Tests.Models;
 
 /// <summary>
@@ -44,4 +46,9 @@ public class XacmlResourceAttributes
     /// Gets or sets the OrganizationNumber for the org owning the resource
     /// </summary>
     public string OrganizationNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the value for resource party uuid attribute
+    /// </summary>
+    public Guid PartyUuid { get; set; }
 }

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
@@ -133,7 +135,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
 
         private async Task<XacmlContextRequest> Enrich(XacmlContextRequest request)
         {
-            await EnrichResourceAttributes(request);
+                await EnrichResourceAttributes(request);
 
             return request;
         }
@@ -175,6 +177,12 @@ namespace Altinn.AccessManagement.Tests.Mocks
             }
             else if (!string.IsNullOrEmpty(resourceAttributes.ResourceRegistryId) &&
                      !string.IsNullOrEmpty(resourceAttributes.ResourcePartyValue))
+            {
+                // The resource attributes are complete
+                resourceAttributeComplete = true;
+            }
+            else if (!string.IsNullOrEmpty(resourceAttributes.ResourceRegistryId) &&
+                     !string.IsNullOrEmpty(resourceAttributes.PartyUuid.ToString()) && resourceAttributes.PartyUuid != Guid.Empty)
             {
                 // The resource attributes are complete
                 resourceAttributeComplete = true;
@@ -348,6 +356,11 @@ namespace Altinn.AccessManagement.Tests.Mocks
                 if (attribute.AttributeId.OriginalString.Equals(XacmlRequestAttribute.OrganizationNumberAttribute))
                 {
                     resourceAttributes.OrganizationNumber = attribute.AttributeValues.First().Value;
+                }
+
+                if (attribute.AttributeId.OriginalString.Equals(XacmlRequestAttribute.PartyUuidAttribute) && Guid.TryParse(attribute.AttributeValues.First().Value, out Guid partyUuid))
+                {
+                    resourceAttributes.PartyUuid = partyUuid;
                 }
             }
 

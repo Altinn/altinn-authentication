@@ -20,6 +20,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Authorization;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -34,6 +35,7 @@ using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -109,6 +111,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IPartiesClient, PartiesClientMock>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
             services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
+            services.AddTransient<IAuthorizationHandler, EndUserResourceAccessHandlerMock>();
             SetupDateTimeMock();
             SetupGuidMock();
         }
@@ -124,22 +127,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
             int partyId = 500000;
-            Guid id = Guid.NewGuid();
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
-            string para = $"{partyId}/{id}";
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/internal/create?party={partyUuid}");
             createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
 
             SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
-            HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
+            HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/internal?party={partyUuid}");
             HttpResponseMessage listSystemUserResponse = await client.SendAsync(listSystemUserRequst, HttpCompletionOption.ResponseContentRead);
             List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await listSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
@@ -175,8 +177,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             HttpClient client = CreateClient();
            
-            int partyId = 500801;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}");
+            int partyId = 500801; 
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000008000001");
+
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/internal/agent?party={partyUuid}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -214,23 +218,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
             int partyId = 500000;
-            Guid id = Guid.NewGuid();
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
-            string para = $"{partyId}/{id}";
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/internal/create?party={partyUuid}");
             createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
 
             SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
             Assert.NotNull(shouldBeCreated);
 
-            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/internal/single?party={partyUuid}&systemUserId={shouldBeCreated.Id}");
             HttpResponseMessage lookupSystemUserResponse = await client.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
             SystemUser? systemUserDoesExist = JsonSerializer.Deserialize<SystemUser>(await lookupSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
@@ -517,12 +520,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_Get_Single_ReturnsNotFound()
         {
             HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
             int partyId = 500000;
             Guid id = Guid.NewGuid();
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
-            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{id}");
+            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/internal/single?party={partyUuid}&systemUserId={id}");
+            looukpSystemUserRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
             HttpResponseMessage lookupSystemUserResponse = await client.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
             SystemUser? systemUserDoesExist = JsonSerializer.Deserialize<SystemUser>(await lookupSystemUserResponse.Content.ReadAsStringAsync(), _options);
 
@@ -540,6 +544,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
             int partyId = 500000;
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
             SystemUserRequestDto newSystemUser = new()
             {
@@ -547,7 +552,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/internal/create?party={partyUuid}")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
@@ -556,7 +561,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SystemUser? shouldBeCreated = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
             Assert.NotNull(shouldBeCreated);
 
-            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/internal/single?party={partyUuid}&systemUserId={shouldBeCreated.Id}");
             HttpResponseMessage lookupSystemUserResponse = await client.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
             SystemUser? systemUserDoesExist = await lookupSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
 
@@ -564,11 +569,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(systemUserDoesExist);
             Assert.Equal(shouldBeCreated.Id, systemUserDoesExist.Id);
 
-            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/internal?party={partyUuid}&systemUserId={shouldBeCreated.Id}");
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.Accepted, response2.StatusCode);
 
-            HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpRequestMessage request3 = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/internal/single?party={partyUuid}&systemUserId={shouldBeCreated.Id}");
             HttpResponseMessage response3 = await client.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             SystemUser? shouldBeDeleted = await response3.Content.ReadFromJsonAsync<SystemUser>();            
             Assert.Equal(HttpStatusCode.NotFound, response3.StatusCode);
@@ -631,16 +636,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
             int partyId = 500000;
-            Guid id = Guid.NewGuid();
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
-            string para = $"{partyId}/{id}";
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/internal/create?party={partyUuid}");
             createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
 
@@ -682,14 +686,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
             int partyId = 500000;
-  
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
+
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/internal/create?party={partyUuid}")
             {
                 Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
             };
@@ -844,18 +849,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
             int partyId = 500000;
-            Guid id = Guid.NewGuid();
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
             string systemId = "991825827_the_matrix";
 
-            string para = $"{partyId}/{id}";
             SystemUserRequestDto newSystemUser = new()
             {
                 IntegrationTitle = "IntegrationTitleValue",
                 SystemId = systemId
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create"); 
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/internal/create?party={partyUuid}"); 
             createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
 
@@ -992,7 +996,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             int partyId = 500801;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000008000001");
+
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/internal/agent?party={partyUuid}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -1010,7 +1016,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
 
             int partyId = 500000;
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
+
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/internal/agent?party={partyUuid}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             var list = await response.Content.ReadFromJsonAsync<List<SystemUser>>();
 
@@ -1062,6 +1070,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client2 = CreateClient();
 
             int partyId = 500000;
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
             string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
             HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
@@ -1069,7 +1078,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
             Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-            HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            string getEndpoint = $"/authentication/api/v1/systemuser/internal/agent?party={partyUuid}";
+
+            HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, getEndpoint);
             listSystemUserRequst.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
             HttpResponseMessage listSystemUserResponse = await client2.SendAsync(listSystemUserRequst, HttpCompletionOption.ResponseContentRead);
             List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await listSystemUserResponse.Content.ReadAsStringAsync(), _options);
@@ -1080,7 +1091,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Delegation of a Customer to the empty Agent System User
             string systemUserId = list[0].Id;
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/internal/agent/delegation/?party={partyUuid}&systemUserId={systemUserId}";
 
             var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
 
@@ -1515,6 +1526,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client2 = CreateClient();
 
             int partyId = 500000;
+            Guid facilitatorId = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
             string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
             HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
@@ -1522,7 +1534,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
             Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-            string getEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}";
+            string getEndpoint = $"/authentication/api/v1/systemuser/internal/agent?party={facilitatorId}";
 
             HttpRequestMessage getAgent = new(HttpMethod.Get, getEndpoint);
             getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
@@ -1533,11 +1545,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
 
-            Guid facilitatorId = new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651");
-
             HttpClient client3 = CreateClient();
             client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?facilitatorId={facilitatorId}");
+            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/internal/agent?party={facilitatorId}&id={systemUserId}");
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
         }
@@ -1791,6 +1801,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client2 = CreateClient();
 
             int partyId = 500000;
+            Guid partyUuid = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
             string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
             HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
@@ -1798,14 +1809,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
             Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-            string getEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}";
+            string getEndpoint = $"/authentication/api/v1/systemuser/internal/agent?party={partyUuid}";
 
             HttpRequestMessage getAgent = new(HttpMethod.Get, getEndpoint);
             getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
             HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
 
             var systemUserApproveResponse = await getResponse.Content.ReadFromJsonAsync<List<SystemUser>>();
-            Assert.NotNull(systemUserApproveResponse);
+            Assert.NotEmpty(systemUserApproveResponse);
 
             Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
 
@@ -1813,7 +1824,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client3 = CreateClient();
             client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?facilitatorId={facilitatorId}");
+            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/internal/agent?facilitatorId={facilitatorId}&party={partyUuid}&systemUserId={systemUserId}");
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();
