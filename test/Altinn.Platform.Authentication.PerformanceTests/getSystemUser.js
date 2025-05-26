@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { expect, expectStatusFor, randomItem, uuidv4, URL, describe, getEnterpriseToken } from "./common/testimports.js";
+import { expect, randomItem, uuidv4, URL, describe, getEnterpriseToken } from "./common/testimports.js";
 import { getSystemUrl, getSystemUsersUrl, getSystemUserByExternalIdUrl} from './common/config.js';
 
 const traceCalls = (__ENV.traceCalls ?? 'false') === 'true';
@@ -60,7 +60,7 @@ function getSystems() {
     let systems = null;
     describe('Get all systems', () => {
         let r = http.get(url.toString(), params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();  
         systems = r.json();      
     });
@@ -75,7 +75,7 @@ function getSystem(systemId, orgno) {
     let system = null;
     describe('Get system details', () => {
         let r = http.get(url.toString(), params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();  
         system = r.json();      
     });
@@ -89,7 +89,7 @@ function getSystemUsers(systemId, token) {
     let systemUsers = null;
     describe('Get system users', () => {
         let r = http.get(url.toString(), params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();
         systemUsers = r.json();
     });
@@ -106,7 +106,7 @@ function getSystemUser(systemProviderOrgNo, clientId, systemUserOwnerOrgNo) {
     url.searchParams.append('systemUserOwnerOrgNo', systemUserOwnerOrgNo);
     describe('Get system user', () => {
         let r = http.get(url.toString(), params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();
     });
 }

@@ -41,6 +41,8 @@ const systemUsers = new SharedArray('systemUsers', function () {
   return readCsv(systemUsersFilename);
 });
 
+export const systemOwner =  __ENV.API_ENVIRONMENT == "yt01" ? "713431400" : "991825827"; 
+
 export const resources = [ 
   "ttd-dialogporten-performance-test-01", 
   "ttd-dialogporten-performance-test-02", 
