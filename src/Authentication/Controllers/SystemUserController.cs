@@ -96,7 +96,7 @@ public class SystemUserController : ControllerBase
     public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid facilitator, [FromQuery] Guid systemUserId)
     {
         List<DelegationResponse> ret = [];
-        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(party, facilitator, systemUserId);
         if (result.IsSuccess) 
         {
             ret = result.Value;
@@ -116,7 +116,7 @@ public class SystemUserController : ControllerBase
     public async Task<ActionResult> GetSingleSystemUserById([FromQuery] Guid party, [FromQuery] Guid systemUserId)
     {
         SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
-        if (systemUser is not null)
+        if (systemUser is not null && systemUser.PartyId == party.ToString())
         {
             return Ok(systemUser);
         }
@@ -373,6 +373,11 @@ public class SystemUserController : ControllerBase
         {
             ModelState.AddModelError("return", $"SystemUser with Id {systemUserId} Not Found");
             return ValidationProblem(ModelState);
+        }
+
+        if (systemUser.PartyId != party)
+        {
+            return Forbid();
         }
 
         Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);

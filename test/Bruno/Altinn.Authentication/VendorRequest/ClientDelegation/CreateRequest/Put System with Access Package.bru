@@ -1,11 +1,11 @@
 meta {
-  name: Create System with Access Package
+  name: Put System with Access Package
   type: http
-  seq: 2
+  seq: 3
 }
 
-post {
-  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor
+put {
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{system_id}}
   body: json
   auth: inherit
 }
@@ -22,33 +22,42 @@ body:json {
       "nn": "{{system_name}}"
     },
     "Description": {
-      "en": "{{description}}",
-      "nb": "{{description}}",
-      "nn": "{{description}}"
+      "en": "Bruno tesTt",
+      "nb": "Bruno test",
+      "nn": "Bruno test."
     },
-    "allowedRedirectUrls": [
-      "https://fiken.no"
+    "accessPackages": [
+          {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-lonn"
+      },
+      {
+        "urn" : "urn:altinn:accesspackage:ansvarlig-revisor"
+      },
+      {
+        "urn" : "urn:altinn:accesspackage:revisormedarbeider"
+      }
     ],
-  "accessPackages" : [ {
-      "urn" : "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
-    }, {
-      "urn" : "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet"
-    }, {
-      "urn" : "urn:altinn:accesspackage:regnskapsforer-lonn"
-    }, {
-      "urn" : "urn:altinn:accesspackage:ansvarlig-revisor"
-    }, {
-      "urn" : "urn:altinn:accesspackage:revisormedarbeider"
-    }, {
-      "urn" : "urn:altinn:accesspackage:skattegrunnlag"
-    }, {
-      "urn" : "urn:altinn:accesspackage:forretningsforer-eiendom"
-    } ],
-    "isVisible": true,
+    "allowedRedirectUrls": [
+      "https://www.tripletex.no"
+    ],
+    "isVisible": false,
     "ClientId": [
       "{{system_name}}"
     ]
   }
+  
+  
+  //app_ttd_endring-av-navn-v2
+}
+
+vars:pre-request {
+  system_id: 312605031_9d12e130-4c35-45ed-adb8-3d0d0df55867
 }
 
 script:pre-request {
@@ -59,20 +68,15 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","314126181");
-  bru.setEnvVar("auth_org", "314126181");
+  bru.setEnvVar("auth_orgNo","314239457");
+  bru.setEnvVar("auth_org", "314239457");
   
-  //Test js input
-  const systemName = "Forretningsfører 1"
-  const description = "System med forretningsfører";
+  const systemName = "Tripletex C"
   
   bru.setEnvVar("system_name",systemName);
-  bru.setEnvVar("description",description);
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);
-  
-  
   
   const auth_orgNo = bru.getEnvVar("auth_orgNo"); // Retrieve it from the environment
   const system_name = bru.getEnvVar("system_name"); // Retrieve system_name as well
