@@ -210,7 +210,11 @@ public class AccessManagementClientMock: IAccessManagementClient
     {
         List<ConnectionDto> delegations = [];
         
-        if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232") || facilitator == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17") || facilitator == new Guid("23478729-1ffa-49c7-a3d0-6e0d08540e9a"))
+        if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") 
+            || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232") 
+            || facilitator == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17") 
+            || facilitator == new Guid("23478729-1ffa-49c7-a3d0-6e0d08540e9a")
+            || facilitator == new Guid("00000000-0000-0000-0005-000000000000"))
         {
             return delegations;
         }

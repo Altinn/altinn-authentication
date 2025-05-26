@@ -73,6 +73,7 @@ public class SystemUserRepository : ISystemUserRepository
                 sr.systemvendor_orgnumber,
                 sui.reportee_org_no,
 		        sui.reportee_party_id,
+                sui.reportee_party_uuid,
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
@@ -90,7 +91,7 @@ public class SystemUserRepository : ISystemUserRepository
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("reportee_party_id", partyUuid);
+            command.Parameters.AddWithValue("reportee_party_uuid", partyUuid);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();

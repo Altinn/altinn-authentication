@@ -412,13 +412,13 @@ public class SystemUserController : ControllerBase
     /// Delete an Agent SystemUser.
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE_PARTY_QUERY)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpDelete("internal/agent/")]
-    public async Task<ActionResult> DeleteAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid systemUserId, [FromQuery] Guid facilitatorId, CancellationToken cancellationToken = default)
+    [HttpDelete("internal/agent")]
+    public async Task<ActionResult> DeleteAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid id, CancellationToken cancellationToken = default)
     {
-        Result<bool> result = await _systemUserService.DeleteAgentSystemUser(party, systemUserId, facilitatorId, cancellationToken);
+        Result<bool> result = await _systemUserService.DeleteAgentSystemUser(id, party, cancellationToken);
         if (result.IsSuccess)
         {
             return Ok();
