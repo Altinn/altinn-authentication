@@ -1823,10 +1823,28 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task AgentSystemUser_GetClients_ReturnsListOK()
         {
-            AccessPackage accessPackage = new()
-            {
-                Urn = "urn:altinn:accesspackage:skattnaering"
-            };
+            HttpClient client2 = CreateClient();
+
+            int partyId = 500000;
+
+            Guid clientId = Guid.NewGuid();
+            Guid facilitator = Guid.NewGuid();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+            List<ConnectionDto>? list = JsonSerializer.Deserialize<List<ConnectionDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.NotEqual(HttpStatusCode.Unauthorized, clientListResponse.StatusCode);
+            Assert.True(list is not null);
+            Assert.True(list.Count > 1);
+        }
+
+        [Fact]
+        public async Task AgentSystemUser_GetClients_FilterByPackage_ReturnsListOK()
+        {
+            string accessPackage1 = "regnskapsforer-lonn";
+            string accessPackage2 = "regnskapsforer-med-signeringsrettighet";
 
             HttpClient client2 = CreateClient();
 
@@ -1835,14 +1853,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid clientId = Guid.NewGuid();
             Guid facilitator = Guid.NewGuid();
 
-            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}&packages={accessPackage}");
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}&packages={accessPackage1}&packages={accessPackage2}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
             HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             List<ConnectionDto>? list = JsonSerializer.Deserialize<List<ConnectionDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.NotEqual(HttpStatusCode.Unauthorized, clientListResponse.StatusCode);
             Assert.True(list is not null);
-            Assert.True(list.Count > 1);
+            Assert.True(list.Count == 4);
         }
 
         [Fact]

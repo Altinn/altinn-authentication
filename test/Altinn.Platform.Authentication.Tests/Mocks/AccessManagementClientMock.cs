@@ -284,7 +284,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ConnectionDto>>> GetClientsForFacilitator(Guid facilitatorId, string[] packages, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
         {
@@ -297,7 +297,20 @@ public class AccessManagementClientMock: IAccessManagementClient
         };
 
         string clientData = File.OpenText("Data/Customers/customerlist.json").ReadToEnd();
-        List<ConnectionDto>? clients = JsonSerializer.Deserialize<List<ConnectionDto>>(clientData, options);
+        List<ClientDto>? clients = JsonSerializer.Deserialize<List<ClientDto>>(clientData, options);
+
+        if (packages != null && packages.Count > 0 && clients != null)
+        {
+            var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
+            clients = clients
+                .Where(c =>
+                    c.Access != null &&
+                    c.Access.Any(a =>
+                        a.Packages != null &&
+                        a.Packages.Any(p => packageSet.Contains(p))))
+                .ToList();
+        }
+
         return await Task.FromResult(clients);
     }
 }

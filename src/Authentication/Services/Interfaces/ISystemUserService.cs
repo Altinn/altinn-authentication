@@ -160,5 +160,5 @@ public interface ISystemUserService
     /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
     /// <param name="packages">An array of access package URNs. Only clients associated with at least one of these access packages will be included in the result.</param>
     /// <returns>List of Clients</returns>
-    Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, string[] packages, CancellationToken cancellationToken = default);
+    Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, CancellationToken cancellationToken = default);
 }

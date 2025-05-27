@@ -437,7 +437,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, string[] packages, CancellationToken cancellationToken)
+        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, CancellationToken cancellationToken)
         {
             var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
             if (res.IsSuccess)
@@ -468,17 +468,16 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
-        private static Result<List<Customer>> ConvertConnectionDTOToClient(List<ConnectionDto> value)
+        private static Result<List<Customer>> ConvertConnectionDTOToClient(List<ClientDto> value)
         {
             List<Customer> result = [];
             foreach (var item in value)
             {
                 var newCustomer = new Customer()
                 {
-                    DisplayName = item.From.Name,
-                    PartyType = item.From.Type,
-                    OrganizationIdentifier = item.From.RefId,
-                    PartyUUId = item.From.Id
+                    DisplayName = item.Party.Name,
+                    OrganizationIdentifier = item.Party.OrganizationNumber,
+                    PartyUUId = item.Party.Id
                 };
                 result.Add(newCustomer);
             }

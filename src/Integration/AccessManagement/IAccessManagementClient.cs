@@ -92,5 +92,5 @@ public interface IAccessManagementClient
     /// </summary>
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="packages">Access package URNs</param>
-    Task<Result<List<ConnectionDto>>> GetClientsForFacilitator(Guid facilitatorId, string[] packages, CancellationToken cancellationToken = default);
+    Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
 }

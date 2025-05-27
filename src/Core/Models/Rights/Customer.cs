@@ -9,11 +9,6 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights
     public class Customer
     {
         /// <summary>
-        /// Type of party, organization/person
-        /// </summary>
-        public required string PartyType { get; set; }
-
-        /// <summary>
         /// UUid of the party
         /// </summary>
         public required Guid PartyUUId { get; set; }

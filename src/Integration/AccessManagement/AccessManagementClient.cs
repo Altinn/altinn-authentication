@@ -540,7 +540,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ConnectionDto>>> GetClientsForFacilitator(Guid facilitatorId, string[] packages, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -550,9 +550,12 @@ public class AccessManagementClient : IAccessManagementClient
 
         string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
         
-        if (packages != null && packages.Length > 0)
+        if (packages != null && packages.Count > 0)
         {
-            endpointUrl = $"{endpointUrl}&packages={packages}";
+            foreach (var package in packages)
+            {
+                endpointUrl = $"{endpointUrl}&packages={package}";
+            }
         }
 
         try
@@ -561,19 +564,19 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
+                return await response.Content.ReadFromJsonAsync<List<ClientDto>>(_serializerOptions, cancellationToken) ?? [];
             }
             else
             {
                 if(response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
-                    return new Result<List<ConnectionDto>>(problemInstance);
+                    return new Result<List<ClientDto>>(problemInstance);
                 }
                 else if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-                    return new Result<List<ConnectionDto>>(problemInstance);
+                    return new Result<List<ClientDto>>(problemInstance);
                 }
                 else
                 {
@@ -586,7 +589,7 @@ public class AccessManagementClient : IAccessManagementClient
                     new KeyValuePair<string, string>("Problem Detail : ", problemDetails.Detail)
                     });
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
-                    return new Result<List<ConnectionDto>>(problemInstance);
+                    return new Result<List<ClientDto>>(problemInstance);
                 }
             }
         }
