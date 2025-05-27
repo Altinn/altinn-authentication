@@ -274,12 +274,12 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_FailedToGetClients_Forbidden { get; }
-        = _factory.Create(43, HttpStatusCode.Forbidden, "Forbidden");
+        = _factory.Create(44, HttpStatusCode.Forbidden, "Forbidden");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_FailedToGetClients { get; }
-        = _factory.Create(43, HttpStatusCode.BadRequest, "Failed to get clients");
+        = _factory.Create(45, HttpStatusCode.BadRequest, "Failed to get clients");
 
 }

@@ -11,7 +11,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights
         /// <summary>
         /// UUid of the party
         /// </summary>
-        public required Guid PartyUUId { get; set; }
+        public required Guid PartyUuid { get; set; }
 
         /// <summary>
         /// party id

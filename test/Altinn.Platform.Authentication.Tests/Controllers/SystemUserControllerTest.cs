@@ -1825,6 +1825,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             HttpClient client2 = CreateClient();
 
+            // partyId of the system user that is used to fetch the clients
             int partyId = 500000;
 
             Guid clientId = Guid.NewGuid();
@@ -1848,6 +1849,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client2 = CreateClient();
 
+            // partyId of the system user that is used to fetch the clients
             int partyId = 500000;
 
             Guid clientId = Guid.NewGuid();
@@ -1873,6 +1875,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client2 = CreateClient();
 
+            // partyId of the system user that is used to fetch the clients
             int partyId = 500000;
 
             Guid clientId = Guid.NewGuid();
@@ -1895,6 +1898,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client2 = CreateClient();
 
+            // partyId of the system user that is used to fetch the clients
             int partyId = 500000;
 
             Guid clientId = Guid.NewGuid();

@@ -445,7 +445,7 @@ namespace Altinn.Platform.Authentication.Services
                 return ConvertConnectionDTOToClient(res.Value);
             }
 
-            return res.Problem ?? Problem.UnableToDoDelegationCheck;
+            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
         }
 
         private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
@@ -477,7 +477,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     DisplayName = item.Party.Name,
                     OrganizationIdentifier = item.Party.OrganizationNumber,
-                    PartyUUId = item.Party.Id
+                    PartyUuid = item.Party.Id
                 };
                 result.Add(newCustomer);
             }
