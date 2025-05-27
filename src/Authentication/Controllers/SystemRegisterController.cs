@@ -69,7 +69,7 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
     {
         RegisteredSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-        
+
         if (registeredSystem == null)
         {
             return NotFound();
@@ -116,21 +116,41 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
-        List<MaskinPortenClientInfo> maskinPortenClients = await _systemRegisterService.GetMaskinportenClients(updateSystem.ClientId, cancellationToken);
-        RegisteredSystemResponse systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
+        if (updateSystem.Id != systemId)
+        {
+            return BadRequest("Mismatch between body and SystemId in URL");
+        }
+
+        RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+
+        if (currentSystem == null)
+        {
+            return NotFound($"System with ID '{systemId}' not found.");
+        }
 
         ValidationErrorBuilder validateErrorRights = await ValidateRights(updateSystem.Rights, cancellationToken);
         ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(updateSystem.AccessPackages, cancellationToken);
         ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages);
-
-        foreach (string clientId in updateSystem.ClientId)
+        
+        List<MaskinPortenClientInfo> allClientUsages = await _systemRegisterService.GetMaskinportenClients(currentSystem.ClientId.Union(updateSystem.ClientId).ToList(), cancellationToken);
+        
+        foreach (var clientInfo in allClientUsages)
         {
-            bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.InternalId).Count > 0;
-            if (clientExistsForAnotherSystem)
+            var usages = allClientUsages
+                .Where(x => string.Equals(x.ClientId, clientInfo.ClientId, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            bool usedByAnotherSystem = usages.Any(x =>
+                x.SystemInternalId != currentSystem.InternalId && !x.IsDeleted);
+
+            if (usedByAnotherSystem)
             {
-                ModelState.AddModelError("ClientId", $"ClientId {clientId} already tagged with another system");
+                ModelState.AddModelError("ClientId", $"ClientId '{clientInfo}' is already in use by another system.");
                 return BadRequest(ModelState);
             }
+
+            // Remove the client id's tie to System. If not then this clientId cannot be used any more when creating new systems or in future updates.
+            await _systemRegisterService.DeleteMaskinportenClient(clientInfo.ClientId, currentSystem.InternalId, cancellationToken);
         }
 
         if (errors.TryToActionResult(out var errorResult))
@@ -142,7 +162,7 @@ public class SystemRegisterController : ControllerBase
 
         if (!success)
         {
-            return BadRequest();
+            return BadRequest("Unable to update system.");
         }
 
         return Ok(new SystemRegisterUpdateResult(true));
@@ -199,7 +219,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
-    [HttpPost("vendor")]    
+    [HttpPost("vendor")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
@@ -233,14 +253,14 @@ public class SystemRegisterController : ControllerBase
             {
                 return errorResult;
             }
-            
+
             var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
             if (registeredSystemGuid is null)
             {
                 return BadRequest();
             }
 
-            return Ok(registeredSystemGuid);            
+            return Ok(registeredSystemGuid);
         }
         catch (Exception e)
         {
@@ -339,8 +359,8 @@ public class SystemRegisterController : ControllerBase
         }
 
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId, registerSystemResponse.InternalId);
-        if (!deleted) 
-        { 
+        if (!deleted)
+        {
             return BadRequest();
         }
 

@@ -150,5 +150,11 @@ namespace Altinn.Platform.Authentication.Services
 
             return true;
         }
+
+        /// <inheritdoc/>
+        public Task DeleteMaskinportenClient(string clientInfoClientId, Guid currentSystemInternalId, CancellationToken cancellationToken)
+        {
+            return _systemRegisterRepository.DeleteMaskinportenClient(clientInfoClientId, currentSystemInternalId, cancellationToken);
+        }
     }
 }

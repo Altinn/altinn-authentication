@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Policy;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Tests.Mocks;
 using Altinn.Authorization.ProblemDetails;
@@ -963,7 +964,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemRegister_Update_System()
         {
-            // Post system
+            // Post original System
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -979,22 +980,27 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             StreamContent content = new StreamContent(dataStream);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            // Run update request
+            // Run update request with two new client_id's: removing one existing and adding two new ones
             HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemId}/");
             request.Content = content;
             HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
-            
-            // Get system to verify fields were updated
+
+            // Get updated system to verify fields were updated
             HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
             Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
-            
+
             RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
             string systemRegister = await File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.json").ReadToEndAsync();
             RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
-            
+
             // Assert updates were made
             AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualUpdatedSystem);
+            
+            // Verify you can create new system with old (deleted) clientIds
+            string filename = "Data/SystemRegister/Json/SystemRegisterClientIdsExist.json";
+            HttpResponseMessage responseNewSystem = await CreateSystemRegister(filename);
+            Assert.Equal(HttpStatusCode.OK, responseNewSystem.StatusCode);
         }
 
         [Fact]

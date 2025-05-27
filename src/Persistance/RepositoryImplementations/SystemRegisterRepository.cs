@@ -282,6 +282,34 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
+    /// <inheritdoc/>
+    public async Task DeleteMaskinportenClient(string clientId, Guid systemInternalId, CancellationToken cancellationToken = default)
+    {
+        const string QUERY = /*strpsql*/"""
+                                        DELETE FROM business_application.maskinporten_client
+                                        WHERE client_id = @client_id AND system_internal_id = @system_internal_id;
+                                        """;
+        try
+        {
+            await using NpgsqlConnection conn = await _datasource.OpenConnectionAsync(cancellationToken);
+
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("client_id", clientId); // string
+            command.Parameters.AddWithValue("system_internal_id", systemInternalId); // Guid
+            
+            int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+            
+            await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // DeleteMaskinportenClient // Exception");
+            throw;
+        }
+    }
+
     /// <inheritdoc/> 
     public async Task<List<Right>> GetRightsForRegisteredSystem(string systemId)
     {

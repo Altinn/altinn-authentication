@@ -31,7 +31,7 @@
   ],
   "softDeleted": false,
   "clientId": [
-    "32ef65ac-6e62-498d-880f-76c85c2052ae", "NEW UPDATED CLIENT ID"
+    "UPDATED CLIENT ID", "ANOTHER UPDATED CLIENT ID", "GUID_SOMETHING"
   ],
   "isVisible": false,
   "allowedredirecturls": [

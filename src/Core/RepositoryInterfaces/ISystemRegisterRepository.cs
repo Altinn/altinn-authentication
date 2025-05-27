@@ -53,6 +53,8 @@ public interface ISystemRegisterRepository
     /// <param name="systemInternalId">The internal system idenficator for a system</param>
     /// <returns>True if set to deleted</returns>
     Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId);
+    
+    Task DeleteMaskinportenClient(string clientInfoClientId, Guid currentSystemInternalId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list, if any, of Default Rights 

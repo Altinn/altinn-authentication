@@ -133,5 +133,14 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>false when one of the resource idnot found</returns>
         Task<bool> DoesAccessPackageExistsAndDelegable(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Removes a maskinporten client
+        /// </summary>
+        /// <param name="clientId">ClientId</param>
+        /// <param name="internalId">Internal Id tied to System in System register</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
+        Task DeleteMaskinportenClient(string clientId, Guid internalId, CancellationToken cancellationToken);
     }
 }
