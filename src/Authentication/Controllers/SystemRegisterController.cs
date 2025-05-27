@@ -130,41 +130,23 @@ public class SystemRegisterController : ControllerBase
 
         ValidationErrorBuilder validateErrorRights = await ValidateRights(updateSystem.Rights, cancellationToken);
         ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(updateSystem.AccessPackages, cancellationToken);
-        ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages);
-        
-        List<MaskinPortenClientInfo> allClientUsages = await _systemRegisterService.GetMaskinportenClients(currentSystem.ClientId.Union(updateSystem.ClientId).ToList(), cancellationToken);
-        
-        foreach (var clientInfo in allClientUsages)
-        {
-            var usages = allClientUsages
-                .Where(x => string.Equals(x.ClientId, clientInfo.ClientId, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+        (ValidationErrorBuilder validateErrorClientIds, List<MaskinPortenClientInfo> clientIdsToDelete) = await ValidateClientIds(currentSystem, updateSystem, cancellationToken);
+        ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
 
-            bool usedByAnotherSystem = usages.Any(x =>
-                x.SystemInternalId != currentSystem.InternalId && !x.IsDeleted);
-
-            if (usedByAnotherSystem)
-            {
-                ModelState.AddModelError("ClientId", $"ClientId '{clientInfo}' is already in use by another system.");
-                return BadRequest(ModelState);
-            }
-
-            // Remove the client id's tie to System. If not then this clientId cannot be used any more when creating new systems or in future updates.
-            await _systemRegisterService.DeleteMaskinportenClient(clientInfo.ClientId, currentSystem.InternalId, cancellationToken);
-        }
-
-        if (errors.TryToActionResult(out var errorResult))
+        if (errors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
 
-        var success = await _systemRegisterService.UpdateWholeRegisteredSystem(updateSystem, systemId, cancellationToken);
+        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(updateSystem, systemId, cancellationToken);
 
         if (!success)
         {
             return BadRequest("Unable to update system.");
         }
 
+        await DeleteRemovedClientIdsAsync(clientIdsToDelete, currentSystem.InternalId, cancellationToken);
+        
         return Ok(new SystemRegisterUpdateResult(true));
     }
 
@@ -414,6 +396,50 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
+    private async Task<(ValidationErrorBuilder Errors, List<MaskinPortenClientInfo> ToDelete)> ValidateClientIds(
+        RegisteredSystemResponse currentSystem,
+        RegisterSystemRequest updatedSystem,
+        CancellationToken cancellationToken)
+    {
+        ValidationErrorBuilder errors = default;
+
+        var allClientIds = currentSystem.ClientId
+            .Union(updatedSystem.ClientId, StringComparer.OrdinalIgnoreCase)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        List<MaskinPortenClientInfo> allClientUsages = await _systemRegisterService
+            .GetMaskinportenClients(allClientIds, cancellationToken);
+
+        var removedClientIds = currentSystem.ClientId
+            .Where(oldId => !updatedSystem.ClientId.Contains(oldId, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var removedClientUsages = allClientUsages
+            .Where(x => removedClientIds.Contains(x.ClientId, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var clientInfo in removedClientUsages)
+        {
+            var usages = allClientUsages
+                .Where(x => string.Equals(x.ClientId, clientInfo.ClientId, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            bool usedByAnotherSystem = usages.Any(x =>
+                x.SystemInternalId != currentSystem.InternalId && !x.IsDeleted);
+
+            if (usedByAnotherSystem)
+            {
+                errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [
+                    ErrorPathConstant.CLIENT_ID
+                ]);
+            }
+        }
+
+        return (errors, removedClientUsages);
+    }
+
     private async Task<ValidationErrorBuilder> ValidateRegisteredSystem(RegisterSystemRequest systemToValidate, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
@@ -461,5 +487,19 @@ public class SystemRegisterController : ControllerBase
         }
 
         return mergedErrors;
+    }
+    
+    private async Task DeleteRemovedClientIdsAsync(
+        List<MaskinPortenClientInfo> toDelete,
+        Guid currentSystemId,
+        CancellationToken cancellationToken)
+    {
+        foreach (var clientInfo in toDelete)
+        {
+            await _systemRegisterService.DeleteMaskinportenClient(
+                clientInfo.ClientId,
+                currentSystemId,
+                cancellationToken);
+        }
     }
 }
