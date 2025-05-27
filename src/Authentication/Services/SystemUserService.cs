@@ -443,6 +443,18 @@ namespace Altinn.Platform.Authentication.Services
             }
         }
 
+        /// <inheritdoc/>
+        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, CancellationToken cancellationToken)
+        {
+            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
+            if (res.IsSuccess)
+            {
+                return ConvertConnectionDTOToClient(res.Value);
+            }
+
+            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+        }
+
         private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
         {
             List<DelegationResponse> result = [];
@@ -458,6 +470,23 @@ namespace Altinn.Platform.Authentication.Services
                 };
 
                 result.Add(newDel);
+            }
+
+            return result;
+        }
+
+        private static Result<List<Customer>> ConvertConnectionDTOToClient(List<ClientDto> value)
+        {
+            List<Customer> result = [];
+            foreach (var item in value)
+            {
+                var newCustomer = new Customer()
+                {
+                    DisplayName = item.Party.Name,
+                    OrganizationIdentifier = item.Party.OrganizationNumber,
+                    PartyUuid = item.Party.Id
+                };
+                result.Add(newCustomer);
             }
 
             return result;

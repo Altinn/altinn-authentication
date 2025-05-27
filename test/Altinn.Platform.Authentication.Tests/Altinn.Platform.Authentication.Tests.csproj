@@ -73,6 +73,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Data\Customers\customerlist.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\Delegation\DelegationAccessResponseApp.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
