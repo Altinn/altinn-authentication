@@ -5,14 +5,14 @@
     "ID": "0192:991825827"
   },
   "name": {
-    "nb": "The Matrix",
-    "en": "The Matrix",
-    "nn": "The Matrix"
+    "nb": "Updated Name",
+    "en": "Updated Name",
+    "nn": "Updated Name"
   },
   "description": {
-    "nb": "The Matrix",
-    "en": "The Matrix",
-    "nn": "The Matrix"
+    "nb": "Updated description",
+    "en": "Updated description",
+    "nn": "Updated description"
   },
   "rights": [
     {
@@ -26,7 +26,7 @@
   ],
   "softDeleted": false,
   "clientId": [
-    "32ef65ac-6e62-498d-880f-76c85c2052ae"
+    "32ef65ac-6e62-498d-880f-76c85c2052ae", "UPDATED CLIENT ID"
   ],
   "isVisible": false,
   "allowedRedirectUrls": [

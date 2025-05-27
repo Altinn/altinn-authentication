@@ -45,13 +45,19 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
-        
+
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
         private readonly Mock<TimeProvider> timeProviderMock = new Mock<TimeProvider>();
         private readonly Mock<IGuidService> guidService = new Mock<IGuidService>();
         private readonly Mock<IEventsQueueClient> _eventQueue = new Mock<IEventsQueueClient>();
+
+        // Used by all tests
+        private readonly JsonSerializerOptions options = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
         protected override void ConfigureServices(IServiceCollection services)
         {
@@ -64,21 +70,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             WebHostBuilder builder = new();
 
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                conf.AddJsonFile(configPath);
-            });
+            builder.ConfigureAppConfiguration((context, conf) => { conf.AddJsonFile(configPath); });
 
             var configuration = new ConfigurationBuilder()
-              .AddJsonFile(configPath)
-              .Build();
+                .AddJsonFile(configPath)
+                .Build();
 
             configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
             configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
             configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-            
+
             services.Configure<GeneralSettings>(generalSettingSection);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
@@ -92,7 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-            services.AddSingleton<ISystemUserService, SystemUserService>();    
+            services.AddSingleton<ISystemUserService, SystemUserService>();
             services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
             services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
@@ -157,7 +160,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, existingSystemResponse.StatusCode);
 
             AltinnValidationProblemDetails problemDetails = await existingSystemResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
-            Assert.NotNull(problemDetails);            
+            Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_SystemId_Exists.ErrorCode);
             Assert.Equal("/registersystemrequest/systemid", error.Paths.First(p => p.Equals("/registersystemrequest/systemid")));
             Assert.Equal("The system id already exists", error.Detail);
@@ -409,7 +412,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.BadRequest, updateResponse.StatusCode);
                 AltinnValidationProblemDetails problemDetails = await updateResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
-                Assert.NotNull(problemDetails);                
+                Assert.NotNull(problemDetails);
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_Duplicates.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
                 Assert.Equal("One or more duplicate rights found", error.Detail);
@@ -527,7 +530,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)    
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
@@ -960,37 +963,38 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemRegister_Update_System()
         {
+            // Post system
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            JsonSerializerOptions options = new JsonSerializerOptions()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+            // Prepare updated system request
+            string systemId = "991825827_the_matrix";
+            HttpClient client = CreateClient();
+            string[] prefixes = { "altinn", "digdir" };
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                string systemId = "991825827_the_matrix";
-                HttpClient client = CreateClient();
-                string[] prefixes = { "altinn", "digdir" };
-                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            Stream dataStream = File.OpenRead("Data/SystemRegister/Json/SystemRegisterUpdateRequest.json");
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/SystemRegisterUpdateRequest.json");
-                StreamContent content = new StreamContent(dataStream);
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemId}/");
-                request.Content = content;
-                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
-                HttpResponseMessage getResponse = await GetSystemRegister(systemId);
-                RegisteredSystemResponse actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getResponse.Content.ReadAsStringAsync(), _options);
-                string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.json").ReadToEnd();
-                RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
-                AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
-                Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
-            }
+            // Run update request
+            HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemId}/");
+            request.Content = content;
+            HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+            
+            // Get system to verify fields were updated
+            HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
+            
+            RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
+            string systemRegister = await File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.json").ReadToEndAsync();
+            RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
+            
+            // Assert updates
+            AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualUpdatedSystem);
         }
 
         [Fact]
@@ -1207,7 +1211,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
             HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            
+
             return getResponse;
         }
     }
