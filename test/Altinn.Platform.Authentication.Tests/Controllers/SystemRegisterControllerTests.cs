@@ -993,7 +993,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string systemRegister = await File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.json").ReadToEndAsync();
             RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
             
-            // Assert updates
+            // Assert updates were made
             AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualUpdatedSystem);
         }
 

@@ -138,7 +138,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 rights = @rights,
                 accesspackages = @accesspackages,
                 last_changed = CURRENT_TIMESTAMP,
-                allowedredirecturls = @allowedredirecturls
+                allowedredirecturls = @allowedredirecturls,
+                client_id = @client_id
             WHERE business_application.system_register.system_id = @system_id
             """;
         await using NpgsqlConnection conn = await _datasource.OpenConnectionAsync(cancellationToken);
@@ -158,6 +159,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, updatedSystem.ClientId);
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
 
