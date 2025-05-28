@@ -59,7 +59,7 @@ public class EndUserResourceAccessHandlerMock : AuthorizationHandler<EndUserReso
 
         bool userHasRequestedPartyAccess = false;
 
-        if (party == "00000000-0000-0000-0005-000000000000")
+        if (party == "00000000-0000-0000-0005-000000000000" || party == "00000000-0000-0000-0005-000000000004")
         {
             userHasRequestedPartyAccess = true;
         }

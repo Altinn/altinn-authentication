@@ -397,6 +397,7 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<RequestSystemResponse>> ApproveSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
+
         Result<bool> response = await _requestSystemUser.ApproveAndCreateSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {

@@ -51,7 +51,7 @@
       "BusinessPostalCity": null
     },
     "PartyId": 500004,
-    "PartyUuid": "00000000-0000-0000-0005-000000000000",
+    "PartyUuid": "00000000-0000-0000-0005-000000000004",
     "UnitType": "AS",
     "Name": "TEST AS",
     "IsDeleted": false,
