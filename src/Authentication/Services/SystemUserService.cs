@@ -395,7 +395,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(Guid partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
         {
             Result<bool> result = await _accessManagementClient.DeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
             if (result.IsProblem)

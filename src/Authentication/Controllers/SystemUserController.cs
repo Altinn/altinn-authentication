@@ -393,13 +393,13 @@ public class SystemUserController : ControllerBase
     /// Delete a customer from an Agent SystemUser.
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE_PARTY_QUERY)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("internal/agent/delegation/")]
-    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid delegationId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid delegationId, CancellationToken cancellationToken = default)
     {
-        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, facilitatorId, cancellationToken);
+        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(delegationId, party, cancellationToken);
         if (result.IsSuccess)
         {
             return Ok();
@@ -416,9 +416,9 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("internal/agent")]
-    public async Task<ActionResult> DeleteAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid id, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> DeleteAgentSystemUser([FromQuery] Guid party, [FromQuery] Guid systemUserId, CancellationToken cancellationToken = default)
     {
-        Result<bool> result = await _systemUserService.DeleteAgentSystemUser(id, party, cancellationToken);
+        Result<bool> result = await _systemUserService.DeleteAgentSystemUser(systemUserId, party, cancellationToken);
         if (result.IsSuccess)
         {
             return Ok();
