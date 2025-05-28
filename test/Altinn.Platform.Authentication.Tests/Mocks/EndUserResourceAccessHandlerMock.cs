@@ -65,7 +65,8 @@ public class EndUserResourceAccessHandlerMock : AuthorizationHandler<EndUserReso
             || party == "02ba44dc-d80b-4493-a942-9b355d491da0"
             || party == "23478729-1ffa-49c7-a3d0-6e0d08540e9a"
             || party == "cf814a90-1a14-4323-ae8b-72738abaab49"
-            || party == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
+            || party == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232"
+            || party == "1765cf28-2554-4f3c-90c6-a269a01f46c8")
         {
             userHasRequestedPartyAccess = true;
         }

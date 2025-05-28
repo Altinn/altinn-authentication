@@ -1465,12 +1465,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_PartyMismatch()
         {
             int partyId = 500005;
-            Guid facilitatorId = new Guid("1765cf28-2554-4f3c-90c6-a269a01f46c8");
+            Guid partyUuid = new Guid("1765cf28-2554-4f3c-90c6-a269a01f46c8");
             Guid delegationId = Guid.NewGuid();
 
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
+            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/internal/agent/delegation?party={partyUuid}&delegationId={delegationId}");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
