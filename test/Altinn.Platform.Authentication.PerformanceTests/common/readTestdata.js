@@ -16,7 +16,7 @@ import exec from 'k6/execution';
  * @param {} filename 
  * @returns 
  */
-function readCsv(filename) {
+export function readCsv(filename) {
   try {
     return papaparse.parse(open(filename), { header: true, skipEmptyLines: true }).data;
   } catch (error) {

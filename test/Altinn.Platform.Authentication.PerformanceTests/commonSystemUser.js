@@ -163,5 +163,5 @@ function getAmToken(organization) {
         partyuuid: organization.orgUuid
     }
     return getPersonalToken(tokenOptions, environment);
-  }
+}
 
