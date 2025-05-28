@@ -261,6 +261,8 @@ public class AccessManagementClientMock: IAccessManagementClient
                 return Problem.AgentSystemUser_InvalidDelegationFacilitator;
             case "1765cf28-2554-4f3c-90c6-a269a01f46c8":
                 return Problem.AgentSystemUser_DeleteDelegation_PartyMismatch;
+            case "00000000-0000-0000-0005-000000000000":
+                return Problem.AgentSystemUser_DelegationNotFound;
             default:
                 return await Task.FromResult(true);
         }

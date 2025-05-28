@@ -88,5 +88,127 @@
     "OnlyHierarchyElementWithNoAccess": false,
     "ChildParties": [
     ]
+  },
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
+    "OrgNumber": "",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "",
+      "Name": "MISSING ORGNO TEST AS",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 500009,
+    "PartyUuid": "00000000-0000-0000-0005-000000000009",
+    "UnitType": "AS",
+    "Name": "TEST AS",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
+  },
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
+    "OrgNumber": "910493355",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "910493355",
+      "Name": "TEST AS",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 500008,
+    "PartyUuid": "23478729-1ffa-49c7-a3d0-6e0d08540e9a",
+    "UnitType": "AS",
+    "Name": "TEST AS",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
+  },
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
+    "OrgNumber": "910493355",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "910493355",
+      "Name": "TEST AS",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 500032,
+    "PartyUuid": "ca00ce4a-c30c-4cf7-9523-a65cd3a40232",
+    "UnitType": "AS",
+    "Name": "TEST AS",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
+  },
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
+    "OrgNumber": "910493355",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "910493355",
+      "Name": "TEST AS",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 500007,
+    "PartyUuid": "ca00ce4a-c30c-4cf7-9523-a65cd3a40237",
+    "UnitType": "AS",
+    "Name": "TEST AS",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
   }
 ]
+
+
