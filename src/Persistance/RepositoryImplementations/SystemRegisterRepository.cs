@@ -138,7 +138,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 rights = @rights,
                 accesspackages = @accesspackages,
                 last_changed = CURRENT_TIMESTAMP,
-                allowedredirecturls = @allowedredirecturls
+                allowedredirecturls = @allowedredirecturls,
+                client_id = @client_id
             WHERE business_application.system_register.system_id = @system_id
             """;
         await using NpgsqlConnection conn = await _datasource.OpenConnectionAsync(cancellationToken);
@@ -158,6 +159,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, updatedSystem.ClientId);
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
 
@@ -276,6 +278,34 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // SetDeleteRegisteredSystemById // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task DeleteMaskinportenClient(string clientId, Guid systemInternalId, CancellationToken cancellationToken = default)
+    {
+        const string QUERY = /*strpsql*/"""
+                                        DELETE FROM business_application.maskinporten_client
+                                        WHERE client_id = @client_id AND system_internal_id = @system_internal_id;
+                                        """;
+        try
+        {
+            await using NpgsqlConnection conn = await _datasource.OpenConnectionAsync(cancellationToken);
+
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("client_id", clientId); // string
+            command.Parameters.AddWithValue("system_internal_id", systemInternalId); // Guid
+            
+            int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+            
+            await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // DeleteMaskinportenClient // Exception");
             throw;
         }
     }
