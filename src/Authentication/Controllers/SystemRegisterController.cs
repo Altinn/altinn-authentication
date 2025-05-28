@@ -147,7 +147,7 @@ public class SystemRegisterController : ControllerBase
 
         if (!success)
         {
-            return BadRequest("Unable to update system.");
+            return BadRequest("Unable to update system");
         }
 
         await DeleteRemovedClientIds(clientIdsToDelete, currentSystem.InternalId, cancellationToken);
