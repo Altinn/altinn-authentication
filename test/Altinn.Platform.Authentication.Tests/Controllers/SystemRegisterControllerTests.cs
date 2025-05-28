@@ -53,8 +53,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<TimeProvider> timeProviderMock = new Mock<TimeProvider>();
         private readonly Mock<IGuidService> guidService = new Mock<IGuidService>();
         private readonly Mock<IEventsQueueClient> _eventQueue = new Mock<IEventsQueueClient>();
-
-        // Used by all tests
+        
         private readonly JsonSerializerOptions options = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -1210,11 +1209,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string[] prefixes = { "altinn", "digdir" };
             string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            JsonSerializerOptions options = new JsonSerializerOptions()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
             HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 

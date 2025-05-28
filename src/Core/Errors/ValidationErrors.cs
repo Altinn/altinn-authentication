@@ -71,4 +71,9 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_ResourceId_InvalidFormat { get; }
         = _factory.Create(9, "One or more resource id is in wrong format. The valid format is urn:altinn:resource");
+    
+    
+    public static ValidationErrorDescriptor SystemRegister_Duplicate_ClientIds { get; }
+        = _factory.Create(11, "Request contains duplicate client ids");
+    
 }

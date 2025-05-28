@@ -141,6 +141,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="internalId">Internal Id tied to System in System register</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-        Task DeleteMaskinportenClient(string clientId, Guid internalId, CancellationToken cancellationToken);
+        Task DeleteMaskinportenClientId(string clientId, Guid internalId, CancellationToken cancellationToken);
     }
 }

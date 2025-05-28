@@ -14,7 +14,9 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Altinn.Authentication.Controllers;
 
@@ -103,22 +105,25 @@ public class SystemRegisterController : ControllerBase
     /// <summary>
     /// Replaces the entire registered system
     /// </summary>
-    /// <param name="updateSystem">The updated system model</param>
+    /// <param name="attemptedUpdatedSystem">The updated system model</param>
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("vendor/{systemId}")]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest attemptedUpdatedSystem, string systemId, CancellationToken cancellationToken = default)
     {
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor.ID), User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(attemptedUpdatedSystem.Vendor.ID), User))
         {
             return Forbid();
         }
 
-        if (updateSystem.Id != systemId)
+        if (attemptedUpdatedSystem.Id != systemId)
         {
-            return BadRequest("Mismatch between body and SystemId in URL");
+            return BadRequest("SystemId in request body doesn't match systemId in Url");
         }
 
         RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
@@ -128,9 +133,9 @@ public class SystemRegisterController : ControllerBase
             return NotFound($"System with ID '{systemId}' not found.");
         }
 
-        ValidationErrorBuilder validateErrorRights = await ValidateRights(updateSystem.Rights, cancellationToken);
-        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(updateSystem.AccessPackages, cancellationToken);
-        (ValidationErrorBuilder validateErrorClientIds, List<MaskinPortenClientInfo> clientIdsToDelete) = await ValidateClientIds(currentSystem, updateSystem, cancellationToken);
+        ValidationErrorBuilder validateErrorRights = await ValidateRights(attemptedUpdatedSystem.Rights, cancellationToken);
+        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(attemptedUpdatedSystem.AccessPackages, cancellationToken);
+        (ValidationErrorBuilder validateErrorClientIds, List<MaskinPortenClientInfo> clientIdsToDelete) = await ValidateClientIds(currentSystem, attemptedUpdatedSystem, cancellationToken);
         ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
 
         if (errors.TryToActionResult(out ActionResult errorResult))
@@ -138,15 +143,15 @@ public class SystemRegisterController : ControllerBase
             return errorResult;
         }
 
-        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(updateSystem, systemId, cancellationToken);
+        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(attemptedUpdatedSystem, systemId, cancellationToken);
 
         if (!success)
         {
             return BadRequest("Unable to update system.");
         }
 
-        await DeleteRemovedClientIdsAsync(clientIdsToDelete, currentSystem.InternalId, cancellationToken);
-        
+        await DeleteRemovedClientIds(clientIdsToDelete, currentSystem.InternalId, cancellationToken);
+
         return Ok(new SystemRegisterUpdateResult(true));
     }
 
@@ -332,7 +337,8 @@ public class SystemRegisterController : ControllerBase
 
         if (registerSystemResponse == null)
         {
-            return BadRequest();
+            ModelState.AddModelError("return", "Mismatch for systemId given for url and request body");
+            return ValidationProblem(ModelState);
         }
 
         if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse?.Vendor?.ID), User))
@@ -396,34 +402,34 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private async Task<(ValidationErrorBuilder Errors, List<MaskinPortenClientInfo> ToDelete)> ValidateClientIds(
-        RegisteredSystemResponse currentSystem,
-        RegisterSystemRequest updatedSystem,
-        CancellationToken cancellationToken)
+    private async Task<(ValidationErrorBuilder Errors, List<MaskinPortenClientInfo> ClientIdsToDelete)>
+        ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
 
-        var allClientIds = currentSystem.ClientId
+        bool hasDuplicates = updatedSystem.ClientId
+            .GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .Any(g => g.Count() > 1);
+
+        if (hasDuplicates)
+        {
+            errors.Add(ValidationErrors.SystemRegister_Duplicate_ClientIds, [ErrorPathConstant.CLIENT_ID]);
+        }
+
+        // Combine current and new client IDs to get all relevant usages
+        List<string> allRelevantClientIds = currentSystem.ClientId
             .Union(updatedSystem.ClientId, StringComparer.OrdinalIgnoreCase)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        List<MaskinPortenClientInfo> allClientUsages = await _systemRegisterService
-            .GetMaskinportenClients(allClientIds, cancellationToken);
+        List<MaskinPortenClientInfo> allClientUsages =
+            await _systemRegisterService.GetMaskinportenClients(allRelevantClientIds, cancellationToken);
 
-        var removedClientIds = currentSystem.ClientId
-            .Where(oldId => !updatedSystem.ClientId.Contains(oldId, StringComparer.OrdinalIgnoreCase))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        var removedClientUsages = allClientUsages
-            .Where(x => removedClientIds.Contains(x.ClientId, StringComparer.OrdinalIgnoreCase))
-            .ToList();
-
-        foreach (var clientInfo in removedClientUsages)
+        // Validate incoming clientIds (ensure not used by another system)
+        foreach (string clientId in updatedSystem.ClientId)
         {
-            var usages = allClientUsages
-                .Where(x => string.Equals(x.ClientId, clientInfo.ClientId, StringComparison.OrdinalIgnoreCase))
+            List<MaskinPortenClientInfo> usages = allClientUsages
+                .Where(x => string.Equals(x.ClientId, clientId, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             bool usedByAnotherSystem = usages.Any(x =>
@@ -431,11 +437,18 @@ public class SystemRegisterController : ControllerBase
 
             if (usedByAnotherSystem)
             {
-                errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [
-                    ErrorPathConstant.CLIENT_ID
-                ]);
+                errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [ErrorPathConstant.CLIENT_ID]);
             }
         }
+
+        // Determine which client IDs were removed
+        List<string> removedClientIds = currentSystem.ClientId
+            .Where(oldId => !updatedSystem.ClientId.Contains(oldId, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
+        List<MaskinPortenClientInfo> removedClientUsages = allClientUsages
+            .Where(x => removedClientIds.Contains(x.ClientId, StringComparer.OrdinalIgnoreCase))
+            .ToList();
 
         return (errors, removedClientUsages);
     }
@@ -488,15 +501,15 @@ public class SystemRegisterController : ControllerBase
 
         return mergedErrors;
     }
-    
-    private async Task DeleteRemovedClientIdsAsync(
+
+    private async Task DeleteRemovedClientIds(
         List<MaskinPortenClientInfo> toDelete,
         Guid currentSystemId,
         CancellationToken cancellationToken)
     {
         foreach (var clientInfo in toDelete)
         {
-            await _systemRegisterService.DeleteMaskinportenClient(
+            await _systemRegisterService.DeleteMaskinportenClientId(
                 clientInfo.ClientId,
                 currentSystemId,
                 cancellationToken);
