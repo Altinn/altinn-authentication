@@ -133,9 +133,12 @@ public class SystemRegisterController : ControllerBase
             return NotFound($"System with ID '{systemId}' not found.");
         }
 
+        List<string> allClientIds = CombineClientIds(currentSystem.ClientId, attemptedUpdatedSystem.ClientId);
+        List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
+
         ValidationErrorBuilder validateErrorRights = await ValidateRights(attemptedUpdatedSystem.Rights, cancellationToken);
         ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(attemptedUpdatedSystem.AccessPackages, cancellationToken);
-        (ValidationErrorBuilder validateErrorClientIds, List<MaskinPortenClientInfo> clientIdsToDelete) = await ValidateClientIds(currentSystem, attemptedUpdatedSystem, cancellationToken);
+        ValidationErrorBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, attemptedUpdatedSystem, allClientIdUsages);
         ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
 
         if (errors.TryToActionResult(out ActionResult errorResult))
@@ -150,10 +153,14 @@ public class SystemRegisterController : ControllerBase
             return BadRequest("Unable to update system");
         }
 
+        List<MaskinPortenClientInfo> clientIdsToDelete = FindRemovedClients(currentSystem, attemptedUpdatedSystem, allClientIdUsages);
         await DeleteRemovedClientIds(clientIdsToDelete, currentSystem.InternalId, cancellationToken);
 
         return Ok(new SystemRegisterUpdateResult(true));
     }
+
+    private static List<string> CombineClientIds(IEnumerable<string> current, IEnumerable<string> updated) =>
+        current.Union(updated, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
     /// <summary>
     /// Retrieves a list of the predfined default rights for the Product type, if any
@@ -402,8 +409,7 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private async Task<(ValidationErrorBuilder Errors, List<MaskinPortenClientInfo> ClientIdsToDelete)>
-        ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, CancellationToken cancellationToken)
+    private Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> allClientUsages)
     {
         ValidationErrorBuilder errors = default;
 
@@ -415,15 +421,6 @@ public class SystemRegisterController : ControllerBase
         {
             errors.Add(ValidationErrors.SystemRegister_Duplicate_ClientIds, [ErrorPathConstant.CLIENT_ID]);
         }
-
-        // Combine current and new client IDs to get all relevant usages
-        List<string> allRelevantClientIds = currentSystem.ClientId
-            .Union(updatedSystem.ClientId, StringComparer.OrdinalIgnoreCase)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        List<MaskinPortenClientInfo> allClientUsages =
-            await _systemRegisterService.GetMaskinportenClients(allRelevantClientIds, cancellationToken);
 
         // Validate incoming clientIds (ensure not used by another system)
         foreach (string clientId in updatedSystem.ClientId)
@@ -450,7 +447,7 @@ public class SystemRegisterController : ControllerBase
             .Where(x => removedClientIds.Contains(x.ClientId, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
-        return (errors, removedClientUsages);
+        return Task.FromResult(errors);
     }
 
     private async Task<ValidationErrorBuilder> ValidateRegisteredSystem(RegisterSystemRequest systemToValidate, CancellationToken cancellationToken)
@@ -502,10 +499,7 @@ public class SystemRegisterController : ControllerBase
         return mergedErrors;
     }
 
-    private async Task DeleteRemovedClientIds(
-        List<MaskinPortenClientInfo> toDelete,
-        Guid currentSystemId,
-        CancellationToken cancellationToken)
+    private async Task DeleteRemovedClientIds(List<MaskinPortenClientInfo> toDelete, Guid currentSystemId, CancellationToken cancellationToken)
     {
         foreach (var clientInfo in toDelete)
         {
@@ -514,5 +508,16 @@ public class SystemRegisterController : ControllerBase
                 currentSystemId,
                 cancellationToken);
         }
+    }
+
+    private List<MaskinPortenClientInfo> FindRemovedClients(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> clientUsages)
+    {
+        List<string> removedIds = currentSystem.ClientId
+            .Where(oldId => !updatedSystem.ClientId.Contains(oldId, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
+        return clientUsages
+            .Where(x => removedIds.Contains(x.ClientId, StringComparer.OrdinalIgnoreCase))
+            .ToList();
     }
 }
