@@ -409,7 +409,7 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> allClientUsages)
+    private static Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> allClientUsages)
     {
         ValidationErrorBuilder errors = default;
 
@@ -437,16 +437,7 @@ public class SystemRegisterController : ControllerBase
                 errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [ErrorPathConstant.CLIENT_ID]);
             }
         }
-
-        // Determine which client IDs were removed
-        List<string> removedClientIds = currentSystem.ClientId
-            .Where(oldId => !updatedSystem.ClientId.Contains(oldId, StringComparer.OrdinalIgnoreCase))
-            .ToList();
-
-        List<MaskinPortenClientInfo> removedClientUsages = allClientUsages
-            .Where(x => removedClientIds.Contains(x.ClientId, StringComparer.OrdinalIgnoreCase))
-            .ToList();
-
+        
         return Task.FromResult(errors);
     }
 
@@ -510,7 +501,7 @@ public class SystemRegisterController : ControllerBase
         }
     }
 
-    private List<MaskinPortenClientInfo> FindRemovedClients(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> clientUsages)
+    private static List<MaskinPortenClientInfo> FindRemovedClients(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> clientUsages)
     {
         List<string> removedIds = currentSystem.ClientId
             .Where(oldId => !updatedSystem.ClientId.Contains(oldId, StringComparer.OrdinalIgnoreCase))
