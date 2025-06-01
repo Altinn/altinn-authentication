@@ -298,6 +298,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue("client_id", clientId); // string
             command.Parameters.AddWithValue("system_internal_id", systemInternalId); // Guid
             
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            
             await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
