@@ -54,7 +54,7 @@ public interface ISystemRegisterRepository
     /// <returns>True if set to deleted</returns>
     Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId);
     
-    Task DeleteMaskinportenClient(string clientInfoClientId, Guid currentSystemInternalId, CancellationToken cancellationToken);
+    Task DeleteMaskinportenClient(string clientId, Guid internalId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list, if any, of Default Rights 
