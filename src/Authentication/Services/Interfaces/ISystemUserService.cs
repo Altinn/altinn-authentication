@@ -7,6 +7,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Register.Models;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
 #nullable enable
@@ -162,4 +163,6 @@ public interface ISystemUserService
     /// <param name="packages">An array of access package URNs. Only clients associated with at least one of these access packages will be included in the result.</param>
     /// <returns>List of Clients</returns>
     Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, CancellationToken cancellationToken = default);
+
+
 }

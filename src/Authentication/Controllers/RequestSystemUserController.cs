@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -358,6 +359,31 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
     {
         Result<RequestSystemResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(party, requestId);
+        if (res.IsProblem)
+        {
+            return res.Problem.ToActionResult();
+        }
+
+        return Ok(res.Value);
+    }
+
+    /// <summary>
+    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
+    /// </summary>
+    /// <returns>RequestSystemResponse model</returns>    
+    [Authorize]
+    [HttpGet("{requestId}")]
+    public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(Guid requestId)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+
+        Result<Party> verifyParty = await _requestSystemUser.VerifyUserRightAndGetParty(requestId, userId);
+        if (verifyParty.IsProblem)
+        {
+            return verifyParty.Problem.ToActionResult();
+        }
+
+        Result<RequestSystemResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(verifyParty.Value.PartyId, requestId);
         if (res.IsProblem)
         {
             return res.Problem.ToActionResult();
