@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Http;
 namespace Altinn.Platform.Authentication.Helpers;
 
 /// <summary>
-/// Helper class for decision
+/// Helper class for decision, used specifically for authorisation of a user logged in without prior selection of reportee
 /// </summary>
 public class SpecificDecisionHelper
 {
@@ -56,57 +56,25 @@ public class SpecificDecisionHelper
     private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
     /// <summary>
-    /// Creates a decision request based on input
+    /// Creates a decision request for a logged in user on a resource with an action
     /// </summary>
     /// <returns></returns>
-    public static XacmlJsonRequestRoot CreateDecisionRequest(AuthorizationHandlerContext context, EndUserResourceAccessRequirement requirement, IQueryCollection queryParams)
-    {
-        XacmlJsonRequest request = new XacmlJsonRequest();
-        request.AccessSubject = new List<XacmlJsonCategory>();
-        request.Action = new List<XacmlJsonCategory>();
-        request.Resource = new List<XacmlJsonCategory>();
-
-        string party = queryParams.FirstOrDefault(p => p.Key == ParamParty).Value.FirstOrDefault();
-
-        request.AccessSubject.Add(CreateSubjectCategory(context.User.Claims));
-        request.Action.Add(CreateActionCategory(requirement.ActionType));
-
-        XacmlJsonCategory resource = CreateResourceCategoryForResource(requirement.ResourceId);
-        request.Resource.Add(resource);
-
-        if (Guid.TryParse(party, out Guid partyUuid))
-        {
-            resource.Attribute.Add(CreateXacmlJsonAttribute(AltinnCoreClaimTypes.PartyUUID, partyUuid.ToString(), DefaultType, DefaultIssuer));
-        }
-        else
-        {
-            throw new ArgumentException("invalid party " + party);
-        }
-
-        XacmlJsonRequestRoot jsonRequest = new() { Request = request };
-
-        return jsonRequest;
-    }
-
-    /// <summary>
-    /// Creates a decision request based on input
-    /// </summary>
-    /// <returns></returns>
-    public static XacmlJsonRequestRoot CreateDecisionRequestManual(IEnumerable<Claim> claims, EndUserResourceAccessRequirement requirement, Guid partyUuid)
+    public static XacmlJsonRequestRoot CreateDecisionRequestForUserId(IEnumerable<Claim> claims, string actionType, string resourceId, Guid partyUuid)
     {
         XacmlJsonRequest request = new()
         {
-            AccessSubject = new List<XacmlJsonCategory>(),
-            Action = new List<XacmlJsonCategory>(),
-            Resource = new List<XacmlJsonCategory>()
+            AccessSubject = [],
+            Action = [],
+            Resource = []
         };
 
-        request.AccessSubject.Add(CreateSubjectCategory(claims));
-        request.Action.Add(CreateActionCategory(requirement.ActionType));
+        request.AccessSubject.Add(new() { Attribute = CreateSubjectAttributesValidateOnlyUserId(claims) });
 
-        XacmlJsonCategory resource = CreateResourceCategoryForResource(requirement.ResourceId);
-        request.Resource.Add(resource);
+        request.Action.Add(CreateActionCategory(actionType));
+
+        XacmlJsonCategory resource = CreateResourceCategoryForResource(resourceId);
         resource.Attribute.Add(CreateXacmlJsonAttribute(AltinnCoreClaimTypes.PartyUUID, partyUuid.ToString(), DefaultType, DefaultIssuer));
+        request.Resource.Add(resource);
 
         XacmlJsonRequestRoot jsonRequest = new() { Request = request };
 
@@ -282,6 +250,22 @@ public class SpecificDecisionHelper
             else if (IsPartyUuidClaim(claim.Type))
             {
                 attributes.Add(CreateXacmlJsonAttribute(AltinnCoreClaimTypes.PartyUUID, claim.Value, DefaultType, claim.Issuer));
+            }
+        }
+
+        return attributes;
+    }
+
+    private static List<XacmlJsonAttribute> CreateSubjectAttributesValidateOnlyUserId(IEnumerable<Claim> claims)
+    {
+        List<XacmlJsonAttribute> attributes = [];
+
+        // Mapping all claims on user to attributes
+        foreach (Claim claim in claims)
+        {
+            if (IsUserIdClaim(claim.Type))
+            {
+                attributes.Add(CreateXacmlJsonAttribute(AltinnCoreClaimTypes.UserId, claim.Value, DefaultType, claim.Issuer));
             }
         }
 

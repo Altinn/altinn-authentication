@@ -997,9 +997,7 @@ public class RequestSystemUserService(
 
         Guid partyUuid = (Guid)party.PartyUuid;
 
-        EndUserResourceAccessRequirement requirement = new("write", "altinn_access_management");
-
-        XacmlJsonRequestRoot jsonRequest = SpecificDecisionHelper.CreateDecisionRequestManual(claims, requirement, partyUuid);
+        XacmlJsonRequestRoot jsonRequest = SpecificDecisionHelper.CreateDecisionRequestForUserId(claims, "write", "altinn_access_management", partyUuid);
 
         XacmlJsonResponse response = await pdp.GetDecisionForRequest(jsonRequest);
         if (response is null)
@@ -1007,7 +1005,7 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
-        if (DecisionHelper.ValidatePdpDecision(response.Response, context.User))            
+        if (SpecificDecisionHelper.ValidatePdpDecision(response, context.User))            
         {
             return new RequestSystemResponseInternal()
             {
