@@ -62,4 +62,9 @@ public class PartiesClientMock : IPartiesClient
 
         return Task.FromResult<Organization>(organization);
     }
+
+    public Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }
