@@ -260,7 +260,7 @@ public class SpecificDecisionHelper
     {
         List<XacmlJsonAttribute> attributes = [];
 
-        // Mapping all claims on user to attributes
+        // Mapping only userid claim on user to attribute
         foreach (Claim claim in claims)
         {
             if (IsUserIdClaim(claim.Type))
