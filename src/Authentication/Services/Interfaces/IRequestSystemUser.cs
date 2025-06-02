@@ -169,8 +169,7 @@ public interface IRequestSystemUser
     /// Verifies that the logged in user has the required rights to the request, and returns the Reportee Party
     /// in the request.
     /// </summary>
-    /// <param name="requestId">The id for the request</param>
-    /// <param name="userId">The logged in user in the BFF</param>
+    /// <param name="requestId">The id for the request</param>    
     /// <returns>Reportee</returns>
-    Task<Result<Party>> VerifyUserRightAndGetParty(Guid requestId, int userId);
+    Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId);
 }

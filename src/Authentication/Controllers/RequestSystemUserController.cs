@@ -368,28 +368,21 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
+    /// Used by the BFF to retrieve the chosen Request by Guid Id alone,
+    /// authorized manually via pdp that the logged in user can access the request.
     /// </summary>
     /// <returns>RequestSystemResponse model</returns>    
     [Authorize]
     [HttpGet("{requestId}")]
-    public async Task<ActionResult<RequestSystemResponse>> GetRequestByPartyIdAndRequestId(Guid requestId)
+    public async Task<ActionResult<RequestSystemResponse>> GetRequestById(Guid requestId)
     {
-        int userId = AuthenticationHelper.GetUserId(HttpContext);
-
-        Result<Party> verifyParty = await _requestSystemUser.VerifyUserRightAndGetParty(requestId, userId);
-        if (verifyParty.IsProblem)
+        Result<RequestSystemResponseInternal> verify = await _requestSystemUser.CheckUserAuthorizationAndGetRequest(requestId);
+        if (verify.IsProblem)
         {
-            return verifyParty.Problem.ToActionResult();
+            return verify.Problem.ToActionResult();
         }
 
-        Result<RequestSystemResponse> res = await _requestSystemUser.GetRequestByPartyAndRequestId(verifyParty.Value.PartyId, requestId);
-        if (res.IsProblem)
-        {
-            return res.Problem.ToActionResult();
-        }
-
-        return Ok(res.Value);
+        return Ok(verify.Value);
     }
 
     /// <summary>

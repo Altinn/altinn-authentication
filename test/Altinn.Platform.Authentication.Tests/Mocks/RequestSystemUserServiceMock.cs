@@ -109,7 +109,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<Party>> VerifyUserRightAndGetParty(Guid requestId, int userId)
+        public Task<Result<RequestSystemResponseInternal>> VerifyUserRightAndGetParty(Guid requestId)
         {
             throw new NotImplementedException();
         }

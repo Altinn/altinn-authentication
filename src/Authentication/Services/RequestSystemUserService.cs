@@ -970,7 +970,7 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<Party>> VerifyUserRightAndGetParty(Guid requestId, int userId)
+    public async Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
     {
         RequestSystemResponse? request = await requestRepository.GetRequestByInternalId(requestId);
         if (request is null)
@@ -997,7 +997,7 @@ public class RequestSystemUserService(
 
         Guid partyUuid = (Guid)party.PartyUuid;
 
-        EndUserResourceAccessRequirement requirement = new("read", "accessmangement");
+        EndUserResourceAccessRequirement requirement = new("write", "altinn_access_management");
 
         XacmlJsonRequestRoot jsonRequest = SpecificDecisionHelper.CreateDecisionRequestManual(claims, requirement, partyUuid);
 
@@ -1009,7 +1009,20 @@ public class RequestSystemUserService(
 
         if (DecisionHelper.ValidatePdpDecision(response.Response, context.User))            
         {
-            return party;
+            return new RequestSystemResponseInternal()
+            {
+                Id = request.Id,
+                ExternalRef = request.ExternalRef,
+                SystemId = request.SystemId,
+                PartyOrgNo = request.PartyOrgNo,
+                PartyId = party.PartyId,
+                PartyUuid = (Guid)party.PartyUuid,
+                Rights = request.Rights,
+                Status = request.Status,
+                ConfirmUrl = request.ConfirmUrl,
+                Created = request.Created,
+                RedirectUrl = request.RedirectUrl
+            };
         }
 
         return Problem.RequestNotFound;
