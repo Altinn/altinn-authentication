@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
@@ -16,6 +17,7 @@ namespace Altinn.Platform.Authentication.Helpers;
 /// <summary>
 /// Helper class for decision, used specifically for authorisation of a user logged in without prior selection of reportee
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class SpecificDecisionHelper
 {
     private const string ParamInstanceOwnerPartyId = "instanceOwnerPartyId";
