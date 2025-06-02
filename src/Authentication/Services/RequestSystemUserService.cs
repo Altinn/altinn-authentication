@@ -986,8 +986,6 @@ public class RequestSystemUserService(
 
         IEnumerable<Claim> claims = context.User.Claims;
 
-        ClaimsPrincipal user = context.User;
-
         string orgNo = request.PartyOrgNo;
      
         Party party = await partiesClient.GetPartyByOrgNo(orgNo);
