@@ -50,7 +50,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     /// <summary>
     /// Unit Tests for the SystemUnitController
     /// </summary>
-    public class SystemUserControllerTest(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
+    public class SystemUserControllerTest(
+        DbFixture dbFixture, 
+        WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private readonly Mock<IUserProfileService> _userProfileService = new Mock<IUserProfileService>();
@@ -61,6 +63,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IGuidService> guidService = new Mock<IGuidService>();
         private readonly Mock<IEventsQueueClient> _eventQueue = new Mock<IEventsQueueClient>();
 
+        // must be set as the same as in the test.appsettings.json
         private int _paginationSize = 10;
 
         protected override void ConfigureServices(IServiceCollection services)
@@ -640,8 +643,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            int nextPage = 3;
-            int numberOfTestCases = _paginationSize + nextPage;
+            int nextPage = _paginationSize;
+            int thirdPage = _paginationSize - 1;
+            int numberOfTestCases = _paginationSize + nextPage + thirdPage;
 
             await CreateSeveralSystemUsers(client, numberOfTestCases, newSystemUser.SystemId);
 
@@ -650,6 +654,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
             vendorClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
+            // First page
             string vendorEndpoint = $"/authentication/api/v1/systemuser/vendor/bysystem/{newSystemUser.SystemId}";
 
             HttpRequestMessage vendorMessage = new(HttpMethod.Get, vendorEndpoint);
@@ -671,17 +676,39 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.NotNull(result.Links.Next);
 
+            // Next Page
             HttpRequestMessage vendorMessageNext = new(HttpMethod.Get, result.Links.Next);
             HttpResponseMessage vendorResponseNext = await vendorClient.SendAsync(vendorMessageNext, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.OK, vendorResponseNext.StatusCode);
 
             Paginated<SystemUser>? resultNext = await vendorResponseNext.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
             Assert.NotNull(resultNext);
-            var listNext = result.Items.ToList();
+            var listNext = resultNext.Items.ToList();
             Assert.NotNull(listNext);
             Assert.NotEmpty(listNext);
             Assert.Distinct(listNext);
             Assert.Equal(nextPage, listNext.Count);
+            all.AddRange(listNext);
+            Assert.Distinct(all);
+            Assert.Equal(all.Count, _paginationSize + nextPage);
+
+            Assert.NotNull(resultNext.Links.Next);
+
+            // Third page
+            HttpRequestMessage vendorMessageThird = new(HttpMethod.Get, resultNext.Links.Next);
+            HttpResponseMessage vendorResponseThird = await vendorClient.SendAsync(vendorMessageThird, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.OK, vendorResponseThird.StatusCode);
+
+            Paginated<SystemUser>? resultThird = await vendorResponseThird.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
+            Assert.NotNull(resultThird);
+            var listThird = resultThird.Items.ToList();
+            Assert.NotNull(listThird);
+            Assert.NotEmpty(listThird);
+            Assert.Distinct(listThird);
+            Assert.Equal(thirdPage, listThird.Count);
+            all.AddRange(listThird);
+            Assert.Distinct(all);
+            Assert.Equal(all.Count, numberOfTestCases);
         }
 
         [Fact]
@@ -849,6 +876,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemUser_ListAll_Ok()
         {
+            // must be set to the same as in the system_user_service
+            const int STREAM_LIMIT = 10;
+
             // Create System used for test
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
@@ -868,21 +898,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = systemId
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create"); 
-            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
-            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
-
-            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
-
-            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
-            Assert.NotNull(shouldBeCreated);
-            Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);
-
-            int numberOfTestCases = 13;
+            int numberOfTestCases = STREAM_LIMIT + 2;
 
             await CreateSeveralSystemUsers(client, numberOfTestCases, systemId);
 
-            // Stream PAGE_SIZE (10)
+            // Stream PAGE_SIZE (_paginationSize)
             HttpClient streamClient = CreateClient();
             string[] prefixes = { "altinn", "digdir" };
             string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.admin", prefixes);
@@ -894,8 +914,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result = await streamResponse.Content.ReadFromJsonAsync<ItemStream<SystemUserRegisterDTO>>();
             Assert.NotNull(result);
             var list = result.Items.ToList();            
-            Assert.Equal(list[0].IntegrationTitle, newSystemUser.IntegrationTitle);
-            Assert.Equal(_paginationSize, list.Count);
+            Assert.Distinct(list);
+            Assert.Equal(STREAM_LIMIT, list.Count);
 
             // Stream some more, should get only 2
             streamEndpoint = result.Links.Next!;
@@ -905,7 +925,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result2 = await streamResponse2.Content.ReadFromJsonAsync<ItemStream<SystemUserRegisterDTO>>();            
             Assert.NotNull(result2);
             var list2 = result2.Items.ToList();
-            Assert.Equal(numberOfTestCases - _paginationSize +1, list2.Count);
+            Assert.Equal(numberOfTestCases - STREAM_LIMIT, list2.Count);
 
             // Stream yet again, should get 0 new 
             streamEndpoint = result2.Links.Next!;

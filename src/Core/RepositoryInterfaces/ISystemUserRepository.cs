@@ -61,7 +61,7 @@ public interface ISystemUserRepository
     /// <param name="systemId">The system the Vendor wants the list for</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, CancellationToken cancellationToken);
+    Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, long sequenceFrom, CancellationToken cancellationToken);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the ChangeRequest

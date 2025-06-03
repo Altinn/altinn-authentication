@@ -242,10 +242,16 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, cancellationToken);
+            long continueFrom = 0;
+            if (continueRequest is not null && continueRequest.ContinuationToken is not null)
+            {
+                continueFrom = long.Parse(continueRequest.ContinuationToken) - 1;
+            }
+
+            List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, continueFrom, cancellationToken);
             theList ??= [];
 
-            return Page.Create(theList, _paginationSize, static theList => theList.Id);
+            return Page.Create(theList, _paginationSize, static theList => theList.SequenceNo.ToString());
         }
 
         /// <inheritdoc/>

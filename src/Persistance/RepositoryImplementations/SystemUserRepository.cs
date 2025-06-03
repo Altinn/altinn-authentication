@@ -76,7 +76,8 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.sequence_no
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -117,7 +118,8 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.sequence_no
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -158,7 +160,8 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.sequence_no
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -197,7 +200,8 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.sequence_no
             FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
@@ -330,7 +334,8 @@ public class SystemUserRepository : ISystemUserRepository
                 systemvendor_orgnumber,
                 external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.sequence_no
             FROM business_application.system_user_profile sui
                 JOIN business_application.system_register sr  
                 ON   sui.system_internal_id = sr.system_internal_id
@@ -392,12 +397,13 @@ public class SystemUserRepository : ISystemUserRepository
             SupplierOrgNo = reader.GetFieldValue<string>("systemvendor_orgnumber"),
             ExternalRef = external_ref ?? orgno,
             UserType = systemUserType,
-            AccessPackages = accessPackages
+            AccessPackages = accessPackages,
+            SequenceNo = reader.GetFieldValue<long>("sequence_no")
         });
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, CancellationToken cancellationToken)
+    public async Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, long sequenceFrom, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -411,18 +417,22 @@ public class SystemUserRepository : ISystemUserRepository
 		        sui.created,
                 sui.external_ref,
                 sui.systemuser_type,
-                sui.accesspackages
+                sui.accesspackages,
+                sui.sequence_no
 	        FROM business_application.system_user_profile sui 
                 JOIN business_application.system_register sr  
                 ON sui.system_internal_id = sr.system_internal_id
 	        WHERE sr.system_id = @system_id
-	            AND sui.is_deleted = false;
+	            AND sui.is_deleted = false
+                AND sui.sequence_no > @sequence_no
+            ORDER BY sui.sequence_no ASC
             ";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
             command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.AddWithValue("sequence_no", sequenceFrom);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToSystemUser)
