@@ -640,15 +640,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 SystemId = "991825827_the_matrix",
             };
 
-            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create");
-            createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
-            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            int nextPage = 3;
+            int numberOfTestCases = _paginationSize + nextPage;
 
-            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
-
-            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
-            Assert.NotNull(shouldBeCreated);
-            Assert.Equal("IntegrationTitleValue", shouldBeCreated.IntegrationTitle);
+            await CreateSeveralSystemUsers(client, numberOfTestCases, newSystemUser.SystemId);
 
             HttpClient vendorClient = CreateClient();
             string[] prefixes = { "altinn", "digdir" };
@@ -665,10 +660,28 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var result = await vendorResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
             Assert.NotNull(result);
             var list = result.Items.ToList();
+            List<SystemUser> all = [];
             
             Assert.NotNull(list);
             Assert.NotEmpty(list);
-            Assert.Equal(list[0].IntegrationTitle, newSystemUser.IntegrationTitle);
+            Assert.Distinct(list);
+            Assert.Equal(_paginationSize, list.Count);
+
+            all.AddRange(list);
+
+            Assert.NotNull(result.Links.Next);
+
+            HttpRequestMessage vendorMessageNext = new(HttpMethod.Get, result.Links.Next);
+            HttpResponseMessage vendorResponseNext = await vendorClient.SendAsync(vendorMessageNext, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.OK, vendorResponseNext.StatusCode);
+
+            Paginated<SystemUser>? resultNext = await vendorResponseNext.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
+            Assert.NotNull(resultNext);
+            var listNext = result.Items.ToList();
+            Assert.NotNull(listNext);
+            Assert.NotEmpty(listNext);
+            Assert.Distinct(listNext);
+            Assert.Equal(nextPage, listNext.Count);
         }
 
         [Fact]
