@@ -426,6 +426,7 @@ public class AccessManagementClient : IAccessManagementClient
     /// <returns></returns>
     private static string? GetRoleFromAccessPackages(string accessPackage, List<ClientRoleAccessPackages> clientRoleAccessPackages)
     {
+        accessPackage = accessPackage?.Split(":")[3]!;
         if (string.IsNullOrEmpty(accessPackage) || clientRoleAccessPackages == null)
         {
             return null;
