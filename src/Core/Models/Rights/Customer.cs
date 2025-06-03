@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
 
 namespace Altinn.Platform.Authentication.Core.Models.Rights
 {
@@ -27,5 +28,10 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights
         /// Organisation number
         /// </summary>
         public required string OrganizationIdentifier { get; set; }
+
+        /// <summary>
+        /// Gets or sets a collection of all access information for the client 
+        /// </summary>
+        public List<ClientRoleAccessPackages> Access { get; set; } = [];
     }
 }
