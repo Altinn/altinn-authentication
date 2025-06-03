@@ -424,18 +424,18 @@ public class AccessManagementClient : IAccessManagementClient
     /// </summary>
     /// <param name="accessPackages">The accesspackage requested for a system user on a system</param>
     /// <returns></returns>
-    private static string? GetRoleFromAccessPackages(string accessPackage, List<ClientRoleAccessPackages> accessess)
+    private static string? GetRoleFromAccessPackages(string accessPackage, List<ClientRoleAccessPackages> clientRoleAccessPackages)
     {
-        if (string.IsNullOrEmpty(accessPackage) || accessess == null)
+        if (string.IsNullOrEmpty(accessPackage) || clientRoleAccessPackages == null)
         {
             return null;
         }
 
-        foreach (var access in accessess)
+        foreach (var clientRoleAccessPackage in clientRoleAccessPackages)
         {
-            if (access.Packages != null && access.Packages.Contains(accessPackage, StringComparer.OrdinalIgnoreCase))
+            if (clientRoleAccessPackage.Packages != null && clientRoleAccessPackage.Packages.Contains(accessPackage, StringComparer.OrdinalIgnoreCase))
             {
-                return access.Role;
+                return clientRoleAccessPackage.Role;
             }
         }
 
