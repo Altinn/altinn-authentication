@@ -484,7 +484,8 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     DisplayName = item.Party.Name,
                     OrganizationIdentifier = item.Party.OrganizationNumber,
-                    PartyUuid = item.Party.Id
+                    PartyUuid = item.Party.Id,
+                    Access = item.Access
                 };
                 result.Add(newCustomer);
             }
