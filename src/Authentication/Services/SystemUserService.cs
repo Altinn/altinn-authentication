@@ -245,10 +245,10 @@ namespace Altinn.Platform.Authentication.Services
             long continueFrom = 0;
             if (continueRequest is not null && continueRequest.ContinuationToken > 0)
             {
-                continueFrom = continueRequest.ContinuationToken - 1;
+                continueFrom = continueRequest.ContinuationToken;
             }
 
-            List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, continueFrom, cancellationToken);
+            List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, continueFrom, _paginationSize, cancellationToken);
             theList ??= [];
 
             return Page.Create(theList, _paginationSize, static theList => theList.SequenceNo);
