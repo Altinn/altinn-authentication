@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IEventsQueueClient> _eventQueue = new Mock<IEventsQueueClient>();
 
         // must be set as the same as in the test.appsettings.json
-        private int _paginationSize = 10;
+        private int _paginationSize = 2;
 
         protected override void ConfigureServices(IServiceCollection services)
         {
