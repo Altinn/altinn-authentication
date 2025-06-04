@@ -224,10 +224,10 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(
+        public async Task<Result<Page<SystemUser, long>>> GetAllSystemUsersByVendorSystem(
             OrganisationNumber vendorOrgNo, 
             string systemId, 
-            Page<string>.Request continueRequest, 
+            Page<long>.Request continueRequest, 
             CancellationToken cancellationToken)
         {
             RegisteredSystemResponse? system = await _registerRepository.GetRegisteredSystemById(systemId);
@@ -243,15 +243,15 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             long continueFrom = 0;
-            if (continueRequest is not null && continueRequest.ContinuationToken is not null)
+            if (continueRequest is not null && continueRequest.ContinuationToken > 0)
             {
-                continueFrom = long.Parse(continueRequest.ContinuationToken) - 1;
+                continueFrom = continueRequest.ContinuationToken - 1;
             }
 
             List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, continueFrom, cancellationToken);
             theList ??= [];
 
-            return Page.Create(theList, _paginationSize, static theList => theList.SequenceNo.ToString());
+            return Page.Create(theList, _paginationSize, static theList => theList.SequenceNo);
         }
 
         /// <inheritdoc/>
