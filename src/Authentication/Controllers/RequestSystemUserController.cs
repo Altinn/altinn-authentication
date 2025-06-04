@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -364,6 +365,24 @@ public class RequestSystemUserController : ControllerBase
         }
 
         return Ok(res.Value);
+    }
+
+    /// <summary>
+    /// Used by the BFF to retrieve the chosen Request by Guid Id alone,
+    /// authorized manually via pdp that the logged in user can access the request.
+    /// </summary>
+    /// <returns>RequestSystemResponse model</returns>    
+    [Authorize]
+    [HttpGet("{requestId}")]
+    public async Task<ActionResult<RequestSystemResponse>> GetRequestById(Guid requestId)
+    {
+        Result<RequestSystemResponseInternal> verify = await _requestSystemUser.CheckUserAuthorizationAndGetRequest(requestId);
+        if (verify.IsProblem)
+        {
+            return verify.Problem.ToActionResult();
+        }
+
+        return Ok(verify.Value);
     }
 
     /// <summary>

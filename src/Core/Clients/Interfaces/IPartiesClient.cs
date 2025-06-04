@@ -22,4 +22,12 @@ public interface IPartiesClient
     /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
     /// <returns>party information</returns>
     Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns partyInfo
+    /// </summary>
+    /// <param name="orgNo">The OrgNo to lookup</param>
+    /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
+    /// <returns>party information</returns>
+    Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default);
 }

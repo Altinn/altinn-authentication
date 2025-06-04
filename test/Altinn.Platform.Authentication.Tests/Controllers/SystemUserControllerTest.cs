@@ -662,7 +662,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.OK, vendorResponse.StatusCode);
 
-            var result = await vendorResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
+            Paginated<SystemUser>? result = await vendorResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
             Assert.NotNull(result);
             var list = result.Items.ToList();
             

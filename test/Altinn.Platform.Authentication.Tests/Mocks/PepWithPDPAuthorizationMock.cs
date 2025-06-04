@@ -14,7 +14,9 @@ using Altinn.Authorization.ABAC.Xacml;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Common.PEP.Helpers;
 using Altinn.Common.PEP.Interfaces;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Storage.Interface.Models;
+using AltinnCore.Authentication.Constants;
 using Newtonsoft.Json;
 
 namespace Altinn.AccessManagement.Tests.Mocks
@@ -39,6 +41,11 @@ namespace Altinn.AccessManagement.Tests.Mocks
         /// <inheritdoc />
         public async Task<XacmlJsonResponse> GetDecisionForRequest(XacmlJsonRequestRoot xacmlJsonRequest)
         {
+            if (MockShortCutForNoReporteeInRoute(xacmlJsonRequest.Request.AccessSubject))
+            {
+                return new XacmlJsonResponse() { Response = [new() { Decision = "Permit" }] };
+            }
+
             return await Authorize(xacmlJsonRequest.Request);
         }
 
@@ -271,6 +278,26 @@ namespace Altinn.AccessManagement.Tests.Mocks
 
             attribute.AttributeValues.Add(new XacmlAttributeValue(new Uri(XacmlConstants.DataTypes.XMLString), attributeValue));
             return attribute;
+        }
+
+        private bool MockShortCutForNoReporteeInRoute(List<XacmlJsonCategory> subjects)
+        {
+            int subjectUserId = 0;
+
+            foreach (XacmlJsonCategory sub in subjects)
+            {
+                if (sub.Attribute.Any() && sub.Attribute.First().AttributeId == AltinnCoreClaimTypes.UserId)
+                {
+                    subjectUserId = Convert.ToInt32(sub.Attribute.First().Value);
+                }
+            }
+
+            if (subjectUserId == 1338)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private async Task EnrichSubjectAttributes(XacmlContextRequest request, string resourceParty)
