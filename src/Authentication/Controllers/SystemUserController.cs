@@ -239,7 +239,7 @@ public class SystemUserController : ControllerBase
     [HttpGet("vendor/bysystem/{systemId}", Name = "vendor/systemusers/bysystem")]
     public async Task<ActionResult<Paginated<SystemUser>>> GetAllSystemUsersByVendorSystem(
         string systemId,
-        [FromQuery(Name = "token")] Opaque<string>? token = null,
+        [FromQuery(Name = "token")] Opaque<long>? token = null,
         CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
@@ -248,13 +248,13 @@ public class SystemUserController : ControllerBase
             return Unauthorized();
         }
 
-        Page<string>.Request continueFrom = null!;
+        Page<long>.Request continueFrom = null!;
         if (token?.Value is not null)
         {
             continueFrom = Page.ContinueFrom(token!.Value);
         }
 
-        Result<Page<SystemUser, string>> pageResult = await _systemUserService.GetAllSystemUsersByVendorSystem(
+        Result<Page<SystemUser, long>> pageResult = await _systemUserService.GetAllSystemUsersByVendorSystem(
             vendorOrgNo, systemId, continueFrom, cancellationToken);
         if (pageResult.IsProblem)
         {
