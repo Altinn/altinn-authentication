@@ -1329,7 +1329,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
 
             Guid clientId = Guid.NewGuid();
-            Guid facilitator = Guid.NewGuid();
+            Guid facilitator = Guid.Parse("00000000-0000-0000-0005-000000000000");
 
             HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/{facilitator}/{systemUserId}/delegations");
             listSystemUserRequst.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
@@ -1818,6 +1818,97 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();
             Assert.Equal(Problem.AgentSystemUser_TooManyAssignments.Detail, problemDetails?.Detail);
+        }
+
+        [Fact]
+        public async Task AgentSystemUser_GetClients_ReturnsListOK()
+        {
+            HttpClient client2 = CreateClient();
+
+            // partyId of the system user that is used to fetch the clients
+            int partyId = 500000;
+
+            Guid clientId = Guid.NewGuid();
+            Guid facilitator = Guid.NewGuid();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+            List<ConnectionDto>? list = JsonSerializer.Deserialize<List<ConnectionDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.NotEqual(HttpStatusCode.Unauthorized, clientListResponse.StatusCode);
+            Assert.True(list is not null);
+            Assert.True(list.Count > 1);
+        }
+
+        [Fact]
+        public async Task AgentSystemUser_GetClients_FilterByPackage_ReturnsListOK()
+        {
+            string accessPackage1 = "regnskapsforer-lonn";
+            string accessPackage2 = "regnskapsforer-med-signeringsrettighet";
+
+            HttpClient client2 = CreateClient();
+
+            // partyId of the system user that is used to fetch the clients
+            int partyId = 500000;
+
+            Guid clientId = Guid.NewGuid();
+            Guid facilitator = Guid.NewGuid();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}&packages={accessPackage1}&packages={accessPackage2}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+            List<ConnectionDto>? list = JsonSerializer.Deserialize<List<ConnectionDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.NotEqual(HttpStatusCode.Unauthorized, clientListResponse.StatusCode);
+            Assert.True(list is not null);
+            Assert.True(list.Count == 4);
+        }
+
+        [Fact]
+        public async Task AgentSystemUser_GetClients_Unauthorized()
+        {
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skattnaering"
+            };
+
+            HttpClient client2 = CreateClient();
+
+            // partyId of the system user that is used to fetch the clients
+            int partyId = 500000;
+
+            Guid clientId = Guid.NewGuid();
+            Guid facilitator = Guid.NewGuid();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}&packages={accessPackage}");
+            
+            HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, clientListResponse.StatusCode);
+        }
+
+        [Fact]
+        public async Task AgentSystemUser_GetClients_Forbidden()
+        {
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skattnaering"
+            };
+
+            HttpClient client2 = CreateClient();
+
+            // partyId of the system user that is used to fetch the clients
+            int partyId = 500000;
+
+            Guid clientId = Guid.NewGuid();
+            Guid facilitator = new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/clients?facilitator={facilitator}&packages={accessPackage}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
         }
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)

@@ -142,5 +142,14 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
         Task DeleteMaskinportenClientIds(List<string> clientIds, Guid internalId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Gets the list of invalid access packages.
+        /// </summary>
+        /// <param name="accessPackages">access packages to be validated</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register</returns>
+        Task<(List<string> invalidFormatUrns, List<string> notFoundUrns, List<string> notDelegableUrns)>
+            GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
     }
 }

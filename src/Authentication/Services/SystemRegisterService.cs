@@ -127,7 +127,7 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         return false;
                     }
-                }
+                }                
             }
 
             return true;
@@ -155,6 +155,47 @@ namespace Altinn.Platform.Authentication.Services
         public Task DeleteMaskinportenClientIds(List<string> clientIds, Guid internalId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.DeleteMaskinportenClients(clientIds, internalId, cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        public async Task<(List<string> invalidFormatUrns, List<string> notFoundUrns, List<string> notDelegableUrns)>
+            GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
+        {
+            var invalidFormatUrns = new List<string>();
+            var notFoundUrns = new List<string>();
+            var notDelegableUrns = new List<string>();
+
+            foreach (AccessPackage accessPackage in accessPackages)
+            {
+                string? urn = accessPackage.Urn;
+
+                if (string.IsNullOrEmpty(urn))
+                {
+                    invalidFormatUrns.Add(urn ?? string.Empty);
+                    continue;
+                }
+
+                string[] urnParts = urn.Split(':');
+                if (urnParts.Length < 4)
+                {
+                    invalidFormatUrns.Add(urn);
+                    continue;
+                }
+
+                string urnValue = urnParts[3];
+                Package? package = await _accessManagementClient.GetAccessPackage(urnValue);
+
+                if (package == null)
+                {
+                    notFoundUrns.Add(urn);
+                }
+                else if (!package.IsDelegable)
+                {
+                    notDelegableUrns.Add(urn);
+                }
+            }
+
+            return (invalidFormatUrns, notFoundUrns, notDelegableUrns);
         }
     }
 }

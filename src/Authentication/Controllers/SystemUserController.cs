@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -93,10 +94,10 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
-    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
+    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId)
     {
         List<DelegationResponse> ret = [];
-        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(party, facilitator, systemUserId);
         if (result.IsSuccess) 
         {
             ret = result.Value;
@@ -116,7 +117,7 @@ public class SystemUserController : ControllerBase
     public async Task<ActionResult> GetSingleSystemUserById(int party, Guid systemUserId)
     {
         SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
-        if (systemUser is not null)
+        if (systemUser is not null && systemUser.PartyId == party.ToString())
         {
             return Ok(systemUser);
         }
@@ -375,6 +376,11 @@ public class SystemUserController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
+        if (systemUser.PartyId != party)
+        {
+            return Forbid();
+        }
+
         Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
@@ -417,6 +423,26 @@ public class SystemUserController : ControllerBase
         if (result.IsSuccess)
         {
             return Ok();
+        }
+
+        return result.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Get list of clients for a facilitator
+    /// </summary>
+    /// <returns>List of Clients</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("agent/{party}/clients")]
+    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
+    {
+        List<Customer> ret = [];
+        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return Ok(result.Value);
         }
 
         return result.Problem.ToActionResult();

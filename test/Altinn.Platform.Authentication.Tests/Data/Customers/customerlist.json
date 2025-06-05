@@ -1,0 +1,3017 @@
+[
+  {
+    "party": {
+      "id": "fd9d93c7-1dd7-45bc-9772-6ba977b3cd36",
+      "name": "MODIG UTNYTTENDE TIGER AS",
+      "organizationNumber": "313801527",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "fa274f2c-4107-4619-9577-9acef1be8352",
+      "name": "VELKOMMEN OPPLYST TIGER AS",
+      "organizationNumber": "312440911",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "fa1aae83-98e8-477e-a7e8-a8378468a69f",
+      "name": "KOMPETENT ØDE TIGER AS",
+      "organizationNumber": "313912787",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "f5d6ff4f-02bf-49d5-9b9f-25b138f1d9b0",
+      "name": "KRY RING TIGER AS",
+      "organizationNumber": "314254643",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "f0d10b8c-f94d-4ea5-993a-95e6f6be64ef",
+      "name": "LYDIG TRIST TIGER AS",
+      "organizationNumber": "214286602",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "f0ab640f-50ba-4c57-8046-4ddeb004e0ab",
+      "name": "DEDIKERT DYP TIGER AS",
+      "organizationNumber": "312427761",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "eac0bb25-c89e-46ac-b73a-4053a333b44a",
+      "name": "UROMANTISK IHERDIG TIGER AS",
+      "organizationNumber": "311079964",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "ea730f89-621c-40b8-80d5-b9fbc5eb635a",
+      "name": "SAMLET FORSTÅELSESFULL TIGER AS",
+      "organizationNumber": "310992410",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "e9a3f6e5-a775-4f4f-ac94-6ea8e7ffd98c",
+      "name": "SUBJEKTIV PRESIS TIGER AS",
+      "organizationNumber": "313506703",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "e96f5aa2-473a-48f2-8a52-5b9755359673",
+      "name": "VARSOM GOD TIGER AS",
+      "organizationNumber": "311002503",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "e927cb2e-dbdc-43ea-8569-8ddcedb455e7",
+      "name": "UFORNUFTIG ULOGISK TIGER AS",
+      "organizationNumber": "311722719",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "e9193c08-73b6-4351-bd58-573675a3d167",
+      "name": "LOGISK SART TIGER AS",
+      "organizationNumber": "313772756",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "e8562b1a-2b19-4adc-b13d-24d42e3504d9",
+      "name": "FAST SINDIG KROKODILLE",
+      "organizationNumber": "313347974",
+      "unitType": "STI"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "dc4512cc-f8db-45d9-8c0a-80ed187cfdac",
+      "name": "MOTVILLIG MATEMATISK TIGER AS",
+      "organizationNumber": "312964740",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "dbe022f6-cbfb-4cde-9d39-331213ce310c",
+      "name": "SIGEN INTERESSANT TIGER AS",
+      "organizationNumber": "213039032",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "d7484d32-49a0-4724-a4b8-fa2841311cbe",
+      "name": "KLARTENKT ELEGANT TIGER AS",
+      "organizationNumber": "314277120",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "d719641a-ae6d-4068-b27b-b18845319ac5",
+      "name": "FANTASTISK FALSK TIGER AS",
+      "organizationNumber": "312815591",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "d4a27d9a-538d-4eaa-8cbb-8f054cdbd33e",
+      "name": "SAMEIET TYKKHUDET SMIGRENDE LØVE",
+      "organizationNumber": "310075884",
+      "unitType": "ESEK"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "d4983376-7777-4a6b-8a28-4456dfaf2d0c",
+      "name": "UMUSIKALSK UNDERLIG TIGER AS",
+      "organizationNumber": "314108582",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "d34f563b-bc47-4868-94ea-b8b8534aaf04",
+      "name": "LØSNINGSORIENTERT PRODUKTIV TIGER AS",
+      "organizationNumber": "312288087",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "cfeed602-1257-41ca-b987-5b484bcf5dfb",
+      "name": "DYP KJÆR TIGER AS",
+      "organizationNumber": "314206606",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "cd64a5e5-e81c-45c1-9914-b8617a552221",
+      "name": "ANONYM JURIDISK TIGER AS",
+      "organizationNumber": "313195295",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "cc5e7a81-dd09-4d02-89e6-9fec3fcbeccf",
+      "name": "OPPFYLLENDE BESTEMT TIGER AS",
+      "organizationNumber": "313473309",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "ca8d4c9b-3daf-4a53-b227-366a247fe5a0",
+      "name": "OVERFLØDIG KLASSISK TIGER AS",
+      "organizationNumber": "212616362",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "ca71b265-c971-42d5-a3bf-793b0ab96a31",
+      "name": "HUSLØS DJERV TIGER AS",
+      "organizationNumber": "313318788",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c8c8087d-f204-4ba3-9b67-d88d379a8fcb",
+      "name": "FAST PESSIMISTISK TIGER AS",
+      "organizationNumber": "313185877",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c6d30fc4-4f07-41cf-ada6-e5f07f2f026b",
+      "name": "SPESIELL ELEKTRONISK TIGER AS",
+      "organizationNumber": "310584436",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c567b0ab-6d5c-450b-8365-d3ddfd2581b3",
+      "name": "STA TRIST TIGER AS",
+      "organizationNumber": "311117211",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c399e861-c4b5-4ac9-a319-9da0819c2acf",
+      "name": "PÅLITELIG ULYDIG TIGER AS",
+      "organizationNumber": "314127145",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c2650c4d-b156-4652-8428-342ecddc2f10",
+      "name": "LITT UEMOSJONELL TIGER AS",
+      "organizationNumber": "213630652",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c2223153-fa2c-4ab9-b735-7a80259ce165",
+      "name": "KANTETE KVART TIGER AS",
+      "organizationNumber": "310802670",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c10e5b1a-b244-4e71-b3df-d2c4fda20657",
+      "name": "FREDELIG REALISTISK TIGER AS",
+      "organizationNumber": "312679612",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c0be5725-9ab1-4094-8f57-a600b405c878",
+      "name": "MARITIM KJÆRLIG TIGER AS",
+      "organizationNumber": "314198603",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "c04791e1-62e0-4765-9d38-c9cff754490f",
+      "name": "SØT OVERFØLSOM TIGER AS",
+      "organizationNumber": "310627208",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "bb693e20-c494-41c9-a579-038d0b8900aa",
+      "name": "OMTENKSOM BARMHJERTIG TIGER AS",
+      "organizationNumber": "313193063",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "b9dd1492-7f09-47ff-9a3d-a6db543ebc88",
+      "name": "UNDERLIG URETTFERDIG TIGER AS",
+      "organizationNumber": "313506371",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "b938175d-5e5a-4d2d-b80d-ea23e8160b68",
+      "name": "STORARTET AKUSTISK TIGER AS",
+      "organizationNumber": "313648737",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "b5b22bfa-cf75-4232-ab9d-db1dc68c2719",
+      "name": "FORSKJELLIG MODERAT TIGER AS",
+      "organizationNumber": "310839582",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "b4a32692-f00d-4404-b9d0-5261bc6d4a8c",
+      "name": "PEN UNG TIGER AS",
+      "organizationNumber": "310577014",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "b3e89c65-ea25-4ca2-85e6-a443263301fe",
+      "name": "DYPSINDIG TOPP TIGER AS",
+      "organizationNumber": "313862658",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "b3d6f7a4-6641-4ee3-bacb-ea151e59fe03",
+      "name": "ANSVARSFULL PÅPASSELIG APE",
+      "organizationNumber": "310812048",
+      "unitType": "FLI"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "b1bf7a7d-174e-4195-a652-a4b464b7ad1b",
+      "name": "ÆRLIG MÅTEHOLDEN TIGER AS",
+      "organizationNumber": "311045210",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "aeb7d794-f9d9-42e6-ae67-86bea4a7071e",
+      "name": "SPENNENDE TURKIS TIGER AS",
+      "organizationNumber": "313572986",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "ad8def47-3b66-4765-965d-342d9796ce6c",
+      "name": "LYSEBLÅ VÅKEN TIGER AS",
+      "organizationNumber": "213501232",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "a99ef198-a22c-4ff6-9ea5-941c04a256b3",
+      "name": "SJELDEN URIMELIG TIGER AS",
+      "organizationNumber": "310964980",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "a8e96dbf-71dd-4898-98e8-8a4701cbbc6c",
+      "name": "AVANSERT PLUTSELIG TIGER AS",
+      "organizationNumber": "311033271",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "a76d3569-a7c7-4d21-938b-908ea9a8ed20",
+      "name": "SAMEIET SKEPTISK RASK LØVE",
+      "organizationNumber": "312584212",
+      "unitType": "ESEK"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "a758186b-0705-44c3-afff-0e879a685089",
+      "name": "HÅRSÅR GJENNOMSIKTIG TIGER AS",
+      "organizationNumber": "313347095",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "a402ba3a-b68a-4fa1-bbbb-c0b005e6e62f",
+      "name": "HENSIKTSMESSIG UMOTIVERT TIGER AS",
+      "organizationNumber": "313575586",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "a2d8924e-0218-4b3e-a582-3b63dfae8e03",
+      "name": "RØD GREI TIGER AS",
+      "organizationNumber": "310505617",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "9b3e139b-f256-42ab-bfc0-32b6de2dd375",
+      "name": "VASSEN HANDLEKRAFTIG TIGER AS",
+      "organizationNumber": "312961709",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "9a5e74f3-e145-460a-b54b-9b56f008d93f",
+      "name": "EKSTRA HUSLØS TIGER AS",
+      "organizationNumber": "312468859",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "9a30e582-3d6a-4dd2-9d7e-b62bffc271af",
+      "name": "SAKTE VIKTIG APE",
+      "organizationNumber": "310915270",
+      "unitType": "FLI"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "9854ede0-645c-4142-906a-57f49a41b3e9",
+      "name": "JORDNÆR SNÅL HEST BORETTSLAG",
+      "organizationNumber": "311041509",
+      "unitType": "BRL"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "96f27f02-93a7-4e57-8a5a-5843fa14f470",
+      "name": "ULLEN INTERNASJONAL TIGER AS",
+      "organizationNumber": "311783815",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "96dcb7b0-9e00-4373-8d54-bde15536a1d5",
+      "name": "VAKKER PRIKKETE TIGER AS",
+      "organizationNumber": "312939460",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "9472d5f2-91cd-4c78-9fa6-c51dca272aa1",
+      "name": "SKJØR GLUPSK TIGER AS",
+      "organizationNumber": "313247198",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "942ef1d7-68f8-4f6f-8738-6b4563bfbc37",
+      "name": "REDELIG HEMMELIGHETSFULL TIGER AS",
+      "organizationNumber": "313278662",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "91fa14dc-e0c8-4ce0-a7e0-a7691134519b",
+      "name": "GLUPSK VIRKELIG TIGER AS",
+      "organizationNumber": "311724460",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "90a51555-1309-4025-9059-90cba16e0f45",
+      "name": "UTNYTTENDE FREIDIG TIGER AS",
+      "organizationNumber": "314278356",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "8ee15533-8560-4db3-a209-1b5a0db8d123",
+      "name": "GYLDEN MINKENDE TIGER AS",
+      "organizationNumber": "312770393",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "8e92feb7-22b3-425a-913e-2c1efded38df",
+      "name": "MORSOM VIS TIGER AS",
+      "organizationNumber": "214034522",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "8d7f61ad-097c-4b47-bfb2-cf0b7d2190cf",
+      "name": "AUTONOM MORALSK TIGER AS",
+      "organizationNumber": "310902950",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "8d3c893e-2b70-4b0e-bda8-c5d3bdf93624",
+      "name": "ØDE NATURSTRIDIG TIGER AS",
+      "organizationNumber": "312959429",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "8c9e60f5-ca94-47e7-bef4-10ede1671c33",
+      "name": "TYPISK SJENERT TIGER AS",
+      "organizationNumber": "313582345",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "89c9b357-b1ca-47dc-bd24-9785af5f3ecb",
+      "name": "SPESIFIKK OPPSTEMT TIGER AS",
+      "organizationNumber": "310599298",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "8961e999-d876-42c3-956f-58d929e36d73",
+      "name": "FORNEM UTTRYKKSFULL TIGER AS",
+      "organizationNumber": "214120062",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "879f1aff-b54f-40ab-b142-96767c404f0a",
+      "name": "TROVERDIG SKEPTISK KROKODILLE",
+      "organizationNumber": "313816656",
+      "unitType": "STI"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "82167999-bdae-4655-8725-79014587a47b",
+      "name": "UPOPULÆR BEMERKELSESVERDIG TIGER AS",
+      "organizationNumber": "314248538",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "817b1d76-eddc-46ac-a876-54a3be4830dd",
+      "name": "USEDVANLIG OFFISIELL TIGER AS",
+      "organizationNumber": "314237889",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "7ffa153d-a9f8-4edf-b4b8-339d63512207",
+      "name": "LØSNINGSORIENTERT ENKEL TIGER AS",
+      "organizationNumber": "312974398",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "7fc68658-5b16-4641-95b9-225518ae39f8",
+      "name": "FORNUFTIG FYLDIG TIGER AS",
+      "organizationNumber": "313167844",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "770a0bc2-51c9-4d0e-b78f-0131ac600971",
+      "name": "FYLDIG KOSTBAR TIGER AS",
+      "organizationNumber": "313171019",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "7001bf95-13e5-4aca-9201-a694b37b79b4",
+      "name": "SEIN FLINK TIGER AS",
+      "organizationNumber": "213097202",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "6feefc85-17e6-4d15-9a62-98988d822dcb",
+      "name": "ENGASJERT MOTSTANDSDYKTIG LØVE BOLIGSAMEIE",
+      "organizationNumber": "314142934",
+      "unitType": "ESEK"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "69942afa-6df4-40f6-a219-61442b110a3d",
+      "name": "OVERFØLSOM SNILL TIGER AS",
+      "organizationNumber": "314277104",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "6973674b-45b0-4610-ad6f-d393b2578a54",
+      "name": "SYMPATISK SOSIAL TIGER AS",
+      "organizationNumber": "312929384",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "68ccb892-d87d-4157-9a0e-cadb64c3ab8b",
+      "name": "FANTASILØS FIRKANTET TIGER AS",
+      "organizationNumber": "314243048",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "67dec556-d93d-4248-9f5d-42139c7fab39",
+      "name": "LOGISK UTSTRAKT TIGER AS",
+      "organizationNumber": "310651907",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "65740d80-4b9e-4574-a6d3-d68475f9dc05",
+      "name": "ALLSIDIG TRÅDLØS TIGER AS",
+      "organizationNumber": "310692999",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5ffd2143-0215-419e-9fd1-71bfeefc5566",
+      "name": "VOKAL KOMISK TIGER AS",
+      "organizationNumber": "310020893",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5e77decc-c2d9-42cc-8f10-8c54e6475670",
+      "name": "OMTENKSOM KONSEKVENT TIGER AS",
+      "organizationNumber": "314174186",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5e47f6ff-de3f-475c-a5a1-6f5e48eee96b",
+      "name": "UNDERLIG INNSIKTSFULL TIGER AS",
+      "organizationNumber": "311135619",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5d9f95f4-f713-448e-94eb-9b779c480b81",
+      "name": "AUTORISERT VEIK TIGER AS",
+      "organizationNumber": "310609544",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5ca62ff5-a88f-4740-81e9-a29a750af453",
+      "name": "KOMPLETT POPULÆR TIGER AS",
+      "organizationNumber": "313009203",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5c484f99-3c18-4717-a56f-43bb98277390",
+      "name": "TYDELIG LITEN LØVE SAMEIE",
+      "organizationNumber": "313549178",
+      "unitType": "ESEK"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5a6b4ad3-cfe2-4e8a-8ef4-eb2252041992",
+      "name": "EIERSEKSJONSSAMEIET MORSOM INKONSEKVENT LØVE",
+      "organizationNumber": "313106020",
+      "unitType": "ESEK"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5a045cbb-e26c-4a38-9ad2-9ed116869332",
+      "name": "VENNLIG GRETTEN TIGER AS",
+      "organizationNumber": "310381659",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5988b0af-df4d-49d2-869e-37ec051489eb",
+      "name": "KONGE NY APE",
+      "organizationNumber": "313054349",
+      "unitType": "FLI"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "59440ae0-7b63-46f7-acea-7617bd35add4",
+      "name": "INNESLUTTET MOTIVERT TIGER AS",
+      "organizationNumber": "312852810",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "593de12f-00e5-4ac6-b535-1a3302f1cce6",
+      "name": "FORDEKT KJÆRLIG TIGER AS",
+      "organizationNumber": "313079074",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "58c5d69b-d10b-4039-9f6c-6f5d2be9bcb2",
+      "name": "UTØRST SKAPENDE TIGER AS",
+      "organizationNumber": "312922223",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "56dcc20e-14aa-4e6f-ad77-25a5a88e9960",
+      "name": "UNGT UAVHENGIG TIGER AS",
+      "organizationNumber": "313218155",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "551601fa-cb72-48d8-90bc-d9e740249c1a",
+      "name": "ANONYM AKSEPTABEL TIGER AS",
+      "organizationNumber": "314259114",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "54a38058-0526-41ec-9513-30d0ba08b0c6",
+      "name": "GRUNN GLAD TIGER AS",
+      "organizationNumber": "313648559",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "5280b199-d6a9-437c-abd4-a38c435e23e4",
+      "name": "KNUSLETE FORDEKT TIGER AS",
+      "organizationNumber": "310066915",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "51efcbde-121d-4e9b-81c3-4c73bf197c90",
+      "name": "TOÅRIG SOFISTIKERT ISBJØRN SA",
+      "organizationNumber": "314239520",
+      "unitType": "SA"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "503e7d56-f0bd-460e-b7b0-5f9fbe97bcd5",
+      "name": "BERIKENDE STANDHAFTIG APE",
+      "organizationNumber": "313308936",
+      "unitType": "FLI"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "4bf0ac81-90d4-4376-a0fa-8620a545ab4d",
+      "name": "OMKOMMEN FRYKTSOM TIGER AS",
+      "organizationNumber": "210716572",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "4b9357d4-78c6-469c-b33e-fd37e37bf941",
+      "name": "OFFISIELL TROFAST TIGER AS",
+      "organizationNumber": "310596892",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "47d6d135-d117-4b2b-8735-01ff7694b439",
+      "name": "OPPSTEMT KJÆR TIGER AS",
+      "organizationNumber": "310476099",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "4721b974-a93b-45c4-9d63-408b4c16c13f",
+      "name": "VÅKEN ALFABETISK TIGER AS",
+      "organizationNumber": "314241525",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "43125ba4-fa34-4333-89b8-6c97e61041eb",
+      "name": "SVIMMEL ORDENTLIG TIGER AS",
+      "organizationNumber": "313734986",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "425b8b7a-8b31-4abd-a004-779bf0afb5f6",
+      "name": "TILFREDSSTILLENDE VARM TIGER AS",
+      "organizationNumber": "310096164",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "4206a96e-355a-4dc7-8e20-4bd117fc17aa",
+      "name": "TØFF SITRONGUL TIGER AS",
+      "organizationNumber": "313872076",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "3f0e0c4b-58ab-4251-b2c8-7cf9ee4c0254",
+      "name": "FORNUFTIG OPPLAGT TIGER AS",
+      "organizationNumber": "312951541",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "3ee753f1-0d8d-4491-b4e7-7fd8124696ae",
+      "name": "SLAPP AKROBATISK TIGER AS",
+      "organizationNumber": "310522775",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "3bf4aa8a-f18c-4e61-9825-6ce06b507989",
+      "name": "SENTRAL REN TIGER AS",
+      "organizationNumber": "313589056",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "3bd58d1e-1c92-4435-bc79-1f64d192db47",
+      "name": "ELEKTRONISK SALT TIGER AS",
+      "organizationNumber": "312491362",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "37c7b5fe-1741-4e14-b67c-6c4b9f75f599",
+      "name": "ALFABETISK RØD TIGER AS",
+      "organizationNumber": "312767732",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "34c83ad3-8a02-421b-a4f6-f1f03a24c700",
+      "name": "RU OPPJAGET TIGER AS",
+      "organizationNumber": "312929112",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "2f5d2589-d8f8-41cd-acdc-348cd657c2b0",
+      "name": "KJEMPENDE FREDFULL APE",
+      "organizationNumber": "312568853",
+      "unitType": "FLI"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "2d853592-5c42-47a8-aee1-2090410b520e",
+      "name": "GREI RIMELIG STRUTS AB",
+      "organizationNumber": "313754367",
+      "unitType": "NUF"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "2ab7c779-ef57-4270-959e-cac5937b8633",
+      "name": "TØRR SUNN TIGER AS",
+      "organizationNumber": "313112845",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "2a54b3da-b4fa-4a5e-ac49-9cd35ffc4420",
+      "name": "STERK KOMPLEKS TIGER AS",
+      "organizationNumber": "311735500",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "2980a228-e0a7-44ae-b7ca-5805623feef5",
+      "name": "SAMEIET NESNØDD NYBAKT LØVE",
+      "organizationNumber": "310202320",
+      "unitType": "ESEK"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "279fc9a4-13e5-4de8-9d61-7736a894865b",
+      "name": "ROSA PARAT TIGER AS",
+      "organizationNumber": "310940259",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "24649116-c2cf-43c8-bdf0-a91faae09460",
+      "name": "AUTONOM SPESIFIKK APE",
+      "organizationNumber": "310706485",
+      "unitType": "FLI"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "22ece1e6-4ad2-40ab-85ac-e7381a6acc39",
+      "name": "ORANSJE BESKJEDEN TIGER AS",
+      "organizationNumber": "212708062",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "22b0e495-04fa-4d0f-9c58-696c5cefde60",
+      "name": "USELVISK GILD TIGER AS",
+      "organizationNumber": "312828782",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "20a3ad68-6e55-4de7-84d8-4bfcafe7bc70",
+      "name": "OPPLAGT FREIDIG TIGER AS",
+      "organizationNumber": "313607046",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "1d9e6858-68a0-4a24-bb3e-60c859458828",
+      "name": "EKSPLOSIV SVENSK TIGER AS",
+      "organizationNumber": "212795402",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "1c6d2bf3-e7fb-4dcf-992f-34338cdd9fcd",
+      "name": "DOBBEL MATT TIGER AS",
+      "organizationNumber": "312474042",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "1ae2c5ca-09e2-462c-acec-07b6449ea960",
+      "name": "ALMINNELIG FESTLIG TIGER AS",
+      "organizationNumber": "314241746",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "1ad00c6d-e7f8-432f-9685-d9aa53808212",
+      "name": "LYDIG VELDIG TIGER AS",
+      "organizationNumber": "313032418",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "1ab7f540-68c9-4ba5-a846-2390bf5faeae",
+      "name": "RUSTEN RIK TIGER AS",
+      "organizationNumber": "312267446",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "16c19987-9443-4e07-8395-c10ebb2a9249",
+      "name": "FYSISK SIST ISBJØRN SA",
+      "organizationNumber": "310807974",
+      "unitType": "SA"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "14bc9b4b-ba1e-4ad2-b75b-0134719b80e7",
+      "name": "REDELIG ÆRLIG TIGER AS",
+      "organizationNumber": "313542785",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "0ff56130-5995-44eb-b6bc-f6a5f35f2ffe",
+      "name": "ELEKTRONISK MORSK TIGER AS",
+      "organizationNumber": "314018397",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "0f476093-0e8d-44d4-ab2f-22a3ddeed750",
+      "name": "SIGEN UTÅLMODIG TIGER AS",
+      "organizationNumber": "312243199",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "0dcbc295-456b-4cd9-966e-f95d3cbef192",
+      "name": "USANNFERDIG NORMAL TIGER AS",
+      "organizationNumber": "314046838",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "0c6b8989-494c-40d4-a977-91323b5d53ee",
+      "name": "UINSPIRERT HUSLØS TIGER AS",
+      "organizationNumber": "313620999",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "0a1b5909-6b24-4ce5-b148-ff917b48e0f6",
+      "name": "HUSLØS EKSPLOSIV TIGER AS",
+      "organizationNumber": "310676519",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "059d7ceb-cd44-42ad-a360-17501f82bd04",
+      "name": "EVIG SKÅNSOM TIGER AS",
+      "organizationNumber": "313115461",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "03d79c06-a9f9-4b02-9888-88e900efc8a9",
+      "name": "OPPFARENDE GRETTEN TIGER AS",
+      "organizationNumber": "312677237",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "038ba613-67fe-484d-b8df-cd134c0f3b0d",
+      "name": "SKAPENDE USELVISK TIGER AS",
+      "organizationNumber": "313251136",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "024a0fdd-294c-45ce-9a12-262b11983f2d",
+      "name": "SPRUDLENDE KRY TIGER AS",
+      "organizationNumber": "312403072",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "01571c81-80e4-47b3-a253-67a70c3d3132",
+      "name": "LILLA BLØT TIGER AS",
+      "organizationNumber": "313169960",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "0099ada4-7491-4765-919d-4006daabeb7d",
+      "name": "SLITEN SAKTE TIGER AS",
+      "organizationNumber": "310248185",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "revisor",
+        "packages": [
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider",
+          "ansvarlig-revisor",
+          "revisormedarbeider"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "f1c7ca59-5bf9-4036-bdb8-15062d992eaa",
+      "name": "VELDIG FLAT TIGER AS",
+      "organizationNumber": "313426475",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "regnskapsforer",
+        "packages": [
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn",
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn",
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "bb44fdc6-c6f1-4a87-b872-8ecf43f42b53",
+      "name": "TROFAST PRAKTISK TIGER AS",
+      "organizationNumber": "312511894",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "regnskapsforer",
+        "packages": [
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn",
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn",
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "a88a4172-c5ee-482a-af56-59f51b1844a4",
+      "name": "KOMPETENT NETT TIGER AS",
+      "organizationNumber": "312432528",
+      "unitType": "AS"
+    },
+    "access": [
+      {
+        "role": "regnskapsforer",
+        "packages": [
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn",
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn",
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn"
+        ]
+      }
+    ]
+  },
+  {
+    "party": {
+      "id": "a23b7707-0349-4903-b8d9-6a293d15ec89",
+      "name": "FINTFØLENDE GJESTFRI HAMSTER KF",
+      "organizationNumber": "313334333",
+      "unitType": "KF"
+    },
+    "access": [
+      {
+        "role": "regnskapsforer",
+        "packages": [
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn",
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn",
+          "regnskapsforer-med-signeringsrettighet",
+          "regnskapsforer-uten-signeringsrettighet",
+          "regnskapsforer-lonn"
+        ]
+      }
+    ]
+  }
+]
