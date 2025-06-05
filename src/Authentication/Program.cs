@@ -81,15 +81,15 @@ ConfigureLogging(builder.Logging);
 ConfigureServices(builder.Services, builder.Configuration);
 
 // Forwardlimit is set to 2 as our infrastructure has 1 proxy forward. The 2nd value from right to left is read into remoteipaddress property which is the client ip
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor;
-    options.ForwardLimit = 2;
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
-    options.RequireHeaderSymmetry = false;
-});
+//builder.Services.Configure<ForwardedHeadersOptions>(options =>
+//{
+//    options.ForwardedHeaders =
+//        ForwardedHeaders.XForwardedFor;
+//    options.ForwardLimit = 2;
+//    options.KnownNetworks.Clear();
+//    options.KnownProxies.Clear();
+//    options.RequireHeaderSymmetry = false;
+//});
 
 builder.Services.AddPersistanceLayer();
 
@@ -466,8 +466,7 @@ static string GetXmlCommentsPathForControllers()
 }
 
 void Configure()
-{
-    app.UseForwardedHeaders();
+{    
     if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     {
         app.UseDeveloperExceptionPage();
@@ -479,6 +478,8 @@ void Configure()
     {
         app.UseExceptionHandler("/authentication/api/v1/error");
     }
+
+    app.UseForwardedHeaders();
 
     app.UseSwagger(o => o.RouteTemplate = "authentication/swagger/{documentName}/swagger.json");
 

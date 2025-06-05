@@ -712,6 +712,66 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemUser_ListByVendorsSystem_XForwarding_Test()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+            Guid id = Guid.NewGuid();
+
+            string para = $"{partyId}/{id}";
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix",
+            };
+
+            int nextPage = _paginationSize;
+            int thirdPage = _paginationSize - 1;
+            int numberOfTestCases = _paginationSize + nextPage + thirdPage;
+
+            await CreateSeveralSystemUsers(client, numberOfTestCases, newSystemUser.SystemId);
+
+            HttpClient vendorClient = CreateClient();
+            string[] prefixes = { "altinn", "digdir" };
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            vendorClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // First page
+            string vendorEndpoint = $"/authentication/api/v1/systemuser/vendor/bysystem/{newSystemUser.SystemId}";
+
+            HttpRequestMessage vendorMessage = new(HttpMethod.Get, vendorEndpoint);
+            vendorMessage.Headers.Add("X-FORWARDED-FOR", "192.168.1.100, 192.168.2.50, 10.100.200.7");
+            vendorMessage.Headers.Add("X-FORWARDED-HOST", "first.example, second.example, last.example");
+            vendorMessage.Headers.Add("X-FORWARDED-PROTO", "https, https, https");
+            HttpResponseMessage vendorResponse = await vendorClient.SendAsync(vendorMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, vendorResponse.StatusCode);
+
+            var result = await vendorResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>();
+            Assert.NotNull(result);
+            var list = result.Items.ToList();
+            List<SystemUser> all = [];
+
+            Assert.NotNull(list);
+            Assert.NotEmpty(list);
+            Assert.Distinct(list);
+            Assert.Equal(_paginationSize, list.Count);
+
+            all.AddRange(list);
+
+            Assert.NotNull(result.Links.Next);
+            Uri uri = new(result.Links.Next, UriKind.Absolute);
+            Assert.Equal("last.example", uri.Host);
+            Assert.Equal("https", uri.Scheme);
+        }
+
+        [Fact]
         public async Task SystemUser_CreateAndDelegate_ReturnsOk()
         {
             // Create System used for test
