@@ -121,13 +121,14 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
-        ValidationErrorBuilder generalErrors = default;
-        
         if (proposedUpdateToSystem.Id != systemId)
         {
-            generalErrors.Add(ValidationErrors.SystemId_Mismatch, [
-                ErrorPathConstant.SYSTEM_ID
-            ]);
+            ValidationErrorBuilder errors = default;
+            errors.Add(ValidationErrors.SystemId_Mismatch, [ErrorPathConstant.SYSTEM_ID]);
+            if (errors.TryToActionResult(out var result))
+            {
+                return result;
+            }
         }
 
         RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
@@ -143,9 +144,9 @@ public class SystemRegisterController : ControllerBase
         ValidationErrorBuilder validateErrorRights = await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken);
         ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, cancellationToken);
         ValidationErrorBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages);
-        ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds, generalErrors);
+        ValidationErrorBuilder mergedErrors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
 
-        if (errors.TryToActionResult(out ActionResult errorResult))
+        if (mergedErrors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
@@ -410,35 +411,36 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private static Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> allClientUsages)
+    private Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> allClientUsages)
     {
         ValidationErrorBuilder errors = default;
 
-        bool hasDuplicates = updatedSystem.ClientId
-            .GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .Any(g => g.Count() > 1);
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+        bool hasDuplicates = updatedSystem.ClientId.Any(clientId => !seen.Add(clientId));
 
         if (hasDuplicates)
         {
             errors.Add(ValidationErrors.SystemRegister_Duplicate_ClientIds, [ErrorPathConstant.CLIENT_ID]);
         }
-
-        // Validate incoming clientIds (ensure not used by another system)
+        
+        // Check for client IDs used by other systems (not deleted and not ours)
         foreach (string clientId in updatedSystem.ClientId)
         {
-            List<MaskinPortenClientInfo> usages = allClientUsages
-                .Where(x => string.Equals(x.ClientId, clientId, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            bool usedByOther = allClientUsages.Any(usage =>
+            {
+                bool sameClientId = string.Equals(usage.ClientId, clientId, StringComparison.OrdinalIgnoreCase);
+                bool differentSystem = usage.SystemInternalId != currentSystem.InternalId;
+                bool isActive = !usage.IsDeleted;
 
-            bool usedByAnotherSystem = usages.Any(x =>
-                x.SystemInternalId != currentSystem.InternalId && !x.IsDeleted);
+                return sameClientId && differentSystem && isActive;
+            });
 
-            if (usedByAnotherSystem)
+            if (usedByOther)
             {
                 errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [ErrorPathConstant.CLIENT_ID]);
             }
         }
-        
+
         return Task.FromResult(errors);
     }
 

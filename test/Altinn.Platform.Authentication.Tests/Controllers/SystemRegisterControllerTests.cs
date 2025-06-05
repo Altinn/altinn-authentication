@@ -1208,6 +1208,33 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_EmptyClientId_Test()
+        {
+            // Prepare
+            const string systemId = "991825827_the_matrix";
+
+            // Empty to see if we can update
+            List<string> clientIdsInFirstSystem = [];
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // New clientIds
+            List<string> newClientIds = ["123", "1234"];
+            RegisterSystemRequest proposedUpdate = CreateSystemRegisterRequest(systemId, newClientIds);
+            var resp = await PutSystemRegisterAsync(proposedUpdate, systemId);
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+            HttpResponseMessage responseGet = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, responseGet.StatusCode);
+
+            RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await responseGet.Content.ReadAsStringAsync(), _options);
+            Assert.True(actualUpdatedSystem.ClientId.Count == proposedUpdate.ClientId.Count);
+            Assert.Contains(proposedUpdate.ClientId[0], actualUpdatedSystem.ClientId[0]);
+            Assert.Contains(proposedUpdate.ClientId[0], actualUpdatedSystem.ClientId[1]);
+        }
+
+        [Fact]
         public async Task SystemRegister_UnmatchedRequestBodyAndSystemId()
         {
             // Prepare
@@ -1226,7 +1253,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Read the content as string
             string content = await resp.Content.ReadAsStringAsync();
-            Assert.Equal("SystemId in request body doesn't match systemId in Url", content);
+            Assert.Contains("The system ID in the request body does not match the system ID in the URL", content);
         }
 
         [Fact]
