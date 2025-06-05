@@ -416,7 +416,7 @@ public class SystemRegisterController : ControllerBase
 
             var problemExtensionData = ProblemExtensionData.Create(new[]
             {
-                    new KeyValuePair<string, string>("Invalid Urn Details : ", string.Join(" | ", allInvalidUrns))
+                new KeyValuePair<string, string>("Invalid Urn Details : ", string.Join(" | ", allInvalidUrns))
             });
 
             errors.Add(ValidationErrors.SystemRegister_AccessPackage_NotValid, ErrorPathConstant.ACCESSPACKAGES, problemExtensionData);
@@ -432,20 +432,20 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> allClientUsages)
+    private static Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest proposedUpdateToSystem, List<MaskinPortenClientInfo> allClientUsages)
     {
         ValidationErrorBuilder errors = default;
 
         HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
-        bool hasDuplicates = updatedSystem.ClientId.Any(clientId => !seen.Add(clientId));
+        bool hasDuplicates = proposedUpdateToSystem.ClientId.Any(clientId => !seen.Add(clientId));
 
         if (hasDuplicates)
         {
             errors.Add(ValidationErrors.SystemRegister_Duplicate_ClientIds, [ErrorPathConstant.CLIENT_ID]);
         }
-        
+
         // Check for client IDs used by other systems (not deleted and not ours)
-        foreach (string clientId in updatedSystem.ClientId)
+        foreach (string clientId in proposedUpdateToSystem.ClientId)
         {
             bool usedByOther = allClientUsages.Any(usage =>
             {

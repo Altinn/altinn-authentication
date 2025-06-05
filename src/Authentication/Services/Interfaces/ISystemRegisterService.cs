@@ -135,15 +135,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<bool> DoesAccessPackageExistsAndDelegable(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Removes a maskinporten client
-        /// </summary>
-        /// <param name="clientIds">list of client ids to delete</param>
-        /// <param name="internalId">Internal Id tied to System in System register</param>
-        /// <param name="cancellationToken">the cancellation token</param>
-        /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-        Task DeleteMaskinportenClientIds(List<string> clientIds, Guid internalId, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Gets the list of invalid access packages.
         /// </summary>
         /// <param name="accessPackages">access packages to be validated</param>

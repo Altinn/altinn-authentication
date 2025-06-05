@@ -19,7 +19,6 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 {
     private readonly NpgsqlDataSource _datasource;
     private readonly ILogger _logger;
-    private ISystemRegisterRepository _systemRegisterRepositoryImplementation;
 
     /// <summary>
     /// Constructor
@@ -127,7 +126,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    /// <inheritdoc cref="" />  
+    /// <inheritdoc/>
     public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, string systemId, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/"""
@@ -157,16 +156,16 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_NAME, updatedSystem.Name);
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_DESCRIPTION, updatedSystem.Description);
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE, updatedSystem.IsVisible);
-            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
-            command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
+            command.Parameters.Add(new NpgsqlParameter(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = updatedSystem.Rights });
+            command.Parameters.Add(new NpgsqlParameter(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = updatedSystem.AccessPackages });
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS, updatedSystem.AllowedRedirectUrls.ConvertAll<string>(delegate(Uri u) { return u.ToString(); }));
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, updatedSystem.ClientId);
 
-            bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
+            bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
 
             await UpdateClient(updatedSystem.ClientId, updatedSystem.Id, cancellationToken);
 
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(cancellationToken);
 
             return isUpdated;
         }
@@ -283,7 +282,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    /// <inheritdoc cref="" />
+    /// <inheritdoc/>
     public async Task DeleteMaskinportenClients(List<string> clientIds, Guid internalId, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/"""

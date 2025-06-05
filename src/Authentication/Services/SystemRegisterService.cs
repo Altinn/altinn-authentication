@@ -150,12 +150,6 @@ namespace Altinn.Platform.Authentication.Services
 
             return true;
         }
-        
-        /// <inheritdoc cref="" />
-        public Task DeleteMaskinportenClientIds(List<string> clientIds, Guid internalId, CancellationToken cancellationToken)
-        {
-            return _systemRegisterRepository.DeleteMaskinportenClients(clientIds, internalId, cancellationToken);
-        }
 
         /// <inheritdoc/>
         public async Task<(List<string> invalidFormatUrns, List<string> notFoundUrns, List<string> notDelegableUrns)>
