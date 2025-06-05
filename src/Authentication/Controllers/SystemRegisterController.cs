@@ -105,7 +105,7 @@ public class SystemRegisterController : ControllerBase
     /// <summary>
     /// Replaces the entire registered system
     /// </summary>
-    /// <param name="attemptedUpdatedSystem">The updated system model</param>
+    /// <param name="proposedUpdateToSystem">The updated system model</param>
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
@@ -114,16 +114,20 @@ public class SystemRegisterController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest attemptedUpdatedSystem, string systemId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest proposedUpdateToSystem, string systemId, CancellationToken cancellationToken = default)
     {
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(attemptedUpdatedSystem.Vendor.ID), User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(proposedUpdateToSystem.Vendor.ID), User))
         {
             return Forbid();
         }
 
-        if (attemptedUpdatedSystem.Id != systemId)
+        ValidationErrorBuilder generalErrors = default;
+        
+        if (proposedUpdateToSystem.Id != systemId)
         {
-            return BadRequest("SystemId in request body doesn't match systemId in Url");
+            generalErrors.Add(ValidationErrors.SystemId_Mismatch, [
+                ErrorPathConstant.SYSTEM_ID
+            ]);
         }
 
         RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
@@ -133,28 +137,25 @@ public class SystemRegisterController : ControllerBase
             return NotFound($"System with ID '{systemId}' not found.");
         }
 
-        List<string> allClientIds = CombineClientIds(currentSystem.ClientId, attemptedUpdatedSystem.ClientId);
+        List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
 
-        ValidationErrorBuilder validateErrorRights = await ValidateRights(attemptedUpdatedSystem.Rights, cancellationToken);
-        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(attemptedUpdatedSystem.AccessPackages, cancellationToken);
-        ValidationErrorBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, attemptedUpdatedSystem, allClientIdUsages);
-        ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
+        ValidationErrorBuilder validateErrorRights = await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken);
+        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, cancellationToken);
+        ValidationErrorBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages);
+        ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds, generalErrors);
 
         if (errors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
 
-        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(attemptedUpdatedSystem, systemId, cancellationToken);
+        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(proposedUpdateToSystem, systemId, cancellationToken);
 
         if (!success)
         {
             return BadRequest("Unable to update system");
         }
-
-        List<MaskinPortenClientInfo> clientIdsToDelete = FindRemovedClients(currentSystem, attemptedUpdatedSystem, allClientIdUsages);
-        await DeleteRemovedClientIds(clientIdsToDelete, currentSystem.InternalId, cancellationToken);
 
         return Ok(new SystemRegisterUpdateResult(true));
     }
@@ -488,27 +489,5 @@ public class SystemRegisterController : ControllerBase
         }
 
         return mergedErrors;
-    }
-
-    private async Task DeleteRemovedClientIds(List<MaskinPortenClientInfo> toDelete, Guid currentSystemId, CancellationToken cancellationToken)
-    {
-        foreach (var clientInfo in toDelete)
-        {
-            await _systemRegisterService.DeleteMaskinportenClientId(
-                clientInfo.ClientId,
-                currentSystemId,
-                cancellationToken);
-        }
-    }
-
-    private static List<MaskinPortenClientInfo> FindRemovedClients(RegisteredSystemResponse currentSystem, RegisterSystemRequest updatedSystem, List<MaskinPortenClientInfo> clientUsages)
-    {
-        List<string> removedIds = currentSystem.ClientId
-            .Where(oldId => !updatedSystem.ClientId.Contains(oldId, StringComparer.OrdinalIgnoreCase))
-            .ToList();
-
-        return clientUsages
-            .Where(x => removedIds.Contains(x.ClientId, StringComparer.OrdinalIgnoreCase))
-            .ToList();
     }
 }

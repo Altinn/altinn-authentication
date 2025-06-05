@@ -105,7 +105,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
         {
-            return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
+            return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem, systemId, cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -127,7 +127,7 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         return false;
                     }
-                }                
+                }
             }
 
             return true;
@@ -150,11 +150,11 @@ namespace Altinn.Platform.Authentication.Services
 
             return true;
         }
-
-        /// <inheritdoc/>
-        public Task DeleteMaskinportenClientId(string clientId, Guid internalId, CancellationToken cancellationToken)
+        
+        /// <inheritdoc cref="" />
+        public Task DeleteMaskinportenClientIds(List<string> clientIds, Guid internalId, CancellationToken cancellationToken)
         {
-            return _systemRegisterRepository.DeleteMaskinportenClient(clientId, internalId, cancellationToken);
+            return _systemRegisterRepository.DeleteMaskinportenClients(clientIds, internalId, cancellationToken);
         }
     }
 }

@@ -19,6 +19,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 {
     private readonly NpgsqlDataSource _datasource;
     private readonly ILogger _logger;
+    private ISystemRegisterRepository _systemRegisterRepositoryImplementation;
 
     /// <summary>
     /// Constructor
@@ -126,8 +127,8 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    /// <inheritdoc/>  
-    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default)
+    /// <inheritdoc cref="" />  
+    public async Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, string systemId, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/"""
                                         UPDATE business_application.system_register
@@ -163,7 +164,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
             bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
 
-            await UpdateClient(updatedSystem.ClientId, updatedSystem.Id, conn, transaction);
+            await UpdateClient(updatedSystem.ClientId, updatedSystem.Id, cancellationToken);
 
             await transaction.CommitAsync();
 
@@ -282,30 +283,29 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    /// <inheritdoc/>
-    public async Task DeleteMaskinportenClient(string clientId, Guid internalId, CancellationToken cancellationToken)
+    /// <inheritdoc cref="" />
+    public async Task DeleteMaskinportenClients(List<string> clientIds, Guid internalId, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/"""
                                         DELETE FROM business_application.maskinporten_client
-                                        WHERE client_id = @client_id AND system_internal_id = @system_internal_id;
+                                        WHERE client_id = ANY(@client_ids) AND system_internal_id = @system_internal_id;
                                         """;
         try
         {
             await using NpgsqlConnection conn = await _datasource.OpenConnectionAsync(cancellationToken);
+            await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken);
 
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn, transaction);
 
-            command.Parameters.AddWithValue("client_id", clientId); // string
-            command.Parameters.AddWithValue("system_internal_id", internalId); // Guid
+            command.Parameters.AddWithValue("client_ids", clientIds.ToArray()); // array of strings
+            command.Parameters.AddWithValue("system_internal_id", internalId); // single Guid
 
             await command.ExecuteNonQueryAsync(cancellationToken);
-
-            await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // SystemRegisterRepository // DeleteMaskinportenClient // Exception");
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // DeleteMaskinportenClients // Exception");
             throw;
         }
     }
@@ -513,24 +513,25 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    private async Task UpdateClient(List<string> clientIds, string systemId, NpgsqlConnection conn, NpgsqlTransaction transaction)
+    private async Task UpdateClient(List<string> newClientIds, string systemId, CancellationToken cancellationToken)
     {
         try
         {
             RegisteredSystemResponse? systemInfo = await GetRegisteredSystemById(systemId);
-
             List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo!.InternalId);
+            List<string> existingClientIds = existingClients.Select(c => c.ClientId).ToList();
 
-            if (existingClients != null)
+            List<string> clientIdsToDelete = existingClientIds.Except(newClientIds).ToList();
+            List<string> clientIdsToAdd = newClientIds.Except(existingClientIds).ToList();
+
+            if (clientIdsToAdd.Count != 0)
             {
-                foreach (string id in clientIds)
-                {
-                    bool clientFoundAlready = existingClients.FindAll(c => c.ClientId == id).Count() > 0;
-                    if (!clientFoundAlready)
-                    {
-                        await CreateClient(id, systemInfo.InternalId);
-                    }
-                }
+                await DeleteMaskinportenClients(clientIdsToDelete, systemInfo.InternalId, cancellationToken);
+            }
+
+            foreach (string clientId in clientIdsToAdd)
+            {
+                await CreateClient(clientId, systemInfo.InternalId);
             }
         }
         catch (Exception ex)

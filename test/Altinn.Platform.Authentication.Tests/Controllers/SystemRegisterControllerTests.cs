@@ -994,6 +994,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Verify you can create new system with old (deleted) clientIds
             string filename = "Data/SystemRegister/Json/SystemRegisterClientIdsExist.json";
             HttpResponseMessage responseNewSystem = await CreateSystemRegister(filename);
+            var resp = await responseNewSystem.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, responseNewSystem.StatusCode);
         }
 

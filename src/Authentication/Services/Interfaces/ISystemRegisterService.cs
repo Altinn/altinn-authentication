@@ -137,10 +137,10 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <summary>
         /// Removes a maskinporten client
         /// </summary>
-        /// <param name="clientId">ClientId</param>
+        /// <param name="clientIds">list of client ids to delete</param>
         /// <param name="internalId">Internal Id tied to System in System register</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-        Task DeleteMaskinportenClientId(string clientId, Guid internalId, CancellationToken cancellationToken);
+        Task DeleteMaskinportenClientIds(List<string> clientIds, Guid internalId, CancellationToken cancellationToken);
     }
 }
