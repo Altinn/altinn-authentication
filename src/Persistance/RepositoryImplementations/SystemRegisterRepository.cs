@@ -523,7 +523,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             List<string> clientIdsToDelete = existingClientIds.Except(newClientIds).ToList();
             List<string> clientIdsToAdd = newClientIds.Except(existingClientIds).ToList();
 
-            if (clientIdsToAdd.Count != 0)
+            if (clientIdsToDelete.Count > 0)
             {
                 await DeleteMaskinportenClients(clientIdsToDelete, systemInfo.InternalId, cancellationToken);
             }

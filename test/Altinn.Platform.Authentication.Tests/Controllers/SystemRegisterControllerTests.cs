@@ -1188,6 +1188,65 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Rollback_Test()
+        {
+            const string systemId = "991825827_the_matrix";
+            List<string> clientIdsInFirstSystem = [Guid.NewGuid().ToString()];
+
+            // New update
+            List<string> validClientIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // Create put request with same ClientId which needs to be created
+            // RegisterSystemRequest update = CreateSystemRegisterRequest(systemId, []);
+
+            // Invalid redirectUrl
+            RegisterSystemRequest updateIsVisibleTrue = CreateSystemRegisterRequest(systemId, validClientIds, true, "htts://vg.no");
+            var resp = await PutSystemRegisterAsync(updateIsVisibleTrue, systemId);
+            var stringResp = await resp.Content.ReadAsStringAsync();
+
+            // make sure we noticed it failed on postgres update
+            Assert.Contains("Npgsql.PostgresException", stringResp);
+
+            HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
+
+            // verify the second one failed and did not update isVisible = true
+            RegisteredSystemResponse noneUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
+            Assert.False(noneUpdatedSystem.IsVisible);
+            Assert.Equal(noneUpdatedSystem.ClientId, clientIdsInFirstSystem);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Delete_Several_Clients_Test()
+        {
+            const string systemId = "991825827_the_matrix";
+            List<string> clientIdsInFirstSystem = ["f5d441dc-e4fe-482b-b8ff-164951689c9d", "0d767db9-1713-47cb-bac5-ce3439f450c2"];
+
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // Run update with no clientIds
+            List<string> newClientIds = [];
+
+            // Keep using the same clientId, but update something else
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, newClientIds, true);
+            var resp = await PutSystemRegisterAsync(updatedSystem, systemId);
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+            HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
+
+            // Assert all client ids were removed
+            RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
+            Assert.True(actualUpdatedSystem.ClientId.Count == 0);
+        }
+
+        [Fact]
         public async Task SystemRegister_DuplicateClientIds_Test()
         {
             // Prepare
@@ -1356,7 +1415,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         }
 
-        private static RegisterSystemRequest CreateSystemRegisterRequest(string systemId, List<string> clientIds, bool isVisible = false)
+        private static RegisterSystemRequest CreateSystemRegisterRequest(string systemId, List<string> clientIds, bool isVisible = false, string redirecturl = "https://altinn.no")
         {
             return new RegisterSystemRequest
             {
@@ -1364,7 +1423,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Vendor = new VendorInfo
                 {
                     Authority = "iso6523-actorid-upis",
-                    ID = "0192:991825827"
+                    ID = $"0192:991825827"
                 },
                 Name = new Dictionary<string, string>
                 {
@@ -1378,27 +1437,27 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     { "en", "Test system for Put" },
                     { "nn", "Test system for Put" }
                 },
-                Rights = new List<Right>
-                {
-                    new()
+                Rights =
+                [
+                    new Right
                     {
-                        Resource = new List<AttributePair>
-                        {
-                            new()
+                        Resource =
+                        [
+                            new AttributePair
                             {
                                 Id = "urn:altinn:resource",
                                 Value = "ske-krav-og-betalinger"
                             }
-                        }
+                        ]
                     }
-                },
+                ],
                 ClientId = clientIds,
-                AllowedRedirectUrls = new List<Uri>
-                {
-                    new("https://vg.no"),
-                    new("https://nrk.no"),
-                    new("https://altinn.no")
-                },
+                AllowedRedirectUrls =
+                [
+                    new Uri("https://vg.no"),
+                    new Uri("https://nrk.no"),
+                    new Uri(redirecturl)
+                ],
                 IsVisible = isVisible
             };
         }
@@ -1450,6 +1509,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             return getResponse;
+        }
+
+        public async Task<List<string>> RunParallelSystemRegisterUpdates(List<RegisterSystemRequest> updates)
+        {
+            List<string> responseBodies = [];
+            List<Task<HttpResponseMessage>> tasks = updates
+                .Select(updateDto => PutSystemRegisterAsync(updateDto, updateDto.Id))
+                .ToList();
+
+            HttpResponseMessage[] responses = await Task.WhenAll(tasks);
+
+            foreach (HttpResponseMessage response in responses)
+            {
+                Console.WriteLine($"Status: {response.StatusCode}");
+                string body = await response.Content.ReadAsStringAsync();
+                responseBodies.Add(body);
+            }
+
+            return responseBodies;
         }
     }
 }
