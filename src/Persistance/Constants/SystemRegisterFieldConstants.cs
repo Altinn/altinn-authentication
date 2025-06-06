@@ -32,7 +32,7 @@ namespace Altinn.Platform.Authentication.Persistance.Constants
         public const string SYSTEM_DESCRIPTION = "description";
 
         /// <summary>
-        /// Field Name for system description
+        /// Field Name for system client ids
         /// </summary>
         public const string SYSTEM_CLIENTID = "client_id";
 

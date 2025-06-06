@@ -54,6 +54,8 @@ public interface ISystemRegisterRepository
     /// <returns>True if set to deleted</returns>
     Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId);
 
+    Task DeleteMaskinportenClients(List<string> clientIds, Guid internalId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Retrieves the list, if any, of Default Rights 
     /// the System Vendor has put on the Registered System.
@@ -103,11 +105,10 @@ public interface ISystemRegisterRepository
 
     /// <summary>
     /// Updates the whole registered system,
-    /// except internal_id, system_id, orgnr and client_id.    
+    /// except internal_id, system_id and orgnr.    
     /// </summary>
-    /// <param name="systemId">The human readable string id</param>
     /// <returns>true if changed</returns>
-    Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default);
+    Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, string systemId, CancellationToken cancellationToken = default);
 
     /// Checks if the client id exists
     /// </summary>

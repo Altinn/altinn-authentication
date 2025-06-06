@@ -53,6 +53,9 @@
     <None Remove="appsettings.test.json" />
     <None Remove="selfSignedTestCertificate.pfx" />
     <None Remove="selfSignedTestCertificatePublic.cer" />
+    <None Update="Data\SystemRegister\Json\SystemRegisterClientIdsExist.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
