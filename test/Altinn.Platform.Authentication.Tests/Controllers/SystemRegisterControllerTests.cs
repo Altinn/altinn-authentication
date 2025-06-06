@@ -1195,7 +1195,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // New update
             List<string> validClientIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
-
             RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
             HttpResponseMessage response = await CreateSystemRegister(originalSystem);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1243,7 +1242,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert all client ids were removed
             RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
-            Assert.True(actualUpdatedSystem.ClientId.Count == 0);
+            Assert.Empty(actualUpdatedSystem.ClientId);
         }
 
         [Fact]
