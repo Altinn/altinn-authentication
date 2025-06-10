@@ -8,6 +8,7 @@ using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
@@ -20,6 +21,7 @@ using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
 
 #nullable enable
@@ -342,9 +344,10 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+            bool mockCustomerApi = await featureManager.IsEnabledAsync(FeatureFlags.MockCustomerApi);
+            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, mockCustomerApi, cancellationToken);
             if (result.IsSuccess)
             {
                 List<DelegationResponse> theList = [];
@@ -444,15 +447,28 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, CancellationToken cancellationToken)
+        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, CustomerRoleType customerRoleType, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
-            if (res.IsSuccess)
+            if (await featureManager.IsEnabledAsync(FeatureFlags.MockCustomerApi))
             {
-                return ConvertConnectionDTOToClient(res.Value);
-            }
+                var res = await _partiesClient.GetPartyCustomers(facilitator, customerRoleType, cancellationToken);
+                if (res.IsSuccess)
+                {
+                    return ConvertPartyCustomerToClient(res.Value);
+                }
 
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+            }
+            else
+            {
+                var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
+                if (res.IsSuccess)
+                {
+                    return ConvertConnectionDTOToClient(res.Value);
+                }
+
+                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+            }
         }
 
         private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
@@ -486,6 +502,23 @@ namespace Altinn.Platform.Authentication.Services
                     OrganizationIdentifier = item.Party.OrganizationNumber,
                     PartyUuid = item.Party.Id,
                     Access = item.Access
+                };
+                result.Add(newCustomer);
+            }
+
+            return result;
+        }
+
+        private static Result<List<Customer>> ConvertPartyCustomerToClient(CustomerList value)
+        {
+            List<Customer> result = [];
+            foreach (var item in value.Data)
+            {
+                var newCustomer = new Customer()
+                {
+                    DisplayName = item.DisplayName,
+                    OrganizationIdentifier = item.OrganizationIdentifier,
+                    PartyUuid = item.PartyUuid,
                 };
                 result.Add(newCustomer);
             }

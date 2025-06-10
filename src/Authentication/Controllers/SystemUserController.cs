@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
@@ -21,6 +22,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
@@ -38,6 +40,7 @@ public class SystemUserController : ControllerBase
     private readonly ISystemUserService _systemUserService;
     private readonly GeneralSettings _generalSettings;
     private readonly IRequestSystemUser _requestSystemUser;
+    private readonly IFeatureManager _featureManager;
 
     /// <summary>
     /// Route name for the internal stream of systemusers used by the Registry
@@ -53,11 +56,13 @@ public class SystemUserController : ControllerBase
     public SystemUserController(
         ISystemUserService systemUserService, 
         IRequestSystemUser requestSystemUser, 
-        IOptions<GeneralSettings> generalSettings)
+        IOptions<GeneralSettings> generalSettings,
+        IFeatureManager featureManager)
     {
         _systemUserService = systemUserService;
         _generalSettings = generalSettings.Value;
         _requestSystemUser = requestSystemUser;
+        _featureManager = featureManager;
     }
 
     /// <summary>
@@ -381,7 +386,7 @@ public class SystemUserController : ControllerBase
             return Forbid();
         }
 
-        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, _featureManager, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok(delegationResult.Value);
@@ -435,10 +440,10 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/clients")]
-    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] CustomerRoleType customerRoleType, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
     {
         List<Customer> ret = [];
-        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, cancellationToken);
+        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, customerRoleType, _featureManager, cancellationToken);
 
         if (result.IsSuccess)
         {
