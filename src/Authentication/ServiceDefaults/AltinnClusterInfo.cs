@@ -1,10 +1,12 @@
-﻿using System.Net;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net;
 
 namespace Altinn.Platform.Authentication.ServiceDefaults;
 
 /// <summary>
 /// Information about the Altinn cluster.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class AltinnClusterInfo
 {
     /// <summary>

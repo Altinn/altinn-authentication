@@ -13,6 +13,7 @@ namespace Altinn.Platform.Authentication.ServiceDefaults;
 /// <summary>
 /// A util from ServiceDefaults
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal static class IPNetworkUtils
 {
     /// <summary>

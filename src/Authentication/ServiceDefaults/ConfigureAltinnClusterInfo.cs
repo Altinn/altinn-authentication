@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Diagnostics;
+﻿using System.Diagnostics.CodeAnalysis;
+using CommunityToolkit.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -7,6 +8,7 @@ namespace Altinn.Platform.Authentication.ServiceDefaults;
 /// <summary>
 /// Applies servicedefaults
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal class ConfigureAltinnClusterInfo
     : IConfigureOptions<AltinnClusterInfo>
 {
