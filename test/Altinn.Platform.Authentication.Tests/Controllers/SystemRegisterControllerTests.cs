@@ -1195,14 +1195,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // New update
             List<string> validClientIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
-            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+
+            // IsVisible = false
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem, isVisible: false);
             HttpResponseMessage response = await CreateSystemRegister(originalSystem);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            // Create put request with same ClientId which needs to be created
-            // RegisterSystemRequest update = CreateSystemRegisterRequest(systemId, []);
-
-            // Invalid redirectUrl
+            // Invalid redirectUrl and trying to set "InVisible: true"
             RegisterSystemRequest updateIsVisibleTrue = CreateSystemRegisterRequest(systemId, validClientIds, true, "htts://vg.no");
             var resp = await PutSystemRegisterAsync(updateIsVisibleTrue, systemId);
             var stringResp = await resp.Content.ReadAsStringAsync();
@@ -1250,14 +1249,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Prepare
             const string systemId = "991825827_the_matrix";
-            List<string> clientIdsInFirstSystem = ["456", "8910"];
+            List<string> clientIdsInFirstSystem = ["09f040c6-dfc8-4a96-bd74-11bb2708ef81", "bc2df960-1d22-40be-a39f-b3b698bb2868"];
             RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
             HttpResponseMessage response = await CreateSystemRegister(originalSystem);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             // Duplicate clientIds
-            List<string> newClientIds = ["123", "123"];
-            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, newClientIds);
+            List<string> duplicateClientIds = ["09f040c6-dfc8-4a96-bd74-11bb2708ef81", "09f040c6-dfc8-4a96-bd74-11bb2708ef81"];
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, duplicateClientIds);
             var resp = await PutSystemRegisterAsync(updatedSystem, systemId);
             Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
 
@@ -1278,7 +1277,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             // New clientIds
-            List<string> newClientIds = ["123", "1234"];
+            List<string> newClientIds = ["dcbebc87-1e84-4ace-928a-220d4e557bb4", "070bebf2-c1b6-4efb-9e6b-be1927c473d8"];
             RegisterSystemRequest proposedUpdate = CreateSystemRegisterRequest(systemId, newClientIds);
             var resp = await PutSystemRegisterAsync(proposedUpdate, systemId);
             Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
@@ -1288,8 +1287,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await responseGet.Content.ReadAsStringAsync(), _options);
             Assert.True(actualUpdatedSystem.ClientId.Count == proposedUpdate.ClientId.Count);
-            Assert.Contains(proposedUpdate.ClientId[0], actualUpdatedSystem.ClientId[0]);
-            Assert.Contains(proposedUpdate.ClientId[0], actualUpdatedSystem.ClientId[1]);
+            Assert.Equal(proposedUpdate.ClientId, actualUpdatedSystem.ClientId);
         }
 
         [Fact]
@@ -1345,15 +1343,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             const string systemId = "991825827_the_matrix";
             const string systemIdSecondSystem = "991825827_snowman";
 
-            List<string> clientIdsInFirstSystem = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+            List<string> clientIdsInFirstSystem = ["fda56404-f022-46e8-929c-f38b6de2c195", "a0ac009e-0d0b-44bd-b713-95f88355b14b", "9e8d58f8-9b3a-4d5b-95f6-78994ffd0152"];
             HttpResponseMessage responseFirst = await CreateAndAssertSystemAsync(systemId, clientIdsInFirstSystem);
             Assert.Equal(HttpStatusCode.OK, responseFirst.StatusCode);
 
-            List<string> clientIdsSecondSystem = ["ClientIdForSecondSystem"];
+            List<string> clientIdsSecondSystem = ["f204bf11-c92b-4ba1-a3ca-278dd290efdc"];
             await CreateAndAssertSystemAsync(systemIdSecondSystem, clientIdsSecondSystem);
 
             // Running update with one new clientId and also one old from a second system
-            List<string> newClientIds = ["NewClientIdToUpdate", clientIdsSecondSystem[0]];
+            List<string> newClientIds = ["1cd178af-806e-40db-b050-46e60c1d112c", clientIdsSecondSystem[0]];
             RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, newClientIds);
 
             // Expecting bad request here
