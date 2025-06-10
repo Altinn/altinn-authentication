@@ -79,7 +79,7 @@ public interface ISystemUserService
     /// <param name="continueRequest">The Guid denoting from where to continue with Pagination</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<string>.Request continueRequest, CancellationToken cancellationToken);
+    Task<Result<Page<SystemUser, long>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<long>.Request continueRequest, CancellationToken cancellationToken);
 
     /// <summary>
     /// Called from the Authn.UI BFF to create a new SystemUser and delegate it to the given Reportee Party,
