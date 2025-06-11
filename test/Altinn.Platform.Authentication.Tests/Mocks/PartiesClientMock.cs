@@ -6,6 +6,9 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Enums;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Register.Models;
 
 namespace Altinn.Authentication.Tests.Mocks;
@@ -61,5 +64,10 @@ public class PartiesClientMock : IPartiesClient
         };
 
         return Task.FromResult<Organization>(organization);
+    }
+
+    public Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, CustomerRoleType customerType, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }

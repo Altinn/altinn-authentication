@@ -30,6 +30,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Azure;
 using Azure;
 using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
+using System;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -311,7 +312,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, bool mockCustomerApi, CancellationToken cancellationToken)
     {
         const string AGENT = "agent";
 
@@ -335,7 +336,15 @@ public class AccessManagementClient : IAccessManagementClient
 
         foreach (var pac in systemUser.AccessPackages) 
         {
-            var role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
+            string? role;
+            if (mockCustomerApi)
+            {
+                role = GetRoleFromAccessPackage(pac.Urn!);
+            }
+            else
+            {
+                role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
+            }               
 
             if ( role is null )
             {
@@ -441,6 +450,20 @@ public class AccessManagementClient : IAccessManagementClient
         }
 
         return null;
+    }
+
+    private static string? GetRoleFromAccessPackage(string accessPackage)
+    {
+        Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "revisor");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "revisor");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
+
+        hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
+        return found;
     }
 
     public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
