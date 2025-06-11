@@ -164,6 +164,7 @@ public class PartiesClient : IPartiesClient
 
     private static string? GetRoleFromAccessPackage(string accessPackage)
     {
+        accessPackage = $"urn:altinn:accesspackage:{accessPackage}".ToLowerInvariant();
         Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "regnskapsforer");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "regnskapsforer");
