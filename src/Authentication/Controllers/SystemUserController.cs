@@ -244,7 +244,7 @@ public class SystemUserController : ControllerBase
     [HttpGet("vendor/bysystem/{systemId}", Name = "vendor/systemusers/bysystem")]
     public async Task<ActionResult<Paginated<SystemUser>>> GetAllSystemUsersByVendorSystem(
         string systemId,
-        [FromQuery(Name = "token")] Opaque<string>? token = null,
+        [FromQuery(Name = "token")] Opaque<long>? token = null,
         CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
@@ -253,13 +253,13 @@ public class SystemUserController : ControllerBase
             return Unauthorized();
         }
 
-        Page<string>.Request continueFrom = null!;
+        Page<long>.Request continueFrom = null!;
         if (token?.Value is not null)
         {
             continueFrom = Page.ContinueFrom(token!.Value);
         }
 
-        Result<Page<SystemUser, string>> pageResult = await _systemUserService.GetAllSystemUsersByVendorSystem(
+        Result<Page<SystemUser, long>> pageResult = await _systemUserService.GetAllSystemUsersByVendorSystem(
             vendorOrgNo, systemId, continueFrom, cancellationToken);
         if (pageResult.IsProblem)
         {
@@ -440,7 +440,7 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/clients")]
-    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] CustomerRoleType customerRoleType, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
     {
         List<Customer> ret = [];
         var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
