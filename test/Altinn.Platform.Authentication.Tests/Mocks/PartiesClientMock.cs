@@ -66,7 +66,7 @@ public class PartiesClientMock : IPartiesClient
         return Task.FromResult<Organization>(organization);
     }
 
-    public Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, CustomerRoleType customerType, CancellationToken cancellationToken)
+    public Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

@@ -114,10 +114,18 @@ public class PartiesClient : IPartiesClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, CustomerRoleType customerType, CancellationToken cancellationToken)
+    public async Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken)
     {
         try
         {
+            CustomerRoleType customerType = GetRoleFromAccessPackage(accessPackage) switch
+            {
+                "regnskapsforer" => CustomerRoleType.Regnskapsforer,
+                "revisor" => CustomerRoleType.Revisor,
+                "forretningsforer" => CustomerRoleType.Forretningsforer,
+                _ => throw new ArgumentException("Invalid customer type")
+            };
+
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
             string endpointUrl = customerType switch
             {
@@ -152,5 +160,19 @@ public class PartiesClient : IPartiesClient
             _logger.LogError(ex, "Authentication // RegisterClient // GetPartyCustomers // Exception");
             throw;
         }
+    }
+
+    private static string? GetRoleFromAccessPackage(string accessPackage)
+    {
+        Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "revisor");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "revisor");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
+
+        hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
+        return found;
     }
 }
