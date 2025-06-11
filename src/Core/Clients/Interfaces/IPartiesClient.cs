@@ -30,8 +30,8 @@ public interface IPartiesClient
     /// Return all customers of a specific type for party
     /// </summary>
     /// <param name="partyUuid">The party UUID of the party to retrieve customers from</param>
-    /// <param name="customerType">Customer type to get</param>
+    /// <param name="accessPackage">Access Package</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of all party customers</returns>
-    Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, CustomerRoleType customerType, CancellationToken cancellationToken);
+    Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken);
 }

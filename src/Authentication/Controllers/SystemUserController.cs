@@ -443,7 +443,7 @@ public class SystemUserController : ControllerBase
     public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] CustomerRoleType customerRoleType, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
     {
         List<Customer> ret = [];
-        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, customerRoleType, _featureManager, cancellationToken);
+        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
 
         if (result.IsSuccess)
         {

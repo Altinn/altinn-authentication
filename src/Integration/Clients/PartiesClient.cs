@@ -114,6 +114,69 @@ public class PartiesClient : IPartiesClient
     }
 
     /// <inheritdoc />
+    public async Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken)
+    {
+        try
+        {
+            CustomerRoleType customerType = GetRoleFromAccessPackage(accessPackage) switch
+            {
+                "regnskapsforer" => CustomerRoleType.Regnskapsforer,
+                "revisor" => CustomerRoleType.Revisor,
+                "forretningsforer" => CustomerRoleType.Forretningsforer,
+                _ => throw new ArgumentException("Invalid customer type")
+            };
+
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
+            string endpointUrl = customerType switch
+            {
+                CustomerRoleType.Revisor => $"internal/parties/{partyUuid}/customers/ccr/revisor",
+                CustomerRoleType.Regnskapsforer => $"internal/parties/{partyUuid}/customers/ccr/regnskapsforer",
+                CustomerRoleType.Forretningsforer => $"internal/parties/{partyUuid}/customers/ccr/forretningsforer",
+                _ => throw new ArgumentException("Invalid customer type")
+            };
+
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
+
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, accessToken);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                if (response.StatusCode == HttpStatusCode.NoContent)
+                {
+                    return new CustomerList();
+                }
+                else
+                {
+                    return JsonSerializer.Deserialize<CustomerList>(responseContent, _serializerOptions);
+                }
+            }
+
+            _logger.LogError("Authentication // RegisterClient // GetPartyCustomers // Unexpected HttpStatusCode: {StatusCode}\n {responseBody}", response.StatusCode, responseContent);
+            return new Result<CustomerList>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RegisterClient // GetPartyCustomers // Exception");
+            throw;
+        }
+    }
+
+    private static string? GetRoleFromAccessPackage(string accessPackage)
+    {
+        Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "regnskapsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "revisor");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "revisor");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
+
+        hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
+        return found;
+    }
+
+    /// <inheritdoc />
     public async Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, CustomerRoleType customerType, CancellationToken cancellationToken)
     {
         try

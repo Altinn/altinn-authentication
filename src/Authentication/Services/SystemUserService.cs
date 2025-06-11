@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -453,11 +454,11 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, CustomerRoleType customerRoleType, IFeatureManager featureManager, CancellationToken cancellationToken)
+        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.MockCustomerApi))
             {
-                var res = await _partiesClient.GetPartyCustomers(facilitator, customerRoleType, cancellationToken);
+                var res = await _partiesClient.GetPartyCustomers(facilitator, packages.FirstOrDefault(), cancellationToken);
                 if (res.IsSuccess)
                 {
                     return ConvertPartyCustomerToClient(res.Value);
