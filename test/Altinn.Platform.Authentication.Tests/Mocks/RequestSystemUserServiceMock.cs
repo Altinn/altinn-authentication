@@ -113,5 +113,10 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             throw new NotImplementedException();
         }
+
+        public Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetAgentRequest(Guid requestId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

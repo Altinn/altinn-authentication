@@ -167,9 +167,17 @@ public interface IRequestSystemUser
 
     /// <summary>
     /// Verifies that the logged in user has the required rights to the request, and returns the Reportee Party
+    /// in the SystemUserInternal request.
+    /// </summary>
+    /// <param name="requestId">The id for the request</param>    
+    /// <returns>RequestSystemResponseInternal</returns>
+    Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId);
+
+    /// <summary>
+    /// Verifies that the logged in user has the required rights to the Agent request, and returns the Reportee Party
     /// in the request.
     /// </summary>
     /// <param name="requestId">The id for the request</param>    
-    /// <returns>Reportee</returns>
-    Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId);
+    /// <returns>RequestSystemResponseInternal</returns>
+    Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetAgentRequest(Guid requestId);
 }

@@ -404,6 +404,24 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Used by the BFF to authenticate the PartyId to retrieve the chosen Request by guid
+    /// Is different from the Vendor endpoint, since this authenticates the Facilitator and not the Vendor
+    /// </summary>
+    /// <returns>AgentRequestSystemResponse model</returns>
+    [Authorize]
+    [HttpGet("agent/{requestId}")]
+    public async Task<ActionResult<RequestSystemResponseInternal>> GetAgentRequestById(Guid requestId)
+    {
+        Result<RequestSystemResponseInternal> verify = await _requestSystemUser.CheckUserAuthorizationAndGetAgentRequest(requestId);
+        if (verify.IsProblem)
+        {
+            return verify.Problem.ToActionResult();
+        }
+
+        return Ok(verify.Value);
+    }
+
+    /// <summary>
     /// Approves the systemuser requet and creates a system user
     /// </summary>
     /// <param name="party">the partyId</param>

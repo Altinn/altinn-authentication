@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -970,14 +971,40 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
+    public async Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetAgentRequest(Guid requestId)
     {
-        RequestSystemResponse? request = await requestRepository.GetRequestByInternalId(requestId);
+        AgentRequestSystemResponse? request = await requestRepository.GetAgentRequestByInternalId(requestId);
         if (request is null)
         {
             return Problem.RequestNotFound;
         }
 
+        Result<Party> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
+        if (validatedParty.IsProblem)
+        {
+            return validatedParty.Problem;
+        }
+
+        return new RequestSystemResponseInternal()
+        {
+            Id = request.Id,
+            ExternalRef = request.ExternalRef,
+            SystemId = request.SystemId,
+            PartyOrgNo = request.PartyOrgNo,
+            PartyId = validatedParty.Value.PartyId,
+            PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
+            Rights = [],
+            AccessPackages = request.AccessPackages,
+            Status = request.Status,
+            ConfirmUrl = request.ConfirmUrl,
+            Created = request.Created,
+            RedirectUrl = request.RedirectUrl,
+            SystemUserType = request.UserType.ToString()
+        };
+    }
+
+    private async Task<Result<Party>> ValidateAndVerifyRequest(string orgNo)
+    {
         HttpContext? context = httpContextAccessor.HttpContext;
         if (context is null)
         {
@@ -986,10 +1013,8 @@ public class RequestSystemUserService(
 
         IEnumerable<Claim> claims = context.User.Claims;
 
-        string orgNo = request.PartyOrgNo;
-     
         Party party = await partiesClient.GetPartyByOrgNo(orgNo);
-                
+
         if (!party.PartyUuid.HasValue)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -1005,26 +1030,44 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
-        if (SpecificDecisionHelper.ValidatePdpDecision(response, context.User))            
+        if (SpecificDecisionHelper.ValidatePdpDecision(response, context.User))
         {
-            return new RequestSystemResponseInternal()
+            return party;
+        }
+
+        return Problem.RequestNotFound;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
+    {
+        RequestSystemResponse? request = await requestRepository.GetRequestByInternalId(requestId);
+        if (request is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        Result<Party> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
+        if (validatedParty.IsProblem)
+        {
+            return validatedParty.Problem;
+        }
+
+        return new RequestSystemResponseInternal()
             {
                 Id = request.Id,
                 ExternalRef = request.ExternalRef,
                 SystemId = request.SystemId,
                 PartyOrgNo = request.PartyOrgNo,
-                PartyId = party.PartyId,
-                PartyUuid = (Guid)party.PartyUuid,
+                PartyId = validatedParty.Value.PartyId,
+                PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
                 Rights = request.Rights,
                 Status = request.Status,
                 ConfirmUrl = request.ConfirmUrl,
                 Created = request.Created,
                 RedirectUrl = request.RedirectUrl
-            };
-        }
-
-        return Problem.RequestNotFound;
-    }    
+            };       
+    }
 
     private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType,CancellationToken cancellationToken)
     {

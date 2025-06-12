@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -62,6 +63,14 @@ public class RequestSystemResponseInternal()
     public List<Right> Rights { get; set; }
 
     /// <summary>
+    /// The set of Rights requested for this system user. Must be equal to or less than the set defined in the Registered System.
+    /// Must be a minimum of 1 selected Right.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("accessPackages")]
+    public List<AccessPackage> AccessPackages { get; set; }
+
+    /// <summary>
     /// Initially the request is "new", 
     /// other values are "accepted", "rejected", "denied"
     /// </summary>
@@ -89,4 +98,10 @@ public class RequestSystemResponseInternal()
     /// </summary>
     [JsonPropertyName("created")]
     public DateTime Created { get; set; }
+
+    /// <summary>
+    /// Either Agent or Default
+    /// </summary>
+    [JsonPropertyName("systemUserType")]
+    public string SystemUserType { get; set; }
 }
