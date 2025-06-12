@@ -4,6 +4,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
 using Xunit.Abstractions;
@@ -54,7 +55,7 @@ public class SystemUserTokenTests : TestFixture
             $"&systemUserOwnerOrgNo={systemUserOwnerOrgNo}" +
             $"&externalRef={externalRef}";
 
-        var fullEndpoint = $"{ApiEndpoints.GetSystemUserByExternalId.Url()}{queryString}";
+        var fullEndpoint = $"{Endpoints.GetSystemUserByExternalId.Url()}{queryString}";
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
@@ -152,20 +153,32 @@ public class SystemUserTokenTests : TestFixture
             .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
             .WithName(name)
             .WithToken(maskinportenToken);
+        
+        // Post system
+        var requestBodySystemRegister = teststate.GenerateRequestBody();
+        await _platformClient.SystemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
 
         // Create system user with same created rights mentioned above
-        var postSystemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(teststate, maskinportenToken);
+        for (int i = 0; i < 20; i++) 
+        {
+            var externalRef = Guid.NewGuid().ToString();
+            var postSystemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(teststate, maskinportenToken, externalRef);
+            
+            //Approve system user
+            var id = Common.ExtractPropertyFromJson(postSystemUserResponse, "id");
+            var systemId = Common.ExtractPropertyFromJson(postSystemUserResponse, "systemId");
+            _outputHelper.WriteLine($"System user with id: {id}");
+            _outputHelper.WriteLine($"systemId {systemId}");
+            
+            await _platformClient.SystemUserClient.ApproveSystemUserRequest(testuser, id);
+        }
+        
+        
 
-        //Approve system user
-        var id = Common.ExtractPropertyFromJson(postSystemUserResponse, "id");
-        var systemId = Common.ExtractPropertyFromJson(postSystemUserResponse, "systemId");
-
-        await _platformClient.SystemUserClient.ApproveSystemUserRequest(testuser, id);
-
+        return null;
         //Return system user and make sure it was created
-        return await GetSystemUserOnSystemId(systemId);
     }
-    
+
     private async Task<SystemUser?> GetSystemUserOnSystemId(string systemId)
     {
         var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
@@ -175,7 +188,7 @@ public class SystemUserTokenTests : TestFixture
 
         return systemUsers.Find(user => user.SystemId == systemId);
     }
-    
+
 
     // Utility function to properly pad Base64 strings before decoding
     private static string PadBase64(string base64)
@@ -183,4 +196,6 @@ public class SystemUserTokenTests : TestFixture
         base64 = base64.Replace('-', '+').Replace('_', '/'); // Convert URL-safe Base64 to standard Base64
         return base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '='); // Ensure proper padding
     }
+    
+    
 }

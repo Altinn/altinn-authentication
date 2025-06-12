@@ -1,10 +1,10 @@
 using System.Reflection;
 
-namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 
 public static class ApiEndpointExtensions
 {
-    public static string Url(this ApiEndpoints endpoint)
+    public static string? Url(this Endpoints endpoint)
     {
         return endpoint.GetType()
                    .GetField(endpoint.ToString())?

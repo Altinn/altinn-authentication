@@ -4,6 +4,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.Authorization;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
 using Xunit.Abstractions;
@@ -126,7 +127,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 
     private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string? maskinportenToken)
     {
-        var getRequestByIdUrl = ApiEndpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
+        var getRequestByIdUrl = Endpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
         var responseGetByRequestId = await _fixture.Platform.GetAsync(getRequestByIdUrl, maskinportenToken);
 
         Assert.True(HttpStatusCode.OK == responseGetByRequestId.StatusCode);
@@ -151,7 +152,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
     public async Task<HttpResponseMessage> GetVendorAgentRequestByExternalRef(string systemId, string orgNo,
         string externalRef, string maskinportenToken)
     {
-        var url = ApiEndpoints.GetVendorAgentRequestByExternalRef.Url()
+        var url = Endpoints.GetVendorAgentRequestByExternalRef.Url()
             .Replace("{systemId}", systemId)
             .Replace("{orgNo}", orgNo)
             .Replace("{externalRef}", externalRef);
@@ -168,7 +169,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
             .Replace("{accessPackage}", accessPackage)
             .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
 
-        var userResponse = await _fixture.Platform.PostAsync(ApiEndpoints.PostAgentClientRequest.Url(),
+        var userResponse = await _fixture.Platform.PostAsync(Endpoints.PostAgentClientRequest.Url(),
             clientRequestBody, _fixture.VendorTokenMaskinporten);
 
         var userResponseContent = await userResponse.Content.ReadAsStringAsync();
@@ -185,7 +186,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
         Assert.NotNull(systemUserResponse);
         Assert.Contains(_fixture.SystemId, await systemUserResponse.ReadAsStringAsync());
 
-        var approveUrl = ApiEndpoints.ApproveAgentRequest.Url()
+        var approveUrl = Endpoints.ApproveAgentRequest.Url()
             .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
 

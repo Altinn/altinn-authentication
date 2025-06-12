@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -23,7 +24,7 @@ public class PlatformAuthenticationClient
     public readonly string? BaseUrlAuthentication;
 
     public readonly string? BaseUrlBff;
-    
+
     public SystemRegisterClient SystemRegisterClient { get; set; }
     public SystemUserClient SystemUserClient { get; set; }
     public AccessManagementClient AccessManagementClient { get; set; }
@@ -39,7 +40,7 @@ public class PlatformAuthenticationClient
         BaseUrlBff = GetEnvironment(EnvironmentHelper.Testenvironment);
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
-        
+
         SystemRegisterClient = new SystemRegisterClient(this);
         SystemUserClient = new SystemUserClient(this);
         AccessManagementClient = new AccessManagementClient(this);
@@ -68,7 +69,7 @@ public class PlatformAuthenticationClient
     {
         // Define base URLs for tt02 and all "at" environments
         const string tt02 = "https://platform.tt02.altinn.no/";
-            const string atBaseUrl = "https://platform.{env}.altinn.cloud/";
+        const string atBaseUrl = "https://platform.{env}.altinn.cloud/";
 
         // Handle case-insensitive input and return the correct URL
         environmentHelperTestenvironment = environmentHelperTestenvironment.ToLower();
@@ -88,7 +89,7 @@ public class PlatformAuthenticationClient
     /// <param name="body">Request body, see Swagger documentation for reference</param>
     /// <param name="token">Bearer token</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> PostAsync(string endpoint, string body, string? token)
+    public async Task<HttpResponseMessage> PostAsync(string? endpoint, string body, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -108,15 +109,23 @@ public class PlatformAuthenticationClient
     /// <param name="endpoint">path to api endpoint</param>
     /// <param name="token">Token used</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> GetAsync(string endpoint, string? token)
+    public async Task<HttpResponseMessage> GetAsync(string? endpoint, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
+    
+    public async Task<HttpResponseMessage> GetNextUrl(string? endpoint, string? token)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        return await client.GetAsync($"{endpoint}");
+    }
 
-    public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string? token)
+    public async Task<HttpResponseMessage> PutAsync(string? path, string requestBody, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -198,8 +207,8 @@ public class PlatformAuthenticationClient
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
-                $"?env={EnvironmentHelper.Testenvironment}" +
-                $"&scopes=altinn:portal/enduser " + scopes +
+            $"?env={EnvironmentHelper.Testenvironment}" +
+            $"&scopes=altinn:portal/enduser " + scopes +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
             $"&partyuuid={user.AltinnPartyUuid}" +
@@ -315,7 +324,7 @@ public class PlatformAuthenticationClient
         return TestUsers.Find(testUser => testUser.Org!.Equals(vendor))
                ?? throw new Exception($"Test user not found for organization: {vendor}");
     }
-    
+
     public async Task<Testuser> GetTestUserAndTokenForCategory(String category)
     {
         var testuser = TestUsers.Find(user => user.Category!.Equals(category)) ?? throw new Exception("Unable to find testuser with category");
@@ -337,8 +346,8 @@ public class PlatformAuthenticationClient
     {
         var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
 
-        var url = ApiEndpoints.DelegationAuthentication.Url()
-            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+        var url = Endpoints.DelegationAuthentication.Url()
+            ?.Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{systemUserUuid}", systemUserUuid);
 
         return await PostAsync(url, requestBodyDelegation, tokenFacilitator);
@@ -346,24 +355,95 @@ public class PlatformAuthenticationClient
 
     public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer, ITestOutputHelper outputHelper)
     {
-        
-        var url = ApiEndpoints.DeleteCustomer.Url()
+        var url = Endpoints.DeleteCustomer.Url()
             .Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{delegationId}", selectedCustomer.delegationId);
 
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
-        
+
         return await Delete(url, facilitator.AltinnToken);
     }
 
     public async Task<HttpResponseMessage> DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
     {
-        var url = ApiEndpoints.DeleteAgentSystemUser.Url()
+        var url = Endpoints.DeleteAgentSystemUser.Url()
             .Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{systemUserId}", systemUserId);
 
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
 
         return await Delete(url, facilitator.AltinnToken);
+    }
+
+    public async Task<SystemUser?> CreateSystemUserOnExistingSystem()
+    {
+        var testuser = TestUsers.Find(testUser => testUser.Org!.Equals(EnvironmentHelper.Vendor))
+                       ?? throw new Exception($"Test user not found for organization: {EnvironmentHelper.Vendor}");
+
+        var maskinportenToken = await GetMaskinportenTokenForVendor();
+
+        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
+            .WithClientId(Guid.NewGuid().ToString()) //Creates System User With MaskinportenClientId
+            .WithVendor(EnvironmentHelper.Vendor)
+            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
+            .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
+            .WithName(Guid.NewGuid().ToString())
+            .WithToken(maskinportenToken);
+
+        // Post system
+        var requestBodySystemRegister = teststate.GenerateRequestBody();
+        await SystemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+
+        // Create system user with same created rights mentioned above
+        for (int i = 0; i < 32; i++)
+        {
+            var externalRef = "Systembruker med Nummer: " + i; 
+            var postSystemUserResponse = await SystemUserClient.CreateSystemUserRequestWithExternalRef(teststate, maskinportenToken, externalRef);
+
+            //Approve system user
+            var id = Common.ExtractPropertyFromJson(postSystemUserResponse, "id");
+            var systemId = Common.ExtractPropertyFromJson(postSystemUserResponse, "systemId");
+            // _outputHelper.WriteLine($"System user with id: {id}");
+            // _outputHelper.WriteLine($"systemId {systemId}");
+
+            await SystemUserClient.ApproveSystemUserRequest(testuser, id);
+        }
+
+        var users = await SystemUserClient.GetSystemUserById(teststate.SystemId, maskinportenToken);
+
+        var content = await users.Content.ReadAsStringAsync();
+
+        await IterateAllPages(content, maskinportenToken);
+        // assert you can click next and go to it
+        return null;
+        //Return system user and make sure it was created
+    }
+
+    private async Task IterateAllPages(string initialJson, string? maskinportenToken)
+    {
+        string? nextUrl = ExtractNextUrl(initialJson);
+
+        while (!string.IsNullOrEmpty(nextUrl))
+        {
+            var resp = await GetNextUrl(nextUrl, maskinportenToken);
+            Assert.NotNull(resp);
+
+            var respBody = await resp.Content.ReadAsStringAsync();
+            nextUrl = ExtractNextUrl(respBody);
+        }
+    }
+
+    private string? ExtractNextUrl(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+
+        if (doc.RootElement.TryGetProperty("links", out var linksElement) &&
+            linksElement.TryGetProperty("next", out var nextElement))
+        {
+            return nextElement.GetString();
+        }
+
+        return null;
     }
 }

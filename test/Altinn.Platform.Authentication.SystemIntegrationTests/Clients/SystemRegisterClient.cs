@@ -3,6 +3,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
@@ -24,7 +25,7 @@ public class SystemRegisterClient
     /// </summary>
     public async Task<HttpResponseMessage> PostSystem(string requestBody, string? token)
     {
-        var response = await _platformClient.PostAsync(ApiEndpoints.CreateSystemRegister.Url(), requestBody, token);
+        var response = await _platformClient.PostAsync(Endpoints.CreateSystemRegister.Url(), requestBody, token);
 
         Assert.True(response.StatusCode is HttpStatusCode.OK, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
@@ -33,7 +34,7 @@ public class SystemRegisterClient
 
     public async Task<List<SystemResponseDto>> GetSystemsAsync(string? token)
     {
-        var response = await _platformClient.GetAsync(ApiEndpoints.GetAllSystemsFromRegister.Url(), token);
+        var response = await _platformClient.GetAsync(Endpoints.GetAllSystemsFromRegister.Url(), token);
 
         // Assert the response status is OK
         Assert.True(HttpStatusCode.OK == response.StatusCode,
@@ -47,13 +48,13 @@ public class SystemRegisterClient
 
     public async Task DeleteSystem(string systemId, string? token)
     {
-        var resp = await _platformClient.Delete($"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", systemId), token);
+        var resp = await _platformClient.Delete($"{Endpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", systemId), token);
         Assert.True(HttpStatusCode.OK == resp.StatusCode, $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
     }
 
     public async Task UpdateRightsOnSystem(string systemId, string requestBody, string? token)
     {
-        var putUrl = ApiEndpoints.UpdateRightsVendorSystemRegister.Url().Replace("{systemId}", systemId);
+        var putUrl = Endpoints.UpdateRightsVendorSystemRegister.Url().Replace("{systemId}", systemId);
         var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
 
         await Common.AssertResponse(putResponse, HttpStatusCode.OK);
@@ -61,7 +62,7 @@ public class SystemRegisterClient
 
     public async Task<HttpResponseMessage> getBySystemId(string systemId, string? token)
     {
-        var getUrl = ApiEndpoints.GetVendorSystemRegisterById.Url().Replace("{systemId}", systemId);
+        var getUrl = Endpoints.GetVendorSystemRegisterById.Url().Replace("{systemId}", systemId);
         var getResponse = await _platformClient.GetAsync(getUrl, token);
         return getResponse;
     }
