@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Register.Models;
+using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
 #nullable enable
@@ -80,7 +82,7 @@ public interface ISystemUserService
     /// <param name="continueRequest">The Guid denoting from where to continue with Pagination</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    Task<Result<Page<SystemUser, string>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<string>.Request continueRequest, CancellationToken cancellationToken);
+    Task<Result<Page<SystemUser, long>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<long>.Request continueRequest, CancellationToken cancellationToken);
 
     /// <summary>
     /// Called from the Authn.UI BFF to create a new SystemUser and delegate it to the given Reportee Party,
@@ -123,8 +125,13 @@ public interface ISystemUserService
     /// Creates a new delegation of a customer to an Agent SystemUser.
     /// The service is idempotent.
     /// </summary>
+    /// <param name="systemUser">SystemUser</param>
+    /// <param name="request">AgentDelegationInputDto</param>
+    /// <param name="userId",>the user id of the logged in user</param>
+    /// <param name="featureManager",>FeatureManager</param>
+    /// <param name="cancellationToken",>CancellationToken</param>
     /// <returns>Result of True or False</returns> 
-    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, IFeatureManager featureManager, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
@@ -161,7 +168,8 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
     /// <param name="packages">An array of access package URNs. Only clients associated with at least one of these access packages will be included in the result.</param>
-    /// <param name="cancellationToken">The cancellation token</param>
+    /// <param name="featureManager">FeatureManager</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of Clients</returns>
-    Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, CancellationToken cancellationToken = default);
+    Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
 }

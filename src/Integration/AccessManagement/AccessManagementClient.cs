@@ -29,6 +29,8 @@ using Altinn.Platform.Register.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Azure;
 using Azure;
+using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
+using System;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -310,7 +312,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, bool mockCustomerApi, CancellationToken cancellationToken)
     {
         const string AGENT = "agent";
 
@@ -334,7 +336,15 @@ public class AccessManagementClient : IAccessManagementClient
 
         foreach (var pac in systemUser.AccessPackages) 
         {
-            var role = GetRoleFromAccessPackage(pac.Urn!);
+            string? role;
+            if (mockCustomerApi)
+            {
+                role = GetRoleFromAccessPackage(pac.Urn!);
+            }
+            else
+            {
+                role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
+            }               
 
             if ( role is null )
             {
@@ -417,15 +427,34 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
+
     /// <summary>
-    ///  Only for use in the PILOT test in tt02
+    ///  Gets the role identifier that gives access to the requested access package
     /// </summary>
-    /// <param name="accessPackages">The accesspackage requested on the system user</param>
+    /// <param name="accessPackages">The accesspackage requested for a system user on a system</param>
     /// <returns></returns>
+    private static string? GetRoleFromAccessPackages(string accessPackage, List<ClientRoleAccessPackages> clientRoleAccessPackages)
+    {
+        accessPackage = accessPackage?.Split(":")[3]!;
+        if (string.IsNullOrEmpty(accessPackage) || clientRoleAccessPackages == null)
+        {
+            return null;
+        }
+
+        foreach (var clientRoleAccessPackage in clientRoleAccessPackages)
+        {
+            if (clientRoleAccessPackage.Packages != null && clientRoleAccessPackage.Packages.Contains(accessPackage, StringComparer.OrdinalIgnoreCase))
+            {
+                return clientRoleAccessPackage.Role;
+            }
+        }
+
+        return null;
+    }
+
     private static string? GetRoleFromAccessPackage(string accessPackage)
     {
         Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
-
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "regnskapsforer");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "regnskapsforer");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "regnskapsforer");
