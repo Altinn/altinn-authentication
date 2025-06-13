@@ -96,7 +96,7 @@ public class PartiesClient : IPartiesClient
 
             StringContent requestBody = new(JsonSerializer.Serialize((new PartyLookup() { OrgNo = orgNo })), Encoding.UTF8, "application/json");
 
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody);
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody, accessToken);
             string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.OK)
