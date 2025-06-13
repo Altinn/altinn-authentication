@@ -98,7 +98,7 @@ public interface ISystemRegisterRepository
     /// except internal_id, system_id and orgnr.    
     /// </summary>
     /// <returns>true if changed</returns>
-    Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, string systemId, CancellationToken cancellationToken = default);
+    Task<bool> UpdateRegisteredSystem(RegisterSystemRequest updatedSystem, CancellationToken cancellationToken = default);
 
     /// Checks if the client id exists
     /// </summary>

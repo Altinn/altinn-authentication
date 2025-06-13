@@ -88,10 +88,9 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Replaces the entire registered system
         /// </summary>
         /// <param name="updateSystem">The updated system model</param>
-        /// <param name="systemId">The Id of the Registered System </param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns></returns>
-        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken);
+        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if one of the clientid exists

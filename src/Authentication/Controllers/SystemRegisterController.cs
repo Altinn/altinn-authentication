@@ -151,7 +151,7 @@ public class SystemRegisterController : ControllerBase
             return errorResult;
         }
 
-        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(proposedUpdateToSystem, systemId, cancellationToken);
+        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(proposedUpdateToSystem, cancellationToken);
 
         if (!success)
         {
@@ -346,7 +346,7 @@ public class SystemRegisterController : ControllerBase
 
         if (registerSystemResponse == null)
         {
-            ModelState.AddModelError("return", "Mismatch for systemId given for url and request body");
+            ModelState.AddModelError("return", "System not found");
             return ValidationProblem(ModelState);
         }
 
