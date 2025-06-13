@@ -1,11 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
+using Altinn.Authentication.Integration.Clients;
+using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Common.PEP.Authorization;
+using Altinn.Common.PEP.Helpers;
+using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Authorization;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -18,6 +26,8 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Azure.Core;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 
@@ -26,8 +36,10 @@ namespace Altinn.Platform.Authentication.Services;
 
 /// <inheritdoc/>
 public class RequestSystemUserService(
+    IHttpContextAccessor httpContextAccessor,
     ISystemRegisterService systemRegisterService,
     IPartiesClient partiesClient,
+    IPDP pdp,
     ISystemRegisterRepository systemRegisterRepository,
     IAccessManagementClient accessManagementClient,
     IRequestRepository requestRepository,
@@ -956,6 +968,105 @@ public class RequestSystemUserService(
         }
 
         return res;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetAgentRequest(Guid requestId)
+    {
+        AgentRequestSystemResponse? request = await requestRepository.GetAgentRequestByInternalId(requestId);
+        if (request is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        Result<Party> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
+        if (validatedParty.IsProblem)
+        {
+            return validatedParty.Problem;
+        }
+
+        return new RequestSystemResponseInternal()
+        {
+            Id = request.Id,
+            ExternalRef = request.ExternalRef,
+            SystemId = request.SystemId,
+            PartyOrgNo = request.PartyOrgNo,
+            PartyId = validatedParty.Value.PartyId,
+            PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
+            Rights = [],
+            AccessPackages = request.AccessPackages,
+            Status = request.Status,
+            ConfirmUrl = request.ConfirmUrl,
+            Created = request.Created,
+            RedirectUrl = request.RedirectUrl,
+            SystemUserType = request.UserType.ToString()
+        };
+    }
+
+    private async Task<Result<Party>> ValidateAndVerifyRequest(string orgNo)
+    {
+        HttpContext? context = httpContextAccessor.HttpContext;
+        if (context is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        IEnumerable<Claim> claims = context.User.Claims;
+
+        Party party = await partiesClient.GetPartyByOrgNo(orgNo);
+
+        if (!party.PartyUuid.HasValue)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        Guid partyUuid = (Guid)party.PartyUuid;
+
+        XacmlJsonRequestRoot jsonRequest = SpecificDecisionHelper.CreateDecisionRequestForUserId(claims, "write", "altinn_access_management", partyUuid);
+
+        XacmlJsonResponse response = await pdp.GetDecisionForRequest(jsonRequest);
+        if (response is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (SpecificDecisionHelper.ValidatePdpDecision(response, context.User))
+        {
+            return party;
+        }
+
+        return Problem.RequestNotFound;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
+    {
+        RequestSystemResponse? request = await requestRepository.GetRequestByInternalId(requestId);
+        if (request is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        Result<Party> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
+        if (validatedParty.IsProblem)
+        {
+            return validatedParty.Problem;
+        }
+
+        return new RequestSystemResponseInternal()
+            {
+                Id = request.Id,
+                ExternalRef = request.ExternalRef,
+                SystemId = request.SystemId,
+                PartyOrgNo = request.PartyOrgNo,
+                PartyId = validatedParty.Value.PartyId,
+                PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
+                Rights = request.Rights,
+                Status = request.Status,
+                ConfirmUrl = request.ConfirmUrl,
+                Created = request.Created,
+                RedirectUrl = request.RedirectUrl
+            };       
     }
 
     private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType,CancellationToken cancellationToken)
