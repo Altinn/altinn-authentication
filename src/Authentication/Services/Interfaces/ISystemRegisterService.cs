@@ -50,15 +50,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<RegisteredSystemResponse?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default);
 
         /// <summary>
-        /// Inserts a new unique ClientId
-        /// </summary>
-        /// <param name="clientId">The Client_Ids are maintained by Maskinporten, but we need to reference them in the db</param>
-        /// <param name="systemInteralId">the internal system idenficator for a system</param>
-        /// <param name="cancellationToken">The Cancellationtoken</param>
-        /// <returns></returns>
-        Task<bool> CreateClient(string clientId, Guid systemInteralId, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Inserts a new Registered System
         /// </summary>
         /// <param name="system">The descriptor DTO for a new System</param>
