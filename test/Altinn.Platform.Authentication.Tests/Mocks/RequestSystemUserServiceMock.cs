@@ -7,6 +7,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
 
 namespace Altinn.Platform.Authentication.Tests.Mocks
 {
@@ -104,6 +105,16 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         }
 
         public Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int party, Guid requestId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetAgentRequest(Guid requestId)
         {
             throw new NotImplementedException();
         }

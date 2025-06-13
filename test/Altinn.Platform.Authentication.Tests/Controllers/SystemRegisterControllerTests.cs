@@ -320,7 +320,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task SystemRegister_Update_AccessPackage_Success()
+        public async Task SystemRegister_Update_AccessPackage_Success_Admin()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
@@ -346,6 +346,66 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.OK, updateResponse.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_AccessPackage_Success_Owner_NotAdmin()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.IsSuccessStatusCode)
+            {
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                // Arrange
+                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateAccessPackages.json");
+                StreamContent content = new StreamContent(dataStream);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                string systemID = "991825827_the_matrix";
+                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/accesspackages");
+                request.Content = content;
+                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(System.Net.HttpStatusCode.OK, updateResponse.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_AccessPackage_Forbid_NotOwner_NotAdmin()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            if (response.IsSuccessStatusCode)
+            {
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "974761076", "altinn:authentication/systemregister.write", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                // Arrange
+                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateAccessPackages.json");
+                StreamContent content = new StreamContent(dataStream);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                string systemID = "991825827_the_matrix";
+                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/accesspackages");
+                request.Content = content;
+                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(System.Net.HttpStatusCode.Forbidden, updateResponse.StatusCode);
             }
         }
 

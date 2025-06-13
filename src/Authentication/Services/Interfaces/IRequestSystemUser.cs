@@ -6,6 +6,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Register.Models;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
 
@@ -163,4 +164,20 @@ public interface IRequestSystemUser
     /// <param name="requestId">The Guid Id for the Request</param>
     /// <returns>The AgentRequest model</returns>
     Task<Result<AgentRequestSystemResponse>> GetAgentRequestByPartyAndRequestId(int party, Guid requestId);
+
+    /// <summary>
+    /// Verifies that the logged in user has the required rights to the request, and returns the Reportee Party
+    /// in the SystemUserInternal request.
+    /// </summary>
+    /// <param name="requestId">The id for the request</param>    
+    /// <returns>RequestSystemResponseInternal</returns>
+    Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId);
+
+    /// <summary>
+    /// Verifies that the logged in user has the required rights to the Agent request, and returns the Reportee Party
+    /// in the request.
+    /// </summary>
+    /// <param name="requestId">The id for the request</param>    
+    /// <returns>RequestSystemResponseInternal</returns>
+    Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetAgentRequest(Guid requestId);
 }

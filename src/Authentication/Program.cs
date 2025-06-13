@@ -28,6 +28,7 @@ using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.Extensions;
+using Altinn.Platform.Authentication.ServiceDefaults;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
@@ -49,6 +50,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -79,15 +81,15 @@ ConfigureLogging(builder.Logging);
 ConfigureServices(builder.Services, builder.Configuration);
 
 // Forwardlimit is set to 2 as our infrastructure has 1 proxy forward. The 2nd value from right to left is read into remoteipaddress property which is the client ip
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor;
-    options.ForwardLimit = 2;
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
-    options.RequireHeaderSymmetry = false;
-});
+//builder.Services.Configure<ForwardedHeadersOptions>(options =>
+//{
+//    options.ForwardedHeaders =
+//        ForwardedHeaders.XForwardedFor;
+//    options.ForwardLimit = 2;
+//    options.KnownNetworks.Clear();
+//    options.KnownProxies.Clear();
+//    options.RequireHeaderSymmetry = false;
+//});
 
 builder.Services.AddPersistanceLayer();
 
@@ -291,6 +293,20 @@ void ConfigureLogging(ILoggingBuilder logging)
 
 void ConfigureServices(IServiceCollection services, IConfiguration config)
 {
+    services.Configure<AltinnClusterInfo>(builder.Configuration.GetSection("Altinn:ClusterInfo"));
+    services.AddSingleton<IConfigureOptions<AltinnClusterInfo>, ConfigureAltinnClusterInfo>();
+    services.AddOptions<ForwardedHeadersOptions>()
+        .Configure((ForwardedHeadersOptions options, IOptionsMonitor<AltinnClusterInfo> clusterInfoOptions) =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.All;
+
+            var clusterInfo = clusterInfoOptions.CurrentValue;
+            if (clusterInfo.ClusterNetwork is { } clusterNetwork)
+            {
+                options.KnownNetworks.Add(new IPNetwork(clusterNetwork.BaseAddress, clusterNetwork.PrefixLength));
+            }
+        });
+
     services.AddControllers().AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.WriteIndented = true;
@@ -450,8 +466,7 @@ static string GetXmlCommentsPathForControllers()
 }
 
 void Configure()
-{
-    app.UseForwardedHeaders();
+{    
     if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     {
         app.UseDeveloperExceptionPage();
@@ -463,6 +478,8 @@ void Configure()
     {
         app.UseExceptionHandler("/authentication/api/v1/error");
     }
+
+    app.UseForwardedHeaders();
 
     app.UseSwagger(o => o.RouteTemplate = "authentication/swagger/{documentName}/swagger.json");
 
