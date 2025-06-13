@@ -263,7 +263,7 @@ public class SystemRegisterController : ControllerBase
     {
         ValidationErrorBuilder errors = default;
         RegisteredSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
-        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse.Vendor.ID), User))
         {
             return Forbid();
         }
@@ -296,7 +296,7 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateAccessPackagesOnRegisteredSystem([FromBody] List<AccessPackage> accessPackages, string systemId, CancellationToken cancellationToken = default)
     {
         RegisteredSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse.Vendor.ID), User))
         {
             return Forbid();
         }

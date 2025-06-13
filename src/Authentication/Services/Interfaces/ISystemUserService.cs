@@ -8,6 +8,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Register.Models;
 using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;

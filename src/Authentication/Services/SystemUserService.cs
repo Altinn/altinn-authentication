@@ -531,6 +531,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return result;
-        }
+        }         
     }
 }

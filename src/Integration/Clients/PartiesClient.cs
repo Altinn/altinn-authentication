@@ -12,6 +12,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Text;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Authorization.ProblemDetails;
@@ -80,6 +81,35 @@ public class PartiesClient : IPartiesClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // PartiesClient // GetPartyAsync // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string endpointUrl = $"parties/lookup";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!);
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
+
+            StringContent requestBody = new(JsonSerializer.Serialize((new PartyLookup() { OrgNo = orgNo })), Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                return JsonSerializer.Deserialize<Party>(responseContent, _serializerOptions);
+            }
+
+            _logger.LogError("Authentication // PartiesClient // GetPartyByOrgNo // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // PartiesClient // GetPartyByOrgNo // Exception");
             throw;
         }
     }
