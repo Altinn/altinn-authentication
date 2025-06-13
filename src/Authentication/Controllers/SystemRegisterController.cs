@@ -14,7 +14,9 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Altinn.Authentication.Controllers;
 
@@ -69,7 +71,7 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
     {
         RegisteredSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-        
+
         if (registeredSystem == null)
         {
             return NotFound();
@@ -103,50 +105,64 @@ public class SystemRegisterController : ControllerBase
     /// <summary>
     /// Replaces the entire registered system
     /// </summary>
-    /// <param name="updateSystem">The updated system model</param>
+    /// <param name="proposedUpdateToSystem">The updated system model</param>
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     [HttpPut("vendor/{systemId}")]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken = default)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest proposedUpdateToSystem, string systemId, CancellationToken cancellationToken = default)
     {
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(updateSystem.Vendor.ID), User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(proposedUpdateToSystem.Vendor.ID), User))
         {
             return Forbid();
         }
 
-        List<MaskinPortenClientInfo> maskinPortenClients = await _systemRegisterService.GetMaskinportenClients(updateSystem.ClientId, cancellationToken);
-        RegisteredSystemResponse systemInfo = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
-
-        ValidationErrorBuilder validateErrorRights = await ValidateRights(updateSystem.Rights, cancellationToken);
-        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(updateSystem.AccessPackages, cancellationToken);
-        ValidationErrorBuilder errors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages);
-
-        foreach (string clientId in updateSystem.ClientId)
+        if (proposedUpdateToSystem.Id != systemId)
         {
-            bool clientExistsForAnotherSystem = maskinPortenClients.FindAll(x => x.ClientId == clientId && x.SystemInternalId != systemInfo.InternalId).Count > 0;
-            if (clientExistsForAnotherSystem)
+            ValidationErrorBuilder errors = default;
+            errors.Add(ValidationErrors.SystemId_Mismatch, [ErrorPathConstant.SYSTEM_ID]);
+            if (errors.TryToActionResult(out var result))
             {
-                ModelState.AddModelError("ClientId", $"ClientId {clientId} already tagged with another system");
-                return BadRequest(ModelState);
+                return result;
             }
         }
 
-        if (errors.TryToActionResult(out var errorResult))
+        RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+
+        if (currentSystem == null)
+        {
+            return NotFound($"System with ID '{systemId}' not found.");
+        }
+
+        List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
+        List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
+
+        ValidationErrorBuilder validateErrorRights = await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken);
+        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, cancellationToken);
+        ValidationErrorBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages);
+        ValidationErrorBuilder mergedErrors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
+
+        if (mergedErrors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
 
-        var success = await _systemRegisterService.UpdateWholeRegisteredSystem(updateSystem, systemId, cancellationToken);
+        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(proposedUpdateToSystem, cancellationToken);
 
         if (!success)
         {
-            return BadRequest();
+            return BadRequest("Unable to update system");
         }
 
         return Ok(new SystemRegisterUpdateResult(true));
     }
+
+    private static List<string> CombineClientIds(IEnumerable<string> current, IEnumerable<string> updated) =>
+        current.Union(updated, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
     /// <summary>
     /// Retrieves a list of the predfined default rights for the Product type, if any
@@ -199,7 +215,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="registerNewSystem">The descriptor model of a new Registered System</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
     /// <returns></returns>
-    [HttpPost("vendor")]    
+    [HttpPost("vendor")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<Guid>> CreateRegisteredSystem([FromBody] RegisterSystemRequest registerNewSystem, CancellationToken cancellationToken = default)
     {
@@ -233,14 +249,14 @@ public class SystemRegisterController : ControllerBase
             {
                 return errorResult;
             }
-            
+
             var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
             if (registeredSystemGuid is null)
             {
                 return BadRequest();
             }
 
-            return Ok(registeredSystemGuid);            
+            return Ok(registeredSystemGuid);
         }
         catch (Exception e)
         {
@@ -330,7 +346,8 @@ public class SystemRegisterController : ControllerBase
 
         if (registerSystemResponse == null)
         {
-            return BadRequest();
+            ModelState.AddModelError("return", "System not found");
+            return ValidationProblem(ModelState);
         }
 
         if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse?.Vendor?.ID), User))
@@ -339,8 +356,8 @@ public class SystemRegisterController : ControllerBase
         }
 
         bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId, registerSystemResponse.InternalId);
-        if (!deleted) 
-        { 
+        if (!deleted)
+        {
             return BadRequest();
         }
 
@@ -399,7 +416,7 @@ public class SystemRegisterController : ControllerBase
 
             var problemExtensionData = ProblemExtensionData.Create(new[]
             {
-                    new KeyValuePair<string, string>("Invalid Urn Details : ", string.Join(" | ", allInvalidUrns))
+                new KeyValuePair<string, string>("Invalid Urn Details : ", string.Join(" | ", allInvalidUrns))
             });
 
             errors.Add(ValidationErrors.SystemRegister_AccessPackage_NotValid, ErrorPathConstant.ACCESSPACKAGES, problemExtensionData);
@@ -413,6 +430,39 @@ public class SystemRegisterController : ControllerBase
         }
 
         return errors;
+    }
+
+    private static Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest proposedUpdateToSystem, List<MaskinPortenClientInfo> allClientUsages)
+    {
+        ValidationErrorBuilder errors = default;
+
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+        bool hasDuplicates = proposedUpdateToSystem.ClientId.Any(clientId => !seen.Add(clientId));
+
+        if (hasDuplicates)
+        {
+            errors.Add(ValidationErrors.SystemRegister_Duplicate_ClientIds, [ErrorPathConstant.CLIENT_ID]);
+        }
+
+        // Check for client IDs used by other systems (not deleted and not ours)
+        foreach (string clientId in proposedUpdateToSystem.ClientId)
+        {
+            bool usedByOther = allClientUsages.Any(usage =>
+            {
+                bool sameClientId = string.Equals(usage.ClientId, clientId, StringComparison.OrdinalIgnoreCase);
+                bool differentSystem = usage.SystemInternalId != currentSystem.InternalId;
+                bool isActive = !usage.IsDeleted;
+
+                return sameClientId && differentSystem && isActive;
+            });
+
+            if (usedByOther)
+            {
+                errors.Add(ValidationErrors.SystemRegister_ClientID_Exists, [ErrorPathConstant.CLIENT_ID]);
+            }
+        }
+
+        return Task.FromResult(errors);
     }
 
     private async Task<ValidationErrorBuilder> ValidateRegisteredSystem(RegisterSystemRequest systemToValidate, CancellationToken cancellationToken)

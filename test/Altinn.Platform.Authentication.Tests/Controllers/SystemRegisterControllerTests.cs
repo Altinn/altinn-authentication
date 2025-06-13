@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Policy;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Authentication.Tests.Mocks;
@@ -28,11 +28,7 @@ using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
-using Azure;
-using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.KeyVault.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -45,13 +41,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
-        
+
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
         private readonly Mock<TimeProvider> timeProviderMock = new Mock<TimeProvider>();
         private readonly Mock<IGuidService> guidService = new Mock<IGuidService>();
         private readonly Mock<IEventsQueueClient> _eventQueue = new Mock<IEventsQueueClient>();
+
+        private readonly JsonSerializerOptions options = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
         protected override void ConfigureServices(IServiceCollection services)
         {
@@ -64,21 +65,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             WebHostBuilder builder = new();
 
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                conf.AddJsonFile(configPath);
-            });
+            builder.ConfigureAppConfiguration((context, conf) => { conf.AddJsonFile(configPath); });
 
             var configuration = new ConfigurationBuilder()
-              .AddJsonFile(configPath)
-              .Build();
+                .AddJsonFile(configPath)
+                .Build();
 
             configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
             configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
             configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-            
+
             services.Configure<GeneralSettings>(generalSettingSection);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
@@ -92,7 +90,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-            services.AddSingleton<ISystemUserService, SystemUserService>();    
+            services.AddSingleton<ISystemUserService, SystemUserService>();
             services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
             services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
@@ -157,7 +155,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, existingSystemResponse.StatusCode);
 
             AltinnValidationProblemDetails problemDetails = await existingSystemResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
-            Assert.NotNull(problemDetails);            
+            Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_SystemId_Exists.ErrorCode);
             Assert.Equal("/registersystemrequest/systemid", error.Paths.First(p => p.Equals("/registersystemrequest/systemid")));
             Assert.Equal("The system id already exists", error.Detail);
@@ -469,7 +467,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.BadRequest, updateResponse.StatusCode);
                 AltinnValidationProblemDetails problemDetails = await updateResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
-                Assert.NotNull(problemDetails);                
+                Assert.NotNull(problemDetails);
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_Duplicates.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
                 Assert.Equal("One or more duplicate rights found", error.Detail);
@@ -587,7 +585,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)    
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
@@ -1020,37 +1018,44 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task SystemRegister_Update_System()
         {
-            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            // Post original System
+            const string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            JsonSerializerOptions options = new JsonSerializerOptions()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+            // Prepare updated system request
+            string systemId = "991825827_the_matrix";
+            HttpClient client = CreateClient();
+            string[] prefixes = ["altinn", "digdir"];
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                string systemId = "991825827_the_matrix";
-                HttpClient client = CreateClient();
-                string[] prefixes = { "altinn", "digdir" };
-                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            Stream dataStream = File.OpenRead("Data/SystemRegister/Json/SystemRegisterUpdateRequest.json");
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/SystemRegisterUpdateRequest.json");
-                StreamContent content = new StreamContent(dataStream);
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            // Run update request with two new client_id's - removing one existing and adding two new ones
+            HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemId}/");
+            request.Content = content;
+            HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
 
-                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemId}/");
-                request.Content = content;
-                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-                Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
-                HttpResponseMessage getResponse = await GetSystemRegister(systemId);
-                RegisteredSystemResponse actualRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getResponse.Content.ReadAsStringAsync(), _options);
-                string systemRegister = File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.json").ReadToEnd();
-                RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
-                AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualRegisteredSystem);
-                Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
-            }
+            // Get updated system to verify fields were updated
+            HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
+
+            RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
+            string systemRegister = await File.OpenText("Data/SystemRegister/Json/SystemRegisterUpdateResponse.json").ReadToEndAsync();
+            RegisteredSystemResponse expectedRegisteredSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(systemRegister, options);
+
+            // Assert updates were made
+            AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualUpdatedSystem);
+
+            // Verify you can create new system with old (deleted) clientIds
+            string filename = "Data/SystemRegister/Json/SystemRegisterClientIdsExist.json";
+            HttpResponseMessage responseNewSystem = await CreateSystemRegister(filename);
+            var resp = await responseNewSystem.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, responseNewSystem.StatusCode);
         }
 
         [Fact]
@@ -1217,6 +1222,303 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("One or all the accesspackage(s) is not found in altinn's access packages or is not delegable because they are not part of REGN/REVI/Forretningsfører roller", error.Detail);
         }
 
+        [Fact]
+        public async Task SystemRegister_Update_System_UnchangedClientId_Test()
+        {
+            // Prepare
+            const string systemId = "991825827_the_matrix";
+            List<string> clientIdsInFirstSystem = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // Keep using the same clientId, but update something else
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem, true);
+            var resp = await PutSystemRegisterAsync(updatedSystem, systemId);
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+            HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
+
+            // Assert new system contains the same clientId
+            RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
+            Assert.True(actualUpdatedSystem.ClientId.Count == clientIdsInFirstSystem.Count);
+            Assert.Contains(clientIdsInFirstSystem[0], actualUpdatedSystem.ClientId[0]);
+            Assert.True(actualUpdatedSystem.IsVisible);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Rollback_Test()
+        {
+            const string systemId = "991825827_the_matrix";
+            List<string> clientIdsInFirstSystem = [Guid.NewGuid().ToString()];
+
+            // New update
+            List<string> validClientIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+
+            // IsVisible = false
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem, isVisible: false);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // Invalid redirectUrl and trying to set "InVisible: true"
+            RegisterSystemRequest updateIsVisibleTrue = CreateSystemRegisterRequest(systemId, validClientIds, true, "htts://vg.no");
+            var resp = await PutSystemRegisterAsync(updateIsVisibleTrue, systemId);
+            var stringResp = await resp.Content.ReadAsStringAsync();
+
+            // make sure we noticed it failed on postgres update
+            Assert.Contains("Npgsql.PostgresException", stringResp);
+
+            HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
+
+            // verify the second one failed and did not update isVisible = true
+            RegisteredSystemResponse noneUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
+            Assert.False(noneUpdatedSystem.IsVisible);
+            Assert.Equal(noneUpdatedSystem.ClientId, clientIdsInFirstSystem);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Delete_Several_Clients_Test()
+        {
+            const string systemId = "991825827_the_matrix";
+            List<string> clientIdsInFirstSystem = ["f5d441dc-e4fe-482b-b8ff-164951689c9d", "0d767db9-1713-47cb-bac5-ce3439f450c2"];
+
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // Run update with no clientIds
+            List<string> newClientIds = [];
+
+            // Keep using the same clientId, but update something else
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, newClientIds, true);
+            var resp = await PutSystemRegisterAsync(updatedSystem, systemId);
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+            HttpResponseMessage getSystemResponse = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, getSystemResponse.StatusCode);
+
+            // Assert all client ids were removed
+            RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await getSystemResponse.Content.ReadAsStringAsync(), _options);
+            Assert.Empty(actualUpdatedSystem.ClientId);
+        }
+
+        [Fact]
+        public async Task SystemRegister_DuplicateClientIds_Test()
+        {
+            // Prepare
+            const string systemId = "991825827_the_matrix";
+            List<string> clientIdsInFirstSystem = ["09f040c6-dfc8-4a96-bd74-11bb2708ef81", "bc2df960-1d22-40be-a39f-b3b698bb2868"];
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // Duplicate clientIds
+            List<string> duplicateClientIds = ["09f040c6-dfc8-4a96-bd74-11bb2708ef81", "09f040c6-dfc8-4a96-bd74-11bb2708ef81"];
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, duplicateClientIds);
+            var resp = await PutSystemRegisterAsync(updatedSystem, systemId);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+
+            string content = await resp.Content.ReadAsStringAsync();
+            Assert.Contains(ValidationErrors.SystemRegister_Duplicate_ClientIds.Detail, content);
+        }
+
+        [Fact]
+        public async Task SystemRegister_EmptyClientId_Test()
+        {
+            // Prepare
+            const string systemId = "991825827_the_matrix";
+
+            // Empty to see if we can update
+            List<string> clientIdsInFirstSystem = [];
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // New clientIds
+            List<string> newClientIds = ["dcbebc87-1e84-4ace-928a-220d4e557bb4", "070bebf2-c1b6-4efb-9e6b-be1927c473d8"];
+            RegisterSystemRequest proposedUpdate = CreateSystemRegisterRequest(systemId, newClientIds);
+            var resp = await PutSystemRegisterAsync(proposedUpdate, systemId);
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+            HttpResponseMessage responseGet = await GetSystemRegister(systemId);
+            Assert.Equal(HttpStatusCode.OK, responseGet.StatusCode);
+
+            RegisteredSystemResponse actualUpdatedSystem = JsonSerializer.Deserialize<RegisteredSystemResponse>(await responseGet.Content.ReadAsStringAsync(), _options);
+            Assert.True(actualUpdatedSystem.ClientId.Count == proposedUpdate.ClientId.Count);
+            Assert.Equal(proposedUpdate.ClientId, actualUpdatedSystem.ClientId);
+        }
+
+        [Fact]
+        public async Task SystemRegister_UnmatchedRequestBodyAndSystemId()
+        {
+            // Prepare
+            const string systemId = "991825827_the_matrix";
+            List<string> clientIdsInFirstSystem = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            List<string> newClientIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, newClientIds);
+
+            // Expecting bad request here
+            var resp = await PutSystemRegisterAsync(updatedSystem, "991825827_does_not_match_request_bodys_system_id");
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+
+            // Read the content as string
+            string content = await resp.Content.ReadAsStringAsync();
+            Assert.Contains("The system ID in the request body does not match the system ID in the URL", content);
+        }
+
+        [Fact]
+        public async Task SystemRegister_SystemNotFound_Test()
+        {
+            // Prepare
+            const string systemId = "991825827_the_matrix";
+            List<string> clientIdsInFirstSystem = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+            RegisterSystemRequest originalSystem = CreateSystemRegisterRequest(systemId, clientIdsInFirstSystem);
+            HttpResponseMessage response = await CreateSystemRegister(originalSystem);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // Try to put on system that does not exist
+            const string putSystemId = "SystemIdThatDoesNotExist";
+            List<string> newClientIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(putSystemId, newClientIds);
+
+            // Expecting bad request here
+            var resp = await PutSystemRegisterAsync(updatedSystem, putSystemId);
+            Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+
+            // Read the content as string
+            string content = await resp.Content.ReadAsStringAsync();
+            Assert.Equal($"System with ID '{putSystemId}' not found.", content);
+        }
+
+        [Fact]
+        public async Task SystemRegister_ClientIdExists_Test()
+        {
+            // Prepare
+            const string systemId = "991825827_the_matrix";
+            const string systemIdSecondSystem = "991825827_snowman";
+
+            List<string> clientIdsInFirstSystem = ["fda56404-f022-46e8-929c-f38b6de2c195", "a0ac009e-0d0b-44bd-b713-95f88355b14b", "9e8d58f8-9b3a-4d5b-95f6-78994ffd0152"];
+            HttpResponseMessage responseFirst = await CreateAndAssertSystemAsync(systemId, clientIdsInFirstSystem);
+            Assert.Equal(HttpStatusCode.OK, responseFirst.StatusCode);
+
+            List<string> clientIdsSecondSystem = ["f204bf11-c92b-4ba1-a3ca-278dd290efdc"];
+            await CreateAndAssertSystemAsync(systemIdSecondSystem, clientIdsSecondSystem);
+
+            // Running update with one new clientId and also one old from a second system
+            List<string> newClientIds = ["1cd178af-806e-40db-b050-46e60c1d112c", clientIdsSecondSystem[0]];
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, newClientIds);
+
+            // Expecting bad request here
+            HttpResponseMessage resp = await PutSystemRegisterAsync(updatedSystem, systemId);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+            string content = await resp.Content.ReadAsStringAsync();
+            Assert.Contains(ValidationErrors.SystemRegister_ClientID_Exists.Detail, content);
+        }
+
+        private async Task<HttpResponseMessage> CreateAndAssertSystemAsync(string systemId, List<string> clientIds)
+        {
+            var request = CreateSystemRegisterRequest(systemId, clientIds);
+            HttpResponseMessage response = await CreateSystemRegister(request);
+            return response;
+        }
+
+        private async Task<HttpResponseMessage> CreateSystemRegister(RegisterSystemRequest registerSystemRequest)
+        {
+            HttpClient client = CreateClient();
+
+            string[] prefixes = ["altinn", "digdir"];
+            string token = PrincipalUtil.GetOrgToken(
+                "digdir",
+                "991825827",
+                "altinn:authentication/systemregister.admin",
+                prefixes);
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            string json = JsonSerializer.Serialize(registerSystemRequest, _options);
+            HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            HttpRequestMessage request = new(HttpMethod.Post, "/authentication/api/v1/systemregister/vendor/")
+            {
+                Content = content
+            };
+
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            return response;
+        }
+
+        private async Task<HttpResponseMessage> PutSystemRegisterAsync(RegisterSystemRequest updateDto, string systemIdPath)
+        {
+            HttpClient client = CreateClient();
+
+            string[] prefixes = ["altinn", "digdir"];
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var json = JsonSerializer.Serialize(updateDto, options);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemIdPath}/")
+            {
+                Content = content
+            };
+
+            return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        }
+
+        private static RegisterSystemRequest CreateSystemRegisterRequest(string systemId, List<string> clientIds, bool isVisible = false, string redirecturl = "https://altinn.no")
+        {
+            return new RegisterSystemRequest
+            {
+                Id = systemId,
+                Vendor = new VendorInfo
+                {
+                    Authority = "iso6523-actorid-upis",
+                    ID = $"0192:991825827"
+                },
+                Name = new Dictionary<string, string>
+                {
+                    { "nb", "The Matrix" },
+                    { "en", "The Matrix" },
+                    { "nn", "The Matrix" }
+                },
+                Description = new Dictionary<string, string>
+                {
+                    { "nb", "Test system for Put" },
+                    { "en", "Test system for Put" },
+                    { "nn", "Test system for Put" }
+                },
+                Rights =
+                [
+                    new Right
+                    {
+                        Resource =
+                        [
+                            new AttributePair
+                            {
+                                Id = "urn:altinn:resource",
+                                Value = "ske-krav-og-betalinger"
+                            }
+                        ]
+                    }
+                ],
+                ClientId = clientIds,
+                AllowedRedirectUrls =
+                [
+                    new Uri("https://vg.no"),
+                    new Uri("https://nrk.no"),
+                    new Uri(redirecturl)
+                ],
+                IsVisible = isVisible
+            };
+        }
+
         private void SetupDateTimeMock()
         {
             timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
@@ -1260,15 +1562,29 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string[] prefixes = { "altinn", "digdir" };
             string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            JsonSerializerOptions options = new JsonSerializerOptions()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
             HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            
+
             return getResponse;
+        }
+
+        public async Task<List<string>> RunParallelSystemRegisterUpdates(List<RegisterSystemRequest> updates)
+        {
+            List<string> responseBodies = [];
+            List<Task<HttpResponseMessage>> tasks = updates
+                .Select(updateDto => PutSystemRegisterAsync(updateDto, updateDto.Id))
+                .ToList();
+
+            HttpResponseMessage[] responses = await Task.WhenAll(tasks);
+
+            foreach (HttpResponseMessage response in responses)
+            {
+                Console.WriteLine($"Status: {response.StatusCode}");
+                string body = await response.Content.ReadAsStringAsync();
+                responseBodies.Add(body);
+            }
+
+            return responseBodies;
         }
     }
 }
