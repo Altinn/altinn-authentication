@@ -278,6 +278,23 @@ public class ChangeRequestSystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Used by the BFF to authenticate the userId to retrieve the chosen Request by guid without partyId
+    /// </summary>
+    /// <returns></returns>
+    [Authorize]
+    [HttpGet("{requestId}")]
+    public async Task<ActionResult<ChangeRequestResponseInternal>> GetChangeRequestId(Guid requestId)
+    {
+        Result<ChangeRequestResponseInternal> res = await _changeRequestService.CheckUserAuthorizationAndGetRequest(requestId);
+        if (res.IsProblem)
+        {
+            return res.Problem.ToActionResult();
+        }
+
+        return Ok(res.Value);
+    }
+
+    /// <summary>
     /// Approves the systemuser requet and creates a system user
     /// </summary>
     /// <param name="party">the partyId</param>
