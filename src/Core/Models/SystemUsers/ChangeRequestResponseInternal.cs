@@ -50,7 +50,14 @@ public class ChangeRequestResponseInternal()
     /// </summary>
     [Required]
     [JsonPropertyName("partyId")]
-    public string PartyId { get; set; }
+    public int PartyId { get; set; }
+
+    /// <summary>
+    /// The partyUuid for the reportee
+    /// </summary>
+    [Required]
+    [JsonPropertyName("partyUuid")]
+    public Guid PartyUuid { get; set; }
 
     /// <summary>
     /// The set of Rights requested as Required for this system user. 
