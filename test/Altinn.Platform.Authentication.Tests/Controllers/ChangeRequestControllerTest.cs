@@ -1494,9 +1494,11 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage statusChangeResponseMessage = await client2.SendAsync(statusChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, statusChangeResponseMessage.StatusCode);
         Assert.NotNull(statusChangeResponseMessage.Content);
-        ChangeRequestResponse? statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
+        ChangeRequestResponseInternal? statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponseInternal>();
         Assert.NotNull(statusResponse);
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
+        Assert.Equal(partyId, statusResponse.PartyId);
+        Assert.Equal(new Guid("00000000-0000-0000-0005-000000000000"), statusResponse.PartyUuid);
     }
 
     [Fact]
