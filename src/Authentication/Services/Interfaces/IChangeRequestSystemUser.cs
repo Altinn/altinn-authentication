@@ -97,4 +97,12 @@ public interface IChangeRequestSystemUser
     /// <param name="vendorOrgNo">the vendors's org no</param>
     /// <returns>A response model with the validated rights</returns>
     Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestSystemUser validateSet, OrganisationNumber vendorOrgNo);
+
+    /// <summary>
+    /// Get the internal Request response DTO for display in the FrontEnd,
+    /// which also include the partyId
+    /// </summary>    
+    /// <param name="requestId">The Guid Id for the Request</param>
+    /// <returns>The internal Request model</returns>
+    Task<Result<ChangeRequestResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId);
 }
