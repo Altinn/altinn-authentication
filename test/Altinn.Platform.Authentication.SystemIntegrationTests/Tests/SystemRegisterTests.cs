@@ -8,6 +8,7 @@ using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
 using Xunit.Abstractions;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 
@@ -32,7 +33,7 @@ public class SystemRegisterTests
         _systemRegisterClient = new SystemRegisterClient(_platformClient);
     }
 
-    public static async Task<string> GetRequestBodyWithReplacements(TestState testState, string filePath)
+    private static async Task<string> GetRequestBodyWithReplacements(TestState testState, string filePath)
     {
         var fileContent = await Helper.ReadFile(filePath);
         return fileContent
@@ -365,33 +366,51 @@ public class SystemRegisterTests
     [Fact]
     public async Task PutSystemWithAccessPackage()
     {
+        // Prepare with basic access package
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-        TestState state = CreateStandardSystemWithAccessPackage(maskinportenToken);
+        TestState state = _platformClient.SystemRegisterClient.CreateStandardSystemWithAccessPackage(maskinportenToken);
         await _systemRegisterClient.PostSystem(state.GenerateRequestBody(), maskinportenToken);
 
-        // access packages
-        // urn:altinn:accesspackage:post-og-telekommunikasjon
+        // Update with new accessPackages
+        List<AccessPackageDto> requestBodyPut =
+        [
+            new() { Urn = "urn:altinn:accesspackage:post-og-telekommunikasjon" },
+            new() { Urn = "urn:altinn:accesspackage:dokumentbasert-tilsyn" },
+            new() { Urn = "urn:altinn:accesspackage:infrastruktur" },
+            new() { Urn = "urn:altinn:accesspackage:patent-varemerke-design" },
+            new() { Urn = "urn:altinn:accesspackage:tilskudd-stotte-erstatning" },
+            new() { Urn = "urn:altinn:accesspackage:mine-sider-kommune" },
+            new() { Urn = "urn:altinn:accesspackage:politi-og-domstol" },
+            new() { Urn = "urn:altinn:accesspackage:rapportering-statistikk" },
+            new() { Urn = "urn:altinn:accesspackage:forskning" },
+            new() { Urn = "urn:altinn:accesspackage:folkeregister" },
+            new() { Urn = "urn:altinn:accesspackage:maskinporten-scopes" },
+            new() { Urn = "urn:altinn:accesspackage:maskinlesbare-hendelser" },
+            new() { Urn = "urn:altinn:accesspackage:maskinporten-scopes-nuf" }
+        ];
 
-        List<AccessPackageDto> requestBodyPut = [new() { Urn = "urn:altinn:accesspackage:post-og-telekommunikasjon" }];
         var jsonString = JsonSerializer.Serialize(requestBodyPut);
         var url = Endpoints.UpdateVendorAccessPackages.Url()?.Replace("{systemId}", state.SystemId);
         var responsePut = await _platformClient.PutAsync(url, jsonString, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, responsePut.StatusCode);
 
-        //Get system to see what it contains
+        // Get system to see what it contains
         var resp = await _platformClient.SystemRegisterClient.getBySystemId(state.SystemId, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var updatedSystem = await resp.Content.ReadAsStringAsync();
-        Assert.Contains("urn:altinn:accesspackage:post-og-telekommunikasjon", updatedSystem);
-    }
 
-    private TestState CreateStandardSystemWithAccessPackage(string? token)
-    {
-        return new TestState("Resources/Testdata/Systemregister/AccessPackageSystemRegister.json")
-            .WithRedirectUrl("https://altinn.no")
-            .WithClientId(Guid.NewGuid().ToString()) //For a real case it should use a maskinporten client id, but that means you cant post the same system again
-            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
-            .WithName(Guid.NewGuid().ToString())
-            .WithToken(token);
+        var jsonDoc = JsonDocument.Parse(updatedSystem);
+        var accessPackages = jsonDoc.RootElement.GetProperty("accessPackages");
+
+        // Actual Urns from resposne
+        List<AccessPackageDto> actualUrns = accessPackages.EnumerateArray()
+            .Select(p => p.GetProperty("urn").GetString())
+            .Where(urn => urn != null)
+            .Select(urn => new AccessPackageDto { Urn = urn! })
+            .ToList();
+        
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal(actualUrns.Count, requestBodyPut.Count);
+        Assert.Equal(actualUrns, requestBodyPut);
     }
 }

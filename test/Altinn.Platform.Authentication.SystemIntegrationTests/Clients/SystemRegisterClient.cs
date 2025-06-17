@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
@@ -65,5 +64,15 @@ public class SystemRegisterClient
         var getUrl = Endpoints.GetVendorSystemRegisterById.Url().Replace("{systemId}", systemId);
         var getResponse = await _platformClient.GetAsync(getUrl, token);
         return getResponse;
+    }
+
+    public TestState CreateStandardSystemWithAccessPackage(string? token)
+    {
+        return new TestState("Resources/Testdata/Systemregister/AccessPackageSystemRegister.json")
+            .WithRedirectUrl("https://altinn.no")
+            .WithClientId(Guid.NewGuid().ToString())
+            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
+            .WithName(Guid.NewGuid().ToString())
+            .WithToken(token);
     }
 }
