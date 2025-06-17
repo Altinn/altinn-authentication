@@ -818,6 +818,7 @@ public class ChangeRequestSystemUserService(
                 PartyId = party.PartyId,
                 PartyUuid = partyUuid,
                 RequiredRights = req.RequiredRights,
+                UnwantedRights = req.UnwantedRights,
                 Status = req.Status,
                 ConfirmUrl = req.ConfirmUrl,
                 Created = req.Created,

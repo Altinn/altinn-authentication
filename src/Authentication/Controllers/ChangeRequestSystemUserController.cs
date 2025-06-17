@@ -283,7 +283,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns></returns>
     [Authorize]
     [HttpGet("{requestId}")]
-    public async Task<ActionResult<ChangeRequestResponseInternal>> GetChangeRequestId(Guid requestId)
+    public async Task<ActionResult<ChangeRequestResponseInternal>> GetChangeRequestById(Guid requestId)
     {
         Result<ChangeRequestResponseInternal> res = await _changeRequestService.CheckUserAuthorizationAndGetRequest(requestId);
         if (res.IsProblem)
