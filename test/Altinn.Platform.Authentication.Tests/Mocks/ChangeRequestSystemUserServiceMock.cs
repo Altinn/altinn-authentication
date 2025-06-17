@@ -28,6 +28,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
+        public Task<Result<ChangeRequestResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
