@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
@@ -29,6 +30,9 @@ public class PlatformAuthenticationClient
     public SystemUserClient SystemUserClient { get; set; }
     public AccessManagementClient AccessManagementClient { get; set; }
     public Common Common { get; set; }
+    
+    private static string? _cachedToken;
+    private static DateTime _tokenExpiry;
 
     /// <summary>
     /// Base class for running requests
@@ -116,7 +120,7 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
-    
+
     public async Task<HttpResponseMessage> GetNextUrl(string? endpoint, string? token)
     {
         using var client = new HttpClient();
@@ -295,9 +299,16 @@ public class PlatformAuthenticationClient
     /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
     public async Task<string?> GetMaskinportenTokenForVendor()
     {
+        if (_cachedToken != null && DateTime.UtcNow < _tokenExpiry)
+        {
+            return _cachedToken;
+        }
         var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
-        return token;
+        _cachedToken = token;
+        _tokenExpiry = DateTime.UtcNow.AddMinutes(2); // Valid for 2 minutes
+
+        return _cachedToken;
     }
 
     public async Task<string> GetSystemUserToken(string? externalRef = "", string scopes = "")
@@ -356,7 +367,7 @@ public class PlatformAuthenticationClient
     public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer, ITestOutputHelper outputHelper)
     {
         var url = Endpoints.DeleteCustomer.Url()
-            .Replace("{party}", facilitator.AltinnPartyId)
+            ?.Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{delegationId}", selectedCustomer.delegationId);
 
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
@@ -367,7 +378,7 @@ public class PlatformAuthenticationClient
     public async Task<HttpResponseMessage> DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
     {
         var url = Endpoints.DeleteAgentSystemUser.Url()
-            .Replace("{party}", facilitator.AltinnPartyId)
+            ?.Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{systemUserId}", systemUserId);
 
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
@@ -375,66 +386,44 @@ public class PlatformAuthenticationClient
         return await Delete(url, facilitator.AltinnToken);
     }
 
-    public async Task<SystemUser?> CreateSystemUserOnExistingSystem()
+    public async Task<string> GetSystemUsers(string systemId, string? maskinportenToken)
     {
-        var testuser = TestUsers.Find(testUser => testUser.Org!.Equals(EnvironmentHelper.Vendor))
-                       ?? throw new Exception($"Test user not found for organization: {EnvironmentHelper.Vendor}");
-
-        var maskinportenToken = await GetMaskinportenTokenForVendor();
-
-        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithClientId(Guid.NewGuid().ToString()) //Creates System User With MaskinportenClientId
-            .WithVendor(EnvironmentHelper.Vendor)
-            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
-            .WithName(Guid.NewGuid().ToString())
-            .WithToken(maskinportenToken);
-
-        // Post system
-        var requestBodySystemRegister = teststate.GenerateRequestBody();
-        await SystemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
-
-        // Create system user with same created rights mentioned above
-        for (int i = 0; i < 32; i++)
-        {
-            var externalRef = "Systembruker med Nummer: " + i; 
-            var postSystemUserResponse = await SystemUserClient.CreateSystemUserRequestWithExternalRef(teststate, maskinportenToken, externalRef);
-
-            //Approve system user
-            var id = Common.ExtractPropertyFromJson(postSystemUserResponse, "id");
-            var systemId = Common.ExtractPropertyFromJson(postSystemUserResponse, "systemId");
-            // _outputHelper.WriteLine($"System user with id: {id}");
-            // _outputHelper.WriteLine($"systemId {systemId}");
-
-            await SystemUserClient.ApproveSystemUserRequest(testuser, id);
-        }
-
-        var users = await SystemUserClient.GetSystemUserById(teststate.SystemId, maskinportenToken);
-
-        var content = await users.Content.ReadAsStringAsync();
-
-        await IterateAllPages(content, maskinportenToken);
-        // assert you can click next and go to it
-        return null;
-        //Return system user and make sure it was created
+        var users = await SystemUserClient.GetSystemUserById(systemId, maskinportenToken);
+        return await users.Content.ReadAsStringAsync();
     }
 
-    private async Task IterateAllPages(string initialJson, string? maskinportenToken)
+    public async Task VerifyPagination(string initialJson, string? maskinportenToken)
     {
         string? nextUrl = ExtractNextUrl(initialJson);
 
-        while (!string.IsNullOrEmpty(nextUrl))
-        {
-            var resp = await GetNextUrl(nextUrl, maskinportenToken);
-            Assert.NotNull(resp);
+        //Should never be empty first click due to creating 32 system users
+        Assert.NotNull(nextUrl);
+        Assert.NotEmpty(nextUrl);
 
-            var respBody = await resp.Content.ReadAsStringAsync();
-            nextUrl = ExtractNextUrl(respBody);
-        }
+        var root = JsonNode.Parse(initialJson);
+        var systemUsersList = root?["data"]?.AsArray();
+        
+        //Assert all system users are present
+        Assert.NotNull(systemUsersList);
+        Assert.Equal(20, systemUsersList.Count);
+        
+        var resp = await GetNextUrl(nextUrl, maskinportenToken);
+        Assert.NotNull(resp);
+
+        var respBody = await resp.Content.ReadAsStringAsync();
+        nextUrl = ExtractNextUrl(respBody);
+        
+        Assert.Null(nextUrl);
+
+        root = JsonNode.Parse(respBody);
+        systemUsersList = root?["data"]?.AsArray();
+
+        // Assert remaining system users are present
+        Assert.NotNull(systemUsersList);
+        Assert.Equal(12, systemUsersList.Count);
     }
 
-    private string? ExtractNextUrl(string json)
+    private static string? ExtractNextUrl(string json)
     {
         using var doc = JsonDocument.Parse(json);
 

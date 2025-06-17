@@ -19,7 +19,7 @@ public class SystemUserTokenTests : TestFixture
 {
     private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
-    private string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
+    private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
 
     /// <summary>
     /// Testing System user endpoints
@@ -136,47 +136,6 @@ public class SystemUserTokenTests : TestFixture
 
         Assert.NotNull(responseContent);
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    private async Task<SystemUser?> CreateSystemUserOnExistingSystem(string name)
-    {
-        var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
-                       ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper.Vendor}");
-
-        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-
-        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithClientId(_platformClient.EnvironmentHelper.maskinportenClientId) //Creates System User With MaskinportenClientId
-            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
-            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
-            .WithName(name)
-            .WithToken(maskinportenToken);
-        
-        // Post system
-        var requestBodySystemRegister = teststate.GenerateRequestBody();
-        await _platformClient.SystemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
-
-        // Create system user with same created rights mentioned above
-        for (int i = 0; i < 20; i++) 
-        {
-            var externalRef = Guid.NewGuid().ToString();
-            var postSystemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(teststate, maskinportenToken, externalRef);
-            
-            //Approve system user
-            var id = Common.ExtractPropertyFromJson(postSystemUserResponse, "id");
-            var systemId = Common.ExtractPropertyFromJson(postSystemUserResponse, "systemId");
-            _outputHelper.WriteLine($"System user with id: {id}");
-            _outputHelper.WriteLine($"systemId {systemId}");
-            
-            await _platformClient.SystemUserClient.ApproveSystemUserRequest(testuser, id);
-        }
-        
-        
-
-        return null;
-        //Return system user and make sure it was created
     }
 
     private async Task<SystemUser?> GetSystemUserOnSystemId(string systemId)

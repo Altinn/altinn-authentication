@@ -16,9 +16,9 @@ headers {
 
 body:json {
   {
-    "systemId" : "312605031_TripleTexSuperPackage1 aef4f62b-7e19-4988-a7ea-7d50b2ae1bdc",
-    "externalRef": "adas",
-    "partyOrgNo" : "312655985",
+    "systemId" : "{{system_id}}",
+    "externalRef": "1",
+    "partyOrgNo" : "314098595",
     "rights" : [ {
       "resource" : [ {
         "value" : "authentication-e2e-test",
@@ -30,7 +30,7 @@ body:json {
         "id" : "urn:altinn:resource"
       } ]
     } ],
-    "redirectUrl" : "*"
+    "redirectUrl" : ""
   }
   
   
@@ -53,10 +53,13 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
   
-  bru.setEnvVar("auth_orgNo","312605031");
-  bru.setEnvVar("auth_org", "312605031");
   
-  bru.setEnvVar("system_id","310574775_UrlQueryPathTesIsvisible");
+  var leverandoerOrg = "310574775";
+  var systemId = leverandoerOrg + "_testsystem"
+  bru.setEnvVar("system_id","310574775_SystemNewTest");
+  
+  bru.setEnvVar("auth_orgNo",leverandoerOrg);
+  bru.setEnvVar("auth_org", leverandoerOrg);
   bru.setEnvVar("external_ref", "1234");
   
   

@@ -43,7 +43,12 @@ body:json {
       "urn" : "urn:altinn:accesspackage:skattegrunnlag"
     }, {
       "urn" : "urn:altinn:accesspackage:forretningsforer-eiendom"
-    } ],
+    },
+                      {
+                        "urn" : "urn:altinn:accesspackage:lonn"
+                      }
+                     
+                     ],
     "isVisible": true,
     "ClientId": [
       "{{system_name}}"
@@ -63,7 +68,7 @@ script:pre-request {
   bru.setEnvVar("auth_org", "314126181");
   
   //Test js input
-  const systemName = "Forretningsfører 1"
+  const systemName = "Forretningsfører 122"
   const description = "System med forretningsfører";
   
   bru.setEnvVar("system_name",systemName);

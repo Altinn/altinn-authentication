@@ -156,7 +156,7 @@ public class SystemUserTests : IDisposable
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         TestState systemInSystemRegister = await CreateSystemInSystemRegister(maskinportenToken);
-        
+
         var systemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(systemInSystemRegister, maskinportenToken, Guid.NewGuid().ToString());
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
@@ -343,7 +343,10 @@ public class SystemUserTests : IDisposable
     [Fact]
     public async Task VerifyPaginatedResponseSystemUserTest()
     {
-        SystemUser? test = await _platformClient.CreateSystemUserOnExistingSystem();
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+        string systemId = _platformClient.EnvironmentHelper.Vendor + "_PaginationSystemUserToReuse";
+        var content = await _platformClient.GetSystemUsers(systemId, maskinportenToken);
+        await _platformClient.VerifyPagination(content, maskinportenToken);
     }
 
     public async Task<string> CreateSystemAndSystemUserRequest(TestState testState, string? maskinportenToken)
@@ -533,6 +536,7 @@ public class SystemUserTests : IDisposable
             _outputHelper.WriteLine($"Cleaning up system user: {_systemUserId}");
             _platformClient.SystemUserClient.DeleteSystemUser(_testperson.AltinnPartyId, _systemUserId).GetAwaiter().GetResult();
         }
+
         GC.SuppressFinalize(this);
     }
 }
