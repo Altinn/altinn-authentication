@@ -16,7 +16,7 @@ import exec from 'k6/execution';
  * @param {} filename 
  * @returns 
  */
-function readCsv(filename) {
+export function readCsv(filename) {
   try {
     return papaparse.parse(open(filename), { header: true, skipEmptyLines: true }).data;
   } catch (error) {
@@ -28,7 +28,7 @@ function readCsv(filename) {
 if (!__ENV.API_ENVIRONMENT) {
   throw new Error('API_ENVIRONMENT must be set');
 }
-const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-random-customers.csv`;
+const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-all-customers.csv`;
 
 /**
  * SharedArray variable that stores the service owners data.
@@ -40,6 +40,8 @@ const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-random-cu
 const systemUsers = new SharedArray('systemUsers', function () {
   return readCsv(systemUsersFilename);
 });
+
+export const systemOwner =  __ENV.API_ENVIRONMENT == "yt01" ? "713431400" : "991825827"; 
 
 export const resources = [ 
   "ttd-dialogporten-performance-test-01", 

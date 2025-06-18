@@ -116,10 +116,10 @@ testid="${name}_$(date '+%Y%m%dT%H%M%S')"
 
 archive_args=""
 if $breakpoint; then
-    archive_args="-e stages_target=$vus -e stages_duration=$duration -e abort_on_fail=$abort_on_fail"
+    archive_args="-e breakpoint=true -e stages_target=$vus -e stages_duration=$duration -e abort_on_fail=$abort_on_fail"
 fi
 # Create the k6 archive
-
+echo "Creating k6 archive from $filename with testid $testid, archive_args: $archive_args"
 if ! k6 archive $filename \
      -e API_VERSION="$API_VERSION" \
      -e API_ENVIRONMENT="$API_ENVIRONMENT" \
@@ -132,7 +132,7 @@ fi
 # Create the configmap from the archive
 if ! kubectl create configmap $configmapname --from-file=archive.tar; then
     echo "Error: Failed to create configmap"
-    rm archive.tar
+    #rm archive.tar
     exit 1
 fi
 

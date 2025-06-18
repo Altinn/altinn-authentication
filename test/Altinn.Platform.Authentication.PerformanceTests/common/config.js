@@ -18,41 +18,41 @@ const amDelegationUrl = "api/v1/internal/systemuserclientdelegation"
 export const urls = {
     v1: {
         registerSystem: {
-            test: testBaseUrl + systemRegister,
+            at22: testBaseUrl + systemRegister,
             yt01: yt01BaseUrl + systemRegister
         },
 
         requestSystemUser: {
-            test: testBaseUrl + systemUserRequest,
+            at22: testBaseUrl + systemUserRequest,
             yt01: yt01BaseUrl + systemUserRequest
         },
 
         approveSystemUser: {
-            test: testBaseUrl + systemUserApprove,
+            at22: testBaseUrl + systemUserApprove,
             yt01: yt01BaseUrl + systemUserApprove
         },
         systemUrl: {
-            test: testBaseUrl + systemUrl,
+            at22: testBaseUrl + systemUrl,
             yt01: yt01BaseUrl + systemUrl
         },
         systemUsersUrl: {
-            test: testBaseUrl + systemUsersUrl,
+            at22: testBaseUrl + systemUsersUrl,
             yt01: yt01BaseUrl + systemUsersUrl
         },
         systemUserByExternalIdUrl: {
-            test: testBaseUrl + systemUserByExternalIdUrl,
+            at22: testBaseUrl + systemUserByExternalIdUrl,
             yt01: yt01BaseUrl + systemUserByExternalIdUrl
         },
         getCustomerList: {
-            test: testRegisterBaseUrl + customerList,
+            at22: testRegisterBaseUrl + customerList,
             yt01: yt01RegisterBaseUrl + customerList
         },
         delegationUrl: {
-            test: testBaseUrl + delegationUrl,
+            at22: testBaseUrl + delegationUrl,
             yt01: yt01BaseUrl + delegationUrl
         },
         amDelegationUrl: {
-            test: testAmBaseUrl + amDelegationUrl,
+            at22: testAmBaseUrl + amDelegationUrl,
             yt01: yt01AmBaseUrl + amDelegationUrl
         }
     }

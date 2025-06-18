@@ -1,15 +1,25 @@
 import http from 'k6/http';
 import encoding from 'k6/encoding';
-import { uuidv4, URL} from './common/k6-utils.js';
-import { expect, expectStatusFor } from "./common/testimports.js";
-import { describe } from './common/describe.js';
-import { registerSystemUrl, requestSystemUserUrl, approveSystemUserUrl, postDelegationUrl, postAmDelegationUrl } from './common/config.js';
+import { 
+    expect, 
+    uuidv4, 
+    URL, 
+    describe, 
+    getPersonalToken, 
+    getEnterpriseToken 
+} from "./common/testimports.js";
+import { 
+    registerSystemUrl, 
+    requestSystemUserUrl, 
+    approveSystemUserUrl, 
+    postDelegationUrl, 
+    postAmDelegationUrl 
+} from './common/config.js';
 import { getCreateSystemBody, getCreateSystemUserBody } from './testdata/postData.js';
-import { getPersonalToken, getEnterpriseTokenWithType } from './common/token.js';
 import { getDelegationBody, getAmDelegationBody } from './testdata/postData.js';
-import { getAmToken } from './common/token.js';
 
 const traceCalls = (__ENV.traceCalls ?? 'false') === 'true';
+const environment = __ENV.API_ENVIRONMENT;
 
 export const createSystemOwnerLabel = "Create system";
 export const createSystemUserLabel = "Create system user";
@@ -23,15 +33,15 @@ export let options = {
     }
 };
 
-export function createSystem(systemOwner, systemId, resource, token, clientId, type) {
+export function createSystem(systemOwner, systemId, resources, token, clientId, type) {
     const params = getParams(createSystemOwnerLabel);
     params.headers.Authorization = "Bearer " + token;
     const url = new URL(registerSystemUrl);
-    const body = getCreateSystemBody(systemOwner, systemId, clientId, resource, type);
+    const body = getCreateSystemBody(systemOwner, systemId, clientId, resources, type);
     let id = null;
     describe('Create system', () => {
         let r = http.post(url.toString(), JSON.stringify(body),params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();  
         id = r.json();      
     });
@@ -53,7 +63,7 @@ export function createSystemUser(systemId, organization, resources, token, type,
     let id = null;
     describe('Create system user', () => {
         let r = http.post(url, JSON.stringify(body), params);
-        expectStatusFor(r).to.equal(201);
+        expect(r.status, "response status").to.equal(201);
         expect(r, 'response').to.have.validJsonBody();
         id = r.json().id;
     });
@@ -74,7 +84,7 @@ export function approveSystemUser(organization, systemUserId, type) {
     } 
     return describe('Approve system user', () => {
         let r = http.post(url, null, params); 
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r.body).to.equal("true");
     });
 }
@@ -105,7 +115,7 @@ export function delegateSystemUser(customer, organization, systemUserId) {
     let id = null;
     describe('Delegate system user', () => {
         let r = http.post(url, JSON.stringify(body), params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();
         id = r.json().map((x) => x.delegationId);
     });
@@ -115,24 +125,22 @@ export function delegateSystemUser(customer, organization, systemUserId) {
 export function delegateAmSystemUser(customer, organization, systemUserId, resources) {
     const params = getParams(postDelegationLabel);
     params.headers.Authorization = "Bearer " + getAmToken(organization);
-
     const url = new URL(postAmDelegationUrl);
     url.searchParams.append('party', organization.orgUuid);
     const body = getAmDelegationBody(customer.partyUuid, systemUserId, resources, organization.orgType);
     describe('Delegate system user', () => {
         let r = http.post(url.toString(), JSON.stringify(body), params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();
     });
 }
-
 
 export function getSystemOwnerTokenAndClientId(systemOwner, iteration) {
     const tokenOptions = {
         scopes: "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemuser.request.read altinn:authorization/authorize",
         orgno: systemOwner
     }
-    const token = getEnterpriseTokenWithType(tokenOptions, iteration);
+    const token = getEnterpriseToken(tokenOptions, iteration, environment);
     const parts = token.split('.');
     const jwt = JSON.parse(encoding.b64decode(parts[1].toString(), "rawstd", 's'))
     return [token, jwt.client_id];   
@@ -143,6 +151,17 @@ function getApproveSystemUserToken(userId) {
         scopes: "altinn:portal/enduser",
         userId: userId
     }
-    return getPersonalToken(tokenOptions);
+    return getPersonalToken(tokenOptions, environment);
+}
+
+function getAmToken(organization) {
+    const tokenOptions = {
+        scopes: "altinn:portal/enduser",
+        pid: organization.ssn,
+        userid: organization.userId,
+        partyid: organization.partyId,
+        partyuuid: organization.orgUuid
+    }
+    return getPersonalToken(tokenOptions, environment);
 }
 

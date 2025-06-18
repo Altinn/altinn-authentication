@@ -1,18 +1,32 @@
 import http from 'k6/http';
 import exec from 'k6/execution';
-import { randomItem, uuidv4, URL} from './common/k6-utils.js';
-import { expect, expectStatusFor } from "./common/testimports.js";
-import { describe } from './common/describe.js';
-import { splitSystemUsers, regnskapsforerUrns, forretningsforerUrns, revisorUrns } from './common/readTestdata.js';
-import { getEnterpriseToken } from './common/token.js';
+import { 
+    expect, 
+    randomItem, 
+    uuidv4, 
+    URL, 
+    describe, 
+    getEnterpriseToken 
+} from "./common/testimports.js";
+import { splitSystemUsers, regnskapsforerUrns, forretningsforerUrns, revisorUrns, systemOwner } from './common/readTestdata.js';
 import { getCustomerListUrl, getSystemUsersUrl } from './common/config.js';
-import { createSystem, createSystemUser, approveSystemUser, getParams, getSystemOwnerTokenAndClientId, delegateAmSystemUser as delegateSystemUser } from './commonSystemUser.js';
-import { createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, postDelegationLabel } from './commonSystemUser.js';
-import { options as _options } from './commonSystemUser.js';
+import { 
+    createSystem, 
+    createSystemUser, 
+    approveSystemUser, 
+    getParams, 
+    getSystemOwnerTokenAndClientId, 
+    delegateAmSystemUser as delegateSystemUser,
+    createSystemOwnerLabel, 
+    createSystemUserLabel, 
+    approveSystemUserLabel, 
+    postDelegationLabel,
+    options as _options 
+} from './commonSystemUser.js';
+export { splitSystemUsers as setup } from './common/readTestdata.js';
 
 const subscription_key = __ENV.subscription_key;
-
-const systemOwner = "713431400"; 
+const environment = __ENV.API_ENVIRONMENT;
 
 const getCustormerListLabel = "Get customer list";
 const getSystemUsersLabel = "Get system users";
@@ -24,19 +38,13 @@ for (var label of labels) {
     options.thresholds[[`http_req_failed{name:${label}}`]] = ['rate<=0.0'];
 }
 
-export function setup() {
-    return splitSystemUsers();
-}
-
 export default function(data) {
     let mySystemUsers = data[exec.vu.idInTest - 1];
     if (mySystemUsers.length == 0) {
-        console.log("No more system users to create");
-        return;
+        //console.log("No more system users to create");
+        exec.test.abort("No more system users to create");
     }
     const organization = randomItem(mySystemUsers);
-    // Remove the organization from the list
-    data[exec.vu.idInTest - 1] = data[exec.vu.idInTest - 1].filter(item => item.orgNo != organization.orgNo);
     const systemId = `${systemOwner}_${uuidv4()}`;
 
     // get token to create system, systemuser and read systemid.
@@ -44,7 +52,7 @@ export default function(data) {
     const [token, clientId] = getSystemOwnerTokenAndClientId(systemOwner, __ITER);
     const resources = getPackages(organization.orgType);
 
-        // create system and system user
+    // create system and system user
     const systemResponse = createSystem(systemOwner, systemId, resources, token, clientId, "accessPackage");
 
     // create system user, approve, get customer list and delegate system user
@@ -67,9 +75,9 @@ export default function(data) {
     let noOfDelegations = 0;
     // delegate system user to 10 customers
     for (let customer of customerList.data) {
-        let delegationId = delegateSystemUser(customer, organization, systemUserId, resources);
+        let _ = delegateSystemUser(customer, organization, systemUserId, resources);
         noOfDelegations++;
-        if (noOfDelegations >=10) {
+        if (noOfDelegations >=1) {
             break;
         }
     }
@@ -81,7 +89,7 @@ function getCustomerList(systemOwner, orgUuid, orgType) {
         scopes: "altinn:register/partylookup.admin",
         orgno: systemOwner
     }
-    const token = getEnterpriseToken(tokenOptions);
+    const token = getEnterpriseToken(tokenOptions, 0, environment);
     const params = getParams(getCustormerListLabel);
     params.headers.Authorization = "Bearer " + token;
     params.headers['Ocp-Apim-Subscription-Key'] = subscription_key;
@@ -89,7 +97,7 @@ function getCustomerList(systemOwner, orgUuid, orgType) {
     let customer_list = null;
     describe('Get customer list', () => {
         let r = http.get(url, params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();  
         customer_list = r.json();      
     });
@@ -103,7 +111,7 @@ function getSystemUserId(systemId, token) {
     let systemUsers = null;
     describe('Get system users', () => {
         let r = http.get(url.toString(), params);
-        expectStatusFor(r).to.equal(200);
+        expect(r.status, "response status").to.equal(200);
         expect(r, 'response').to.have.validJsonBody();
         systemUsers = r.json();
     });
