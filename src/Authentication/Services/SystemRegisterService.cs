@@ -56,12 +56,6 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> CreateClient(string clientId, Guid systemInteralId, CancellationToken cancellationToken)
-        {
-            return _systemRegisterRepository.CreateClient(clientId, systemInteralId);
-        }
-
-        /// <inheritdoc/>
         public Task<bool> DoesClientIdExists(List<string> clientId, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.DoesClientIdExists(clientId);
@@ -70,7 +64,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.CreateRegisteredSystem(system);
+            return _systemRegisterRepository.CreateRegisteredSystem(system, cancellation);
         }
 
         /// <summary>
@@ -103,7 +97,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, string systemId, CancellationToken cancellationToken)
+        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, CancellationToken cancellationToken)
         {
             return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
         }
