@@ -20,4 +20,9 @@ public class VendorDto
 public class AccessPackageDto
 {
     public string? Urn { get; set; }
+    
+    public override bool Equals(object? obj)
+    {
+        return obj is AccessPackageDto other && Urn == other.Urn;
+    }
 }

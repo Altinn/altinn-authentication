@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -56,7 +57,7 @@ public class SystemUserTests : IDisposable
 
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
-        var endpoint = ApiEndpoints.GetSystemUsersByParty.Url().Replace("{party}", dagl.AltinnPartyId);
+        var endpoint = Endpoints.GetSystemUsersByParty.Url().Replace("{party}", dagl.AltinnPartyId);
 
         var respons = await _platformClient.GetAsync(endpoint, altinnToken);
 
@@ -89,7 +90,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse = await
-            _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
+            _platformClient.PostAsync(Endpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
 
         // Assert
         await AssertSystemUserRequestCreated(userResponse);
@@ -121,7 +122,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse = await
-            _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
+            _platformClient.PostAsync(Endpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
 
         // Assert
         await AssertSystemUserRequestCreated(userResponse);
@@ -154,8 +155,9 @@ public class SystemUserTests : IDisposable
     {
         // Arrange
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-        var systemInSystemRegister = await CreateSystemInSystemRegister(maskinportenToken);
-        var systemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(systemInSystemRegister, maskinportenToken);
+        TestState systemInSystemRegister = await CreateSystemInSystemRegister(maskinportenToken);
+
+        var systemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(systemInSystemRegister, maskinportenToken, Guid.NewGuid().ToString());
 
         var id = Common.ExtractPropertyFromJson(systemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(systemUserResponse, "systemId");
@@ -205,7 +207,7 @@ public class SystemUserTests : IDisposable
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var systemUserResponse = await CreateSystemAndSystemUserRequest(maskinportenToken);
         var requestId = Common.ExtractPropertyFromJson(systemUserResponse, "id");
-        var urlDelete = ApiEndpoints.DeleteSystemUserRequest.Url().Replace("{requestId}", requestId);
+        var urlDelete = Endpoints.DeleteSystemUserRequest.Url().Replace("{requestId}", requestId);
 
         // Act - Delete System User Request
         var responseDelete = await _platformClient.Delete(urlDelete, maskinportenToken);
@@ -287,7 +289,7 @@ public class SystemUserTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, statusResponseAfterDelete.StatusCode);
 
         //Verify that you can create a new System User Request
-        var respExternalRef = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(testState, maskinportenToken);
+        var respExternalRef = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(testState, maskinportenToken, externalRef);
         var respNoExternalRef = await _platformClient.SystemUserClient.CreateSystemUserRequestWithoutExternalRef(testState, maskinportenToken);
         var idNewRequestWithExternalRef = Common.ExtractPropertyFromJson(respExternalRef, "id");
         var idNewRequestWithoutExternalRef = Common.ExtractPropertyFromJson(respNoExternalRef, "id");
@@ -338,6 +340,15 @@ public class SystemUserTests : IDisposable
         await _platformClient.SystemUserClient.PutSystemUser(jsonBody, maskinportenToken);
     }
 
+    [Fact]
+    public async Task VerifyPaginatedResponseSystemUserTest()
+    {
+        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
+        string systemId = _platformClient.EnvironmentHelper.Vendor + "_PaginationSystemUserToReuse";
+        var content = await _platformClient.GetSystemUsers(systemId, maskinportenToken);
+        await _platformClient.VerifyPagination(content, maskinportenToken);
+    }
+
     public async Task<string> CreateSystemAndSystemUserRequest(TestState testState, string? maskinportenToken)
     {
         var requestBodySystemREgister = testState.GenerateRequestBody();
@@ -359,7 +370,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
+            await _platformClient.PostAsync(Endpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -414,7 +425,7 @@ public class SystemUserTests : IDisposable
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
+            await _platformClient.PostAsync(Endpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -423,7 +434,7 @@ public class SystemUserTests : IDisposable
         return content;
     }
 
-    private async Task<HttpResponseMessage> ApproveRequest(string endpoint, Testuser testperson)
+    private async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
     {
         // Get the Altinn token
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
@@ -461,7 +472,7 @@ public class SystemUserTests : IDisposable
 
     private async Task<HttpResponseMessage> GetSystemUserRequestStatus(string requestId, string? token)
     {
-        var url = ApiEndpoints.GetSystemUserRequestStatus.Url().Replace("requestId", requestId);
+        var url = Endpoints.GetSystemUserRequestStatus.Url().Replace("requestId", requestId);
         return await _platformClient.GetAsync(url, token);
     }
 
@@ -477,7 +488,7 @@ public class SystemUserTests : IDisposable
 
     private async Task ApproveSystemUserRequest(Testuser testuser, string requestId, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
     {
-        var approveUrl = ApiEndpoints.ApproveSystemUserRequest.Url()
+        var approveUrl = Endpoints.ApproveSystemUserRequest.Url()
             .Replace("{party}", testuser.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
@@ -488,7 +499,7 @@ public class SystemUserTests : IDisposable
 
     private async Task RejectSystemUserRequest(string? altinnPartyId, string requestId)
     {
-        var approveUrl = ApiEndpoints.RejectSystemUserRequest.Url()
+        var approveUrl = Endpoints.RejectSystemUserRequest.Url()
             .Replace("{party}", altinnPartyId)
             .Replace("{requestId}", requestId);
 
@@ -500,7 +511,7 @@ public class SystemUserTests : IDisposable
 
     private async Task<HttpResponseMessage> GetSystemUserById(string systemId, string? token)
     {
-        var urlGetBySystem = ApiEndpoints.GetSystemUsersBySystemForVendor.Url().Replace("{systemId}", systemId);
+        var urlGetBySystem = Endpoints.GetSystemUsersBySystemForVendor.Url().Replace("{systemId}", systemId);
         return await _platformClient.GetAsync(urlGetBySystem, token);
     }
 
@@ -525,6 +536,7 @@ public class SystemUserTests : IDisposable
             _outputHelper.WriteLine($"Cleaning up system user: {_systemUserId}");
             _platformClient.SystemUserClient.DeleteSystemUser(_testperson.AltinnPartyId, _systemUserId).GetAwaiter().GetResult();
         }
+
         GC.SuppressFinalize(this);
     }
 }

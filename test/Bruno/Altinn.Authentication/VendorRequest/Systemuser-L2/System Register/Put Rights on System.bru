@@ -1,0 +1,73 @@
+meta {
+  name: Put Rights on System
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{system_id}}/rights
+  body: json
+  auth: inherit
+}
+
+body:json {
+  [
+    {
+      "action": "read",
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "authentication-e2e-test"
+        }
+      ]
+    },
+    {
+      "action": "read",
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "vegardtestressurs"
+        }
+      ]
+    }
+  ]
+}
+
+vars:pre-request {
+  system_id: 312605031_ca87ef92-6f30-4d2b-b502-480f81e4138b
+  ~system_id: 310574775_isDeletedTest
+  ~system_id: 310574775_TwoRedirectUrlsTest
+  ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
+  ~system_id: 310574775_UrlQueryPathTesIsvisibleTest
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  const { v4: uuidv4} = require('uuid')
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
+  
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
+  
+  // const systemName = "QueryParamMustWorkSingle"
+  // 
+  bru.setEnvVar("system_name","isDeletedTest");
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  bru.setEnvVar("bearer_token", token);
+  
+  const auth_orgNo = bru.getEnvVar("auth_orgNo"); // Retrieve it from the environment
+  const system_name = bru.getEnvVar("system_name"); // Retrieve system_name as well
+  console.log(system_name)
+  
+  bru.setEnvVar("system_id", `${auth_orgNo}_${system_name}`);
+  
+}
+
+docs {
+  SystemId med tilgangspakke i AT22:
+  - 310574775_KlientDelegeringManuellTest: urn:altinn:accesspackage:skattnaering" (isVisible: false)
+}

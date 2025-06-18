@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
@@ -109,7 +110,7 @@ public class SwaggerCoverageTest
 
     private static ApiEndpoint? GetApiEndpointByName(string name)
     {
-        var field = typeof(ApiEndpoints).GetField(name, BindingFlags.Public | BindingFlags.Static);
+        var field = typeof(Endpoints).GetField(name, BindingFlags.Public | BindingFlags.Static);
         var attribute = field?.GetCustomAttribute<EndpointInfoAttribute>();
         return attribute != null ? new ApiEndpoint(attribute.Url, attribute.Method) : null;
     }

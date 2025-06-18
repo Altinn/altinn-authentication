@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -23,11 +25,14 @@ public class PlatformAuthenticationClient
     public readonly string? BaseUrlAuthentication;
 
     public readonly string? BaseUrlBff;
-    
+
     public SystemRegisterClient SystemRegisterClient { get; set; }
     public SystemUserClient SystemUserClient { get; set; }
     public AccessManagementClient AccessManagementClient { get; set; }
     public Common Common { get; set; }
+    
+    private static string? _cachedToken;
+    private static DateTime _tokenExpiry;
 
     /// <summary>
     /// Base class for running requests
@@ -39,7 +44,7 @@ public class PlatformAuthenticationClient
         BaseUrlBff = GetEnvironment(EnvironmentHelper.Testenvironment);
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
-        
+
         SystemRegisterClient = new SystemRegisterClient(this);
         SystemUserClient = new SystemUserClient(this);
         AccessManagementClient = new AccessManagementClient(this);
@@ -68,7 +73,7 @@ public class PlatformAuthenticationClient
     {
         // Define base URLs for tt02 and all "at" environments
         const string tt02 = "https://platform.tt02.altinn.no/";
-            const string atBaseUrl = "https://platform.{env}.altinn.cloud/";
+        const string atBaseUrl = "https://platform.{env}.altinn.cloud/";
 
         // Handle case-insensitive input and return the correct URL
         environmentHelperTestenvironment = environmentHelperTestenvironment.ToLower();
@@ -88,7 +93,7 @@ public class PlatformAuthenticationClient
     /// <param name="body">Request body, see Swagger documentation for reference</param>
     /// <param name="token">Bearer token</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> PostAsync(string endpoint, string body, string? token)
+    public async Task<HttpResponseMessage> PostAsync(string? endpoint, string body, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -108,7 +113,7 @@ public class PlatformAuthenticationClient
     /// <param name="endpoint">path to api endpoint</param>
     /// <param name="token">Token used</param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> GetAsync(string endpoint, string? token)
+    public async Task<HttpResponseMessage> GetAsync(string? endpoint, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -116,7 +121,15 @@ public class PlatformAuthenticationClient
         return await client.GetAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
 
-    public async Task<HttpResponseMessage> PutAsync(string path, string requestBody, string? token)
+    public async Task<HttpResponseMessage> GetNextUrl(string? endpoint, string? token)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        return await client.GetAsync($"{endpoint}");
+    }
+
+    public async Task<HttpResponseMessage> PutAsync(string? path, string requestBody, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -198,8 +211,8 @@ public class PlatformAuthenticationClient
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
-                $"?env={EnvironmentHelper.Testenvironment}" +
-                $"&scopes=altinn:portal/enduser " + scopes +
+            $"?env={EnvironmentHelper.Testenvironment}" +
+            $"&scopes=altinn:portal/enduser " + scopes +
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
             $"&partyuuid={user.AltinnPartyUuid}" +
@@ -286,9 +299,16 @@ public class PlatformAuthenticationClient
     /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
     public async Task<string?> GetMaskinportenTokenForVendor()
     {
+        if (_cachedToken != null && DateTime.UtcNow < _tokenExpiry)
+        {
+            return _cachedToken;
+        }
         var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
-        return token;
+        _cachedToken = token;
+        _tokenExpiry = DateTime.UtcNow.AddMinutes(2); // Valid for 2 minutes
+
+        return _cachedToken;
     }
 
     public async Task<string> GetSystemUserToken(string? externalRef = "", string scopes = "")
@@ -315,7 +335,7 @@ public class PlatformAuthenticationClient
         return TestUsers.Find(testUser => testUser.Org!.Equals(vendor))
                ?? throw new Exception($"Test user not found for organization: {vendor}");
     }
-    
+
     public async Task<Testuser> GetTestUserAndTokenForCategory(String category)
     {
         var testuser = TestUsers.Find(user => user.Category!.Equals(category)) ?? throw new Exception("Unable to find testuser with category");
@@ -337,8 +357,8 @@ public class PlatformAuthenticationClient
     {
         var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
 
-        var url = ApiEndpoints.DelegationAuthentication.Url()
-            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+        var url = Endpoints.DelegationAuthentication.Url()
+            ?.Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{systemUserUuid}", systemUserUuid);
 
         return await PostAsync(url, requestBodyDelegation, tokenFacilitator);
@@ -346,24 +366,73 @@ public class PlatformAuthenticationClient
 
     public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer, ITestOutputHelper outputHelper)
     {
-        
-        var url = ApiEndpoints.DeleteCustomer.Url()
-            .Replace("{party}", facilitator.AltinnPartyId)
+        var url = Endpoints.DeleteCustomer.Url()
+            ?.Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{delegationId}", selectedCustomer.delegationId);
 
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
-        
+
         return await Delete(url, facilitator.AltinnToken);
     }
 
     public async Task<HttpResponseMessage> DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
     {
-        var url = ApiEndpoints.DeleteAgentSystemUser.Url()
-            .Replace("{party}", facilitator.AltinnPartyId)
+        var url = Endpoints.DeleteAgentSystemUser.Url()
+            ?.Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{systemUserId}", systemUserId);
 
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
 
         return await Delete(url, facilitator.AltinnToken);
+    }
+
+    public async Task<string> GetSystemUsers(string systemId, string? maskinportenToken)
+    {
+        var users = await SystemUserClient.GetSystemUserById(systemId, maskinportenToken);
+        return await users.Content.ReadAsStringAsync();
+    }
+
+    public async Task VerifyPagination(string initialJson, string? maskinportenToken)
+    {
+        string? nextUrl = ExtractNextUrl(initialJson);
+
+        //Should never be empty first click due to creating 32 system users
+        Assert.NotNull(nextUrl);
+        Assert.NotEmpty(nextUrl);
+
+        var root = JsonNode.Parse(initialJson);
+        var systemUsersList = root?["data"]?.AsArray();
+        
+        //Assert all system users are present
+        Assert.NotNull(systemUsersList);
+        Assert.Equal(20, systemUsersList.Count);
+        
+        var resp = await GetNextUrl(nextUrl, maskinportenToken);
+        Assert.NotNull(resp);
+
+        var respBody = await resp.Content.ReadAsStringAsync();
+        nextUrl = ExtractNextUrl(respBody);
+        
+        Assert.Null(nextUrl);
+
+        root = JsonNode.Parse(respBody);
+        systemUsersList = root?["data"]?.AsArray();
+
+        // Assert remaining system users are present
+        Assert.NotNull(systemUsersList);
+        Assert.Equal(12, systemUsersList.Count);
+    }
+
+    private static string? ExtractNextUrl(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+
+        if (doc.RootElement.TryGetProperty("links", out var linksElement) &&
+            linksElement.TryGetProperty("next", out var nextElement))
+        {
+            return nextElement.GetString();
+        }
+
+        return null;
     }
 }

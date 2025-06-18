@@ -3,6 +3,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
 using Xunit.Abstractions;
@@ -62,7 +63,7 @@ public class ChangeRequestTests : TestFixture
 
     private async Task AssertStatusChangeRequest(string requestId, string expectedStatus, string? maskinportenToken)
     {
-        var getRequestByIdUrl = ApiEndpoints.GetChangeRequestByRequestIdUrl.Url().Replace("{requestId}", requestId);
+        var getRequestByIdUrl = Endpoints.GetChangeRequestByRequestIdUrl.Url().Replace("{requestId}", requestId);
         var responsGetByRequestId = await _platformAuthentication.GetAsync(getRequestByIdUrl, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, responsGetByRequestId.StatusCode);
         Assert.Contains(requestId, await responsGetByRequestId.Content.ReadAsStringAsync());
@@ -73,7 +74,7 @@ public class ChangeRequestTests : TestFixture
 
     private async Task AssertRequestRetrievalByExternalRef(string systemId, string externalRef, string? maskinportenToken)
     {
-        var getByExternalRefUrl = ApiEndpoints.GetChangeRequestByExternalRef.Url()
+        var getByExternalRefUrl = Endpoints.GetChangeRequestByExternalRef.Url()
             .Replace("{systemId}", systemId)
             .Replace("{vendor}", _platformAuthentication.EnvironmentHelper.Vendor)
             .Replace("{externalRef}", externalRef);
@@ -86,7 +87,7 @@ public class ChangeRequestTests : TestFixture
 
     private async Task AssertRequestRetrievalById(string requestId, string systemId, string externalRef, string? maskinportenToken)
     {
-        var getRequestByIdUrl = ApiEndpoints.GetChangeRequestByRequestId.Url()
+        var getRequestByIdUrl = Endpoints.GetChangeRequestByRequestId.Url()
             .Replace("{requestId}", requestId);
         var responsGetByRequestId = await _platformAuthentication.GetAsync(getRequestByIdUrl, maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, responsGetByRequestId.StatusCode);
@@ -107,7 +108,7 @@ public class ChangeRequestTests : TestFixture
 
     private async Task<HttpResponseMessage> ApproveChangeRequest(string requestId, Testuser testperson)
     {
-        var approveUrl = ApiEndpoints.ApproveChangeRequest.Url()
+        var approveUrl = Endpoints.ApproveChangeRequest.Url()
             .Replace("{partyId}", testperson.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
@@ -124,7 +125,7 @@ public class ChangeRequestTests : TestFixture
             .Replace("{systemId}", systemId)
             .Replace("{externalRef}", externalRef);
 
-        var changeRequestResponse = await _platformAuthentication.PostAsync(ApiEndpoints.PostChangeRequestVendor.Url(),
+        var changeRequestResponse = await _platformAuthentication.PostAsync(Endpoints.PostChangeRequestVendor.Url(),
             changeRequestBody,
             maskinportenToken);
 

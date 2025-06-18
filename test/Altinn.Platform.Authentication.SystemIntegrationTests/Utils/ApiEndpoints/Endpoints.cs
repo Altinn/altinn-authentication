@@ -1,9 +1,8 @@
 using System.Reflection;
-using System.Text.RegularExpressions;
 
-namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 
-public enum ApiEndpoints
+public enum Endpoints
 {
     // System Register Endpoints
     [EndpointInfo("authentication/api/v1/systemregister", "GET")]
@@ -17,6 +16,9 @@ public enum ApiEndpoints
 
     [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "PUT")]
     UpdateVendorSystemRegister,
+
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}/accesspackages", "PUT")]
+    UpdateVendorAccessPackages,
 
     [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}/rights", "PUT")]
     UpdateRightsVendorSystemRegister,
@@ -129,7 +131,7 @@ public enum ApiEndpoints
 
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/{systemUserId}", "DELETE")]
     DeleteAgentSystemUser,
-    
+
     // Authorization endpoints
     [EndpointInfo("authorization/api/v1/decision", "POST")]
     Decision
@@ -138,10 +140,10 @@ public enum ApiEndpoints
 [AttributeUsage(AttributeTargets.Field)]
 public class EndpointInfoAttribute : Attribute
 {
-    public string Url { get; }
+    public string? Url { get; }
     public HttpMethod Method { get; }
 
-    public EndpointInfoAttribute(string url, string method)
+    public EndpointInfoAttribute(string? url, string method)
     {
         Url = url;
         Method = new HttpMethod(method.ToUpper());
@@ -152,12 +154,12 @@ public static class ApiEndpointHelper
 {
     public static List<ApiEndpoint> GetEndpoints()
     {
-        return Enum.GetValues<ApiEndpoints>()
+        return Enum.GetValues<Endpoints>()
             .Select(e => new ApiEndpoint(GetUrl(e), GetMethod(e)))
             .ToList();
     }
 
-    public static string GetUrl(ApiEndpoints endpoint)
+    public static string? GetUrl(Endpoints endpoint)
     {
         return endpoint.GetType()
                    .GetField(endpoint.ToString())
@@ -165,7 +167,7 @@ public static class ApiEndpointHelper
                ?? string.Empty;
     }
 
-    private static HttpMethod GetMethod(ApiEndpoints endpoint)
+    private static HttpMethod GetMethod(Endpoints endpoint)
     {
         return endpoint.GetType()
             .GetField(endpoint.ToString())!
@@ -175,10 +177,10 @@ public static class ApiEndpointHelper
 
 public class ApiEndpoint
 {
-    public string Url { get; }
+    public string? Url { get; }
     public HttpMethod Method { get; }
 
-    public ApiEndpoint(string url, HttpMethod method)
+    public ApiEndpoint(string? url, HttpMethod method)
     {
         Url = NormalizeUrl(url);
         Method = method;
@@ -200,7 +202,7 @@ public class ApiEndpoint
     /// <summary>
     /// Normalizes the URL to ensure Swagger and test paths match.
     /// </summary>
-    public static string NormalizeUrl(string url)
+    public static string? NormalizeUrl(string? url)
     {
         if (!url.StartsWith("v1/")) url = "v1/" + url; // ✅ Ensure v1 prefix
         // ✅ Remove trailing slashes for consistency

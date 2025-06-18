@@ -1,7 +1,7 @@
 meta {
-  name: Create System User Request
+  name: Dhana create request
   type: http
-  seq: 1
+  seq: 4
 }
 
 post {
@@ -16,17 +16,17 @@ headers {
 
 body:json {
   {
+    "externalReference": "123",
     "systemId": "314126181_Forretningsfører 122",
-    "partyOrgNo": "313776301",
-    "externalRef" : "123",
-    "redirectUrl": "",
-   "accessPackages": [
-      {
-        "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
-      }
-    ]
-  }
-  
+    "partyOrgNo": "314250052",
+    "accessPackages":
+     [
+          {
+              "urn": "urn:altinn:accesspackage:skattegrunnlag"
+          }
+     ],
+    "redirectUrl": ""
+  } 
 }
 
 vars:pre-request {

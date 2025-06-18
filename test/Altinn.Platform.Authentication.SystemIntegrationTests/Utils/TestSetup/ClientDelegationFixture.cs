@@ -36,7 +36,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
     }
     
     // Consider moving this to Common
-    private async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
+    public async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
     {
         var maskinportenToken = await Platform.GetMaskinportenTokenForVendor();
         var vendorId = Platform.EnvironmentHelper.Vendor;

@@ -26,24 +26,17 @@ body:json {
       "nb": "Integrasjonstest. Noe er randomisert her, men mye blir likt.",
       "nn": "integrasjonstest på nynorsk. Noe er randomisert her, men mye blir likt."
     },
-   "rights": [
-      {
-        "resource": [
-          {
-            "value": "authentication-e2e-test",
-            "id": "urn:altinn:resource"
-          }
-        ]
-      },
-      {
-        "resource": [
-          {
-            "value": "vegardtestressurs",
-            "id": "urn:altinn:resource"
-          }
-        ]
-      }
-    ],
+   "rights" : [ {
+      "resource" : [ {
+        "value" : "authentication-e2e-test",
+        "id" : "urn:altinn:resource"
+      } ]
+    }, {
+      "resource" : [ {
+        "value" : "vegardtestressurs",
+        "id" : "urn:altinn:resource"
+      } ]
+    } ],
     "allowedRedirectUrls": [
       "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback",
                 "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
@@ -68,7 +61,7 @@ script:pre-request {
   
   // const systemName = "QueryParamMustWorkSingle"
   // 
-  bru.setEnvVar("system_name","SystemNew");
+  bru.setEnvVar("system_name","SystemNewTest");
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);

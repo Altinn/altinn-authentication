@@ -4,6 +4,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
 using Xunit.Abstractions;
@@ -18,7 +19,7 @@ public class SystemUserTokenTests : TestFixture
 {
     private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
-    private string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
+    private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
 
     /// <summary>
     /// Testing System user endpoints
@@ -54,7 +55,7 @@ public class SystemUserTokenTests : TestFixture
             $"&systemUserOwnerOrgNo={systemUserOwnerOrgNo}" +
             $"&externalRef={externalRef}";
 
-        var fullEndpoint = $"{ApiEndpoints.GetSystemUserByExternalId.Url()}{queryString}";
+        var fullEndpoint = $"{Endpoints.GetSystemUserByExternalId.Url()}{queryString}";
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
@@ -137,35 +138,6 @@ public class SystemUserTokenTests : TestFixture
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
     }
 
-    private async Task<SystemUser?> CreateSystemUserOnExistingSystem(string name)
-    {
-        var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
-                       ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper.Vendor}");
-
-        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-
-        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithClientId(_platformClient.EnvironmentHelper.maskinportenClientId) //Creates System User With MaskinportenClientId
-            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
-            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithResource(value: "app_ttd_endring-av-navn-v2", id: "urn:altinn:resource")
-            .WithName(name)
-            .WithToken(maskinportenToken);
-
-        // Create system user with same created rights mentioned above
-        var postSystemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(teststate, maskinportenToken);
-
-        //Approve system user
-        var id = Common.ExtractPropertyFromJson(postSystemUserResponse, "id");
-        var systemId = Common.ExtractPropertyFromJson(postSystemUserResponse, "systemId");
-
-        await _platformClient.SystemUserClient.ApproveSystemUserRequest(testuser, id);
-
-        //Return system user and make sure it was created
-        return await GetSystemUserOnSystemId(systemId);
-    }
-    
     private async Task<SystemUser?> GetSystemUserOnSystemId(string systemId)
     {
         var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
@@ -175,7 +147,7 @@ public class SystemUserTokenTests : TestFixture
 
         return systemUsers.Find(user => user.SystemId == systemId);
     }
-    
+
 
     // Utility function to properly pad Base64 strings before decoding
     private static string PadBase64(string base64)
@@ -183,4 +155,6 @@ public class SystemUserTokenTests : TestFixture
         base64 = base64.Replace('-', '+').Replace('_', '/'); // Convert URL-safe Base64 to standard Base64
         return base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '='); // Ensure proper padding
     }
+    
+    
 }

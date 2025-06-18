@@ -3,6 +3,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
@@ -21,7 +22,7 @@ public class SystemUserClient
 
     public async Task<HttpResponseMessage> GetSystemuserForParty(string? party, string? token)
     {
-        var urlGetBySystem = ApiEndpoints.GetSystemUsersByParty.Url()
+        var urlGetBySystem = Endpoints.GetSystemUsersByParty.Url()
             .Replace("{party}", party);
         var response = await _platformClient.GetAsync(urlGetBySystem, token);
 
@@ -30,11 +31,11 @@ public class SystemUserClient
 
         return response;
     }
- 
+
 
     public async Task<HttpResponseMessage> GetSystemuserForPartyAgent(string? party, string? token)
     {
-        var urlGetBySystem = ApiEndpoints.GetSystemUsersByPartyAgent.Url()
+        var urlGetBySystem = Endpoints.GetSystemUsersByPartyAgent.Url()
             .Replace("{party}", party);
         var response = await _platformClient.GetAsync(urlGetBySystem, token);
 
@@ -51,7 +52,7 @@ public class SystemUserClient
         var content = await resp.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<List<SystemUser>>(content, Common.JsonSerializerOptions) ?? [];
     }
-    
+
     public async Task<List<SystemUser>> GetSystemUsersForTestUser(Testuser testuser)
     {
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
@@ -61,11 +62,17 @@ public class SystemUserClient
         return JsonSerializer.Deserialize<List<SystemUser>>(content, Common.JsonSerializerOptions) ?? [];
     }
 
+    public async Task<HttpResponseMessage> GetSystemUserById(string systemId, string? token)
+    {
+        var urlGetBySystem = Endpoints.GetSystemUsersBySystemForVendor.Url()?.Replace("{systemId}", systemId);
+        return await _platformClient.GetAsync(urlGetBySystem, token);
+    }
+
 
     public async Task<HttpResponseMessage> GetSystemUserByExternalRef(string externalRef, string systemId, string? maskinportenToken)
     {
         var urlGetBySystem =
-            ApiEndpoints.GetSystemUserRequestByExternalRef.Url()
+            Endpoints.GetSystemUserRequestByExternalRef.Url()
                 .Replace("{externalRef}", externalRef)
                 .Replace("{systemId}", systemId)
                 .Replace("{orgNo}", _platformClient.EnvironmentHelper.Vendor);
@@ -87,7 +94,7 @@ public class SystemUserClient
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
+            await _platformClient.PostAsync(Endpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -96,13 +103,13 @@ public class SystemUserClient
         return content;
     }
 
-    public async Task<string> CreateSystemUserRequestWithExternalRef(TestState testState, string? maskinportenToken)
+    public async Task<string> CreateSystemUserRequestWithExternalRef(TestState testState, string? maskinportenToken, string externalRef)
     {
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/SystemUser/CreateRequestExternalRef.json"))
             .Replace("{systemId}", testState.SystemId)
             .Replace("{redirectUrl}", testState.RedirectUrl)
-            .Replace("{externalRef}", testState.ExternalRef);
+            .Replace("{externalRef}", externalRef);
 
         //Create system user request on the same rights that exist in the SystemRegister
         var rightsJson = JsonSerializer.Serialize(testState.Rights, Common.JsonSerializerOptions);
@@ -111,7 +118,7 @@ public class SystemUserClient
 
         // Act
         var userResponse =
-            await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
+            await _platformClient.PostAsync(Endpoints.CreateSystemUserRequest.Url(), finalJson, maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -122,8 +129,9 @@ public class SystemUserClient
 
     public async Task ApproveSystemUserRequest(Testuser testuser, string requestId)
     {
-        var approveUrl = ApiEndpoints.ApproveSystemUserRequest.Url()
-            .Replace("{partyId}", testuser.AltinnPartyId)
+        var approveUrl = Endpoints.ApproveSystemUserRequest.Url()
+            ?.Replace("{partyId}", testuser.AltinnPartyId)
+            .Replace("{party}", testuser.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
         var approveResponse = await ApproveRequest(approveUrl, testuser);
@@ -132,7 +140,7 @@ public class SystemUserClient
             $"Approval failed with status code: {approveResponse.StatusCode}");
     }
 
-    public async Task<HttpResponseMessage> ApproveRequest(string endpoint, Testuser testperson)
+    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
     {
         // Get the Altinn token
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
@@ -144,7 +152,7 @@ public class SystemUserClient
 
     public async Task DeleteSystemUser(string? altinnPartyId, string? systemUserId)
     {
-        var deleteUrl = ApiEndpoints.DeleteSystemUserById.Url()
+        var deleteUrl = Endpoints.DeleteSystemUserById.Url()
             .Replace("{party}", altinnPartyId)
             .Replace("{systemUserId}", systemUserId);
         var deleteResponse = await _platformClient.DeleteRequest(deleteUrl, _platformClient.GetTestUserForVendor());
@@ -154,7 +162,7 @@ public class SystemUserClient
 
     public async Task PutSystemUser(string requestBody, string? token)
     {
-        var putUrl = ApiEndpoints.UpdateSystemUser.Url();
+        var putUrl = Endpoints.UpdateSystemUser.Url();
         var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
 
         Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);

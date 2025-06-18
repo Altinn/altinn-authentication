@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
@@ -27,8 +28,9 @@ public class AccessManagementClient
             ? null
             : new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync($"{_platformClient.BaseUrlAuthentication}/authorization/api/v1/decision",
+        var response = await client.PostAsync($"{_platformClient.BaseUrlAuthentication}/{Endpoints.Decision.Url()}",
             content);
+
         return response;
     }
 }

@@ -1,47 +1,21 @@
 meta {
-  name: Create System User Request
+  name: Get System Users on SystemId
   type: http
-  seq: 1
+  seq: 3
 }
 
-post {
-  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/vendor/bysystem/312605031_b6b33730-5f8f-4846-b5aa-b520520cee93?token=NzM0Ng
   body: json
-  auth: none
+  auth: bearer
+}
+
+params:query {
+  token: NzM0Ng
 }
 
 headers {
   Authorization: Bearer {{bearerToken}}
-}
-
-body:json {
-  {
-    "systemId" : "{{system_id}}",
-    "externalRef": "1",
-    "partyOrgNo" : "314098595",
-    "rights" : [ {
-      "resource" : [ {
-        "value" : "authentication-e2e-test",
-        "id" : "urn:altinn:resource"
-      } ]
-    }, {
-      "resource" : [ {
-        "value" : "vegardtestressurs",
-        "id" : "urn:altinn:resource"
-      } ]
-    } ],
-    "redirectUrl" : ""
-  }
-  
-  
-  //Redirect URLs defined in System Register
-    // "allowedRedirectUrls": [
-    // "https://www.domain.com/?utm_source=newsletter&utm_medium=email",
-    // "https://www.domain.com/?utm_source=newsletter"
-    // ],
-  
-  
-  //
 }
 
 script:pre-request {
@@ -51,15 +25,14 @@ script:pre-request {
   
   //Set token type
   bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.read");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
   
   
-  var leverandoerOrg = "310574775";
-  var systemId = leverandoerOrg + "_testsystem"
-  bru.setEnvVar("system_id","310574775_SystemNewTest");
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
   
-  bru.setEnvVar("auth_orgNo",leverandoerOrg);
-  bru.setEnvVar("auth_org", leverandoerOrg);
+  bru.setEnvVar("system_id","310574775_UrlQueryPathTesIsvisible");
   bru.setEnvVar("external_ref", "1234");
   
   
