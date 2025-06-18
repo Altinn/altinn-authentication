@@ -15,7 +15,6 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 {
     private readonly ITestOutputHelper _outputHelper;
     private readonly ClientDelegationFixture _fixture;
-    private static readonly string[] value = new[] { "string" };
 
     public ClientDelegationTests(ClientDelegationFixture fixture, ITestOutputHelper outputHelper)
     {
@@ -162,7 +161,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
     }
 
 
-    private async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef)
+    public async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef)
     {
         var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
             .Replace("{systemId}", _fixture.SystemId)

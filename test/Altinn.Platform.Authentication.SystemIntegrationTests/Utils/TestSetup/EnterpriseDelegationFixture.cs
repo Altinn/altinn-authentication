@@ -1,11 +1,10 @@
 using Xunit;
 
-// ReSharper disable ClassNeverInstantiated.Global
-
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 
-public class ClientDelegationFixture : TestFixture, IAsyncLifetime
+public class EnterpriseDelegationFixture : TestFixture, IAsyncLifetime
 {
+    
     public required string SystemId;
     public string? VendorTokenMaskinporten;
     public string? ClientId { get; set; }
@@ -32,6 +31,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
     {
         await Platform.Common.DeleteSystem(SystemId, VendorTokenMaskinporten);
     }
-
-    // Consider moving this to Common
+    
+   
+    
 }

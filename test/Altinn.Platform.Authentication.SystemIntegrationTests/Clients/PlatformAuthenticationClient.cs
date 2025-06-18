@@ -435,4 +435,16 @@ public class PlatformAuthenticationClient
 
         return null;
     }
+    
+    public async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string? maskinportenToken)
+    {
+        var getRequestByIdUrl = Endpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
+        var responseGetByRequestId = await GetAsync(getRequestByIdUrl, maskinportenToken);
+
+        Assert.True(HttpStatusCode.OK == responseGetByRequestId.StatusCode);
+        Assert.Contains(requestId, await responseGetByRequestId.Content.ReadAsStringAsync());
+
+        var status = Common.ExtractPropertyFromJson(await responseGetByRequestId.Content.ReadAsStringAsync(), "status");
+        Assert.True(expectedStatus.Equals(status), $"Status is not {expectedStatus} but: {status}");
+    }
 }

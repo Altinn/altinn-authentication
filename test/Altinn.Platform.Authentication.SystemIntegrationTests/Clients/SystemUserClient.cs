@@ -167,4 +167,39 @@ public class SystemUserClient
 
         Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);
     }
+
+    public async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef, string systemId, string? vendorTokenMaskinporten)
+    {
+        var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
+            .Replace("{systemId}", systemId)
+            .Replace("{externalRef}", externalRef)
+            .Replace("{accessPackage}", accessPackage)
+            .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
+
+        var userResponse = await _platformClient.PostAsync(Endpoints.PostAgentClientRequest.Url(),
+            clientRequestBody, vendorTokenMaskinporten);
+
+        var userResponseContent = await userResponse.Content.ReadAsStringAsync();
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
+            $"Unexpected status: {userResponse.StatusCode} - {userResponseContent}");
+
+        var requestId = Common.ExtractPropertyFromJson(userResponseContent, "id");
+        await _platformClient.AssertStatusSystemUserRequest(requestId, "New", vendorTokenMaskinporten);
+
+        var systemUserResponse =
+            await _platformClient.Common.GetSystemUserForVendorAgent(systemId,
+                vendorTokenMaskinporten);
+
+        Assert.NotNull(systemUserResponse);
+        Assert.Contains(systemId, await systemUserResponse.ReadAsStringAsync());
+
+        var approveUrl = Endpoints.ApproveAgentRequest.Url()
+            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            .Replace("{requestId}", requestId);
+
+        var approveResponse = await _platformClient.Common.ApproveRequest(approveUrl, facilitator);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        await _platformClient.AssertStatusSystemUserRequest(requestId, "Accepted", vendorTokenMaskinporten);
+    }
 }

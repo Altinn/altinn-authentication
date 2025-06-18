@@ -234,7 +234,7 @@ public class Common
         return response;
     }
     
-    public async Task CreateSystemWithAccessPackages(string[] accessPackages)
+    public async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
     {
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var vendorId = _platformClient.EnvironmentHelper.Vendor;
@@ -256,5 +256,6 @@ public class Common
         var response = await _platformClient.SystemRegisterClient.PostSystem(json, maskinportenToken);
 
         await AssertResponse(response, HttpStatusCode.OK);
+        return systemId;
     }
 }
