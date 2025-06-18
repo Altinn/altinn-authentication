@@ -53,9 +53,10 @@ public interface IAccessManagementClient
     /// <param name="systemUser">The Agent SystemUser</param>
     /// <param name="request">Post Body from BFF containing customerId</param>
     /// <param name="userId">Logged in user</param>
+    /// <param name="mockCustomerApi">Mock flag for Customer API</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, bool mockCustomerApi, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list of all delegationIds 
@@ -86,4 +87,11 @@ public interface IAccessManagementClient
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="assignmentId">The delegation id</param>
     Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid assignmentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get clients for a facilitator
+    /// </summary>
+    /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
+    /// <param name="packages">Access package URNs</param>
+    Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
 }

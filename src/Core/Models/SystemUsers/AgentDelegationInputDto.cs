@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 /// <summary>
@@ -20,4 +21,9 @@ public class AgentDelegationInputDto
     /// and is administrating it from the FrontEnd.
     /// </summary>
     public required string FacilitatorId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a collection of all access information for the client 
+    /// </summary>
+    public List<ClientRoleAccessPackages> Access { get; set; } = [];
 }

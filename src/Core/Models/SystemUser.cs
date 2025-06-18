@@ -108,5 +108,11 @@ namespace Altinn.Platform.Authentication.Core.Models
         /// </summary>
         [JsonPropertyName("userType")]
         public SystemUserType UserType { get; set; }
+
+        /// <summary>
+        /// Used internally when paginating
+        /// </summary>
+        [JsonIgnore]
+        public long SequenceNo { get; set; } = 0;
     }
 }

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -14,19 +15,15 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 /// </summary>
 ///
 [Trait("Category", "IntegrationTest")]
-public class ChangeRequestTests
+public class ChangeRequestTests : TestFixture
 {
     private readonly ITestOutputHelper _outputHelper;
-    private readonly Common _common;
     private readonly PlatformAuthenticationClient _platformAuthentication;
-    private readonly SystemUserClient _systemUserClient;
 
     public ChangeRequestTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
         _platformAuthentication = new PlatformAuthenticationClient();
-        _systemUserClient = new SystemUserClient(_platformAuthentication);
-        _common = new Common(_platformAuthentication, outputHelper);
     }
 
     [Fact]
@@ -38,7 +35,7 @@ public class ChangeRequestTests
         var clientId = Guid.NewGuid().ToString();
         var testperson = _platformAuthentication.GetTestUserForVendor();
         testperson.AltinnToken = await _platformAuthentication.GetPersonalAltinnToken(testperson);
-        var systemId = await _common.CreateAndApproveSystemUserRequest(maskinportenToken, externalRef, testperson, clientId);
+        var systemId = await _platformAuthentication.Common.CreateAndApproveSystemUserRequest(maskinportenToken, externalRef, testperson, clientId);
 
         // Act
         var changeRequestResponse = await SubmitChangeRequest(systemId, externalRef, maskinportenToken);
@@ -57,10 +54,10 @@ public class ChangeRequestTests
         await AssertRequestRetrievalById(requestId, systemId, externalRef, maskinportenToken);
         await AssertRequestRetrievalByExternalRef(systemId, externalRef, maskinportenToken);
 
-        var systemUsers = await _systemUserClient.GetSystemUsersForTestUser(testperson);
+        var systemUsers = await _platformAuthentication.SystemUserClient.GetSystemUsersForTestUser(testperson);
         
         //Cleanup
-        await _systemUserClient.DeleteSystemUser(testperson.AltinnPartyId, systemUsers.FirstOrDefault()?.Id);
+        await _platformAuthentication.SystemUserClient.DeleteSystemUser(testperson.AltinnPartyId, systemUsers.FirstOrDefault()?.Id);
     }
 
     private async Task AssertStatusChangeRequest(string requestId, string expectedStatus, string? maskinportenToken)
@@ -100,7 +97,7 @@ public class ChangeRequestTests
     private async Task AssertSystemUserUpdated(string systemId, string externalRef, string? maskinportenToken)
     {
         // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
-        var respGetSystemUsersForVendor = await _common.GetSystemUserForVendor(systemId, maskinportenToken);
+        var respGetSystemUsersForVendor = await _platformAuthentication.Common.GetSystemUserForVendor(systemId, maskinportenToken);
         var systemusersRespons = await respGetSystemUsersForVendor.ReadAsStringAsync();
 
         // Assert systemId
@@ -115,7 +112,7 @@ public class ChangeRequestTests
             .Replace("{requestId}", requestId);
 
         var approvalResp =
-            await _common.ApproveRequest(approveUrl, testperson);
+            await _platformAuthentication.Common.ApproveRequest(approveUrl, testperson);
 
         return approvalResp;
     }

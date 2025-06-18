@@ -77,7 +77,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, bool mockCustomerApi, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -145,8 +145,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "REGN");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "REVI");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattegrunnlag", "FFOR");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattnaering", "FFOR");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
 
         hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);        
         return found;   
@@ -283,5 +282,35 @@ public class AccessManagementClientMock: IAccessManagementClient
                 return await Task.FromResult(true);
             }
         }
+    }
+
+    public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    {
+        if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
+        {
+            return Problem.AgentSystemUser_FailedToGetClients_Forbidden;
+        }
+
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
+        string clientData = File.OpenText("Data/Customers/customerlist.json").ReadToEnd();
+        List<ClientDto>? clients = JsonSerializer.Deserialize<List<ClientDto>>(clientData, options);
+
+        if (packages != null && packages.Count > 0 && clients != null)
+        {
+            var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
+            clients = clients
+                .Where(c =>
+                    c.Access != null &&
+                    c.Access.Any(a =>
+                        a.Packages != null &&
+                        a.Packages.Any(p => packageSet.Contains(p))))
+                .ToList();
+        }
+
+        return await Task.FromResult(clients);
     }
 }

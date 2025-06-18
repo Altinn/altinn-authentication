@@ -5,7 +5,37 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/accessmanagement/api/v1/meta/info/accesspackages/package/urn/regnskapsforer-med-signeringsrettighet
+  url: const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+
+const { v4: uuidv4} = require('uuid')
+
+
+//Set token type
+bru.setEnvVar("auth_tokenType","Enterprise");
+bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+
+bru.setEnvVar("auth_orgNo","314126181");
+bru.setEnvVar("auth_org", "314126181");
+
+
+var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+bru.setEnvVar("bearer_token", token);
+{{baseUrl}}/accessmanagement/api/v1/meta/info/accesspackages/package/urn/{{packageId}}
   body: none
   auth: none
+}
+
+script:pre-request {
+  var pakkeEksempel = "forretningsforer-eiendom"
+  
+  
+  bru.setEnvVar("packageId","urn:altinn:accesspackage:regnskapsforer-lonn")
+  
+}
+
+tests {
+  test("Should get specific package on package name", function () {
+    const data = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+  });
 }

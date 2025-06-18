@@ -31,7 +31,7 @@ public class SystemRegisterClient
         return response;
     }
 
-    public async Task<List<SystemDto>> GetSystemsAsync(string? token)
+    public async Task<List<SystemResponseDto>> GetSystemsAsync(string? token)
     {
         var response = await _platformClient.GetAsync(ApiEndpoints.GetAllSystemsFromRegister.Url(), token);
 
@@ -41,23 +41,22 @@ public class SystemRegisterClient
 
         // Deserialize the JSON content to a list of SystemDto
         var jsonContent = await response.Content.ReadAsStringAsync();
-        var systems = JsonSerializer.Deserialize<List<SystemDto>>(jsonContent, Common.JsonSerializerOptions);
+        var systems = JsonSerializer.Deserialize<List<SystemResponseDto>>(jsonContent, Common.JsonSerializerOptions);
         return systems ?? [];
     }
 
-    public async Task DeleteSystem(string SystemId, string? token)
+    public async Task DeleteSystem(string systemId, string? token)
     {
-        var resp = await _platformClient.Delete($"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", SystemId), token);
+        var resp = await _platformClient.Delete($"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", systemId), token);
         Assert.True(HttpStatusCode.OK == resp.StatusCode, $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
     }
 
-    public async Task<HttpResponseMessage> UpdateRightsOnSystem(string systemId, string requestBody, string? token)
+    public async Task UpdateRightsOnSystem(string systemId, string requestBody, string? token)
     {
         var putUrl = ApiEndpoints.UpdateRightsVendorSystemRegister.Url().Replace("{systemId}", systemId);
         var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
 
         await Common.AssertResponse(putResponse, HttpStatusCode.OK);
-        return putResponse;
     }
 
     public async Task<HttpResponseMessage> getBySystemId(string systemId, string? token)

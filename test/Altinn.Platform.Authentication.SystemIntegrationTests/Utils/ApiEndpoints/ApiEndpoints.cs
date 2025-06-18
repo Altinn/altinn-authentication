@@ -128,8 +128,11 @@ public enum ApiEndpoints
     DeleteCustomer,
 
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/{systemUserId}", "DELETE")]
-    DeleteAgentSystemUser
-
+    DeleteAgentSystemUser,
+    
+    // Authorization endpoints
+    [EndpointInfo("authorization/api/v1/decision", "POST")]
+    Decision
 }
 
 [AttributeUsage(AttributeTargets.Field)]

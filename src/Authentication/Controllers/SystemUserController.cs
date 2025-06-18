@@ -9,8 +9,10 @@ using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
+using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -20,6 +22,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
@@ -37,6 +40,7 @@ public class SystemUserController : ControllerBase
     private readonly ISystemUserService _systemUserService;
     private readonly GeneralSettings _generalSettings;
     private readonly IRequestSystemUser _requestSystemUser;
+    private readonly IFeatureManager _featureManager;
 
     /// <summary>
     /// Route name for the internal stream of systemusers used by the Registry
@@ -52,11 +56,13 @@ public class SystemUserController : ControllerBase
     public SystemUserController(
         ISystemUserService systemUserService, 
         IRequestSystemUser requestSystemUser, 
-        IOptions<GeneralSettings> generalSettings)
+        IOptions<GeneralSettings> generalSettings,
+        IFeatureManager featureManager)
     {
         _systemUserService = systemUserService;
         _generalSettings = generalSettings.Value;
         _requestSystemUser = requestSystemUser;
+        _featureManager = featureManager;
     }
 
     /// <summary>
@@ -93,10 +99,10 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
-    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId)
+    public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId)
     {
         List<DelegationResponse> ret = [];
-        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(party, facilitator, systemUserId);
         if (result.IsSuccess) 
         {
             ret = result.Value;
@@ -116,7 +122,7 @@ public class SystemUserController : ControllerBase
     public async Task<ActionResult> GetSingleSystemUserById(int party, Guid systemUserId)
     {
         SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
-        if (systemUser is not null)
+        if (systemUser is not null && systemUser.PartyId == party.ToString())
         {
             return Ok(systemUser);
         }
@@ -238,7 +244,7 @@ public class SystemUserController : ControllerBase
     [HttpGet("vendor/bysystem/{systemId}", Name = "vendor/systemusers/bysystem")]
     public async Task<ActionResult<Paginated<SystemUser>>> GetAllSystemUsersByVendorSystem(
         string systemId,
-        [FromQuery(Name = "token")] Opaque<string>? token = null,
+        [FromQuery(Name = "token")] Opaque<long>? token = null,
         CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
@@ -247,13 +253,13 @@ public class SystemUserController : ControllerBase
             return Unauthorized();
         }
 
-        Page<string>.Request continueFrom = null!;
+        Page<long>.Request continueFrom = null!;
         if (token?.Value is not null)
         {
             continueFrom = Page.ContinueFrom(token!.Value);
         }
 
-        Result<Page<SystemUser, string>> pageResult = await _systemUserService.GetAllSystemUsersByVendorSystem(
+        Result<Page<SystemUser, long>> pageResult = await _systemUserService.GetAllSystemUsersByVendorSystem(
             vendorOrgNo, systemId, continueFrom, cancellationToken);
         if (pageResult.IsProblem)
         {
@@ -375,7 +381,12 @@ public class SystemUserController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        if (systemUser.PartyId != party)
+        {
+            return Forbid();
+        }
+
+        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, _featureManager, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok(delegationResult.Value);
@@ -417,6 +428,26 @@ public class SystemUserController : ControllerBase
         if (result.IsSuccess)
         {
             return Ok();
+        }
+
+        return result.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Get list of clients for a facilitator
+    /// </summary>
+    /// <returns>List of Clients</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("agent/{party}/clients")]
+    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] CustomerRoleType customerRoleType, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
+    {
+        List<Customer> ret = [];
+        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return Ok(result.Value);
         }
 
         return result.Problem.ToActionResult();

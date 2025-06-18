@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,6 +25,7 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -30,6 +33,7 @@ namespace Altinn.Platform.Authentication.Services;
 
 /// <inheritdoc/>
 public class ChangeRequestSystemUserService(
+    IHttpContextAccessor httpContextAccessor,
     ISystemRegisterService systemRegisterService,
     IPartiesClient partiesClient,
     ISystemRegisterRepository systemRegisterRepository,
@@ -767,5 +771,62 @@ public class ChangeRequestSystemUserService(
         };
 
         return await PDPClient.GetDecisionForRequest(request);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<ChangeRequestResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
+    {
+        ChangeRequestResponse? req = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        if (req == null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        HttpContext? context = httpContextAccessor.HttpContext;
+        if (context is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        IEnumerable<Claim> claims = context.User.Claims;
+
+        Party party = await partiesClient.GetPartyByOrgNo(req.PartyOrgNo);
+
+        if (!party.PartyUuid.HasValue)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        Guid partyUuid = (Guid)party.PartyUuid;
+
+        XacmlJsonRequestRoot jsonRequest = SpecificDecisionHelper.CreateDecisionRequestForUserId(claims, "write", "altinn_access_management", partyUuid);
+
+        XacmlJsonResponse response = await PDPClient.GetDecisionForRequest(jsonRequest);
+        if (response is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        if (SpecificDecisionHelper.ValidatePdpDecision(response, context.User))
+        {
+            return new ChangeRequestResponseInternal()
+            {
+                Id = requestId,
+                ExternalRef = req.ExternalRef,
+                SystemId = req.SystemId,
+                PartyOrgNo = req.PartyOrgNo,
+                PartyId = party.PartyId,
+                PartyUuid = partyUuid,
+                RequiredRights = req.RequiredRights,
+                UnwantedRights = req.UnwantedRights,
+                Status = req.Status,
+                ConfirmUrl = req.ConfirmUrl,
+                Created = req.Created,
+                RedirectUrl = req.RedirectUrl,
+                SystemUserId = req.SystemUserId
+            };
+        }
+
+        return Problem.RequestNotFound;        
     }
 }

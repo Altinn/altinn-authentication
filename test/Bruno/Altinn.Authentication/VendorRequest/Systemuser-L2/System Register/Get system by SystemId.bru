@@ -11,8 +11,9 @@ get {
 }
 
 vars:pre-request {
-  system_id: 310574775_isDeletedTestDontSet
-  ~system_id: 310574775_isDeletedTest
+  system_id: 310574775_isDeletedTest
+  ~system_id: 313588270_visma
+  ~system_id: 310574775_isDeletedTestDontSet
   ~system_id: 310574775_TwoRedirectUrlsTest
   ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
   ~system_id: 310574775_UrlQueryPathTesIsvisibleTest
@@ -26,8 +27,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","310574775");
-  bru.setEnvVar("auth_org", "310574775");
+  bru.setEnvVar("auth_orgNo","313588270");
+  bru.setEnvVar("auth_org", "313588270");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

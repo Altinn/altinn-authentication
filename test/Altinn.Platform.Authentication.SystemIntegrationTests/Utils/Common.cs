@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.Builders;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -9,21 +10,24 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 
 public class Common
 {
-    private readonly SystemRegisterClient _systemRegisterClient;
-    private readonly SystemUserClient _systemUserClient;
     private readonly PlatformAuthenticationClient _platformClient;
-    public readonly ITestOutputHelper Output;
-    public static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true };
 
-    public Common(PlatformAuthenticationClient platformClient, ITestOutputHelper output)
+    public static readonly JsonSerializerOptions JsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
+
+    public Common(PlatformAuthenticationClient platformClient)
     {
         _platformClient = platformClient;
-        _systemRegisterClient = new SystemRegisterClient(platformClient);
-        _systemUserClient = new SystemUserClient(platformClient);
-        Output = output;
     }
 
-    public async Task<string> CreateAndApproveSystemUserRequest(string? maskinportenToken, string externalRef, Testuser testuser, string clientId)
+    private SystemRegisterClient SystemRegisterClient => _platformClient.SystemRegisterClient;
+    private SystemUserClient SystemUserClient => _platformClient.SystemUserClient;
+
+    public async Task<string> CreateAndApproveSystemUserRequest(string? maskinportenToken, string externalRef,
+        Testuser testuser, string clientId)
     {
         var testState = new TestState("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
             .WithClientId(clientId)
@@ -35,7 +39,7 @@ public class Common
         var requestBodySystemREgister = testState.GenerateRequestBody();
 
         // Register system
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
+        var response = await SystemRegisterClient.PostSystem(requestBodySystemREgister, maskinportenToken);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
 
         // Prepare system user request
@@ -45,7 +49,8 @@ public class Common
             .Replace("{externalRef}", externalRef);
 
         // Act
-        var userResponse = await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
+        var userResponse = await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody,
+            maskinportenToken);
 
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
@@ -56,10 +61,11 @@ public class Common
         using var jsonDocSystemRequestResponse = JsonDocument.Parse(content);
         var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
 
-     
+
         // Approve
         var approveResp =
-            await ApproveRequest($"authentication/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve", testuser);
+            await ApproveRequest($"authentication/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve",
+                testuser);
 
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
@@ -75,7 +81,7 @@ public class Common
             "Did not get OK, but: " + resp.StatusCode + " for endpoint:  " + endpoint);
         return resp.Content;
     }
-    
+
     public async Task<HttpContent> GetSystemUserForVendorAgent(string systemId, string? maskinportenToken)
     {
         var url = ApiEndpoints.GetVendorAgentRequestsBySystemId.Url().Replace("{systemId}", systemId);
@@ -97,7 +103,7 @@ public class Common
         Assert.True(response.IsSuccessStatusCode,
             $"{message}. Received: {response.StatusCode} and response text was: {response.Content.ReadAsStringAsync().Result}");
     }
-    
+
     public static string ExtractPropertyFromJson(string json, string propertyName)
     {
         using var jsonDoc = JsonDocument.Parse(json);
@@ -128,10 +134,12 @@ public class Common
 
     public static async Task AssertResponse(HttpResponseMessage response, HttpStatusCode statusCode)
     {
-        Assert.True(statusCode == response.StatusCode, $"[Response was {response.StatusCode} : Response body was: {await response.Content.ReadAsStringAsync()}]");
+        Assert.True(statusCode == response.StatusCode,
+            $"[Response was {response.StatusCode} : Response body was: {await response.Content.ReadAsStringAsync()}]");
     }
 
-    public async Task CreateRequestWithManalExample(string? maskinportenToken, string externalRef, Testuser testuser, string clientId)
+    public async Task CreateRequestWithManalExample(string? maskinportenToken, string externalRef, Testuser testuser,
+        string clientId)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/VendorExampleUrls.json")
             .WithName("E2E tests - Redirect URL" + Guid.NewGuid())
@@ -144,24 +152,21 @@ public class Common
             .WithToken(maskinportenToken);
 
         var requestBodySystemRegister = testState.GenerateRequestBody();
-        Output.WriteLine("request body from Register: " + requestBodySystemRegister);
 
         // Register system
-        var response = await _systemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
+        var response = await SystemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
         Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
 
         // Prepare system user request
         var requestBody = (await Helper.ReadFile("Resources/Testdata/ChangeRequest/CreateSystemUserRequest.json"))
             .Replace("{systemId}", testState.SystemId)
-            // .Replace("{redirectUrl}", testState.AllowedRedirectUrls.First())
-            // .Replace("{redirectUrl}",testState.AllowedRedirectUrls.First() + "&clientId=123")
-            .Replace("{redirectUrl}","")
+            .Replace("{redirectUrl}", "")
             .Replace("{externalRef}", externalRef);
-        
-        Output.WriteLine("Request body for system user request" + requestBody);
+
         // Act
-        var userResponse = await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody, maskinportenToken);
-        
+        var userResponse = await _platformClient.PostAsync(ApiEndpoints.CreateSystemUserRequest.Url(), requestBody,
+            maskinportenToken);
+
         // Assert
         var content = await userResponse.Content.ReadAsStringAsync();
 
@@ -170,7 +175,7 @@ public class Common
 
         using var jsonDocSystemRequestResponse = JsonDocument.Parse(content);
         var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
-        
+
         var url = ApiEndpoints.ApproveSystemUserRequest.Url()
             .Replace("{party}", testuser.AltinnPartyId)
             .Replace("{requestId}", id);
@@ -181,10 +186,51 @@ public class Common
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve");
     }
-    
-    public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser)
+
+    public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser,
+        string externalRef = "")
     {
-        var systemUsers = await _systemUserClient.GetSystemUsersForAgentTestUser(testuser);
-        return systemUsers.Find(user => user.SystemId == systemId);
+        var systemUsers = await SystemUserClient.GetSystemUsersForAgentTestUser(testuser);
+        return systemUsers.Find(user => user.SystemId == systemId && user.ExternalRef == externalRef);
+    }
+
+    public async Task GetTokenForSystemUser(string? clientId, string? systemUserOwnerOrgNo, string? externalRef)
+    {
+        const string scopes = "altinn:maskinporten/systemuser.read";
+        var systemProviderOrgNo = _platformClient.EnvironmentHelper.Vendor;
+
+        var altinnEnterpriseToken =
+            await _platformClient.GetEnterpriseAltinnToken(systemProviderOrgNo, scopes);
+
+        var queryString =
+            $"?clientId={clientId}" +
+            $"&systemProviderOrgNo={systemProviderOrgNo}" +
+            $"&systemUserOwnerOrgNo={systemUserOwnerOrgNo}" +
+            $"&externalRef={externalRef}";
+
+        var fullEndpoint = $"{ApiEndpoints.GetSystemUserByExternalId.Url()}{queryString}";
+
+        var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
+        Assert.NotNull(resp);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    public async Task DeleteSystem(string systemId, string? token)
+    {
+        var resp = await _platformClient.Delete(
+            $"{ApiEndpoints.DeleteSystemSystemRegister.Url()}".Replace("{systemId}", systemId), token);
+        Assert.True(HttpStatusCode.OK == resp.StatusCode,
+            $"{resp.StatusCode}  {await resp.Content.ReadAsStringAsync()}");
+    }
+
+    /// <summary>
+    /// Creates a new system in Systemregister. Requires Bearer token from Maskinporten
+    /// </summary>
+    public async Task<HttpResponseMessage> PostSystem(string requestBody, string? token)
+    {
+        var response = await _platformClient.PostAsync(ApiEndpoints.CreateSystemRegister.Url(), requestBody, token);
+        Assert.True(response.StatusCode is HttpStatusCode.OK,
+            $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+        return response;
     }
 }

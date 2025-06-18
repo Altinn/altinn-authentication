@@ -9,13 +9,13 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
-      <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.7.0" />
+      <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.9.0" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
       <PackageReference Include="more.xunit.runner.visualstudio" Version="2.3.1">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.7.0" />
+      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
       <PackageReference Include="xunit" Version="2.9.3" />
     </ItemGroup>
 
@@ -66,6 +66,9 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Resources\Testdata\Systemregister\AccessPackageSystemRegister.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\Testdata\AccessManagement\systemUserDecision.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>

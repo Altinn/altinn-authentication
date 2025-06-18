@@ -263,7 +263,7 @@ public class SystemRegisterController : ControllerBase
     {
         ValidationErrorBuilder errors = default;
         RegisteredSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
-        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse.Vendor.ID), User))
         {
             return Forbid();
         }
@@ -296,7 +296,7 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateAccessPackagesOnRegisteredSystem([FromBody] List<AccessPackage> accessPackages, string systemId, CancellationToken cancellationToken = default)
     {
         RegisteredSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-        if (!AuthenticationHelper.HasWriteAccess(registerSystemResponse.SystemVendorOrgNumber, User))
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse.Vendor.ID), User))
         {
             return Forbid();
         }
@@ -377,11 +377,32 @@ public class SystemRegisterController : ControllerBase
     private async Task<ValidationErrorBuilder> ValidateAccessPackages(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
-        if (!await _systemRegisterService.DoesAccessPackageExistsAndDelegable(accessPackages, cancellationToken))
+
+        var (invalidFormatUrns, notFoundUrns, notDelegableUrns) = await _systemRegisterService.GetInvalidAccessPackageUrnsDetailed(accessPackages, cancellationToken);
+        if (invalidFormatUrns.Count > 0 || notFoundUrns.Count > 0 || notDelegableUrns.Count > 0)
         {
-            errors.Add(ValidationErrors.SystemRegister_AccessPackage_NotValid, [
-                ErrorPathConstant.ACCESSPACKAGES
-            ]);
+            var allInvalidUrns = new List<string>();
+            if (invalidFormatUrns.Count > 0)
+            {
+                allInvalidUrns.Add($"Invalid format: {string.Join(", ", invalidFormatUrns)}");
+            }
+
+            if (notFoundUrns.Count > 0)
+            {
+                allInvalidUrns.Add($"Not found: {string.Join(", ", notFoundUrns)}");
+            }
+
+            if (notDelegableUrns.Count > 0)
+            {
+                allInvalidUrns.Add($"Not delegable: {string.Join(", ", notDelegableUrns)}");
+            }
+
+            var problemExtensionData = ProblemExtensionData.Create(new[]
+            {
+                    new KeyValuePair<string, string>("Invalid Urn Details : ", string.Join(" | ", allInvalidUrns))
+            });
+
+            errors.Add(ValidationErrors.SystemRegister_AccessPackage_NotValid, ErrorPathConstant.ACCESSPACKAGES, problemExtensionData);
         }
 
         if (AuthenticationHelper.HasDuplicateAccessPackage(accessPackages))

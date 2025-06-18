@@ -4,6 +4,7 @@ using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -13,12 +14,11 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 /* This won't work in AT22 due to maskinporten is only configured to use TT02 */
 
 [Trait("Category", "IntegrationTest")]
-public class SystemUserTokenTests
+public class SystemUserTokenTests : TestFixture
 {
     private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
-    private readonly SystemUserClient _systemUserClient;
-    private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
+    private string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
 
     /// <summary>
     /// Testing System user endpoints
@@ -29,7 +29,6 @@ public class SystemUserTokenTests
     {
         _outputHelper = outputHelper;
         _platformClient = new PlatformAuthenticationClient();
-        _systemUserClient = new SystemUserClient(_platformClient);
     }
 
     [SkipUnlessTt02Fact]
@@ -59,8 +58,6 @@ public class SystemUserTokenTests
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
-
-        _outputHelper.WriteLine(await resp.Content.ReadAsStringAsync());
         Assert.Equal(System.Net.HttpStatusCode.OK, resp.StatusCode);
     }
 
@@ -70,7 +67,6 @@ public class SystemUserTokenTests
         var systemUser = await GetSystemUserOnSystemId(SystemId);
         Assert.NotNull(systemUser);
         Assert.NotNull(systemUser.ExternalRef);
-        _outputHelper.WriteLine(systemUser.ExternalRef);
 
         var maskinportenToken = await _platformClient.GetSystemUserToken(systemUser.ExternalRef);
         Assert.NotNull(maskinportenToken);
@@ -158,13 +154,13 @@ public class SystemUserTokenTests
             .WithToken(maskinportenToken);
 
         // Create system user with same created rights mentioned above
-        var postSystemUserResponse = await _systemUserClient.CreateSystemUserRequestWithExternalRef(teststate, maskinportenToken);
+        var postSystemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(teststate, maskinportenToken);
 
         //Approve system user
         var id = Common.ExtractPropertyFromJson(postSystemUserResponse, "id");
         var systemId = Common.ExtractPropertyFromJson(postSystemUserResponse, "systemId");
 
-        await _systemUserClient.ApproveSystemUserRequest(testuser, id);
+        await _platformClient.SystemUserClient.ApproveSystemUserRequest(testuser, id);
 
         //Return system user and make sure it was created
         return await GetSystemUserOnSystemId(systemId);
@@ -175,7 +171,7 @@ public class SystemUserTokenTests
         var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
                        ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper.Vendor}");
 
-        var systemUsers = await _systemUserClient.GetSystemUsersForTestUser(testuser);
+        var systemUsers = await _platformClient.SystemUserClient.GetSystemUsersForTestUser(testuser);
 
         return systemUsers.Find(user => user.SystemId == systemId);
     }
