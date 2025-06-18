@@ -15,6 +15,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 {
     private readonly ITestOutputHelper _outputHelper;
     private readonly ClientDelegationFixture _fixture;
+    private static readonly string[] value = new[] { "string" };
 
     public ClientDelegationTests(ClientDelegationFixture fixture, ITestOutputHelper outputHelper)
     {
@@ -52,10 +53,10 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
             await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, facilitator,
                 externalRef);
 
-        var customers = await GetCustomers(facilitator, systemUser?.Id);
+        List<CustomerListDto> customers = await GetCustomers(facilitator, systemUser?.Id);
 
         // Act: Delegate customer
-        var allDelegations = await DelegateCustomerToSystemUser(facilitator, systemUser?.Id, customers);
+        List<DelegationResponseDto> allDelegations = await DelegateCustomerToSystemUser(facilitator, systemUser?.Id, customers);
 
         // Verify decision end point to verify Rights given
         var decision = await PerformDecision(systemUser?.Id, customers);
@@ -121,7 +122,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
         Assert.NotNull(customers);
         Assert.True(customers.Count > 0, $"Found no customers for systemuser with Id {systemUserId}");
 
-        var customersToDelegate = allCustomers ? customers : customers.Take(1).ToList();
+        List<CustomerListDto> customersToDelegate = allCustomers ? customers : customers.Take(1).ToList();
         return customersToDelegate;
     }
 
@@ -153,7 +154,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
         string externalRef, string maskinportenToken)
     {
         var url = Endpoints.GetVendorAgentRequestByExternalRef.Url()
-            .Replace("{systemId}", systemId)
+            ?.Replace("{systemId}", systemId)
             .Replace("{orgNo}", orgNo)
             .Replace("{externalRef}", externalRef);
 
@@ -196,17 +197,17 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
         await AssertStatusSystemUserRequest(requestId, "Accepted", _fixture.VendorTokenMaskinporten);
     }
 
-    private async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser facilitator,
-        string? systemUserId, List<CustomerListDto> customersToDelegate)
+    private async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser facilitator, string? systemUserId, List<CustomerListDto> customersToDelegate)
     {
-        var responses = new List<DelegationResponseDto>();
+        List<DelegationResponseDto> responses = [];
 
         foreach (var customer in customersToDelegate)
         {
             var requestBody = JsonSerializer.Serialize(new
             {
                 customerId = customer.id,
-                facilitatorId = facilitator.AltinnPartyUuid
+                facilitatorId = facilitator.AltinnPartyUuid,
+                access = customer.access ?? []
             });
 
             var delegationResponse =
