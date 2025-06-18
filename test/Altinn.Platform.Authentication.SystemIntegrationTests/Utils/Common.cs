@@ -212,6 +212,7 @@ public class Common
 
         var resp = await _platformClient.GetAsync(fullEndpoint, altinnEnterpriseToken);
         Assert.NotNull(resp);
+        var testresp = resp.Content.ReadAsStringAsync().Result;
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
