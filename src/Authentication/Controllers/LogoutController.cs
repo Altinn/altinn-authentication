@@ -39,6 +39,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IFeatureManager _featureManager;
         private readonly IRequestSystemUser _requestSystemUser;
         private readonly IChangeRequestSystemUser _changeRequestSystemUser;
+        private readonly IConsentService _consentService;
 
         /// <summary>
         /// Defay
@@ -50,7 +51,8 @@ namespace Altinn.Platform.Authentication.Controllers
             IEventLog eventLog,
             IFeatureManager featureManager,
             IRequestSystemUser requestSystemUser,
-            IChangeRequestSystemUser changeRequestSystemUser)
+            IChangeRequestSystemUser changeRequestSystemUser,
+            IConsentService consentService)
         {
             _generalSettings = generalSettings.Value;
             _oidcProviderSettings = oidcProviderSettings.Value;
@@ -59,6 +61,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _featureManager = featureManager;
             _requestSystemUser = requestSystemUser;
             _changeRequestSystemUser = changeRequestSystemUser;
+            _consentService = consentService;
         }
 
         /// <summary>
@@ -124,6 +127,12 @@ namespace Altinn.Platform.Authentication.Controllers
             if (cookieValues != null && cookieValues.TryGetValue("SystemuserAgentRequestId", out string agentRequestId) && Guid.TryParse(agentRequestId, out Guid agentRequestGuid))
             {
                 Result<string> redirectUrl = await _requestSystemUser.GetRedirectByAgentRequestId(agentRequestGuid);
+                return Redirect(redirectUrl.Value);
+            }
+
+            if (cookieValues != null && cookieValues.TryGetValue("ConsentRequestId", out string consentRequestId) && Guid.TryParse(consentRequestId, out Guid consentRequestGuid))
+            {
+                Result<string> redirectUrl = await _consentService.GetConsentRequestRedirectUrl(consentRequestGuid);
                 return Redirect(redirectUrl.Value);
             }
 

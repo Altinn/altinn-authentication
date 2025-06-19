@@ -9,11 +9,13 @@ using System.Net.Security;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Altinn.Authentication.Tests.Mocks;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Controllers;
 using Altinn.Platform.Authentication.Enum;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -91,6 +93,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
             services.AddSingleton<IRequestSystemUser, RequestSystemUserServiceMock>();
             services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserServiceMock>();
+            services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
             services.AddSingleton(_featureManager.Object);
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(_timeProviderMock.Object);
@@ -331,6 +334,28 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
             Assert.Equal("https://smartcloudaltinn.azurewebsites.net/agentrequest", locationValues?.First());
+        }
+
+        [Fact]
+        public async Task Logout_HandleLoggedOut_RedirectToConsentRedirectUrl()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout/handleloggedout");
+            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo=ConsentRequestId=c0970300-005c-4784-aea6-5e7bac61b9b1");
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
+
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
+
+            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            Assert.Equal("https://altinn.no/", locationValues?.First());
         }
 
         [Fact]

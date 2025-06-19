@@ -94,4 +94,10 @@ public interface IAccessManagementClient
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="packages">Access package URNs</param>
     Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get redirect URL for consent request
+    /// </summary>
+    /// <param name="consentId">The consent request id</param>
+    Task<ConsentRedirectUrl?> GetConsentRequestRedirectUrl(Guid consentId);
 }
