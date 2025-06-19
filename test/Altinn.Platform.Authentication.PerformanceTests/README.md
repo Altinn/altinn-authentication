@@ -7,10 +7,28 @@ This directory holds the performance tests for authentication systemuser (system
   * or Docker (available av `docker` in `PATH`)
 * Powershell or Bash (should work on any platform supported by K6)
 
-## Test file
-The test files associated are
-- `createAndConfirmSystemUsers.js`
-- `getSystemUser.js`
+## Tests
+### Create and confirm systemuser
+File: `createAndConfirmSystemUsers.js`
+1. Create system
+2. Create systemuser on system
+3. Confirm systemuser
+### Get systemuser
+File: `getSystemUser.js`
+1. Get systems
+2. Get system for a random system
+3. Get systemusers for system
+4. Get systemuser for a random systemuser 
+### Create client delegations
+File: `createClientDelegations.js`
+1. Create system
+2. Create systemuser on system
+3. Confirm systemuser
+4. Delegate systemuser
+### Parties query
+File: `partiesQuery.js`
+1. Create randomized request body
+2. Call get parties with request body
 
 ## Run test
 ### From cli

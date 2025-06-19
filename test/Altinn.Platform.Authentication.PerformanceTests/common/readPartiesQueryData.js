@@ -1,9 +1,10 @@
 import papaparse from 'https://jslib.k6.io/papaparse/5.1.1/index.js';
 import { SharedArray } from "k6/data";
+import { environment } from './config.js';
 
-const endUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-end-users.csv`;
-const siUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-si-users.csv`;
-const organizationsFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-organizations.csv`;
+const endUsersFilename = `../testdata/data-${environment}-end-users.csv`;
+const siUsersFilename = `../testdata/data-${environment}-si-users.csv`;
+const organizationsFilename = `../testdata/data-${environment}-organizations.csv`;
 
 function readCsv(filename) {
     try {

@@ -1,6 +1,7 @@
 import http from 'k6/http';
 import { expect, randomItem, uuidv4, URL, describe, getEnterpriseToken } from "./common/testimports.js";
-import { getSystemUrl, getSystemUsersUrl, getSystemUserByExternalIdUrl} from './common/config.js';
+import { getSystemUrl, getSystemUsersUrl, getSystemUserByExternalIdUrl } from './common/config.js';
+import { buildOptions } from './commonSystemUser.js';
 
 const traceCalls = (__ENV.traceCalls ?? 'false') === 'true';
 
@@ -10,16 +11,7 @@ const getSystemUsersLabel = "Get system users";
 const getSystemUserLabel = "Get system user by external id";
 const labels = [getSystemsLabel, getSystemLabel, getSystemUsersLabel, getSystemUserLabel];
 
-export let options = {
-    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'p(99.5)', 'p(99.9)', 'count'],
-    thresholds: {
-        checks: ['rate>=1.0']
-    }
-};
-for (var label of labels) {
-    options.thresholds[[`http_req_duration{name:${label}}`]] = [];
-    options.thresholds[[`http_req_failed{name:${label}}`]] = ['rate<=0.0'];
-}
+export let options = buildOptions(labels);
 
 function getParams(label) {
     const traceparent = uuidv4();
