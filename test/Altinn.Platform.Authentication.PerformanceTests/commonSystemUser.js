@@ -13,14 +13,19 @@ import {
     requestSystemUserUrl, 
     approveSystemUserUrl, 
     postDelegationUrl, 
-    postAmDelegationUrl 
+    postAmDelegationUrl,
+    stages_duration,
+    stages_target,
+    breakpoint,
+    abort_on_fail,
+    environment
 } from './common/config.js';
 import { getCreateSystemBody, getCreateSystemUserBody } from './testdata/postData.js';
 import { getDelegationBody, getAmDelegationBody } from './testdata/postData.js';
 
 const traceCalls = (__ENV.traceCalls ?? 'false') === 'true';
-const environment = __ENV.API_ENVIRONMENT;
 
+export const tokenGenLabel = "Token generator";
 export const createSystemOwnerLabel = "Create system";
 export const createSystemUserLabel = "Create system user";
 export const approveSystemUserLabel = "Approve system user";
@@ -32,6 +37,34 @@ export let options = {
         checks: ['rate>=1.0']
     }
 };
+
+export function buildOptions(labels) {
+    let options = {
+        summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'count'],
+        thresholds: {
+            checks: ['rate>=1.0'],
+            [`http_req_duration{name:${tokenGenLabel}}`]: [],
+            [`http_req_failed{name:${tokenGenLabel}}`]: ['rate<=0.0']
+        }
+    };
+    if (breakpoint) {
+        for (var label of labels) {
+            options.thresholds[[`http_req_duration{name:${label}}`]] = [{ threshold: "max<5000", abortOnFail: abort_on_fail }];
+            options.thresholds[[`http_req_failed{name:${label}}`]] = [{ threshold: 'rate<=0.0', abortOnFail: abort_on_fail }];
+        }
+        //options.executor = 'ramping-arrival-rate';
+        options.stages = [
+            { duration: stages_duration, target: stages_target },
+        ];
+    }
+    else {
+        for (var label of labels) {
+            options.thresholds[[`http_req_duration{name:${label}}`]] = [];
+            options.thresholds[[`http_req_failed{name:${label}}`]] = ['rate<=0.0'];
+        }
+    }
+    return options;
+}
 
 export function createSystem(systemOwner, systemId, resources, token, clientId, type) {
     const params = getParams(createSystemOwnerLabel);

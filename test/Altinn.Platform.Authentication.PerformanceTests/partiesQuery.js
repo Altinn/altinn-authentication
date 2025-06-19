@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { randomIntBetween, randomItem } from './common/testimports.js';
 import { getEnterpriseToken, URL, expect, describe } from './common/testimports.js';
-import { getParams, options as _options } from './commonSystemUser.js';
+import { getParams, buildOptions } from './commonSystemUser.js';
 import { organizations, siUsers, endUsers } from './common/readPartiesQueryData.js';
 
 const getPartyLabel = "Get party";
@@ -39,41 +39,7 @@ const runAsDialogporten = (__ENV.runAsDialogporten ?? 'false') === 'true';
 
 const systemOwner = "713431400"; 
 
-export const tokenGenLabel = "Token generation";
-
-const breakpoint = __ENV.breakpoint;
-const stages_duration = (__ENV.stages_duration ?? '1m');
-const stages_target = (__ENV.stages_target ?? '5');
-const abort_on_fail = (__ENV.abort_on_fail ?? 'true') === 'true';
-
-function buildOptions() {
-    let options = {
-        summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(95)', 'p(99)', 'count'],
-        thresholds: {
-            checks: ['rate>=1.0'],
-            [`http_req_duration{name:${tokenGenLabel}}`]: [],
-            [`http_req_failed{name:${tokenGenLabel}}`]: ['rate<=0.0']
-        }
-    };
-    if (breakpoint) {
-        for (var label of labels) {
-            options.thresholds[[`http_req_duration{name:${label}}`]] = [{ threshold: "max<5000", abortOnFail: abort_on_fail }];
-            options.thresholds[[`http_req_failed{name:${label}}`]] = [{ threshold: 'rate<=0.0', abortOnFail: abort_on_fail }];
-        }
-        //options.executor = 'ramping-arrival-rate';
-        options.stages = [
-            { duration: stages_duration, target: stages_target },
-        ];
-    }
-    else {
-        for (var label of labels) {
-            options.thresholds[[`http_req_duration{name:${label}}`]] = [];
-            options.thresholds[[`http_req_failed{name:${label}}`]] = ['rate<=0.0'];
-        }
-    }
-    return options;
-}
-export let options = buildOptions();
+export let options = buildOptions(labels);
 
 export function setup() {
     const data = {
@@ -83,7 +49,6 @@ export function setup() {
 }
 
 export default function(data) {
-    console.log(organizations.length, "organizations");
     const params = getParams(getPartyLabel);
     params.headers.Authorization = "Bearer " + data.token;
     params.headers['Ocp-Apim-Subscription-Key'] = __ENV.subscription_key;

@@ -5,23 +5,17 @@ import {
     createSystem, 
     approveSystemUser, 
     getSystemOwnerTokenAndClientId, 
-    createSystemUser 
-} from './commonSystemUser.js';
-import { 
+    createSystemUser, 
+    buildOptions,
     createSystemOwnerLabel, 
     createSystemUserLabel, 
     approveSystemUserLabel, 
 } from './commonSystemUser.js';
-import { options as _options } from './commonSystemUser.js';
 
 const systemOwner = "713431400"; 
 const labels = [createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel];
 
-export let options = _options;
-for (var label of labels) {
-    options.thresholds[[`http_req_duration{name:${label}}`]] = [];
-    options.thresholds[[`http_req_failed{name:${label}}`]] = ['rate<=0.0'];
-}
+export let options = buildOptions(labels);
 
 export function setup() {
     return splitSystemUsers();

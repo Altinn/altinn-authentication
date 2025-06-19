@@ -9,7 +9,8 @@
 import papaparse from 'https://jslib.k6.io/papaparse/5.1.1/index.js';
 import { SharedArray } from "k6/data";
 import exec from 'k6/execution';
-//
+import { breakpoint, stages_target, environment } from './config.js';
+
 
 /**
  * Function to read the CSV file specified by the filename parameter.
@@ -25,10 +26,7 @@ export function readCsv(filename) {
   } 
 }
 
-if (!__ENV.API_ENVIRONMENT) {
-  throw new Error('API_ENVIRONMENT must be set');
-}
-const systemUsersFilename = `../testdata/data-${__ENV.API_ENVIRONMENT}-all-customers.csv`;
+const systemUsersFilename = `../testdata/data-${environment}-all-customers.csv`;
 
 /**
  * SharedArray variable that stores the service owners data.
@@ -41,7 +39,7 @@ const systemUsers = new SharedArray('systemUsers', function () {
   return readCsv(systemUsersFilename);
 });
 
-export const systemOwner =  __ENV.API_ENVIRONMENT == "yt01" ? "713431400" : "991825827"; 
+export const systemOwner =  environment == "yt01" ? "713431400" : "991825827"; 
 
 export const resources = [ 
   "ttd-dialogporten-performance-test-01", 
@@ -86,7 +84,12 @@ function systemUsersPart(totalVus, vuId) {
 }
 
 export function splitSystemUsers() {
-  const totalVus = exec.test.options.scenarios.default.vus;
+  let totalVus = 1;
+  if (breakpoint) {
+        totalVus = stages_target;
+  } else {
+        totalVus = exec.test.options.scenarios.default.vus;
+  }
   let parts = [];
   for (let i = 1; i <= totalVus; i++) {
         parts.push(systemUsersPart(totalVus, i));

@@ -1,3 +1,11 @@
+export const api_version = __ENV.API_VERSION || 'v1'; // Default to v1 if not set
+export const environment = __ENV.API_ENVIRONMENT || 'yt01'; // Default to yt01 if not set
+export const breakpoint = __ENV.breakpoint === 'true' || false; // Default to false if not set
+export const stages_duration = (__ENV.stages_duration ?? '1m');
+export const stages_target = (__ENV.stages_target ?? '5');
+export const abort_on_fail = __ENV.abort_on_fail === 'true' || false; // Default to false if not set
+
+
 const testBaseUrl = "https://platform.at22.altinn.cloud/authentication/";
 const yt01BaseUrl = "https://platform.yt01.altinn.cloud/authentication/";
 const testRegisterBaseUrl = "https://platform.at22.altinn.cloud/register/";
@@ -58,21 +66,23 @@ export const urls = {
     }
 };
 
-if (!urls[__ENV.API_VERSION]) {
-    throw new Error(`Invalid API version: ${__ENV.API_VERSION}. Please ensure it's set correctly in your environment variables.`);
+if (!urls[api_version]) {
+    throw new Error(`Invalid API version: ${api_version}. Please ensure it's set correctly in your environment variables.`);
 }
 
-if (!urls[__ENV.API_VERSION]["registerSystem"][__ENV.API_ENVIRONMENT]) {
-    throw new Error(`Invalid API environment: ${__ENV.API_ENVIRONMENT}. Please ensure it's set correctly in your environment variables.`);
+if (!urls[api_version]["registerSystem"][environment]) {
+    throw new Error(`Invalid API environment: ${environment}. Please ensure it's set correctly in your environment variables.`);
 }
 
-export const registerSystemUrl = urls[__ENV.API_VERSION]["registerSystem"][__ENV.API_ENVIRONMENT];
-export const requestSystemUserUrl = urls[__ENV.API_VERSION]["requestSystemUser"][__ENV.API_ENVIRONMENT];
-export const approveSystemUserUrl = urls[__ENV.API_VERSION]["approveSystemUser"][__ENV.API_ENVIRONMENT];
-export const getSystemUrl = urls[__ENV.API_VERSION]["systemUrl"][__ENV.API_ENVIRONMENT];
-export const getSystemUsersUrl = urls[__ENV.API_VERSION]["systemUsersUrl"][__ENV.API_ENVIRONMENT];
-export const getSystemUserByExternalIdUrl = urls[__ENV.API_VERSION]["systemUserByExternalIdUrl"][__ENV.API_ENVIRONMENT];
-export const getCustomerListUrl = urls[__ENV.API_VERSION]["getCustomerList"][__ENV.API_ENVIRONMENT];
-export const postDelegationUrl = urls[__ENV.API_VERSION]["delegationUrl"][__ENV.API_ENVIRONMENT];
-export const postAmDelegationUrl = urls[__ENV.API_VERSION]["amDelegationUrl"][__ENV.API_ENVIRONMENT];
-export const tokenGeneratorEnv = __ENV.API_ENVIRONMENT == "yt01" ? "yt01" : "tt02"; // yt01 is the only environment that has a separate token generator environment
+
+
+export const registerSystemUrl = urls[api_version]["registerSystem"][environment];
+export const requestSystemUserUrl = urls[api_version]["requestSystemUser"][environment];
+export const approveSystemUserUrl = urls[api_version]["approveSystemUser"][environment];
+export const getSystemUrl = urls[api_version]["systemUrl"][environment];
+export const getSystemUsersUrl = urls[api_version]["systemUsersUrl"][environment];
+export const getSystemUserByExternalIdUrl = urls[api_version]["systemUserByExternalIdUrl"][environment];
+export const getCustomerListUrl = urls[api_version]["getCustomerList"][environment];
+export const postDelegationUrl = urls[api_version]["delegationUrl"][environment];
+export const postAmDelegationUrl = urls[api_version]["amDelegationUrl"][environment];
+export const tokenGeneratorEnv = environment == "yt01" ? "yt01" : "tt02"; // yt01 is the only environment that has a separate token generator environment

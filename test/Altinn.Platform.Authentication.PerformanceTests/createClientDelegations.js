@@ -8,7 +8,7 @@ import {
     describe, 
     getEnterpriseToken 
 } from "./common/testimports.js";
-import { splitSystemUsers, regnskapsforerUrns, forretningsforerUrns, revisorUrns, systemOwner } from './common/readTestdata.js';
+import { regnskapsforerUrns, forretningsforerUrns, revisorUrns, systemOwner } from './common/readTestdata.js';
 import { getCustomerListUrl, getSystemUsersUrl } from './common/config.js';
 import { 
     createSystem, 
@@ -21,7 +21,7 @@ import {
     createSystemUserLabel, 
     approveSystemUserLabel, 
     postDelegationLabel,
-    options as _options 
+    buildOptions
 } from './commonSystemUser.js';
 export { splitSystemUsers as setup } from './common/readTestdata.js';
 
@@ -32,11 +32,7 @@ const getCustormerListLabel = "Get customer list";
 const getSystemUsersLabel = "Get system users";
 const labels = [createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, getCustormerListLabel, getSystemUsersLabel, postDelegationLabel];
 
-export let options = _options;
-for (var label of labels) {
-    options.thresholds[[`http_req_duration{name:${label}}`]] = [];
-    options.thresholds[[`http_req_failed{name:${label}}`]] = ['rate<=0.0'];
-}
+export let options = buildOptions(labels);
 
 export default function(data) {
     let mySystemUsers = data[exec.vu.idInTest - 1];
