@@ -50,15 +50,14 @@ body:json {
                 "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
     ],
     "isVisible": false,
-    "ClientId": [
-      "{{system_name}}"
-    ]
+    "ClientId": [ null, "123asdasdds" ]
   }
 }
 
 vars:pre-request {
-  system_id: 310574775_isDeletedTest
-  ~system_id: 310574775_TwoRedirectUrlsTest
+  system_id: 310574775_TwoRedirectUrlsTest
+  ~system_id: 310574775_BugFixTest123
+  ~system_id: 310574775_isDeletedTest
   ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
   ~system_id: 310574775_UrlQueryPathTesIsvisibleTest
 }
@@ -74,9 +73,9 @@ script:pre-request {
   bru.setEnvVar("auth_orgNo","310574775");
   bru.setEnvVar("auth_org", "310574775");
   
+  
   // const systemName = "QueryParamMustWorkSingle"
   // 
-  bru.setEnvVar("system_name","isDeletedTest");
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);

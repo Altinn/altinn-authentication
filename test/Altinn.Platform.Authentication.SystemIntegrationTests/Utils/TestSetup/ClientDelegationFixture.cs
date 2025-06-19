@@ -24,8 +24,10 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
             "urn:altinn:accesspackage:skattegrunnlag",
             "urn:altinn:accesspackage:forretningsforer-eiendom"
         ];
-
-        SystemId = await Platform.Common.CreateSystemWithAccessPackages(accessPackages);
+        
+        var systemName = "ClientDelegationAccessPackages " + Guid.NewGuid().ToString("N");
+        ClientId = systemName;
+        SystemId = await Platform.Common.CreateSystemWithAccessPackages(accessPackages,ClientId);
     }
 
     public async Task DisposeAsync()

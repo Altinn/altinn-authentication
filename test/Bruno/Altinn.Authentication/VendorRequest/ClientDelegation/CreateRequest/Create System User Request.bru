@@ -16,25 +16,26 @@ headers {
 
 body:json {
   {
-    "systemId": "314126181_Forretningsfører 122",
+    "systemId": "312605031_MaestroBugi",
     "partyOrgNo": "313776301",
-    "externalRef" : "123",
+    "externalRef" : "123456",
     "redirectUrl": "",
-   "accessPackages": [
-      {
-        "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
-      }
-    ]
+      "accessPackages": [
+        {
+          "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+        }
+      ]
   }
   
 }
 
 vars:pre-request {
-  auth_orgNo: 310574775
-  auth_org: 310574775
-  partyOrgNo: 310990418
+  ~auth_orgNo: 310574775
+  ~auth_org: 310574775
+  ~partyOrgNo: 310990418
   ~system_id: 312605031_E2E test - urn:altinn:accesspackage:revisormedarbeiderAnsvarlig Revisor
   ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
+  ~system_id: 
 }
 
 script:pre-request {
@@ -47,8 +48,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
   
-  bru.setEnvVar("auth_orgNo","314126181");
-  bru.setEnvVar("auth_org", "314126181");
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

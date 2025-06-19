@@ -194,7 +194,7 @@ public class SystemUserClient
         Assert.Contains(systemId, await systemUserResponse.ReadAsStringAsync());
 
         var approveUrl = Endpoints.ApproveAgentRequest.Url()
-            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            ?.Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
         var approveResponse = await _platformClient.Common.ApproveRequest(approveUrl, facilitator);

@@ -1,0 +1,31 @@
+meta {
+  name: Get Requests
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/51428801/053c222e-95ff-4a2f-bfde-b64b7e161529
+  body: none
+  auth: none
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  
+  const { v4: uuidv4} = require('uuid')
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+  
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
+  
+  
+  console.log(bru.getEnvVar("auth_tokenType"));
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  bru.setEnvVar("bearer_token", token);
+  
+}

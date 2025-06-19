@@ -1,0 +1,52 @@
+meta {
+  name: Get all requests by vendor on {{systemId}}
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/bysystem/{{systemId}}
+  body: none
+  auth: inherit
+}
+
+headers {
+  : 
+}
+
+vars:pre-request {
+  systemId: 312605031_MaestroBugi
+  ~systemId: 848072222_MaestroSoftAS-test
+  ~systemId: 315543088_MaestroSoftAS
+  ~systemId: 974760673_Maestro_test
+  ~systemId: 991825827_smartcloud
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.read");
+  
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org","312605031");
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  
+  console.log(bru.getEnvVar("auth_tokenType"))
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  
+  
+  
+  
+  
+  
+}
+
+docs {
+  Required scope: altinn:authentication/systemuser.request.read
+  
+  Token generator request params: scopes=altinn:authentication/systemuser.request.read&org=digdir&orgNo=991825827
+}

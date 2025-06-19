@@ -232,6 +232,8 @@ public class SystemRegisterTests
             await _platformClient.GetAsync($"{Endpoints.GetVendorSystemRegisterById.Url()}".Replace("{systemId}", teststate.SystemId), maskinportenToken);
         Assert.Equal(HttpStatusCode.OK, getForVendor.StatusCode);
 
+        _outputHelper.WriteLine("ssytemId " + teststate.SystemId);
+        
         //Cleanup
         await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
     }

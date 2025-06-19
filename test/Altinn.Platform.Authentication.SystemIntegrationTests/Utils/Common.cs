@@ -235,11 +235,10 @@ public class Common
         return response;
     }
     
-    public async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
+    public async Task<string> CreateSystemWithAccessPackages(string[] accessPackages, string systemName)
     {
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var vendorId = _platformClient.EnvironmentHelper.Vendor;
-        var systemName = "ClientDelegationAccessPackages " + Guid.NewGuid().ToString("N");
         var systemId = $"{vendorId}_{systemName}";
 
         var system = new SystemRegisterBuilder()

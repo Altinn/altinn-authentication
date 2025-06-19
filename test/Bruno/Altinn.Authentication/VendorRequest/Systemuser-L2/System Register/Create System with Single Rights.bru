@@ -37,13 +37,16 @@ body:json {
         "id" : "urn:altinn:resource"
       } ]
     } ],
+      "accessPackages": [
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+      }
+    ],
     "allowedRedirectUrls": [
-      "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback",
-                "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
+      "https://www.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
     ],
     "isVisible": false,
     "ClientId": [
-      "{{system_name}}"
     ]
   }
 }
@@ -56,12 +59,12 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","310574775");
-  bru.setEnvVar("auth_org", "310574775");
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605031");
   
   // const systemName = "QueryParamMustWorkSingle"
   // 
-  bru.setEnvVar("system_name","SystemNewTest");
+  bru.setEnvVar("system_name","MaestroBugi");
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);
