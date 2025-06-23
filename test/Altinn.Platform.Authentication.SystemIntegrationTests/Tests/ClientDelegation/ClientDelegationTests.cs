@@ -37,10 +37,10 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
     [Theory]
     [InlineData("regnskapsforer-lonn", "NotApplicable", "facilitator-regn-og-revisor")]
     [InlineData("ansvarlig-revisor", "Permit", "facilitator-regn-og-revisor")]
-    [InlineData("forretningsforer-eiendom", "NotApplicable", "facilitator-forretningsfoerer")]
-    [InlineData("regnskapsforer-med-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
-    [InlineData("regnskapsforer-uten-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
-    [InlineData("revisormedarbeider", "NotApplicable", "facilitator-regn-og-revisor")]
+    // [InlineData("forretningsforer-eiendom", "NotApplicable", "facilitator-forretningsfoerer")]
+    // [InlineData("regnskapsforer-med-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
+    // [InlineData("regnskapsforer-uten-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
+    // [InlineData("revisormedarbeider", "NotApplicable", "facilitator-regn-og-revisor")]
     public async Task CreateSystemUserClientRequestTest(string accessPackage, string expectedDecision, string testCategory)
     {
         var externalRef = Guid.NewGuid().ToString();

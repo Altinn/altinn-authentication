@@ -1,11 +1,11 @@
 meta {
-  name: Get all requests by vendor on {{systemId}}
+  name: Get all requests by vendor on {{systemId}} Agent
   type: http
-  seq: 4
+  seq: 9
 }
 
 get {
-  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/bysystem/{{systemId}}
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent/bysystem/{{systemId}}
   body: none
   auth: inherit
 }

@@ -134,7 +134,14 @@ public enum Endpoints
 
     // Authorization endpoints
     [EndpointInfo("authorization/api/v1/decision", "POST")]
-    Decision
+    Decision,
+    
+    [EndpointInfo("accessmanagement/api/v1/meta/info/accesspackages/export", "GET")]
+    AccessPackagesExport,
+    
+    
+    
+    
 }
 
 [AttributeUsage(AttributeTargets.Field)]
