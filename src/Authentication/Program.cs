@@ -385,7 +385,6 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
     services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
     services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserService>();
-    services.AddSingleton<IConsentService, ConsentService>();
     services.AddSingleton<IGuidService, GuidService>();
     services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
     services.AddSingleton<IPDP, PDPAppSI>();

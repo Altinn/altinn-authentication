@@ -629,29 +629,4 @@ public class AccessManagementClient : IAccessManagementClient
 
         }
     }
-
-    public async Task<ConsentRedirectUrl?> GetConsentRequestRedirectUrl(Guid requestId)
-    {
-        try
-        {
-            string endpointUrl = $"bff/consentrequests/{requestId}/redirecturl";
-
-            HttpResponseMessage response = await _client.GetAsync(endpointUrl);
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                JsonSerializerOptions options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                };
-                string content = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<ConsentRedirectUrl>(content, options);
-            }
-            return null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // GetConsentRequestRedirectUrl // Exception");
-            throw;
-        }
-    }
 }

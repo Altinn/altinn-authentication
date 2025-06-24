@@ -313,13 +313,4 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         return await Task.FromResult(clients);
     }
-
-    public async Task<ConsentRedirectUrl?> GetConsentRequestRedirectUrl(Guid consentId)
-    {
-        ConsentRedirectUrl redirectUrl = new()
-        {
-            Url = "https://altinn.no"
-        };
-        return await Task.FromResult(redirectUrl);
-    }
 }

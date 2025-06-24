@@ -39,7 +39,6 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IFeatureManager _featureManager;
         private readonly IRequestSystemUser _requestSystemUser;
         private readonly IChangeRequestSystemUser _changeRequestSystemUser;
-        private readonly IConsentService _consentService;
 
         /// <summary>
         /// Defay
@@ -51,8 +50,7 @@ namespace Altinn.Platform.Authentication.Controllers
             IEventLog eventLog,
             IFeatureManager featureManager,
             IRequestSystemUser requestSystemUser,
-            IChangeRequestSystemUser changeRequestSystemUser,
-            IConsentService consentService)
+            IChangeRequestSystemUser changeRequestSystemUser)
         {
             _generalSettings = generalSettings.Value;
             _oidcProviderSettings = oidcProviderSettings.Value;
@@ -61,7 +59,6 @@ namespace Altinn.Platform.Authentication.Controllers
             _featureManager = featureManager;
             _requestSystemUser = requestSystemUser;
             _changeRequestSystemUser = changeRequestSystemUser;
-            _consentService = consentService;
         }
 
         /// <summary>
@@ -106,11 +103,19 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             string logoutInfoCookie = Request.Cookies[_generalSettings.AltinnLogoutInfoCookieName];
             CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            Response.Cookies.Delete(_generalSettings.AltinnLogoutInfoCookieName, opt);
-
+            
             Dictionary<string, string> cookieValues = logoutInfoCookie?.Split('?')
                 .Select(x => x.Split('='))
                 .ToDictionary(x => x[0], x => x[1]);
+
+            // if amSafeRedirectUrl is set in cookie, the am bff handles the redirect and deletes cookie
+            if (cookieValues != null && cookieValues.ContainsKey("amSafeRedirectUrl"))
+            {
+                string bffUrl = $"https://am.ui.{_generalSettings.HostName}/accessmanagement/api/v1/logoutredirect";
+                return Redirect(bffUrl);
+            }
+
+            Response.Cookies.Delete(_generalSettings.AltinnLogoutInfoCookieName, opt);
 
             if (cookieValues != null && cookieValues.TryGetValue("SystemuserRequestId", out string requestId) && Guid.TryParse(requestId, out Guid requestGuid))
             {
@@ -127,12 +132,6 @@ namespace Altinn.Platform.Authentication.Controllers
             if (cookieValues != null && cookieValues.TryGetValue("SystemuserAgentRequestId", out string agentRequestId) && Guid.TryParse(agentRequestId, out Guid agentRequestGuid))
             {
                 Result<string> redirectUrl = await _requestSystemUser.GetRedirectByAgentRequestId(agentRequestGuid);
-                return Redirect(redirectUrl.Value);
-            }
-
-            if (cookieValues != null && cookieValues.TryGetValue("ConsentRequestId", out string consentRequestId) && Guid.TryParse(consentRequestId, out Guid consentRequestGuid))
-            {
-                Result<string> redirectUrl = await _consentService.GetConsentRequestRedirectUrl(consentRequestGuid);
                 return Redirect(redirectUrl.Value);
             }
 
