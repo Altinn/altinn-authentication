@@ -105,7 +105,7 @@ namespace Altinn.Platform.Authentication.Controllers
             CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
             
             Dictionary<string, string> cookieValues = logoutInfoCookie?.Split('?')
-                .Select(x => x.Split('='))
+                .Select(x => x.Split(['='], 2))
                 .ToDictionary(x => x[0], x => x[1]);
 
             // if amSafeRedirectUrl is set in cookie, the am bff handles the redirect and deletes cookie

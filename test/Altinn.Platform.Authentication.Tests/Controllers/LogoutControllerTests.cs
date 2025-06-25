@@ -340,7 +340,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout/handleloggedout");
-            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo=amSafeRedirectUrl=encryptedUrl");
+            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo=amSafeRedirectUrl=aHR0cHM6Ly9sb2NhbGhvc3Q=");
 
             // Act
             HttpResponseMessage response = await client.SendAsync(requestMessage);
