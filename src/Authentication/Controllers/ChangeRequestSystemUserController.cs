@@ -60,7 +60,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <summary>
     /// Query parameter to not choose a reportee when the end user is redirected to the Authn.UI to approve the Request.
     /// </summary>
-    public const string REPORTEESELECTIONPARAMETER = "&DONTCHOOSEREPORTEE = true";
+    public const string REPORTEESELECTIONPARAMETER = "&DONTCHOOSEREPORTEE=true";
 
     /// <summary>
     /// Route for the Get System by Vendor endpoint
