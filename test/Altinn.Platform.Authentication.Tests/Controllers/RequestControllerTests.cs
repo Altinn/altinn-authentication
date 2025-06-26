@@ -350,6 +350,7 @@ public class RequestControllerTests(
 
         AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.NotNull(res);
+        Assert.Contains("&DONTCHOOSEREPORTEE = true", res.ConfirmUrl);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
 
@@ -395,7 +396,8 @@ public class RequestControllerTests(
             Content = JsonContent.Create(req)
         };
         HttpResponseMessage message2 = await client.SendAsync(request2, HttpCompletionOption.ResponseHeadersRead);
-
+        AgentRequestSystemResponse? createdResponse = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.Contains("&DONTCHOOSEREPORTEE = true", createdResponse.ConfirmUrl);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
     }
 
@@ -629,6 +631,7 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.True(res2 is not null);
+        Assert.Contains("&DONTCHOOSEREPORTEE = true", res2.ConfirmUrl);
         Assert.Equal(testId, res2.Id);
     }
 
@@ -676,6 +679,7 @@ public class RequestControllerTests(
         string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.Contains("&DONTCHOOSEREPORTEE = true", res2.ConfirmUrl);
         Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
     }
@@ -788,6 +792,7 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.True(res2 is not null);
+        Assert.Contains("&DONTCHOOSEREPORTEE = true", res2.ConfirmUrl);
         Assert.Equal(req.SystemId + req.PartyOrgNo + req.ExternalRef, res2.SystemId + res2.PartyOrgNo + res2.ExternalRef);
     }
 
@@ -1068,7 +1073,6 @@ public class RequestControllerTests(
 
         AgentRequestSystemResponse? requestGet = JsonSerializer.Deserialize<AgentRequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
         Assert.NotNull(requestGet);
-
         Assert.Equal(res.Id, requestGet.Id);
     }
 

@@ -58,6 +58,11 @@ public class ChangeRequestSystemUserController : ControllerBase
     public const string CONFIRMURL2 = "/accessmanagement/ui/systemuser/changerequest?id=";
 
     /// <summary>
+    /// Query parameter to not choose a reportee when the end user is redirected to the Authn.UI to approve the Request.
+    /// </summary>
+    public const string REPORTEESELECTIONPARAMETER = "&DONTCHOOSEREPORTEE = true";
+
+    /// <summary>
     /// Route for the Get System by Vendor endpoint
     /// which uses pagination.
     /// </summary>
@@ -131,7 +136,7 @@ public class ChangeRequestSystemUserController : ControllerBase
         Result<ChangeRequestResponse> response = await _changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -141,7 +146,7 @@ public class ChangeRequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -210,7 +215,7 @@ public class ChangeRequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -253,7 +258,7 @@ public class ChangeRequestSystemUserController : ControllerBase
         
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
