@@ -73,6 +73,11 @@ public class RequestSystemUserController : ControllerBase
     public const string CONFIRMURL3 = "/accessmanagement/ui/systemuser/agentrequest?id=";
 
     /// <summary>
+    /// Query parameter to not choose a reportee when the end user is redirected to the Authn.UI to approve the Request.
+    /// </summary>
+    public const string REPORTEESELECTIONPARAMETER = "&DONTCHOOSEREPORTEE = true";
+
+    /// <summary>
     /// Route for the Get System by Vendor endpoint
     /// which uses pagination.
     /// </summary>
@@ -118,7 +123,7 @@ public class RequestSystemUserController : ControllerBase
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -128,7 +133,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -170,7 +175,7 @@ public class RequestSystemUserController : ControllerBase
         Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -180,7 +185,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -228,7 +233,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -259,7 +264,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -302,7 +307,7 @@ public class RequestSystemUserController : ControllerBase
         
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -343,7 +348,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id;
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 

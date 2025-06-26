@@ -224,6 +224,7 @@ public class ChangeRequestControllerTest(
         ChangeRequestResponse? createdResponse = await createdResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(createdResponse);
         Assert.NotEmpty(createdResponse.RequiredRights);
+        Assert.Contains("&DONTCHOOSEREPORTEE = true", createdResponse.ConfirmUrl);
         Assert.NotNull(createdResponse.ConfirmUrl);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
     }
@@ -351,6 +352,7 @@ public class ChangeRequestControllerTest(
         ChangeRequestResponse? createdResponse2 = await createdResponseMessage2.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(createdResponse2);
         Assert.NotEmpty(createdResponse2.RequiredRights);
+        Assert.Contains("&DONTCHOOSEREPORTEE = true", createdResponse2.ConfirmUrl);
         Assert.Equal(createdResponse2.ConfirmUrl, createdResponse.ConfirmUrl);
         Assert.True(DeepCompare(createdResponse2.RequiredRights, change.RequiredRights));
     }
