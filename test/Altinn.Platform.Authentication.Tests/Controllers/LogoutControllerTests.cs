@@ -334,6 +334,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task Logout_HandleLoggedOut_RedirectToConsentRedirectUrl()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout/handleloggedout");
+            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo=amSafeRedirectUrl=aHR0cHM6Ly9sb2NhbGhvc3Q=");
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
+
+            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            Assert.Equal("https://am.ui.localhost/accessmanagement/api/v1/logoutredirect", locationValues?.First());
+        }
+
+        [Fact]
         public async Task Logout_HandleLoggedOut_RedirectToSBL()
         {
             // Arrange

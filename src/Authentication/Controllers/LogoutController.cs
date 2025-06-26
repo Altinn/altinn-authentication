@@ -103,11 +103,19 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             string logoutInfoCookie = Request.Cookies[_generalSettings.AltinnLogoutInfoCookieName];
             CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            Response.Cookies.Delete(_generalSettings.AltinnLogoutInfoCookieName, opt);
-
+            
             Dictionary<string, string> cookieValues = logoutInfoCookie?.Split('?')
-                .Select(x => x.Split('='))
+                .Select(x => x.Split(['='], 2))
                 .ToDictionary(x => x[0], x => x[1]);
+
+            // if amSafeRedirectUrl is set in cookie, the am bff handles the redirect and deletes cookie
+            if (cookieValues != null && cookieValues.ContainsKey("amSafeRedirectUrl"))
+            {
+                string bffUrl = $"https://am.ui.{_generalSettings.HostName}/accessmanagement/api/v1/logoutredirect";
+                return Redirect(bffUrl);
+            }
+
+            Response.Cookies.Delete(_generalSettings.AltinnLogoutInfoCookieName, opt);
 
             if (cookieValues != null && cookieValues.TryGetValue("SystemuserRequestId", out string requestId) && Guid.TryParse(requestId, out Guid requestGuid))
             {
