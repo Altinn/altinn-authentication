@@ -17,14 +17,13 @@ public class EnterpriseDelegationTests : IClassFixture<EnterpriseDelegationFixtu
     }
 
     [Theory]
-    [InlineData("akvakultur", "NotApplicable", "sneha")]
-    public async Task CreateSystemUserClientRequestTest(string accessPackage, string expectedDecision, string testCategory)
+    [InlineData("NotApplicable", "sneha")]
+    public async Task CreateSystemUserClientRequestTest(string expectedDecision, string testCategory)
     {
-        var externalRef = Guid.NewGuid().ToString();
         Testuser facilitator = await _fixture.Platform.GetTestUserAndTokenForCategory(testCategory);
-        await _fixture.Platform.SystemUserClient.SetupAndApproveSystemUser(facilitator, accessPackage, externalRef, _fixture.SystemId, _fixture.VendorTokenMaskinporten);
-        
-        _outputHelper.WriteLine($"Access package: {accessPackage}");
+        await _fixture.Platform.SystemUserClient.SetupAndApproveSystemUser(facilitator, _fixture.PostedPackages, _fixture.SystemId, _fixture.VendorTokenMaskinporten);
+
+        // _outputHelper.WriteLine($"Access package: {accessPackage}");
         _outputHelper.WriteLine($"SystemId {_fixture.SystemId}");
         _outputHelper.WriteLine($"Facilitator {_fixture.Platform.GetTestUserForVendor().Org}");
     }

@@ -1,42 +1,24 @@
 meta {
-  name: Create System User Request
+  name: Get request status
   type: http
-  seq: 1
+  seq: 3
 }
 
-post {
-  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent
+get {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor/agent/{{requestId}}
   body: json
-  auth: inherit
+  auth: none
 }
 
 headers {
-  ~Authorization: Bearer {{bearerToken}}
-}
-
-body:json {
-  {
-    "systemId": "312605031_MaestroBugi123",
-    "partyOrgNo": "313776301",
-    "externalRef" : "123456",
-    "redirectUrl": "",
-      "accessPackages": [
-        {
-          "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
-        }
-      ]
-  }
-  
-  
+  Authorization: Bearer {{bearerToken}}
 }
 
 vars:pre-request {
-  ~auth_orgNo: 310574775
-  ~auth_org: 310574775
-  ~partyOrgNo: 310990418
-  ~system_id: 312605031_E2E test - urn:altinn:accesspackage:revisormedarbeiderAnsvarlig Revisor
-  ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
-  ~system_id: 
+  auth_orgNo: 991825827
+  auth_org: 991825827
+  requestId: 5c897f3f-7f09-4c60-94e6-326a6c77ba21
+  partyOrgNo: 312251604
 }
 
 script:pre-request {
@@ -44,13 +26,9 @@ script:pre-request {
   
   const { v4: uuidv4} = require('uuid')
   
-  
   //Set token type
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
-  
-  bru.setEnvVar("auth_orgNo","312605031");
-  bru.setEnvVar("auth_org", "312605031");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.SystemRegister;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.SystemUserRequest;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
@@ -153,7 +155,7 @@ public class SystemUserClient
     public async Task DeleteSystemUser(string? altinnPartyId, string? systemUserId)
     {
         var deleteUrl = Endpoints.DeleteSystemUserById.Url()
-            .Replace("{party}", altinnPartyId)
+            ?.Replace("{party}", altinnPartyId)
             .Replace("{systemUserId}", systemUserId);
         var deleteResponse = await _platformClient.DeleteRequest(deleteUrl, _platformClient.GetTestUserForVendor());
 
@@ -168,16 +170,24 @@ public class SystemUserClient
         Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);
     }
 
-    public async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef, string systemId, string? vendorTokenMaskinporten)
+    public async Task SetupAndApproveSystemUser(Testuser facilitator, List<SystemRegisterAccessPackageDto>? accessPackage, string systemId, string? vendorTokenMaskinporten)
     {
-        var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
-            .Replace("{systemId}", systemId)
-            .Replace("{externalRef}", externalRef)
-            .Replace("{accessPackage}", accessPackage)
-            .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
+        var request = new ClientDelegationRequest
+        {
+            AccessPackages = accessPackage,
+            SystemId = systemId,
+            PartyOrgNo = facilitator.Org,
+            RedirectUrl = "",
+            ExternalRef = Guid.NewGuid().ToString()
+        };
 
-        var userResponse = await _platformClient.PostAsync(Endpoints.PostAgentClientRequest.Url(),
-            clientRequestBody, vendorTokenMaskinporten);
+        var json = JsonSerializer.Serialize(request, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        });
+
+        var userResponse = await _platformClient.PostAsync(Endpoints.PostAgentClientRequest.Url(), json, vendorTokenMaskinporten);
 
         var userResponseContent = await userResponse.Content.ReadAsStringAsync();
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
@@ -186,9 +196,7 @@ public class SystemUserClient
         var requestId = Common.ExtractPropertyFromJson(userResponseContent, "id");
         await _platformClient.AssertStatusSystemUserRequest(requestId, "New", vendorTokenMaskinporten);
 
-        var systemUserResponse =
-            await _platformClient.Common.GetSystemUserForVendorAgent(systemId,
-                vendorTokenMaskinporten);
+        var systemUserResponse = await _platformClient.Common.GetSystemUserForVendorAgent(systemId, vendorTokenMaskinporten);
 
         Assert.NotNull(systemUserResponse);
         Assert.Contains(systemId, await systemUserResponse.ReadAsStringAsync());

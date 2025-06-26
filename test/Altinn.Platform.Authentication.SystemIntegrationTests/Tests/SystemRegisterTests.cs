@@ -374,7 +374,7 @@ public class SystemRegisterTests
         await _systemRegisterClient.PostSystem(state.GenerateRequestBody(), maskinportenToken);
 
         // Update with new accessPackages
-        List<AccessPackageDto> requestBodyPut =
+        List<SystemRegisterAccessPackageDto> requestBodyPut =
         [
             new() { Urn = "urn:altinn:accesspackage:post-og-telekommunikasjon" },
             new() { Urn = "urn:altinn:accesspackage:dokumentbasert-tilsyn" },
@@ -405,10 +405,10 @@ public class SystemRegisterTests
         var accessPackages = jsonDoc.RootElement.GetProperty("accessPackages");
 
         // Actual Urns from resposne
-        List<AccessPackageDto> actualUrns = accessPackages.EnumerateArray()
+        List<SystemRegisterAccessPackageDto> actualUrns = accessPackages.EnumerateArray()
             .Select(p => p.GetProperty("urn").GetString())
             .Where(urn => urn != null)
-            .Select(urn => new AccessPackageDto { Urn = urn! })
+            .Select(urn => new SystemRegisterAccessPackageDto { Urn = urn! })
             .ToList();
         
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);

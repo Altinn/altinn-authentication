@@ -1,4 +1,3 @@
-using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.SystemRegister;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.Builders;
@@ -41,21 +40,21 @@ public class SystemRegisterBuilder
         return this;
     }
 
-    public SystemRegisterBuilder WithAccessPackages(IEnumerable<string> accessPackageUrns)
+    public SystemRegisterBuilder WithAccessPackages(List<SystemRegisterAccessPackageDto> accessPackages)
     {
-        _system.AccessPackages = accessPackageUrns.Select(urn => new AccessPackageDto { Urn = urn }).ToList();
+        _system.AccessPackages = accessPackages;
         return this;
     }
 
     public SystemRegisterBuilder WithClientId(string clientId)
     {
-        _system.ClientId = new List<string> { clientId };
+        _system.ClientId = [clientId];
         return this;
     }
 
     public SystemRegisterBuilder WithRedirectUrl(string url)
     {
-        _system.AllowedRedirectUrls = new List<string> { url };
+        _system.AllowedRedirectUrls = [url];
         return this;
     }
 

@@ -1,0 +1,89 @@
+meta {
+  name: Create System User Request
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/authentication/api/v1/systemuser/request/vendor
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{bearerToken}}
+}
+
+body:json {
+  {
+    "systemId": "310131938_DIGDIR_DEMO_SAP",
+    "partyOrgNo": "310021199",
+    "rights": [
+      {
+        "resource": [
+          {
+            "value": "ske-innrapportering-livsforsikring",
+            "id": "urn:altinn:resource"
+          }
+        ]
+      }
+    ],
+    "redirectUrl": "https://skatteetaten.github.io/"
+  }
+  
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  
+  const { v4: uuidv4} = require('uuid')
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
+  
+  
+  var leverandoerOrg = "310131938";
+  bru.setEnvVar("system_id","310131938_DemoSystem_vanlig");
+  bru.setEnvVar("auth_orgNo",leverandoerOrg);
+  bru.setEnvVar("auth_org", leverandoerOrg);
+  bru.setEnvVar("external_ref", "1234");
+  
+  
+  console.log(bru.getEnvVar("auth_tokenType"));
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  bru.setEnvVar("bearer_token", token);
+  
+}
+
+docs {
+  Testdata du kan benytte i AT/TT:
+  
+  OrgNumber_AK Fnumber_AK (No column name)
+  314239458 22877497392 11984
+  310495670 13886499404 6216
+  313588270 23812849735 5878
+  312939053 24856398710 5762
+  314239822 11866598926 5489
+  310990361 25877799797 2750
+  210707832 27827297548 2211
+  314242246 08815697562 751
+  314239385 10876398783 620
+  314242211 30896797138 577
+  314242211 12887498871 577
+  310267511 25848395245 564
+  
+  
+  
+  Litt "Snillere testdata":
+  
+  OrgNumber_AK Fnumber_AK (No column name)
+  910982613 08070100054 131
+  910918842 15070100875 131
+  910325930 13050101449 131
+  910647520 26060101093 131
+  312251604 20924199971 130
+  910073214 06030101233 129
+  910921908 21080101411 1
+}

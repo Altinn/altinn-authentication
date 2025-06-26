@@ -511,7 +511,7 @@ public class SystemUserTests : IDisposable
 
     private async Task<HttpResponseMessage> GetSystemUserById(string systemId, string? token)
     {
-        var urlGetBySystem = Endpoints.GetSystemUsersBySystemForVendor.Url().Replace("{systemId}", systemId);
+        var urlGetBySystem = Endpoints.GetSystemUsersBySystemForVendor.Url()?.Replace("{systemId}", systemId);
         return await _platformClient.GetAsync(urlGetBySystem, token);
     }
 

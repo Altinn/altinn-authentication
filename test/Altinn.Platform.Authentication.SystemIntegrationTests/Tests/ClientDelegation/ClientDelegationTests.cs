@@ -127,7 +127,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 
     private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string? maskinportenToken)
     {
-        var getRequestByIdUrl = Endpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
+        var getRequestByIdUrl = Endpoints.GetVendorAgentRequestById.Url()?.Replace("{requestId}", requestId);
         var responseGetByRequestId = await _fixture.Platform.GetAsync(getRequestByIdUrl, maskinportenToken);
 
         Assert.True(HttpStatusCode.OK == responseGetByRequestId.StatusCode);
@@ -187,7 +187,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
         Assert.Contains(_fixture.SystemId, await systemUserResponse.ReadAsStringAsync());
 
         var approveUrl = Endpoints.ApproveAgentRequest.Url()
-            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            ?.Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
         var approveResponse = await _fixture.Platform.Common.ApproveRequest(approveUrl, facilitator);

@@ -22,33 +22,39 @@ body:json {
       "nn": "{{system_name}}"
     },
     "Description": {
-      "en": "{{description}}",  
+      "en": "{{description}}",
       "nb": "{{description}}",
       "nn": "{{description}}"
     },
     "allowedRedirectUrls": [
       "https://fiken.no"
     ],
-  "accessPackages" : [ {
-      "urn" : "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
-    }, {
-      "urn" : "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet"
-    }, {
-      "urn" : "urn:altinn:accesspackage:regnskapsforer-lonn"
-    }, {
-      "urn" : "urn:altinn:accesspackage:ansvarlig-revisor"
-    }, {
-      "urn" : "urn:altinn:accesspackage:revisormedarbeider"
-    }, {
-      "urn" : "urn:altinn:accesspackage:skattegrunnlag"
-    }, {
-      "urn" : "urn:altinn:accesspackage:forretningsforer-eiendom"
-    },
-                      {
-                        "urn" : "urn:altinn:accesspackage:lonn"
-                      }
-                     
-                     ],
+    "accessPackages": [
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:regnskapsforer-lonn"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:ansvarlig-revisor"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:revisormedarbeider"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:skattegrunnlag"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
+      },
+      {
+        "urn": "urn:altinn:accesspackage:lonn"
+      }
+    ],
     "isVisible": true,
     "ClientId": [
       "{{system_name}}"
@@ -64,11 +70,13 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","314126181");
-  bru.setEnvVar("auth_org", "314126181");
+  var vendorOrg = "310131938";
+  
+  bru.setEnvVar("auth_orgNo",vendorOrg);
+  bru.setEnvVar("auth_org", vendorOrg);
   
   //Test js input
-  const systemName = "Forretningsfører 122"
+  const systemName = "Forretningsfører-demosystem-klientdelegering"
   const description = "System med forretningsfører";
   
   bru.setEnvVar("system_name",systemName);
@@ -76,8 +84,6 @@ script:pre-request {
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
   bru.setEnvVar("bearer_token", token);
-  
-  
   
   const auth_orgNo = bru.getEnvVar("auth_orgNo"); // Retrieve it from the environment
   const system_name = bru.getEnvVar("system_name"); // Retrieve system_name as well
@@ -90,4 +96,13 @@ script:pre-request {
 docs {
   SystemId med tilgangspakke i AT22:
   - 310574775_KlientDelegeringManuellTest: urn:altinn:accesspackage:skattnaering" (isVisible: false)
+  
+  
+  
+  Daglig leder med kunder for forretningsfører:
+  06815597492,310021199
+  
+  
+  Daglig leder for Systemeier
+  01907496445, 310131938
 }

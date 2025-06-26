@@ -1,7 +1,7 @@
 meta {
   name: Put system
   type: http
-  seq: 3
+  seq: 2
 }
 
 put {
@@ -12,9 +12,9 @@ put {
 
 body:json {
   {
-    "Id": "{{system_id}}",
+    "Id": "312605031_PutBugTt02",
     "Vendor": {
-      "ID": "0192:{{auth_org}}"
+      "ID": "0192:312605065"
     },
     "Name": {
       "en": "System med action read",
@@ -50,13 +50,13 @@ body:json {
                 "https://test.cloud-booking.net/_/misc/integration.htm?integration=Altinn3&action=authCallback"
     ],
     "isVisible": false,
-    "ClientId": [ null, "123asdasdds" ]
+    "ClientId": [ "123asdasdds", "asd" ]
   }
 }
 
 vars:pre-request {
-  system_id: 310574775_TwoRedirectUrlsTest
-  ~system_id: 310574775_BugFixTest123
+  system_id: 312605031_PutBugTt02
+  ~system_id: 310574775_TwoRedirectUrlsTest
   ~system_id: 310574775_isDeletedTest
   ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
   ~system_id: 310574775_UrlQueryPathTesIsvisibleTest
@@ -70,8 +70,8 @@ script:pre-request {
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
-  bru.setEnvVar("auth_orgNo","310574775");
-  bru.setEnvVar("auth_org", "310574775");
+  bru.setEnvVar("auth_orgNo","312605031");
+  bru.setEnvVar("auth_org", "312605");
   
   
   // const systemName = "QueryParamMustWorkSingle"

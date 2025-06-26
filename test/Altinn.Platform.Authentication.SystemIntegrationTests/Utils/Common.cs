@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.SystemRegister;
 using Xunit;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.Builders;
@@ -235,7 +236,7 @@ public class Common
         return response;
     }
     
-    public async Task<string> CreateSystemWithAccessPackages(string[] accessPackages, string systemName)
+    public async Task<string> CreateSystemWithAccessPackages(List<SystemRegisterAccessPackageDto> accessPackages, string systemName)
     {
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
         var vendorId = _platformClient.EnvironmentHelper.Vendor;

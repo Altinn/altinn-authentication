@@ -1,18 +1,17 @@
 meta {
   name: Get system by SystemId
   type: http
-  seq: 5
+  seq: 3
 }
 
 get {
-  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/{{system_id}}
+  url: {{baseUrl}}/authentication/api/v1/systemregister/vendor/310131938_DemoSystem_vanlig2
   body: json
   auth: inherit
 }
 
 vars:pre-request {
-  system_id: 312605031_PutBugTt02
-  ~system_id: 848072222_MaestroSoftAS-test
+  system_id: 848072222_MaestroSoftAS-test
   ~system_id: 310574775_BugFixTest123
   ~system_id: 310574775_isDeletedTest
   ~system_id: 313588270_visma
@@ -31,9 +30,10 @@ script:pre-request {
   bru.setEnvVar("auth_scopes","altinn:authentication/systemregister.write");
   
   
-  var org = "312605031"
-  bru.setEnvVar("auth_orgNo",org);
-  bru.setEnvVar("auth_org", org);
+  var org = "310131938"
+  
+  bru.setEnvVar("auth_orgNo","310131938");
+  bru.setEnvVar("auth_org", "310131938");
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token

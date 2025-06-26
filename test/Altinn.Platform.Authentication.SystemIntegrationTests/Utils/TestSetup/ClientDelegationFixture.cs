@@ -1,3 +1,4 @@
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.SystemRegister;
 using Xunit;
 
 // ReSharper disable ClassNeverInstantiated.Global
@@ -24,10 +25,14 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
             "urn:altinn:accesspackage:skattegrunnlag",
             "urn:altinn:accesspackage:forretningsforer-eiendom"
         ];
-        
+
+        List<SystemRegisterAccessPackageDto> packages = accessPackages
+            .Select(urn => new SystemRegisterAccessPackageDto { Urn = urn })
+            .ToList();
+
         var systemName = "ClientDelegationAccessPackages " + Guid.NewGuid().ToString("N");
         ClientId = systemName;
-        SystemId = await Platform.Common.CreateSystemWithAccessPackages(accessPackages,ClientId);
+        SystemId = await Platform.Common.CreateSystemWithAccessPackages(packages, ClientId);
     }
 
     public async Task DisposeAsync()

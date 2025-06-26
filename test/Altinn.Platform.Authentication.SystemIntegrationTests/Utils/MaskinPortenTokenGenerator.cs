@@ -76,8 +76,8 @@ public class MaskinPortenTokenGenerator
 
         var signingCredentials = new SigningCredentials(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
 
-        var claims = new List<Claim>
-        {
+        List<Claim> claims =
+        [
             new(JwtRegisteredClaimNames.Aud, audience),
             new(JwtRegisteredClaimNames.Sub, iss),
             new(JwtRegisteredClaimNames.Iss, iss),
@@ -85,7 +85,7 @@ public class MaskinPortenTokenGenerator
             new(JwtRegisteredClaimNames.Exp, exp.ToString(), ClaimValueTypes.Integer64),
             new(JwtRegisteredClaimNames.Iat, iat.ToString(), ClaimValueTypes.Integer64),
             new(JwtRegisteredClaimNames.Jti, jti)
-        };
+        ];
 
         var vendor = EnvHelper.Vendor;
 
@@ -95,7 +95,6 @@ public class MaskinPortenTokenGenerator
             { "ID", $"0192:{vendor}" }
         };
 
-        // Create the authorization_detail object
         var authorizationDetail = new JwtPayload
         {
             { "systemuser_org", systemUserOrg },

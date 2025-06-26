@@ -132,14 +132,12 @@ public enum Endpoints
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/{systemUserId}", "DELETE")]
     DeleteAgentSystemUser,
 
-    // Authorization endpoints
+    // Authorization and AM endpoints
     [EndpointInfo("authorization/api/v1/decision", "POST")]
     Decision,
     
     [EndpointInfo("accessmanagement/api/v1/meta/info/accesspackages/export", "GET")]
-    AccessPackagesExport,
-    
-    
+    AccessPackagesExport
     
     
 }

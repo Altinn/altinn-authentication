@@ -1,7 +1,7 @@
 meta {
-  name: Dhana create request
+  name: Create System User Request
   type: http
-  seq: 3
+  seq: 2
 }
 
 post {
@@ -16,25 +16,27 @@ headers {
 
 body:json {
   {
-    "externalReference": "123",
-    "systemId": "314126181_Forretningsfører 122",
-    "partyOrgNo": "314250052",
-    "accessPackages":
-     [
-          {
-              "urn": "urn:altinn:accesspackage:skattegrunnlag"
-          }
-     ],
-    "redirectUrl": ""
-  } 
+    "systemId": "310131938_Forretningsfører-demosystem-klientdelegering",
+    "partyOrgNo": "310021199",
+    "externalRef": "1",
+    "redirectUrl": "",
+    "accessPackages": [
+      {
+        "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
+      }
+    ]
+  }
+  
+  
 }
 
 vars:pre-request {
-  auth_orgNo: 310574775
-  auth_org: 310574775
-  partyOrgNo: 310990418
+  ~auth_orgNo: 310574775
+  ~auth_org: 310574775
+  ~partyOrgNo: 310990418
   ~system_id: 312605031_E2E test - urn:altinn:accesspackage:revisormedarbeiderAnsvarlig Revisor
   ~system_id: 310574775_SystemIdWithSingleRightAndAccessPackagesAndApp
+  ~system_id: 
 }
 
 script:pre-request {
@@ -43,12 +45,13 @@ script:pre-request {
   const { v4: uuidv4} = require('uuid')
   
   
+  var organization = "310131938";
   //Set token type
   bru.setEnvVar("auth_tokenType","Enterprise");
   bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.write");
   
-  bru.setEnvVar("auth_orgNo","314126181");
-  bru.setEnvVar("auth_org", "314126181");
+  bru.setEnvVar("auth_orgNo",organization);
+  bru.setEnvVar("auth_org", organization);
   
   
   var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
