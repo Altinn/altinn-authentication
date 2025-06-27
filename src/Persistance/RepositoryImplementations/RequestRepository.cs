@@ -442,13 +442,15 @@ public class RequestRepository : IRequestRepository
                 created
             FROM business_application.request r
             WHERE r.system_id = @system_id
-                and r.is_deleted = false;";
+                and r.is_deleted = false
+                and systemuser_type = @systemuser_type;";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("system_id", systemId);
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToRequest)
