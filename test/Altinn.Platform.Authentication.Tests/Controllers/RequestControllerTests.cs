@@ -2120,6 +2120,68 @@ public class RequestControllerTests(
         Assert.True(res3 is not null);
     }
 
+    /// <summary>
+    /// Get all requests for a standard system which has both single Rights and AccessPackages
+    /// </summary>
+    /// <returns></returns>
+    [Fact]
+    public async Task Get_All_Requests_BothRightPackage_By_System_Paginated_Several()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+
+        // Arrange
+        string systemId = "991825827_the_matrix";
+
+        await CreateSeveralAgentRequest(client, _paginationSize, systemId);
+
+        await CreateSeveralRequest(client, _paginationSize, systemId);
+
+        // Get the Paginated Agent Request
+        HttpClient client2 = CreateClient();
+        string token2 = AddSystemUserRequesReadTestTokenToClient(client2);
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/bysystem/{systemId}";
+
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        Paginated<AgentRequestSystemResponse>? res2 = await message2.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
+        Assert.True(res2 is not null);
+        var list = res2.Items.ToList();
+        Assert.NotEmpty(list);
+        Assert.Equal(_paginationSize, list.Count);
+        Assert.Contains(list, x => x.PartyOrgNo == "910493353");
+        Assert.NotNull(res2.Links.Next);
+
+        HttpResponseMessage message3 = await client2.GetAsync(res2.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message3.StatusCode);
+        Paginated<AgentRequestSystemResponse>? res3 = await message3.Content.ReadFromJsonAsync<Paginated<AgentRequestSystemResponse>>();
+        Assert.True(res3 is not null);
+
+        // Get the Paginated Standard Requests
+        HttpClient client3 = CreateClient();
+        string token3 = AddSystemUserRequesReadTestTokenToClient(client3);
+        string endpoint3 = $"/authentication/api/v1/systemuser/request/vendor/bysystem/{systemId}";
+
+        HttpResponseMessage message4 = await client3.GetAsync(endpoint3);
+        Assert.Equal(HttpStatusCode.OK, message4.StatusCode);
+        Paginated<RequestSystemResponse>? res4 = await message4.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res4 is not null);
+        var list2 = res4.Items.ToList();
+        Assert.NotEmpty(list2);
+        Assert.Equal(_paginationSize, list2.Count);
+        Assert.Contains(list2, x => x.PartyOrgNo == "910493353");
+        Assert.NotNull(res4.Links.Next);
+
+        HttpResponseMessage message5 = await client3.GetAsync(res4.Links.Next);
+        Assert.Equal(HttpStatusCode.OK, message5.StatusCode);
+        Paginated<RequestSystemResponse>? res5 = await message5.Content.ReadFromJsonAsync<Paginated<RequestSystemResponse>>();
+        Assert.True(res5 is not null);
+    }
+
     [Fact]
     public async Task Delete_Request_ByGuid_Accepted()
     {
