@@ -139,5 +139,28 @@ namespace Altinn.Platform.Authentication.Tests.Middlewares
             Assert.True(nextCalled);
             Assert.NotEqual(400, context.Response.StatusCode);
         }
+
+        [Fact]
+        public async Task InvokeAsync_RootArrayWithMultipleUrnInObject_ReturnsBadRequest()
+        {
+            // Arrange: root array with an object that has multiple "urn" properties
+            string json = @"[
+                       { ""urn"": ""urn:1"", ""urn"": ""urn:2"" }
+            ]";
+            var context = CreateHttpContext("PUT", "/authentication/api/v1/systemregister/vendor/123/accesspackages", "application/json", json);
+            var middleware = new RawJsonInspectionMiddleware(_ => Task.CompletedTask);
+
+            // Act
+            await middleware.InvokeAsync(context);
+
+            // Assert
+            Assert.Equal(400, context.Response.StatusCode);
+            context.Response.Body.Position = 0;
+            var reader = new StreamReader(context.Response.Body);
+            string response = await reader.ReadToEndAsync();
+            ProblemDetails problem = JsonSerializer.Deserialize<ProblemDetails>(response);
+            Assert.Contains("Each AccessPackage object must contain only one 'urn' property.", problem.Detail);
+        }
+
     }
 }
