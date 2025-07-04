@@ -91,6 +91,7 @@ ConfigureServices(builder.Services, builder.Configuration);
 //    options.RequireHeaderSymmetry = false;
 //});
 
+builder.Services.AddScoped<TrimStringsActionFilter>();
 builder.Services.AddPersistanceLayer();
 
 // builder.Services.AddHostedService<Archiver>();
