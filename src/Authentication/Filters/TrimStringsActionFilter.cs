@@ -1,4 +1,7 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Reflection;
 using Altinn.Platform.Authentication.Attributes;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -9,6 +12,8 @@ namespace Altinn.Platform.Authentication.Filters
     /// </summary>
     public class TrimStringsActionFilter : IActionFilter
     {
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new();
+
         /// <summary>
         /// Called before the action method is invoked.
         /// Trims whitespace from all string properties of the action arguments,
@@ -56,17 +61,17 @@ namespace Altinn.Platform.Authentication.Filters
                 return;
             }
 
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (!prop.CanRead || !prop.CanWrite || prop.GetIndexParameters().Length > 0)
-                {
-                    continue;
-                }
+            // Get or add property metadata from the cache
+            var properties = _propertyCache.GetOrAdd(type, t =>
+                t.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0)
+                 .ToArray());
 
+            foreach (var prop in properties)
+            {
                 // Skip properties with [DoNotTrim]
                 if (prop.GetCustomAttribute<DoNotTrimAttribute>() != null)
-                {  
-                    continue; 
+                {
+                    continue;
                 }
 
                 if (prop.PropertyType == typeof(string))
