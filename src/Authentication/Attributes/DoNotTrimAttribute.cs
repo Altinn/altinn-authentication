@@ -6,7 +6,7 @@ namespace Altinn.Platform.Authentication.Attributes
     /// This attribute is used to indicate that a property should not be trimmed of whitespace characters.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
-    public class DoNotTrimAttribute : Attribute
+    public sealed class DoNotTrimAttribute : Attribute
     {
     }
 }
