@@ -10,6 +10,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -109,6 +110,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]    
     [HttpPost("vendor")]
+    [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<ChangeRequestResponse>> CreateChangeRequest([FromBody] ChangeRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
