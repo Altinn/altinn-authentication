@@ -354,7 +354,12 @@ namespace Altinn.Platform.Authentication.Helpers
             };
         }
 
-        private static string GetOrganizationNumberFromClaim(string claim)
+        /// <summary>
+        /// Gets the organization number from the consumer claim
+        /// </summary>
+        /// <param name="claim">the user claim</param>
+        /// <returns>organization number</returns>
+        public static string GetOrganizationNumberFromClaim(string claim)
         {
             ConsumerClaim? consumerClaim;
             try
