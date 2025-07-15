@@ -39,4 +39,11 @@ public class GetMaskinportenTokenTest
         var maskinportenToken = await _platformAuthenticationClient.GetMaskinportenTokenForVendor();
         Assert.NotNull(maskinportenToken);
     }
+    
+    [Fact]
+    public async Task GetConsentToken()
+    {
+        var maskinportenToken = await _platformAuthenticationClient.GetMaskinportenTokenForVendor();
+        Assert.NotNull(maskinportenToken);
+    }
 }

@@ -52,7 +52,7 @@ public class MaskinPortenTokenGenerator
         Assert.True(iss != null, "iss is null somehow, check it");
 
         const string scope = "altinn:authentication/systemregister.write";
-            // "altinn:systembruker.demo";
+        // "altinn:systembruker.demo";
 
         var now = DateTimeOffset.UtcNow;
         var exp = now.AddMinutes(1).ToUnixTimeSeconds();
@@ -60,7 +60,7 @@ public class MaskinPortenTokenGenerator
         var jti = Guid.NewGuid().ToString();
 
         var jwk = EnvHelper.jwk;
-        
+
         var rsa = new RSACryptoServiceProvider();
         rsa.ImportParameters(new RSAParameters
         {
@@ -118,7 +118,7 @@ public class MaskinPortenTokenGenerator
         var payload = new JwtPayload(claims) { { "authorization_details", authorizationDetails } };
         // Convert to JSON string
         var json = JsonConvert.SerializeObject(payload);
-      
+
         var token = new JwtSecurityToken(header, payload);
         var tokenHandler = new JwtSecurityTokenHandler();
 
@@ -135,7 +135,7 @@ public class MaskinPortenTokenGenerator
 
         Assert.True(iss != null, "iss is null somehow, check it");
 
-        const string scope = "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read altinn:authentication/systemregister.admin";
+        const string scope = "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read altinn:authentication/systemregister.admin altinn:consentrequests.read";
 
         // Set the current time and expiration time for the token
         var now = DateTimeOffset.UtcNow;
@@ -190,6 +190,83 @@ public class MaskinPortenTokenGenerator
         var tokenHandler = new JwtSecurityTokenHandler();
 
         // Write and return the JWT
+        return Task.FromResult(tokenHandler.WriteToken(token));
+    }
+
+    public Task<string> GenerateJwtForConsent(string? requestId, string? org)
+    {
+        var audience = string.IsNullOrEmpty(EnvHelper.MaskinportenEnvironment)
+            ? "https://test.maskinporten.no/token"
+            : EnvHelper.MaskinportenEnvironment;
+
+        var iss = maskinportenClientId;
+
+        Assert.True(iss != null, "iss is null somehow, check it");
+
+        const string scope = "altinn:authentication/systemregister.write";
+        // "altinn:systembruker.demo";
+
+        var now = DateTimeOffset.UtcNow;
+        var exp = now.AddMinutes(1).ToUnixTimeSeconds();
+        var iat = now.ToUnixTimeSeconds();
+        var jti = Guid.NewGuid().ToString();
+
+        var jwk = EnvHelper.jwk;
+
+        var rsa = new RSACryptoServiceProvider();
+        rsa.ImportParameters(new RSAParameters
+        {
+            Modulus = Convert.FromBase64String(ToStandardBase64(jwk.n)),
+            Exponent = Convert.FromBase64String("AQAB"),
+            D = Convert.FromBase64String(ToStandardBase64(jwk.d)),
+            P = Convert.FromBase64String(ToStandardBase64(jwk.p)),
+            Q = Convert.FromBase64String(ToStandardBase64(jwk.q)),
+            DP = Convert.FromBase64String(ToStandardBase64(jwk.dp)),
+            DQ = Convert.FromBase64String(ToStandardBase64(jwk.dq)),
+            InverseQ = Convert.FromBase64String(ToStandardBase64(jwk.qi))
+        });
+
+        var signingCredentials = new SigningCredentials(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
+
+        List<Claim> claims =
+        [
+            new(JwtRegisteredClaimNames.Aud, audience),
+            new(JwtRegisteredClaimNames.Sub, iss),
+            new(JwtRegisteredClaimNames.Iss, iss),
+            new("scope", scope),
+            new(JwtRegisteredClaimNames.Exp, exp.ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Iat, iat.ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Jti, jti)
+        ];
+
+        // Create the authorization_detail object
+        Dictionary<string, object> consentOfferedBy = new()
+        {
+            { "authority", "iso6523-actorid-upis" },
+            { "ID", $"0192:{org}" } //Samtykkegiver - person eller org
+        };
+
+        var authorizationDetail = new JwtPayload
+        {
+            { "consent_offered_by", consentOfferedBy },
+            { "type", "urn:altinn:concent" },
+            { "id", requestId } // RequestId for samtykke
+        };
+
+        List<JwtPayload> authorizationDetails = [authorizationDetail];
+
+        var header = new JwtHeader(signingCredentials)
+        {
+            { "kid", jwk.kid }
+        };
+
+        var payload = new JwtPayload(claims) { { "authorization_details", authorizationDetails } };
+        // Convert to JSON string
+        var json = JsonConvert.SerializeObject(payload);
+
+        var token = new JwtSecurityToken(header, payload);
+        var tokenHandler = new JwtSecurityTokenHandler();
+
         return Task.FromResult(tokenHandler.WriteToken(token));
     }
 
@@ -249,6 +326,17 @@ public class MaskinPortenTokenGenerator
     public async Task<string> GetMaskinportenSystemUserToken(string? externalRef = "")
     {
         var jwt = await GenerateJwtForSystemUserToken(externalRef);
+        var maskinportenTokenResponse = await RequestToken(jwt);
+        var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
+        var root = jsonDoc.RootElement;
+
+        return root.GetProperty("access_token").GetString() ??
+               throw new Exception("Unable to get access token from response.");
+    }
+
+    public async Task<string> GetMaskinportenConsentToken(string requestId, string org)
+    {
+        var jwt = await GenerateJwtForConsent(requestId, org);
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;

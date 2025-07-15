@@ -348,7 +348,7 @@ public class SystemUserTests : IDisposable
         var content = await _platformClient.GetSystemUsers(systemId, maskinportenToken);
         await _platformClient.VerifyPagination(content, maskinportenToken);
     }
-
+    
     public async Task<string> CreateSystemAndSystemUserRequest(TestState testState, string? maskinportenToken)
     {
         var requestBodySystemREgister = testState.GenerateRequestBody();

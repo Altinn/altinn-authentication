@@ -23,7 +23,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
             "urn:altinn:accesspackage:regnskapsforer-lonn",
             "urn:altinn:accesspackage:ansvarlig-revisor",
             "urn:altinn:accesspackage:revisormedarbeider",
-            "urn:altinn:accesspackage:skattegrunnlag",
+            "urn:altinn:accesspackage:skattegrunnlag", 
             "urn:altinn:accesspackage:forretningsforer-eiendom"
         ];
         

@@ -18,8 +18,14 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 public class SystemUserTokenTests : TestFixture
 {
     private readonly ITestOutputHelper _outputHelper;
+
     private readonly PlatformAuthenticationClient _platformClient;
-    private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
+
+    // private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
+    private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete"; //This works
+    // private const string SystemId = "312605031_SystemRegister e2e Testsc6edcad1-1106-496d-8cc7-b626b16ac22c";
+        
+    // IntegrationTestNbTeam-Authentication-SystemuserE2E-User-Do-Not-Delete-TT02    
 
     /// <summary>
     /// Testing System user endpoints
@@ -138,6 +144,14 @@ public class SystemUserTokenTests : TestFixture
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+
+    [SkipUnlessTt02Fact]
+    public async Task SystemuserGetToken_Consent()
+    {
+        var maskinportenToken = await _platformClient.GetConsentToken("fd5b1577-6dbf-40bf-b690-6f4b27f01692", "312605031");
+        Assert.NotNull(maskinportenToken);
+    }
+
     private async Task<SystemUser?> GetSystemUserOnSystemId(string systemId)
     {
         var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
@@ -155,6 +169,4 @@ public class SystemUserTokenTests : TestFixture
         base64 = base64.Replace('-', '+').Replace('_', '/'); // Convert URL-safe Base64 to standard Base64
         return base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '='); // Ensure proper padding
     }
-    
-    
 }

@@ -15,7 +15,6 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 {
     private readonly ITestOutputHelper _outputHelper;
     private readonly ClientDelegationFixture _fixture;
-    private static readonly string[] value = new[] { "string" };
 
     public ClientDelegationTests(ClientDelegationFixture fixture, ITestOutputHelper outputHelper)
     {
