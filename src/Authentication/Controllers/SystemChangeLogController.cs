@@ -40,7 +40,7 @@ namespace Altinn.Platform.Authentication.Controllers
         public async Task<ActionResult<List<SystemChangeLog>>> GetChangeLogAsync(string systemId, CancellationToken cancellationToken = default)
         {
             RegisteredSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-            if (registeredSystem == null)
+            if (registeredSystem is null)
             {
                 return NotFound($"System with ID {systemId} not found.");
             }

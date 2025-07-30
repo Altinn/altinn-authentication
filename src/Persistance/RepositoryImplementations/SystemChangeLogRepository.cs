@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -97,7 +96,7 @@ public class SystemChangeLogRepository : ISystemChangeLogRepository
             {
                 string dbValue = reader.GetString(reader.GetOrdinal("change_type"));
                 string enumValue = string.Concat(dbValue.Split('_').Select(s => char.ToUpperInvariant(s[0]) + s.Substring(1)));
-
+                
                 var log = new SystemChangeLog
                 {
                     SystemInternalId = reader.GetGuid(reader.GetOrdinal("system_internal_id")),
