@@ -1631,17 +1631,5 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.Equal(expectedJson, actualJson);
             }
         }
-
-        // Helper method for deep equality
-        private static bool JsonEquals(object obj1, object obj2, JsonSerializerOptions options)
-        {
-            var json1 = JsonSerializer.Serialize(obj1, options);
-            var json2 = JsonSerializer.Serialize(obj2, options);
-
-            using var doc1 = JsonDocument.Parse(json1);
-            using var doc2 = JsonDocument.Parse(json2);
-
-            return doc1.RootElement.ToString() == doc2.RootElement.ToString();
-        }
     }
 }
