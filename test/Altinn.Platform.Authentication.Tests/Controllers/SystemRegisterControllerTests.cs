@@ -17,6 +17,7 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
@@ -90,6 +91,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
+            services.AddSingleton<ISystemChangeLogService, SystemChangeLogService>();
             services.AddSingleton<ISystemUserService, SystemUserService>();
             services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
@@ -105,6 +107,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpResponseMessage response = await CreateSystemRegister(dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+            await AssertSystemChangeLog("991825827_the_matrix", "ChangeLogCreate");
         }
 
         [Fact]
@@ -316,6 +319,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.OK, updateResponse.StatusCode);
+                
+                await AssertSystemChangeLog(systemID, "ChangeLogRightsUpdate");
             }
         }
 
@@ -346,6 +351,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.OK, updateResponse.StatusCode);
+
+                await AssertSystemChangeLog(systemID, "ChangeLogAPUpdate");
             }
         }
 
@@ -376,6 +383,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 request.Content = content;
                 HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(System.Net.HttpStatusCode.OK, updateResponse.StatusCode);
+
+                await AssertSystemChangeLog(systemID, "ChangeLogAPUpdate");
             }
         }
 
@@ -1050,6 +1059,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert updates were made
             AssertionUtil.AssertRegisteredSystem(expectedRegisteredSystem, actualUpdatedSystem);
+           
+            await AssertSystemChangeLog(systemId, "ChangeLogUpdate");
 
             // Verify you can create new system with old (deleted) clientIds
             string filename = "Data/SystemRegister/Json/SystemRegisterClientIdsExist.json";
@@ -1585,6 +1596,40 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             }
 
             return responseBodies;
+        }
+
+        private async Task<List<SystemChangeLog>> GetSystemChangeLog(string systemId)
+        {
+            HttpClient client = CreateClient();
+            string[] prefixes = { "altinn", "digdir" };
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemchangelog/{systemId}");
+            HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+
+            List<SystemChangeLog> actualSystemChangeLog = JsonSerializer.Deserialize<List<SystemChangeLog>>(await getResponse.Content.ReadAsStringAsync(), _options);
+            return actualSystemChangeLog;
+        }
+
+        private async Task AssertSystemChangeLog(string systemId, string fileName)
+        {
+            string systemChangeLog = File.OpenText($"Data/SystemChangeLog/{fileName}.json").ReadToEnd();
+            List<SystemChangeLog> expectedSystemChangeLog = JsonSerializer.Deserialize<List<SystemChangeLog>>(systemChangeLog, options);
+
+            List<SystemChangeLog> actualSystemChangeLog = await GetSystemChangeLog(systemId);
+            Assert.NotNull(actualSystemChangeLog);
+            Assert.Equal(expectedSystemChangeLog.Count, actualSystemChangeLog.Count);
+
+            foreach (var expected in expectedSystemChangeLog)
+            {
+                var actual = actualSystemChangeLog.FirstOrDefault(a => a.ChangeType == expected.ChangeType);
+                Assert.NotNull(actual);
+                Assert.Equal(expected.ChangedByOrgNumber, actual.ChangedByOrgNumber);
+
+                var expectedJson = JsonSerializer.Serialize(expected.ChangedData, options);
+                var actualJson = JsonSerializer.Serialize(actual.ChangedData, options);
+                Assert.Equal(expectedJson, actualJson);
+            }
         }
     }
 }

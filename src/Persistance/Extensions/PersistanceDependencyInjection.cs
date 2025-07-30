@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Altinn.Platform.Authentication.Core.Enums;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
@@ -30,6 +31,7 @@ public static class PersistanceDependencyInjection
         AddSystemRegisterRepository(services);
         AddRequestRepository(services);
         AddChangeRequestRepository(services);
+        AddSystemChangeLogRepository(services);
         return services;
     }
 
@@ -64,6 +66,7 @@ public static class PersistanceDependencyInjection
             var builder = new NpgsqlDataSourceBuilder(connectionString);
             builder.EnableDynamicJson();
             builder.MapEnum<SystemUserType>("business_application.systemuser_type");
+            builder.MapEnum<SystemChangeType>("business_application.systemchange_type");
             builder.UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>());
             return builder.Build();            
         });
@@ -87,5 +90,14 @@ public static class PersistanceDependencyInjection
     private static void AddSystemRegisterRepository(this IServiceCollection services)
     {
         services.TryAddTransient<ISystemRegisterRepository, SystemRegisterRepository>();
+    }
+
+    /// <summary>
+    /// Extension method for DI
+    /// </summary>
+    /// <param name="services">IServiceCollection for parent DI</param>
+    private static void AddSystemChangeLogRepository(this IServiceCollection services)
+    {
+        services.TryAddTransient<ISystemChangeLogRepository, SystemChangeLogRepository>();
     }
 }

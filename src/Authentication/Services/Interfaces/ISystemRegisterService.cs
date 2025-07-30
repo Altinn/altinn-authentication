@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 #nullable enable
@@ -53,26 +54,30 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Inserts a new Registered System
         /// </summary>
         /// <param name="system">The descriptor DTO for a new System</param>
+        /// <param name="systemChangeLog">SystemChangeLog</param>
         /// <param name="cancellation">The Cancelation token</param>
         /// <returns></returns>
-        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default);
+        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, SystemChangeLog systemChangeLog, CancellationToken cancellation = default);
 
         /// <summary>
         /// Updates the rights on a registered system
         /// </summary>
         /// <param name="rights">A list of rights</param>
         /// <param name="systemId">The human readable string id</param>
+        /// <param name="systemChangeLog">the system change log</param>
+        /// <param name="cancellationToken"> The cancellation token</param>
         /// <returns>true if changed</returns>
-        Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
+        Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId, SystemChangeLog systemChangeLog, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Updates the access packages on a registered system
         /// </summary>
         /// <param name="accessPackages">A list of access packages</param>
         /// <param name="systemId">The human readable string id</param>
+        /// <param name="systemChangeLog">SystemChangeLog</param>
         /// <param name="cancellation">The cancellation token</param>
         /// <returns>true if changed</returns>
-        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, CancellationToken cancellation = default);
+        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, SystemChangeLog systemChangeLog, CancellationToken cancellation = default);
 
         /// <summary>
         /// Set's the product's is_deleted column to True.
@@ -81,16 +86,19 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="id">The human readable string id</param>
         /// <param name="systemInternalId">The internal system idenficator for a system</param>
+        /// <param name="systemChangeLog">SystemChangeLog</param>
+        /// <param name="cancellation">the cancellation token</param>
         /// <returns>True if set to deleted</returns>
-        Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId);
+        Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId, SystemChangeLog systemChangeLog, CancellationToken cancellation = default);
 
         /// <summary>
         /// Replaces the entire registered system
         /// </summary>
         /// <param name="updateSystem">The updated system model</param>
+        /// <param name="systemChangeLog">SystemChangeLog</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns></returns>
-        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, CancellationToken cancellationToken);
+        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, SystemChangeLog systemChangeLog, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if one of the clientid exists

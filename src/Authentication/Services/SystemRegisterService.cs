@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -62,9 +63,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default)
+        public Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, SystemChangeLog systemChangeLog, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.CreateRegisteredSystem(system, cancellation);
+            return _systemRegisterRepository.CreateRegisteredSystem(system, systemChangeLog, cancellation);
         }
 
         /// <summary>
@@ -79,27 +80,27 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId)
+        public Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId, SystemChangeLog systemChangeLog, CancellationToken cancellationToken)
         {
-            return _systemRegisterRepository.UpdateRightsForRegisteredSystem(rights, systemId);
+            return _systemRegisterRepository.UpdateRightsForRegisteredSystem(rights, systemId, systemChangeLog, cancellationToken);
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, CancellationToken cancellation = default)
+        public Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, SystemChangeLog systemChangeLog, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId);
+            return _systemRegisterRepository.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId, systemChangeLog, cancellation);
         }
 
         /// <inheritdoc/>
-        public Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId)
+        public Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId, SystemChangeLog systemChangeLog, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.SetDeleteRegisteredSystemById(id, systemInternalId);
+            return _systemRegisterRepository.SetDeleteRegisteredSystemById(id, systemInternalId, systemChangeLog, cancellation);
         }
 
         /// <inheritdoc/>
-        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, CancellationToken cancellationToken)
+        public Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, SystemChangeLog systemChangeLog, CancellationToken cancellationToken)
         {
-            return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem);
+            return _systemRegisterRepository.UpdateRegisteredSystem(updateSystem, systemChangeLog, cancellationToken);
         }
 
         /// <inheritdoc/>

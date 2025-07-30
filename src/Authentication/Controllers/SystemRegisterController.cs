@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
@@ -10,9 +11,11 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Helpers;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -153,7 +156,7 @@ public class SystemRegisterController : ControllerBase
             return errorResult;
         }
 
-        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(proposedUpdateToSystem, cancellationToken);
+        bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(proposedUpdateToSystem, PopulateSystemChangeLog(User, SystemChangeType.Update, currentSystem.InternalId, proposedUpdateToSystem), cancellationToken);
 
         if (!success)
         {
@@ -252,8 +255,8 @@ public class SystemRegisterController : ControllerBase
             {
                 return errorResult;
             }
-
-            var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, cancellationToken);
+            
+            var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, PopulateSystemChangeLog(User, SystemChangeType.Create, null, registerNewSystem), cancellationToken);
             if (registeredSystemGuid is null)
             {
                 return BadRequest();
@@ -294,7 +297,7 @@ public class SystemRegisterController : ControllerBase
             return errorResult;
         }
 
-        bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId);
+        bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId, PopulateSystemChangeLog(User, SystemChangeType.RightsUpdate, registerSystemResponse.InternalId, rights), cancellationToken);
         if (!success)
         {
             return BadRequest();
@@ -327,7 +330,7 @@ public class SystemRegisterController : ControllerBase
             return errorResult;
         }
 
-        bool success = await _systemRegisterService.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId, cancellationToken);
+        bool success = await _systemRegisterService.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId, PopulateSystemChangeLog(User, SystemChangeType.AccessPackageUpdate, registerSystemResponse.InternalId, accessPackages), cancellationToken);
         if (!success)
         {
             return BadRequest();
@@ -343,7 +346,7 @@ public class SystemRegisterController : ControllerBase
     /// <returns>true if changed</returns>
     [HttpDelete("vendor/{systemId}")]
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
-    public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId)
+    public async Task<ActionResult<SystemRegisterUpdateResult>> SetDeleteOnRegisteredSystem(string systemId, CancellationToken cancellationToken = default)
     {
         RegisteredSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
 
@@ -358,7 +361,7 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
-        bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId, registerSystemResponse.InternalId);
+        bool deleted = await _systemRegisterService.SetDeleteRegisteredSystemById(systemId, registerSystemResponse.InternalId, PopulateSystemChangeLog(User, SystemChangeType.Delete, registerSystemResponse.InternalId, null), cancellationToken);
         if (!deleted)
         {
             return BadRequest();
@@ -515,5 +518,27 @@ public class SystemRegisterController : ControllerBase
         }
 
         return mergedErrors;
+    }
+
+    private SystemChangeLog PopulateSystemChangeLog(ClaimsPrincipal organisation, SystemChangeType changeType, Guid? internalId, object changedData)
+    {
+        string? orgClaim = organisation?.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
+
+        string orgNumber = AuthenticationHelper.GetOrganizationNumberFromClaim(orgClaim);
+
+        var systemChangeLog = new SystemChangeLog
+        {
+            ChangedByOrgNumber = orgNumber,
+            ChangeType = changeType,
+            ChangedData = changedData,
+            ClientId = organisation?.Claims.Where(c => c.Type.Equals("client_id")).Select(c => c.Value).FirstOrDefault(),            
+        };
+
+        if (internalId.HasValue)
+        {
+            systemChangeLog.SystemInternalId = internalId.Value;
+        }
+
+        return systemChangeLog;
     }
 }
