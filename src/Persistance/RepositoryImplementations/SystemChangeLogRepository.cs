@@ -69,4 +69,59 @@ public class SystemChangeLogRepository : ISystemChangeLogRepository
             throw;
         }
     }
+
+    /// <inheritdoc/>
+    public async Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default)
+    {
+        const string QUERY = @"
+        SELECT 
+            system_internal_id,
+            changedby_orgnumber,
+            change_type,
+            changed_data,
+            client_id,
+            created
+        FROM business_application.system_change_log
+        WHERE system_internal_id = @system_internal_id
+        ORDER BY created DESC;";
+
+        var result = new List<SystemChangeLog>();
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            command.Parameters.AddWithValue("system_internal_id", systemInternalId);
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                string dbValue = reader.GetString(reader.GetOrdinal("change_type"));
+                string enumValue = string.Concat(dbValue.Split('_').Select(s => char.ToUpperInvariant(s[0]) + s.Substring(1)));
+
+                var log = new SystemChangeLog
+                {
+                    SystemInternalId = reader.GetGuid(reader.GetOrdinal("system_internal_id")),
+                    ChangedByOrgNumber = reader.IsDBNull(reader.GetOrdinal("changedby_orgnumber"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("changedby_orgnumber")),
+                    ChangeType = Enum.Parse<SystemChangeType>(enumValue, true),
+                    ChangedData = JsonSerializer.Deserialize<object>(reader.GetString(reader.GetOrdinal("changed_data"))),
+                    ClientId = reader.IsDBNull(reader.GetOrdinal("client_id"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("client_id")),
+                    Created = reader.IsDBNull(reader.GetOrdinal("created"))
+                        ? null
+                        : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("created"))
+                };
+                result.Add(log);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemChangeLogRepository // GetChangeLogAsync // Exception");
+            throw;
+        }
+
+        return result;
+    }
 }

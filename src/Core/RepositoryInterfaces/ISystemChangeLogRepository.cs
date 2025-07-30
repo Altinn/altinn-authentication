@@ -22,5 +22,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task LogChangeAsync(SystemChangeLog systemChangeLog, NpgsqlConnection conn, NpgsqlTransaction transaction, CancellationToken cancellationToken = default);
+
+        Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default);
     }
 }

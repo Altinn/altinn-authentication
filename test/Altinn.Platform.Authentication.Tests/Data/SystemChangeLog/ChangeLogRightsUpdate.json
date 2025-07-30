@@ -1,0 +1,50 @@
+[
+  {
+    "changeType": "create",
+    "changeDate": "2023-10-01T12:00:00Z",
+    "changedByOrgNumber": "991825827",
+    "changedData": {
+      "Id": "991825827_the_matrix",
+      "Name": {
+        "en": "The Matrix",
+        "nb": "The Matrix",
+        "nn": "The Matrix"
+      },
+      "Rights": [],
+      "Vendor": {
+        "ID": "0192:991825827"
+      },
+      "ClientId": [
+        "32ef65ac-6e62-498d-880f-76c85c2052ae"
+      ],
+      "IsVisible": true,
+      "Description": {
+        "en": "Test system",
+        "nb": "Test system",
+        "nn": "Test system"
+      },
+      "AccessPackages": [],
+      "AllowedRedirectUrls": [
+        "https://vg.no",
+        "https://nrk.no",
+        "https://altinn.no"
+      ]
+    }
+  },
+  {
+    "changeType": "rightsupdate",
+    "changeDate": "2023-10-01T12:00:00Z",
+    "changedByOrgNumber": "991825827",
+    "changedData": [
+      {
+        "Action": null,
+        "Resource": [
+          {
+            "id": "urn:altinn:resource",
+            "value": "ske-krav-og-betalinger"
+          }
+        ]
+      }
+    ]
+  }
+]

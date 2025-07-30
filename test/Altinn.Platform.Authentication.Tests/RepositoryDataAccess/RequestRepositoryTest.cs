@@ -5,6 +5,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Persistence.Tests;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
 using Xunit;
 
@@ -20,6 +21,7 @@ public class RequestRepositoryTest(DbFixture dbFixture)
     protected override void ConfigureServices(IServiceCollection services)
     {
         services.AddPersistanceLayer();
+        services.TryAddSingleton(TimeProvider.System);
         base.ConfigureServices(services);
     }
 

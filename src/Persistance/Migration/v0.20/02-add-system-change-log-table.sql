@@ -2,8 +2,8 @@
 CREATE TYPE business_application.systemchange_type AS ENUM(
   'create',
   'update',
-  'rightsupdate',
-  'accesspackageupdate',
+  'rights_update',
+  'access_package_update',
   'delete',
   'unknown'
 );
