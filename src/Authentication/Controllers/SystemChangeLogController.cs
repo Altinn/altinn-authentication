@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Altinn.Platform.Authentication.Controllers
@@ -37,9 +40,15 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns></returns>
         [HttpGet("{systemId}")]
+        [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
         public async Task<ActionResult<List<SystemChangeLog>>> GetChangeLogAsync(string systemId, CancellationToken cancellationToken = default)
         {
             RegisteredSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+            if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registeredSystem.Vendor.ID), User))
+            {
+                return Forbid();
+            }
+
             if (registeredSystem is null)
             {
                 return NotFound($"System with ID {systemId} not found.");

@@ -24,6 +24,7 @@ using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
+using Altinn.Platform.Authentication.Tests.Helpers;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
@@ -54,6 +55,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
+
+        public const string Admin = "altinn:authentication/systemregister.admin";
+        public const string Write = "altinn:authentication/systemregister.write";
+
+        protected HttpClient GetAuthenticatedClient(string scope)
+        {
+            var client = CreateClient();
+            string[] prefixes = { "altinn", "digdir" };
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", scope, prefixes);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return client;
+        }
 
         protected override void ConfigureServices(IServiceCollection services)
         {
@@ -105,7 +118,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
             await AssertSystemChangeLog("991825827_the_matrix", "ChangeLogCreate");
         }
@@ -115,7 +129,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -124,7 +139,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithResourceAndApp.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -133,7 +149,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -141,8 +158,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Create_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidRequest.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
         }
 
@@ -151,10 +168,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-            HttpResponseMessage existingSystemResponse = await CreateSystemRegister(dataFileName);
+            HttpClient client2 = GetAuthenticatedClient(Admin);
+            HttpResponseMessage existingSystemResponse = await SystemRegisterTestHelper.CreateSystemRegister(client2, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, existingSystemResponse.StatusCode);
 
             AltinnValidationProblemDetails problemDetails = await existingSystemResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
@@ -169,8 +187,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidSystemIdFormat.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
 
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
@@ -186,8 +204,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidResourceIdFormat.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
@@ -202,8 +220,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidResource.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
@@ -218,8 +236,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidAccessPackage.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
@@ -234,8 +252,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterDuplicateResource.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
@@ -250,8 +268,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterDuplicateAccessPackage.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
@@ -266,8 +284,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidRedirectUrl.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
@@ -282,8 +300,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidOrgIdentifier.json";
-
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient client = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
@@ -296,7 +314,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_Rights_Success()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.IsSuccessStatusCode)
             {
@@ -328,7 +347,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_AccessPackage_Success_Admin()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.IsSuccessStatusCode)
             {
@@ -360,7 +380,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_AccessPackage_Success_Owner_NotAdmin()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.IsSuccessStatusCode)
             {
@@ -392,7 +413,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_AccessPackage_Forbid_NotOwner_NotAdmin()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.IsSuccessStatusCode)
             {
@@ -422,7 +444,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.IsSuccessStatusCode)
             {
@@ -452,7 +475,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_DuplicateResource_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.IsSuccessStatusCode)
             {
@@ -487,7 +511,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_DuplicateAccessPackage_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.IsSuccessStatusCode)
             {
@@ -522,7 +547,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_ResourceIdDoesNotExist_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.IsSuccessStatusCode)
             {
@@ -558,11 +584,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ListofAll()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
             string dataFileName01 = "Data/SystemRegister/Json/SystemRegister01.json";
-            HttpResponseMessage response01 = await CreateSystemRegister(dataFileName01);
+            HttpClient createClient2 = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response01 = await SystemRegisterTestHelper.CreateSystemRegister(createClient2, dataFileName01);
+            ////HttpResponseMessage response01 = await CreateSystemRegister(dataFileName01);
             string dataFileName02 = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageNull.json";
-            HttpResponseMessage response02 = await CreateSystemRegister(dataFileName02);
+            HttpClient createClient3 = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response02 = await SystemRegisterTestHelper.CreateSystemRegister(createClient3, dataFileName02);
+            ////HttpResponseMessage response02 = await CreateSystemRegister(dataFileName02);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK && response01.StatusCode == System.Net.HttpStatusCode.OK && response02.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -592,7 +623,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -620,7 +652,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_Forbid_IfNotOwner()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -647,7 +680,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegisterDTO_Get()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -696,7 +730,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ProductDefaultRights()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -716,7 +751,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ProductDefaultRights_App()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             var expectedRights = new List<AttributePair>
             {
@@ -748,7 +784,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ProductDefaultRights_App_OldFormat()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             var expectedRights = new List<AttributePair>
             {
@@ -781,7 +818,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ProductDefaultRights_App_Resource()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithResourceAndApp.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             var expectedAppRights = new List<AttributePair>
             {
@@ -825,7 +863,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ProductDefaultRights_App_Resource_OldAppFormat()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithResourceAndApp.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             var expectedAppRights = new List<AttributePair>
             {
@@ -870,7 +909,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ProductDefaultRights_NoRights()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -889,7 +929,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_AccessPackages()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -909,7 +950,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_AccessPackages_NoAccessPackages()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);            
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -928,7 +970,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Delete_System()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);          
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -948,7 +991,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Delete_System_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -968,7 +1012,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Delete_System_BySystemOwner()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -988,7 +1033,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Delete_System_BySystemOwner_WrongScope()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -1008,7 +1054,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Delete_System_BySystemOwner_MismatchInOrg()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -1029,7 +1076,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Post original System
             const string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             // Prepare updated system request
@@ -1064,7 +1112,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Verify you can create new system with old (deleted) clientIds
             string filename = "Data/SystemRegister/Json/SystemRegisterClientIdsExist.json";
-            HttpResponseMessage responseNewSystem = await CreateSystemRegister(filename);
+            HttpClient createClient2 = GetAuthenticatedClient(Admin);
+            HttpResponseMessage responseNewSystem = await SystemRegisterTestHelper.CreateSystemRegister(createClient2, filename);
+            ////HttpResponseMessage responseNewSystem = await CreateSystemRegister(filename);
             var resp = await responseNewSystem.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, responseNewSystem.StatusCode);
         }
@@ -1073,7 +1123,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_System_BadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             JsonSerializerOptions options = new JsonSerializerOptions()
             {
@@ -1113,7 +1164,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Update_System_InvalidRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+            HttpClient createClient = GetAuthenticatedClient(Admin);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
 
             JsonSerializerOptions options = new JsonSerializerOptions()
             {

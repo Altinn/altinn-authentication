@@ -53,6 +53,9 @@
     <None Remove="appsettings.test.json" />
     <None Remove="selfSignedTestCertificate.pfx" />
     <None Remove="selfSignedTestCertificatePublic.cer" />
+    <None Update="Data\SystemChangeLog\ChangeLogAll.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemChangeLog\ChangeLogAPUpdate.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
