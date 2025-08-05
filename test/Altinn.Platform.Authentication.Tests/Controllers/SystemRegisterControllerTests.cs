@@ -1114,7 +1114,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string filename = "Data/SystemRegister/Json/SystemRegisterClientIdsExist.json";
             HttpClient createClient2 = GetAuthenticatedClient(Admin);
             HttpResponseMessage responseNewSystem = await SystemRegisterTestHelper.CreateSystemRegister(createClient2, filename);
-            ////HttpResponseMessage responseNewSystem = await CreateSystemRegister(filename);
             var resp = await responseNewSystem.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, responseNewSystem.StatusCode);
         }
