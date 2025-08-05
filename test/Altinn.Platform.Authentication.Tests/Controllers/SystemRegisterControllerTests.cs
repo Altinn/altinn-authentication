@@ -586,14 +586,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpClient createClient = GetAuthenticatedClient(Admin);
             HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+
             string dataFileName01 = "Data/SystemRegister/Json/SystemRegister01.json";
             HttpClient createClient2 = GetAuthenticatedClient(Admin);
             HttpResponseMessage response01 = await SystemRegisterTestHelper.CreateSystemRegister(createClient2, dataFileName01);
-            ////HttpResponseMessage response01 = await CreateSystemRegister(dataFileName01);
+
             string dataFileName02 = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageNull.json";
             HttpClient createClient3 = GetAuthenticatedClient(Admin);
             HttpResponseMessage response02 = await SystemRegisterTestHelper.CreateSystemRegister(createClient3, dataFileName02);
-            ////HttpResponseMessage response02 = await CreateSystemRegister(dataFileName02);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK && response01.StatusCode == System.Net.HttpStatusCode.OK && response02.StatusCode == System.Net.HttpStatusCode.OK)
             {
