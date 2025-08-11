@@ -1573,6 +1573,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             await SystemRegisterTestHelper.GetAndAssertSystemChangeLog(getChangeLogClient, systemId, "ChangeLogCreate");
         }
 
+        [Fact]
+        public async Task GetSystemChangeLog_InvalidSystemId_ReturnsNotFound()
+        {
+            // Post original System
+            const string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Write, ValidOrg);
+
+            string systemId = "991825827_the_matrix";
+
+            // Get change log
+            HttpClient getChangeLogClient = GetAuthenticatedClient(Write, InvalidOrg);
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}/changelog");
+            HttpResponseMessage getResponse = await getChangeLogClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+        }
+
         private async Task<HttpResponseMessage> CreateAndAssertSystemAsync(string systemId, List<string> clientIds)
         {
             var request = CreateSystemRegisterRequest(systemId, clientIds);

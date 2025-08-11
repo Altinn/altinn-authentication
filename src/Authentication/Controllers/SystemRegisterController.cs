@@ -382,21 +382,14 @@ public class SystemRegisterController : ControllerBase
     public async Task<ActionResult<List<SystemChangeLog>>> GetChangeLogAsync(string systemId, CancellationToken cancellationToken = default)
     {
         RegisteredSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registeredSystem.Vendor.ID), User))
-        {
-            return Forbid();
-        }
 
         if (registeredSystem is null)
         {
             return NotFound($"System with ID {systemId} not found.");
         }
-        else
+        else if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registeredSystem?.Vendor.ID), User))
         {
-            if (registeredSystem.IsDeleted)
-            {
-                return NotFound($"System with ID {systemId} is deleted.");
-            }
+            return Forbid();
         }
 
         Guid systemInternalId = registeredSystem.InternalId;
