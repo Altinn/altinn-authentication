@@ -135,7 +135,9 @@ public class MaskinPortenTokenGenerator
 
         Assert.True(iss != null, "iss is null somehow, check it");
 
-        const string scope = "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read altinn:authentication/systemregister.admin altinn:consentrequests.read";
+        const string scope = 
+            // "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read altinn:authentication/systemregister.admin " +
+                             "altinn:consentrequests.read altinn:consentrequests.write";
 
         // Set the current time and expiration time for the token
         var now = DateTimeOffset.UtcNow;
@@ -173,6 +175,7 @@ public class MaskinPortenTokenGenerator
             new Claim(JwtRegisteredClaimNames.Aud, audience),
             new Claim(JwtRegisteredClaimNames.Iss, iss),
             new Claim("scope", scope),
+            new Claim("consumer_org", "311071092"),
             new Claim(JwtRegisteredClaimNames.Exp, exp.ToString(), ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Iat, iat.ToString(), ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Jti, jti)
@@ -193,7 +196,7 @@ public class MaskinPortenTokenGenerator
         return Task.FromResult(tokenHandler.WriteToken(token));
     }
 
-    public Task<string> GenerateJwtForConsent(string? requestId, string? org)
+    public Task<string> GenerateJwtForConsent(string? requestId, string? pid)
     {
         var audience = string.IsNullOrEmpty(EnvHelper.MaskinportenEnvironment)
             ? "https://test.maskinporten.no/token"
@@ -239,17 +242,11 @@ public class MaskinPortenTokenGenerator
             new(JwtRegisteredClaimNames.Jti, jti)
         ];
 
-        // Create the authorization_detail object
-        Dictionary<string, object> consentOfferedBy = new()
-        {
-            { "authority", "iso6523-actorid-upis" },
-            { "ID", $"0192:{org}" } //Samtykkegiver - person eller org
-        };
-
         var authorizationDetail = new JwtPayload
         {
-            { "consent_offered_by", consentOfferedBy },
-            { "type", "urn:altinn:concent" },
+            
+            { "from", $"urn:altinn:person:identifier-no:{pid}" },
+            { "type", "urn:altinn:consent" },
             { "id", requestId } // RequestId for samtykke
         };
 
@@ -334,9 +331,9 @@ public class MaskinPortenTokenGenerator
                throw new Exception("Unable to get access token from response.");
     }
 
-    public async Task<string> GetMaskinportenConsentToken(string requestId, string org)
+    public async Task<string> GetMaskinportenConsentToken(string requestId, string pid)
     {
-        var jwt = await GenerateJwtForConsent(requestId, org);
+        var jwt = await GenerateJwtForConsent(requestId, pid);
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;

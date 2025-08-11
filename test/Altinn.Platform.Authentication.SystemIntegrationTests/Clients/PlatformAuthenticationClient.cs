@@ -311,9 +311,9 @@ public class PlatformAuthenticationClient
         return _cachedToken;
     }
     
-    public async Task<string> GetConsentToken(string? requestId, string org)
+    public async Task<string> GetConsentToken(string requestId, string pid)
     {
-        var token = await MaskinPortenTokenGenerator.GetMaskinportenConsentToken(requestId, org);
+        var token = await MaskinPortenTokenGenerator.GetMaskinportenConsentToken(requestId, pid);
         Assert.True(null != token, "Unable to retrieve maskinporten systemuser token");
         return token;
     }

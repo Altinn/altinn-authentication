@@ -1,0 +1,39 @@
+meta {
+  name: Get Next Requests
+  type: http
+  seq: 6
+}
+
+get {
+  url: https://platform.at22.altinn.cloud/authentication/api/v1/systemuser/request/vendor/bysystem/310574775_SystemNewTest?token=ImVlMTc0YTJjLWNlZWItNDUwMC05ZGE2LWE0Yzc0M2VkNmM2OSI
+  body: none
+  auth: bearer
+}
+
+params:query {
+  token: ImVlMTc0YTJjLWNlZWItNDUwMC05ZGE2LWE0Yzc0M2VkNmM2OSI
+}
+
+auth:bearer {
+  token: {{bearerToken}}
+}
+
+script:pre-request {
+  const TestToolsTokenGenerator = require("./TestToolsTokenGenerator.js");
+  
+  const { v4: uuidv4} = require('uuid')
+  
+  //Set token type
+  bru.setEnvVar("auth_tokenType","Enterprise");
+  bru.setEnvVar("auth_scopes","altinn:authentication/systemuser.request.read");
+  
+  
+  var leverandoerOrg = "310574775";
+  // bru.setEnvVar("system_id","310574775_SystemNewTest");
+  
+  bru.setEnvVar("auth_orgNo","310574775");
+  bru.setEnvVar("auth_org", "310574775");
+  
+  var token = await TestToolsTokenGenerator.getToken(); // Fetch and store the token
+  bru.setEnvVar("bearer_token", token);
+}

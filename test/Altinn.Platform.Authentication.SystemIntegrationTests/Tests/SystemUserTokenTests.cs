@@ -148,7 +148,11 @@ public class SystemUserTokenTests : TestFixture
     [SkipUnlessTt02Fact]
     public async Task SystemuserGetToken_Consent()
     {
-        var maskinportenToken = await _platformClient.GetConsentToken("fd5b1577-6dbf-40bf-b690-6f4b27f01692", "312605031");
+        //Id hvor org som henter samtykketokenet er requiredBy:55e29374-5e9d-44cf-b0f7-edbaba65c3e4
+        // Id hvor det ikke er noen requiredBy: 3aea5fb9-88d6-4108-9ff4-c20e2771af20 // 
+        
+        var maskinportenToken = await _platformClient.GetConsentToken("cdb9e6d1-4a01-4aec-b17d-7da21277618f", "17866298211");
+        _outputHelper.WriteLine(maskinportenToken);
         Assert.NotNull(maskinportenToken);
     }
 
