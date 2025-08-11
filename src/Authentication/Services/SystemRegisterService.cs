@@ -10,6 +10,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
+using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
 #nullable enable
@@ -22,6 +23,7 @@ namespace Altinn.Platform.Authentication.Services
     public class SystemRegisterService : ISystemRegisterService
     {
         private readonly ISystemRegisterRepository _systemRegisterRepository;
+        private readonly ISystemChangeLogRepository _systemChangeLogRepository;
         private readonly IResourceRegistryClient _resourceRegistryClient;
         private readonly IAccessManagementClient _accessManagementClient;
 
@@ -31,11 +33,13 @@ namespace Altinn.Platform.Authentication.Services
         public SystemRegisterService(
             ISystemRegisterRepository systemRegisterRepository,
             IResourceRegistryClient resourceRegistryClient,
-            IAccessManagementClient accessManagementClient)
+            IAccessManagementClient accessManagementClient,
+            ISystemChangeLogRepository systemChangeLogRepository)
         {
             _systemRegisterRepository = systemRegisterRepository;
             _resourceRegistryClient = resourceRegistryClient;
             _accessManagementClient = accessManagementClient;
+            _systemChangeLogRepository = systemChangeLogRepository;
         }
 
         /// <inheritdoc/>
@@ -185,6 +189,12 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return (invalidFormatUrns, notFoundUrns, notDelegableUrns);
+        }
+
+        /// <inheritdoc/>
+        public Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default)
+        {
+            return _systemChangeLogRepository.GetChangeLogAsync(systemInternalId, cancellationToken);
         }
     }
 }

@@ -140,5 +140,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register</returns>
         Task<(List<string> invalidFormatUrns, List<string> notFoundUrns, List<string> notDelegableUrns)>
             GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Gets the change log for a specific system identified by its internal ID.
+        /// </summary>
+        /// <param name="systemInternalId">the internal id of the system</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns></returns>
+        Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default);
     }
 }
