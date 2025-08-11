@@ -384,7 +384,6 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.TryAddSingleton(TimeProvider.System);
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
-    services.AddSingleton<ISystemChangeLogService, SystemChangeLogService>();
     services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
     services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserService>();
     services.AddSingleton<IGuidService, GuidService>();
