@@ -387,7 +387,7 @@ public class SystemRegisterController : ControllerBase
         {
             return NotFound($"System with ID {systemId} not found.");
         }
-        else if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registeredSystem?.Vendor.ID), User))
+        else if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registeredSystem?.Vendor?.ID), User))
         {
             return Forbid();
         }

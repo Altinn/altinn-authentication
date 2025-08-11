@@ -1583,7 +1583,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string systemId = "991825827_the_matrix";
 
             // Get change log
-            HttpClient getChangeLogClient = GetAuthenticatedClient(Write, InvalidOrg);
+            HttpClient getChangeLogClient = GetAuthenticatedClient(Write, ValidOrg);
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}/changelog");
             HttpResponseMessage getResponse = await getChangeLogClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
