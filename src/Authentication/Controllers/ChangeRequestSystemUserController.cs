@@ -70,11 +70,11 @@ public class ChangeRequestSystemUserController : ControllerBase
     public const string ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM = "vendor/changerequest/bysystem";
 
     /// <summary>
-    /// Verifies if the given set(s) of required and/or unwanted rights are delegated for the given systemId and user.
+    /// Verifies if the given set(s) of required and/or unwanted rights and or AccessPackages which are delegated for the given systemId and user.
     /// </summary>
-    /// <param name="validateSet">The model containing the set(s) of required and/or unwanted rights</param>
+    /// <param name="validateSet">The model containing the set(s) of required and/or unwanted rights and/or accesspackages</param>
     /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Response model of CreateRequestSystemUserResponse</returns>
+    /// <returns>ChangeRequestResponse model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor/verify")]
     public async Task<ActionResult<ChangeRequestResponse>> VerifySetOfRights([FromBody] ChangeRequestSystemUser validateSet, CancellationToken cancellationToken = default)
@@ -157,7 +157,10 @@ public class ChangeRequestSystemUserController : ControllerBase
 
     private static ChangeRequestResponse? EmptySetsReturnEmptyResponse(ChangeRequestSystemUser createRequest)
     {
-        if (createRequest.RequiredRights.Count == 0 && createRequest.UnwantedRights.Count == 0)
+        if (createRequest.RequiredRights.Count == 0 && 
+            createRequest.UnwantedRights.Count == 0 && 
+            createRequest.RequiredAccessPackages.Count == 0 && 
+            createRequest.UnwantedAccessPackages.Count == 0)
         {
             return new ChangeRequestResponse
             {

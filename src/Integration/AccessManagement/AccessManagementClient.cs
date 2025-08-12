@@ -31,6 +31,9 @@ using Microsoft.Extensions.Azure;
 using Azure;
 using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
 using System;
+using System.Collections.Generic;
+using System.Drawing.Text;
+using Microsoft.VisualBasic;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -80,11 +83,11 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";            
+            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";
 
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
 
-            if ( response.StatusCode == System.Net.HttpStatusCode.OK )
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<AuthorizedPartyExternal>(responseContent, _serializerOptions)!;
@@ -104,7 +107,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";            
+            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";
 
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
 
@@ -134,7 +137,7 @@ public class AccessManagementClient : IAccessManagementClient
             StringContent requestBody = new(content, Encoding.UTF8, "application/json");
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody);
             response.EnsureSuccessStatusCode();
-            return JsonSerializer.Deserialize<List<DelegationResponseData>>( await response.Content.ReadAsStringAsync(), _serializerOptions) ;
+            return JsonSerializer.Deserialize<List<DelegationResponseData>>(await response.Content.ReadAsStringAsync(), _serializerOptions);
 
         }
         catch (Exception ex)
@@ -213,7 +216,8 @@ public class AccessManagementClient : IAccessManagementClient
         if (!await RevokeRightsToSystemUser(partyId, systemUser, rights))
         {
             return Problem.Rights_FailedToRevoke;
-        };
+        }
+        ;
 
         return true;
     }
@@ -316,8 +320,8 @@ public class AccessManagementClient : IAccessManagementClient
     {
         const string AGENT = "agent";
 
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
-        if ( ! Guid.TryParse(request.FacilitatorId, out Guid facilitator))
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        if (!Guid.TryParse(request.FacilitatorId, out Guid facilitator))
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -334,7 +338,7 @@ public class AccessManagementClient : IAccessManagementClient
 
         List<CreateSystemDelegationRolePackageDto> rolePackages = [];
 
-        foreach (var pac in systemUser.AccessPackages) 
+        foreach (var pac in systemUser.AccessPackages)
         {
             string? role;
             if (mockCustomerApi)
@@ -344,9 +348,9 @@ public class AccessManagementClient : IAccessManagementClient
             else
             {
                 role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
-            }               
+            }
 
-            if ( role is null )
+            if (role is null)
             {
                 return Problem.RoleNotFoundForPackage;
             }
@@ -358,13 +362,13 @@ public class AccessManagementClient : IAccessManagementClient
             };
 
             rolePackages.Add(rolePackage);
-        }        
+        }
 
         AgentDelegationRequest agentDelegationRequest = new()
         {
             AgentId = agentSystemUserId,
             AgentName = systemUser.IntegrationTitle,
-            AgentRole = AGENT, 
+            AgentRole = AGENT,
             ClientId = clientId,
             FacilitatorId = facilitator,
             RolePackages = rolePackages
@@ -380,7 +384,7 @@ public class AccessManagementClient : IAccessManagementClient
             if (response.IsSuccessStatusCode && found is not null)
             {
                 return found;
-            }            
+            }
 
             return new Result<List<AgentDelegationResponse>>(Problem.Rights_FailedToDelegate);
 
@@ -393,14 +397,14 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId,CancellationToken cancellationToken)
+    public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken)
     {
         try
         {
             string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
-            return await HandleErrors(response);    
+            return await HandleErrors(response);
         }
         catch (Exception ex)
         {
@@ -473,11 +477,12 @@ public class AccessManagementClient : IAccessManagementClient
         {
             return Problem.Reportee_Orgno_NotFound;
         }
-        
-        if( systemUserId == Guid.Empty)
+
+        if (systemUserId == Guid.Empty)
         {
             return Problem.SystemUserNotFound;
-        };
+        }
+        ;
 
         string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}";
 
@@ -489,11 +494,11 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 return await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
             }
-        
+
             return Problem.UnableToDoDelegationCheck;
 
         }
-        catch (Exception ex) 
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // AccessManagementClient // GetDelegationsForAgent // Exception");
             throw;
@@ -541,14 +546,14 @@ public class AccessManagementClient : IAccessManagementClient
             }
             else
             {
-                if(isDeleteAgent)
+                if (isDeleteAgent)
                 {
                     problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
                 }
                 else
                 {
                     problemInstance = ProblemInstance.Create(Problem.CustomerDelegation_FailedToRevoke, problemExtensionData);
-                }                
+                }
             }
 
             return new Result<bool>(problemInstance);
@@ -578,7 +583,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
 
         string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
-        
+
         if (packages != null && packages.Count > 0)
         {
             foreach (var package in packages)
@@ -597,7 +602,7 @@ public class AccessManagementClient : IAccessManagementClient
             }
             else
             {
-                if(response.StatusCode == HttpStatusCode.Unauthorized)
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
                     return new Result<List<ClientDto>>(problemInstance);
@@ -627,6 +632,77 @@ public class AccessManagementClient : IAccessManagementClient
             _logger.LogError(ex, "Authentication // AccessManagementClient // GetClientsForFacilitator // Exception");
             throw;
 
+        }
+    }
+
+    public async Task<Result<List<AccessPackage>>> GetDelegatedAccessPackages(SystemUser systemUser, Guid partyUuid, CancellationToken cancellationToken = default)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        string endpointUrl = $"internal/connections/accesspackages?party={partyUuid}&to{systemUser.Id}";
+        List<AccessPackage> result = [];
+
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var msg = await response.Content.ReadFromJsonAsync<PaginatedAccessPackages>(_serializerOptions, cancellationToken);
+                if (msg is not null)
+                {
+                    AddPackages(msg);
+
+                    string? nextLink = msg.Links;
+                    int circuitBreaker = 0;
+
+                    while(nextLink is not null)
+                    {
+                        circuitBreaker++;
+                        nextLink = await GetNextPage(msg.Links, token);
+                        if (circuitBreaker > 10) { break; }
+                    }
+                }                
+
+                return result;
+            }
+
+            return Problem.SystemUser_FailedToGetAccessPackages;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetDelegatedAccessPackages // Exception");
+            throw;
+        }
+
+        void AddPackages(PaginatedAccessPackages page)
+        {
+            if (page is not null && page.Items.Count > 0)
+            {
+                foreach (var item in page.Items)
+                {
+                    result.Add(new AccessPackage() { Urn = item.Package.Urn });
+                }
+            }
+        }
+
+        async Task<string?> GetNextPage (string url, string token) 
+        {
+            HttpResponseMessage next = await _client.GetAsync(token, url);
+            if (next.IsSuccessStatusCode)
+            {
+                var nextMsg = await next.Content.ReadFromJsonAsync<PaginatedAccessPackages>(_serializerOptions, cancellationToken);
+                if (nextMsg is not null)
+                {
+                    AddPackages(nextMsg);
+
+                    if (nextMsg.Links is not null)
+                    {
+                        return nextMsg.Links;
+                    }
+                }                               
+            }
+
+            return null;
         }
     }
 }
