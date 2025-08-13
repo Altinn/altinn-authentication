@@ -70,6 +70,7 @@ public class ChangeRequestSystemUserService(
         // Similar as to running the Verify endpoint, but we need to check here too, since the vendor might not have verified the request first.
         if (verified.Value.Status == ChangeRequestStatus.NoChangeNeeded.ToString())
         {
+            // Short circuit the logic and return a response with four empty sets
             return verified.Value;
         }
 
@@ -93,8 +94,10 @@ public class ChangeRequestSystemUserService(
             PartyOrgNo = createRequest.PartyOrgNo,
             RequiredRights = createRequest.RequiredRights,
             UnwantedRights = createRequest.UnwantedRights,
+            RequiredAccessPackages = createRequest.RequiredAccessPackages,
+            UnwantedAccessPackages = createRequest.UnwantedAccessPackages,
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createRequest.RedirectUrl
+            RedirectUrl = createRequest.RedirectUrl           
         };
 
         Result<bool> res = await changeRequestRepository.CreateChangeRequest(created);
@@ -567,17 +570,29 @@ public class ChangeRequestSystemUserService(
         {
             return valSet.Problem;
         }
-        
+
+        ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
+
         Result<List<Right>> verifiedRequiredRights = await VerifySingleRightsWithPDP(verifyRequest.RequiredRights, valSet.Value.SystemUser, true);
         if (verifiedRequiredRights.IsProblem)
         {
             return verifiedRequiredRights.Problem;
         }
 
+        if (verifiedRequiredRights.Value.Count > 0)
+        { 
+            changeRequestStatus = ChangeRequestStatus.New;
+        }
+
         Result<List<Right>> verifiedUnwantedRights = await VerifySingleRightsWithPDP(verifyRequest.UnwantedRights, valSet.Value.SystemUser, false);
         if (verifiedUnwantedRights.IsProblem)
         {
             return verifiedUnwantedRights.Problem;
+        }
+
+        if (verifiedUnwantedRights.Value.Count > 0)
+        {
+            changeRequestStatus = ChangeRequestStatus.New;
         }
 
         Party party = await partiesClient.GetPartyByOrgNo(valSet.Value.SystemUser.ReporteeOrgNo);
@@ -594,10 +609,20 @@ public class ChangeRequestSystemUserService(
             return verifiedRequiredAccessPackages.Problem;
         }
 
+        if (verifiedRequiredAccessPackages.Value.Count > 0)
+        {
+            changeRequestStatus = ChangeRequestStatus.New;
+        }
+
         Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(verifyRequest.UnwantedAccessPackages, partyUuid, valSet.Value.SystemUser, false);
         if (verifiedUnwantedAccessPackages.IsProblem)
         {
             return verifiedUnwantedAccessPackages.Problem;
+        }
+
+        if (verifiedUnwantedAccessPackages.Value.Count > 0)
+        {
+            changeRequestStatus = ChangeRequestStatus.New;
         }
 
         return new ChangeRequestResponse()
@@ -611,7 +636,7 @@ public class ChangeRequestSystemUserService(
             UnwantedRights = verifiedUnwantedRights.Value,
             RequiredAccessPackages = verifiedRequiredAccessPackages.Value,
             UnwantedAccessPackages = verifiedUnwantedAccessPackages.Value,
-            Status = ChangeRequestStatus.New.ToString(),
+            Status = changeRequestStatus.ToString(),
             RedirectUrl = verifyRequest.RedirectUrl
         };
     }

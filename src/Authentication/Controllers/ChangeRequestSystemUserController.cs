@@ -127,7 +127,7 @@ public class ChangeRequestSystemUserController : ControllerBase
             SystemId = createRequest.SystemId,
         };
 
-        // Check to see if both the Required and Unwanted Rights are empty
+        // Check to see if all four Required and Unwanted Rights and AccessPackages are empty
         var emptyResponse = EmptySetsReturnEmptyResponse(createRequest);
         if (emptyResponse is not null)
         {
