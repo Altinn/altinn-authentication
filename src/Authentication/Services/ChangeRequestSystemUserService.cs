@@ -950,6 +950,8 @@ public class ChangeRequestSystemUserService(
                 PartyUuid = partyUuid,
                 RequiredRights = req.RequiredRights,
                 UnwantedRights = req.UnwantedRights,
+                RequiredAccessPackages = req.RequiredAccessPackages,
+                UnwantedAccessPackages = req.UnwantedAccessPackages,
                 Status = req.Status,
                 ConfirmUrl = req.ConfirmUrl,
                 Created = req.Created,
