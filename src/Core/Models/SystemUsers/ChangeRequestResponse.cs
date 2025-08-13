@@ -77,17 +77,17 @@ public class ChangeRequestResponse()
     /// An empty list is allowed.
     /// </summary>
     [Required]
-    [JsonPropertyName("requiredAccessPackagages")]
+    [JsonPropertyName("requiredAccessPackages")]
     public List<AccessPackage> RequiredAccessPackages { get; set; } = [];
 
     /// <summary>
-    /// The set of AccessPackages to be ensured are not delegeted to this system user. 
+    /// The set of AccessPackages to be ensured are not delegated to this system user. 
     /// If currently delegated, they will be revoked.
     /// If already not delegated, no change is needed; idempotent.
     /// An empty list is allowed.
     /// </summary>
     [Required]
-    [JsonPropertyName("unwantedAccessPackagages")]
+    [JsonPropertyName("unwantedAccessPackages")]
     public List<AccessPackage> UnwantedAccessPackages { get; set; } = [];
 
 

@@ -217,7 +217,6 @@ public class AccessManagementClient : IAccessManagementClient
         {
             return Problem.Rights_FailedToRevoke;
         }
-        ;
 
         return true;
     }
@@ -482,7 +481,6 @@ public class AccessManagementClient : IAccessManagementClient
         {
             return Problem.SystemUserNotFound;
         }
-        ;
 
         string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}";
 
@@ -638,7 +636,7 @@ public class AccessManagementClient : IAccessManagementClient
     public async Task<Result<List<AccessPackage>>> GetDelegatedAccessPackages(SystemUser systemUser, Guid partyUuid, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        string endpointUrl = $"internal/connections/accesspackages?party={partyUuid}&to{systemUser.Id}";
+        string endpointUrl = $"internal/connections/accesspackages?party={partyUuid}&to={systemUser.Id}";
         List<AccessPackage> result = [];
 
         try

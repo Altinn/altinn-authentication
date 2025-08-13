@@ -619,7 +619,7 @@ public class ChangeRequestSystemUserService(
     /// <summary>
     /// Find the currently delegated AccessPackages to a SystemUser
     /// </summary>
-    /// <param name="accessPackages">AccessPacke</param>
+    /// <param name="accessPackages">AccessPackeges</param>
     /// <param name="partyUuid">The Uuid for the reportee owning the Systemuser</param>
     /// <param name="systemUser">The SystemUser</param>
     /// <param name="required">Whether all should be required, or all are unwanted</param>
