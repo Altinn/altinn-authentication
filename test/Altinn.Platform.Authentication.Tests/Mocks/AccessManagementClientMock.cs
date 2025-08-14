@@ -329,4 +329,19 @@ public class AccessManagementClientMock: IAccessManagementClient
         string content = File.ReadAllText(dataFileName);
         return Task.FromResult((List<AccessPackageDto.Check>)JsonSerializer.Deserialize(content, typeof(List<AccessPackageDto.Check>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
+
+    Task<Result<bool>> IAccessManagementClient.PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<Result<bool>> IAccessManagementClient.AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<Result<bool>> IAccessManagementClient.DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
 }

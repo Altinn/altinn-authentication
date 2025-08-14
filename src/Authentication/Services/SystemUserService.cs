@@ -335,6 +335,13 @@ namespace Altinn.Platform.Authentication.Services
                 return delegationSucceeded.Problem;
             }
 
+            Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(party.PartyUuid.HasValue ? party.PartyUuid.Value : Guid.Empty, inserted, regSystem.AccessPackages, cancellationToken);
+            if (delegationSucceeded.IsProblem)
+            {
+                await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                return delegationSucceeded.Problem;
+            }
+
             return inserted;
         }
 
@@ -459,6 +466,38 @@ namespace Altinn.Platform.Authentication.Services
                 await _repository.SetDeleteSystemUserById(systemUserId);
                 return true;
             }
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUser systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken)
+        {
+            // Push system user to Access Management
+            Result<bool> partyCreated = await _accessManagementClient.PushSystemUserToAM(partyUuId, systemUser, cancellationToken);
+
+            if (partyCreated.IsProblem)
+            {
+                return partyCreated.Problem;
+            }
+
+            // Add the system user as right holder
+            Result<bool> result = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuId, Guid.Parse(systemUser.Id), cancellationToken);
+            if (result.IsProblem)
+            {
+                return result.Problem;
+            }
+
+            // 2. Delegate the access packages to the system user
+            foreach (AccessPackage accessPackage in accessPackages)
+            {
+                Result<bool> delegationResult = await _accessManagementClient.DelegateSingleAccessPackageToSystemUser(partyUuId, Guid.Parse(systemUser.Id), accessPackage.Urn, cancellationToken);
+
+                if (delegationResult.IsProblem)
+                {
+                    return new Result<bool>(result.Problem!);
+                }
+            }
+
+            return true;
         }
 
         /// <inheritdoc/>

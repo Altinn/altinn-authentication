@@ -102,4 +102,32 @@ public interface IAccessManagementClient
     /// <param name="requestedPackages">list of accesspackages to be delegated</param>
     /// <returns></returns>
     Task<List<AccessPackageDto.Check>?> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages);
+
+    /// <summary>
+    /// Pushes a System User to the Access Management
+    /// </summary>
+    /// <param name="partyUuId">the identifier of the aprty</param>
+    /// <param name="systemUser">the system user id</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns>true if the system user is pushed successfully to access management</returns>
+    Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds a System User as a Right Holder for the Party
+    /// </summary>
+    /// <param name="partyUuId">the identifier of the party</param>
+    /// <param name="systemUserId">the system user id</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Delegates access packages to a system user on behalf of a party
+    /// </summary>
+    /// <param name="partyUuId">the identifier of the party</param>
+    /// <param name="systemUserId">the system user id</param>
+    /// <param name="urn">the urn of access package to be delegated</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>true if the delegations are successful</returns>
+    Task<Result<bool>> DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken);
 }
