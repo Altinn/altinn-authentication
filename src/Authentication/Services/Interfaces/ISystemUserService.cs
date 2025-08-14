@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -172,4 +173,14 @@ public interface ISystemUserService
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of Clients</returns>
     Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Delegate access packages to a system user.
+    /// </summary>
+    /// <param name="partyUuId">the identifier of the party</param>
+    /// <param name="systemUser">the system user</param>
+    /// <param name="accessPackages">the list of accesspackages to be delegated</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns>true if the delegations are successful</returns>
+    Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUser systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken);
 }
