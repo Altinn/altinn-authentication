@@ -94,4 +94,12 @@ public interface IAccessManagementClient
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="packages">Access package URNs</param>
     Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verifies if the user has th necessary rights to delegate the requested access packages
+    /// </summary>
+    /// <param name="partyId">the party id of the delegator</param>
+    /// <param name="requestedPackages">list of accesspackages to be delegated</param>
+    /// <returns></returns>
+    Task<List<AccessPackageDto.Check>?> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages);
 }

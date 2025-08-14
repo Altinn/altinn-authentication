@@ -313,4 +313,20 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         return await Task.FromResult(clients);
     }
+
+    public Task<List<AccessPackageDto.Check>?> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages)
+    {
+        string dataFileName;
+        if (partyId == "500004")
+        {
+            dataFileName = "Data/Delegation/DelegationAccessPackageResponse_NotDelegable.json";
+        }
+        else
+        {
+            dataFileName = "Data/Delegation/DelegationAccessPackageResponse.json";
+        }
+
+        string content = File.ReadAllText(dataFileName);
+        return Task.FromResult((List<AccessPackageDto.Check>)JsonSerializer.Deserialize(content, typeof(List<AccessPackageDto.Check>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
+    }
 }

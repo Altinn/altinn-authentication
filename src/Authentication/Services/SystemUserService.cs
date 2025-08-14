@@ -11,6 +11,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -287,6 +288,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+            AccessPackageDelegationCheckResult accessPackageDelegationCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(int.Parse(partyId), regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
             if (delegationCheckFinalResult.RightResponses is null)
             {
                 // This represents some problem with doing the delegation check beyond the rights not being delegable.
@@ -297,6 +299,12 @@ namespace Altinn.Platform.Authentication.Services
             {
                 // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
                 return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+            }
+
+            if (!accessPackageDelegationCheckResult.CanDelegate)
+            {
+                // This represents that the access packages are not delegable, but the AccessPackageDelegationCheck method call has been completed.
+                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult.errors);
             }
 
             SystemUser newSystemUser = new()

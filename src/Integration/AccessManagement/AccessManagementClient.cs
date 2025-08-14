@@ -145,7 +145,65 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
+    public async Task<List<AccessPackageDto.Check>?> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages)
+    {
+        try
+        {
+            string endpointUrl = $"enduser/connections/accesspackages/delegationcheck?party={partyId}";
+            if (requestedPackages is not null && requestedPackages.Length > 0)
+            {
+                endpointUrl += $"&packages={string.Join(",", requestedPackages)}";
+            }
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+            response.EnsureSuccessStatusCode();
+            return JsonSerializer.Deserialize<List<AccessPackageDto.Check>>(await response.Content.ReadAsStringAsync(), _serializerOptions);
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> responseData)
+    {
+        foreach (RightResponses rightResponse in responseData)
+        {
+            Result<RightsDelegationResponseExternal> result = await DelegateSingleRightToSystemUser(partyId, systemUser, rightResponse);
+
+            if (result.IsProblem)
+            {
+                return new Result<bool>(result.Problem!);
+            }
+
+            bool allDelegated = result.Value.RightDelegationResults.All(r => r.Status == DelegationStatusExternal.Delegated);
+            if (!allDelegated)
+            {
+                var notDelegatedDetails = result.Value.RightDelegationResults
+                    .Where(r => r.Status != DelegationStatusExternal.Delegated)
+                    .Select(r => r.Details)
+                    .ToList();
+
+                var problemDetails = new ProblemDetails
+                {
+                    Title = "Some rights were not delegated",
+                    Detail = "Not all rights were successfully delegated.",
+                    Extensions = { { "Details", notDelegatedDetails } }
+                };
+
+                _logger.LogError("Authentication.UI // AccessManagementClient // DelegateRightToSystemUser // Problem: {Problem}", problemDetails.Detail);
+                throw new DelegationException(problemDetails);
+            }
+        }
+
+        return new Result<bool>(true);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> DelegateAccessPackageToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> responseData)
     {
         foreach (RightResponses rightResponse in responseData)
         {
