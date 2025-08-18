@@ -282,4 +282,9 @@ public static class Problem
     public static ProblemDescriptor AgentSystemUser_FailedToGetClients { get; }
         = _factory.Create(45, HttpStatusCode.BadRequest, "Failed to get clients");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToGetAccessPackages { get; }
+        = _factory.Create(46, HttpStatusCode.BadRequest, "Failed to get list of accesspackages delegated");
 }

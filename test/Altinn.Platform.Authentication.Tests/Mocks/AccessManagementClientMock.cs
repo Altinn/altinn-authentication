@@ -313,4 +313,10 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         return await Task.FromResult(clients);
     }
+
+    public async Task<Result<List<AccessPackage>>> GetDelegatedAccessPackages(SystemUser systemUser, Guid partyUuid, CancellationToken cancellationToken = default)
+    {
+        List<AccessPackage> empty = [];
+        return empty;
+    }
 }
