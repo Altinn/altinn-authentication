@@ -277,13 +277,13 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.Reportee_Orgno_NotFound;
             }
 
-            Guid partyUuid = party.PartyUuid.HasValue ? party.PartyUuid.Value : Guid.Empty;
             if (!party.PartyUuid.HasValue)
             {
-                return Problem.PartyUuid_NotFound;
+                return Problem.Party_PartyUuid_NotFound;
             }
 
             Guid partyUuid = party.PartyUuid.Value;
+
             ExternalRequestId externalRequestId = new()
             {
                 OrgNo = party.OrgNumber,
