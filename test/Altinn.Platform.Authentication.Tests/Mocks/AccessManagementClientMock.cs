@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -15,6 +16,7 @@ using Altinn.Authentication.Integration.Configuration;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -284,11 +286,11 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
         {
-            return Problem.AgentSystemUser_FailedToGetClients_Forbidden;
+            return Task.FromResult<Result<List<ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
         }
 
         JsonSerializerOptions options = new JsonSerializerOptions
@@ -297,9 +299,9 @@ public class AccessManagementClientMock: IAccessManagementClient
         };
 
         string clientData = File.OpenText("Data/Customers/customerlist.json").ReadToEnd();
-        List<ClientDto>? clients = JsonSerializer.Deserialize<List<ClientDto>>(clientData, options);
+        List<ClientDto> clients = JsonSerializer.Deserialize<List<ClientDto>>(clientData, options)!;
 
-        if (packages != null && packages.Count > 0 && clients != null)
+        if (packages != null && packages.Count > 0)
         {
             var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
             clients = clients
@@ -311,37 +313,44 @@ public class AccessManagementClientMock: IAccessManagementClient
                 .ToList();
         }
 
-        return await Task.FromResult(clients);
+        return Task.FromResult<Result<List<ClientDto>>>(clients);
     }
 
-    public Task<List<AccessPackageDto.Check>?> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages)
+    public async IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         string dataFileName;
         if (partyId == "500004")
         {
-            dataFileName = "Data/Delegation/DelegationAccessPackageResponse_NotDelegable.json";
+            dataFileName = "Data/Delegation/CheckDelegationAccessPackageResponse_NotDelegable.json";
         }
         else
         {
-            dataFileName = "Data/Delegation/DelegationAccessPackageResponse.json";
+            dataFileName = "Data/Delegation/CheckDelegationAccessPackageResponse.json";
         }
 
         string content = File.ReadAllText(dataFileName);
-        return Task.FromResult((List<AccessPackageDto.Check>)JsonSerializer.Deserialize(content, typeof(List<AccessPackageDto.Check>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
+        PaginatedInput<AccessPackageDto.Check> paginatedAccessPackages = JsonSerializer.Deserialize<PaginatedInput<AccessPackageDto.Check>>(content, _serializerOptions)!;
+
+        //List<AccessPackageDto.Check> accessPackages = JsonSerializer.Deserialize<List<AccessPackageDto.Check>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        foreach (AccessPackageDto.Check accessPackageCheck in paginatedAccessPackages.Items)
+        {
+            yield return accessPackageCheck;
+        }
     }
 
-    Task<Result<bool>> IAccessManagementClient.PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken)
+    public async Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return true;
     }
 
-    Task<Result<bool>> IAccessManagementClient.AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return true;
     }
 
-    Task<Result<bool>> IAccessManagementClient.DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
+    public async Task<Result<bool>> DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return true;
     }
 }

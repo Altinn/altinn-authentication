@@ -261,6 +261,9 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
+            DelegationCheckResult delegationCheckFinalResult = null;
+            AccessPackageDelegationCheckResult accessPackageDelegationCheckResult = null;
+
             RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
             {
@@ -287,9 +290,17 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_AlreadyExists;
             }
 
-            DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
-            AccessPackageDelegationCheckResult accessPackageDelegationCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(int.Parse(partyId), regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
-            if (delegationCheckFinalResult.RightResponses is null)
+            if (regSystem.Rights is not null && regSystem.Rights.Count > 0)
+            {
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+            }
+
+            if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0)
+            {
+                accessPackageDelegationCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(int.Parse(partyId), regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
+            }
+                
+            if (delegationCheckFinalResult?.RightResponses is null)
             {
                 // This represents some problem with doing the delegation check beyond the rights not being delegable.
                 return Problem.UnableToDoDelegationCheck;
@@ -301,10 +312,10 @@ namespace Altinn.Platform.Authentication.Services
                 return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
             }
 
-            if (!accessPackageDelegationCheckResult.CanDelegate)
+            if (accessPackageDelegationCheckResult is not null && !accessPackageDelegationCheckResult.CanDelegate)
             {
                 // This represents that the access packages are not delegable, but the AccessPackageDelegationCheck method call has been completed.
-                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult.errors);
+                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult?.errors);
             }
 
             SystemUser newSystemUser = new()
@@ -328,18 +339,24 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToCreate;
             }
 
-            Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses);
-            if (delegationSucceeded.IsProblem)
+            if (regSystem.Rights is not null && regSystem.Rights.Count > 0)
             {
-                await _repository.SetDeleteSystemUserById((Guid)insertedId);
-                return delegationSucceeded.Problem;
+                Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses);
+                if (delegationSucceeded.IsProblem)
+                {
+                    await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                    return delegationSucceeded.Problem;
+                }
             }
 
-            Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(party.PartyUuid.HasValue ? party.PartyUuid.Value : Guid.Empty, inserted, regSystem.AccessPackages, cancellationToken);
-            if (delegationSucceeded.IsProblem)
+            if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0)
             {
-                await _repository.SetDeleteSystemUserById((Guid)insertedId);
-                return delegationSucceeded.Problem;
+                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(party.PartyUuid.HasValue ? party.PartyUuid.Value : Guid.Empty, inserted, regSystem.AccessPackages, cancellationToken);
+                if (accessPackageDelegationSucceeded.IsProblem)
+                {
+                    await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                    return accessPackageDelegationSucceeded.Problem;
+                }
             }
 
             return inserted;

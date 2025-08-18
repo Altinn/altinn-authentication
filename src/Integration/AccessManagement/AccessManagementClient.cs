@@ -7,6 +7,7 @@ using Altinn.Platform.Authentication.Core.Exceptions;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -27,6 +28,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -146,26 +148,43 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<List<AccessPackageDto.Check>?> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages)
+    public async IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        try
+        string? endpointUrl = $"enduser/connections/accesspackages/delegationcheck?party={partyId}";
+        if (requestedPackages is not null && requestedPackages.Length > 0)
         {
-            string endpointUrl = $"enduser/connections/accesspackages/delegationcheck?party={partyId}";
-            if (requestedPackages is not null && requestedPackages.Length > 0)
+            endpointUrl += $"&packages={string.Join(",", requestedPackages)}";
+        }
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        PaginatedInput<AccessPackageDto.Check>? paginatedAccessPackages;
+        do
+        {
+            try
             {
-                endpointUrl += $"&packages={string.Join(",", requestedPackages)}";
+                using HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
+                response.EnsureSuccessStatusCode();
+                paginatedAccessPackages = await response.Content.ReadFromJsonAsync<PaginatedInput<AccessPackageDto.Check>>(_serializerOptions, cancellationToken);
             }
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
-            response.EnsureSuccessStatusCode();
-            return JsonSerializer.Deserialize<List<AccessPackageDto.Check>>(await response.Content.ReadAsStringAsync(), _serializerOptions);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
+                throw;
+            }
 
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
-            throw;
-        }
+            if (paginatedAccessPackages is null)
+            {
+
+               _logger.LogError("Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage");
+                throw new InvalidOperationException("Received null response from Access Management for delegation check.");
+            }
+            foreach (AccessPackageDto.Check accessPackageCheck in paginatedAccessPackages.Items)
+            {
+                yield return accessPackageCheck;
+            }
+            
+            endpointUrl = paginatedAccessPackages.Links.Next;
+
+        } while (endpointUrl is not null);
     }
 
     /// <inheritdoc />

@@ -212,12 +212,8 @@ public class DelegationHelper(
                         .Where(pkg => !string.IsNullOrEmpty(pkg.Urn))
                         .Select(pkg => pkg.Urn!)
                         .ToArray();
-        List<AccessPackageDto.Check>? delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId.ToString(), urns);
-        if (delegationCheckResults is null)
-        {
-            return new AccessPackageDelegationCheckResult(false, null, null);
-        }
-
+        List<AccessPackageDto.Check> delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId.ToString(), urns).ToListAsync();
+       
         // 3. Process results
         bool canDelegate = delegationCheckResults.All(r => r.Result);
 
