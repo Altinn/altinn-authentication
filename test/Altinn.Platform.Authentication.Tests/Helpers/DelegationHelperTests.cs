@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -173,13 +174,13 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             };
 
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+                .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
                 .Returns(checkResult.ToAsyncEnumerable());
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.ValidateDelegationRightsForAccessPackages(1, "sys", requested, false, CancellationToken.None);
+            var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
             Assert.True(result.CanDelegate);
@@ -204,7 +205,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.ValidateDelegationRightsForAccessPackages(1, "sys", requested, false, CancellationToken.None);
+            var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
             Assert.False(result.CanDelegate);
@@ -232,13 +233,13 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
         };
 
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+                .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
                 .Returns(checkResult.ToAsyncEnumerable());
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.ValidateDelegationRightsForAccessPackages(1, "sys", requested, false, CancellationToken.None);
+            var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
             Assert.False(result.CanDelegate);
@@ -261,13 +262,13 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .ReturnsAsync(systemPackages);
 
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+                .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
                 .Returns(AsyncEnumerable.Empty<AccessPackageDto.Check>());
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.ValidateDelegationRightsForAccessPackages(1, "sys", requested, false, CancellationToken.None);
+            var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
             Assert.True(result.CanDelegate);
@@ -289,13 +290,13 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .ReturnsAsync(systemPackages);
 
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+                .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
                 .Returns(AsyncEnumerable.Empty<AccessPackageDto.Check>());
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.ValidateDelegationRightsForAccessPackages(1, "sys", requested, false, CancellationToken.None);
+            var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
             Assert.True(result.CanDelegate);

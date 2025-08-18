@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -187,7 +188,7 @@ public class DelegationHelper(
     /// <param name="fromBff">if the check is for the user driver or vendor driven system user creation</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
-    public async Task<AccessPackageDelegationCheckResult> ValidateDelegationRightsForAccessPackages(int partyId, string systemId, List<AccessPackage> accessPackages, bool fromBff, CancellationToken cancellationToken)
+    public async Task<AccessPackageDelegationCheckResult> ValidateDelegationRightsForAccessPackages(Guid partyId, string systemId, List<AccessPackage> accessPackages, bool fromBff, CancellationToken cancellationToken)
     {
         // 1. Verify that the access packages are valid for the system
         (bool allVerified, List<AccessPackage> validAccessPackages, List<AccessPackage> invalidAccessPackages) = await ValidateRequestedAccessPackages(accessPackages, systemId, fromBff, cancellationToken);
@@ -212,7 +213,7 @@ public class DelegationHelper(
                         .Where(pkg => !string.IsNullOrEmpty(pkg.Urn))
                         .Select(pkg => pkg.Urn!)
                         .ToArray();
-        List<AccessPackageDto.Check> delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId.ToString(), urns, cancellationToken).ToListAsync(cancellationToken);
+        List<AccessPackageDto.Check> delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken).ToListAsync(cancellationToken);
        
         // 3. Process results
         bool canDelegate = delegationCheckResults.All(r => r.Result);
