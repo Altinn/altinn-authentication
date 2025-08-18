@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
@@ -175,7 +176,9 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             accessManagementClient
                 .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
-                .Returns(checkResult.ToAsyncEnumerable());
+                .Returns(checkResult
+                    .Select(c => new Result<AccessPackageDto.Check>(c)) // Use constructor
+                    .ToAsyncEnumerable());
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
@@ -228,13 +231,15 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .ReturnsAsync(systemPackages);
 
             var checkResult = new List<AccessPackageDto.Check>
-        {
-            new() { Package = new(), Result = false, Reasons = new List<AccessPackageDto.Check.Reason> { new() { Description = "Not allowed" } } }
-        };
+            {
+                new() { Package = new(), Result = false, Reasons = new List<AccessPackageDto.Check.Reason> { new() { Description = "Not allowed" } } }
+            };
 
             accessManagementClient
                 .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
-                .Returns(checkResult.ToAsyncEnumerable());
+                .Returns(checkResult
+                .Select(c => new Result<AccessPackageDto.Check>(c)) // Use constructor
+                .ToAsyncEnumerable());
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
@@ -263,7 +268,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             accessManagementClient
                 .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
-                .Returns(AsyncEnumerable.Empty<AccessPackageDto.Check>());
+                .Returns(AsyncEnumerable.Empty<Result<AccessPackageDto.Check>>());
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
@@ -291,7 +296,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             accessManagementClient
                 .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
-                .Returns(AsyncEnumerable.Empty<AccessPackageDto.Check>());
+                .Returns(AsyncEnumerable.Empty<Result<AccessPackageDto.Check>>());
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 

@@ -213,8 +213,18 @@ public class DelegationHelper(
                         .Where(pkg => !string.IsNullOrEmpty(pkg.Urn))
                         .Select(pkg => pkg.Urn!)
                         .ToArray();
-        List<AccessPackageDto.Check> delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken).ToListAsync(cancellationToken);
-       
+
+        // List<AccessPackageDto.Check> delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken).ToListAsync(cancellationToken);
+        // New code (extracts Check from Result<Check>)
+        var resultList = await accessManagementClient
+            .CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken)
+            .ToListAsync(cancellationToken);
+
+        List<AccessPackageDto.Check> delegationCheckResults = resultList
+            .Where(r => r.IsSuccess && r.Value is not null)
+            .Select(r => r.Value!)
+            .ToList();
+
         // 3. Process results
         bool canDelegate = delegationCheckResults.All(r => r.Result);
 

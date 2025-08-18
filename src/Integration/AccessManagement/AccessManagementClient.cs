@@ -148,22 +148,37 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<Result<AccessPackageDto.Check>> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         string? endpointUrl = $"enduser/connections/accesspackages/delegationcheck?party={partyId}";
         if (requestedPackages is not null && requestedPackages.Length > 0)
         {
-            endpointUrl += $"&packages={string.Join(",", requestedPackages)}";
+            foreach (var package in requestedPackages)
+            {
+                endpointUrl += $"&packages={HttpUtility.UrlEncode(package)}";
+            }
         }
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        PaginatedInput<AccessPackageDto.Check>? paginatedAccessPackages;
+        PaginatedInput<AccessPackageDto.Check>? paginatedAccessPackages = null;
+        ProblemInstance? problemInstance = null;
         do
         {
             try
             {
                 using HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
-                response.EnsureSuccessStatusCode();
-                paginatedAccessPackages = await response.Content.ReadFromJsonAsync<PaginatedInput<AccessPackageDto.Check>>(_serializerOptions, cancellationToken);
+                
+                if(response.StatusCode == HttpStatusCode.OK)
+                {
+                    paginatedAccessPackages = await response.Content.ReadFromJsonAsync<PaginatedInput<AccessPackageDto.Check>>(_serializerOptions, cancellationToken);
+                }
+                else
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                    _logger.LogError($"Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage // Title: {problemDetails.Title}, HttpStatusCode : {response.StatusCode},Problem: {problemDetails.Detail}");
+                    problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);                    
+                }
+                
             }
             catch (Exception ex)
             {
@@ -171,9 +186,14 @@ public class AccessManagementClient : IAccessManagementClient
                 throw;
             }
 
+            if(problemInstance is not null)
+            {                
+                yield return new Result<AccessPackageDto.Check>(problemInstance);
+                yield break;
+            }
+
             if (paginatedAccessPackages is null)
             {
-
                _logger.LogError("Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage");
                 throw new InvalidOperationException("Received null response from Access Management for delegation check.");
             }
