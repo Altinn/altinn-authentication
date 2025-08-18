@@ -148,7 +148,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         string? endpointUrl = $"enduser/connections/accesspackages/delegationcheck?party={partyId}";
         if (requestedPackages is not null && requestedPackages.Length > 0)

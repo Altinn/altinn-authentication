@@ -102,7 +102,7 @@ public interface IAccessManagementClient
     /// <param name="partyId">the party id of the delegator</param>
     /// <param name="requestedPackages">list of accesspackages to be delegated</param>
     /// <returns></returns>
-    IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Pushes a System User to the Access Management

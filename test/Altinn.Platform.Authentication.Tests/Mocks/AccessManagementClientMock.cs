@@ -316,10 +316,10 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult<Result<List<ClientDto>>>(clients);
     }
 
-    public async IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(string partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<AccessPackageDto.Check> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         string dataFileName;
-        if (partyId == "500004")
+        if (partyId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))
         {
             dataFileName = "Data/Delegation/CheckDelegationAccessPackageResponse_NotDelegable.json";
         }

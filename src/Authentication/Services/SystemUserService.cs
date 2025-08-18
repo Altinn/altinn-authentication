@@ -277,6 +277,8 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.Reportee_Orgno_NotFound;
             }
 
+            Guid partyUuid = party.PartyUuid.HasValue ? party.PartyUuid.Value : Guid.Empty;
+
             ExternalRequestId externalRequestId = new()
             {
                 OrgNo = party.OrgNumber,
@@ -297,7 +299,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0)
             {
-                accessPackageDelegationCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(int.Parse(partyId), regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
+                accessPackageDelegationCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
             }
                 
             if (delegationCheckFinalResult?.RightResponses is null)
@@ -351,7 +353,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0)
             {
-                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(party.PartyUuid.HasValue ? party.PartyUuid.Value : Guid.Empty, inserted, regSystem.AccessPackages, cancellationToken);
+                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, regSystem.AccessPackages, cancellationToken);
                 if (accessPackageDelegationSucceeded.IsProblem)
                 {
                     await _repository.SetDeleteSystemUserById((Guid)insertedId);
