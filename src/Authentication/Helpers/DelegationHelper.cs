@@ -212,7 +212,7 @@ public class DelegationHelper(
                         .Where(pkg => !string.IsNullOrEmpty(pkg.Urn))
                         .Select(pkg => pkg.Urn!)
                         .ToArray();
-        List<AccessPackageDto.Check> delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId.ToString(), urns).ToListAsync();
+        List<AccessPackageDto.Check> delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId.ToString(), urns, cancellationToken).ToListAsync(cancellationToken);
        
         // 3. Process results
         bool canDelegate = delegationCheckResults.All(r => r.Result);
@@ -330,7 +330,7 @@ public class DelegationHelper(
         return (allVerified, verifiedRights);
     }
 
-    private async Task<(bool AllVerified, List<AccessPackage> ValidAccessPackages, List<AccessPackage> invalidAccessPackages)> ValidateRequestedAccessPackages(List<AccessPackage> requestedAccessPackages, string systemId, bool fromBff, CancellationToken cancellationToken)
+    private async Task<(bool AllVerified, List<AccessPackage> ValidAccessPackages, List<AccessPackage> InvalidAccessPackages)> ValidateRequestedAccessPackages(List<AccessPackage> requestedAccessPackages, string systemId, bool fromBff, CancellationToken cancellationToken)
     {
         List<AccessPackage> validAccessPackages = [];
         List<AccessPackage> invalidAccessPackages = [];

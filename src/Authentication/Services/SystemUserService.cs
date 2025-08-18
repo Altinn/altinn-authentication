@@ -261,8 +261,8 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
-            DelegationCheckResult delegationCheckFinalResult = null;
-            AccessPackageDelegationCheckResult accessPackageDelegationCheckResult = null;
+            DelegationCheckResult? delegationCheckFinalResult = null;
+            AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult = null;
 
             RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
@@ -315,7 +315,7 @@ namespace Altinn.Platform.Authentication.Services
             if (accessPackageDelegationCheckResult is not null && !accessPackageDelegationCheckResult.CanDelegate)
             {
                 // This represents that the access packages are not delegable, but the AccessPackageDelegationCheck method call has been completed.
-                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult?.errors);
+                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult.errors);
             }
 
             SystemUser newSystemUser = new()
@@ -506,7 +506,7 @@ namespace Altinn.Platform.Authentication.Services
             // 2. Delegate the access packages to the system user
             foreach (AccessPackage accessPackage in accessPackages)
             {
-                Result<bool> delegationResult = await _accessManagementClient.DelegateSingleAccessPackageToSystemUser(partyUuId, Guid.Parse(systemUser.Id), accessPackage.Urn, cancellationToken);
+                Result<bool> delegationResult = await _accessManagementClient.DelegateSingleAccessPackageToSystemUser(partyUuId, Guid.Parse(systemUser.Id), accessPackage.Urn!, cancellationToken);
 
                 if (delegationResult.IsProblem)
                 {
@@ -522,7 +522,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.MockCustomerApi))
             {
-                var res = await _partiesClient.GetPartyCustomers(facilitator, packages.FirstOrDefault(), cancellationToken);
+                var res = await _partiesClient.GetPartyCustomers(facilitator, packages.FirstOrDefault()!, cancellationToken);
                 if (res.IsSuccess)
                 {
                     return ConvertPartyCustomerToClient(res.Value);
