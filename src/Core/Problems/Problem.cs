@@ -293,4 +293,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemUser_FailedToPushSystemUser { get; }
         = _factory.Create(2, HttpStatusCode.BadRequest, "Unable to push system user information to access management");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Party_PartyUuid_NotFound { get; }
+        = _factory.Create(46, HttpStatusCode.NotFound, "The party is missing it's uuid.");
 }
