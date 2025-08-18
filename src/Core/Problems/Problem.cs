@@ -282,4 +282,15 @@ public static class Problem
     public static ProblemDescriptor AgentSystemUser_FailedToGetClients { get; }
         = _factory.Create(45, HttpStatusCode.BadRequest, "Failed to get clients");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToAddAsRightHolder { get; }
+        = _factory.Create(2, HttpStatusCode.BadRequest, "Unable to add system user as right holder to the organisation");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToPushSystemUser { get; }
+        = _factory.Create(2, HttpStatusCode.BadRequest, "Unable to push system user information to access management");
 }

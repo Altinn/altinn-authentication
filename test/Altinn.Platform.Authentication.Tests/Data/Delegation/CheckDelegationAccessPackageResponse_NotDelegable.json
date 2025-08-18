@@ -1,0 +1,30 @@
+{
+  "links": {
+    "next": null
+  },
+  "data": [   
+    {
+      "package": {
+        "id": "c0eb20c1-2268-48f5-88c5-f26cb47a6b1f",
+        "urn": "urn:altinn:accesspackage:eksplisitt",
+        "areaId": "3f5df819-7aca-49e1-bf6f-3e8f120f20d1"
+      },
+      "result": false,
+      "reasons": [
+        {
+          "description": "NoAccess",
+          "roleId": null,
+          "roleUrn": null,
+          "fromId": null,
+          "fromName": null,
+          "toId": null,
+          "toName": null,
+          "viaId": null,
+          "viaName": null,
+          "viaRoleId": null,
+          "viaRoleUrn": null
+        }
+      ]
+    }
+  ]
+}

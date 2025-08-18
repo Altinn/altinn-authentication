@@ -125,7 +125,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Checks if the resourceids are found in resource register
+        /// Checks if the acesspackages are found in altinn
         /// </summary>
         /// <param name="accessPackages">access packages</param>
         /// <param name="cancellationToken">the cancellation token</param>
