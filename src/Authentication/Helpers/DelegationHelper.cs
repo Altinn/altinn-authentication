@@ -181,7 +181,7 @@ public class DelegationHelper(
     /// <summary>
     /// Validates delegation rights for a list of access packages for a party
     /// </summary>
-    /// <param name="partyId">the id of the party that deelgates access</param>
+    /// <param name="partyId">the id of the party that delegates access</param>
     /// <param name="systemId">the id of the system that the vendor requests access for</param>
     /// <param name="accessPackages">list of accesspackages to be delegated</param>
     /// <param name="fromBff">if the check is for the user driver or vendor driven system user creation</param>
@@ -194,7 +194,7 @@ public class DelegationHelper(
 
         if (!allVerified)
         {
-            var errors = validAccessPackages.Select(pkg => new DetailExternal
+            var errors = invalidAccessPackages.Select(pkg => new DetailExternal
             {
                 Code = DetailCodeExternal.Unknown,
                 Description = "Unknown Access Package",
@@ -356,7 +356,7 @@ public class DelegationHelper(
 
         if (invalidAccessPackages.Count > 0)
         {
-            return (false, invalidAccessPackages, invalidAccessPackages);
+            return (false, validAccessPackages, invalidAccessPackages);
         }
 
         return (true, validAccessPackages, invalidAccessPackages);

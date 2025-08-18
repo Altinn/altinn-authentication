@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers
 {
+    [ExcludeFromCodeCoverage]
     public class PartyBaseDto
     {
         /// <summary>
@@ -14,7 +16,7 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers
         public Guid PartyUuid { get; set; }
 
         /// <summary>
-        /// Gets or sets the type of the PArty Uuid.
+        /// Gets or sets the type of the Party Uuid.
         /// </summary>
         public required string EntityType { get; set; }
 

@@ -510,7 +510,7 @@ namespace Altinn.Platform.Authentication.Services
 
                 if (delegationResult.IsProblem)
                 {
-                    return new Result<bool>(result.Problem!);
+                    return new Result<bool>(delegationResult.Problem!);
                 }
             }
 

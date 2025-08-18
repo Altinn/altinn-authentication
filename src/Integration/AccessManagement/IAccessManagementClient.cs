@@ -97,7 +97,7 @@ public interface IAccessManagementClient
     Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Verifies if the user has th necessary rights to delegate the requested access packages
+    /// Verifies if the user has the necessary rights to delegate the requested access packages
     /// </summary>
     /// <param name="partyId">the party id of the delegator</param>
     /// <param name="requestedPackages">list of accesspackages to be delegated</param>
@@ -107,7 +107,7 @@ public interface IAccessManagementClient
     /// <summary>
     /// Pushes a System User to the Access Management
     /// </summary>
-    /// <param name="partyUuId">the identifier of the aprty</param>
+    /// <param name="partyUuId">the identifier of the party</param>
     /// <param name="systemUser">the system user id</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>true if the system user is pushed successfully to access management</returns>

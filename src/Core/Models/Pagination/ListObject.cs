@@ -1,10 +1,12 @@
 ﻿#nullable enable
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.Pagination;
 
+[ExcludeFromCodeCoverage]
 /// <summary>
 /// A list object is a wrapper around a list of items to allow for the API to be
 /// extended in the future without breaking backwards compatibility.

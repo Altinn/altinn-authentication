@@ -1,8 +1,10 @@
 ﻿#nullable enable
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Core.Models.Pagination;
 
+[ExcludeFromCodeCoverage]
 /// <summary>
 /// A paginated <see cref="ListObject{T}"/>.
 /// </summary>
