@@ -414,18 +414,26 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
+        // Check Single Rights
         DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
         if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
+        // Check AccessPackages
+
+        // Approve and Delegate Single Rights
         var changed = await changeRequestRepository.ApproveAndDelegateOnSystemUser(requestId, toBeChanged, userId, cancellationToken);
 
         if (!changed)
         {
             return Problem.SystemUser_FailedToCreate;
         }
+
+        // Approve and Delegate AccessPackages
+
+        // Revoke AccessPackages
 
         Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
         if (delegationSucceeded.IsProblem)
