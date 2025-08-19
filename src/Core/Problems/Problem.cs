@@ -286,17 +286,29 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor SystemUser_FailedToAddAsRightHolder { get; }
-        = _factory.Create(2, HttpStatusCode.BadRequest, "Unable to add system user as right holder to the organisation");
+        = _factory.Create(46, HttpStatusCode.BadRequest, "Unable to add system user as right holder to the organisation");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor SystemUser_FailedToPushSystemUser { get; }
-        = _factory.Create(2, HttpStatusCode.BadRequest, "Unable to push system user information to access management");
+        = _factory.Create(47, HttpStatusCode.BadRequest, "Unable to push system user information to access management");
 
     /// <summary>
     /// gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor Party_PartyUuid_NotFound { get; }
-        = _factory.Create(46, HttpStatusCode.NotFound, "The party is missing it's uuid.");
+        = _factory.Create(48, HttpStatusCode.BadRequest, "The party is missing its uuid.");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_DelegationCheckFailed { get; }
+        = _factory.Create(49, HttpStatusCode.BadRequest, "The delegation check failed for access packages");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_DelegationFailed { get; }
+        = _factory.Create(50, HttpStatusCode.BadRequest, "The delegation of access package to the system user failed");
 }
