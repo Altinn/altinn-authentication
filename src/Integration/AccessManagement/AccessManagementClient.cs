@@ -2,6 +2,7 @@ using Altinn.AccessManagement.Core.Helpers;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authentication.Integration.Configuration;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Common.AccessTokenClient.Services;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Exceptions;
 using Altinn.Platform.Authentication.Core.Extensions;
@@ -52,6 +53,7 @@ public class AccessManagementClient : IAccessManagementClient
     private readonly JsonSerializerOptions _serializerOptions =
         new() { PropertyNameCaseInsensitive = true };
     private readonly IWebHostEnvironment _env;
+    private readonly IAccessTokenGenerator _accessTokenGenerator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LookupClient"/> class
@@ -66,7 +68,8 @@ public class AccessManagementClient : IAccessManagementClient
         IHttpContextAccessor httpContextAccessor,
         IOptions<AccessManagementSettings> accessManagementSettings,
         IOptions<PlatformSettings> platformSettings,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        IAccessTokenGenerator accessTokenGenerator)
     {
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
@@ -76,6 +79,7 @@ public class AccessManagementClient : IAccessManagementClient
         _client = httpClient;
         _serializerOptions.Converters.Add(new JsonStringEnumConverter());
         _env = env;
+        _accessTokenGenerator = accessTokenGenerator;
     }
 
     /// <inheritdoc/>
@@ -221,9 +225,10 @@ public class AccessManagementClient : IAccessManagementClient
             };
             string endpointUrl = $"internal/party";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
             string content = JsonSerializer.Serialize(partyBaseDto, _serializerOptions);
             StringContent requestBody = new(content, Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody);
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody, accessToken);
             return await HandleDelegationResponse(response, "PushSystemUserToAM");
         }
         catch (Exception ex)
