@@ -22,6 +22,7 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
@@ -43,13 +44,15 @@ namespace Altinn.Platform.Authentication.Services
         IAccessManagementClient accessManagementClient,
         DelegationHelper delegationHelper,
         IPartiesClient partiesClient,
-        IOptions<PaginationOptions> paginationOption) : ISystemUserService
+        IOptions<PaginationOptions> paginationOption,
+        ILogger<SystemUserService> logger) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
         private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
         private readonly ISystemRegisterService systemRegisterService = systemRegisterService;
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
         private readonly IPartiesClient _partiesClient = partiesClient;
+        private readonly ILogger<SystemUserService> _logger = logger;   
 
         /// <summary>
         /// Used to limit the number of items returned in a paginated list
@@ -267,6 +270,7 @@ namespace Altinn.Platform.Authentication.Services
             RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
             {
+                _logger.LogError(Problem.SystemIdNotFound.Detail, request.SystemId);
                 return Problem.SystemIdNotFound;
             }
 
@@ -274,11 +278,13 @@ namespace Altinn.Platform.Authentication.Services
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
+                _logger.LogError(Problem.Reportee_Orgno_NotFound.Detail, partyId);
                 return Problem.Reportee_Orgno_NotFound;
             }
 
             if (!party.PartyUuid.HasValue)
             {
+                _logger.LogError(Problem.Party_PartyUuid_NotFound.Detail, partyId);
                 return Problem.Party_PartyUuid_NotFound;
             }
 
@@ -316,11 +322,15 @@ namespace Altinn.Platform.Authentication.Services
 
             if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0)
             {
-                accessPackageDelegationCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
-                if (accessPackageDelegationCheckResult is not null && !accessPackageDelegationCheckResult.CanDelegate)
+                var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
+                if (accessPackageCheckResult.IsProblem)
                 {
-                    // This represents that the access packages are not delegable, but the AccessPackageDelegationCheck method call has been completed.
-                    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult.errors);
+                    _logger.LogError(accessPackageCheckResult.Problem.Detail);
+                    return accessPackageCheckResult.Problem;
+                }
+                else
+                {
+                    accessPackageDelegationCheckResult = accessPackageCheckResult.Value;
                 }
             }
 

@@ -186,10 +186,9 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
-            Assert.True(result.CanDelegate);
-            Assert.NotNull(result.accessPackages);
-            Assert.Single(result.accessPackages);
-            Assert.Empty(result.errors);
+            Assert.True(result.Value.CanDelegate);
+            Assert.NotNull(result.Value.accessPackages);
+            Assert.Single(result.Value.accessPackages);
         }
 
         [Fact]
@@ -211,10 +210,9 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
-            Assert.False(result.CanDelegate);
-            Assert.Null(result.accessPackages);
-            Assert.NotEmpty(result.errors);
-            Assert.Contains(result.errors, e => e.Description.Contains("Unknown Access Package"));
+            Assert.True(result.IsProblem);
+            Assert.Equal(Problem.AccessPackage_ValidationFailed.Detail, result.Problem.Detail);      
+            Assert.Equal("AccessPackage { Urn = urn:invalid }", result.Problem.Extensions.GetValueOrDefault("Invalid Urn Details : "));
         }
 
         [Fact]
@@ -247,10 +245,8 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
-            Assert.False(result.CanDelegate);
-            Assert.NotNull(result.accessPackages);
-            Assert.NotEmpty(result.errors);
-            Assert.Contains(result.errors, e => e.Description.Contains("Delegation not allowed"));
+            Assert.True(result.IsProblem);
+            Assert.Equal(Problem.AccessPackage_Delegation_MissingRequiredAccess.Detail, result.Problem.Detail);
         }
 
         [Fact]
@@ -276,9 +272,8 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
-            Assert.True(result.CanDelegate);
-            Assert.Empty(result.accessPackages);
-            Assert.Empty(result.errors);
+            Assert.True(result.Value.CanDelegate);
+            Assert.Empty(result.Value.accessPackages);
         }
 
         [Fact]
@@ -304,9 +299,8 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
-            Assert.True(result.CanDelegate);
-            Assert.All(result.accessPackages, p => Assert.Null(p.Urn));
-            Assert.Empty(result.errors);
+            Assert.True(result.Value.CanDelegate);
+            Assert.All(result.Value.accessPackages, p => Assert.Null(p.Urn));
         }
 
         [Fact]

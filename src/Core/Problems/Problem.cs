@@ -311,4 +311,16 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor AccessPackage_DelegationFailed { get; }
         = _factory.Create(50, HttpStatusCode.BadRequest, "The delegation of access package to the system user failed");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_ValidationFailed { get; }
+        = _factory.Create(51, HttpStatusCode.BadRequest, "One or more access packages are invalid");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_Delegation_MissingRequiredAccess { get; }
+        = _factory.Create(52, HttpStatusCode.BadRequest, "The user does not have enough access to delegate the requested access packages");
 }
