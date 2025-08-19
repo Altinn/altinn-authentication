@@ -305,4 +305,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor AccessPackage_DelegationCheckFailed { get; }
         = _factory.Create(49, HttpStatusCode.BadRequest, "The delegation check failed for access packages");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_DelegationFailed { get; }
+        = _factory.Create(50, HttpStatusCode.BadRequest, "The delegation of access package to the system user failed");
 }

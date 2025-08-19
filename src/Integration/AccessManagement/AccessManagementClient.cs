@@ -303,9 +303,9 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError($"Authentication.UI // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+                _logger.LogError($"Authentication.UI // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Title: {problemDetails.Title}, HttpStatusCode: {response.StatusCode} ,Problem: {problemDetails.Detail}");
 
-                ProblemInstance problemInstance = ProblemInstance.Create(Problem.Rights_FailedToDelegate);
+                ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationFailed);
                 return new Result<bool>(problemInstance);
             }
         }
