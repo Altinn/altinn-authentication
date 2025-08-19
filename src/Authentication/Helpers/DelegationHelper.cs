@@ -188,7 +188,7 @@ public class DelegationHelper(
     /// <param name="fromBff">if the check is for the user driver or vendor driven system user creation</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
-    public async Task<AccessPackageDelegationCheckResult> ValidateDelegationRightsForAccessPackages(Guid partyId, string systemId, List<AccessPackage> accessPackages, bool fromBff, CancellationToken cancellationToken)
+    public async Task<Result<AccessPackageDelegationCheckResult>> ValidateDelegationRightsForAccessPackages(Guid partyId, string systemId, List<AccessPackage> accessPackages, bool fromBff, CancellationToken cancellationToken)
     {
         // 1. Verify that the access packages are valid for the system
         (bool allVerified, List<AccessPackage> validAccessPackages, List<AccessPackage> invalidAccessPackages) = await ValidateRequestedAccessPackages(accessPackages, systemId, fromBff, cancellationToken);
@@ -205,7 +205,12 @@ public class DelegationHelper(
             }
             }).ToList();
 
-            return new AccessPackageDelegationCheckResult(false, null, errors);
+            var problemExtensionData = ProblemExtensionData.Create(new[]
+            {
+                new KeyValuePair<string, string>("Invalid Urn Details : ", string.Join(" | ", invalidAccessPackages))
+            });
+            ProblemInstance problemInstance = Problem.AccessPackage_ValidationFailed.Create(problemExtensionData);
+            return new Result<AccessPackageDelegationCheckResult>(problemInstance);
         }
 
         // 2. Check if access packages are delegable
@@ -218,6 +223,20 @@ public class DelegationHelper(
             .CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken)
             .ToListAsync(cancellationToken);
 
+        // Check for any problems before further processing
+        foreach (var result in resultList)
+        {
+            if (result.IsProblem)
+            {
+                var problemExtensionData = ProblemExtensionData.Create(new[]
+                {
+                    new KeyValuePair<string, string>("Problem Detail : ", result.Problem.Detail)
+                });
+                ProblemInstance problemInstance = Problem.AccessPackage_DelegationCheckFailed.Create(problemExtensionData);
+                return new Result<AccessPackageDelegationCheckResult>(problemInstance);
+            }
+        }
+
         List<AccessPackageDto.Check> delegationCheckResults = resultList
             .Where(r => r.IsSuccess && r.Value is not null)
             .Select(r => r.Value!)
@@ -229,27 +248,11 @@ public class DelegationHelper(
         if (canDelegate)
         {
             // Success on delegation check
-            return new AccessPackageDelegationCheckResult(true, validAccessPackages, []);
+            return new AccessPackageDelegationCheckResult(true, validAccessPackages);
         }
         else
         {
-            var errors = delegationCheckResults
-                .Where(r => !r.Result)
-                .Select(r => new DetailExternal
-                {
-                    Code = DetailCodeExternal.Unknown,
-                    Description = $"Delegation not allowed for access package: {r.Package?.Urn ?? "unknown"}"
-                        + (r.Reasons != null && r.Reasons.Any()
-                            ? $" - Reason: {string.Join("; ", r.Reasons.Select(reason => reason.Description))}"
-                            : string.Empty),
-                    Parameters = new Dictionary<string, List<AttributePair>>
-                    {
-                        { "Urn", new List<AttributePair> { new AttributePair { Id = "Urn", Value = r.Package?.Urn ?? string.Empty } } }
-                    }
-                })
-                .ToList();
-
-            return new AccessPackageDelegationCheckResult(false, validAccessPackages, errors);
+            return new Result<AccessPackageDelegationCheckResult>(Problem.AccessPackage_Delegation_MissingRequiredAccess);
         }
     }
 

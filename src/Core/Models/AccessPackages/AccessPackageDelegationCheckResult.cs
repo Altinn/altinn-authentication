@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
 {
-    public record AccessPackageDelegationCheckResult(bool CanDelegate, List<AccessPackage>? accessPackages, List<DetailExternal>? errors);
+    public record AccessPackageDelegationCheckResult(bool CanDelegate, List<AccessPackage>? accessPackages);
 }

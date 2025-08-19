@@ -22,6 +22,7 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
@@ -316,11 +317,14 @@ namespace Altinn.Platform.Authentication.Services
 
             if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0)
             {
-                accessPackageDelegationCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
-                if (accessPackageDelegationCheckResult is not null && !accessPackageDelegationCheckResult.CanDelegate)
+                var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
+                if (accessPackageCheckResult.IsProblem)
                 {
-                    // This represents that the access packages are not delegable, but the AccessPackageDelegationCheck method call has been completed.
-                    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult.errors);
+                    return accessPackageCheckResult.Problem;
+                }
+                else
+                {
+                    accessPackageDelegationCheckResult = accessPackageCheckResult.Value;
                 }
             }
 
