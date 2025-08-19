@@ -300,29 +300,28 @@ namespace Altinn.Platform.Authentication.Services
             if (regSystem.Rights is not null && regSystem.Rights.Count > 0)
             {
                 delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+
+                if (delegationCheckFinalResult?.RightResponses is null)
+                {
+                    // This represents some problem with doing the delegation check beyond the rights not being delegable.
+                    return Problem.UnableToDoDelegationCheck;
+                }
+
+                if (!delegationCheckFinalResult.CanDelegate)
+                {
+                    // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
+                    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+                }
             }
 
             if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0)
             {
                 accessPackageDelegationCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
-            }
-                
-            if (delegationCheckFinalResult?.RightResponses is null)
-            {
-                // This represents some problem with doing the delegation check beyond the rights not being delegable.
-                return Problem.UnableToDoDelegationCheck;
-            }
-
-            if (!delegationCheckFinalResult.CanDelegate)
-            {
-                // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
-            }
-
-            if (accessPackageDelegationCheckResult is not null && !accessPackageDelegationCheckResult.CanDelegate)
-            {
-                // This represents that the access packages are not delegable, but the AccessPackageDelegationCheck method call has been completed.
-                return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult.errors);
+                if (accessPackageDelegationCheckResult is not null && !accessPackageDelegationCheckResult.CanDelegate)
+                {
+                    // This represents that the access packages are not delegable, but the AccessPackageDelegationCheck method call has been completed.
+                    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(accessPackageDelegationCheckResult.errors);
+                }
             }
 
             SystemUser newSystemUser = new()
