@@ -44,15 +44,13 @@ namespace Altinn.Platform.Authentication.Services
         IAccessManagementClient accessManagementClient,
         DelegationHelper delegationHelper,
         IPartiesClient partiesClient,
-        IOptions<PaginationOptions> paginationOption,
-        ILogger<SystemUserService> logger) : ISystemUserService
+        IOptions<PaginationOptions> paginationOption) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
         private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
         private readonly ISystemRegisterService systemRegisterService = systemRegisterService;
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
         private readonly IPartiesClient _partiesClient = partiesClient;
-        private readonly ILogger<SystemUserService> _logger = logger;   
 
         /// <summary>
         /// Used to limit the number of items returned in a paginated list
@@ -270,7 +268,6 @@ namespace Altinn.Platform.Authentication.Services
             RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
             {
-                _logger.LogError(Problem.SystemIdNotFound.Detail, request.SystemId);
                 return Problem.SystemIdNotFound;
             }
 
@@ -278,13 +275,11 @@ namespace Altinn.Platform.Authentication.Services
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
-                _logger.LogError(Problem.Reportee_Orgno_NotFound.Detail, partyId);
                 return Problem.Reportee_Orgno_NotFound;
             }
 
             if (!party.PartyUuid.HasValue)
             {
-                _logger.LogError(Problem.Party_PartyUuid_NotFound.Detail, partyId);
                 return Problem.Party_PartyUuid_NotFound;
             }
 
@@ -325,7 +320,6 @@ namespace Altinn.Platform.Authentication.Services
                 var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, regSystem.AccessPackages, true, cancellationToken);
                 if (accessPackageCheckResult.IsProblem)
                 {
-                    _logger.LogError(accessPackageCheckResult.Problem.Detail);
                     return accessPackageCheckResult.Problem;
                 }
                 else
