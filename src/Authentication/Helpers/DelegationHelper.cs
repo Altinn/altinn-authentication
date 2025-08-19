@@ -214,8 +214,6 @@ public class DelegationHelper(
                         .Select(pkg => pkg.Urn!)
                         .ToArray();
 
-        // List<AccessPackageDto.Check> delegationCheckResults = await accessManagementClient.CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken).ToListAsync(cancellationToken);
-        // New code (extracts Check from Result<Check>)
         var resultList = await accessManagementClient
             .CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken)
             .ToListAsync(cancellationToken);

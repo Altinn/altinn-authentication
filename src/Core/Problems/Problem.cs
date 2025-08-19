@@ -298,7 +298,7 @@ public static class Problem
     /// gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor Party_PartyUuid_NotFound { get; }
-        = _factory.Create(48, HttpStatusCode.BadRequest, "The party is missing it's uuid.");
+        = _factory.Create(48, HttpStatusCode.BadRequest, "The party is missing its uuid.");
 
     /// <summary>
     /// gets a <see cref="ProblemDescriptor"/>.
