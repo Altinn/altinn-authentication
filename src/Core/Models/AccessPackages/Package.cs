@@ -56,4 +56,25 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         /// </summary>
         public string Urn { get; set; }
     }
+
+    /// <summary>
+    /// Compact Package Model
+    /// </summary>
+    public class CompactPackage
+    {
+        /// <summary>
+        /// Id
+        /// </summary>
+        public Guid Id { get; set; }
+
+        /// <summary>
+        /// Urn
+        /// </summary>
+        public string Urn { get; set; }
+
+        /// <summary>
+        /// AreaId
+        /// </summary>
+        public Guid AreaId { get; set; }
+    }
 }

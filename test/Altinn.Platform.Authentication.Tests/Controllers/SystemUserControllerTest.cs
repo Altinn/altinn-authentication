@@ -579,6 +579,48 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemUser_Delete_Returns_Problem()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister2RightsAndAP.json";
+            _ = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+            int partyId = 500000;
+
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix",
+            };
+
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            {
+                Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
+            };
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
+            SystemUser? shouldBeCreated = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
+            Assert.NotNull(shouldBeCreated);
+
+            HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpResponseMessage lookupSystemUserResponse = await client.SendAsync(looukpSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+            SystemUser? systemUserDoesExist = await lookupSystemUserResponse.Content.ReadFromJsonAsync<SystemUser>();
+
+            Assert.Equal(HttpStatusCode.OK, lookupSystemUserResponse.StatusCode);
+            Assert.NotNull(systemUserDoesExist);
+            Assert.Equal(shouldBeCreated.Id, systemUserDoesExist.Id);
+
+            HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
+            HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.BadRequest, response2.StatusCode);
+            var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await response2.Content.ReadAsStringAsync(), _options);
+            Assert.Equal(Problem.SystemUser_FailedToRemoveRightHolder.Detail, problemDetails?.Detail);
+        }
+
+        [Fact]
         public async Task SystemUser_Delete_ReturnsNotFound()
         {
             // Create System used for test

@@ -21,7 +21,7 @@
       "BusinessPostalCity": null
     },
     "PartyId": 500000,
-    "PartyUuid": "00000000-0000-0000-0005-000000000000",
+    "PartyUuid": "ade3fa95-f941-4537-b924-1efc7d853c77",
     "UnitType": "AS",
     "Name": "LEPSØY OG TONSTAD",
     "IsDeleted": false,
@@ -51,7 +51,7 @@
       "BusinessPostalCity": null
     },
     "PartyId": 500004,
-    "PartyUuid": "00000000-0000-0000-0005-000000000000",
+    "PartyUuid": "2c022f99-b975-48fb-8c74-9c1ef579b515",
     "UnitType": "AS",
     "Name": "TEST AS",
     "IsDeleted": false,
@@ -81,7 +81,7 @@
       "BusinessPostalCity": null
     },
     "PartyId": 500005,
-    "PartyUuid": "00000000-0000-0000-0005-000000000000",
+    "PartyUuid": "c48fc8fc-3695-40d5-90d1-fd12cb51075b",
     "UnitType": "AS",
     "Name": "TEST ORG AS",
     "IsDeleted": false,

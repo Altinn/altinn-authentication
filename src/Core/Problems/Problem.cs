@@ -323,4 +323,22 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor AccessPackage_Delegation_MissingRequiredAccess { get; }
         = _factory.Create(52, HttpStatusCode.BadRequest, "The user does not have enough access to delegate the requested access packages");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToRemoveRightHolder { get; }
+        = _factory.Create(53, HttpStatusCode.BadRequest, "Unable to remove system user as right holder from the organisation");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_FailedToGetDelegatedPackages { get; }
+        = _factory.Create(54, HttpStatusCode.BadRequest, "Unable to get delegated access packages");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToDelete { get; }
+        = _factory.Create(55, HttpStatusCode.BadRequest, "Failed to delete system user");
 }

@@ -358,4 +358,52 @@ public class AccessManagementClientMock: IAccessManagementClient
     {
         return true;
     }
+
+    public async Task<Result<bool>> RemoveSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, bool cascade, CancellationToken cancellationToken)
+    {
+        if (partyUuId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))
+        {
+            return false;
+        }
+        else if (partyUuId == new Guid("ade3fa95-f941-4537-b924-1efc7d853c77"))
+        {
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToRemoveRightHolder);
+            return new Result<bool>(problemInstance);
+        }
+        else
+        {
+            return true;
+        }            
+    }
+
+    public async Task<Result<bool>> DeleteSingleAccessPackageFromSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
+    {
+        return true;
+    }
+
+    public async IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+    {
+        string dataFileName = string.Empty;
+        if (partyUuId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))
+        {
+            dataFileName = "Data/Delegation/AccessPackagesForSystemUser.json";
+        }
+        else if (partyUuId == new Guid("7a851ad6-3255-4c9b-a727-0b449797eb09"))
+        {
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);
+            yield return new Result<PackagePermission>(problemInstance);
+        }
+        else
+        {
+            dataFileName = "Data/Delegation/AccessPackagesForSystemUser.json";
+        }
+
+        string content = File.ReadAllText(dataFileName);
+        PaginatedInput<PackagePermission> paginatedAccessPackagesForSystemUser = JsonSerializer.Deserialize<PaginatedInput<PackagePermission>>(content, _serializerOptions)!;
+
+        foreach (PackagePermission packagePermission in paginatedAccessPackagesForSystemUser.Items)
+        {
+            yield return packagePermission;
+        }
+    }
 }
