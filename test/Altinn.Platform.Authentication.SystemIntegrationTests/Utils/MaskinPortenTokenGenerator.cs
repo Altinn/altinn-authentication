@@ -135,9 +135,9 @@ public class MaskinPortenTokenGenerator
 
         Assert.True(iss != null, "iss is null somehow, check it");
 
-        const string scope = 
+        const string scope =
             // "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read altinn:authentication/systemregister.admin " +
-                             "altinn:consentrequests.read altinn:consentrequests.write";
+            "altinn:consentrequests.read altinn:consentrequests.write";
 
         // Set the current time and expiration time for the token
         var now = DateTimeOffset.UtcNow;
@@ -196,7 +196,7 @@ public class MaskinPortenTokenGenerator
         return Task.FromResult(tokenHandler.WriteToken(token));
     }
 
-    public Task<string> GenerateJwtForConsent(string? requestId, string? pid)
+    public Task<string> GenerateJwtForConsent(string? requestId, string? from)
     {
         var audience = string.IsNullOrEmpty(EnvHelper.MaskinportenEnvironment)
             ? "https://test.maskinporten.no/token"
@@ -244,8 +244,7 @@ public class MaskinPortenTokenGenerator
 
         var authorizationDetail = new JwtPayload
         {
-            
-            { "from", $"urn:altinn:person:identifier-no:{pid}" },
+            { "from", from },
             { "type", "urn:altinn:consent" },
             { "id", requestId } // RequestId for samtykke
         };
@@ -331,14 +330,13 @@ public class MaskinPortenTokenGenerator
                throw new Exception("Unable to get access token from response.");
     }
 
-    public async Task<string> GetMaskinportenConsentToken(string requestId, string pid)
+    public async Task<string> GetMaskinportenConsentToken(string requestId, string from)
     {
-        var jwt = await GenerateJwtForConsent(requestId, pid);
+        var jwt = await GenerateJwtForConsent(requestId, from);
         var maskinportenTokenResponse = await RequestToken(jwt);
         var jsonDoc = JsonDocument.Parse(maskinportenTokenResponse);
         var root = jsonDoc.RootElement;
 
-        return root.GetProperty("access_token").GetString() ??
-               throw new Exception("Unable to get access token from response.");
+        return root.GetProperty("access_token").GetString() ?? throw new Exception("Unable to get access token from response.");
     }
 }

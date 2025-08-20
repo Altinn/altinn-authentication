@@ -43,7 +43,10 @@ public class GetMaskinportenTokenTest
     [Fact]
     public async Task GetConsentToken()
     {
-        var maskinportenToken = await _platformAuthenticationClient.GetConsentToken("2de477fa-72a7-4f25-a409-08a60ba6c23b", "17866298211");
+        var pid = "04855195742";
+        var from = $"urn:altinn:person:identifier-no:{pid}";
+        
+        var maskinportenToken = await _platformAuthenticationClient.GetConsentToken("1542da16-dda8-47ff-8eda-16954d1d1a62", from);
         Assert.NotNull(maskinportenToken);
     }
 }

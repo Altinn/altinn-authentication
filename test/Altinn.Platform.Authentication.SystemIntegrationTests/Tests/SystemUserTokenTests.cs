@@ -143,15 +143,43 @@ public class SystemUserTokenTests : TestFixture
         Assert.NotNull(responseContent);
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
     }
+    
+    [SkipUnlessTt02Fact]
+    public async Task Consent_Demo_Testmoete_Expired()
+    {
+        var from = "urn:altinn:person:identifier-no:17866298211";
+        
+        var maskinportenToken = await _platformClient.GetConsentToken("cdb9e6d1-4a01-4aec-b17d-7da21277618f", from);
+        
+        _outputHelper.WriteLine(maskinportenToken);
+        Assert.NotNull(maskinportenToken);
+    }
+    
+    [SkipUnlessTt02Fact]
+    public async Task Consent_Demo_Testmoete()
+    {
+        // To: 312605031 (Maskinportenklient org, som skal lese data, leverandør)
+        var from = "urn:altinn:person:identifier-no:17866298211";
+        
+        var maskinportenToken = await _platformClient.GetConsentToken("ecaf59cc-5460-4c69-8ad0-616a054d29d4", from);
+        
+        _outputHelper.WriteLine(maskinportenToken);
+        Assert.NotNull(maskinportenToken);
+    }
+
 
 
     [SkipUnlessTt02Fact]
     public async Task SystemuserGetToken_Consent()
     {
-        //Id hvor org som henter samtykketokenet er requiredBy:55e29374-5e9d-44cf-b0f7-edbaba65c3e4
-        // Id hvor det ikke er noen requiredBy: 3aea5fb9-88d6-4108-9ff4-c20e2771af20 // 
+       // var from = "urn:altinn:person:identifier-no:17866298211";
+
+       var from = "urn:altinn:organization:identifier-no:214246732";
+        // This works, but should expire 13.08.2025 - 16:30: https://am.ui.tt02.altinn.no/accessmanagement/ui/consent/request?id=cdb9e6d1-4a01-4aec-b17d-7da21277618f
+        var maskinportenToken = await _platformClient.GetConsentToken("cdb9e6d1-4a01-4aec-b17d-7da21277618f", from);
         
-        var maskinportenToken = await _platformClient.GetConsentToken("cdb9e6d1-4a01-4aec-b17d-7da21277618f", "17866298211");
+        // var maskinportenToken = await _platformClient.GetConsentToken("1542da16-dda8-47ff-8eda-16954d1d1a62", "03848999848");
+        
         _outputHelper.WriteLine(maskinportenToken);
         Assert.NotNull(maskinportenToken);
     }

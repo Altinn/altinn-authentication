@@ -35,12 +35,12 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
     /// - Other packages result in "NotApplicable" if access is not valid for the facilitator's relation
     /// </summary>
     [Theory]
-    // [InlineData("regnskapsforer-lonn", "NotApplicable", "facilitator-regn-og-revisor")]
+    [InlineData("regnskapsforer-lonn", "NotApplicable", "facilitator-regn-og-revisor")]
     [InlineData("ansvarlig-revisor", "Permit", "facilitator-regn-og-revisor")]
-    // [InlineData("forretningsforer-eiendom", "NotApplicable", "facilitator-forretningsfoerer")]
-    // [InlineData("regnskapsforer-med-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
-    // [InlineData("regnskapsforer-uten-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
-    // [InlineData("revisormedarbeider", "NotApplicable", "facilitator-regn-og-revisor")]
+    [InlineData("forretningsforer-eiendom", "NotApplicable", "facilitator-forretningsfoerer")]
+    [InlineData("regnskapsforer-med-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
+    [InlineData("regnskapsforer-uten-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
+    [InlineData("revisormedarbeider", "NotApplicable", "facilitator-regn-og-revisor")]
     public async Task CreateSystemUserClientRequestTest(string accessPackage, string expectedDecision, string testCategory)
     {
         var externalRef = Guid.NewGuid().ToString();
@@ -48,9 +48,7 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 
         await SetupAndApproveSystemUser(facilitator, accessPackage, externalRef);
 
-        var systemUser =
-            await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, facilitator,
-                externalRef);
+        var systemUser = await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, facilitator, externalRef);
 
         List<CustomerListDto> customers = await GetCustomers(facilitator, systemUser?.Id);
 
