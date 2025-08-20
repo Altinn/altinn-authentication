@@ -282,12 +282,7 @@ public class RequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
     {
-        if (rights.Count > 0 && systemInfo.Rights is null)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        if (rights.Count > systemInfo.Rights?.Count)
+        if ((rights.Count > 0 && systemInfo.Rights is null) || (rights.Count > systemInfo.Rights!.Count))
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
