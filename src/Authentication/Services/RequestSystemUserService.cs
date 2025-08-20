@@ -96,6 +96,12 @@ public class RequestSystemUserService(
             }
         }
 
+        // Must have a minimum of either one Right or one Accesspackage for a Standard SystemUser
+        if (createRequest.Rights.Count == 0 && createRequest.AccessPackages.Count == 0)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
         Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
         if (valRights.IsProblem)
         {
@@ -181,6 +187,11 @@ public class RequestSystemUserService(
             }
         }
 
+        if (createAgentRequest.AccessPackages is null || createAgentRequest.AccessPackages.Count == 0)
+        {
+            return Problem.AccessPackage_ValidationFailed;
+        }
+
         Result<bool> valPackages = ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
         if (valPackages.IsProblem)
         {
@@ -229,7 +240,7 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
-        if (accessPackages.Count == 0 || systemInfo.AccessPackages.Count == 0)
+        if (systemInfo.AccessPackages.Count == 0)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
@@ -271,12 +282,12 @@ public class RequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
     {
-        if (rights.Count == 0 || systemInfo.Rights.Count == 0)
+        if (rights.Count > 0 && systemInfo.Rights is null)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
-        if (rights.Count > systemInfo.Rights.Count)
+        if (rights.Count > systemInfo.Rights?.Count)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
