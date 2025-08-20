@@ -365,7 +365,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             return false;
         }
-        else if (partyUuId == new Guid("ade3fa95-f941-4537-b924-1efc7d853c77"))
+        else if (partyUuId == new Guid("c8987f17-a1b5-49f3-8ec5-7b58e2e33f42"))
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToRemoveRightHolder);
             return new Result<bool>(problemInstance);
