@@ -318,27 +318,7 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/connections/accesspackages?party={partyUuId}&from={partyUuId}&to={systemUserId}&package={urn}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
-
-            if (response.IsSuccessStatusCode)
-            {
-                return true;
-            }
-            else
-            {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                string? validationErrors = string.Empty;
-                if (problemDetails.Detail == "One or more validation errors occurred.")
-                {
-                    AltinnValidationProblemDetails validationProblems = JsonSerializer.Deserialize<AltinnValidationProblemDetails>(responseContent, _serializerOptions)!;
-                    validationErrors = JsonSerializer.Serialize(validationProblems, _serializerOptions);
-                }
-                
-                _logger.LogError($"Authentication // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Title: {problemDetails.Title}, HttpStatusCode: {response.StatusCode} ,Problem: {problemDetails.Detail}, ValidationErrors: {validationErrors}");
-
-                ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationFailed);
-                return new Result<bool>(problemInstance);
-            }
+            return await HandleResponse(response, "DelegateSingleAccessPackageToSystemUser");
         }
         catch (Exception ex)
         {
@@ -395,27 +375,7 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/connections/accesspackages?party={partyUuId}&from={partyUuId}&to={systemUserId}&package={urn}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
-
-            if (response.IsSuccessStatusCode)
-            {
-                return true;
-            }
-            else
-            {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                string? validationErrors = string.Empty;
-                if (problemDetails.Detail == "One or more validation errors occurred.")
-                {
-                    AltinnValidationProblemDetails validationProblems = JsonSerializer.Deserialize<AltinnValidationProblemDetails>(responseContent, _serializerOptions)!;
-                    validationErrors = JsonSerializer.Serialize(validationProblems, _serializerOptions);
-                }
-
-                _logger.LogError($"Authentication // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Title: {problemDetails.Title}, HttpStatusCode: {response.StatusCode} ,Problem: {problemDetails.Detail}, ValidationErrors: {validationErrors}");
-
-                ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationFailed);
-                return new Result<bool>(problemInstance);
-            }
+            return await HandleResponse(response, "DeleteSingleAccessPackageFromSystemUser");
         }
         catch (Exception ex)
         {
@@ -664,7 +624,7 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
-            return await HandleErrors(response);    
+            return await HandleDeleteAgentErrors(response);    
         }
         catch (Exception ex)
         {
@@ -682,7 +642,7 @@ public class AccessManagementClient : IAccessManagementClient
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
-            return await HandleErrors(response, true);
+            return await HandleDeleteAgentErrors(response, true);
         }
         catch (Exception ex)
         {
@@ -826,7 +786,7 @@ public class AccessManagementClient : IAccessManagementClient
         return found;
     }
 
-    private async Task<Result<bool>> HandleErrors(HttpResponseMessage response, bool isDeleteAgent = false)
+    private async Task<Result<bool>> HandleDeleteAgentErrors(HttpResponseMessage response, bool isDeleteAgent = false)
     {
         string deleteString = isDeleteAgent ? "DeleteAgentAssignment" : "DeleteDelegation";
         if (response.IsSuccessStatusCode)
@@ -912,6 +872,8 @@ public class AccessManagementClient : IAccessManagementClient
             "RemoveSystemUserAsRightHolder" => Problem.SystemUser_FailedToRemoveRightHolder,
             "PushSystemUserToAM" => Problem.SystemUser_FailedToPushSystemUser,
             "RevokeRightsToSystemUser" => Problem.Rights_FailedToRevoke,
+            "DeleteSingleAccessPackageFromSystemUser" => Problem.SystemUser_FailedToDeleteAccessPackage,
+            "DelegateSingleAccessPackageToSystemUser" => Problem.AccessPackage_DelegationFailed
         };
 
         if (response.IsSuccessStatusCode)
@@ -922,11 +884,20 @@ public class AccessManagementClient : IAccessManagementClient
         {
             string responseContent = await response.Content.ReadAsStringAsync();
             ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-            _logger.LogError($"Authentication // AccessManagementClient // {logContext} // HttpStatusCode: {response.StatusCode} // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+
+            string? validationErrors = string.Empty;
+            if (problemDetails.Detail == "One or more validation errors occurred.")
+            {
+                AltinnValidationProblemDetails validationProblems = JsonSerializer.Deserialize<AltinnValidationProblemDetails>(responseContent, _serializerOptions)!;
+                validationErrors = JsonSerializer.Serialize(validationProblems, _serializerOptions);
+            }
+
+            _logger.LogError($"Authentication // AccessManagementClient // {logContext} // HttpStatusCode: {response.StatusCode} // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}, ValidationErrors: {validationErrors}");
 
             var problemExtensionData = ProblemExtensionData.Create(new[]
             {
-                new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail!)
+                new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail!),
+                new KeyValuePair<string, string>("ValidationErrors: ", validationErrors!)
             });
 
             ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem, problemExtensionData);

@@ -341,4 +341,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemUser_FailedToDelete { get; }
         = _factory.Create(55, HttpStatusCode.BadRequest, "Failed to delete system user");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToDeleteAccessPackage { get; }
+        = _factory.Create(55, HttpStatusCode.BadRequest, "Failed to delete access package delegation for system user");
 }
