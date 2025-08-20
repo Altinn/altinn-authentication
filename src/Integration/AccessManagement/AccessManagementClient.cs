@@ -101,7 +101,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // GetPartyFromReporteeListIfExists // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetPartyFromReporteeListIfExists // Exception");
             throw;
         }
     }
@@ -125,7 +125,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // GetParty // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetParty // Exception");
             throw;
         }
     }
@@ -146,7 +146,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // CheckDelegationAccess // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccess // Exception");
             throw;
         }
     }
@@ -179,14 +179,14 @@ public class AccessManagementClient : IAccessManagementClient
                 {
                     string responseContent = await response.Content.ReadAsStringAsync();
                     ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                    _logger.LogError($"Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage // Title: {problemDetails.Title}, HttpStatusCode : {response.StatusCode},Problem: {problemDetails.Detail}");
+                    _logger.LogError($"Authentication. // AccessManagementClient // CheckDelegationAccessForAccessPackage // Title: {problemDetails.Title}, HttpStatusCode : {response.StatusCode},Problem: {problemDetails.Detail}");
                     problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);                    
                 }
                 
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
+                _logger.LogError(ex, "Authentication// AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
                 throw;
             }
 
@@ -198,7 +198,7 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (paginatedAccessPackages is null)
             {
-               _logger.LogError("Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage");
+               _logger.LogError("Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage");
                 throw new InvalidOperationException("Received null response from Access Management for delegation check.");
             }
             foreach (AccessPackageDto.Check accessPackageCheck in paginatedAccessPackages.Items)
@@ -218,7 +218,7 @@ public class AccessManagementClient : IAccessManagementClient
         {
             PartyBaseDto partyBaseDto = new()
             {
-                PartyUuid = partyUuId,
+                PartyUuid = new Guid(systemUser.Id),
                 DisplayName = systemUser.IntegrationTitle,
                 EntityType = "Systembruker",
                 EntityVariantType = FormatEntityVariantType(systemUser.UserType)
@@ -233,7 +233,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
             throw;
         }
     }
@@ -252,7 +252,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
             throw;
         }
     }
@@ -284,7 +284,7 @@ public class AccessManagementClient : IAccessManagementClient
                     Extensions = { { "Details", notDelegatedDetails } }
                 };
 
-                _logger.LogError("Authentication.UI // AccessManagementClient // DelegateRightToSystemUser // Problem: {Problem}", problemDetails.Detail);
+                _logger.LogError("Authentication // AccessManagementClient // DelegateRightToSystemUser // Problem: {Problem}", problemDetails.Detail);
                 throw new DelegationException(problemDetails);
             }
         }
@@ -296,7 +296,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"internal/connections/accesspackages?party={partyUuId}&to={systemUserId}&package={urn}";
+            string endpointUrl = $"internal/connections/accesspackages?party={partyUuId}&from={partyUuId}&to={systemUserId}&package={urn}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
 
@@ -308,7 +308,14 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError($"Authentication.UI // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Title: {problemDetails.Title}, HttpStatusCode: {response.StatusCode} ,Problem: {problemDetails.Detail}");
+                string? validationErrors = string.Empty;
+                if (problemDetails.Detail == "One or more validation errors occurred.")
+                {
+                    AltinnValidationProblemDetails validationProblems = JsonSerializer.Deserialize<AltinnValidationProblemDetails>(responseContent, _serializerOptions)!;
+                    validationErrors = JsonSerializer.Serialize(validationProblems, _serializerOptions);
+                }
+                
+                _logger.LogError($"Authentication // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Title: {problemDetails.Title}, HttpStatusCode: {response.StatusCode} ,Problem: {problemDetails.Detail}, ValidationErrors: {validationErrors}");
 
                 ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationFailed);
                 return new Result<bool>(problemInstance);
@@ -316,7 +323,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Exception");
             throw;
         }
 
@@ -406,7 +413,7 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError($"Authentication.UI // AccessManagementClient // DelegateSingleRightToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+                _logger.LogError($"Authentication // AccessManagementClient // DelegateSingleRightToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
                 ProblemInstance problemInstance = ProblemInstance.Create(Problem.Rights_FailedToDelegate);
                 return new Result<RightsDelegationResponseExternal>(problemInstance);
@@ -414,7 +421,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // DelegateSingleRightToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateSingleRightToSystemUser // Exception");
             throw;
         }
 
@@ -448,7 +455,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeSingleRightToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeSingleRightToSystemUser // Exception");
             throw;
         }
 
@@ -547,7 +554,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
             throw;
         }
     }
@@ -565,7 +572,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
             throw;
         }
     }
@@ -799,7 +806,7 @@ public class AccessManagementClient : IAccessManagementClient
         {
             string responseContent = await response.Content.ReadAsStringAsync();
             ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-            _logger.LogError($"Authentication.UI // AccessManagementClient // {logContext} // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+            _logger.LogError($"Authentication // AccessManagementClient // {logContext} // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
             ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem);
             return new Result<bool>(problemInstance);
