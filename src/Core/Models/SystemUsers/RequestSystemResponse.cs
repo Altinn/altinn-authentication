@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -43,11 +44,19 @@ public class RequestSystemResponse()
 
     /// <summary>
     /// The set of Rights requested for this system user. Must be equal to or less than the set defined in the Registered System.
-    /// Must be a minimum of 1 selected Right.
+    /// Must be a minimum of 1 selected Right or AccessPackage.
     /// </summary>
     [Required]
     [JsonPropertyName("rights")]
-    public List<Right> Rights { get; set; }
+    public List<Right> Rights { get; set; } = [];
+
+    /// <summary>
+    /// The set of AccessPackages requested for this system user. Must be equal to or less than the set defined in the Registered System.
+    /// Must be a minimum of 1 selected AccessPackages or Right.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("accessPackages")]
+    public List<AccessPackage> AccessPackages { get; set; } = [];
 
     /// <summary>
     /// Initially the request is "new", 

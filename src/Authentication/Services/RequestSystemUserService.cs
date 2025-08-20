@@ -102,6 +102,12 @@ public class RequestSystemUserService(
             return valRights.Problem;
         }
 
+        Result<bool> valPackages = ValidateAccessPackages(createRequest.AccessPackages, systemInfo);
+        if (valPackages.IsProblem)
+        {
+            return valPackages.Problem;
+        }
+
         // Set an empty ExternalRef to be equal to the PartyOrgNo
         if (createRequest.ExternalRef is null || createRequest.ExternalRef == string.Empty)
         {
@@ -117,6 +123,7 @@ public class RequestSystemUserService(
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
             Rights = createRequest.Rights,
+            AccessPackages = createRequest.AccessPackages,
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createRequest.RedirectUrl
         };
@@ -463,6 +470,7 @@ public class RequestSystemUserService(
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
+            AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
@@ -490,6 +498,7 @@ public class RequestSystemUserService(
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
+            AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
@@ -570,6 +579,7 @@ public class RequestSystemUserService(
             SystemId = find.SystemId,
             ExternalRef = find.ExternalRef,
             Rights = find.Rights,
+            AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
             RedirectUrl = find.RedirectUrl
@@ -1062,6 +1072,7 @@ public class RequestSystemUserService(
                 PartyId = validatedParty.Value.PartyId,
                 PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
                 Rights = request.Rights,
+                AccessPackages = request.AccessPackages,
                 Status = request.Status,
                 ConfirmUrl = request.ConfirmUrl,
                 Created = request.Created,

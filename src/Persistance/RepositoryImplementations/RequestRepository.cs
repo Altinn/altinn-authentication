@@ -45,6 +45,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 systemuser_type,
                 redirect_urls)
@@ -54,6 +55,7 @@ public class RequestRepository : IRequestRepository
                 @system_id,
                 @party_org_no,
                 @rights,
+                @accesspackages,
                 @status,
                 @systemuser_type,
                 @redirect_urls);";
@@ -67,6 +69,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("system_id", createRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = createRequest.Rights });
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createRequest.AccessPackages });
             command.Parameters.AddWithValue("status", createRequest.Status);
 
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
@@ -152,6 +155,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created
@@ -235,6 +239,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created 
@@ -384,7 +389,8 @@ public class RequestRepository : IRequestRepository
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
-            Rights = reader.GetFieldValue<List<Right>>("rights"),
+            Rights = reader.IsDBNull("rights") ? [] : reader.GetFieldValue<List<Right>>("rights"),
+            AccessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
@@ -437,6 +443,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created
@@ -628,6 +635,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created 
