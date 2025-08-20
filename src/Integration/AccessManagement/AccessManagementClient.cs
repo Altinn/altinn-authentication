@@ -246,7 +246,7 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/connections?party={partyUuId}&to={systemUserId}";
 
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
             return await HandleDelegationResponse(response, "AddSystemUserAsRightHolder");
 
         }
