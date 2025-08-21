@@ -192,21 +192,25 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
-
-            foreach (Right right in rights)
+            bool isRightsDeleted = false;
+            if (rights.Count > 0)
             {
-                List<AttributePair> resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
+                foreach (Right right in rights)
+                {
+                    List<AttributePair> resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
 
-                right.Resource = resource;
+                    right.Resource = resource;
+                }
+
+                var revokeRightResult = await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
+                if (revokeRightResult.IsProblem)
+                {
+                    return revokeRightResult.Problem;
+                }
+
+                isRightsDeleted = revokeRightResult.Value;
             }
-
-            var revokeRightResult = await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
-            if (revokeRightResult.IsProblem)
-            {
-                return revokeRightResult.Problem;
-            }
-
-            bool isRightsDeleted = revokeRightResult.Value;
+             
             var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, true, cancellationToken);
             if (removeSystemUserResult.IsProblem)
             {
@@ -214,7 +218,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             bool isAccessPackagesDeleted = removeSystemUserResult.Value;
-            if (!isRightsDeleted || !isAccessPackagesDeleted)
+            if ((rights.Count > 0 && !isRightsDeleted) || !isAccessPackagesDeleted)
             {
                 return Problem.SystemUser_FailedToDelete;
             }
