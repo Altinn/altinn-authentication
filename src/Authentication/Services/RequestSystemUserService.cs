@@ -102,16 +102,22 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
-        Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
-        if (valRights.IsProblem)
+        if (createRequest.Rights.Count > 0)
         {
-            return valRights.Problem;
+            Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
+            if (valRights.IsProblem)
+            {
+                return valRights.Problem;
+            }
         }
 
-        Result<bool> valPackages = ValidateAccessPackages(createRequest.AccessPackages, systemInfo);
-        if (valPackages.IsProblem)
+        if (createRequest.AccessPackages.Count > 0)
         {
-            return valPackages.Problem;
+            Result<bool> valPackages = ValidateAccessPackages(createRequest.AccessPackages, systemInfo);
+            if (valPackages.IsProblem)
+            {
+                return valPackages.Problem;
+            }
         }
 
         // Set an empty ExternalRef to be equal to the PartyOrgNo
