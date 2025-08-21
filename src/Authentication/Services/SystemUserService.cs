@@ -192,7 +192,9 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
+            List<AccessPackage> accesssPackages = await systemRegisterService.GetAccessPackagesForRegisteredSystem(systemUser.SystemId, cancellationToken);
             bool isRightsDeleted = false;
+            bool isAccessPackagesDeleted = false;
             if (rights.Count > 0)
             {
                 foreach (Right right in rights)
@@ -211,14 +213,18 @@ namespace Altinn.Platform.Authentication.Services
                 isRightsDeleted = revokeRightResult.Value;
             }
              
-            var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, true, cancellationToken);
-            if (removeSystemUserResult.IsProblem)
+            if (accesssPackages.Count > 0)
             {
-                return removeSystemUserResult.Problem;
+                var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, true, cancellationToken);
+                if (removeSystemUserResult.IsProblem)
+                {
+                    return removeSystemUserResult.Problem;
+                }
+
+                isAccessPackagesDeleted = removeSystemUserResult.Value;
             }
 
-            bool isAccessPackagesDeleted = removeSystemUserResult.Value;
-            if ((rights.Count > 0 && !isRightsDeleted) || !isAccessPackagesDeleted)
+            if ((rights.Count > 0 && !isRightsDeleted) || (accesssPackages.Count > 0 && !isAccessPackagesDeleted))
             {
                 return Problem.SystemUser_FailedToDelete;
             }
