@@ -379,7 +379,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DeleteSingleAccessPackageFromSystemUser // Exception");
             throw;
         }
 
