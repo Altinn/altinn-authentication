@@ -37,20 +37,18 @@ public class CreateRequestSystemUser()
     /// <summary>
     /// The set of Rights requested for this system user. 
     /// Must be equal to or less than the set defined in the Registered System.
-    /// An empty list is allowed, if the AccessPackages list is non-empty.
+    /// An empty or null list is allowed, if the AccessPackages list is non-empty.
     /// </summary>
-    [Required]
     [JsonPropertyName("rights")]
-    public List<Right> Rights { get; set; } = [];
+    public List<Right>? Rights { get; set; }
 
     /// <summary>
     /// The set of AccessPackages requested for this system user. 
     /// Must be equal to or less than the set defined in the Registered System.
-    /// An empty list is allowed, if the Rights list is non-empty.
+    /// An empty or null list is allowed, if the Rights list is non-empty.
     /// </summary>
-    [Required]
     [JsonPropertyName("accessPackages")]
-    public List<AccessPackage> AccessPackages { get; set; } = [];
+    public List<AccessPackage>? AccessPackages { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request

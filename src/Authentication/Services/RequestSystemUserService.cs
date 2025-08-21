@@ -96,13 +96,30 @@ public class RequestSystemUserService(
             }
         }
 
-        // Must have a minimum of either one Right or one Accesspackage for a Standard SystemUser
-        if (createRequest.Rights.Count == 0 && createRequest.AccessPackages.Count == 0)
+        if (createRequest.Rights is null && createRequest.AccessPackages is null)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
-        if (createRequest.Rights.Count > 0)
+        bool hasAtLeastOne = false;
+
+        // Must have a minimum of either one Right or one Accesspackage for a Standard SystemUser
+        if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
+        {
+            hasAtLeastOne = true;
+        }
+
+        if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
+        {
+            hasAtLeastOne = true;
+        }
+
+        if (!hasAtLeastOne)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
         {
             Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
             if (valRights.IsProblem)
@@ -111,7 +128,7 @@ public class RequestSystemUserService(
             }
         }
 
-        if (createRequest.AccessPackages.Count > 0)
+        if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
         {
             Result<bool> valPackages = ValidateAccessPackages(createRequest.AccessPackages, systemInfo);
             if (valPackages.IsProblem)
@@ -134,8 +151,8 @@ public class RequestSystemUserService(
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
-            Rights = createRequest.Rights,
-            AccessPackages = createRequest.AccessPackages,
+            Rights = createRequest.Rights ?? [],
+            AccessPackages = createRequest.AccessPackages ?? [],
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createRequest.RedirectUrl
         };
