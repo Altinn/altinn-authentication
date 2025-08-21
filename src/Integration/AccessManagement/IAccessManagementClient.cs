@@ -123,6 +123,16 @@ public interface IAccessManagementClient
     Task<Result<bool>> AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Removes a System User as a Right Holder for the Party
+    /// </summary>
+    /// <param name="partyUuId">the identifier of the party</param>
+    /// <param name="systemUserId">the system user id</param>
+    /// <param name="cascade">to cascade delete delegations</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> RemoveSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, bool cascade, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Delegates access packages to a system user on behalf of a party
     /// </summary>
     /// <param name="partyUuId">the identifier of the party</param>
@@ -131,4 +141,23 @@ public interface IAccessManagementClient
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>true if the delegations are successful</returns>
     Task<Result<bool>> DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Delegates access packages to a system user on behalf of a party
+    /// </summary>
+    /// <param name="partyUuId">the identifier of the party</param>
+    /// <param name="systemUserId">the system user id</param>
+    /// <param name="urn">the urn of access package to be delegated</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>true if the delegations are successful</returns>
+    Task<Result<bool>> DeleteSingleAccessPackageFromSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets access packages for a system user on behalf of a party
+    /// </summary>
+    /// <param name="partyUuId"></param>
+    /// <param name="systemUserId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken = default);
 }

@@ -59,6 +59,9 @@
     <None Update="Data\Delegation\CheckDelegationAccessPackageResponse_NotDelegable.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\Roles\user_1337\party_500006\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemChangeLog\ChangeLogAll.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

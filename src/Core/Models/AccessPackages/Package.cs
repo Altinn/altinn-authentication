@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
 {
+    [ExcludeFromCodeCoverage]
     /// <summary>
     /// Package
     /// </summary>
@@ -55,5 +57,26 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         /// Urn
         /// </summary>
         public string Urn { get; set; }
+    }
+
+    /// <summary>
+    /// Compact Package Model
+    /// </summary>
+    public class CompactPackage
+    {
+        /// <summary>
+        /// Id
+        /// </summary>
+        public Guid Id { get; set; }
+
+        /// <summary>
+        /// Urn
+        /// </summary>
+        public string Urn { get; set; }
+
+        /// <summary>
+        /// AreaId
+        /// </summary>
+        public Guid AreaId { get; set; }
     }
 }

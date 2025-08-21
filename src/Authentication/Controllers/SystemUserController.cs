@@ -193,7 +193,12 @@ public class SystemUserController : ControllerBase
         SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
         if (toBeDeleted is not null)
         {
-            await _systemUserService.SetDeleteFlagOnSystemUser(party, systemUserId, cancellationToken);
+            var deleteResult = await _systemUserService.SetDeleteFlagOnSystemUser(party, systemUserId, cancellationToken);
+            if (deleteResult.IsProblem)
+            {
+                return deleteResult.Problem.ToActionResult();
+            }
+
             await DeleteRequestForSystemUser(toBeDeleted);
             return Accepted(1);
         }
