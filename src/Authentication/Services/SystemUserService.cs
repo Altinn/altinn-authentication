@@ -76,7 +76,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
-       
+
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
                 return Problem.SystemUserNotFound;
@@ -96,7 +96,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             SystemUser newSystemUser = new()
-            {                
+            {
                 ReporteeOrgNo = party.OrgNumber,
                 SystemInternalId = regSystem.InternalId,
                 IntegrationTitle = request.IntegrationTitle,
@@ -104,7 +104,7 @@ namespace Altinn.Platform.Authentication.Services
                 PartyId = partyId
             };
 
-            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);        
+            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
             if (insertedId is null)
             {
                 return Problem.SystemUser_FailedToCreate;
@@ -151,7 +151,7 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<SystemUser?> GetSingleSystemUserById(Guid systemUserId)
         {
             SystemUser? search = await _repository.GetSystemUserById(systemUserId);
-        
+
             return search;
         }
 
@@ -160,7 +160,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
         public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
-        {            
+        {
             Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
@@ -176,9 +176,9 @@ namespace Altinn.Platform.Authentication.Services
             Guid partyUuid = party.PartyUuid.Value;
 
             SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
-            if (systemUser is null) 
+            if (systemUser is null)
             {
-                return Problem.SystemUserNotFound;   
+                return Problem.SystemUserNotFound;
             }
 
             if (systemUser.PartyId != partyId)
@@ -212,7 +212,7 @@ namespace Altinn.Platform.Authentication.Services
 
                 isRightsDeleted = revokeRightResult.Value;
             }
-             
+
             if (accesssPackages.Count > 0)
             {
                 var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, true, cancellationToken);
@@ -241,7 +241,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             SystemUser? search = await _repository.GetSystemUserById(Guid.Parse(request.Id));
             if (search == null)
-            {                
+            {
                 return 0;
             }
 
@@ -255,25 +255,25 @@ namespace Altinn.Platform.Authentication.Services
 
         /// <inheritdoc/>
         public async Task<SystemUser?> CheckIfPartyHasIntegration(
-            string clientId, 
-            string systemProviderOrgNo, 
-            string systemUserOwnerOrgNo, 
+            string clientId,
+            string systemProviderOrgNo,
+            string systemUserOwnerOrgNo,
             string externalRef,
             CancellationToken cancellationToken)
         {
             return await _repository.CheckIfPartyHasIntegration(
-                clientId, 
-                systemProviderOrgNo, 
-                systemUserOwnerOrgNo, 
+                clientId,
+                systemProviderOrgNo,
+                systemUserOwnerOrgNo,
                 externalRef,
                 cancellationToken);
         }
 
         /// <inheritdoc/>
         public async Task<Result<Page<SystemUser, long>>> GetAllSystemUsersByVendorSystem(
-            OrganisationNumber vendorOrgNo, 
-            string systemId, 
-            Page<long>.Request continueRequest, 
+            OrganisationNumber vendorOrgNo,
+            string systemId,
+            Page<long>.Request continueRequest,
             CancellationToken cancellationToken)
         {
             RegisteredSystemResponse? system = await _registerRepository.GetRegisteredSystemById(systemId);
@@ -528,7 +528,7 @@ namespace Altinn.Platform.Authentication.Services
                     else
                     {
                         return result.Problem;
-                    }                    
+                    }
                 }
 
                 await _repository.SetDeleteSystemUserById(systemUserId);
@@ -591,6 +591,49 @@ namespace Altinn.Platform.Authentication.Services
 
                 return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
             }
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int partyId, Guid systemUserId, CancellationToken cancellationToken)
+        {
+            SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
+            if (systemUser is null)
+            {
+                return Problem.SystemUserNotFound;
+            }
+
+            Party party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
+
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+            {
+                return Problem.Reportee_Orgno_NotFound;
+            }
+
+            if (!party.PartyUuid.HasValue)
+            {
+                return Problem.Party_PartyUuid_NotFound;
+            }
+
+            Guid partyUuId = party.PartyUuid.Value;
+
+            string systemId = systemUser.SystemId;
+            List<Right> rights = await _registerRepository.GetRightsForRegisteredSystem(systemId);
+            var delegatedPackages = await GetAccessPackagesForSystemUser(partyUuId, systemUser.SystemInternalId!.Value, cancellationToken);
+            if (delegatedPackages.IsProblem)
+            {
+                return Problem.AccessPackage_FailedToGetDelegatedPackages;
+            }
+
+            List<AccessPackage> accessPackagesForSystemUser = delegatedPackages.Value;
+
+            StandardSystemUserDelegations standardSystemUserDelegations = new StandardSystemUserDelegations
+            {
+                SystemUserId = new Guid(systemUser.Id),
+                AccessPackages = accessPackagesForSystemUser,
+                Rights = rights
+            };
+
+            return standardSystemUserDelegations;
         }
 
         private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
@@ -664,6 +707,36 @@ namespace Altinn.Platform.Authentication.Services
 
             Guid partyUuid = party.PartyUuid.Value;
             return partyUuid;
+        }
+
+        private async Task<Result<List<AccessPackage>>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+        {
+            var packagePermissions = await _accessManagementClient.GetAccessPackagesForSystemUser(partyUuId, systemUserId, cancellationToken).ToListAsync(cancellationToken);
+
+            List<PackagePermission> delegations = packagePermissions
+                .Where(r => r.IsSuccess && r.Value is not null)
+                .Select(r => r.Value!)
+                .ToList();
+
+            // 3. Process results
+            GetDelegatedPackagesFromDelegations(delegations, out List<AccessPackage> accessPackages);
+            return accessPackages;
+        }
+
+        private static void GetDelegatedPackagesFromDelegations(
+            List<PackagePermission> delegations,
+            out List<AccessPackage> accessPackages)
+        {
+            accessPackages = [];
+            foreach (PackagePermission packagePermission in delegations)
+            {
+                if (packagePermission.Package is not null)
+                {
+                    AccessPackage accessPackage = new AccessPackage();
+                    accessPackage.Urn = packagePermission.Package.Urn;
+                    accessPackages.Add(accessPackage);
+                }
+            }
         }
     }
 }

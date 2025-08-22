@@ -183,4 +183,13 @@ public interface ISystemUserService
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>true if the delegations are successful</returns>
     Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUser systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets access packages to a system user.
+    /// </summary>
+    /// <param name="partyId">the identifier of the party</param>
+    /// <param name="systemUserId">the system user id</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns>true if the delegations are successful</returns>
+    Task<Result<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int partyId, Guid systemUserId, CancellationToken cancellationToken);
 }
