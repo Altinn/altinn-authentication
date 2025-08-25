@@ -64,6 +64,9 @@ namespace Altinn.Platform.Authentication.Controllers
         private const string IdportenLevel3 = "idporten-loa-substantial";
         private const string IdportenLevel4 = "idporten-loa-high";
         private const string ScopeClaim = "scope";
+        private static readonly Regex AtEnvRegex =
+            new(@"^at\d+\.altinn\.cloud$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private readonly GeneralSettings _generalSettings;
         private readonly ILogger _logger;
         private readonly IOrganisationsService _organisationService;
@@ -260,7 +263,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID });
                 userAuthentication.PartyUuid = profile.UserUuid;
             }
-            
+
             if (userAuthentication != null && userAuthentication.IsAuthenticated)
             {
                 await CreateTokenCookie(userAuthentication);
@@ -588,7 +591,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 string authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
                 string externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
                 string scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
-                
+
                 if (!HasAltinnScope(scope) && !HasPartnerScope(scope))
                 {
                      _logger.LogInformation("Missing scope");
@@ -790,18 +793,33 @@ namespace Altinn.Platform.Authentication.Controllers
 
         /// <summary>
         /// Checks that url is on same host as platform
+        /// Rules:
+        ///  - Allow exact host or a subdomain of _generalSettings.HostName
+        ///  - Special-case: if HostName == "tt02.altinn.no", also allow "af.tt.altinn.no"
+        ///  - Special-case: if HostName matches "atXX.altinn.cloud", also allow "af.at.altinn.cloud"
         /// </summary>
         /// <param name="goToHost">The url to redirect to</param>
         /// <returns>Boolean verifying that goToHost is on current host. </returns>
         private bool IsValidRedirectUri(string goToHost)
         {
             string validHost = _generalSettings.HostName;
-            int segments = _generalSettings.HostName.Split('.').Length;
 
-            List<string> goToList = Enumerable.Reverse(new List<string>(goToHost.Split('.'))).Take(segments).Reverse().ToList();
-            string redirectHost = string.Join(".", goToList);
+            if (goToHost == validHost || goToHost.EndsWith("." + validHost, StringComparison.Ordinal))
+            {
+                return true;
+            }
 
-            return validHost.Equals(redirectHost);
+            if (validHost == "tt02.altinn.no" && goToHost == "af.tt.altinn.no")
+            {
+                return true;
+            }
+
+            if (AtEnvRegex.IsMatch(validHost) && goToHost == "af.at.altinn.cloud")
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -856,7 +874,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 .OrderByDescending(c => c.NotBefore)
                 .FirstOrDefault();
         }
-        
+
         private async Task IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
         {
             UserProfile profile;
@@ -925,7 +943,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 ClaimsPrincipal originalPrincipal = _validator.ValidateToken(originalToken, validationParameters, out _);
                 return originalPrincipal;
-            }           
+            }
             catch (Exception)
             {
                 if (alternativeSigningKeys is null || alternativeSigningKeys.Count == 0)
