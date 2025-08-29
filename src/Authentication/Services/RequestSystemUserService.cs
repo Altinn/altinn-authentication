@@ -96,10 +96,45 @@ public class RequestSystemUserService(
             }
         }
 
-        Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
-        if (valRights.IsProblem)
+        if (createRequest.Rights is null && createRequest.AccessPackages is null)
         {
-            return valRights.Problem;
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        bool hasAtLeastOne = false;
+
+        // Must have a minimum of either one Right or one Accesspackage for a Standard SystemUser
+        if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
+        {
+            hasAtLeastOne = true;
+        }
+
+        if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
+        {
+            hasAtLeastOne = true;
+        }
+
+        if (!hasAtLeastOne)
+        {
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
+        {
+            Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
+            if (valRights.IsProblem)
+            {
+                return valRights.Problem;
+            }
+        }
+
+        if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
+        {
+            Result<bool> valPackages = ValidateAccessPackages(createRequest.AccessPackages, systemInfo);
+            if (valPackages.IsProblem)
+            {
+                return valPackages.Problem;
+            }
         }
 
         // Set an empty ExternalRef to be equal to the PartyOrgNo
@@ -116,7 +151,8 @@ public class RequestSystemUserService(
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
-            Rights = createRequest.Rights,
+            Rights = createRequest.Rights ?? [],
+            AccessPackages = createRequest.AccessPackages ?? [],
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createRequest.RedirectUrl
         };
@@ -174,6 +210,11 @@ public class RequestSystemUserService(
             }
         }
 
+        if (createAgentRequest.AccessPackages is null || createAgentRequest.AccessPackages.Count == 0)
+        {
+            return Problem.AccessPackage_ValidationFailed;
+        }
+
         Result<bool> valPackages = ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
         if (valPackages.IsProblem)
         {
@@ -222,7 +263,7 @@ public class RequestSystemUserService(
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
 
-        if (accessPackages.Count == 0 || systemInfo.AccessPackages.Count == 0)
+        if (systemInfo.AccessPackages.Count == 0)
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
@@ -264,12 +305,7 @@ public class RequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
     {
-        if (rights.Count == 0 || systemInfo.Rights.Count == 0)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        if (rights.Count > systemInfo.Rights.Count)
+        if ((rights.Count > 0 && systemInfo.Rights is null) || (rights.Count > systemInfo.Rights!.Count))
         {
             return Problem.Rights_NotFound_Or_NotDelegable;
         }
@@ -463,6 +499,7 @@ public class RequestSystemUserService(
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
+            AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
@@ -490,6 +527,7 @@ public class RequestSystemUserService(
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
+            AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
@@ -570,6 +608,7 @@ public class RequestSystemUserService(
             SystemId = find.SystemId,
             ExternalRef = find.ExternalRef,
             Rights = find.Rights,
+            AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
             RedirectUrl = find.RedirectUrl
@@ -1062,6 +1101,7 @@ public class RequestSystemUserService(
                 PartyId = validatedParty.Value.PartyId,
                 PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
                 Rights = request.Rights,
+                AccessPackages = request.AccessPackages,
                 Status = request.Status,
                 ConfirmUrl = request.ConfirmUrl,
                 Created = request.Created,

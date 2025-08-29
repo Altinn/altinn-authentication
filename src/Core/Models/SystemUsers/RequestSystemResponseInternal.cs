@@ -56,15 +56,15 @@ public class RequestSystemResponseInternal()
 
     /// <summary>
     /// The set of Rights requested for this system user. Must be equal to or less than the set defined in the Registered System.
-    /// Must be a minimum of 1 selected Right.
+    /// Must be a minimum of 1 selected Right or Accesspackage.
     /// </summary>
     [Required]
     [JsonPropertyName("rights")]
     public List<Right> Rights { get; set; }
 
     /// <summary>
-    /// The set of Rights requested for this system user. Must be equal to or less than the set defined in the Registered System.
-    /// Must be a minimum of 1 selected Right.
+    /// The set of Accesspackages requested for this system user. Must be equal to or less than the set defined in the Registered System.
+    /// Must be a minimum of 1 selected Right or Accesspackage.
     /// </summary>
     [Required]
     [JsonPropertyName("accessPackages")]

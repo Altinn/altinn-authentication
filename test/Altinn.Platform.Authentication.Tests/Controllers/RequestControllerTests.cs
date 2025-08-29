@@ -145,7 +145,8 @@ public class RequestControllerTests(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right],
+            AccessPackages = []            
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -713,7 +714,8 @@ public class RequestControllerTests(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right],
+            AccessPackages = []
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -932,7 +934,8 @@ public class RequestControllerTests(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right],
+            AccessPackages = []
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -1205,7 +1208,8 @@ public class RequestControllerTests(
             ExternalRef = "external",
             SystemId = "991825827_the_matrix",
             PartyOrgNo = "910493353",
-            Rights = [right]
+            Rights = [right],
+            AccessPackages = []
         };
 
         HttpRequestMessage request = new(HttpMethod.Post, endpoint)
