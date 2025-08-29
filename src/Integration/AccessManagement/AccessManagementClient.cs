@@ -388,7 +388,7 @@ public class AccessManagementClient : IAccessManagementClient
     /// <inheritdoc />
     public async IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyId, Guid systemUserId, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        string? endpointUrl = $"enduser/connections/accesspackages?from={partyId}&to={systemUserId}";
+        string? endpointUrl = $"internal/connections/accesspackages?party={partyId}&to={systemUserId}";
 
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         PaginatedInput<PackagePermission>? paginatedPackagePermissions = null;

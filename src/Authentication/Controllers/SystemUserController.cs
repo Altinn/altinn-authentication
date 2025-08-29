@@ -457,4 +457,23 @@ public class SystemUserController : ControllerBase
 
         return result.Problem.ToActionResult();
     }
+
+    /// <summary>
+    /// Get list of delegations for a standard systemuser
+    /// </summary>
+    /// <returns>List of DelegationResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("{party}/{systemUserId}/delegations")]
+    public async Task<ActionResult<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int party, Guid systemUserId, CancellationToken cancellationToken = default)
+    {
+        StandardSystemUserDelegations delegations = new StandardSystemUserDelegations();
+        var result = await _systemUserService.GetListOfDelegationsForStandardSystemUser(party, systemUserId, cancellationToken);
+        if (result.IsProblem)
+        {
+            return result.Problem.ToActionResult();
+        }
+
+        return Ok(result.Value);
+    }
 }    
