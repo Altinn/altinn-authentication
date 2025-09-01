@@ -444,7 +444,7 @@ public class SystemRegisterController : ControllerBase
 
             if (notDelegableUrns.Count > 0)
             {
-                allInvalidUrns.Add($"Not delegable: {string.Join(", ", notDelegableUrns)}");
+                allInvalidUrns.Add($"Not possible to delegate: {string.Join(", ", notDelegableUrns)}");
             }
 
             var problemExtensionData = ProblemExtensionData.Create(new[]

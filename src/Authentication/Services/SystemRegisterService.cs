@@ -151,7 +151,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<(List<string> invalidFormatUrns, List<string> notFoundUrns, List<string> notDelegableUrns)>
+        public async Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns)>
             GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
         {
             var invalidFormatUrns = new List<string>();
@@ -182,7 +182,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     notFoundUrns.Add(urn);
                 }
-                else if (!package.IsDelegable)
+                else if (!package.IsDelegable && !package.IsAssignable)
                 {
                     notDelegableUrns.Add(urn);
                 }

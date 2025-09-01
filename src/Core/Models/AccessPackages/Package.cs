@@ -49,6 +49,11 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         public bool IsDelegable { get; set; }
 
         /// <summary>
+        /// True if the package is direct delegable
+        /// </summary>
+        public bool IsAssignable { get; set; }
+
+        /// <summary>
         /// Has resources
         /// </summary>
         public bool HasResources { get; set; }
