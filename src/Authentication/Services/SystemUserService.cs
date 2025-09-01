@@ -233,20 +233,6 @@ namespace Altinn.Platform.Authentication.Services
 
             // Delete the systemuser in the auth table
             await _repository.SetDeleteSystemUserById(systemUserId);
-
-            // Delete the request that created this systemuser, to allow a new to possibly be created
-            ExternalRequestId extId = new()
-            {
-                ExternalRef = systemUser.ExternalRef,
-                OrgNo = systemUser.ReporteeOrgNo,
-                SystemId = systemUser.SystemId,
-            };
-            var request = await _requestRepository.GetRequestByExternalReferences(extId);
-            if (request != null)
-            {
-                await _requestRepository.DeleteRequestByRequestId(request.Id);
-            }
-
             return true; // if it can't be found, there is no need to delete it.
         }
 

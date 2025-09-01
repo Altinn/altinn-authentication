@@ -1732,7 +1732,12 @@ public class RequestControllerTests(
         Paginated<SystemUser>? page = await getListOfSystemUsersMsgResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>(_options);
         Assert.NotNull(page);
         IEnumerable<SystemUser> list = page.Items;
-        string systemUserId = list.FirstOrDefault().Id;
+        SystemUser? sys = list.FirstOrDefault();
+        Assert.NotNull(sys);
+        string systemUserId = sys.Id;
+        Assert.Equal(req.ExternalRef, sys.ExternalRef);
+        Assert.Equal(req.SystemId, sys.SystemId);
+        Assert.Equal(req.PartyOrgNo, sys.ReporteeOrgNo);
 
         // Delete the SystemUser
         HttpRequestMessage requestD = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{systemUserId}");
@@ -1746,8 +1751,18 @@ public class RequestControllerTests(
         };
         HttpResponseMessage message2 = await client.SendAsync(request2, HttpCompletionOption.ResponseHeadersRead);
 
-        // Return OK in stead of Created, signifying that the request already exists, and that the request is not created again.
-        Assert.NotEqual(HttpStatusCode.OK, message2.StatusCode);
+        // Return Created, signifying that a new request for the same info has been created
+        Assert.Equal(HttpStatusCode.Created, message2.StatusCode);
+        RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res2);
+        Assert.Equal(req.ExternalRef, res2.ExternalRef);
+
+        // Approve the SystemUser        
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        string approveEndpoint2 = $"/authentication/api/v1/systemuser/request/{partyId}/{res2.Id}/approve";
+        HttpRequestMessage approveRequestMessage2 = new(HttpMethod.Post, approveEndpoint2);
+        HttpResponseMessage approveResponseMessage2 = await client2.SendAsync(approveRequestMessage2, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage2.StatusCode);
     }
 
     [Fact]
