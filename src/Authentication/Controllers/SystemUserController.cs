@@ -225,7 +225,7 @@ public class SystemUserController : ControllerBase
         }
 
         ExternalRequestId ext = new(systemUser.ReporteeOrgNo, systemUser.ExternalRef, systemUser.SystemId);
-        var req = await _requestSystemUser.GetRequestByExternalRef(ext, OrganisationNumber.CreateFromStringOrgNo(systemUser.SupplierOrgNo));
+        var req = await _requestSystemUser.GetAgentRequestByExternalRef(ext, OrganisationNumber.CreateFromStringOrgNo(systemUser.SupplierOrgNo));
         if (req.IsSuccess)
         {
             await _requestSystemUser.DeleteRequestByRequestId(req.Value.Id);
