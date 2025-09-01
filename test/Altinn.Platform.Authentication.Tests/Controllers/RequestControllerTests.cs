@@ -44,6 +44,7 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers;
 #nullable enable
@@ -1595,6 +1596,158 @@ public class RequestControllerTests(
 
         // Return OK in stead of Created, signifying that the request already exists, and that the request is not created again.
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);       
+    }
+
+    [Fact]
+    public async Task Create_Request_Reuse_SameInfo_from_Existing_SystemUser_Return_Error()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        //// Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+
+        int partyId = 500000;
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+        // Second Request
+        HttpRequestMessage request2 = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message2 = await client.SendAsync(request2, HttpCompletionOption.ResponseHeadersRead);
+
+        // Return OK in stead of Created, signifying that the request already exists, and that the request is not created again.
+        Assert.NotEqual(HttpStatusCode.OK, message2.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_Request_Reuse_SameInfo_from_Deleted_SystemUser_Return_Ok()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        string systemId = "991825827_the_matrix";
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = systemId,
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+                
+        // Approve the SystemUser
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+
+        int partyId = 500000;
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+        // Vendor tries to get hold of the actual SystemUser created
+        HttpClient client3 = CreateClient();
+        string[] prefixes = { "altinn", "digdir" };
+        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token3);
+        string getSystemUserVendorEndpoint = $"/authentication/api/v1/systemuser/vendor/bysystem/{systemId}";
+        HttpRequestMessage getListOfSystemUsersMsg = new(HttpMethod.Get, getSystemUserVendorEndpoint);
+        HttpResponseMessage getListOfSystemUsersMsgResponse = await client3.SendAsync(getListOfSystemUsersMsg);
+        Assert.Equal(HttpStatusCode.OK, getListOfSystemUsersMsgResponse.StatusCode);
+        Paginated<SystemUser>? page = await getListOfSystemUsersMsgResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>(_options);
+        Assert.NotNull(page);
+        IEnumerable<SystemUser> list = page.Items;
+        string systemUserId = list.FirstOrDefault().Id;
+
+        // Delete the SystemUser
+        HttpRequestMessage requestD = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{systemUserId}");
+        HttpResponseMessage responseD = await client2.SendAsync(requestD, HttpCompletionOption.ResponseContentRead);
+        Assert.Equal(HttpStatusCode.Accepted, responseD.StatusCode);
+
+        // Second Request
+        HttpRequestMessage request2 = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message2 = await client.SendAsync(request2, HttpCompletionOption.ResponseHeadersRead);
+
+        // Return OK in stead of Created, signifying that the request already exists, and that the request is not created again.
+        Assert.NotEqual(HttpStatusCode.OK, message2.StatusCode);
     }
 
     [Fact]
