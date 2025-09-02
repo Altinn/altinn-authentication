@@ -44,7 +44,6 @@ namespace Altinn.Platform.Authentication.Services
         IAccessManagementClient accessManagementClient,
         DelegationHelper delegationHelper,
         IPartiesClient partiesClient,
-        IRequestRepository requestRepository,
         IOptions<PaginationOptions> paginationOption) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
@@ -52,7 +51,6 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ISystemRegisterService systemRegisterService = systemRegisterService;
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
         private readonly IPartiesClient _partiesClient = partiesClient;
-        private readonly IRequestRepository _requestRepository = requestRepository;
 
         /// <summary>
         /// Used to limit the number of items returned in a paginated list
@@ -231,7 +229,6 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToDelete;
             }
 
-            // Delete the systemuser in the auth table
             await _repository.SetDeleteSystemUserById(systemUserId);
             return true; // if it can't be found, there is no need to delete it.
         }
