@@ -9,14 +9,20 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
 {
     [ExcludeFromCodeCoverage]
     /// <summary>
-    /// Package
+    /// Role
     /// </summary>
-    public class Package
+    public class Role
     {
         /// <summary>
         /// Id
         /// </summary>
         public Guid Id { get; set; }
+
+        /// <summary>
+        /// EntityTypeId
+        /// e.g Organization
+        /// </summary>
+        public Guid? EntityTypeId { get; set; }
 
         /// <summary>
         /// ProviderId
@@ -24,50 +30,61 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         public Guid ProviderId { get; set; }
 
         /// <summary>
-        /// EntityTypeId
-        /// </summary>
-        public Guid EntityTypeId { get; set; }
-
-        /// <summary>
-        /// AreaId
-        /// </summary>
-        public Guid AreaId { get; set; }
-
-        /// <summary>
         /// Name
+        /// e.g Dagligleder
         /// </summary>
         public string Name { get; set; }
 
         /// <summary>
+        /// Code
+        /// e.g daglig-leder
+        /// </summary>
+        public string Code { get; set; }
+
+        /// <summary>
         /// Description
+        /// e.g The main operator of the organization
         /// </summary>
         public string Description { get; set; }
 
         /// <summary>
-        /// True if the package is one of "REGN", "REVI", "Forretningsfører" roller
+        /// Defines the role as a KeyRole
         /// </summary>
-        public bool IsDelegable { get; set; }
-
-        /// <summary>
-        /// True if the package is direct delegable
-        /// </summary>
-        public bool IsAssignable { get; set; }
-
-        /// <summary>
-        /// Has resources
-        /// </summary>
-        public bool HasResources { get; set; }
+        public bool IsKeyRole { get; set; }
 
         /// <summary>
         /// Urn
+        /// e.g altinn:external-role:ccr:daglig-leder
+        /// altinn:role:tilgangsstyrer
         /// </summary>
         public string Urn { get; set; }
+
+        /// <summary>
+        /// Can be assigned
+        /// </summary>
+        public bool IsAssignable { get; set; }
     }
 
     /// <summary>
-    /// Compact Package Model
+    /// Extended Role
     /// </summary>
-    public class CompactPackage
+    public class ExtRole : Role
+    {
+        /// <summary>
+        /// EntityType
+        /// </summary>
+        public EntityType EntityType { get; set; }
+
+        /// <summary>
+        /// Provider
+        /// </summary>
+        public Provider Provider { get; set; }
+    }
+
+    /// <summary>
+    /// Compact Role Model
+    /// </summary>
+    public class CompactRole
     {
         /// <summary>
         /// Id
@@ -75,13 +92,13 @@ namespace Altinn.Platform.Authentication.Core.Models.AccessPackages
         public Guid Id { get; set; }
 
         /// <summary>
-        /// Urn
+        /// Value
         /// </summary>
-        public string Urn { get; set; }
+        public string Code { get; set; }
 
         /// <summary>
-        /// AreaId
+        /// Children
         /// </summary>
-        public Guid AreaId { get; set; }
+        public List<CompactRole> Children { get; set; }
     }
 }

@@ -160,7 +160,21 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
         public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
-        {
+        {            
+            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+            {
+                return Problem.Reportee_Orgno_NotFound;
+            }
+
+            if (!party.PartyUuid.HasValue)
+            {
+                return Problem.Party_PartyUuid_NotFound;
+            }
+
+            Guid partyUuid = party.PartyUuid.Value;
+
             SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
             if (systemUser is null) 
             {
@@ -177,18 +191,45 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_ExpectedStandardUserType;
             }
 
-            await _repository.SetDeleteSystemUserById(systemUserId);
-
             List<Right> rights = await systemRegisterService.GetRightsForRegisteredSystem(systemUser.SystemId, cancellationToken);
-
-            foreach (Right right in rights)
+            List<AccessPackage> accesssPackages = await systemRegisterService.GetAccessPackagesForRegisteredSystem(systemUser.SystemId, cancellationToken);
+            bool isRightsDeleted = false;
+            bool isAccessPackagesDeleted = false;
+            if (rights.Count > 0)
             {
-                List<AttributePair> resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
+                foreach (Right right in rights)
+                {
+                    List<AttributePair> resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
 
-                right.Resource = resource;
+                    right.Resource = resource;
+                }
+
+                var revokeRightResult = await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
+                if (revokeRightResult.IsProblem)
+                {
+                    return revokeRightResult.Problem;
+                }
+
+                isRightsDeleted = revokeRightResult.Value;
+            }
+             
+            if (accesssPackages.Count > 0)
+            {
+                var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, true, cancellationToken);
+                if (removeSystemUserResult.IsProblem)
+                {
+                    return removeSystemUserResult.Problem;
+                }
+
+                isAccessPackagesDeleted = removeSystemUserResult.Value;
             }
 
-            await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
+            if ((rights.Count > 0 && !isRightsDeleted) || (accesssPackages.Count > 0 && !isAccessPackagesDeleted))
+            {
+                return Problem.SystemUser_FailedToDelete;
+            }
+
+            await _repository.SetDeleteSystemUserById(systemUserId);
             return true; // if it can't be found, there is no need to delete it.
         }
 
@@ -605,6 +646,24 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return result;
-        }         
+        }
+
+        private async Task<Result<Guid>> GetPartyUuId(int partyId, CancellationToken cancellationToken)
+        {
+            Party party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
+
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+            {
+                return Problem.Reportee_Orgno_NotFound;
+            }
+
+            if (!party.PartyUuid.HasValue)
+            {
+                return Problem.Party_PartyUuid_NotFound;
+            }
+
+            Guid partyUuid = party.PartyUuid.Value;
+            return partyUuid;
+        }
     }
 }
