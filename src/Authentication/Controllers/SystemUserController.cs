@@ -216,6 +216,22 @@ public class SystemUserController : ControllerBase
         }
     }
 
+    private async Task DeleteRequestForSystemUser(Guid toBeDeleted)
+    {
+        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(toBeDeleted);
+        if (systemUser == null) 
+        { 
+            return; 
+        }
+
+        ExternalRequestId ext = new(systemUser.ReporteeOrgNo, systemUser.ExternalRef, systemUser.SystemId);
+        var req = await _requestSystemUser.GetAgentRequestByExternalRef(ext, OrganisationNumber.CreateFromStringOrgNo(systemUser.SupplierOrgNo));
+        if (req.IsSuccess)
+        {
+            await _requestSystemUser.DeleteRequestByRequestId(req.Value.Id);
+        }
+    }
+
     /// <summary>
     /// Replaces the values for the existing system user with those from the update. 
     /// </summary>
@@ -429,9 +445,10 @@ public class SystemUserController : ControllerBase
     [HttpDelete("agent/{party}/{systemUserId}")]
     public async Task<ActionResult> DeleteAgentSystemUser(string party, Guid systemUserId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
     {
+        await DeleteRequestForSystemUser(systemUserId);
         Result<bool> result = await _systemUserService.DeleteAgentSystemUser(party, systemUserId, facilitatorId, cancellationToken);
         if (result.IsSuccess)
-        {
+        {            
             return Ok();
         }
 
