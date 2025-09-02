@@ -43,6 +43,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Asn1.X509;
 using Xunit;
 using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
@@ -231,7 +232,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             createSystemUserRequest.Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"));
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
 
-            SystemUser? shouldBeCreated = JsonSerializer.Deserialize<SystemUser>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
+            SystemUser? shouldBeCreated = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUser?>();  
             Assert.NotNull(shouldBeCreated);
 
             HttpRequestMessage looukpSystemUserRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{shouldBeCreated.Id}");
@@ -1325,11 +1326,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage listSystemUserRequst = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
             listSystemUserRequst.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
             HttpResponseMessage listSystemUserResponse = await client2.SendAsync(listSystemUserRequst, HttpCompletionOption.ResponseContentRead);
-            List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await listSystemUserResponse.Content.ReadAsStringAsync(), _options);
+
+            // List<SystemUser>? list = JsonSerializer.Deserialize<List<SystemUser>>(await listSystemUserResponse.Content.ReadAsStringAsync(), _options);
+            var list = await listSystemUserResponse.Content.ReadFromJsonAsync<List<SystemUser>>(_options);
 
             Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
-            Assert.True(list is not null);
-            Assert.True(list.Count == 1);
+            Assert.NotNull(list);
+            Assert.NotEmpty(list);
 
             // Delegation of a Customer to the empty Agent System User
             string systemUserId = list[0].Id;

@@ -9,6 +9,7 @@ using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Register.Models;
 using Microsoft.FeatureManagement;
 
@@ -128,9 +129,9 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="systemUser">SystemUser</param>
     /// <param name="request">AgentDelegationInputDto</param>
-    /// <param name="userId",>the user id of the logged in user</param>
-    /// <param name="featureManager",>FeatureManager</param>
-    /// <param name="cancellationToken",>CancellationToken</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="featureManager">FeatureManager</param>
+    /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
     Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, IFeatureManager featureManager, CancellationToken cancellationToken);
 
@@ -183,4 +184,43 @@ public interface ISystemUserService
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>true if the delegations are successful</returns>
     Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUser systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Called from the RequestSystemUserService to create a Vendor Requested
+    /// Standard SystemUser, after approval by the Reportee.
+    /// </summary>
+    /// <param name="request">the request from the Vendor, listing required Rights and Accesspackages for a System</param>
+    /// <param name="partyId">the party id of the reportee</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(RequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Called from the RequestSystemUserService to create a Vendor Requested
+    /// Agent SystemUser, after approval by the Reportee.
+    /// </summary>
+    /// <param name="request">the request from the Vendor, listing required Rights and Accesspackages for a System</param>
+    /// <param name="partyId">the party id of the reportee</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(AgentRequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected.
+    /// Also ensure that if any of the new Rights have sub-resources, that the sub-resources are equal to the registered Rights.
+    /// </summary>
+    /// <param name="rights">the Rights chosen for the Request</param>
+    /// <param name="systemInfo">The Vendor's Registered System</param>
+    /// <returns>Result or Problem</returns>
+    Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo);
+
+    /// <summary>
+    /// Validate that the Package is both a subset of the Default Packages registered on the System, and at least one Package is selected.
+    /// </summary>
+    /// <param name="accessPackages">the AccessPackages chosen for the Request</param>
+    /// <param name="systemInfo">The Vendor's Registered System</param>
+    /// <returns>Result or Problem</returns>
+    Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo);
 }

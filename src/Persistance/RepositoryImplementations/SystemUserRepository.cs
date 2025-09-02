@@ -233,8 +233,14 @@ public class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted, int userId)
     {
+        if (string.IsNullOrEmpty(toBeInserted.Id))
+        {
+            toBeInserted.Id = Guid.NewGuid().ToString();
+        }
+
         const string QUERY = /*strpsql*/@"            
                 INSERT INTO business_application.system_user_profile(
+                    system_user_profile_id,
                     integration_title,
                     system_internal_id,
                     reportee_party_id,
@@ -244,6 +250,7 @@ public class SystemUserRepository : ISystemUserRepository
                     accesspackages,
                     systemuser_type)
                 VALUES(
+                    @system_user_profile_id,
                     @integration_title,
                     @system_internal_id,
                     @reportee_party_id,
@@ -264,7 +271,7 @@ public class SystemUserRepository : ISystemUserRepository
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
-
+            command.Parameters.AddWithValue("system_user_profile_id", new Guid(toBeInserted.Id));
             command.Parameters.AddWithValue("integration_title", toBeInserted.IntegrationTitle);
             command.Parameters.AddWithValue("system_internal_id", toBeInserted.SystemInternalId!);
             command.Parameters.AddWithValue("reportee_party_id", toBeInserted.PartyId);

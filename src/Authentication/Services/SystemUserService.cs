@@ -413,6 +413,433 @@ namespace Altinn.Platform.Authentication.Services
             return inserted;
         }
 
+        private async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(
+            SystemUserType systemUserType, 
+            string systemId, 
+            string partyId, 
+            int userId, 
+            string? externalRef,
+            Guid? requestId,
+            List<AccessPackage>? accessPackages = default, 
+            List<Right>? rights = default, 
+            CancellationToken cancellationToken = default)
+        {
+            // Step 1 in refactoring of the systemuser creation process, after this method is verified to work, 
+            // refactor it with the above CreateAndDelegateSystemUser method.
+            // Logic is in part moved from the RequestSystemService and in part new in L4 delivery.
+            DelegationCheckResult? delegationCheckFinalResult = null;
+            AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult = null;
+
+            if (requestId is null || requestId == Guid.Empty)
+            {
+                requestId = Guid.NewGuid();
+            }
+
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemId);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+            {
+                return Problem.Reportee_Orgno_NotFound;
+            }
+
+            if (!party.PartyUuid.HasValue)
+            {
+                return Problem.Party_PartyUuid_NotFound;
+            }
+
+            Guid partyUuid = party.PartyUuid.Value;
+
+            ExternalRequestId externalRequestId = new()
+            {
+                OrgNo = party.OrgNumber,
+                SystemId = systemId,
+                ExternalRef = string.IsNullOrEmpty(externalRef) ? party.OrgNumber : externalRef
+            };
+
+            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            if (existing is not null)
+            {
+                return Problem.SystemUser_AlreadyExists;
+            }
+
+            if (rights is not null && rights.Count > 0)
+            {
+                Result<bool> validatedRequestedRights = ValidateRights(rights, regSystem);
+                if (validatedRequestedRights.IsProblem)
+                {
+                    return validatedRequestedRights.Problem;
+                }
+            }
+
+            if (accessPackages is not null && accessPackages.Count > 0)
+            {
+                Result<bool> validatedRequestedPackages = ValidateAccessPackages(accessPackages, regSystem);
+                if (validatedRequestedPackages.IsProblem)
+                {
+                    return validatedRequestedPackages.Problem;
+                }
+            }
+
+            if (rights is not null && rights.Count > 0)
+            {
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+
+                if (delegationCheckFinalResult?.RightResponses is null)
+                {
+                    // This represents some problem with doing the delegation check beyond the rights not being delegable.
+                    return Problem.UnableToDoDelegationCheck;
+                }
+
+                if (!delegationCheckFinalResult.CanDelegate)
+                {
+                    // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
+                    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+                }
+            }
+
+            if (accessPackages is not null && accessPackages.Count > 0)
+            {
+                var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, accessPackages, true, cancellationToken);
+                if (accessPackageCheckResult.IsProblem)
+                {
+                    return accessPackageCheckResult.Problem;
+                }
+                else
+                {
+                    accessPackageDelegationCheckResult = accessPackageCheckResult.Value;
+                }
+            }
+
+            SystemUser newSystemUser = new()
+            {
+                Id = requestId.ToString()!,
+                ReporteeOrgNo = party.OrgNumber,
+                SystemInternalId = regSystem.InternalId,
+                IntegrationTitle = systemId,
+                SystemId = systemId,
+                PartyId = partyId,
+                UserType = systemUserType,
+                ExternalRef = string.IsNullOrEmpty(externalRef) ? party.OrgNumber : externalRef
+            };
+
+            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
+            if (insertedId is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+            if (inserted is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            if (regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
+            {
+                Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses!);
+                if (delegationSucceeded.IsProblem)
+                {
+                    await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                    return delegationSucceeded.Problem;
+                }
+            }
+
+            if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0 && accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate)
+            {
+                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, regSystem.AccessPackages, cancellationToken);
+                if (accessPackageDelegationSucceeded.IsProblem)
+                {
+                    await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                    return accessPackageDelegationSucceeded.Problem;
+                }
+            }
+
+            return inserted;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(AgentRequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken)
+        {
+            return await CreateSystemUserFromApprovedVendorRequest(SystemUserType.Agent, request.SystemId, partyId, userId, externalRef:request.ExternalRef, request.Id, request.AccessPackages, null, cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(RequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken)
+        {
+            return await CreateSystemUserFromApprovedVendorRequest(SystemUserType.Standard, request.SystemId, partyId, userId, externalRef: request.ExternalRef, request.Id, request.AccessPackages, request.Rights, cancellationToken);
+        }
+                
+        private async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(RequestSystemResponse request, string partyId, int userId, string deprecated, CancellationToken cancellationToken)
+        {
+            // Step 1 in refactoring of the systemuser creation process, after this method is verified to work, 
+            // refactor it with the above CreateAndDelegateSystemUser method.
+            // Logic is in part moved from the RequestSystemService and in part new in L4 delivery.
+            DelegationCheckResult? delegationCheckFinalResult = null;
+            AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult = null;
+
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+
+            if (party is null || string.IsNullOrEmpty(party.OrgNumber))
+            {
+                return Problem.Reportee_Orgno_NotFound;
+            }
+
+            if (!party.PartyUuid.HasValue)
+            {
+                return Problem.Party_PartyUuid_NotFound;
+            }
+
+            Guid partyUuid = party.PartyUuid.Value;
+
+            ExternalRequestId externalRequestId = new()
+            {
+                OrgNo = party.OrgNumber,
+                SystemId = request.SystemId,
+                ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
+            };
+
+            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            if (existing is not null)
+            {
+                return Problem.SystemUser_AlreadyExists;
+            }
+
+            if (request.Rights is not null && request.Rights.Count > 0)
+            {
+                Result<bool> validatedRequestedRights = ValidateRights(request.Rights, regSystem);
+                if (validatedRequestedRights.IsProblem)
+                {
+                    return validatedRequestedRights.Problem;
+                }
+            }
+
+            if (request.AccessPackages is not null && request.AccessPackages.Count > 0)
+            {
+                Result<bool> validatedRequestedPackages = ValidateAccessPackages(request.AccessPackages, regSystem);
+                if (validatedRequestedPackages.IsProblem)
+                {
+                    return validatedRequestedPackages.Problem;
+                }
+            }
+
+            if (request.Rights is not null && request.Rights.Count > 0)
+            {
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+
+                if (delegationCheckFinalResult?.RightResponses is null)
+                {
+                    // This represents some problem with doing the delegation check beyond the rights not being delegable.
+                    return Problem.UnableToDoDelegationCheck;
+                }
+
+                if (!delegationCheckFinalResult.CanDelegate)
+                {
+                    // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
+                    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+                }
+            }
+
+            if (request.AccessPackages is not null && request.AccessPackages.Count > 0)
+            {
+                var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, request.AccessPackages, true, cancellationToken);
+                if (accessPackageCheckResult.IsProblem)
+                {
+                    return accessPackageCheckResult.Problem;
+                }
+                else
+                {
+                    accessPackageDelegationCheckResult = accessPackageCheckResult.Value;
+                }
+            }
+
+            SystemUser newSystemUser = new()
+            {
+                Id = request.Id.ToString(),
+                ReporteeOrgNo = party.OrgNumber,
+                SystemInternalId = regSystem.InternalId,
+                IntegrationTitle = request.SystemId,
+                SystemId = request.SystemId,
+                PartyId = partyId
+            };
+
+            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
+            if (insertedId is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+            if (inserted is null)
+            {
+                return Problem.SystemUser_FailedToCreate;
+            }
+
+            if (regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
+            {
+                Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses!);
+                if (delegationSucceeded.IsProblem)
+                {
+                    await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                    return delegationSucceeded.Problem;
+                }
+            }
+
+            if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0 && accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate)
+            {
+                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, regSystem.AccessPackages, cancellationToken);
+                if (accessPackageDelegationSucceeded.IsProblem)
+                {
+                    await _repository.SetDeleteSystemUserById((Guid)insertedId);
+                    return accessPackageDelegationSucceeded.Problem;
+                }
+            }
+
+            return inserted;
+        }
+
+        /// <inheritdoc/>
+        public Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
+        {
+            if ((rights.Count > 0 && systemInfo.Rights is null) || (rights.Count > systemInfo.Rights!.Count))
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+
+            bool[] validate = new bool[rights.Count];
+            foreach (var requestRight in rights)
+            {
+                // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
+                List<Right> topMatchesInSystem = FindListOfMatchingRightsOnTopAttribute(requestRight.Resource[0], systemInfo.Rights);
+                if (topMatchesInSystem.Count == 0)
+                {
+                    return Problem.Rights_NotFound_Or_NotDelegable;
+                }
+
+                // Locate one full match, the first we find might not be the correct
+                foreach (var systemRight in topMatchesInSystem)
+                {
+                    if (IsFullMatch(systemRight, requestRight))
+                    {
+                        validate[rights.IndexOf(requestRight)] = true;
+                    }
+                }
+            }
+
+            foreach (bool right in validate)
+            {
+                if (!right)
+                {
+                    return Problem.Rights_NotFound_Or_NotDelegable;
+                }
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo)
+        {
+            if (systemInfo == null || systemInfo.AccessPackages == null)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+
+            if (systemInfo.AccessPackages.Count == 0)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+
+            if (accessPackages.Count > systemInfo.AccessPackages.Count)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+
+            bool[] validate = new bool[accessPackages.Count];
+            foreach (AccessPackage accessPackage in accessPackages)
+            {
+                foreach (AccessPackage systemPackage in systemInfo.AccessPackages)
+                {
+                    if (accessPackage.Urn == systemPackage.Urn)
+                    {
+                        validate[accessPackages.IndexOf(systemPackage)] = true;
+                    }
+                }
+            }
+
+            foreach (bool package in validate)
+            {
+                if (!package)
+                {
+                    return Problem.Rights_NotFound_Or_NotDelegable;
+                }
+            }
+
+            return true;
+        }
+
+        // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
+        private static List<Right> FindListOfMatchingRightsOnTopAttribute(AttributePair newpair, List<Right> systemlist)
+        {
+            List<Right> list = [];
+
+            foreach (Right systemRight in systemlist)
+            {
+                foreach (AttributePair p in systemRight.Resource)
+                {
+                    if (newpair.Id == p.Id && newpair.Value == p.Value)
+                    {
+                        list.Add(systemRight);
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        private static bool IsFullMatch(Right systemRight, Right requestRight)
+        {
+            if (requestRight.Resource.Count != systemRight.Resource.Count)
+            {
+                return false;
+            }
+
+            foreach (var systemPair in systemRight.Resource)
+            {
+                if (!VerifySubResource(systemPair, requestRight))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Ensure that the system's sub-resource is present in the request's list of sub-resources
+        private static bool VerifySubResource(AttributePair system, Right request)
+        {
+            foreach (var resource in request.Resource)
+            {
+                if (system.Id == resource.Id && system.Value == resource.Value)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <inheritdoc/>
         public async Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
         {

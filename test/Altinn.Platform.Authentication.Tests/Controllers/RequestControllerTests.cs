@@ -1484,7 +1484,7 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Approve_Request_SecondTime_ReturnBadRequest() 
+    public async Task Approve_Request_SecondTime_ReturnConflict() 
     {
         // Create System used for test
         string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
@@ -1524,6 +1524,7 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
         RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
@@ -1538,13 +1539,13 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
 
-        HttpRequestMessage requestAgain = new(HttpMethod.Post, endpoint)
+        HttpRequestMessage requestAgain = new(HttpMethod.Post, approveEndpoint)
         {
             Content = JsonContent.Create(req)
         };
-        HttpResponseMessage messageAgain = await client.SendAsync(requestAgain, HttpCompletionOption.ResponseHeadersRead);
+        HttpResponseMessage messageAgain = await client2.SendAsync(requestAgain, HttpCompletionOption.ResponseHeadersRead);
 
-        Assert.Equal(HttpStatusCode.BadRequest, messageAgain.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, messageAgain.StatusCode);
     }
 
     [Fact]
