@@ -413,16 +413,7 @@ namespace Altinn.Platform.Authentication.Services
             return inserted;
         }
 
-        private async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(
-            SystemUserType systemUserType, 
-            string systemId, 
-            string partyId, 
-            int userId, 
-            string? externalRef,
-            Guid? requestId,
-            List<AccessPackage>? accessPackages = default, 
-            List<Right>? rights = default, 
-            CancellationToken cancellationToken = default)
+        private async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(SystemUserType systemUserType, string systemId, string partyId, int userId, string? externalRef, Guid? requestId, List<AccessPackage>? accessPackages = default, List<Right>? rights = default, CancellationToken cancellationToken = default)
         {
             // Step 1 in refactoring of the systemuser creation process, after this method is verified to work, 
             // refactor it with the above CreateAndDelegateSystemUser method.
