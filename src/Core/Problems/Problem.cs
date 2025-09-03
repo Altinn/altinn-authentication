@@ -347,4 +347,16 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemUser_FailedToDeleteAccessPackage { get; }
         = _factory.Create(56, HttpStatusCode.BadRequest, "Failed to delete access package delegation for system user");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_MissingAccessPackage { get; }
+        = _factory.Create(57, HttpStatusCode.BadRequest, "No AccessPackages found, an Agent SystemUser must have at least one");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_MissingRightsOrAccessPackages { get; }
+        = _factory.Create(58, HttpStatusCode.BadRequest, "No AccessPackages or Single Rights found, a SystemUser must have at least one");
 }

@@ -45,6 +45,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 systemuser_type,
                 redirect_urls)
@@ -54,6 +55,7 @@ public class RequestRepository : IRequestRepository
                 @system_id,
                 @party_org_no,
                 @rights,
+                @accesspackages,
                 @status,
                 @systemuser_type,
                 @redirect_urls);";
@@ -67,6 +69,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("system_id", createRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
             command.Parameters.Add(new("rights", NpgsqlDbType.Jsonb) { Value = createRequest.Rights });
+            command.Parameters.Add(new("accesspackages", NpgsqlDbType.Jsonb) { Value = createRequest.AccessPackages });
             command.Parameters.AddWithValue("status", createRequest.Status);
 
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
@@ -152,6 +155,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created
@@ -235,6 +239,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created 
@@ -301,8 +306,9 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<Guid?> ApproveAndCreateSystemUser(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken = default)
+    public async Task<bool> ApproveAndCreateSystemUser(Guid requestId, Guid systemUserId, int userId, CancellationToken cancellationToken = default)
     {
+        // TODO for refactor: add systemUserId column to the Request table
         string changed_by = "userId:" + userId.ToString();
 
         const string QUERY = /*strpsql*/"""
@@ -313,27 +319,21 @@ public class RequestRepository : IRequestRepository
             WHERE business_application.request.id = @requestId
             """;
         await using NpgsqlConnection conn = await _dataSource.OpenConnectionAsync(cancellationToken);
-        await using NpgsqlTransaction transaction = await conn.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken);
 
         try
         {
-            await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn, transaction);
+            await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn); 
 
             command.Parameters.AddWithValue("requestId", requestId);
             command.Parameters.AddWithValue("request_status", RequestStatus.Accepted.ToString());
             command.Parameters.AddWithValue("changed_by", changed_by);
 
-            bool isUpdated = await command.ExecuteNonQueryAsync() > 0;
-
-            Guid? systemUserId = await _systemUserRepository.InsertSystemUser(toBeInserted, userId);
-
-            await transaction.CommitAsync();
-
-            return systemUserId;
+            bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
+                        
+            return true;
         }
         catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
+        {            
             _logger.LogError(ex, "Authentication // RequestRepository // ApproveAndCreateSystemUser // Exception");
             throw;
         }
@@ -384,7 +384,8 @@ public class RequestRepository : IRequestRepository
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
-            Rights = reader.GetFieldValue<List<Right>>("rights"),
+            Rights = reader.IsDBNull("rights") ? [] : reader.GetFieldValue<List<Right>>("rights"),
+            AccessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
@@ -437,6 +438,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created
@@ -628,6 +630,7 @@ public class RequestRepository : IRequestRepository
                 system_id,
                 party_org_no,
                 rights,
+                accesspackages,
                 request_status,
                 redirect_urls,
                 created 
