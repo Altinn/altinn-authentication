@@ -64,7 +64,7 @@ public static class ValidationErrors
     /// Gets a validation error descriptor for non existing accesspackage id
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_AccessPackage_NotValid { get; }
-        = _factory.Create(8, "One or all the accesspackage(s) is not found in altinn's access packages or is not delegable because they are not part of REGN/REVI/Forretningsfører roller");
+        = _factory.Create(8, "One or all the accesspackage(s) is not found in altinn's access packages or is not delegable");
 
     /// <summary>
     /// Gets a validation error descriptor for invalid resource id format
