@@ -247,7 +247,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_NotValid.ErrorCode);
             Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
-            Assert.Equal("One or all the accesspackage(s) is not found in altinn's access packages or is not delegable because they are not part of REGN/REVI/Forretningsfører roller", error.Detail);
+            Assert.Equal("One or all the accesspackage(s) is not found in altinn's access packages or is not delegable", error.Detail);
         }
 
         [Fact]
@@ -1288,7 +1288,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_NotValid.ErrorCode);
             Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
-            Assert.Equal("One or all the accesspackage(s) is not found in altinn's access packages or is not delegable because they are not part of REGN/REVI/Forretningsfører roller", error.Detail);
+            Assert.Equal("One or all the accesspackage(s) is not found in altinn's access packages or is not delegable", error.Detail);
         }
 
         [Fact]

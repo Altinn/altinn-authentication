@@ -223,4 +223,13 @@ public interface ISystemUserService
     /// <param name="systemInfo">The Vendor's Registered System</param>
     /// <returns>Result or Problem</returns>
     Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo);
+  
+    /// Gets access packages to a system user.
+    /// </summary>
+    /// <param name="partyId">the identifier of the party</param>
+    /// <param name="systemUserId">the system user id</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns>true if the delegations are successful</returns>
+    Task<Result<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int partyId, Guid systemUserId, CancellationToken cancellationToken);
+  
 }
