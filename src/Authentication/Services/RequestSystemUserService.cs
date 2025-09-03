@@ -106,7 +106,7 @@ public class RequestSystemUserService(
 
         if (!hasAtLeastOne)
         {
-            return Problem.Rights_NotFound_Or_NotDelegable;
+            return Problem.SystemUser_MissingRightsOrAccessPackages;
         }
 
         if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
@@ -202,7 +202,7 @@ public class RequestSystemUserService(
 
         if (createAgentRequest.AccessPackages is null || createAgentRequest.AccessPackages.Count == 0)
         {
-            return Problem.AccessPackage_ValidationFailed;
+            return Problem.SystemUser_MissingAccessPackage;
         }
 
         Result<bool> valPackages = systemUserService.ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
