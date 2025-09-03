@@ -26,6 +26,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Services
@@ -378,42 +379,19 @@ namespace Altinn.Platform.Authentication.Services
                 PartyId = partyId
             };
 
-            Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
-            if (insertedId is null)
-            {
-                return Problem.SystemUser_FailedToCreate;
-            }
-
-            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
-            if (inserted is null)
-            {
-                return Problem.SystemUser_FailedToCreate;
-            }
-
-            if (regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
-            {
-                Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses!);
-                if (delegationSucceeded.IsProblem)
-                {
-                    await _repository.SetDeleteSystemUserById((Guid)insertedId);
-                    return delegationSucceeded.Problem;
-                }
-            }
-
-            if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0 && accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate)
-            {
-                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, regSystem.AccessPackages, cancellationToken);
-                if (accessPackageDelegationSucceeded.IsProblem)
-                {
-                    await _repository.SetDeleteSystemUserById((Guid)insertedId);
-                    return accessPackageDelegationSucceeded.Problem;
-                }
-            }
-
-            return inserted;
+            return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
         }
 
-        private async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(SystemUserType systemUserType, string systemId, string partyId, int userId, string? externalRef, Guid? requestId, List<AccessPackage>? accessPackages = default, List<Right>? rights = default, CancellationToken cancellationToken = default)
+        private async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(
+            SystemUserType systemUserType, 
+            string systemId, 
+            string partyId, 
+            int userId, 
+            string? externalRef, 
+            Guid? requestId, 
+            List<AccessPackage>? accessPackages = default, 
+            List<Right>? rights = default, 
+            CancellationToken cancellationToken = default)
         {
             // Step 1 in refactoring of the systemuser creation process, after this method is verified to work, 
             // refactor it with the above CreateAndDelegateSystemUser method.
@@ -519,6 +497,20 @@ namespace Altinn.Platform.Authentication.Services
                 ExternalRef = string.IsNullOrEmpty(externalRef) ? party.OrgNumber : externalRef
             };
 
+            return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
+            
+        }
+
+        private async Task<Result<SystemUser>> InsertNewSystemUser(
+            SystemUser newSystemUser, 
+            int userId, 
+            RegisteredSystemResponse regSystem, 
+            DelegationCheckResult? delegationCheckFinalResult, 
+            string partyId, 
+            AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult, 
+            Guid partyUuid, 
+            CancellationToken cancellationToken)
+        {
             Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
             if (insertedId is null)
             {
@@ -555,15 +547,41 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(AgentRequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken)
+        public async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(
+            AgentRequestSystemResponse request, 
+            string partyId, 
+            int userId, 
+            CancellationToken cancellationToken)
         {
-            return await CreateSystemUserFromApprovedVendorRequest(SystemUserType.Agent, request.SystemId, partyId, userId, externalRef:request.ExternalRef, request.Id, request.AccessPackages, null, cancellationToken);
+            return await CreateSystemUserFromApprovedVendorRequest(
+                SystemUserType.Agent, 
+                request.SystemId, 
+                partyId, 
+                userId, 
+                externalRef:request.ExternalRef, 
+                request.Id, 
+                request.AccessPackages, 
+                null, 
+                cancellationToken);
         }
 
         /// <inheritdoc/>
-        public async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(RequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken)
+        public async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(
+            RequestSystemResponse request, 
+            string partyId, 
+            int userId, 
+            CancellationToken cancellationToken)
         {
-            return await CreateSystemUserFromApprovedVendorRequest(SystemUserType.Standard, request.SystemId, partyId, userId, externalRef: request.ExternalRef, request.Id, request.AccessPackages, request.Rights, cancellationToken);
+            return await CreateSystemUserFromApprovedVendorRequest(
+                SystemUserType.Standard, 
+                request.SystemId, 
+                partyId, 
+                userId, 
+                externalRef: request.ExternalRef, 
+                request.Id, 
+                request.AccessPackages, 
+                request.Rights, 
+                cancellationToken);
         }                
      
         /// <inheritdoc/>
