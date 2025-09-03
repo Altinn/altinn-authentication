@@ -213,7 +213,15 @@ namespace Altinn.Platform.Authentication.Services
                 isRightsDeleted = revokeRightResult.Value;
             }
 
-            if (accesssPackages.Count > 0)
+            var delegatedPackages = await GetAccessPackagesForSystemUser(partyUuid, systemUser.SystemInternalId!.Value, cancellationToken);
+            if (delegatedPackages.IsProblem)
+            {
+                return Problem.AccessPackage_FailedToGetDelegatedPackages;
+            }
+
+            List<AccessPackage> accessPackagesForSystemUser = delegatedPackages.Value;
+
+            if (accessPackagesForSystemUser.Count > 0)
             {
                 var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, true, cancellationToken);
                 if (removeSystemUserResult.IsProblem)
@@ -618,7 +626,7 @@ namespace Altinn.Platform.Authentication.Services
 
             string systemId = systemUser.SystemId;
             List<Right> rights = await _registerRepository.GetRightsForRegisteredSystem(systemId);
-            var delegatedPackages = await GetAccessPackagesForSystemUser(partyUuId, systemUser.SystemInternalId!.Value, cancellationToken);
+            var delegatedPackages = await GetAccessPackagesForSystemUser(partyUuId, new Guid(systemUser.Id), cancellationToken);
             if (delegatedPackages.IsProblem)
             {
                 return Problem.AccessPackage_FailedToGetDelegatedPackages;

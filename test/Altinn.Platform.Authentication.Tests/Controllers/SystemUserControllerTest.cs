@@ -1,16 +1,4 @@
 ﻿#nullable enable
-using System;
-using System.Collections.Generic;
-using System.Drawing.Printing;
-using System.Drawing.Text;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
@@ -24,6 +12,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
@@ -33,16 +22,32 @@ using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
+using Altinn.Platform.Register.Models;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Drawing.Printing;
+using System.Drawing.Text;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
@@ -1102,7 +1107,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var list3 = result3.Items.ToList();
             Assert.Empty(list3);
         }
-
+       
         // Agent Tests
         [Fact]
         public async Task AgentSystemUser_Get_ListForPartyId_ReturnsListOK()
@@ -2108,6 +2113,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
         }
+
+
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)
         {
