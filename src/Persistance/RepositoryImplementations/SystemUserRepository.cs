@@ -233,10 +233,10 @@ public class SystemUserRepository : ISystemUserRepository
     /// <inheritdoc />
     public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted, int userId)
     {
-        if (string.IsNullOrEmpty(toBeInserted.Id))
+        if (string.IsNullOrEmpty(toBeInserted.Id) || !Guid.TryParse(toBeInserted.Id, out _))    
         {
             toBeInserted.Id = Guid.NewGuid().ToString();
-        }
+        }        
 
         const string QUERY = /*strpsql*/@"            
                 INSERT INTO business_application.system_user_profile(

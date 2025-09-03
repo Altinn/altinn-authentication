@@ -1,8 +1,6 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
-using System.Drawing.Printing;
-using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -15,14 +13,12 @@ using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authentication.Tests.Mocks;
-using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
-using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
@@ -32,7 +28,6 @@ using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
-using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Hosting;
@@ -42,10 +37,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Asn1.X509;
 using Xunit;
-using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {

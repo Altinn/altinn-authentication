@@ -648,7 +648,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     if (accessPackage.Urn == systemPackage.Urn)
                     {
-                        validate[accessPackages.IndexOf(systemPackage)] = true;
+                        validate[accessPackages.IndexOf(accessPackage)] = true;
                     }
                 }
             }

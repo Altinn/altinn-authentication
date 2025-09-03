@@ -1524,7 +1524,6 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.Created, message.StatusCode);
 
         RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
-        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
