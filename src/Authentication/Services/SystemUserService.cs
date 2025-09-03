@@ -213,7 +213,7 @@ namespace Altinn.Platform.Authentication.Services
                 isRightsDeleted = revokeRightResult.Value;
             }
 
-            var delegatedPackages = await GetAccessPackagesForSystemUser(partyUuid, systemUser.SystemInternalId!.Value, cancellationToken);
+            var delegatedPackages = await GetAccessPackagesForSystemUser(partyUuid, new Guid(systemUser.Id), cancellationToken);
             if (delegatedPackages.IsProblem)
             {
                 return Problem.AccessPackage_FailedToGetDelegatedPackages;
@@ -232,7 +232,7 @@ namespace Altinn.Platform.Authentication.Services
                 isAccessPackagesDeleted = removeSystemUserResult.Value;
             }
 
-            if ((rights.Count > 0 && !isRightsDeleted) || (accesssPackages.Count > 0 && !isAccessPackagesDeleted))
+            if ((rights.Count > 0 && !isRightsDeleted) || (accessPackagesForSystemUser.Count > 0 && !isAccessPackagesDeleted))
             {
                 return Problem.SystemUser_FailedToDelete;
             }
