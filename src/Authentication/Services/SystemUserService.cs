@@ -541,9 +541,9 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            if (regSystem.AccessPackages is not null && regSystem.AccessPackages.Count > 0 && accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate)
+            if (accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate && accessPackageDelegationCheckResult.AccessPackages is not null && accessPackageDelegationCheckResult.AccessPackages.Count > 0)
             {
-                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, regSystem.AccessPackages, cancellationToken);
+                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, accessPackageDelegationCheckResult.AccessPackages, cancellationToken);
                 if (accessPackageDelegationSucceeded.IsProblem)
                 {
                     await _repository.SetDeleteSystemUserById((Guid)insertedId);
