@@ -465,7 +465,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (rights is not null && rights.Count > 0)
             {
-                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], fromBff:false, cancellationToken);
 
                 if (delegationCheckFinalResult?.RightResponses is null)
                 {
@@ -482,7 +482,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (accessPackages is not null && accessPackages.Count > 0)
             {
-                var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, accessPackages, true, cancellationToken);
+                var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, accessPackages, fromBff:false, cancellationToken);
                 if (accessPackageCheckResult.IsProblem)
                 {
                     return accessPackageCheckResult.Problem;
