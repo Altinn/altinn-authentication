@@ -187,8 +187,8 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.True(result.Value.CanDelegate);
-            Assert.NotNull(result.Value.accessPackages);
-            Assert.Single(result.Value.accessPackages);
+            Assert.NotNull(result.Value.AccessPackages);
+            Assert.Single(result.Value.AccessPackages);
         }
 
         [Fact]
@@ -273,7 +273,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.True(result.Value.CanDelegate);
-            Assert.Empty(result.Value.accessPackages);
+            Assert.Empty(result.Value.AccessPackages);
         }
 
         [Fact]
@@ -300,7 +300,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.True(result.Value.CanDelegate);
-            Assert.All(result.Value.accessPackages, p => Assert.Null(p.Urn));
+            Assert.All(result.Value.AccessPackages, p => Assert.Null(p.Urn));
         }
 
         [Fact]
