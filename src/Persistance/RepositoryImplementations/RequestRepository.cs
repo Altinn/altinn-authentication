@@ -306,7 +306,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<bool> ApproveAndCreateSystemUser(Guid requestId, Guid systemUserId, int userId, CancellationToken cancellationToken = default)
+    public async Task<bool> SetRequestApproved(Guid requestId, Guid systemUserId, int userId, CancellationToken cancellationToken = default)
     {
         // TODO for refactor: add systemUserId column to the Request table
         string changed_by = "userId:" + userId.ToString();

@@ -17,6 +17,9 @@
   "accessPackages": [
     {
       "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
+    },
+    {
+      "urn": "urn:altinn:accesspackage:skattnaering"
     }
   ],
   "rights": [
