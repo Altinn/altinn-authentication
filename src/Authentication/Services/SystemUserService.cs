@@ -532,7 +532,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToCreate;
             }
 
-            if (regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
+            if (newSystemUser.UserType == SystemUserType.Standard && regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
             {
                 Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses!);
                 if (delegationSucceeded.IsProblem)
@@ -542,7 +542,7 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            if (accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate && accessPackageDelegationCheckResult.AccessPackages is not null && accessPackageDelegationCheckResult.AccessPackages.Count > 0)
+            if (newSystemUser.UserType == SystemUserType.Standard && accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate && accessPackageDelegationCheckResult.AccessPackages is not null && accessPackageDelegationCheckResult.AccessPackages.Count > 0)
             {
                 Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, accessPackageDelegationCheckResult.AccessPackages, cancellationToken);
                 if (accessPackageDelegationSucceeded.IsProblem)
