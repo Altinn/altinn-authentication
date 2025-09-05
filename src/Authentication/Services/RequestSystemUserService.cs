@@ -526,7 +526,11 @@ public class RequestSystemUserService(
         }
 
         // Logs the change in the Request Repository
-        _ = await requestRepository.SetRequestApproved(requestId, new Guid(systemUser.Value.Id), userId, cancellationToken);
+        bool sat = await requestRepository.SetRequestApproved(requestId, new Guid(systemUser.Value.Id), userId, cancellationToken);
+        if (!sat)
+        {
+            return Problem.RequestCouldNotBeUpdated;
+        }
 
         return true;
     }
@@ -574,7 +578,11 @@ public class RequestSystemUserService(
             return res.Problem;
         }
 
-        _ = await requestRepository.SetRequestApproved(requestId, new Guid(toBeInserted.Value.Id), userId, cancellationToken);
+        bool sat = await requestRepository.SetRequestApproved(requestId, new Guid(toBeInserted.Value.Id), userId, cancellationToken);
+        if (!sat)
+        {
+            return Problem.RequestCouldNotBeUpdated;
+        }
 
         return true;
     }
