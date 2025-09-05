@@ -517,12 +517,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns>true id the systemid contains space</returns>
         public static bool HasSpaceInId(string systemId)
         {
-            if (systemId.Contains(' '))
-            {
-                return true;
-            }
-
-            return false;
+            return systemId.Contains(' ');
         }
     }
 }
