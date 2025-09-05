@@ -144,6 +144,11 @@ public class SystemRegisterController : ControllerBase
             return NotFound($"System with ID '{systemId}' not found.");
         }
 
+        if (currentSystem.IsDeleted)
+        {
+            return BadRequest("Cannot update a system marked as deleted.");
+        }
+
         List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
 
@@ -291,6 +296,11 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
+        if (registerSystemResponse.IsDeleted)
+        {
+            return BadRequest("Cannot update a system marked as deleted.");
+        }
+
         errors = await ValidateRights(rights, cancellationToken);
 
         if (errors.TryToActionResult(out var errorResult))
@@ -322,6 +332,11 @@ public class SystemRegisterController : ControllerBase
         if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse.Vendor.ID), User))
         {
             return Forbid();
+        }
+
+        if (registerSystemResponse.IsDeleted)
+        {
+            return BadRequest("Cannot update a system marked as deleted.");
         }
 
         ValidationErrorBuilder errors = await ValidateAccessPackages(accessPackages, cancellationToken);
@@ -501,6 +516,13 @@ public class SystemRegisterController : ControllerBase
     private async Task<ValidationErrorBuilder> ValidateRegisteredSystem(RegisterSystemRequest systemToValidate, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
+
+        if (AuthenticationHelper.HasSpaceInId(systemToValidate.Id))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Invalid_SystemId_Spaces, [
+                ErrorPathConstant.SYSTEM_ID
+            ]);
+        }
 
         if (!AuthenticationHelper.DoesSystemIdStartWithOrgnumber(systemToValidate.Vendor.ID, systemToValidate.Id))
         {
