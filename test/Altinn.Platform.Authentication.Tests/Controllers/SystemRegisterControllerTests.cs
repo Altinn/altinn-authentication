@@ -167,6 +167,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Create_BadRequest_SystemId()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidSystemId.json";
+            HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+
+            AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_Invalid_SystemId_Spaces.ErrorCode);
+            Assert.Equal("/registersystemrequest/systemid", error.Paths.First(p => p.Equals("/registersystemrequest/systemid")));
+            Assert.Equal("System ID cannot have spaces in id (leading, trailing or in between the id)", error.Detail);
+        }
+
+        [Fact]
         public async Task SystemRegister_Create_DuplicateSystem_BadRequest()
         {
             // Arrange
@@ -348,7 +363,81 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Update_Rights_DeletedSystem_ReturnsBadRequest()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string systemID = "991825827_the_matrix";
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                HttpRequestMessage deleteRequest = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{systemID}/");
+                HttpResponseMessage deleteResponse = await client.SendAsync(deleteRequest, HttpCompletionOption.ResponseContentRead);
+                Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+                // Arrange
+                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateRight.json");
+                StreamContent content = new StreamContent(dataStream);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+               
+                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/rights");
+                request.Content = content;
+                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+                string body = await updateResponse.Content.ReadAsStringAsync();
+                Assert.Equal("Cannot update a system marked as deleted.", body);
+            }
+        }
+
+        [Fact]
         public async Task SystemRegister_Update_AccessPackage_Success_Admin()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string systemID = "991825827_the_matrix";
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                JsonSerializerOptions options = new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                HttpRequestMessage deleteRequest = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{systemID}/");
+                HttpResponseMessage deleteResponse = await client.SendAsync(deleteRequest, HttpCompletionOption.ResponseContentRead);
+                Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+                // Arrange
+                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/UpdateAccessPackages.json");
+                StreamContent content = new StreamContent(dataStream);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                
+                HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemID}/accesspackages");
+                request.Content = content;
+                HttpResponseMessage updateResponse = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+                string body = await updateResponse.Content.ReadAsStringAsync();
+                Assert.Equal("Cannot update a system marked as deleted.", body);
+            }
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_AccessPackage_DeletedSystem_ReturnsBadRequest()
         {
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithoutRight.json";
             HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
@@ -1587,6 +1676,38 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}/changelog");
             HttpResponseMessage getResponse = await getChangeLogClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_DeletedSystem_ReturnsBadRequest()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string name = "991825827_the_matrix";
+                HttpClient client = CreateClient();
+                string[] prefixes = { "altinn", "digdir" };
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemregister/vendor/{name}/");
+                HttpResponseMessage deleteResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+                Stream dataStream = File.OpenRead("Data/SystemRegister/Json/SystemRegisterUpdateRequest.json");
+                StreamContent content = new StreamContent(dataStream);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                HttpRequestMessage updateRequest = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{name}/");
+                updateRequest.Content = content;
+                HttpResponseMessage updateResponse = await client.SendAsync(updateRequest, HttpCompletionOption.ResponseContentRead);
+                Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+                string body = await updateResponse.Content.ReadAsStringAsync();
+                Assert.Equal("Cannot update a system marked as deleted.", body);
+            }
         }
 
         private async Task<HttpResponseMessage> CreateAndAssertSystemAsync(string systemId, List<string> clientIds)

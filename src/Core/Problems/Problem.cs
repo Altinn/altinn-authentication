@@ -359,4 +359,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemUser_MissingRightsOrAccessPackages { get; }
         = _factory.Create(58, HttpStatusCode.BadRequest, "No AccessPackages or Single Rights found, a SystemUser must have at least one");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RequestCouldNotBeUpdated { get; }
+        = _factory.Create(59, HttpStatusCode.NotFound, "An error occured when Updating the Request.");
 }

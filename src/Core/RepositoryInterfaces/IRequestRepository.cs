@@ -42,7 +42,7 @@ public interface IRequestRepository
     /// <param name="userId">the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>returns the system user id</returns>
-    Task<bool> ApproveAndCreateSystemUser(Guid requestId, Guid systemUserId, int userId, CancellationToken cancellationToken);
+    Task<bool> SetRequestApproved(Guid requestId, Guid systemUserId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all Requests that the Vendor has

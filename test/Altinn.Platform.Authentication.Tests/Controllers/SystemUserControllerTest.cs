@@ -44,6 +44,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
+using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
@@ -1283,10 +1284,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string token = AddSystemUserRequestWriteTestTokenToClient(client);
             string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
-            AccessPackage accessPackage = new()
+            AccessPackage accessPackage1 = new()
             {
                 Urn = "urn:altinn:accesspackage:forretningsforer-eiendom"
+            };
 
+            AccessPackage accessPackage2 = new()
+            {
+                Urn = "urn:altinn:accesspackage:skattnaering"
             };
 
             // Arrange
@@ -1295,7 +1300,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 ExternalRef = "external",
                 SystemId = "991825827_the_matrix",
                 PartyOrgNo = "910493353",
-                AccessPackages = [accessPackage]
+                AccessPackages = [accessPackage1, accessPackage2]
             };
 
             HttpRequestMessage request = new(HttpMethod.Post, endpoint)
@@ -1336,7 +1341,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string systemUserId = list[0].Id;
             string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
 
-            var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
+            var delegationRequest = new AgentDelegationInputDto 
+            { 
+                CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString(), Access = [
+                new ClientRoleAccessPackages()
+                {
+                    Role = "REGN",
+                    Packages = ["urn:altinn:accesspackage:skattnaering"]
+                },
+                                new ClientRoleAccessPackages()
+                {
+                    Role = "forretningsforer",
+                    Packages = ["urn:altinn:accesspackage:forretningsforer-eiendom"]
+                }
+                ]
+            };
 
             HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));

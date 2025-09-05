@@ -1,5 +1,5 @@
 {
-  "id": "991825827_the_matrix",
+  "id": "991825827_the matrix",
   "vendor": {
     "authority": "iso6523-actorid-upis",
     "ID": "0192:991825827"
@@ -14,14 +14,6 @@
     "en": "Test system",
     "nn": "Test system"
   },
-  "accessPackages": [
-    {
-      "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
-    },
-    {
-      "urn": "urn:altinn:accesspackage:skattnaering"
-    }
-  ],
   "rights": [
     {
       "resource": [

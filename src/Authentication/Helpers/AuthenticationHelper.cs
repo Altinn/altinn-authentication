@@ -125,7 +125,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
             return userAuthenticationModel;
         }
-       
+
         /// <summary>
         /// Converts IDporten acr claim Authentication Context Class Reference - The security level of assurance for the
         /// authentication. Possible values are Level3 (i.e. MinID was used) or Level4 (other eIDs).
@@ -141,7 +141,7 @@ namespace Altinn.Platform.Authentication.Helpers
                     return Enum.SecurityLevel.Sensitive;
                 case "Level4":
                     return Enum.SecurityLevel.VerySensitive;
-                default: 
+                default:
                     return Enum.SecurityLevel.NotSensitive;
             }
         }
@@ -317,10 +317,10 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="redirectUrls">the redirect url for a system</param>
         /// <returns>true if the url matches the expression</returns>
         public static bool IsValidRedirectUrl(List<Uri> redirectUrls)
-        {            
+        {
             foreach (Uri redirectUri in redirectUrls)
             {
-                if (!IsValidAbsoluteUriWithHttps(redirectUri)) 
+                if (!IsValidAbsoluteUriWithHttps(redirectUri))
                 {
                     return false;
                 }
@@ -339,10 +339,10 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="registeredSystem">the RegisteredSystem object to convert to RegisteredSystemDTO</param>
         /// <returns>RegisteredSystemDTO of RegisteredSystem</returns>
-        public static RegisteredSystemDTO MapRegisteredSystemToRegisteredSystemDTO(RegisteredSystemResponse registeredSystem) 
+        public static RegisteredSystemDTO MapRegisteredSystemToRegisteredSystemDTO(RegisteredSystemResponse registeredSystem)
         {
-            return new RegisteredSystemDTO 
-            { 
+            return new RegisteredSystemDTO
+            {
                 Description = registeredSystem.Description,
                 Name = registeredSystem.Name,
                 Rights = registeredSystem.Rights,
@@ -371,7 +371,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 throw new ArgumentException("Invalid consumer claim: invalid JSON");
             }
 
-            if (consumerClaim is null) 
+            if (consumerClaim is null)
             {
                 throw new ArgumentException("Invalid consumer claim: null");
             }
@@ -508,6 +508,16 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return Problem.RedirectUriNotFound;
+        }
+
+        /// <summary>
+        /// check if the system id contains space
+        /// </summary>
+        /// <param name="systemId">the id of the system</param>
+        /// <returns>true id the systemid contains space</returns>
+        public static bool HasSpaceInId(string systemId)
+        {
+            return systemId.Contains(' ');
         }
     }
 }
