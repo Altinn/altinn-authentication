@@ -502,7 +502,8 @@ namespace Altinn.Platform.Authentication.Services
                 SystemId = systemId,
                 PartyId = partyId,
                 UserType = systemUserType,
-                ExternalRef = string.IsNullOrEmpty(externalRef) ? party.OrgNumber : externalRef
+                ExternalRef = string.IsNullOrEmpty(externalRef) ? party.OrgNumber : externalRef,
+                AccessPackages = 
             };
 
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);

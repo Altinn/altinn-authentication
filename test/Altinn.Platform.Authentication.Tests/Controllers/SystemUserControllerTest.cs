@@ -1283,10 +1283,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string token = AddSystemUserRequestWriteTestTokenToClient(client);
             string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
-            AccessPackage accessPackage = new()
+            AccessPackage accessPackage1 = new()
             {
                 Urn = "urn:altinn:accesspackage:forretningsforer-eiendom"
+            };
 
+            AccessPackage accessPackage2 = new()
+            {
+                Urn = "urn:altinn:accesspackage:skattnaering"
             };
 
             // Arrange
@@ -1295,7 +1299,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 ExternalRef = "external",
                 SystemId = "991825827_the_matrix",
                 PartyOrgNo = "910493353",
-                AccessPackages = [accessPackage]
+                AccessPackages = [accessPackage1, accessPackage2]
             };
 
             HttpRequestMessage request = new(HttpMethod.Post, endpoint)
