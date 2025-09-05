@@ -503,7 +503,7 @@ namespace Altinn.Platform.Authentication.Services
                 PartyId = partyId,
                 UserType = systemUserType,
                 ExternalRef = string.IsNullOrEmpty(externalRef) ? party.OrgNumber : externalRef,
-                AccessPackages = 
+                AccessPackages = accessPackageDelegationCheckResult?.AccessPackages ?? []
             };
 
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
