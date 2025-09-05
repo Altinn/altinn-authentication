@@ -72,10 +72,22 @@ public static class ValidationErrors
     public static ValidationErrorDescriptor SystemRegister_ResourceId_InvalidFormat { get; }
         = _factory.Create(9, "One or more resource id is in wrong format. The valid format is urn:altinn:resource");
 
-
+    /// <summary>
+    /// Gets the validation error descriptor indicating that the request contains duplicate client IDs.
+    /// </summary>
     public static ValidationErrorDescriptor SystemRegister_Duplicate_ClientIds { get; }
         = _factory.Create(11, "Request contains duplicate client ids");
 
+    /// <summary>
+    /// Gets the validation error descriptor for a mismatch between the system ID in the request body and the system ID
+    /// in the URL.
+    /// </summary>
     public static ValidationErrorDescriptor SystemId_Mismatch { get; }
         = _factory.Create(12, "The system ID in the request body does not match the system ID in the URL");
+
+    /// <summary>
+    /// Gets a validation error descriptor for invalid system id with spaces
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_Invalid_SystemId_Spaces { get; }
+        = _factory.Create(13, "System ID cannot have spaces in id (leading, trailing or in between the id)");
 }
