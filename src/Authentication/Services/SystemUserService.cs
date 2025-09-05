@@ -532,9 +532,9 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToCreate;
             }
 
-            if (newSystemUser.UserType == SystemUserType.Standard && regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
+            if (IsStandardSystemUserDelegatgeSingleRights(newSystemUser, regSystem, delegationCheckFinalResult))
             {
-                Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult.RightResponses!);
+                Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult!.RightResponses!);
                 if (delegationSucceeded.IsProblem)
                 {
                     await _repository.SetDeleteSystemUserById((Guid)insertedId);
@@ -542,9 +542,9 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            if (newSystemUser.UserType == SystemUserType.Standard && accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate && accessPackageDelegationCheckResult.AccessPackages is not null && accessPackageDelegationCheckResult.AccessPackages.Count > 0)
+            if (IsStandardSystemUserDelegateAccessPackage(newSystemUser, accessPackageDelegationCheckResult))
             {
-                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, accessPackageDelegationCheckResult.AccessPackages, cancellationToken);
+                Result<bool> accessPackageDelegationSucceeded = await DelegateAccessPackagesToSystemUser(partyUuid, inserted, accessPackageDelegationCheckResult!.AccessPackages!, cancellationToken);
                 if (accessPackageDelegationSucceeded.IsProblem)
                 {
                     await _repository.SetDeleteSystemUserById((Guid)insertedId);
@@ -553,6 +553,26 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return inserted;
+        }
+
+        private static bool IsStandardSystemUserDelegateAccessPackage(SystemUser newSystemUser, AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult)
+        {
+            if (newSystemUser.UserType == SystemUserType.Standard && accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate && accessPackageDelegationCheckResult.AccessPackages is not null && accessPackageDelegationCheckResult.AccessPackages.Count > 0)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsStandardSystemUserDelegatgeSingleRights(SystemUser newSystemUser, RegisteredSystemResponse regSystem, DelegationCheckResult? delegationCheckFinalResult)
+        {
+            if (newSystemUser.UserType == SystemUserType.Standard && regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <inheritdoc/>
