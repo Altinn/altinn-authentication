@@ -526,7 +526,7 @@ public class RequestSystemUserService(
         }
 
         // Logs the change in the Request Repository
-        _ = await requestRepository.ApproveAndCreateSystemUser(requestId, new Guid(systemUser.Value.Id), userId, cancellationToken);
+        _ = await requestRepository.SetRequestApproved(requestId, new Guid(systemUser.Value.Id), userId, cancellationToken);
 
         return true;
     }
@@ -568,14 +568,13 @@ public class RequestSystemUserService(
             return toBeInserted.Problem;
         }
 
-        bool systemUserInserted = await requestRepository.ApproveAndCreateSystemUser(requestId, new Guid(toBeInserted.Value.Id), userId, cancellationToken);
-
         Result<SystemUser> res = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
-
-        if (systemUserInserted is false || res.IsProblem)
+        if (res.IsProblem)
         {
-            return Problem.SystemUser_FailedToCreate;
+            return res.Problem;
         }
+
+        _ = await requestRepository.SetRequestApproved(requestId, new Guid(toBeInserted.Value.Id), userId, cancellationToken);
 
         return true;
     }
