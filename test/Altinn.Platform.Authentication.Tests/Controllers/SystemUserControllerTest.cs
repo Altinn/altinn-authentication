@@ -1097,7 +1097,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemUser_ListAll_Ok()
         {
             // must be set to the same as in the system_user_service
-            const int STREAM_LIMIT = 10;
+            const int STREAM_LIMIT = 100;
 
             // Create System used for test
             string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";

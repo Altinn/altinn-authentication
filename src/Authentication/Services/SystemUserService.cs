@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Used to set the stream chunk limit, for the internal API
         /// </summary>
-        const int STREAM_LIMIT = 10;
+        const int STREAM_LIMIT = 100;
 
         /// <summary>
         /// Creates a new SystemUser
