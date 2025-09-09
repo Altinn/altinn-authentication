@@ -391,6 +391,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IPDP, PDPAppSI>();
     services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();
     services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
+    services.AddTransient<IAuthorizationHandler, AccessTokenHandler>();
     services.AddTransient<DelegationHelper, DelegationHelper>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
