@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Clients;
+using Altinn.Common.AccessToken;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.AccessTokenClient.Services;
