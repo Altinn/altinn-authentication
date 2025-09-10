@@ -520,6 +520,8 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.integration_title,      
                 sui.created,        
                 sui.last_changed,
+                sui.reportee_org_no,
+                sui.reportee_party_id,
                 sui.sequence_no,
                 sui.is_deleted,
                 sui.systemuser_type                            
@@ -562,7 +564,9 @@ public class SystemUserRepository : ISystemUserRepository
             LastChanged = reader.GetFieldValue<DateTime>("last_changed"),
             SequenceNo = reader.GetFieldValue<long>("sequence_no"),
             IsDeleted = reader.GetFieldValue<bool>("is_deleted"),
-            SystemUserType = systemUserType.ToString()
+            SystemUserType = systemUserType,
+            PartyOrgNo = reader.GetFieldValue<string>("reportee_org_no"),
+            PartyId = reader.GetFieldValue<string>("reportee_party_id"),
         });
     }
 }
