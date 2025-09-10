@@ -93,7 +93,7 @@ public class TestState
 
     public TestState WithName(string name)
     {
-        Name = name;
+        Name = name.Replace(" ", "");
         return this;
     }
 
