@@ -506,6 +506,11 @@ namespace Altinn.Platform.Authentication.Services
                 AccessPackages = accessPackageDelegationCheckResult?.AccessPackages ?? []
             };
 
+            if (systemUserType == SystemUserType.Agent)
+            {
+                newSystemUser.AccessPackages = accessPackages ?? [];
+            }
+
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
             
         }
