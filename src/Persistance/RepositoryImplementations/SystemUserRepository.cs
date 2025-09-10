@@ -512,6 +512,9 @@ public class SystemUserRepository : ISystemUserRepository
     public async Task<List<SystemUserRegisterDTO>> GetAllSystemUsers(long fromSequenceNo, int limit, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/"""
+            WITH maxval AS (
+                SELECT business_application.tx_max_safeval('business_application.systemuser_seq') maxval
+            )
             SELECT 
                 sui.system_user_profile_id,
                 sui.integration_title,      
@@ -520,9 +523,10 @@ public class SystemUserRepository : ISystemUserRepository
                 sui.sequence_no,
                 sui.is_deleted,
                 sui.systemuser_type                            
-            FROM business_application.system_user_profile sui                
+            FROM business_application.system_user_profile sui
+            CROSS JOIN maxval mv
             WHERE sui.sequence_no > @sequence_no
-                AND sui.sequence_no <= business_application.tx_max_safeval('business_application.systemuser_seq')
+                AND sui.sequence_no <= mv.maxval
             ORDER BY sui.sequence_no ASC
             LIMIT @limit;
             """

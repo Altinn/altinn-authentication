@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Used to set the stream chunk limit, for the internal API
         /// </summary>
-        const int STREAM_LIMIT = 10;
+        const int STREAM_LIMIT = 100;
 
         /// <summary>
         /// Creates a new SystemUser
@@ -463,7 +463,7 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            if (rights is not null && rights.Count > 0)
+            if (systemUserType == SystemUserType.Standard && rights is not null && rights.Count > 0)
             {
                 delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], fromBff:false, cancellationToken);
 
@@ -480,7 +480,7 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            if (accessPackages is not null && accessPackages.Count > 0)
+            if (systemUserType == SystemUserType.Standard && accessPackages is not null && accessPackages.Count > 0)
             {
                 var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, accessPackages, fromBff:false, cancellationToken);
                 if (accessPackageCheckResult.IsProblem)
