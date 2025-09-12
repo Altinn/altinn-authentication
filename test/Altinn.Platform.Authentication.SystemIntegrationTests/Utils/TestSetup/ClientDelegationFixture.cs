@@ -40,7 +40,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
     {
         var maskinportenToken = await Platform.GetMaskinportenTokenForVendor();
         var vendorId = Platform.EnvironmentHelper.Vendor;
-        var systemName = "ClientDelegationAccessPackages " + Guid.NewGuid().ToString("N");
+        var systemName = "ClientDelegationAccessPackages" + Guid.NewGuid().ToString("N");
         ClientId = systemName;
         var systemId = $"{vendorId}_{systemName}";
 
