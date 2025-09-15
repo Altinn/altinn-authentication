@@ -493,18 +493,29 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
+            regSystem.Name.TryGetValue("nb", out string? systemName);
+            if (systemName is null)
+            {
+                return Problem.SystemNameNotFound;
+            }
+
             SystemUser newSystemUser = new()
             {
                 Id = requestId.ToString()!,
                 ReporteeOrgNo = party.OrgNumber,
                 SystemInternalId = regSystem.InternalId,
-                IntegrationTitle = systemId,
+                IntegrationTitle = systemName,
                 SystemId = systemId,
                 PartyId = partyId,
                 UserType = systemUserType,
                 ExternalRef = string.IsNullOrEmpty(externalRef) ? party.OrgNumber : externalRef,
                 AccessPackages = accessPackageDelegationCheckResult?.AccessPackages ?? []
             };
+
+            if (systemUserType == SystemUserType.Agent)
+            {
+                newSystemUser.AccessPackages = accessPackages ?? [];
+            }
 
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
             
