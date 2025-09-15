@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -23,7 +24,7 @@ public class CreateRequestSystemUser()
     /// </summary>
     [Required]
     [JsonPropertyName("systemId")]
-    public string SystemId { get; set; }
+    public required string SystemId { get; set; }
 
     /// <summary>
     /// The organisation number for the SystemUser's Party 
@@ -31,16 +32,23 @@ public class CreateRequestSystemUser()
     /// </summary>
     [Required]
     [JsonPropertyName("partyOrgNo")]
-    public string PartyOrgNo { get; set; }
+    public required string PartyOrgNo { get; set; }
 
     /// <summary>
     /// The set of Rights requested for this system user. 
     /// Must be equal to or less than the set defined in the Registered System.
-    /// An empty list will throw an error.
+    /// An empty or null list is allowed, if the AccessPackages list is non-empty.
     /// </summary>
-    [Required]
     [JsonPropertyName("rights")]
-    public List<Right> Rights { get; set; }
+    public List<Right>? Rights { get; set; }
+
+    /// <summary>
+    /// The set of AccessPackages requested for this system user. 
+    /// Must be equal to or less than the set defined in the Registered System.
+    /// An empty or null list is allowed, if the Rights list is non-empty.
+    /// </summary>
+    [JsonPropertyName("accessPackages")]
+    public List<AccessPackage>? AccessPackages { get; set; }
 
     /// <summary>
     /// Optional redirect URL to navigate to after the customer has accepted/denied the Request

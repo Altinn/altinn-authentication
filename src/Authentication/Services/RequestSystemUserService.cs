@@ -1,34 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
-using Altinn.Authentication.Integration.Clients;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
-using Altinn.Common.PEP.Authorization;
-using Altinn.Common.PEP.Helpers;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
-using Altinn.Platform.Authentication.Core.Authorization;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
-using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
-using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
-using Azure.Core;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -41,10 +32,9 @@ public class RequestSystemUserService(
     IPartiesClient partiesClient,
     IPDP pdp,
     ISystemRegisterRepository systemRegisterRepository,
-    IAccessManagementClient accessManagementClient,
     IRequestRepository requestRepository,
     IOptions<PaginationOptions> _paginationOption,
-    DelegationHelper delegationHelper)
+    ISystemUserService systemUserService)
     : IRequestSystemUser
 {
     /// <summary>
@@ -96,10 +86,45 @@ public class RequestSystemUserService(
             }
         }
 
-        Result<bool> valRights = ValidateRights(createRequest.Rights, systemInfo);
-        if (valRights.IsProblem)
+        if (createRequest.Rights is null && createRequest.AccessPackages is null)
         {
-            return valRights.Problem;
+            return Problem.Rights_NotFound_Or_NotDelegable;
+        }
+
+        bool hasAtLeastOne = false;
+
+        // Must have a minimum of either one Right or one Accesspackage for a Standard SystemUser
+        if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
+        {
+            hasAtLeastOne = true;
+        }
+
+        if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
+        {
+            hasAtLeastOne = true;
+        }
+
+        if (!hasAtLeastOne)
+        {
+            return Problem.SystemUser_MissingRightsOrAccessPackages;
+        }
+
+        if (createRequest.Rights is not null && createRequest.Rights.Count > 0)
+        {
+            Result<bool> valRights = systemUserService.ValidateRights(createRequest.Rights, systemInfo);
+            if (valRights.IsProblem)
+            {
+                return valRights.Problem;
+            }
+        }
+
+        if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
+        {
+            Result<bool> valPackages = systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo);
+            if (valPackages.IsProblem)
+            {
+                return valPackages.Problem;
+            }
         }
 
         // Set an empty ExternalRef to be equal to the PartyOrgNo
@@ -116,7 +141,8 @@ public class RequestSystemUserService(
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
-            Rights = createRequest.Rights,
+            Rights = createRequest.Rights ?? [],
+            AccessPackages = createRequest.AccessPackages ?? [],
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createRequest.RedirectUrl
         };
@@ -174,7 +200,12 @@ public class RequestSystemUserService(
             }
         }
 
-        Result<bool> valPackages = ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
+        if (createAgentRequest.AccessPackages is null || createAgentRequest.AccessPackages.Count == 0)
+        {
+            return Problem.SystemUser_MissingAccessPackage;
+        }
+
+        Result<bool> valPackages = systemUserService.ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
         if (valPackages.IsProblem)
         {
             return valPackages.Problem;
@@ -207,153 +238,6 @@ public class RequestSystemUserService(
         }
 
         return created;
-    }
-
-    /// <summary>
-    /// Validate that the Package is both a subset of the Default Packages registered on the System, and at least one Package is selected.
-    /// </summary>
-    /// <param name="accessPackages">the AccessPackages chosen for the Request</param>
-    /// <param name="systemInfo">The Vendor's Registered System</param>
-    /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo)
-    {
-        if (systemInfo == null || systemInfo.AccessPackages == null)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        if (accessPackages.Count == 0 || systemInfo.AccessPackages.Count == 0)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        if (accessPackages.Count > systemInfo.AccessPackages.Count)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        bool[] validate = new bool[accessPackages.Count];
-        foreach (AccessPackage accessPackage in accessPackages) 
-        {
-            foreach ( AccessPackage systemPackage in systemInfo.AccessPackages)
-            {
-                if (accessPackage.Urn == systemPackage.Urn) 
-                {
-                    validate[accessPackages.IndexOf(systemPackage)] = true;
-                }
-            }
-        }
-
-        foreach (bool package in validate)
-        {
-            if (!package)
-            {
-                return Problem.Rights_NotFound_Or_NotDelegable;
-            }
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected.
-    /// Also ensure that if any of the new Rights have sub-resources, that the sub-resources are equal to the registered Rights.
-    /// </summary>
-    /// <param name="rights">the Rights chosen for the Request</param>
-    /// <param name="systemInfo">The Vendor's Registered System</param>
-    /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
-    {
-        if (rights.Count == 0 || systemInfo.Rights.Count == 0)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        if (rights.Count > systemInfo.Rights.Count)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        bool[] validate = new bool[rights.Count];
-        foreach (var requestRight in rights)
-        {
-            // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
-            List<Right> topMatchesInSystem = FindListOfMatchingRightsOnTopAttribute(requestRight.Resource[0], systemInfo.Rights);
-            if (topMatchesInSystem.Count == 0)
-            {
-                return Problem.Rights_NotFound_Or_NotDelegable;
-            }
-
-            // Locate one full match, the first we find might not be the correct
-            foreach (var systemRight in topMatchesInSystem)
-            {
-                if (IsFullMatch(systemRight, requestRight))
-                {
-                    validate[rights.IndexOf(requestRight)] = true;
-                }
-            }    
-        }
-
-        foreach (bool right in validate)
-        {
-            if (!right)
-            {
-                return Problem.Rights_NotFound_Or_NotDelegable;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool IsFullMatch(Right systemRight, Right requestRight)
-    {
-        if (requestRight.Resource.Count != systemRight.Resource.Count)
-        {
-            return false;
-        }
-
-        foreach (var systemPair in systemRight.Resource)
-        {
-            if (!VerifySubResource(systemPair, requestRight))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // Ensure that the system's sub-resource is present in the request's list of sub-resources
-    private static bool VerifySubResource(AttributePair system, Right request)
-    {
-        foreach (var resource in request.Resource)
-        {
-            if (system.Id == resource.Id && system.Value == resource.Value)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
-    private static List<Right> FindListOfMatchingRightsOnTopAttribute(AttributePair newpair, List<Right> systemlist)
-    {
-        List<Right> list = [];
-
-        foreach (Right systemRight in systemlist)
-        {
-            foreach (AttributePair p in systemRight.Resource)
-            {
-                if (newpair.Id == p.Id && newpair.Value == p.Value)
-                {
-                    list.Add(systemRight);
-                }
-            }
-        }
-
-        return list;
     }
 
     /// <summary>
@@ -397,7 +281,7 @@ public class RequestSystemUserService(
     /// <param name="vendorOrgNo">Vendor's OrgNo</param>
     /// <param name="sys">The chosen System Info</param>
     /// <returns>Result or Problem</returns>
-    private Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisteredSystemResponse sys)
+    private static Result<bool> ValidateVendorOrgNo(OrganisationNumber vendorOrgNo, RegisteredSystemResponse sys)
     {
         OrganisationNumber? systemOrgNo = null;
 
@@ -463,6 +347,7 @@ public class RequestSystemUserService(
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
+            AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
@@ -490,6 +375,7 @@ public class RequestSystemUserService(
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
             Rights = res.Rights,
+            AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl
         };
@@ -570,6 +456,7 @@ public class RequestSystemUserService(
             SystemId = find.SystemId,
             ExternalRef = find.ExternalRef,
             Rights = find.Rights,
+            AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
             RedirectUrl = find.RedirectUrl
@@ -632,44 +519,17 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
-        if (regSystem is null)
+        Result<SystemUser> systemUser = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
+        if (systemUser.IsProblem)
         {
-            return Problem.SystemIdNotFound;
+            return systemUser.Problem;
         }
 
-        Result<SystemUser> toBeInserted = MapSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
-        if (toBeInserted.IsProblem)
+        // Logs the change in the Request Repository
+        bool sat = await requestRepository.SetRequestApproved(requestId, new Guid(systemUser.Value.Id), userId, cancellationToken);
+        if (!sat)
         {
-            return toBeInserted.Problem;
-        }
-
-        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserRequest.Rights, false, cancellationToken);
-        if (delegationCheckFinalResult.RightResponses is null)
-        {
-            // This represents some problem with doing the delegation check beyond the rights not being delegable.
-            return Problem.UnableToDoDelegationCheck;
-        }
-
-        if (!delegationCheckFinalResult.CanDelegate)
-        {
-            // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-            return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
-        }
-
-        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted.Value, userId, cancellationToken);
-
-        if (systemUserId is null)
-        {
-            return Problem.SystemUser_FailedToCreate;
-        }
-
-        toBeInserted.Value.Id = systemUserId.ToString()!;
-
-        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeInserted.Value, delegationCheckFinalResult.RightResponses);
-        if (delegationSucceeded.IsProblem) 
-        { 
-            return delegationSucceeded.Problem; 
+            return Problem.RequestCouldNotBeUpdated;
         }
 
         return true;
@@ -712,11 +572,16 @@ public class RequestSystemUserService(
             return toBeInserted.Problem;
         }
 
-        Guid? systemUserId = await requestRepository.ApproveAndCreateSystemUser(requestId, toBeInserted.Value, userId, cancellationToken);
-
-        if (systemUserId is null)
+        Result<SystemUser> res = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
+        if (res.IsProblem)
         {
-            return Problem.SystemUser_FailedToCreate;
+            return res.Problem;
+        }
+
+        bool sat = await requestRepository.SetRequestApproved(requestId, new Guid(toBeInserted.Value.Id), userId, cancellationToken);
+        if (!sat)
+        {
+            return Problem.RequestCouldNotBeUpdated;
         }
 
         return true;
@@ -807,6 +672,7 @@ public class RequestSystemUserService(
         {
             toBeInserted = new SystemUser
             {
+                Id = agentSystemUserRequest.Id.ToString(),
                 SystemId = agentSystemUserRequest.SystemId,
                 IntegrationTitle = systemName,
                 SystemInternalId = regSystem?.InternalId,
@@ -1062,6 +928,7 @@ public class RequestSystemUserService(
                 PartyId = validatedParty.Value.PartyId,
                 PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
                 Rights = request.Rights,
+                AccessPackages = request.AccessPackages,
                 Status = request.Status,
                 ConfirmUrl = request.ConfirmUrl,
                 Created = request.Created,

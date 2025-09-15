@@ -193,7 +193,12 @@ public class SystemUserController : ControllerBase
         SystemUser? toBeDeleted = await _systemUserService.GetSingleSystemUserById(systemUserId);
         if (toBeDeleted is not null)
         {
-            await _systemUserService.SetDeleteFlagOnSystemUser(party, systemUserId, cancellationToken);
+            var deleteResult = await _systemUserService.SetDeleteFlagOnSystemUser(party, systemUserId, cancellationToken);
+            if (deleteResult.IsProblem)
+            {
+                return deleteResult.Problem.ToActionResult();
+            }
+
             await DeleteRequestForSystemUser(toBeDeleted);
             return Accepted(1);
         }
@@ -205,6 +210,22 @@ public class SystemUserController : ControllerBase
     {
         ExternalRequestId ext = new(toBeDeleted.ReporteeOrgNo, toBeDeleted.ExternalRef, toBeDeleted.SystemId);
         var req = await _requestSystemUser.GetRequestByExternalRef(ext, OrganisationNumber.CreateFromStringOrgNo(toBeDeleted.SupplierOrgNo));
+        if (req.IsSuccess)
+        {
+            await _requestSystemUser.DeleteRequestByRequestId(req.Value.Id);
+        }
+    }
+
+    private async Task DeleteRequestForSystemUser(Guid toBeDeleted)
+    {
+        SystemUser? systemUser = await _systemUserService.GetSingleSystemUserById(toBeDeleted);
+        if (systemUser == null) 
+        { 
+            return; 
+        }
+
+        ExternalRequestId ext = new(systemUser.ReporteeOrgNo, systemUser.ExternalRef, systemUser.SystemId);
+        var req = await _requestSystemUser.GetAgentRequestByExternalRef(ext, OrganisationNumber.CreateFromStringOrgNo(systemUser.SupplierOrgNo));
         if (req.IsSuccess)
         {
             await _requestSystemUser.DeleteRequestByRequestId(req.Value.Id);
@@ -424,9 +445,10 @@ public class SystemUserController : ControllerBase
     [HttpDelete("agent/{party}/{systemUserId}")]
     public async Task<ActionResult> DeleteAgentSystemUser(string party, Guid systemUserId, [FromQuery]Guid facilitatorId, CancellationToken cancellationToken = default)
     {
+        await DeleteRequestForSystemUser(systemUserId);
         Result<bool> result = await _systemUserService.DeleteAgentSystemUser(party, systemUserId, facilitatorId, cancellationToken);
         if (result.IsSuccess)
-        {
+        {            
             return Ok();
         }
 
@@ -451,5 +473,24 @@ public class SystemUserController : ControllerBase
         }
 
         return result.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Get list of delegations for a standard systemuser
+    /// </summary>
+    /// <returns>List of DelegationResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("{party}/{systemUserId}/delegations")]
+    public async Task<ActionResult<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int party, Guid systemUserId, CancellationToken cancellationToken = default)
+    {
+        StandardSystemUserDelegations delegations = new StandardSystemUserDelegations();
+        var result = await _systemUserService.GetListOfDelegationsForStandardSystemUser(party, systemUserId, cancellationToken);
+        if (result.IsProblem)
+        {
+            return result.Problem.ToActionResult();
+        }
+
+        return Ok(result.Value);
     }
 }    

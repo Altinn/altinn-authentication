@@ -16,6 +16,7 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -141,6 +142,11 @@ public class SystemRegisterController : ControllerBase
         if (currentSystem == null)
         {
             return NotFound($"System with ID '{systemId}' not found.");
+        }
+
+        if (currentSystem.IsDeleted)
+        {
+            return BadRequest("Cannot update a system marked as deleted.");
         }
 
         List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
@@ -290,6 +296,11 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
+        if (registerSystemResponse.IsDeleted)
+        {
+            return BadRequest("Cannot update a system marked as deleted.");
+        }
+
         errors = await ValidateRights(rights, cancellationToken);
 
         if (errors.TryToActionResult(out var errorResult))
@@ -321,6 +332,11 @@ public class SystemRegisterController : ControllerBase
         if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse.Vendor.ID), User))
         {
             return Forbid();
+        }
+
+        if (registerSystemResponse.IsDeleted)
+        {
+            return BadRequest("Cannot update a system marked as deleted.");
         }
 
         ValidationErrorBuilder errors = await ValidateAccessPackages(accessPackages, cancellationToken);
@@ -370,6 +386,32 @@ public class SystemRegisterController : ControllerBase
         return Ok(new SystemRegisterUpdateResult(true));
     }
 
+    /// <summary>
+    /// Gets the change log for a specific system identified by its internal ID.
+    /// </summary>
+    /// <param name="systemId">the system internal id</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    [HttpGet("vendor/{systemId}/changelog")]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    public async Task<ActionResult<List<SystemChangeLog>>> GetChangeLogAsync(string systemId, CancellationToken cancellationToken = default)
+    {
+        RegisteredSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+
+        if (registeredSystem is null)
+        {
+            return NotFound($"System with ID {systemId} not found.");
+        }
+        else if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registeredSystem?.Vendor?.ID), User))
+        {
+            return Forbid();
+        }
+
+        Guid systemInternalId = registeredSystem.InternalId;
+        var changeLog = await _systemRegisterService.GetChangeLogAsync(systemInternalId, cancellationToken);
+        return Ok(changeLog);
+    }
+
     private async Task<ValidationErrorBuilder> ValidateRights(List<Right> rights, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
@@ -417,7 +459,7 @@ public class SystemRegisterController : ControllerBase
 
             if (notDelegableUrns.Count > 0)
             {
-                allInvalidUrns.Add($"Not delegable: {string.Join(", ", notDelegableUrns)}");
+                allInvalidUrns.Add($"Not possible to delegate: {string.Join(", ", notDelegableUrns)}");
             }
 
             var problemExtensionData = ProblemExtensionData.Create(new[]
@@ -474,6 +516,13 @@ public class SystemRegisterController : ControllerBase
     private async Task<ValidationErrorBuilder> ValidateRegisteredSystem(RegisterSystemRequest systemToValidate, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
+
+        if (AuthenticationHelper.HasSpaceInId(systemToValidate.Id))
+        {
+            errors.Add(ValidationErrors.SystemRegister_Invalid_SystemId_Spaces, [
+                ErrorPathConstant.SYSTEM_ID
+            ]);
+        }
 
         if (!AuthenticationHelper.DoesSystemIdStartWithOrgnumber(systemToValidate.Vendor.ID, systemToValidate.Id))
         {

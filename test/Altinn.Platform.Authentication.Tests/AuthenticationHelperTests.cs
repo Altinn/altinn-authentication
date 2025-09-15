@@ -350,5 +350,19 @@ namespace Altinn.Platform.Authentication.Tests
             Assert.False(result.Value);
             Assert.Equal(Problem.NoRedirectUrisFoundOnSystem, result.Problem);
         }
+        
+        [Theory]
+        [InlineData("validId", false)]
+        [InlineData("id with space", true)]
+        [InlineData("idWithTrailingSpace ", true)]
+        [InlineData(" idWithLeadingSpace", true)]
+        [InlineData("id\tWithTab", false)] // Only space character is checked
+        [InlineData("idWithMultiple  Spaces", true)]
+        [InlineData("", false)]
+        public void HasSpaceInId_ReturnsExpectedResult(string input, bool expected)
+        {
+            var result = AuthenticationHelper.HasSpaceInId(input);
+            Assert.Equal(expected, result);
+        }
     }
 }

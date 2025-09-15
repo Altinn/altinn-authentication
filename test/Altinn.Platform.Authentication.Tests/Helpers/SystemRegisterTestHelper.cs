@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
 
         private static async Task<List<SystemChangeLog>> GetSystemChangeLog(HttpClient client, string systemId)
         {
-            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemchangelog/{systemId}");
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}/changelog");
             HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             List<SystemChangeLog> actualSystemChangeLog = JsonSerializer.Deserialize<List<SystemChangeLog>>(await getResponse.Content.ReadAsStringAsync(), _options);

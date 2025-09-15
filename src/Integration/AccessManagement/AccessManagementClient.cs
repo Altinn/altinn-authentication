@@ -1,39 +1,40 @@
+using Altinn.AccessManagement.Core.Helpers;
+using Altinn.Authentication.Core.Problems;
+using Altinn.Authentication.Integration.Configuration;
+using Altinn.Authorization.ProblemDetails;
+using Altinn.Common.AccessTokenClient.Services;
+using Altinn.Platform.Authentication.Core.Enums;
+using Altinn.Platform.Authentication.Core.Exceptions;
+using Altinn.Platform.Authentication.Core.Extensions;
+using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.Pagination;
+using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
+using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Register.Models;
+using Azure;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
+using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Altinn.Platform.Authentication.Core.Models;
-using System.Text;
-using System.Net.Http.Json;
-using Altinn.Authorization.ProblemDetails;
-using Altinn.Platform.Authentication.Core.Extensions;
-using Altinn.Authentication.Core.Problems;
-using Altinn.Platform.Authentication.Core.Models.Rights;
-using Microsoft.Extensions.Primitives;
-using Altinn.AccessManagement.Core.Helpers;
-using Altinn.Authentication.Integration.Configuration;
-using Microsoft.AspNetCore.Mvc;
-using Altinn.Platform.Authentication.Core.Exceptions;
-using System.Net;
-using Altinn.Platform.Authentication.Core.Models.ResourceRegistry;
-using System.Net.Http;
 using System.Web;
-using Altinn.Platform.Authentication.Core.Models.AccessPackages;
-using Altinn.Platform.Authentication.Core.SystemRegister.Models;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
-using Altinn.Platform.Authentication.Core.Models.SystemUsers;
-using Altinn.Platform.Register.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Azure;
-using Azure;
 using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
-using System;
-using System.Collections.Generic;
-using System.Drawing.Text;
-using Microsoft.VisualBasic;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -52,6 +53,7 @@ public class AccessManagementClient : IAccessManagementClient
     private readonly JsonSerializerOptions _serializerOptions =
         new() { PropertyNameCaseInsensitive = true };
     private readonly IWebHostEnvironment _env;
+    private readonly IAccessTokenGenerator _accessTokenGenerator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LookupClient"/> class
@@ -66,7 +68,8 @@ public class AccessManagementClient : IAccessManagementClient
         IHttpContextAccessor httpContextAccessor,
         IOptions<AccessManagementSettings> accessManagementSettings,
         IOptions<PlatformSettings> platformSettings,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        IAccessTokenGenerator accessTokenGenerator)
     {
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
@@ -76,6 +79,7 @@ public class AccessManagementClient : IAccessManagementClient
         _client = httpClient;
         _serializerOptions.Converters.Add(new JsonStringEnumConverter());
         _env = env;
+        _accessTokenGenerator = accessTokenGenerator;
     }
 
     /// <inheritdoc/>
@@ -97,7 +101,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // GetPartyFromReporteeListIfExists // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetPartyFromReporteeListIfExists // Exception");
             throw;
         }
     }
@@ -121,7 +125,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // GetParty // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetParty // Exception");
             throw;
         }
     }
@@ -142,7 +146,132 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // CheckDelegationAccess // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccess // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async IAsyncEnumerable<Result<AccessPackageDto.Check>> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        string? endpointUrl = $"enduser/connections/accesspackages/delegationcheck?party={partyId}";
+        if (requestedPackages is not null && requestedPackages.Length > 0)
+        {
+            foreach (var package in requestedPackages)
+            {
+                endpointUrl += $"&packages={HttpUtility.UrlEncode(package)}";
+            }
+        }
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        PaginatedInput<AccessPackageDto.Check>? paginatedAccessPackages = null;
+        ProblemInstance? problemInstance = null;
+        do
+        {
+            try
+            {
+                using HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
+                
+                if(response.StatusCode == HttpStatusCode.OK)
+                {
+                    paginatedAccessPackages = await response.Content.ReadFromJsonAsync<PaginatedInput<AccessPackageDto.Check>>(_serializerOptions, cancellationToken);
+                }
+                else
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                    _logger.LogError($"Authentication. // AccessManagementClient // CheckDelegationAccessForAccessPackage // Title: {problemDetails.Title}, HttpStatusCode : {response.StatusCode},Problem: {problemDetails.Detail}");
+                    problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);                    
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Authentication// AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
+                throw;
+            }
+
+            if(problemInstance is not null)
+            {                
+                yield return new Result<AccessPackageDto.Check>(problemInstance);
+                yield break;
+            }
+
+            if (paginatedAccessPackages is null)
+            {
+               _logger.LogError("Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage");
+                throw new InvalidOperationException("Received null response from Access Management for delegation check.");
+            }
+            foreach (AccessPackageDto.Check accessPackageCheck in paginatedAccessPackages.Items)
+            {
+                yield return accessPackageCheck;
+            }
+            
+            endpointUrl = paginatedAccessPackages.Links.Next;
+
+        } while (endpointUrl is not null);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken)
+    {
+        try
+        {
+            PartyBaseDto partyBaseDto = new()
+            {
+                PartyUuid = new Guid(systemUser.Id),
+                DisplayName = systemUser.IntegrationTitle,
+                EntityType = "Systembruker",
+                EntityVariantType = FormatEntityVariantType(systemUser.UserType)
+            };
+            string endpointUrl = $"internal/party";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
+            string content = JsonSerializer.Serialize(partyBaseDto, _serializerOptions);
+            StringContent requestBody = new(content, Encoding.UTF8, "application/json");
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody, accessToken);
+            return await HandleResponse(response, "PushSystemUserToAM");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string endpointUrl = $"internal/connections?party={partyUuId}&to={systemUserId}";
+
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
+            return await HandleResponse(response, "AddSystemUserAsRightHolder");
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> RemoveSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, bool cascade, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string endpointUrl = $"internal/connections?party={partyUuId}&to={systemUserId}&cascade={cascade}";
+
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
+            return await HandleResponse(response, "RemoveSystemUserAsRightHolder");
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // RemoveSystemUserAsRightHolder // Exception");
             throw;
         }
     }
@@ -174,12 +303,29 @@ public class AccessManagementClient : IAccessManagementClient
                     Extensions = { { "Details", notDelegatedDetails } }
                 };
 
-                _logger.LogError("Authentication.UI // AccessManagementClient // DelegateRightToSystemUser // Problem: {Problem}", problemDetails.Detail);
+                _logger.LogError("Authentication // AccessManagementClient // DelegateRightToSystemUser // Problem: {Problem}", problemDetails.Detail);
                 throw new DelegationException(problemDetails);
             }
         }
 
         return new Result<bool>(true);
+    }
+
+    public async Task<Result<bool>> DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string endpointUrl = $"internal/connections/accesspackages?party={partyUuId}&from={partyUuId}&to={systemUserId}&package={urn}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
+            return await HandleResponse(response, "DelegateSingleAccessPackageToSystemUser");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateSingleAccessPackageToSystemUser // Exception");
+            throw;
+        }
+
     }
 
     public async Task<Package?> GetAccessPackage(string urnValue)
@@ -219,6 +365,78 @@ public class AccessManagementClient : IAccessManagementClient
         }
 
         return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> DeleteSingleAccessPackageFromSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string endpointUrl = $"internal/connections/accesspackages?party={partyUuId}&from={partyUuId}&to={systemUserId}&package={urn}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
+            return await HandleResponse(response, "DeleteSingleAccessPackageFromSystemUser");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DeleteSingleAccessPackageFromSystemUser // Exception");
+            throw;
+        }
+
+    }
+
+    /// <inheritdoc />
+    public async IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyId, Guid systemUserId, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        string? endpointUrl = $"internal/connections/accesspackages?party={partyId}&to={systemUserId}";
+
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        PaginatedInput<PackagePermission>? paginatedPackagePermissions = null;
+        ProblemInstance? problemInstance = null;
+        do
+        {
+            try
+            {
+                using HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
+
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    paginatedPackagePermissions = await response.Content.ReadFromJsonAsync<PaginatedInput<PackagePermission>>(_serializerOptions, cancellationToken);
+                }
+                else
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                    _logger.LogError($"Authentication. // AccessManagementClient // GetAccessPackagesForSystemUser // Title: {problemDetails.Title}, HttpStatusCode : {response.StatusCode},Problem: {problemDetails.Detail}");
+                    problemInstance = ProblemInstance.Create(Problem.AccessPackage_FailedToGetDelegatedPackages);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Authentication// AccessManagementClient // GetAccessPackagesForSystemUser // Exception");
+                throw;
+            }
+
+            if (problemInstance is not null)
+            {
+                yield return new Result<PackagePermission>(problemInstance);
+                yield break;
+            }
+
+            if (paginatedPackagePermissions is null)
+            {
+                _logger.LogError("Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage");
+                throw new InvalidOperationException("Received null response from Access Management for delegation check.");
+            }
+            foreach (PackagePermission packagePermission in paginatedPackagePermissions.Items)
+            {
+                yield return packagePermission;
+            }
+
+            endpointUrl = paginatedPackagePermissions.Links.Next;
+
+        } while (endpointUrl is not null);
     }
 
     private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(string partyId, SystemUser systemUser, RightResponses rightResponses)
@@ -266,7 +484,7 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError($"Authentication.UI // AccessManagementClient // DelegateSingleRightToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+                _logger.LogError($"Authentication // AccessManagementClient // DelegateSingleRightToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
                 ProblemInstance problemInstance = ProblemInstance.Create(Problem.Rights_FailedToDelegate);
                 return new Result<RightsDelegationResponseExternal>(problemInstance);
@@ -274,7 +492,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // DelegateSingleRightToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateSingleRightToSystemUser // Exception");
             throw;
         }
 
@@ -301,14 +519,17 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/{partyId}/rights/delegation/offered/revoke";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(revokeDelegatedRights));
-
-            response.EnsureSuccessStatusCode();
+            var result = await HandleResponse(response, "RevokeRightsToSystemUser");
+            if (result.IsProblem)
+            {
+                return false;
+            }
 
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeSingleRightToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeSingleRightToSystemUser // Exception");
             throw;
         }
 
@@ -403,11 +624,11 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
-            return await HandleErrors(response);
+            return await HandleDeleteAgentErrors(response);    
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
             throw;
         }
     }
@@ -421,15 +642,111 @@ public class AccessManagementClient : IAccessManagementClient
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
-            return await HandleErrors(response, true);
+            return await HandleDeleteAgentErrors(response, true);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication.UI // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
             throw;
         }
     }
 
+    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        if (facilitator == Guid.Empty)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        if (systemUserId == Guid.Empty)
+        {
+            return Problem.SystemUserNotFound;
+        }
+        ;
+
+        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}";
+
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
+            }
+
+            return Problem.UnableToDoDelegationCheck;
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetDelegationsForAgent // Exception");
+            throw;
+
+        }
+    }
+
+    public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        if (facilitatorId == Guid.Empty)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
+
+        if (packages != null && packages.Count > 0)
+        {
+            foreach (var package in packages)
+            {
+                endpointUrl = $"{endpointUrl}&packages={package}";
+            }
+        }
+
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<ClientDto>>(_serializerOptions, cancellationToken) ?? [];
+            }
+            else
+            {
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
+                    return new Result<List<ClientDto>>(problemInstance);
+                }
+                else if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+                    return new Result<List<ClientDto>>(problemInstance);
+                }
+                else
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+
+                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                    _logger.LogError($"Authentication // AccessManagementClient // GetClientsForFacilitator // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
+                    var problemExtensionData = ProblemExtensionData.Create(new[]
+                    {
+                    new KeyValuePair<string, string>("Problem Detail : ", problemDetails.Detail)
+                    });
+                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
+                    return new Result<List<ClientDto>>(problemInstance);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetClientsForFacilitator // Exception");
+            throw;
+
+        }
+    }
 
     /// <summary>
     ///  Gets the role identifier that gives access to the requested access package
@@ -469,42 +786,7 @@ public class AccessManagementClient : IAccessManagementClient
         return found;
     }
 
-    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
-    {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (facilitator == Guid.Empty)
-        {
-            return Problem.Reportee_Orgno_NotFound;
-        }
-
-        if (systemUserId == Guid.Empty)
-        {
-            return Problem.SystemUserNotFound;
-        }
-
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}";
-
-        try
-        {
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
-
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
-            }
-
-            return Problem.UnableToDoDelegationCheck;
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // GetDelegationsForAgent // Exception");
-            throw;
-
-        }
-    }
-
-    private async Task<Result<bool>> HandleErrors(HttpResponseMessage response, bool isDeleteAgent = false)
+    private async Task<Result<bool>> HandleDeleteAgentErrors(HttpResponseMessage response, bool isDeleteAgent = false)
     {
         string deleteString = isDeleteAgent ? "DeleteAgentAssignment" : "DeleteDelegation";
         if (response.IsSuccessStatusCode)
@@ -572,64 +854,54 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    private static string FormatEntityVariantType(SystemUserType userType)
     {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (facilitatorId == Guid.Empty)
+        return userType switch
         {
-            return Problem.Reportee_Orgno_NotFound;
+            SystemUserType.Agent => "AgentSystem",
+            SystemUserType.Standard => "StandardSystem",
+            _ => "UnknownSystem"
+        };
+    }
+
+    private async Task<Result<bool>> HandleResponse(HttpResponseMessage response, string logContext)
+    {
+        var logContextProblem = logContext switch
+        {
+            "AddSystemUserAsRightHolder" => Problem.SystemUser_FailedToAddAsRightHolder,
+            "RemoveSystemUserAsRightHolder" => Problem.SystemUser_FailedToRemoveRightHolder,
+            "PushSystemUserToAM" => Problem.SystemUser_FailedToPushSystemUser,
+            "RevokeRightsToSystemUser" => Problem.Rights_FailedToRevoke,
+            "DeleteSingleAccessPackageFromSystemUser" => Problem.SystemUser_FailedToDeleteAccessPackage,
+            "DelegateSingleAccessPackageToSystemUser" => Problem.AccessPackage_DelegationFailed
+        };
+
+        if (response.IsSuccessStatusCode)
+        {
+            return true;
         }
-
-        string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
-
-        if (packages != null && packages.Count > 0)
+        else
         {
-            foreach (var package in packages)
+            string responseContent = await response.Content.ReadAsStringAsync();
+            ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+
+            string? validationErrors = string.Empty;
+            if (problemDetails.Detail == "One or more validation errors occurred.")
             {
-                endpointUrl = $"{endpointUrl}&packages={package}";
+                AltinnValidationProblemDetails validationProblems = JsonSerializer.Deserialize<AltinnValidationProblemDetails>(responseContent, _serializerOptions)!;
+                validationErrors = JsonSerializer.Serialize(validationProblems, _serializerOptions);
             }
-        }
 
-        try
-        {
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+            _logger.LogError($"Authentication // AccessManagementClient // {logContext} // HttpStatusCode: {response.StatusCode} // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}, ValidationErrors: {validationErrors}");
 
-            if (response.IsSuccessStatusCode)
+            var problemExtensionData = ProblemExtensionData.Create(new[]
             {
-                return await response.Content.ReadFromJsonAsync<List<ClientDto>>(_serializerOptions, cancellationToken) ?? [];
-            }
-            else
-            {
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
-                    return new Result<List<ClientDto>>(problemInstance);
-                }
-                else if (response.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-                    return new Result<List<ClientDto>>(problemInstance);
-                }
-                else
-                {
-                    string responseContent = await response.Content.ReadAsStringAsync();
+                new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail!),
+                new KeyValuePair<string, string>("ValidationErrors: ", validationErrors!)
+            });
 
-                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                    _logger.LogError($"Authentication // AccessManagementClient // GetClientsForFacilitator // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
-                    var problemExtensionData = ProblemExtensionData.Create(new[]
-                    {
-                    new KeyValuePair<string, string>("Problem Detail : ", problemDetails.Detail)
-                    });
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
-                    return new Result<List<ClientDto>>(problemInstance);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // GetClientsForFacilitator // Exception");
-            throw;
-
+            ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem, problemExtensionData);
+            return new Result<bool>(problemInstance);
         }
     }
 

@@ -125,7 +125,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Checks if the resourceids are found in resource register
+        /// Checks if the acesspackages are found in altinn
         /// </summary>
         /// <param name="accessPackages">access packages</param>
         /// <param name="cancellationToken">the cancellation token</param>
@@ -138,7 +138,15 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="accessPackages">access packages to be validated</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register</returns>
-        Task<(List<string> invalidFormatUrns, List<string> notFoundUrns, List<string> notDelegableUrns)>
+        Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns)>
             GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Gets the change log for a specific system identified by its internal ID.
+        /// </summary>
+        /// <param name="systemInternalId">the internal id of the system</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns></returns>
+        Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default);
     }
 }

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -15,6 +16,7 @@ using Altinn.Authentication.Integration.Configuration;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -146,6 +148,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "REVI");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattnaering", "REGN");
 
         hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);        
         return found;   
@@ -284,11 +287,11 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
         {
-            return Problem.AgentSystemUser_FailedToGetClients_Forbidden;
+            return Task.FromResult<Result<List<ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
         }
 
         JsonSerializerOptions options = new JsonSerializerOptions
@@ -297,9 +300,9 @@ public class AccessManagementClientMock: IAccessManagementClient
         };
 
         string clientData = File.OpenText("Data/Customers/customerlist.json").ReadToEnd();
-        List<ClientDto>? clients = JsonSerializer.Deserialize<List<ClientDto>>(clientData, options);
+        List<ClientDto> clients = JsonSerializer.Deserialize<List<ClientDto>>(clientData, options)!;
 
-        if (packages != null && packages.Count > 0 && clients != null)
+        if (packages != null && packages.Count > 0)
         {
             var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
             clients = clients
@@ -311,7 +314,98 @@ public class AccessManagementClientMock: IAccessManagementClient
                 .ToList();
         }
 
-        return await Task.FromResult(clients);
+        return Task.FromResult<Result<List<ClientDto>>>(clients);
+    }
+
+    public async IAsyncEnumerable<Result<AccessPackageDto.Check>> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        string dataFileName = string.Empty;
+        if (partyId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))
+        {
+            dataFileName = "Data/Delegation/CheckDelegationAccessPackageResponse_NotDelegable.json";
+        }
+        else if (partyId == new Guid("7a851ad6-3255-4c9b-a727-0b449797eb09"))
+        {
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);
+            yield return new Result<AccessPackageDto.Check>(problemInstance);
+        }
+        else
+        {
+            dataFileName = "Data/Delegation/CheckDelegationAccessPackageResponse.json";
+        }
+
+        string content = File.ReadAllText(dataFileName);
+        PaginatedInput<AccessPackageDto.Check> paginatedAccessPackages = JsonSerializer.Deserialize<PaginatedInput<AccessPackageDto.Check>>(content, _serializerOptions)!;
+
+        //List<AccessPackageDto.Check> accessPackages = JsonSerializer.Deserialize<List<AccessPackageDto.Check>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        foreach (AccessPackageDto.Check accessPackageCheck in paginatedAccessPackages.Items)
+        {
+            yield return accessPackageCheck;
+        }
+    }
+
+    public async Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken)
+    {
+        return true;
+    }
+
+    public async Task<Result<bool>> AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+    {
+        return true;
+    }
+
+    public async Task<Result<bool>> DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
+    {
+        return true;
+    }
+
+    public async Task<Result<bool>> RemoveSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, bool cascade, CancellationToken cancellationToken)
+    {
+        if (partyUuId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))
+        {
+            return false;
+        }
+        else if (partyUuId == new Guid("c8987f17-a1b5-49f3-8ec5-7b58e2e33f42"))
+        {
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToRemoveRightHolder);
+            return new Result<bool>(problemInstance);
+        }
+        else
+        {
+            return true;
+        }            
+    }
+
+    public async Task<Result<bool>> DeleteSingleAccessPackageFromSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
+    {
+        return true;
+    }
+
+    public async IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+    {
+        string dataFileName = string.Empty;
+        if (partyUuId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))
+        {
+            dataFileName = "Data/Delegation/AccessPackagesForSystemUser.json";
+        }
+        else if (partyUuId == new Guid("7a851ad6-3255-4c9b-a727-0b449797eb09"))
+        {
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);
+            yield return new Result<PackagePermission>(problemInstance);
+        }
+        else
+        {
+            dataFileName = "Data/Delegation/AccessPackagesForSystemUser.json";
+        }
+
+        string content = File.ReadAllText(dataFileName);
+        PaginatedInput<PackagePermission> paginatedAccessPackagesForSystemUser = JsonSerializer.Deserialize<PaginatedInput<PackagePermission>>(content, _serializerOptions)!;
+
+        foreach (PackagePermission packagePermission in paginatedAccessPackagesForSystemUser.Items)
+        {
+            yield return packagePermission;
+        }
     }
 
     public async Task<Result<List<AccessPackage>>> GetDelegatedAccessPackages(SystemUser systemUser, Guid partyUuid, CancellationToken cancellationToken = default)

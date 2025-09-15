@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Clients;
+using Altinn.Common.AccessToken;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.AccessTokenClient.Services;
@@ -384,7 +385,6 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.TryAddSingleton(TimeProvider.System);
     services.AddSingleton<ISystemUserService, SystemUserService>();
     services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
-    services.AddSingleton<ISystemChangeLogService, SystemChangeLogService>();
     services.AddSingleton<IRequestSystemUser, RequestSystemUserService>();
     services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserService>();
     services.AddSingleton<IGuidService, GuidService>();
@@ -392,6 +392,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IPDP, PDPAppSI>();
     services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();
     services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
+    services.AddTransient<IAuthorizationHandler, AccessTokenHandler>();
     services.AddTransient<DelegationHelper, DelegationHelper>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
