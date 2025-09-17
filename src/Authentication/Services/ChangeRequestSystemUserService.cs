@@ -432,7 +432,7 @@ public class ChangeRequestSystemUserService(
         DelegationCheckResult delegationCheckFinalResult = new(CanDelegate:false, RightResponses:[], errors:[]);
 
         // Check Single Rights to be added 
-        if (systemUserChangeRequest.RequiredRights is not null && systemUserChangeRequest.RequiredRights.Any())
+        if (systemUserChangeRequest.RequiredRights?.Count > 0)
         {
             delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
             if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
@@ -442,7 +442,7 @@ public class ChangeRequestSystemUserService(
         }
 
         // Check AccessPackages to be added
-        if (systemUserChangeRequest.RequiredAccessPackages is not null && systemUserChangeRequest.RequiredAccessPackages.Count > 0)
+        if (systemUserChangeRequest.RequiredAccessPackages?.Count > 0)
         {
             Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, systemUserChangeRequest.RequiredAccessPackages, fromBff: true, cancellationToken);        
             if (checkAccessPackages.IsProblem)
