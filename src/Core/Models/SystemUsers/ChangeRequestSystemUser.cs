@@ -48,7 +48,6 @@ public class ChangeRequestSystemUser()
     /// Must be equal to or less than the set defined in the Registered System - see SystemId.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("requiredRights")]
     public List<Right> RequiredRights { get; set; } = [];
 
@@ -58,7 +57,6 @@ public class ChangeRequestSystemUser()
     /// If already not delegated, no change is needed; idempotent.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("unwantedRights")]
     public List<Right> UnwantedRights { get; set; } = [];
 
@@ -69,7 +67,6 @@ public class ChangeRequestSystemUser()
     /// Must be equal to or less than the set defined in the Registered System - see SystemId.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("requiredAccessPackages")]
     public List<AccessPackage> RequiredAccessPackages { get; set; } = [];
 
@@ -79,7 +76,6 @@ public class ChangeRequestSystemUser()
     /// If already not delegated, no change is needed; idempotent.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("unwantedAccessPackages")]
     public List<AccessPackage> UnwantedAccessPackages { get; set; } = [];
 

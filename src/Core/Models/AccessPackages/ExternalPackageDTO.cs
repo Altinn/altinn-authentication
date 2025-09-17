@@ -13,18 +13,3 @@ public class ExternalPackageDTO
     public required CompactPackage Package { get; set; }
  
 }
-/// <summary>
-/// Is a DTO from AccessManagement
-/// </summary>
-public class CompactPackage
-{
-    /// <summary>
-    /// Id
-    /// </summary>
-    public Guid Id { get; set; }
-
-    /// <summary>
-    /// Urn
-    /// </summary>
-    public required string Urn { get; set; }
-}

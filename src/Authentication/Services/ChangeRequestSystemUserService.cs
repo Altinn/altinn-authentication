@@ -538,12 +538,6 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        Result<bool> valRights = ValidateRights(validateSet.RequiredRights, systemInfo);
-        if (valRights.IsProblem)
-        {
-            return valRights.Problem;
-        }
-
         Result<bool> valRef = await ValidateExternalChangeRequestId(externalRequestId);
         if (valRef.IsProblem)
         {
@@ -560,6 +554,33 @@ public class ChangeRequestSystemUserService(
         if (valCust.IsProblem)
         {
             return valCust.Problem;
+        }
+
+        if (validateSet.RedirectUrl is not null && validateSet.RedirectUrl != string.Empty)
+        {
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(validateSet.RedirectUrl, systemInfo.AllowedRedirectUrls);
+            if (valRedirect.IsProblem)
+            {
+                return valRedirect.Problem;
+            }
+        }
+
+        if (validateSet.RequiredRights is not null && validateSet.RequiredRights.Count > 0)
+        {
+            Result<bool> valRights = systemUserService.ValidateRights(validateSet.RequiredRights, systemInfo);
+            if (valRights.IsProblem)
+            {
+                return valRights.Problem;
+            }
+        }
+
+        if (validateSet.RequiredAccessPackages is not null && validateSet.RequiredAccessPackages.Count > 0)
+        {
+            Result<bool> valPackages = systemUserService.ValidateAccessPackages(validateSet.RequiredAccessPackages, systemInfo);
+            if (valPackages.IsProblem)
+            {
+                return valPackages.Problem;
+            }
         }
 
         return new ChangeRequestValidationSet()
@@ -656,12 +677,13 @@ public class ChangeRequestSystemUserService(
     /// <param name="partyUuid">The Uuid for the reportee owning the Systemuser</param>
     /// <param name="systemUser">The SystemUser</param>
     /// <param name="required">Whether all should be required, or all are unwanted</param>
+    /// <param name="cancellationToken">cancellationToken </param>
     /// <returns>List of difference, an empty list means all are as required</returns>
-    private async Task<Result<List<AccessPackage>>> VerifyAccessPackages(List<AccessPackage> accessPackages, Guid partyUuid, SystemUser systemUser, bool required)
+    private async Task<Result<List<AccessPackage>>> VerifyAccessPackages(List<AccessPackage> accessPackages, Guid partyUuid, SystemUser systemUser, bool required, CancellationToken cancellationToken = default)
     {
         // The result is stored here, we are looking for the difference between what is required and what is current
         List<AccessPackage> diff = [];
-        Result<List<AccessPackage>> currentAccessPackages = await accessManagementClient.GetDelegatedAccessPackages(systemUser, partyUuid);
+        Result<List<AccessPackage>> currentAccessPackages = await delegationHelper.GetAccessPackagesForSystemUser(partyUuid, new Guid(systemUser.Id), cancellationToken);
         if (currentAccessPackages.IsProblem) 
         { 
             return currentAccessPackages.Problem; 

@@ -373,4 +373,41 @@ public class DelegationHelper(
 
         return (true, validAccessPackages, invalidAccessPackages);
     }
+
+    /// <summary>
+    /// Gets the Accesspackages that are delegated to the SystemUser
+    /// </summary>
+    /// <param name="partyUuId">The partyUuid which owns the SystemUser</param>
+    /// <param name="systemUserId">The Guid Id for the SystemUser</param>
+    /// <param name="cancellationToken">Cancellation Token</param>
+    /// <returns></returns>
+    public async Task<Result<List<AccessPackage>>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken = default)
+    {
+        var packagePermissions = await accessManagementClient.GetAccessPackagesForSystemUser(partyUuId, systemUserId, cancellationToken).ToListAsync(cancellationToken);
+
+        List<PackagePermission> delegations = packagePermissions
+            .Where(r => r.IsSuccess && r.Value is not null)
+            .Select(r => r.Value!)
+            .ToList();
+
+        // 3. Process results
+        GetDelegatedPackagesFromDelegations(delegations, out List<AccessPackage> accessPackages);
+        return accessPackages;
+    }
+
+    private static void GetDelegatedPackagesFromDelegations(
+        List<PackagePermission> delegations,
+        out List<AccessPackage> accessPackages)
+    {
+        accessPackages = [];
+        foreach (PackagePermission packagePermission in delegations)
+        {
+            if (packagePermission.Package is not null)
+            {
+                AccessPackage accessPackage = new AccessPackage();
+                accessPackage.Urn = packagePermission.Package.Urn;
+                accessPackages.Add(accessPackage);
+            }
+        }
+    }
 }

@@ -171,6 +171,8 @@ public class ChangeRequestSystemUserController : ControllerBase
                 PartyOrgNo = createRequest.PartyOrgNo,
                 RequiredRights = [],
                 UnwantedRights = [],
+                RequiredAccessPackages = [],
+                UnwantedAccessPackages = [],
                 Status = "new",
                 RedirectUrl = createRequest.RedirectUrl
             };

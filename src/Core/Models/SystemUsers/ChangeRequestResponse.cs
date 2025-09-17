@@ -53,7 +53,6 @@ public class ChangeRequestResponse()
     /// Must be equal to or less than the set defined in the Registered System - see SystemId.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("requiredRights")]
     public List<Right> RequiredRights { get; set; } = [];
 
@@ -63,11 +62,8 @@ public class ChangeRequestResponse()
     /// If already not delegated, no change is needed; idempotent.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("unwantedRights")]
     public List<Right> UnwantedRights { get; set; } = [];
-
-
 
     /// <summary>
     /// The set of AccessPackages requested as Required for this system user. 
@@ -76,7 +72,6 @@ public class ChangeRequestResponse()
     /// Must be equal to or less than the set defined in the Registered System - see SystemId.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("requiredAccessPackages")]
     public List<AccessPackage> RequiredAccessPackages { get; set; } = [];
 
@@ -86,11 +81,8 @@ public class ChangeRequestResponse()
     /// If already not delegated, no change is needed; idempotent.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("unwantedAccessPackages")]
     public List<AccessPackage> UnwantedAccessPackages { get; set; } = [];
-
-
 
     /// <summary>
     /// Initially the request is "new", 
