@@ -307,7 +307,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Approves the systemuser requet and creates a system user
+    /// Approves the systemuser request and updates the system user
     /// </summary>
     /// <param name="party">the partyId</param>
     /// <param name="requestId">The UUID of the request to be approved</param>
