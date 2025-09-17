@@ -87,7 +87,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<bool> ApproveAndDelegateOnSystemUser(Guid requestId, SystemUser toBeChanged, int userId, CancellationToken cancellationToken)
+    public async Task<bool> PersistApprovalOfChangeRequest(Guid requestId, SystemUser toBeChanged, int userId, CancellationToken cancellationToken)
     {
         string changed_by = "userId:" + userId.ToString();
 

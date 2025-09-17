@@ -27,14 +27,14 @@ public interface IChangeRequestRepository
     Task<ChangeRequestResponse?> GetChangeRequestByExternalReferences(ExternalRequestId externalRequestId);
 
     /// <summary>
-    /// Approves a ChangeRequest and delegates the new Rights on the existing SystemUser
+    /// Logs the Approval of a ChangeRequest and sets the changed by field on the SystemUser
     /// </summary>
     /// <param name="requestId">the id of the request to be accepted</param>
     /// <param name="toBeInserted">the system user to be created</param>
     /// <param name="userId">the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
-    /// <returns>returns the system user id</returns>
-    Task<bool> ApproveAndDelegateOnSystemUser(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken);
+    /// <returns>true or false</returns>
+    Task<bool> PersistApprovalOfChangeRequest(Guid requestId, SystemUser toBeInserted, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of Status-Response-model for all ChangeRequests that the Vendor has

@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
+using Altinn.Authentication.Integration.Clients;
 using Altinn.Authorization.ABAC.Xacml;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
@@ -414,31 +415,94 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        // Check Single Rights
-        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
-        if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
+        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+
+        if (party is null || string.IsNullOrEmpty(party.OrgNumber))
         {
-            return Problem.Rights_NotFound_Or_NotDelegable;
+            return Problem.Reportee_Orgno_NotFound;
         }
 
-        // Check AccessPackages
+        if (!party.PartyUuid.HasValue)
+        {
+            return Problem.Party_PartyUuid_NotFound;
+        }
 
-        // Approve and Delegate Single Rights
-        var changed = await changeRequestRepository.ApproveAndDelegateOnSystemUser(requestId, toBeChanged, userId, cancellationToken);
+        Guid partyUuid = party.PartyUuid.Value;
+
+        DelegationCheckResult delegationCheckFinalResult = new(CanDelegate:false, RightResponses:[], errors:[]);
+
+        // Check Single Rights to be added 
+        if (systemUserChangeRequest.RequiredRights is not null && systemUserChangeRequest.RequiredRights.Any())
+        {
+            delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
+            if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+        }
+
+        // Check AccessPackages to be added
+        if (systemUserChangeRequest.RequiredAccessPackages is not null && systemUserChangeRequest.RequiredAccessPackages.Count > 0)
+        {
+            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, systemUserChangeRequest.RequiredAccessPackages, fromBff: true, cancellationToken);        
+            if (checkAccessPackages.IsProblem)
+            {
+                return checkAccessPackages.Problem;
+            }
+
+            if (checkAccessPackages.Value.CanDelegate && checkAccessPackages.Value.AccessPackages?.Count > 0)
+            {
+                foreach (AccessPackage accessPackage in checkAccessPackages.Value.AccessPackages)
+                {
+                    Result<bool> delegationResult = await accessManagementClient.DelegateSingleAccessPackageToSystemUser(partyUuid, Guid.Parse(toBeChanged.Id), accessPackage.Urn!, cancellationToken);
+
+                    if (delegationResult.IsProblem)
+                    {
+                        return new Result<bool>(delegationResult.Problem!);
+                    }
+                }
+            }
+        }
+
+        // Delegate new Single Rights to the SystemUser
+        if (delegationCheckFinalResult.CanDelegate && delegationCheckFinalResult.RightResponses?.Count > 0)
+        {
+            Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
+            if (delegationSucceeded.IsProblem)
+            {
+                return delegationSucceeded.Problem;
+            }
+        }
+
+        // Attempt to Revoke Single Rights from the SystemUser
+        if (systemUserChangeRequest.UnwantedRights?.Count > 0)
+        {
+            var revokeRightResult = await accessManagementClient.RevokeDelegatedRightToSystemUser(partyId.ToString(), toBeChanged, systemUserChangeRequest.UnwantedRights);
+            if (revokeRightResult.IsProblem)
+            {
+                return revokeRightResult.Problem;
+            }
+        }
+
+        // Attempt to Revoke AccessPackages from the SystemUser
+        if (systemUserChangeRequest.UnwantedAccessPackages?.Count > 0)
+        {
+            foreach (AccessPackage accessPackage in systemUserChangeRequest.UnwantedAccessPackages)
+            {
+                var removeSystemUserResult = await accessManagementClient.DeleteSingleAccessPackageFromSystemUser(partyUuid, new Guid(toBeChanged.Id), accessPackage.Urn, cancellationToken);
+                if (removeSystemUserResult.IsProblem)
+                {
+                    return removeSystemUserResult.Problem;
+                }
+            }
+        }
+
+        // Persist Approval
+        var changed = await changeRequestRepository.PersistApprovalOfChangeRequest(requestId, toBeChanged, userId, cancellationToken);
 
         if (!changed)
         {
-            return Problem.SystemUser_FailedToCreate;
-        }
-
-        // Approve and Delegate AccessPackages
-
-        // Revoke AccessPackages
-
-        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
-        if (delegationSucceeded.IsProblem)
-        {
-            return delegationSucceeded.Problem;
+            return Problem.RequestCouldNotBeUpdated;
         }
 
         return true;
