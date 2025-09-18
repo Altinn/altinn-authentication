@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine@sha256:430bd56f4348f9dd400331f0d71403554ec83ae1700a7dcfe1e1519c9fd12174 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:033283403fc5b8789467bb6a0f9670ebe0bc8f2276710cc99f1820f01789bafe AS build
 WORKDIR /app
 
 # Copy everything and build
