@@ -596,6 +596,12 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
+        // For now we don't support ChangeRequests for an Agent SystemUser
+        if (systemUser.UserType == Core.Enums.SystemUserType.Agent)
+        {
+            return Problem.SystemUserNotFound;
+        }
+
         RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
         if (systemInfo is null)
         {
