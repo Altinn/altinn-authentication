@@ -9,12 +9,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
+using Altinn.Authentication.Integration.Clients;
 using Altinn.Authorization.ABAC.Xacml;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -69,6 +71,7 @@ public class ChangeRequestSystemUserService(
         // Similar as to running the Verify endpoint, but we need to check here too, since the vendor might not have verified the request first.
         if (verified.Value.Status == ChangeRequestStatus.NoChangeNeeded.ToString())
         {
+            // Short circuit the logic and return a response with four empty sets
             return verified.Value;
         }
 
@@ -92,8 +95,10 @@ public class ChangeRequestSystemUserService(
             PartyOrgNo = createRequest.PartyOrgNo,
             RequiredRights = createRequest.RequiredRights,
             UnwantedRights = createRequest.UnwantedRights,
+            RequiredAccessPackages = createRequest.RequiredAccessPackages,
+            UnwantedAccessPackages = createRequest.UnwantedAccessPackages,
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createRequest.RedirectUrl
+            RedirectUrl = createRequest.RedirectUrl           
         };
 
         Result<bool> res = await changeRequestRepository.CreateChangeRequest(created);
@@ -410,23 +415,94 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        DelegationCheckResult delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
-        if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
+        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+
+        if (party is null || string.IsNullOrEmpty(party.OrgNumber))
         {
-            return Problem.Rights_NotFound_Or_NotDelegable;
+            return Problem.Reportee_Orgno_NotFound;
         }
 
-        var changed = await changeRequestRepository.ApproveAndDelegateOnSystemUser(requestId, toBeChanged, userId, cancellationToken);
+        if (!party.PartyUuid.HasValue)
+        {
+            return Problem.Party_PartyUuid_NotFound;
+        }
+
+        Guid partyUuid = party.PartyUuid.Value;
+
+        DelegationCheckResult delegationCheckFinalResult = new(CanDelegate:false, RightResponses:[], errors:[]);
+
+        // Check Single Rights to be added 
+        if (systemUserChangeRequest.RequiredRights?.Count > 0)
+        {
+            delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
+            if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
+            {
+                return Problem.Rights_NotFound_Or_NotDelegable;
+            }
+        }
+
+        // Check AccessPackages to be added
+        if (systemUserChangeRequest.RequiredAccessPackages?.Count > 0)
+        {
+            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, systemUserChangeRequest.RequiredAccessPackages, fromBff: true, cancellationToken);        
+            if (checkAccessPackages.IsProblem)
+            {
+                return checkAccessPackages.Problem;
+            }
+
+            if (checkAccessPackages.Value.CanDelegate && checkAccessPackages.Value.AccessPackages?.Count > 0)
+            {
+                foreach (AccessPackage accessPackage in checkAccessPackages.Value.AccessPackages)
+                {
+                    Result<bool> delegationResult = await accessManagementClient.DelegateSingleAccessPackageToSystemUser(partyUuid, Guid.Parse(toBeChanged.Id), accessPackage.Urn!, cancellationToken);
+
+                    if (delegationResult.IsProblem)
+                    {
+                        return new Result<bool>(delegationResult.Problem!);
+                    }
+                }
+            }
+        }
+
+        // Delegate new Single Rights to the SystemUser
+        if (delegationCheckFinalResult.CanDelegate && delegationCheckFinalResult.RightResponses?.Count > 0)
+        {
+            Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
+            if (delegationSucceeded.IsProblem)
+            {
+                return delegationSucceeded.Problem;
+            }
+        }
+
+        // Attempt to Revoke Single Rights from the SystemUser
+        if (systemUserChangeRequest.UnwantedRights?.Count > 0)
+        {
+            var revokeRightResult = await accessManagementClient.RevokeDelegatedRightToSystemUser(partyId.ToString(), toBeChanged, systemUserChangeRequest.UnwantedRights);
+            if (revokeRightResult.IsProblem)
+            {
+                return revokeRightResult.Problem;
+            }
+        }
+
+        // Attempt to Revoke AccessPackages from the SystemUser
+        if (systemUserChangeRequest.UnwantedAccessPackages?.Count > 0)
+        {
+            foreach (AccessPackage accessPackage in systemUserChangeRequest.UnwantedAccessPackages)
+            {
+                var removeSystemUserResult = await accessManagementClient.DeleteSingleAccessPackageFromSystemUser(partyUuid, new Guid(toBeChanged.Id), accessPackage.Urn, cancellationToken);
+                if (removeSystemUserResult.IsProblem)
+                {
+                    return removeSystemUserResult.Problem;
+                }
+            }
+        }
+
+        // Persist Approval
+        var changed = await changeRequestRepository.PersistApprovalOfChangeRequest(requestId, toBeChanged, userId, cancellationToken);
 
         if (!changed)
         {
-            return Problem.SystemUser_FailedToCreate;
-        }
-
-        Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
-        if (delegationSucceeded.IsProblem)
-        {
-            return delegationSucceeded.Problem;
+            return Problem.RequestCouldNotBeUpdated;
         }
 
         return true;
@@ -520,16 +596,16 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
+        // For now we don't support ChangeRequests for an Agent SystemUser
+        if (systemUser.UserType == Core.Enums.SystemUserType.Agent)
+        {
+            return Problem.SystemUserNotFound;
+        }
+
         RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
-        }
-
-        Result<bool> valRights = ValidateRights(validateSet.RequiredRights, systemInfo);
-        if (valRights.IsProblem)
-        {
-            return valRights.Problem;
         }
 
         Result<bool> valRef = await ValidateExternalChangeRequestId(externalRequestId);
@@ -550,6 +626,33 @@ public class ChangeRequestSystemUserService(
             return valCust.Problem;
         }
 
+        if (validateSet.RedirectUrl is not null && validateSet.RedirectUrl != string.Empty)
+        {
+            var valRedirect = AuthenticationHelper.ValidateRedirectUrl(validateSet.RedirectUrl, systemInfo.AllowedRedirectUrls);
+            if (valRedirect.IsProblem)
+            {
+                return valRedirect.Problem;
+            }
+        }
+
+        if (validateSet.RequiredRights is not null && validateSet.RequiredRights.Count > 0)
+        {
+            Result<bool> valRights = systemUserService.ValidateRights(validateSet.RequiredRights, systemInfo);
+            if (valRights.IsProblem)
+            {
+                return valRights.Problem;
+            }
+        }
+
+        if (validateSet.RequiredAccessPackages is not null && validateSet.RequiredAccessPackages.Count > 0)
+        {
+            Result<bool> valPackages = systemUserService.ValidateAccessPackages(validateSet.RequiredAccessPackages, systemInfo);
+            if (valPackages.IsProblem)
+            {
+                return valPackages.Problem;
+            }
+        }
+
         return new ChangeRequestValidationSet()
         {
             ExternalRequestId = externalRequestId,
@@ -567,10 +670,128 @@ public class ChangeRequestSystemUserService(
             return valSet.Problem;
         }
 
+        ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
+
+        Result<List<Right>> verifiedRequiredRights = await VerifySingleRightsWithPDP(verifyRequest.RequiredRights, valSet.Value.SystemUser, true);
+        if (verifiedRequiredRights.IsProblem)
+        {
+            return verifiedRequiredRights.Problem;
+        }
+
+        if (verifiedRequiredRights.Value.Count > 0)
+        { 
+            changeRequestStatus = ChangeRequestStatus.New;
+        }
+
+        Result<List<Right>> verifiedUnwantedRights = await VerifySingleRightsWithPDP(verifyRequest.UnwantedRights, valSet.Value.SystemUser, false);
+        if (verifiedUnwantedRights.IsProblem)
+        {
+            return verifiedUnwantedRights.Problem;
+        }
+
+        if (verifiedUnwantedRights.Value.Count > 0)
+        {
+            changeRequestStatus = ChangeRequestStatus.New;
+        }
+
+        Party party = await partiesClient.GetPartyByOrgNo(valSet.Value.SystemUser.ReporteeOrgNo);
+        if (party is null || party.PartyUuid is null)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        Guid partyUuid = (Guid)party.PartyUuid;
+
+        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(verifyRequest.RequiredAccessPackages, partyUuid, valSet.Value.SystemUser, true);
+        if (verifiedRequiredAccessPackages.IsProblem)
+        {
+            return verifiedRequiredAccessPackages.Problem;
+        }
+
+        if (verifiedRequiredAccessPackages.Value.Count > 0)
+        {
+            changeRequestStatus = ChangeRequestStatus.New;
+        }
+
+        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(verifyRequest.UnwantedAccessPackages, partyUuid, valSet.Value.SystemUser, false);
+        if (verifiedUnwantedAccessPackages.IsProblem)
+        {
+            return verifiedUnwantedAccessPackages.Problem;
+        }
+
+        if (verifiedUnwantedAccessPackages.Value.Count > 0)
+        {
+            changeRequestStatus = ChangeRequestStatus.New;
+        }
+
+        return new ChangeRequestResponse()
+        {
+            Id = Guid.NewGuid(),
+            ExternalRef = verifyRequest.ExternalRef, 
+            SystemId = verifyRequest.SystemId,
+            SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
+            PartyOrgNo = verifyRequest.PartyOrgNo,
+            RequiredRights = verifiedRequiredRights.Value,
+            UnwantedRights = verifiedUnwantedRights.Value,
+            RequiredAccessPackages = verifiedRequiredAccessPackages.Value,
+            UnwantedAccessPackages = verifiedUnwantedAccessPackages.Value,
+            Status = changeRequestStatus.ToString(),
+            RedirectUrl = verifyRequest.RedirectUrl
+        };
+    }
+
+    /// <summary>
+    /// Find the currently delegated AccessPackages to a SystemUser
+    /// </summary>
+    /// <param name="accessPackages">AccessPackeges</param>
+    /// <param name="partyUuid">The Uuid for the reportee owning the Systemuser</param>
+    /// <param name="systemUser">The SystemUser</param>
+    /// <param name="required">Whether all should be required, or all are unwanted</param>
+    /// <param name="cancellationToken">cancellationToken </param>
+    /// <returns>List of difference, an empty list means all are as required</returns>
+    private async Task<Result<List<AccessPackage>>> VerifyAccessPackages(List<AccessPackage> accessPackages, Guid partyUuid, SystemUser systemUser, bool required, CancellationToken cancellationToken = default)
+    {
+        // The result is stored here, we are looking for the difference between what is required and what is current
+        List<AccessPackage> diff = [];
+        Result<List<AccessPackage>> currentAccessPackages = await delegationHelper.GetAccessPackagesForSystemUser(partyUuid, new Guid(systemUser.Id), cancellationToken);
+        if (currentAccessPackages.IsProblem) 
+        { 
+            return currentAccessPackages.Problem; 
+        }
+
+        foreach (AccessPackage accessPackage in accessPackages)
+        {
+            // Look for required ap that are not currently delegated
+            if (required && !currentAccessPackages.Value.Any(u => u.Urn == accessPackage.Urn))
+            {
+                diff.Add(accessPackage);
+            }
+
+            // Look for unwanted ap that are currently delegated
+            if (!required && currentAccessPackages.Value.Any(u => u.Urn == accessPackage.Urn))
+            {
+                diff.Add(accessPackage);
+            }
+        }
+
+        // The difference found
+        return diff;
+    }
+
+    /// <summary>
+    /// Verifies the entire set of single rights with the PDP as a complete set,
+    /// does not identify which were missing if the result is not PERMIT
+    /// </summary>
+    /// <returns>true or false</returns>
+    private async Task<Result<List<Right>>> VerifySingleRightsWithPDP(List<Right> rights, SystemUser systemUser, bool required)
+    {        
         List<PolicyRightsDTO> requiredPolicyRights = [];
 
+        // Need this since the Result type cant init from [] directly
+        List<Right> empty = [];
+
         // Call the Resource Registry to get a flat list of Rights in the PDP format from the list of ResourceIds.
-        foreach (var right in verifyRequest.RequiredRights)
+        foreach (var right in rights)
         {
             foreach (var resource in right.Resource)
             {
@@ -580,44 +801,33 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        // Call the PDP client to verify which of the Required Rights are currently delegated.
-        // The Unwanted rights verification is currently not supported.
-        var res = await MultipleDecisionRequestToPDP(requiredPolicyRights, valSet.Value.SystemUser);
-        if (res.IsProblem) 
+        // Call the PDP client to verify that the entire set of Rights in the list are currently delegated.        
+        var res = await MultipleDecisionRequestToPDP(requiredPolicyRights, systemUser);
+        if (res.IsProblem)
         {
             return res.Problem;
         }
 
-        bool allRequiredRightsAreDelegated = MapPDPResponse(res.Value);
-
-        if (allRequiredRightsAreDelegated)
+        // In the case of Required Rights 
+        if (required)
         {
-            return new ChangeRequestResponse()
+            // All the Required Rights are Permit allready, no change needed, return empty list
+            if (MapPDPResponseAllPermit(res.Value))
             {
-                Id = Guid.NewGuid(),
-                ExternalRef = verifyRequest.ExternalRef,
-                SystemId = verifyRequest.SystemId,
-                PartyOrgNo = verifyRequest.PartyOrgNo,
-                RequiredRights = [],
-                UnwantedRights = verifyRequest.UnwantedRights,
-                Status = ChangeRequestStatus.NoChangeNeeded.ToString(),
-                RedirectUrl = verifyRequest.RedirectUrl
-            };
+                return empty;
+            }
+        }
+        else
+        {
+            // In the case of Unwanted Rights, no Right has Permit, no change needed, return empty list
+            if (MapPDPResponseNonePermit(res.Value))
+            {
+                return empty;
+            }            
         }
 
-        // The Rights are not all delegated, so we need to create a new ChangeRequest
-        return new ChangeRequestResponse()
-        {
-            Id = Guid.NewGuid(),
-            ExternalRef = JsonSerializer.Serialize(res.Value),
-            SystemId = verifyRequest.SystemId,
-            SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
-            PartyOrgNo = verifyRequest.PartyOrgNo,
-            RequiredRights = verifyRequest.RequiredRights,
-            UnwantedRights = verifyRequest.UnwantedRights,
-            Status = ChangeRequestStatus.New.ToString(),
-            RedirectUrl = verifyRequest.RedirectUrl
-        };
+        // A change is needed, return the list of Rights
+        return rights;
     }
 
     /// <summary>
@@ -651,15 +861,15 @@ public class ChangeRequestSystemUserService(
     }
 
     /// <summary>
-    /// Returns True if all the Rights in the PDP call where Permit,
-    /// a False will be returned if any of the Rights where not Permit.
+    /// Returns True if all the Rights in the PDP call were Permit,
+    /// a False will be returned if any of the Rights were not Permit.
     /// This means that the ChangeRequest should be submitted to the API, 
     /// since it is not already delegated, and the PDP API is idempotent,
     /// it does not matter if one or more of the Rights are already delegated.
     /// </summary>
     /// <param name="res">The response from the PDP</param>
     /// <returns>Boolean True if all Rights where Permit</returns>    
-    private static bool MapPDPResponse(XacmlJsonResponse res)
+    private static bool MapPDPResponseAllPermit(XacmlJsonResponse res)
     {
         bool allRequiredRightsAreDelegated = true;
 
@@ -672,6 +882,27 @@ public class ChangeRequestSystemUserService(
         }
 
         return allRequiredRightsAreDelegated;
+    }
+
+    /// <summary>
+    /// Returns True if none of the Rights in the PDP call were Permit,
+    /// a False will be returned if any of the Rights were Permit.
+    /// </summary>
+    /// <param name="res">The response from the PDP</param>
+    /// <returns>Boolean True if no Rights where Permit</returns>    
+    private static bool MapPDPResponseNonePermit(XacmlJsonResponse res)
+    {
+        bool noPermit = true;
+
+        foreach (XacmlJsonResult result in res.Response)
+        {
+            if (result.Decision == XacmlContextDecision.Permit.ToString())
+            {
+                noPermit = false;
+            }
+        }
+
+        return noPermit;
     }
 
     private async Task<Result<XacmlJsonResponse>> MultipleDecisionRequestToPDP(List<PolicyRightsDTO> rights, SystemUser systemUser)
@@ -819,6 +1050,8 @@ public class ChangeRequestSystemUserService(
                 PartyUuid = partyUuid,
                 RequiredRights = req.RequiredRights,
                 UnwantedRights = req.UnwantedRights,
+                RequiredAccessPackages = req.RequiredAccessPackages,
+                UnwantedAccessPackages = req.UnwantedAccessPackages,
                 Status = req.Status,
                 ConfirmUrl = req.ConfirmUrl,
                 Created = req.Created,

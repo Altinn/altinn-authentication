@@ -2,6 +2,7 @@
 using System.Data.Common;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -33,6 +34,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls)
             VALUES(
@@ -43,6 +46,8 @@ public class ChangeRequestRepository(
                 @party_org_no,
                 @required_rights,
                 @unwanted_rights,
+                @required_accesspackages,
+                @unwanted_accesspackages,
                 @status,
                 @redirect_urls);"
         ;
@@ -58,6 +63,9 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
             command.Parameters.Add(new("required_rights", NpgsqlDbType.Jsonb) { Value = createRequest.RequiredRights });
             command.Parameters.Add(new("unwanted_rights", NpgsqlDbType.Jsonb) { Value = createRequest.UnwantedRights });
+            command.Parameters.Add(new("required_accesspackages", NpgsqlDbType.Jsonb) { Value = createRequest.RequiredAccessPackages });
+            command.Parameters.Add(new("unwanted_accesspackages", NpgsqlDbType.Jsonb) { Value = createRequest.UnwantedAccessPackages });
+
             command.Parameters.AddWithValue("status", createRequest.Status);
 
             if (createRequest.RedirectUrl is not null)
@@ -79,7 +87,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<bool> ApproveAndDelegateOnSystemUser(Guid requestId, SystemUser toBeChanged, int userId, CancellationToken cancellationToken)
+    public async Task<bool> PersistApprovalOfChangeRequest(Guid requestId, SystemUser toBeChanged, int userId, CancellationToken cancellationToken)
     {
         string changed_by = "userId:" + userId.ToString();
 
@@ -181,6 +189,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls,
                 created
@@ -217,6 +227,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls,
                 created
@@ -258,6 +270,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls,
                 created 
@@ -297,6 +311,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls,
                 created 
@@ -372,6 +388,8 @@ public class ChangeRequestRepository(
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
             RequiredRights = reader.GetFieldValue<List<Right>>("required_rights"),
             UnwantedRights = reader.GetFieldValue<List<Right>>("unwanted_rights"),
+            RequiredAccessPackages = reader.GetFieldValue<List<AccessPackage>>("required_accesspackages"),
+            UnwantedAccessPackages = reader.GetFieldValue<List<AccessPackage>>("unwanted_accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
