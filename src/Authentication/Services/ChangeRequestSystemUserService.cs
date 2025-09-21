@@ -446,7 +446,7 @@ public class ChangeRequestSystemUserService(
         if (systemUserChangeRequest.RequiredAccessPackages?.Count > 0)
         {
             Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, systemUserChangeRequest.RequiredAccessPackages, fromBff: true, cancellationToken);        
-            if (checkAccessPackages.IsProblem)
+            if (checkAccessPackages.IsProblem)   
             {
                 return checkAccessPackages.Problem;
             }
@@ -1039,6 +1039,22 @@ public class ChangeRequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
+        List<AccessPackage> requiredAccessPackages = [];
+
+        if (req.RequiredAccessPackages?.Count > 0)
+        {
+            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, req.SystemId, req.RequiredAccessPackages, fromBff: true);
+            if (checkAccessPackages.IsProblem)
+            {
+                return checkAccessPackages.Problem;
+            }
+
+            if (checkAccessPackages.IsSuccess && checkAccessPackages.Value?.AccessPackages?.Count > 0) 
+            {
+                requiredAccessPackages = checkAccessPackages.Value.AccessPackages;
+            }
+        }
+
         if (SpecificDecisionHelper.ValidatePdpDecision(response, context.User))
         {
             return new ChangeRequestResponseInternal()
@@ -1051,7 +1067,7 @@ public class ChangeRequestSystemUserService(
                 PartyUuid = partyUuid,
                 RequiredRights = req.RequiredRights,
                 UnwantedRights = req.UnwantedRights,
-                RequiredAccessPackages = req.RequiredAccessPackages,
+                RequiredAccessPackages = requiredAccessPackages,
                 UnwantedAccessPackages = req.UnwantedAccessPackages,
                 Status = req.Status,
                 ConfirmUrl = req.ConfirmUrl,
