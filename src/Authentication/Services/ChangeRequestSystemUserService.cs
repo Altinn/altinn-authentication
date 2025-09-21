@@ -98,67 +98,6 @@ public class ChangeRequestSystemUserService(
     }
 
     /// <summary>
-    /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected
-    /// </summary>
-    /// <param name="rights">the Rights chosen for the Request</param>
-    /// <param name="systemInfo">the System</param>
-    /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
-    {
-        if (rights.Count == 0 || systemInfo.Rights.Count == 0)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        if (rights.Count > systemInfo.Rights.Count)
-        {
-            return Problem.Rights_NotFound_Or_NotDelegable;
-        }
-
-        bool[] validate = new bool[rights.Count];
-        int i = 0;
-        foreach (var rightRequest in rights)
-        {
-            foreach (var resource in rightRequest.Resource)
-            {
-                if (FindOneAttributePair(resource, systemInfo.Rights))
-                {
-                    validate[i] = true;
-                    break;
-                }
-            }
-
-            i++;
-        }
-
-        foreach (bool right in validate)
-        {
-            if (!right)
-            {
-                return Problem.Rights_NotFound_Or_NotDelegable;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool FindOneAttributePair(AttributePair pair, List<Right> list)
-    {
-        foreach (Right l in list)
-        {
-            foreach (AttributePair p in l.Resource)
-            {
-                if (pair.Id == p.Id && pair.Value == p.Value)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>
     /// Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
     /// </summary>
     /// <param name="redirectURL">the RedirectUrl chosen</param>
