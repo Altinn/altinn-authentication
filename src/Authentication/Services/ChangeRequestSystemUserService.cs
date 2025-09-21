@@ -70,7 +70,7 @@ public class ChangeRequestSystemUserService(
             RequiredAccessPackages = createRequest.RequiredAccessPackages,
             UnwantedAccessPackages = createRequest.UnwantedAccessPackages,
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createRequest.RedirectUrl
+            RedirectUrl = createRequest.RedirectUrl           
         };
 
         Result<ChangeRequestValidationSet> validationSet = await ValidateChangeRequest(created, vendorOrgNo, createNew: true);
