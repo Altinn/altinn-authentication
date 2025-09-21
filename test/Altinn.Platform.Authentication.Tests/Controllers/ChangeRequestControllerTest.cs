@@ -345,6 +345,53 @@ public class ChangeRequestControllerTest(
         Assert.Contains("&DONTCHOOSEREPORTEE=true", createdResponse.ConfirmUrl);
         Assert.NotNull(createdResponse.ConfirmUrl);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
+        Guid systemUserIdFromChangeRequest = createdResponse.SystemUserId;
+                
+        // Get and Approve the Change Request
+        string requestId = createdResponse.Id.ToString();
+        HttpClient client3 = CreateClient();
+        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        string getChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}";
+        HttpRequestMessage getChangeRequestMessage = new(HttpMethod.Get, getChangeRequestEndpoint);
+        HttpResponseMessage getChangeResponseMessage = await client3.SendAsync(getChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getChangeResponseMessage.StatusCode);
+
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        string approveChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}/approve";
+        HttpRequestMessage approveChangeRequestMessage = new(HttpMethod.Post, approveChangeRequestEndpoint);
+        HttpResponseMessage approveChangeResponseMessage = await client3.SendAsync(approveChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveChangeResponseMessage.StatusCode);
+
+        // Doublecheck that the correct SystemUser was updated
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        HttpClient client4 = CreateClient();
+        client4.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        string getSystemUserEndpoint = $"/authentication/api/v1/systemuser/{partyId}/{systemUserIdFromChangeRequest}";
+        HttpRequestMessage getSystemUserRequestMessage = new(HttpMethod.Get, getSystemUserEndpoint);
+        HttpResponseMessage getSystemUserResponseMessage = await client4.SendAsync(getSystemUserRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getSystemUserResponseMessage.StatusCode);
+        Assert.NotNull(getSystemUserResponseMessage.Content);
+        SystemUser? systemUser = await getSystemUserResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        Assert.NotNull(systemUser);
+        Assert.Equal(systemUserIdFromChangeRequest, Guid.Parse(systemUser.Id));
     }
 
     /// <summary>
@@ -707,6 +754,11 @@ public class ChangeRequestControllerTest(
         string requestId = createdResponse.Id.ToString();
         HttpClient client3 = CreateClient();
         client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        string getChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}";
+        HttpRequestMessage getChangeRequestMessage = new(HttpMethod.Get, getChangeRequestEndpoint);
+        HttpResponseMessage getChangeResponseMessage = await client3.SendAsync(getChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getChangeResponseMessage.StatusCode);
 
         string approveChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}/approve";
         HttpRequestMessage approveChangeRequestMessage = new(HttpMethod.Post, approveChangeRequestEndpoint);
