@@ -86,6 +86,33 @@ public class PartiesClient : IPartiesClient
     }
 
     /// <inheritdoc/>
+    public async Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string endpointUrl = $"parties/{partyUuId}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
+
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, accessToken, cancellationToken);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                return JsonSerializer.Deserialize<Party>(responseContent, _serializerOptions);
+            }
+
+            _logger.LogError("Authentication // PartiesClient // GetPartyByUuId // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // PartiesClient // GetPartyByUuId // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
     public async Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
     {
         try
