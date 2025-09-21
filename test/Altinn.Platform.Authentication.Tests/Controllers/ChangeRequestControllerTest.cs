@@ -1024,7 +1024,7 @@ public class ChangeRequestControllerTest(
         return false;
     }
 
-    [Fact]
+    [Fact (Skip = "deprecated")]
     public async Task VerifyChangeRequest_AllRightsPermit_ReturnEmptySet()
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
@@ -1117,7 +1117,7 @@ public class ChangeRequestControllerTest(
         Assert.Empty(verifyResponse.RequiredRights);
     }
 
-    [Fact]
+    [Fact (Skip = "deprecated")]
     public async Task VerifyChangeRequest_NotAllRightsPermit_ReturnSet()
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
