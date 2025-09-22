@@ -312,6 +312,8 @@ public class ChangeRequestSystemUserService(
             ExternalRef = find.ExternalRef,
             RequiredRights = find.RequiredRights,
             UnwantedRights = find.UnwantedRights,
+            RequiredAccessPackages = find.RequiredAccessPackages,
+            UnwantedAccessPackages = find.UnwantedAccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
             RedirectUrl = find.RedirectUrl,
