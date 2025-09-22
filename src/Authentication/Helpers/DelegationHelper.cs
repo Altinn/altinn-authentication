@@ -188,7 +188,7 @@ public class DelegationHelper(
     /// <param name="fromBff">if the check is for the user driver or vendor driven system user creation</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
-    public async Task<Result<AccessPackageDelegationCheckResult>> ValidateDelegationRightsForAccessPackages(Guid partyId, string systemId, List<AccessPackage> accessPackages, bool fromBff, CancellationToken cancellationToken)
+    public async Task<Result<AccessPackageDelegationCheckResult>> ValidateDelegationRightsForAccessPackages(Guid partyId, string systemId, List<AccessPackage> accessPackages, bool fromBff, CancellationToken cancellationToken = default)
     {
         // 1. Verify that the access packages are valid for the system
         (bool allVerified, List<AccessPackage> validAccessPackages, List<AccessPackage> invalidAccessPackages) = await ValidateRequestedAccessPackages(accessPackages, systemId, fromBff, cancellationToken);
