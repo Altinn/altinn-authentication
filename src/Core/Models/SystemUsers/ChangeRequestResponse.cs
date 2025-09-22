@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -52,7 +53,6 @@ public class ChangeRequestResponse()
     /// Must be equal to or less than the set defined in the Registered System - see SystemId.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("requiredRights")]
     public List<Right> RequiredRights { get; set; } = [];
 
@@ -62,9 +62,27 @@ public class ChangeRequestResponse()
     /// If already not delegated, no change is needed; idempotent.
     /// An empty list is allowed.
     /// </summary>
-    [Required]
     [JsonPropertyName("unwantedRights")]
     public List<Right> UnwantedRights { get; set; } = [];
+
+    /// <summary>
+    /// The set of AccessPackages requested as Required for this system user. 
+    /// If already delegated, no change is needed; idempotent.
+    /// If not currently delegated, they will be delegated.
+    /// Must be equal to or less than the set defined in the Registered System - see SystemId.
+    /// An empty list is allowed.
+    /// </summary>
+    [JsonPropertyName("requiredAccessPackages")]
+    public List<AccessPackage> RequiredAccessPackages { get; set; } = [];
+
+    /// <summary>
+    /// The set of AccessPackages to be ensured are not delegated to this system user. 
+    /// If currently delegated, they will be revoked.
+    /// If already not delegated, no change is needed; idempotent.
+    /// An empty list is allowed.
+    /// </summary>
+    [JsonPropertyName("unwantedAccessPackages")]
+    public List<AccessPackage> UnwantedAccessPackages { get; set; } = [];
 
     /// <summary>
     /// Initially the request is "new", 

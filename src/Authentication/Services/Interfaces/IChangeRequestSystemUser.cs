@@ -87,8 +87,9 @@ public interface IChangeRequestSystemUser
     /// </summary>
     /// <param name="createRequest">The model describing a new ChangeRequest for a SystemUser</param>
     /// <param name="vendorOrgNo">The OrgNo for the Vendor requesting.</param>
+    /// <param name="systemUser">SystemUser </param>
     /// <returns>Result of Response model or Problem description</returns>
-    Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo);
+    Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser);
 
     /// <summary>
     /// Verifies the sets of rights in the ChangeRequest against the PDP
@@ -96,7 +97,7 @@ public interface IChangeRequestSystemUser
     /// <param name="validateSet">the input model</param>
     /// <param name="vendorOrgNo">the vendors's org no</param>
     /// <returns>A response model with the validated rights</returns>
-    Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestSystemUser validateSet, OrganisationNumber vendorOrgNo);
+    Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo);
 
     /// <summary>
     /// Get the internal Request response DTO for display in the FrontEnd,

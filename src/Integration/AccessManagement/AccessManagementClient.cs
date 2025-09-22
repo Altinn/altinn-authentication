@@ -87,11 +87,11 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";            
+            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";
 
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
 
-            if ( response.StatusCode == System.Net.HttpStatusCode.OK )
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<AuthorizedPartyExternal>(responseContent, _serializerOptions)!;
@@ -111,7 +111,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";            
+            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";
 
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
 
@@ -141,7 +141,7 @@ public class AccessManagementClient : IAccessManagementClient
             StringContent requestBody = new(content, Encoding.UTF8, "application/json");
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody);
             response.EnsureSuccessStatusCode();
-            return JsonSerializer.Deserialize<List<DelegationResponseData>>( await response.Content.ReadAsStringAsync(), _serializerOptions) ;
+            return JsonSerializer.Deserialize<List<DelegationResponseData>>(await response.Content.ReadAsStringAsync(), _serializerOptions);
 
         }
         catch (Exception ex)
@@ -362,7 +362,7 @@ public class AccessManagementClient : IAccessManagementClient
         if (!await RevokeRightsToSystemUser(partyId, systemUser, rights))
         {
             return Problem.Rights_FailedToRevoke;
-        };
+        }
 
         return true;
     }
@@ -540,8 +540,8 @@ public class AccessManagementClient : IAccessManagementClient
     {
         const string AGENT = "agent";
 
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
-        if ( ! Guid.TryParse(request.FacilitatorId, out Guid facilitator))
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        if (!Guid.TryParse(request.FacilitatorId, out Guid facilitator))
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -558,7 +558,7 @@ public class AccessManagementClient : IAccessManagementClient
 
         List<CreateSystemDelegationRolePackageDto> rolePackages = [];
 
-        foreach (var pac in systemUser.AccessPackages) 
+        foreach (var pac in systemUser.AccessPackages)
         {
             string? role;
             if (mockCustomerApi)
@@ -568,9 +568,9 @@ public class AccessManagementClient : IAccessManagementClient
             else
             {
                 role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
-            }               
+            }
 
-            if ( role is null )
+            if (role is null)
             {
                 return Problem.RoleNotFoundForPackage;
             }
@@ -582,13 +582,13 @@ public class AccessManagementClient : IAccessManagementClient
             };
 
             rolePackages.Add(rolePackage);
-        }        
+        }
 
         AgentDelegationRequest agentDelegationRequest = new()
         {
             AgentId = agentSystemUserId,
             AgentName = systemUser.IntegrationTitle,
-            AgentRole = AGENT, 
+            AgentRole = AGENT,
             ClientId = clientId,
             FacilitatorId = facilitator,
             RolePackages = rolePackages
@@ -604,7 +604,7 @@ public class AccessManagementClient : IAccessManagementClient
             if (response.IsSuccessStatusCode && found is not null)
             {
                 return found;
-            }            
+            }
 
             return new Result<List<AgentDelegationResponse>>(Problem.Rights_FailedToDelegate);
 
@@ -617,7 +617,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId,CancellationToken cancellationToken)
+    public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken)
     {
         try
         {
@@ -826,14 +826,14 @@ public class AccessManagementClient : IAccessManagementClient
             }
             else
             {
-                if(isDeleteAgent)
+                if (isDeleteAgent)
                 {
                     problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
                 }
                 else
                 {
                     problemInstance = ProblemInstance.Create(Problem.CustomerDelegation_FailedToRevoke, problemExtensionData);
-                }                
+                }
             }
 
             return new Result<bool>(problemInstance);
@@ -903,5 +903,5 @@ public class AccessManagementClient : IAccessManagementClient
             ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem, problemExtensionData);
             return new Result<bool>(problemInstance);
         }
-    }
+    }   
 }

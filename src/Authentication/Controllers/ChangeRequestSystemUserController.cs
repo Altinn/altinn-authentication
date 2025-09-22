@@ -13,6 +13,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
@@ -25,23 +26,17 @@ namespace Altinn.Authentication.Controllers;
 /// <summary>
 /// CRUD API for Request SystemUser
 /// </summary>
+/// <remarks>
+/// Constructor
+/// </remarks>
 [Route("authentication/api/v1/systemuser/changerequest")]
 [ApiController]
-public class ChangeRequestSystemUserController : ControllerBase
+public class ChangeRequestSystemUserController(
+    IChangeRequestSystemUser changeRequestService,
+    ISystemUserService systemUserService,
+    IOptions<GeneralSettings> generalSettings) : ControllerBase
 {
-    private readonly IChangeRequestSystemUser _changeRequestService;
-    private readonly GeneralSettings _generalSettings;
-
-    /// <summary>
-    /// Constructor
-    /// </summary>
-    public ChangeRequestSystemUserController(
-        IChangeRequestSystemUser changeRequestService,
-        IOptions<GeneralSettings> generalSettings)
-    {
-        _changeRequestService = changeRequestService;
-        _generalSettings = generalSettings.Value;
-    }
+    private readonly GeneralSettings _generalSettings = generalSettings.Value;
 
     /// <summary>
     /// Route for the Created URI
@@ -70,39 +65,6 @@ public class ChangeRequestSystemUserController : ControllerBase
     public const string ROUTE_VENDOR_GET_REQUESTS_BY_SYSTEM = "vendor/changerequest/bysystem";
 
     /// <summary>
-    /// Verifies if the given set(s) of required and/or unwanted rights are delegated for the given systemId and user.
-    /// </summary>
-    /// <param name="validateSet">The model containing the set(s) of required and/or unwanted rights</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Response model of CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
-    [HttpPost("vendor/verify")]
-    public async Task<ActionResult<ChangeRequestResponse>> VerifySetOfRights([FromBody] ChangeRequestSystemUser validateSet, CancellationToken cancellationToken = default)
-    {
-        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
-        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
-        {
-            return Unauthorized();
-        }
-
-        // Check to see if both the Required and Unwanted Rights are empty
-        var emptyResponse = EmptySetsReturnEmptyResponse(validateSet);
-        if (emptyResponse is not null)
-        {
-            return Ok(emptyResponse);
-        }
-
-        // Calls the PDP endpoint to validate the set of rights
-        Result<ChangeRequestResponse> response = await _changeRequestService.VerifySetOfRights(validateSet, vendorOrgNo);
-        if (response.IsSuccess)
-        {
-            return Ok(response.Value);
-        }
-
-        return response.Problem.ToActionResult();
-    }
-
-    /// <summary>
     /// Creates a new Request based on a SystemId for a SystemUser.
     /// </summary>
     /// <param name="createRequest">The request model</param>
@@ -127,7 +89,20 @@ public class ChangeRequestSystemUserController : ControllerBase
             SystemId = createRequest.SystemId,
         };
 
-        // Check to see if both the Required and Unwanted Rights are empty
+        SystemUser? systemUser = await systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        if (systemUser is null)
+        {
+            return Altinn.Authentication.Core.Problems.Problem.SystemUserNotFound.ToActionResult();
+        }
+
+        var systemVendor = OrganisationNumber.CreateFromStringOrgNo(systemUser.SupplierOrgNo);
+
+        if (systemVendor.ID != vendorOrgNo.ID)
+        {
+            return Unauthorized();
+        }
+
+        // Check to see if all four Required and Unwanted Rights and AccessPackages are empty
         var emptyResponse = EmptySetsReturnEmptyResponse(createRequest);
         if (emptyResponse is not null)
         {
@@ -135,7 +110,7 @@ public class ChangeRequestSystemUserController : ControllerBase
         }
 
         // Check to see if the Request already exists
-        Result<ChangeRequestResponse> response = await _changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
+        Result<ChangeRequestResponse> response = await changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess)
         {
             response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
@@ -143,7 +118,7 @@ public class ChangeRequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
-        response = await _changeRequestService.CreateChangeRequest(createRequest, vendorOrgNo);
+        response = await changeRequestService.CreateChangeRequest(createRequest, vendorOrgNo, systemUser);
         
         if (response.IsSuccess)
         {
@@ -157,7 +132,10 @@ public class ChangeRequestSystemUserController : ControllerBase
 
     private static ChangeRequestResponse? EmptySetsReturnEmptyResponse(ChangeRequestSystemUser createRequest)
     {
-        if (createRequest.RequiredRights.Count == 0 && createRequest.UnwantedRights.Count == 0)
+        if (createRequest.RequiredRights.Count == 0 && 
+            createRequest.UnwantedRights.Count == 0 && 
+            createRequest.RequiredAccessPackages.Count == 0 && 
+            createRequest.UnwantedAccessPackages.Count == 0)
         {
             return new ChangeRequestResponse
             {
@@ -168,6 +146,8 @@ public class ChangeRequestSystemUserController : ControllerBase
                 PartyOrgNo = createRequest.PartyOrgNo,
                 RequiredRights = [],
                 UnwantedRights = [],
+                RequiredAccessPackages = [],
+                UnwantedAccessPackages = [],
                 Status = "new",
                 RedirectUrl = createRequest.RedirectUrl
             };
@@ -209,7 +189,7 @@ public class ChangeRequestSystemUserController : ControllerBase
             return Unauthorized();
         }
 
-        Result<ChangeRequestResponse> response = await _changeRequestService.GetChangeRequestByGuid(requestId, vendorOrgNo);
+        Result<ChangeRequestResponse> response = await changeRequestService.GetChangeRequestByGuid(requestId, vendorOrgNo);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -251,7 +231,7 @@ public class ChangeRequestSystemUserController : ControllerBase
             SystemId = systemId,
         };
 
-        Result<ChangeRequestResponse> response = await _changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
+        Result<ChangeRequestResponse> response = await changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
         
         if (response.IsProblem)
         {
@@ -275,7 +255,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     [HttpGet("{party}/{requestId}")]
     public async Task<ActionResult<ChangeRequestResponse>> GetRequestByPartyIdAndRequestId(int party, Guid requestId)
     {
-        Result<ChangeRequestResponse> res = await _changeRequestService.GetChangeRequestByPartyAndRequestId(party, requestId);
+        Result<ChangeRequestResponse> res = await changeRequestService.GetChangeRequestByPartyAndRequestId(party, requestId);
         if (res.IsProblem)
         {
             return res.Problem.ToActionResult();
@@ -292,7 +272,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     [HttpGet("{requestId}")]
     public async Task<ActionResult<ChangeRequestResponseInternal>> GetChangeRequestById(Guid requestId)
     {
-        Result<ChangeRequestResponseInternal> res = await _changeRequestService.CheckUserAuthorizationAndGetRequest(requestId);
+        Result<ChangeRequestResponseInternal> res = await changeRequestService.CheckUserAuthorizationAndGetRequest(requestId);
         if (res.IsProblem)
         {
             return res.Problem.ToActionResult();
@@ -302,7 +282,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Approves the systemuser requet and creates a system user
+    /// Approves the systemuser request and updates the system user
     /// </summary>
     /// <param name="party">the partyId</param>
     /// <param name="requestId">The UUID of the request to be approved</param>
@@ -313,7 +293,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     public async Task<ActionResult<ChangeRequestResponse>> ApproveSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _changeRequestService.ApproveAndDelegateChangeOnSystemUser(requestId, party, userId, cancellationToken);
+        Result<bool> response = await changeRequestService.ApproveAndDelegateChangeOnSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -354,7 +334,7 @@ public class ChangeRequestSystemUserController : ControllerBase
         }
 
         Result<Page<ChangeRequestResponse, Guid>> pageResult =
-          await _changeRequestService.GetAllChangeRequestsForVendor(
+          await changeRequestService.GetAllChangeRequestsForVendor(
               vendorOrgNo, systemId, continueFrom, cancellationToken);
         if (pageResult.IsProblem)
         {
@@ -389,7 +369,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     public async Task<ActionResult<ChangeRequestResponse>> RejectSystemUserChangeRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _changeRequestService.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
+        Result<bool> response = await changeRequestService.RejectChangeOnSystemUser(requestId, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -411,7 +391,7 @@ public class ChangeRequestSystemUserController : ControllerBase
     [HttpDelete("vendor/{requestId}")]
     public async Task<ActionResult<ChangeRequestResponse>> DeleteChangeRequestByRequestId(Guid requestId)
     {
-        Result<bool> res = await _changeRequestService.DeleteChangeRequestByRequestId(requestId);
+        Result<bool> res = await changeRequestService.DeleteChangeRequestByRequestId(requestId);
         if (res.IsProblem)
         {
             return res.Problem.ToActionResult();

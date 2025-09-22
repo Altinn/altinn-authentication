@@ -18,6 +18,7 @@ using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -227,6 +228,280 @@ public class ChangeRequestControllerTest(
         Assert.Contains("&DONTCHOOSEREPORTEE=true", createdResponse.ConfirmUrl);
         Assert.NotNull(createdResponse.ConfirmUrl);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
+    }
+
+    /// <summary>
+    /// After having verified that the ChangeRequest is needed, create a ChangeRequest
+    /// </summary>
+    [Fact]
+    public async Task ChangeRequest_With_AccessPackages_Create_ReturnOk()
+    {
+        List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
+
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2RightsAndAP.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+            ]
+        };
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skattnaering"
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        // Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+
+        int partyId = 500000;
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
+
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        // Change Request, create
+        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+
+        ChangeRequestSystemUser change = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            RequiredRights = [right2],
+            UnwantedRights = [right],
+            RequiredAccessPackages = [accessPackage]            
+        };
+
+        HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, verifyChangeRequestEndpoint)
+        {
+            Content = JsonContent.Create(change)
+        };
+        HttpResponseMessage createdResponseMessage = await client.SendAsync(verifyChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, createdResponseMessage.StatusCode);
+
+        ChangeRequestResponse? createdResponse = await createdResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
+        Assert.NotNull(createdResponse);
+        Assert.NotEmpty(createdResponse.RequiredRights);
+        Assert.Contains("&DONTCHOOSEREPORTEE=true", createdResponse.ConfirmUrl);
+        Assert.NotNull(createdResponse.ConfirmUrl);
+        Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
+        Guid systemUserIdFromChangeRequest = createdResponse.SystemUserId;
+                
+        // Get and Approve the Change Request
+        string requestId = createdResponse.Id.ToString();
+        HttpClient client3 = CreateClient();
+        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        string getChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}";
+        HttpRequestMessage getChangeRequestMessage = new(HttpMethod.Get, getChangeRequestEndpoint);
+        HttpResponseMessage getChangeResponseMessage = await client3.SendAsync(getChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getChangeResponseMessage.StatusCode);
+
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        string approveChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}/approve";
+        HttpRequestMessage approveChangeRequestMessage = new(HttpMethod.Post, approveChangeRequestEndpoint);
+        HttpResponseMessage approveChangeResponseMessage = await client3.SendAsync(approveChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveChangeResponseMessage.StatusCode);
+
+        // Doublecheck that the correct SystemUser was updated
+        xacmlJsonResults = GetDecisionResultSingle();
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        HttpClient client4 = CreateClient();
+        client4.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        string getSystemUserEndpoint = $"/authentication/api/v1/systemuser/{partyId}/{systemUserIdFromChangeRequest}";
+        HttpRequestMessage getSystemUserRequestMessage = new(HttpMethod.Get, getSystemUserEndpoint);
+        HttpResponseMessage getSystemUserResponseMessage = await client4.SendAsync(getSystemUserRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getSystemUserResponseMessage.StatusCode);
+        Assert.NotNull(getSystemUserResponseMessage.Content);
+        SystemUser? systemUser = await getSystemUserResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        Assert.NotNull(systemUser);
+        Assert.Equal(systemUserIdFromChangeRequest, Guid.Parse(systemUser.Id));
+    }
+
+    /// <summary>
+    /// After having verified that the ChangeRequest is needed, create a ChangeRequest
+    /// </summary>
+    [Fact]
+    public async Task ChangeRequest_With_AccessPackages_Create_Return_BadRequest()
+    {
+        List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
+
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        Right right2 = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+            ]
+        };
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skattnaering"
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        // Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+
+        int partyId = 500000;
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+        xacmlJsonResults = GetDecisionResultListNotAllPermit();
+
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        {
+            Response = xacmlJsonResults
+        });
+
+        // Change Request, create
+        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+
+        ChangeRequestSystemUser change = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            RequiredRights = [right2],
+            UnwantedRights = [right],
+            RequiredAccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, verifyChangeRequestEndpoint)
+        {
+            Content = JsonContent.Create(change)
+        };
+        HttpResponseMessage createdResponseMessage = await client.SendAsync(verifyChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.BadRequest, createdResponseMessage.StatusCode);
     }
 
     /// <summary>
@@ -479,6 +754,11 @@ public class ChangeRequestControllerTest(
         string requestId = createdResponse.Id.ToString();
         HttpClient client3 = CreateClient();
         client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+
+        string getChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}";
+        HttpRequestMessage getChangeRequestMessage = new(HttpMethod.Get, getChangeRequestEndpoint);
+        HttpResponseMessage getChangeResponseMessage = await client3.SendAsync(getChangeRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getChangeResponseMessage.StatusCode);
 
         string approveChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}/approve";
         HttpRequestMessage approveChangeRequestMessage = new(HttpMethod.Post, approveChangeRequestEndpoint);
@@ -796,7 +1076,7 @@ public class ChangeRequestControllerTest(
         return false;
     }
 
-    [Fact]
+    [Fact (Skip = "deprecated")]
     public async Task VerifyChangeRequest_AllRightsPermit_ReturnEmptySet()
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
@@ -889,7 +1169,7 @@ public class ChangeRequestControllerTest(
         Assert.Empty(verifyResponse.RequiredRights);
     }
 
-    [Fact]
+    [Fact (Skip = "deprecated")]
     public async Task VerifyChangeRequest_NotAllRightsPermit_ReturnSet()
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
