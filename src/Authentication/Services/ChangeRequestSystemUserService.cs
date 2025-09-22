@@ -313,6 +313,8 @@ public class ChangeRequestSystemUserService(
             RequiredRights = find.RequiredRights,
             UnwantedRights = find.UnwantedRights,
             PartyOrgNo = find.PartyOrgNo,
+            RequiredAccessPackages = find.RequiredAccessPackages,
+            UnwantedAccessPackages = find.UnwantedAccessPackages,
             Status = find.Status,
             RedirectUrl = find.RedirectUrl,
             SystemUserId = find.SystemUserId
