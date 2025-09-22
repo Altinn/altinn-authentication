@@ -343,14 +343,6 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        OrganisationNumber vendor = OrganisationNumber.CreateFromStringOrgNo(regSystem.SystemVendorOrgNumber);
-
-        Result<ChangeRequestResponse> verified = await VerifySetOfRights(systemUserChangeRequest, vendor);
-        if (verified.IsProblem)
-        {
-            return verified.Problem;
-        }
-
         SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
         if (toBeChanged is null)
         {
@@ -612,30 +604,6 @@ public class ChangeRequestSystemUserService(
             return valSet.Problem;
         }
 
-        ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
-
-        Result<List<Right>> verifiedRequiredRights = await VerifySingleRightsWithPDP(verifyRequest.RequiredRights, valSet.Value.SystemUser, true);
-        if (verifiedRequiredRights.IsProblem)
-        {
-            return verifiedRequiredRights.Problem;
-        }
-
-        if (verifiedRequiredRights.Value.Count > 0)
-        { 
-            changeRequestStatus = ChangeRequestStatus.New;
-        }
-
-        Result<List<Right>> verifiedUnwantedRights = await VerifySingleRightsWithPDP(verifyRequest.UnwantedRights, valSet.Value.SystemUser, false);
-        if (verifiedUnwantedRights.IsProblem)
-        {
-            return verifiedUnwantedRights.Problem;
-        }
-
-        if (verifiedUnwantedRights.Value.Count > 0)
-        {
-            changeRequestStatus = ChangeRequestStatus.New;
-        }
-
         Party party = await partiesClient.GetPartyByOrgNo(valSet.Value.SystemUser.ReporteeOrgNo);
         if (party is null || party.PartyUuid is null)
         {
@@ -650,20 +618,10 @@ public class ChangeRequestSystemUserService(
             return verifiedRequiredAccessPackages.Problem;
         }
 
-        if (verifiedRequiredAccessPackages.Value.Count > 0)
-        {
-            changeRequestStatus = ChangeRequestStatus.New;
-        }
-
         Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(verifyRequest.UnwantedAccessPackages, partyUuid, valSet.Value.SystemUser, false);
         if (verifiedUnwantedAccessPackages.IsProblem)
         {
             return verifiedUnwantedAccessPackages.Problem;
-        }
-
-        if (verifiedUnwantedAccessPackages.Value.Count > 0)
-        {
-            changeRequestStatus = ChangeRequestStatus.New;
         }
 
         return new ChangeRequestResponse()
@@ -673,11 +631,11 @@ public class ChangeRequestSystemUserService(
             SystemId = verifyRequest.SystemId,
             SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
-            RequiredRights = verifiedRequiredRights.Value,
-            UnwantedRights = verifiedUnwantedRights.Value,
+            RequiredRights = verifyRequest.RequiredRights,
+            UnwantedRights = verifyRequest.UnwantedRights,
             RequiredAccessPackages = verifiedRequiredAccessPackages.Value,
             UnwantedAccessPackages = verifiedUnwantedAccessPackages.Value,
-            Status = changeRequestStatus.ToString(),
+            Status = ChangeRequestStatus.New.ToString(),
             RedirectUrl = verifyRequest.RedirectUrl
         };
     }
