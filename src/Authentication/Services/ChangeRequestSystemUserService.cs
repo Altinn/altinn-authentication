@@ -984,7 +984,7 @@ public class ChangeRequestSystemUserService(
 
         if (req.RequiredAccessPackages?.Count > 0)
         {
-            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, req.SystemId, req.RequiredAccessPackages, fromBff: true);
+            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, req.SystemId, req.RequiredAccessPackages, fromBff: false);
             if (checkAccessPackages.IsProblem)
             {
                 return checkAccessPackages.Problem;
