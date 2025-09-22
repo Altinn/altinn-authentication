@@ -343,14 +343,6 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        OrganisationNumber vendor = OrganisationNumber.CreateFromStringOrgNo(regSystem.SystemVendorOrgNumber);
-
-        Result<ChangeRequestResponse> verified = await VerifySetOfRights(systemUserChangeRequest, vendor);
-        if (verified.IsProblem)
-        {
-            return verified.Problem;
-        }
-
         SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
         if (toBeChanged is null)
         {
