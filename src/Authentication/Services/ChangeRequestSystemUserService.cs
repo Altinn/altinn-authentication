@@ -56,6 +56,12 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser, Guid correllationId)
     {
+        // For now we don't support ChangeRequests for an Agent SystemUser
+        if (systemUser.UserType == Core.Enums.SystemUserType.Agent)
+        {
+            return Problem.SystemUserNotFound;
+        }
+
         var created = new ChangeRequestResponse()
         {
             Id = correllationId,
@@ -123,12 +129,12 @@ public class ChangeRequestSystemUserService(
     /// If an active SystemUser exists with the same ExternalRequestId, we return a Problem.
     /// If the id's refer to a Rejected or Denied Request, we return a BadRequest, and ask to delete and renew the Request.
     /// </summary>
-    /// <param name="externalRequestId">Combination of SystemId, PartyOrg and External Ref</param>
+    /// <param name="correllationId">The id</param>    
     /// <param name="createNew">Set to true if the attempt is to create a new Request, and false for the Approve call</param>
     /// <returns>Result or Problem</returns>
-    private async Task<Result<bool>> ValidateExternalChangeRequestId(ExternalRequestId externalRequestId, bool createNew)
+    private async Task<Result<bool>> ValidateStatus(Guid correllationId, bool createNew)
     {
-        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByExternalReferences(externalRequestId);
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByInternalId(correllationId);
 
         if (res is not null && res.Status == RequestStatus.Accepted.ToString())
         {
@@ -514,41 +520,9 @@ public class ChangeRequestSystemUserService(
         return systemUserRequest.RedirectUrl;
     }
 
-    private async Task<Result<ChangeRequestValidationSet>> ValidateChangeRequest(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew)
-    {
-        // Set an empty ExternalRef to be equal to the PartyOrgNo
-        if (validateSet.ExternalRef is null || validateSet.ExternalRef == string.Empty)
-        {
-            validateSet.ExternalRef = validateSet.PartyOrgNo;
-        }
-
-        // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
-        ExternalRequestId externalRequestId = new()
-        {
-            ExternalRef = validateSet.ExternalRef ?? validateSet.PartyOrgNo,
-            OrgNo = validateSet.PartyOrgNo,
-            SystemId = validateSet.SystemId,
-        };
-
-        SystemUser? systemUser = await systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
-        if (systemUser is null)
-        {
-            return Problem.SystemUserNotFound;
-        }
-
-        // For now we don't support ChangeRequests for an Agent SystemUser
-        if (systemUser.UserType == Core.Enums.SystemUserType.Agent)
-        {
-            return Problem.SystemUserNotFound;
-        }
-
-        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
-        if (systemInfo is null)
-        {
-            return Problem.SystemIdNotFound;
-        }
-
-        Result<bool> valRef = await ValidateExternalChangeRequestId(externalRequestId, createNew);
+    private async Task<Result<ChangeRequestValidationSet>> ValidateChangeRequest(Guid correllationId, ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew)
+    {   
+        Result<bool> valRef = await ValidateStatus(correllationId, createNew);
         if (valRef.IsProblem)
         {
             return valRef.Problem;
