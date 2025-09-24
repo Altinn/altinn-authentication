@@ -352,7 +352,6 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-
         OrganisationNumber vendor = OrganisationNumber.CreateFromStringOrgNo(regSystem.SystemVendorOrgNumber);
 
         SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
