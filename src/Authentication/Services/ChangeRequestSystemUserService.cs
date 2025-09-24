@@ -77,15 +77,15 @@ public class ChangeRequestSystemUserService(
             RedirectUrl = createRequest.RedirectUrl           
         };
 
-        Result<ChangeRequestValidationSet> validationSet = await ValidateChangeRequest(created, vendorOrgNo, createNew: true);
-        if (validationSet.IsProblem)
+        Result<RegisteredSystemResponse> regSystem = await ValidateChangeRequest(correllationId, created, vendorOrgNo, createNew: true);
+        if (regSystem.IsProblem)
         {
-            return validationSet.Problem;
+            return regSystem.Problem;
         }        
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, validationSet.Value.RegisteredSystem);
+            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, regSystem.Value);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
@@ -349,17 +349,17 @@ public class ChangeRequestSystemUserService(
 
         OrganisationNumber vendor = OrganisationNumber.CreateFromStringOrgNo(regSystem.SystemVendorOrgNumber);
 
-        Result<ChangeRequestResponse> verified = await VerifySetOfRights(systemUserChangeRequest, vendor);
-        if (verified.IsProblem)
-        {
-            return verified.Problem;
-        }
-
         SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
         if (toBeChanged is null)
         {
             return Problem.SystemUserNotFound;
         }
+
+        Result<ChangeRequestResponse> verified = await VerifySetOfRights(systemUserChangeRequest, toBeChanged, vendor);
+        if (verified.IsProblem)
+        {
+            return verified.Problem;
+        }        
 
         Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
 
@@ -520,12 +520,18 @@ public class ChangeRequestSystemUserService(
         return systemUserRequest.RedirectUrl;
     }
 
-    private async Task<Result<ChangeRequestValidationSet>> ValidateChangeRequest(Guid correllationId, ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew)
+    private async Task<Result<RegisteredSystemResponse>> ValidateChangeRequest(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew)
     {   
-        Result<bool> valRef = await ValidateStatus(correllationId, createNew);
+        Result<bool> valRef = await ValidateStatus(validateSet.Id, createNew);
         if (valRef.IsProblem)
         {
             return valRef.Problem;
+        }
+
+        RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
+        if (systemInfo is null)
+        {
+            return Problem.SystemIdNotFound;
         }
 
         Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
@@ -567,18 +573,13 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        return new ChangeRequestValidationSet()
-        {
-            ExternalRequestId = externalRequestId,
-            SystemUser = systemUser,
-            RegisteredSystem = systemInfo
-        };
+        return systemInfo;
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, OrganisationNumber vendorOrgNo)
+    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, SystemUser systemUser, OrganisationNumber vendorOrgNo)
     {
-        Result<ChangeRequestValidationSet> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo, createNew: false);
+        Result<RegisteredSystemResponse> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo, createNew: false);
         if (valSet.IsProblem)
         {
             return valSet.Problem;
@@ -586,7 +587,7 @@ public class ChangeRequestSystemUserService(
 
         ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
 
-        Result<List<Right>> verifiedRequiredRights = await VerifySingleRightsWithPDP(verifyRequest.RequiredRights, valSet.Value.SystemUser, true);
+        Result<List<Right>> verifiedRequiredRights = await VerifySingleRightsWithPDP(verifyRequest.RequiredRights, systemUser, true);
         if (verifiedRequiredRights.IsProblem)
         {
             return verifiedRequiredRights.Problem;
@@ -597,7 +598,7 @@ public class ChangeRequestSystemUserService(
             changeRequestStatus = ChangeRequestStatus.New;
         }
 
-        Result<List<Right>> verifiedUnwantedRights = await VerifySingleRightsWithPDP(verifyRequest.UnwantedRights, valSet.Value.SystemUser, false);
+        Result<List<Right>> verifiedUnwantedRights = await VerifySingleRightsWithPDP(verifyRequest.UnwantedRights, systemUser, false);
         if (verifiedUnwantedRights.IsProblem)
         {
             return verifiedUnwantedRights.Problem;
@@ -608,7 +609,7 @@ public class ChangeRequestSystemUserService(
             changeRequestStatus = ChangeRequestStatus.New;
         }
 
-        Party party = await partiesClient.GetPartyByOrgNo(valSet.Value.SystemUser.ReporteeOrgNo);
+        Party party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
         if (party is null || party.PartyUuid is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -616,7 +617,7 @@ public class ChangeRequestSystemUserService(
 
         Guid partyUuid = (Guid)party.PartyUuid;
 
-        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(verifyRequest.RequiredAccessPackages, partyUuid, valSet.Value.SystemUser, true);
+        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(verifyRequest.RequiredAccessPackages, partyUuid, systemUser, true);
         if (verifiedRequiredAccessPackages.IsProblem)
         {
             return verifiedRequiredAccessPackages.Problem;
@@ -627,7 +628,7 @@ public class ChangeRequestSystemUserService(
             changeRequestStatus = ChangeRequestStatus.New;
         }
 
-        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(verifyRequest.UnwantedAccessPackages, partyUuid, valSet.Value.SystemUser, false);
+        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(verifyRequest.UnwantedAccessPackages, partyUuid, systemUser, false);
         if (verifiedUnwantedAccessPackages.IsProblem)
         {
             return verifiedUnwantedAccessPackages.Problem;
@@ -643,7 +644,7 @@ public class ChangeRequestSystemUserService(
             Id = Guid.NewGuid(),
             ExternalRef = verifyRequest.ExternalRef, 
             SystemId = verifyRequest.SystemId,
-            SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
+            SystemUserId = Guid.Parse(systemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
             RequiredRights = verifiedRequiredRights.Value,
             UnwantedRights = verifiedUnwantedRights.Value,

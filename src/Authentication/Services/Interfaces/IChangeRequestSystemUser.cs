@@ -96,9 +96,10 @@ public interface IChangeRequestSystemUser
     /// Verifies the sets of rights in the ChangeRequest against the PDP
     /// </summary>
     /// <param name="validateSet">the input model</param>
+    /// <param name="systemUser">the systemuser to be changed</param>
     /// <param name="vendorOrgNo">the vendors's org no</param>
     /// <returns>A response model with the validated rights</returns>
-    Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo);
+    Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse validateSet, SystemUser systemUser, OrganisationNumber vendorOrgNo);
 
     /// <summary>
     /// Get the internal Request response DTO for display in the FrontEnd,
