@@ -650,7 +650,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Create System used for test
-        string dataFileName = "Data/SystemRegister/Json/SystemRegister2Rights.json";
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister2RightsAndAP.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
         HttpClient client = CreateClient();
@@ -757,11 +757,11 @@ public class ChangeRequestControllerTest(
             RequiredRights = [],
             UnwantedRights = [],
             RequiredAccessPackages = [
-                 new()
-                    {
-                        Urn = "urn:altinn:accesspackage:skattnaering"
-                    }
-                ]
+                new()
+                {
+                    Urn = "urn:altinn:accesspackage:skattnaering"
+                }
+            ]
         };
 
         // Second attempt return Create (as the ChangeRequest has a new Correllation Id)
@@ -771,14 +771,13 @@ public class ChangeRequestControllerTest(
         };
 
         HttpResponseMessage createdResponseMessage2 = await client.SendAsync(verifyChangeRequestMessage2, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.OK, createdResponseMessage2.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, createdResponseMessage2.StatusCode);
 
         ChangeRequestResponse? createdResponse2 = await createdResponseMessage2.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(createdResponse2);
-        Assert.NotEmpty(createdResponse2.RequiredRights);
+        Assert.NotEmpty(createdResponse2.RequiredAccessPackages);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", createdResponse2.ConfirmUrl);
-        Assert.Equal(createdResponse2.ConfirmUrl, createdResponse.ConfirmUrl);
-        Assert.True(DeepCompare(createdResponse2.RequiredRights, change.RequiredRights));
+        Assert.NotEqual(createdResponse2.ConfirmUrl, createdResponse.ConfirmUrl);        
     }
 
     /// <summary>
