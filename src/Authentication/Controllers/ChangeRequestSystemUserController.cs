@@ -159,15 +159,12 @@ public class ChangeRequestSystemUserController(
             return Ok(emptyResponse);
         }
 
-        // Check to see if the Request already exists, by CorrellationId
-        if (systemUserId.HasValue)
+        // Check to see if the Change Request already exists, by CorrellationId
+        response = await changeRequestService.GetChangeRequestByGuid(correllationId, vendorOrgNo);
+        if (response.IsSuccess)
         {
-            response = await changeRequestService.GetChangeRequestByGuid(correllationId, vendorOrgNo);
-            if (response.IsSuccess)
-            {
-                response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
-                return Ok(response.Value);
-            }
+            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            return Ok(response.Value);
         }
 
         // This is a new Request, create and persist, return the Customer's ConfirmationPageUrl to the Vendor

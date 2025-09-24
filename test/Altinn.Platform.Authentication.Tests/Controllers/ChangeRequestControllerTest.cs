@@ -781,7 +781,7 @@ public class ChangeRequestControllerTest(
     }
 
     /// <summary>
-    /// After having verified that the ChangeRequest is needed, create a ChangeRequest
+    /// Even with a new set of required rights, when using the same Correllation id, the previous Request is returned OK
     /// </summary>
     [Fact]
     public async Task ChangeRequest_Create_Another_Return_Badrequest()
@@ -915,7 +915,7 @@ public class ChangeRequestControllerTest(
         };
 
         HttpResponseMessage createdResponseMessage2 = await client.SendAsync(verifyChangeRequestMessage2, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.BadRequest, createdResponseMessage2.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, createdResponseMessage2.StatusCode);
     }
 
     /// <summary>
