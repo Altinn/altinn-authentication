@@ -40,6 +40,7 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers;
 #nullable enable
@@ -203,19 +204,21 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // Change Request, create
-        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right2],
             UnwantedRights = []
         };
 
-        HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, verifyChangeRequestEndpoint)
+        HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, createChangeRequestEndpoint)
         {
             Content = JsonContent.Create(change)
         };
@@ -319,20 +322,22 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // Change Request, create
-        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right2],
             UnwantedRights = [right],
             RequiredAccessPackages = [accessPackage]            
         };
 
-        HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, verifyChangeRequestEndpoint)
+        HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, createChangeRequestEndpoint)
         {
             Content = JsonContent.Create(change)
         };
@@ -484,13 +489,10 @@ public class ChangeRequestControllerTest(
         });
 
         // Change Request, create
-        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?customer-orgno=910493353&external-ref=external&system-id=991825827_the_matrix";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right2],
             UnwantedRights = [right],
             RequiredAccessPackages = [accessPackage]
@@ -588,20 +590,22 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // Change Request, create
-        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right2],
             UnwantedRights = []
         };
 
         // First attempt return Created
-        HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, verifyChangeRequestEndpoint)
+        HttpRequestMessage verifyChangeRequestMessage = new(HttpMethod.Post, createChangeRequestEndpoint)
         {
             Content = JsonContent.Create(change)
         };
@@ -616,7 +620,7 @@ public class ChangeRequestControllerTest(
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
 
         // Second attempt return OK (as the ChangeRequest already exists)
-        HttpRequestMessage verifyChangeRequestMessage2 = new(HttpMethod.Post, verifyChangeRequestEndpoint)
+        HttpRequestMessage verifyChangeRequestMessage2 = new(HttpMethod.Post, createChangeRequestEndpoint)
         {
             Content = JsonContent.Create(change)
         };
@@ -717,14 +721,16 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right2],
             UnwantedRights = []
         };
@@ -870,14 +876,16 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []
         };
@@ -997,14 +1005,16 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []
         };
@@ -1150,9 +1160,6 @@ public class ChangeRequestControllerTest(
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []
         };
@@ -1243,9 +1250,6 @@ public class ChangeRequestControllerTest(
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []
         };
@@ -1349,14 +1353,16 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []            
         };
@@ -1479,14 +1485,16 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string systemId = "991825827_the_matrix";
+        string orgNo = "910493353";
+        string externalRef = "external";
+
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgNo}&external-ref={externalRef}&system-id={systemId}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []
         };
@@ -1510,10 +1518,7 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
-        // Reject the Change Request
-        string systemId = change.SystemId;
-        string orgNo = change.PartyOrgNo;
-        string externalRef = change.ExternalRef;
+        // Reject the Change Request        
         HttpClient client3 = CreateClient();
         string token3 = AddSystemUserRequestReadTestTokenToClient(client3);
         string statusChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/byexternalref/{systemId}/{orgNo}/{externalRef}";
@@ -1611,14 +1616,16 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []
         };
@@ -1739,14 +1746,16 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string ext = "external";
+        string sys = "991825827_the_matrix";
+
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []
         };
@@ -1929,14 +1938,15 @@ public class ChangeRequestControllerTest(
             Response = xacmlJsonResults
         });
 
+        Guid id = Guid.NewGuid();
+        string orgno = "910493353";
+        string sys = "991825827_the_matrix";
+
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor/";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={externalRef}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
-            ExternalRef = externalRef.ToString(),
-            SystemId = systemId,
-            PartyOrgNo = "910493353",
             RequiredRights = [right],
             UnwantedRights = []
         };

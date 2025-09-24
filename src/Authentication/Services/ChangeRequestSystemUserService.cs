@@ -54,17 +54,15 @@ public class ChangeRequestSystemUserService(
     private int _paginationSize = _paginationOption.Value.Size;
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser)
+    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser, Guid correllationId)
     {
-        Guid newId = Guid.NewGuid();
-
         var created = new ChangeRequestResponse()
         {
-            Id = newId,
+            Id = correllationId,
             SystemUserId = new Guid(systemUser.Id),
-            ExternalRef = createRequest.ExternalRef,
-            SystemId = createRequest.SystemId,
-            PartyOrgNo = createRequest.PartyOrgNo,
+            ExternalRef = systemUser.ExternalRef,
+            SystemId = systemUser.SystemId,
+            PartyOrgNo = systemUser.ReporteeOrgNo,
             RequiredRights = createRequest.RequiredRights,
             UnwantedRights = createRequest.UnwantedRights,
             RequiredAccessPackages = createRequest.RequiredAccessPackages,
