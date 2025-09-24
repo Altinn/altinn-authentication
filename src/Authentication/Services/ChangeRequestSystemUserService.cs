@@ -77,7 +77,7 @@ public class ChangeRequestSystemUserService(
             RedirectUrl = createRequest.RedirectUrl           
         };
 
-        Result<RegisteredSystemResponse> regSystem = await ValidateChangeRequest(correllationId, created, vendorOrgNo, createNew: true);
+        Result<RegisteredSystemResponse> regSystem = await ValidateChangeRequest(created, vendorOrgNo, createNew: true);
         if (regSystem.IsProblem)
         {
             return regSystem.Problem;
@@ -134,29 +134,34 @@ public class ChangeRequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateStatus(Guid correllationId, bool createNew)
     {
-        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByInternalId(correllationId);
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByInternalId(correllationId);        
 
-        if (res is not null && res.Status == RequestStatus.Accepted.ToString())
-        {
-            return Problem.ExternalRequestIdAlreadyAccepted;
-        }
-
-        if (createNew && res is not null && res.Status == RequestStatus.New.ToString())
+        // Attempting to Create a new Change Request, but a pending Request exists, with the same Correllation-Id
+        if (createNew && res is not null && res.Status == RequestStatus.New.ToString() && res.Id == correllationId)
         {
             return Problem.ExternalRequestIdPending;
         }
 
-        if (createNew && res is not null && res.Status != RequestStatus.New.ToString())
+        // Attempting to Create a new Change Request, but the Request has already been Rejected or Accepted (or Denied)
+        if (createNew && res is not null && res.Status != RequestStatus.New.ToString() && res.Id == correllationId)
         {
             return Problem.RequestStatusNotNew;
         }
 
-        if (res is not null && res.Status == RequestStatus.Denied.ToString())
+        // Attempting to Approve a Change Request, but the Status is already Accepted 
+        if (!createNew && res is not null && res.Status == RequestStatus.Accepted.ToString() && res.Id == correllationId)
+        {
+            return Problem.ExternalRequestIdAlreadyAccepted;
+        }
+
+        // Attemptint to Approve a Change Request, but the Status is already Denied
+        if (!createNew && res is not null && res.Status == RequestStatus.Denied.ToString() && res.Id == correllationId)
         {
             return Problem.ExternalRequestIdDenied;
         }
 
-        if (res is not null && res.Status == RequestStatus.Rejected.ToString())
+        // Attemptint to Approve a Change Request, but the Status is already Rejected
+        if (!createNew && res is not null && res.Status == RequestStatus.Rejected.ToString() && res.Id == correllationId)
         {
             return Problem.ExternalRequestIdRejected;
         }
