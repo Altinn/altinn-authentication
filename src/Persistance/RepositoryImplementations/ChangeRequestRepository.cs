@@ -95,8 +95,7 @@ public class ChangeRequestRepository(
             UPDATE business_application.change_request
             SET request_status = @request_status,
                 last_changed = CURRENT_TIMESTAMP,
-                changed_by = @changed_by,
-                is_deleted = false
+                changed_by = @changed_by
             WHERE business_application.change_request.id = @requestId
             """;
         await using NpgsqlConnection conn = await dataSource.OpenConnectionAsync(cancellationToken);
