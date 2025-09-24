@@ -159,24 +159,6 @@ public class ChangeRequestSystemUserController(
             return Ok(emptyResponse);
         }
 
-        // Check to see if the Request already exists, by reporteeOrgno, systemId and ext_ref
-        if (!systemUserId.HasValue && customerOrgno is not null && systemId is not null)
-        {
-            ExternalRequestId externalRequestId = new()
-            {
-                ExternalRef = externalRef ?? customerOrgno,
-                OrgNo = customerOrgno,
-                SystemId = systemId,
-            };
-
-            response = await changeRequestService.GetChangeRequestByExternalRef(externalRequestId, vendorOrgNo);
-            if (response.IsSuccess)
-            {
-                response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
-                return Ok(response.Value);
-            }
-        }
-
         // Check to see if the Request already exists, by CorrellationId
         if (systemUserId.HasValue)
         {
