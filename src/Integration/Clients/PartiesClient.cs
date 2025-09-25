@@ -90,7 +90,7 @@ public class PartiesClient : IPartiesClient
     {
         try
         {
-            string endpointUrl = $"parties/{partyUuId}";
+            string endpointUrl = $"parties/byuuid/{partyUuId}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 

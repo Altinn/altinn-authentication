@@ -112,13 +112,19 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupSystemUserRepositoryMock()
         {
-            Guid validSystemUserId = new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
-            _systemUserRepository
-            .Setup(r => r.GetSystemUserById(It.Is<Guid>(id => id == validSystemUserId)))
-            .ReturnsAsync(new SystemUser
+            // Map valid system user IDs to their ReporteeOrgNo
+            var systemUserData = new Dictionary<Guid, string>
             {
-                Id = "b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4",
-                ReporteeOrgNo = "123456789",
+                { new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4"), "123456789" },
+                { new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"), "987654321" },
+            };
+
+            _systemUserRepository
+            .Setup(r => r.GetSystemUserById(It.Is<Guid>(id => systemUserData.ContainsKey(id))))
+            .ReturnsAsync((Guid id) => new SystemUser
+            {
+                Id = id.ToString(),
+                ReporteeOrgNo = systemUserData[id],
                 AccessPackages = new List<AccessPackage> { new AccessPackage { Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet" } }
             });
         }
@@ -244,6 +250,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task AddClientToSystemUser_ReturnsForbidden()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            Guid clientId = Guid.NewGuid();
+            Guid systemUserId = new("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.write", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
+        }
+
+        [Fact]
         public async Task RemoveClientToSystemUser_ValidRequest_ReturnsOk()
         {
             // Arrange
@@ -277,6 +299,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
+        }
+
+        [Fact]
+        public async Task RemoveClientToSystemUser_ReturnsForbidden()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            Guid clientId = Guid.NewGuid();
+            Guid systemUserId = new("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.write", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
         }
     }
 }
