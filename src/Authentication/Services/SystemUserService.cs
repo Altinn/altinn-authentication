@@ -790,7 +790,7 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         DelegationId = item.DelegationId,
                         CustomerId = item.FromEntityId,
-                        AgentSystemUserId = (Guid)systemUser.SystemInternalId!
+                        AgentSystemUserId = new Guid(systemUser.Id!)
                     };
 
                     theList.Add(newDel);

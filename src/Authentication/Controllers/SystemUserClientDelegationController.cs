@@ -17,10 +17,13 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
@@ -33,6 +36,7 @@ namespace Altinn.Platform.Authentication.Controllers
         SystemUserController inner,
         IPDP Pdp,
         ISystemUserService SystemUserService,
+        IFeatureManager FeatureManager,
         IPartiesClient PartiesClient) : ControllerBase
     {
         private const string ClientDelegationResource = "altinn_client_administration";
@@ -41,10 +45,10 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Get Clients who can delegate to the system user
         /// </summary>
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
-        [HttpGet("{systemUserId}/clients/available")]
-        public async Task<ActionResult<SystemUserInfo>> GetAvailableClientsForDelegation([FromRoute] Guid systemUserId)
+        [HttpGet("clients/available")]
+        public async Task<ActionResult<ClientInfoPaginated<ClientInfo>>> GetAvailableClientsForDelegation([FromQuery] Guid agent)
         {            
-            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(systemUserId);
+            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
 
@@ -72,19 +76,19 @@ namespace Altinn.Platform.Authentication.Controllers
                 return NotFound();
             }
 
-            return await MapCustomerToSystemUserInfo(customers, systemUserId, systemUser.ReporteeOrgNo);
+            return MapCustomerToSystemUserInfo(customers, agent, systemUser.ReporteeOrgNo);
         }
 
         /// <summary>
         /// Get the list of clients that have been delegated to the specified system user
         /// </summary>
-        /// <param name="systemUserId">the system user id</param>
+        /// <param name="agent">the agent system user id</param>
         /// <returns></returns>
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
-        [HttpGet("{systemUserId}/clients")]
-        public async Task<ActionResult<SystemUserInfo>> GetClientsDelegatedToSystemUser([FromRoute] Guid systemUserId)
+        [HttpGet("clients")]
+        public async Task<ActionResult<ClientInfoPaginated<ClientInfo>>> GetClientsDelegatedToSystemUser([FromQuery] Guid agent)
         {
-            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(systemUserId);
+            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (!party.PartyUuid.HasValue)
@@ -98,7 +102,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, systemUserId);
+            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
             
             // If the result is a problem (not 200 OK), return it directly
             if (result.IsProblem)
@@ -113,20 +117,26 @@ namespace Altinn.Platform.Authentication.Controllers
                 return NotFound();
             }
 
-            return await MapDelegationResponseToSystemUserInfo(delegationResponses, systemUserId, systemUser);
+            return await MapDelegationResponseToSystemUserInfo(delegationResponses, agent, systemUser);
         }
 
         /// <summary>
         /// Delegate a client to the system user
         /// </summary>
-        /// <param name="systemUserId">the unique identifier of the system user</param>
-        /// <param name="clientId">the id of the customer</param>
+        /// <param name="agent">the unique identifier of the system user</param>
+        /// <param name="client">the id of the customer</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>delegation response</returns>
-        [HttpPost("{systemUserId}/clients/{clientId}")]
-        public async Task<ActionResult<List<DelegationResponse>>> DelegateClientToSystemUser([FromRoute] Guid systemUserId, [FromRoute] string clientId, CancellationToken cancellationToken)
+        [HttpPost("clients")]
+        public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
-            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(systemUserId);
+            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
+            if (systemUser is null)
+            {
+                ModelState.AddModelError("return", $"SystemUser with Id {agent} Not Found");
+                return ValidationProblem(ModelState);
+            }
+
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (!party.PartyUuid.HasValue)
             {
@@ -141,25 +151,43 @@ namespace Altinn.Platform.Authentication.Controllers
 
             AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
             {
-                CustomerId = clientId,
+                CustomerId = client.ToString(),
                 FacilitatorId = party.PartyUuid.Value.ToString(),                
             };
 
-            return await inner.DelegateToAgentSystemUser(party.PartyId.ToString(), systemUserId, agentDelegationInput, cancellationToken);
+            var userId = AuthenticationHelper.GetUserId(HttpContext);
+
+            Result<List<DelegationResponse>> delegationResult = await SystemUserService.DelegateToAgentSystemUser(systemUser, agentDelegationInput, userId, FeatureManager, cancellationToken);
+            if (delegationResult.IsProblem)
+            {
+                return delegationResult.Problem.ToActionResult();
+            }
+
+            return Ok(new ClientDelegationResponse
+            {
+                Agent = agent,
+                Client = client
+            });
         }
 
         /// <summary>
         /// Delegate a client to the system user
         /// </summary>
-        /// <param name="systemUserId">the unique identifier of the system user</param>
-        /// <param name="clientId">the id of the customer</param>
+        /// <param name="agent">the unique identifier of the system user</param>
+        /// <param name="client">the id of the customer</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>delegation response</returns>
-        [HttpDelete("{systemUserId}/clients/{clientId}")]
-        public async Task<ActionResult<List<DelegationResponse>>> RemoveClientFromSystemUser([FromRoute] Guid systemUserId, [FromRoute] string clientId, CancellationToken cancellationToken)
+        [HttpDelete("clients")]
+        public async Task<ActionResult<List<DelegationResponse>>> RemoveClientFromSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
             Guid delegationId = Guid.Empty;
-            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(systemUserId);
+            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
+            if (systemUser is null)
+            {
+                ModelState.AddModelError("return", $"SystemUser with Id {agent} Not Found");
+                return ValidationProblem(ModelState);
+            }
+
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (!party.PartyUuid.HasValue)
             {
@@ -172,16 +200,16 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, systemUserId);
+            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
             if (result.IsSuccess)
             {
-                DelegationResponse? delegation = result.Value?.FirstOrDefault(d => d.CustomerId == new Guid(clientId));
+                DelegationResponse? delegation = result.Value?.FirstOrDefault(d => d.CustomerId == client);
                 if (delegation == null)
                 {
                     return NotFound(new ProblemDetails
                     {
                         Title = "Delegation not found",
-                        Detail = $"No delegation found for customer {clientId} and system user {systemUserId}",
+                        Detail = $"No delegation found for customer {client} and system user {agent}",
                         Status = 404
                     });
                 }
@@ -197,60 +225,24 @@ namespace Altinn.Platform.Authentication.Controllers
 
             AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
             {
-                CustomerId = clientId,
+                CustomerId = client.ToString(),
                 FacilitatorId = party.PartyUuid.Value.ToString(),
             };
+            
+            var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, agent, cancellationToken);
 
-            return await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, systemUserId, cancellationToken);
-        }
-
-        private async Task<SystemUserInfo> MapCustomerToSystemUserInfo(List<Customer> customers, Guid systemUserId, string systemUserOwner)
-        {
-            SystemUserInfo systemUser = new SystemUserInfo
+            // If the result is a problem (not 200 OK), return it directly
+            // If the result is an ObjectResult and status code is not 200, return it directly
+            if (removeResult is ObjectResult objectResult && objectResult.StatusCode != 200)
             {
-                SystemUserId = systemUserId,
-                SystemUserOwnerOrganizationNumber = systemUserOwner,
-                Clients = new List<ClientInfo>()
-            };
-
-            foreach (var customer in customers)
-            {
-                systemUser.Clients.Add(new ClientInfo
-                {
-                    ClientOrganizationNumber = customer.OrganizationIdentifier,
-                    ClientOrganizationName = customer.DisplayName,
-                    AccessPackages = customer.Access
-                                    .SelectMany(a => a.Packages)
-                                    .Where(p => !string.IsNullOrWhiteSpace(p))
-                                    .Select(p => new AccessPackage { Urn = $"urn:altinn:accesspackage:{p}" })
-                                    .ToList(),
-                });                     
+                return objectResult;
             }
 
-            return systemUser;
-        }
-
-        private async Task<SystemUserInfo> MapDelegationResponseToSystemUserInfo(List<DelegationResponse> delegationResponses, Guid systemUserId, SystemUser systemUser)
-        {
-            SystemUserInfo systemUserInfo = new SystemUserInfo
+            return Ok(new ClientDelegationResponse
             {
-                SystemUserId = systemUserId,
-                SystemUserOwnerOrganizationNumber = systemUser.ReporteeOrgNo,
-                Clients = new List<ClientInfo>()
-            };
-
-            foreach (var delegationResponse in delegationResponses)
-            {
-                Party party = await PartiesClient.GetPartyByUuId(delegationResponse.CustomerId ?? Guid.Empty);
-                systemUserInfo.Clients.Add(new ClientInfo
-                {
-                    ClientOrganizationNumber = party?.Organization?.OrgNumber,
-                    ClientOrganizationName = delegationResponse?.CustomerName,
-                    AccessPackages = systemUser?.AccessPackages
-                });
-            }
-
-            return systemUserInfo;
+                Agent = agent,
+                Client = client
+            });           
         }
 
         /// <summary>
@@ -283,6 +275,51 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return true;
+        }
+
+        private static ClientInfoPaginated<ClientInfo> MapCustomerToSystemUserInfo(List<Customer> customers, Guid systemUserId, string systemUserOwner)
+        {
+            SystemUserInfo systemUser = new SystemUserInfo
+            {
+                SystemUserId = systemUserId,
+                SystemUserOwnerOrg = systemUserOwner
+            };
+
+            List<ClientInfo> clients = new List<ClientInfo>();
+            foreach (var customer in customers)
+            {
+                clients.Add(new ClientInfo
+                {
+                    ClientId = customer.PartyUuid,
+                    ClientOrganizationNumber = customer.OrganizationIdentifier,
+                    ClientOrganizationName = customer.DisplayName
+                });
+            }
+
+            return ClientInfoPaginated.Create(clients, null, systemUser);
+        }
+
+        private async Task<ClientInfoPaginated<ClientInfo>> MapDelegationResponseToSystemUserInfo(List<DelegationResponse> delegationResponses, Guid systemUserId, SystemUser systemUser)
+        {
+            SystemUserInfo systemUserInfo = new SystemUserInfo
+            {
+                SystemUserId = systemUserId,
+                SystemUserOwnerOrg = systemUser.ReporteeOrgNo,
+            };
+
+            List<ClientInfo> clients = new List<ClientInfo>();
+            foreach (var delegationResponse in delegationResponses)
+            {
+                Party party = await PartiesClient.GetPartyByUuId(delegationResponse.CustomerId ?? Guid.Empty);
+                clients.Add(new ClientInfo
+                {
+                    ClientId = delegationResponse.CustomerId ?? Guid.Empty,
+                    ClientOrganizationNumber = party?.Organization?.OrgNumber,
+                    ClientOrganizationName = delegationResponse?.CustomerName,
+                });
+            }
+
+            return ClientInfoPaginated.Create(clients, null, systemUserInfo);
         }
     }
 }

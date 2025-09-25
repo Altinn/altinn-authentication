@@ -1361,8 +1361,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
             delegateMessage.Content = JsonContent.Create(delegationRequest);
             HttpResponseMessage delegationResponse = await client2.SendAsync(delegateMessage, HttpCompletionOption.ResponseContentRead);
-
+            List<DelegationResponse>? delegations = await delegationResponse.Content.ReadFromJsonAsync<List<DelegationResponse>>();
             Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
+            Assert.NotNull(delegations);
+            Assert.Single(delegations);
         }
 
         // Agent Tests
