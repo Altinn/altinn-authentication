@@ -1,5 +1,8 @@
-﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
+﻿using System.Data;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Persistance.Constants.OidcServer;
+using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 
@@ -52,18 +55,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     return null;
                 }
 
-                return MapClient(reader);
+                return MapToOidcClient(reader);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Authentication // ClientRepository // GetClientAsync // client_id={ClientId}", clientId);
                 throw;
             }
-        }
-
-        private static OidcClient MapClient(NpgsqlDataReader r)
-        {
-            return new OidcClient;
         }
 
         private static TEnum ParseEnum<TEnum>(string value, TEnum fallback)
@@ -78,6 +76,57 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
 
             return uri;
+        }
+
+        private static OidcClient MapToOidcClient(NpgsqlDataReader reader)
+        {
+            string clientId = reader.GetFieldValue<string>(ClientTable.CLIENT_ID);
+            string clientName = reader.GetFieldValue<string>(ClientTable.CLIENT_NAME);
+
+            ClientType clientType = ParseEnum(reader.GetFieldValue<string>(ClientTable.CLIENT_TYPE), ClientType.Confidential);
+            TokenEndpointAuthMethod authMethod = ParseEnum(reader.GetFieldValue<string>(ClientTable.TOKEN_ENDPOINT_AUTH_METHOD), TokenEndpointAuthMethod.ClientSecretBasic);
+
+            List<Uri> redirectUris = reader.GetFieldValue<List<Uri>>(ClientTable.REDIRECT_URIS);
+            string[] allowedScopes = reader.GetFieldValue<string[]>(ClientTable.ALLOWED_SCOPES);
+
+            string? clientSecretHash = reader.GetFieldValue<string?>(ClientTable.CLIENT_SECRET_HASH);
+            DateTimeOffset clientSecretExpires = reader.GetFieldValue<DateTimeOffset>(ClientTable.CLIENT_SECRET_EXPIRES_AT);
+            DateTimeOffset? secretRotationAt = reader.GetFieldValue<DateTimeOffset?>(ClientTable.SECRET_ROTATION_AT);
+
+            Uri? jwksUri = reader.GetFieldValue<Uri?>(ClientTable.JWKS_URI);
+            string? jwksJson = reader.GetFieldValue<string?>(ClientTable.JWKS);
+
+            DateTimeOffset createdAt = reader.GetFieldValue<DateTimeOffset>(ClientTable.CREATED_AT);
+            DateTimeOffset? updatedAt = reader.GetFieldValue<DateTimeOffset?>(ClientTable.UPDATED_AT);
+
+            return new OidcClient(
+                clientId: clientId,
+                clientName: clientName,
+                enabled: true, // map when you add an 'enabled' column
+                clientType: clientType,
+                tokenEndpointAuthMethod: authMethod,
+                redirectUris: redirectUris,
+                allowedScopes: allowedScopes,
+                requirePkce: true, // or map from column when you add it
+                allowedCodeChallengeMethods: new[] { "S256" },
+                requireNonce: true,
+                requireConsent: false,
+                requireActorSelection: false,
+                subjectType: SubjectType.Public,
+                sectorIdentifierUri: null,
+                pairwiseSalt: null,
+                clientSecretHash: clientSecretHash,
+                clientSecretExpiresAt: clientSecretExpires,
+                secretRotationAt: secretRotationAt,
+                jwksUri: jwksUri,
+                jwksJson: jwksJson,
+                postLogoutRedirectUris: null,
+                backchannelLogoutUri: null,
+                frontchannelLogoutUri: null,
+                allowTestIdp: false,
+                requireParForTestIdp: true,
+                createdAt: createdAt,
+                updatedAt: updatedAt);
         }
     }
 }

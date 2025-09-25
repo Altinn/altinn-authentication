@@ -29,6 +29,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="Migration\NewFolder\" />
 	  <Folder Include="Migration\v0.11\" />
 	</ItemGroup>
 
