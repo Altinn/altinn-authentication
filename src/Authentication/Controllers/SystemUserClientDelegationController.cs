@@ -127,6 +127,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="client">the id of the customer</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>delegation response</returns>
+        [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_WRITE)]
         [HttpPost("clients")]
         public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
@@ -177,6 +178,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="client">the id of the customer</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>delegation response</returns>
+        [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_WRITE)]
         [HttpDelete("clients")]
         public async Task<ActionResult<List<DelegationResponse>>> RemoveClientFromSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
@@ -266,7 +268,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             if (response?.Response == null)
             {
-                throw new InvalidOperationException("response");
+                throw new InvalidOperationException("PDP response was null or invalid");
             }
 
             if (!DecisionHelper.ValidatePdpDecision(response.Response, userPrincipal))

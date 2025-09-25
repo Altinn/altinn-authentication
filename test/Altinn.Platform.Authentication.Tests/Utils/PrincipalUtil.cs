@@ -5,7 +5,6 @@ using System.Security.Claims;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Tests;
 using AltinnCore.Authentication.Constants;
-using Org.BouncyCastle.Asn1.Cms;
 
 namespace App.IntegrationTests.Utils
 {

@@ -58,7 +58,7 @@ namespace Altinn.Platform.Authentication.Core.Models
 
         /// <summary>
         /// The PartyUuId identifies the end-user Organisation, and is fetched from the login Context and
-        /// user party serivces
+        /// user party services
         /// </summary>
         [JsonPropertyName("partyUuId")]
         public string PartyUuId { get; set; } = string.Empty;
