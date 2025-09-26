@@ -61,12 +61,10 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
         }
 
+        /// <inheritdoc/>
         public async Task<OidcClient> InsertClientAsync(OidcClientCreate create, CancellationToken ct = default)
         {
-            if (create is null)
-            {
-                throw new ArgumentNullException(nameof(create));
-            }
+            ArgumentNullException.ThrowIfNull(create);
 
             if (string.IsNullOrWhiteSpace(create.ClientId))
             {
@@ -153,8 +151,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 created_at,
                 updated_at;";
 
-                    try
-                    {
+            try
+                {
                     await using var cmd = _datasource.CreateCommand(SQL);
 
                     // Required
@@ -164,13 +162,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     cmd.Parameters.AddWithValue("token_endpoint_auth_method", create.TokenEndpointAuthMethod.ToString()); // TEXT
 
                     // Arrays
-                    var pRedirectUris = new NpgsqlParameter<string[]>("redirect_uris", redirectUris)
+                    var predirectUris = new NpgsqlParameter<string[]>("redirect_uris", redirectUris)
                     { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text };
-                    cmd.Parameters.Add(pRedirectUris);
+                    cmd.Parameters.Add(predirectUris);
 
-                    var pAllowedScopes = new NpgsqlParameter<string[]>("allowed_scopes", allowedScopes)
+                    var pallowedScopes = new NpgsqlParameter<string[]>("allowed_scopes", allowedScopes)
                     { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text };
-                    cmd.Parameters.Add(pAllowedScopes);
+                    cmd.Parameters.Add(pallowedScopes);
 
                     // Optional secrets
                     cmd.Parameters.AddWithValue("client_secret_hash", (object?)create.ClientSecretHash ?? DBNull.Value);
@@ -180,11 +178,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     // JWKS
                     cmd.Parameters.AddWithValue("jwks_uri", (object?)create.JwksUri?.ToString() ?? DBNull.Value);
 
-                    var pJwks = new NpgsqlParameter("jwks", NpgsqlDbType.Jsonb)
+                    var pjwks = new NpgsqlParameter("jwks", NpgsqlDbType.Jsonb)
                     {
                         Value = (object?)create.JwksJson ?? DBNull.Value
                     };
-                    cmd.Parameters.Add(pJwks);
+                    cmd.Parameters.Add(pjwks);
 
                     // Timestamps
                     cmd.Parameters.AddWithValue("created_at", now);
@@ -197,7 +195,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                         }
 
                         // Reuse your existing mapper that reads by column name constants
-                   return MapToOidcClient(reader);
+                    return MapToOidcClient(reader);
                 }
                 catch (PostgresException pex) when (pex.SqlState == PostgresErrorCodes.UniqueViolation)
                 {
@@ -212,9 +210,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 }
             }
 
-
-
-    private static TEnum ParseEnum<TEnum>(string value, TEnum fallback)
+        private static TEnum ParseEnum<TEnum>(string value, TEnum fallback)
             where TEnum : struct
             => Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
 
