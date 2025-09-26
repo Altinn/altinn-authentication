@@ -20,6 +20,7 @@ using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Authorization;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
@@ -394,6 +395,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
     services.AddTransient<IAuthorizationHandler, AccessTokenHandler>();
     services.AddTransient<DelegationHelper, DelegationHelper>();
+    services.AddTransient<IOidcServerService, OidcServerService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     {
