@@ -1361,8 +1361,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
             delegateMessage.Content = JsonContent.Create(delegationRequest);
             HttpResponseMessage delegationResponse = await client2.SendAsync(delegateMessage, HttpCompletionOption.ResponseContentRead);
-
+            List<DelegationResponse>? delegations = await delegationResponse.Content.ReadFromJsonAsync<List<DelegationResponse>>();
             Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
+            Assert.NotNull(delegations);
+            Assert.Single(delegations);
         }
 
         // Agent Tests
@@ -2109,7 +2111,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             List<ConnectionDto>? list = JsonSerializer.Deserialize<List<ConnectionDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
-            Assert.NotEqual(HttpStatusCode.Unauthorized, clientListResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
             Assert.True(list is not null);
             Assert.True(list.Count > 1);
         }
@@ -2133,7 +2135,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client2.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             List<ConnectionDto>? list = JsonSerializer.Deserialize<List<ConnectionDto>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
-            Assert.NotEqual(HttpStatusCode.Unauthorized, clientListResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
             Assert.True(list is not null);
             Assert.True(list.Count == 4);
         }

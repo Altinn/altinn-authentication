@@ -465,7 +465,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemUserType == SystemUserType.Standard && rights is not null && rights.Count > 0)
             {
-                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], fromBff:false, cancellationToken);
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, rights, fromBff:false, cancellationToken);
 
                 if (delegationCheckFinalResult?.RightResponses is null)
                 {
@@ -790,7 +790,7 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         DelegationId = item.DelegationId,
                         CustomerId = item.FromEntityId,
-                        AgentSystemUserId = (Guid)systemUser.SystemInternalId!
+                        AgentSystemUserId = new Guid(systemUser.Id!)
                     };
 
                     theList.Add(newDel);
@@ -989,7 +989,8 @@ namespace Altinn.Platform.Authentication.Services
                     AgentSystemUserId = item.To.Id,
                     DelegationId = item.Id,
                     CustomerId = item.From.Id,
-                    AssignmentId = item.Delegation.ToId
+                    AssignmentId = item.Delegation.ToId,
+                    CustomerName = item.From.Name
                 };
 
                 result.Add(newDel);

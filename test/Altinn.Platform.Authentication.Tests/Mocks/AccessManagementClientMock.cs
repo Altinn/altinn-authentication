@@ -224,7 +224,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         { 
             From = new EntityParty()
             {
-                Id = Guid.NewGuid(),
+                Id = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"),
             },
             To = new EntityParty()
             {
@@ -240,7 +240,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             {
                 Id = delegationId,
                 FacilitatorId = facilitator,
-                FromId = Guid.NewGuid(),// value not from our input
+                FromId = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"),// value not from our input
                 ToId = Guid.NewGuid() // the Assignment Id
             }
         });
