@@ -210,7 +210,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // Change Request, create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -328,7 +328,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // Change Request, create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -489,7 +489,7 @@ public class ChangeRequestControllerTest(
         });
 
         // Change Request, create
-        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?customer-orgno=910493353&external-ref=external&system-id=991825827_the_matrix";
+        string verifyChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?orgno=910493353&external-ref=external&system-id=991825827_the_matrix";
 
         ChangeRequestSystemUser change = new()
         {
@@ -596,7 +596,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // Change Request, create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -726,7 +726,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // Change Request, create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -750,7 +750,7 @@ public class ChangeRequestControllerTest(
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
 
         Guid id2 = Guid.NewGuid();
-        string createChangeRequestEndpoint2 = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id2}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint2 = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id2}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change2 = new()
         {
@@ -870,7 +870,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // Change Request, create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -894,7 +894,7 @@ public class ChangeRequestControllerTest(
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
 
         Guid id2 = Guid.NewGuid();
-        string createChangeRequestEndpoint2 = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint2 = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change2 = new()
         {
@@ -1009,7 +1009,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -1164,7 +1164,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -1293,7 +1293,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -1641,7 +1641,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -1773,7 +1773,7 @@ public class ChangeRequestControllerTest(
         string externalRef = "external";
 
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgNo}&external-ref={externalRef}&system-id={systemId}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgNo}&external-ref={externalRef}&system-id={systemId}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -1904,7 +1904,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -2034,7 +2034,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={ext}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={ext}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
@@ -2225,7 +2225,7 @@ public class ChangeRequestControllerTest(
         string sys = "991825827_the_matrix";
 
         // ChangeRequest create
-        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&customer-orgno={orgno}&external-ref={externalRef}&system-id={sys}";
+        string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&orgno={orgno}&external-ref={externalRef}&system-id={sys}";
 
         ChangeRequestSystemUser change = new()
         {
