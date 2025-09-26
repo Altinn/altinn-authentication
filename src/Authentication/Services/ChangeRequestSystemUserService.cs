@@ -135,7 +135,7 @@ public class ChangeRequestSystemUserService(
     /// <returns>Result or Problem</returns>
     private async Task<Result<bool>> ValidateStatus(Guid correllationId, bool createNew)
     {
-        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByInternalId(correllationId);        
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestById(correllationId);        
 
         // Attempting to Create a new Change Request, but a pending Request exists, with the same Correllation-Id
         if (createNew && res is not null && res.Status == RequestStatus.New.ToString() && res.Id == correllationId)
@@ -146,7 +146,7 @@ public class ChangeRequestSystemUserService(
         // Attempting to Create a new Change Request, but the Request has already been Rejected or Accepted (or Denied)
         if (createNew && res is not null && res.Status != RequestStatus.New.ToString() && res.Id == correllationId)
         {
-            return Problem.RequestStatusNotNew;
+            return Problem.ChangeRequestStatusNotNewUseCorrellationId;
         }
 
         // Attempting to Approve a Change Request, but the Status is already Accepted 
@@ -252,7 +252,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ChangeRequestResponse>> GetChangeRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
     {
-        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestById(requestId);
         if (res is null)
         {
             return Problem.RequestNotFound;
@@ -304,7 +304,7 @@ public class ChangeRequestSystemUserService(
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        ChangeRequestResponse? find = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? find = await changeRequestRepository.GetChangeRequestById(requestId);
         if (find is null)
         {
             return Problem.RequestNotFound;
@@ -336,7 +336,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        ChangeRequestResponse? systemUserChangeRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? systemUserChangeRequest = await changeRequestRepository.GetChangeRequestById(requestId);
         if (systemUserChangeRequest is null)
         {
             return Problem.RequestNotFound;
@@ -470,7 +470,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
     {
-        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestById(requestId);
         if (systemUserRequest is null)
         {
             return Problem.RequestNotFound;
@@ -524,7 +524,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<string>> GetRedirectByChangeRequestId(Guid requestId)
     {
-        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestById(requestId);
         if (systemUserRequest is null || systemUserRequest.RedirectUrl is null)
         {
             return Problem.RequestNotFound;
@@ -910,7 +910,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ChangeRequestResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
     {
-        ChangeRequestResponse? req = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? req = await changeRequestRepository.GetChangeRequestById(requestId);
         if (req == null)
         {
             return Problem.RequestNotFound;

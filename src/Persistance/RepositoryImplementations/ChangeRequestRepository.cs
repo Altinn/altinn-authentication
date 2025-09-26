@@ -259,7 +259,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<ChangeRequestResponse?> GetChangeRequestByInternalId(Guid internalId)
+    public async Task<ChangeRequestResponse?> GetChangeRequestById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -284,7 +284,7 @@ public class ChangeRequestRepository(
         {
             await using NpgsqlCommand command = dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("request_id", internalId);
+            command.Parameters.AddWithValue("request_id", id);
 
             var dbres = await command.ExecuteEnumerableAsync()
                 .SelectAwait(ConvertFromReaderToChangeRequest)
