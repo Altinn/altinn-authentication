@@ -593,28 +593,6 @@ public class ChangeRequestSystemUserService(
 
         ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
 
-        Result<List<Right>> verifiedRequiredRights = await VerifySingleRightsWithPDP(verifyRequest.RequiredRights, systemUser, true);
-        if (verifiedRequiredRights.IsProblem)
-        {
-            return verifiedRequiredRights.Problem;
-        }
-
-        if (verifiedRequiredRights.Value.Count > 0)
-        { 
-            changeRequestStatus = ChangeRequestStatus.New;
-        }
-
-        Result<List<Right>> verifiedUnwantedRights = await VerifySingleRightsWithPDP(verifyRequest.UnwantedRights, systemUser, false);
-        if (verifiedUnwantedRights.IsProblem)
-        {
-            return verifiedUnwantedRights.Problem;
-        }
-
-        if (verifiedUnwantedRights.Value.Count > 0)
-        {
-            changeRequestStatus = ChangeRequestStatus.New;
-        }
-
         Party party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
 
         if (party is null || party.PartyUuid is null)
