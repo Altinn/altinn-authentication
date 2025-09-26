@@ -1,10 +1,13 @@
-﻿using System.Data;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
+﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Constants.OidcServer;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using NpgsqlTypes;
+using System;
+using System.Data;
+using System.Data.Common;
 
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.OidcServer
 {
@@ -20,24 +23,23 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <inheritdoc/>
         public async Task<OidcClient?> GetClientAsync(string clientId, CancellationToken ct = default)
         {
-            const string QUERY = /*strpsql*/ @"
-            SELECT
-                client_id,
-                client_name,
-                client_type,
-                token_endpoint_auth_method,
-                redirect_uris,
-                client_secret_hash,
-                client_secret_expires_at,
-                secret_rotation_at,
-                jwks_uri,
-                jwks,
-                allowed_scopes,
-                created_at,
-                updated_at
-            FROM client
-            WHERE client_id = @client_id
-            LIMIT 1;";
+            const string QUERY = /*strpsql*/ @"SELECT
+                        client_id,
+                        client_name,
+                        client_type,
+                        token_endpoint_auth_method,
+                        redirect_uris,
+                        client_secret_hash,
+                        client_secret_expires_at,
+                        secret_rotation_at,
+                        jwks_uri,
+                        jwks,
+                        allowed_scopes,
+                        created_at,
+                        updated_at
+                    FROM client
+                    WHERE client_id = @client_id
+                    LIMIT 1;";
 
             try
             {
@@ -59,8 +61,143 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
         }
 
+        using System.Globalization;
+using System.Linq;
+using Altinn.Platform.Authentication.Core.Models.Clients;
+using NpgsqlTypes;
 
-        private static TEnum ParseEnum<TEnum>(string value, TEnum fallback)
+// ...
+
+public async Task<OidcClient> InsertClientAsync(OidcClientCreate create, CancellationToken ct = default)
+    {
+        if (create is null) throw new ArgumentNullException(nameof(create));
+        if (string.IsNullOrWhiteSpace(create.ClientId)) throw new ArgumentException("ClientId is required.", nameof(create));
+        if (string.IsNullOrWhiteSpace(create.ClientName)) throw new ArgumentException("ClientName is required.", nameof(create));
+        if (create.RedirectUris is null || create.RedirectUris.Count == 0) throw new ArgumentException("At least one redirect URI is required.", nameof(create));
+        if (create.AllowedScopes is null || create.AllowedScopes.Count == 0) throw new ArgumentException("At least one allowed scope is required.", nameof(create));
+
+        // Normalize inputs (defensive)
+        var redirectUris = create.RedirectUris.Select(u =>
+        {
+            if (u is null || !u.IsAbsoluteUri)
+                throw new ArgumentException($"Redirect URI must be absolute. Got: '{u}'.", nameof(create.RedirectUris));
+            return u.ToString();
+        }).ToArray();
+
+        var allowedScopes = create.AllowedScopes
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim().ToLowerInvariant())
+            .Distinct()
+            .ToArray();
+
+        var now = _timeProvider.GetUtcNow();
+
+        const string SQL = /*strpsql*/ @"
+        INSERT INTO client (
+            client_id,
+            client_name,
+            client_type,
+            token_endpoint_auth_method,
+            redirect_uris,
+            client_secret_hash,
+            client_secret_expires_at,
+            secret_rotation_at,
+            jwks_uri,
+            jwks,
+            allowed_scopes,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            @client_id,
+            @client_name,
+            @client_type,
+            @token_endpoint_auth_method,
+            @redirect_uris,
+            @client_secret_hash,
+            @client_secret_expires_at,
+            @secret_rotation_at,
+            @jwks_uri,
+            @jwks,
+            @allowed_scopes,
+            @created_at,
+            @updated_at
+        )
+        RETURNING
+            client_id,
+            client_name,
+            client_type,
+            token_endpoint_auth_method,
+            redirect_uris,
+            client_secret_hash,
+            client_secret_expires_at,
+            secret_rotation_at,
+            jwks_uri,
+            jwks,
+            allowed_scopes,
+            created_at,
+            updated_at;";
+
+        try
+        {
+            await using var cmd = _datasource.CreateCommand(SQL);
+
+            // Required
+            cmd.Parameters.AddWithValue("client_id", create.ClientId);
+            cmd.Parameters.AddWithValue("client_name", create.ClientName);
+            cmd.Parameters.AddWithValue("client_type", create.ClientType.ToString()); // stored as TEXT
+            cmd.Parameters.AddWithValue("token_endpoint_auth_method", create.TokenEndpointAuthMethod.ToString()); // TEXT
+
+            // Arrays
+            var pRedirectUris = new NpgsqlParameter<string[]>("redirect_uris", redirectUris)
+            { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text };
+            cmd.Parameters.Add(pRedirectUris);
+
+            var pAllowedScopes = new NpgsqlParameter<string[]>("allowed_scopes", allowedScopes)
+            { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text };
+            cmd.Parameters.Add(pAllowedScopes);
+
+            // Optional secrets
+            cmd.Parameters.AddWithValue("client_secret_hash", (object?)create.ClientSecretHash ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("client_secret_expires_at", (object?)create.ClientSecretExpiresAt ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("secret_rotation_at", (object?)create.SecretRotationAt ?? DBNull.Value);
+
+            // JWKS
+            cmd.Parameters.AddWithValue("jwks_uri", (object?)create.JwksUri?.ToString() ?? DBNull.Value);
+
+            var pJwks = new NpgsqlParameter("jwks", NpgsqlDbType.Jsonb)
+            {
+                Value = (object?)create.JwksJson ?? DBNull.Value
+            };
+            cmd.Parameters.Add(pJwks);
+
+            // Timestamps
+            cmd.Parameters.AddWithValue("created_at", now);
+            cmd.Parameters.AddWithValue("updated_at", DBNull.Value); // null at insert
+
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct))
+                throw new DataException("INSERT client returned no row.");
+
+            // Reuse your existing mapper that reads by column name constants
+            return MapToOidcClient(reader);
+        }
+        catch (PostgresException pex) when (pex.SqlState == PostgresErrorCodes.UniqueViolation)
+        {
+            // Assuming client.client_id is UNIQUE/PK
+            _logger.LogWarning(pex, "Authentication // OidcServerRepository // InsertClientAsync // Unique violation for client_id={ClientId}", create.ClientId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // OidcServerRepository // InsertClientAsync // client_id={ClientId}", create.ClientId);
+            throw;
+        }
+    }
+
+
+
+    private static TEnum ParseEnum<TEnum>(string value, TEnum fallback)
             where TEnum : struct
             => Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
 
