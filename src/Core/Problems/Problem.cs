@@ -371,4 +371,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor RequestCouldNotBeUpdated { get; }
         = _factory.Create(60, HttpStatusCode.NotFound, "An error occured when Updating the Request.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor ChangeRequestStatusNotNewUseCorrellationId { get; }
+        = _factory.Create(61, HttpStatusCode.Conflict, "The Status of the Request is not New. Please generate a new CorrellationId for a new Change Request");
 }

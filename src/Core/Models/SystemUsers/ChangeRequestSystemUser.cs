@@ -1,5 +1,4 @@
 ﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -16,31 +15,6 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 /// </summary>
 public class ChangeRequestSystemUser()
 {
-    /// <summary>
-    /// Either just the same as the PartyOrgNo for the customer, 
-    /// or a TenantId or other form of disambiguation Id,
-    /// the Vendor has control over themselves to ensure uniqueness.
-    /// A null ExternalRef will default to the PartyOrgNo.
-    /// </summary>
-    [JsonPropertyName("externalRef")]
-    public string? ExternalRef { get; set; }
-
-    /// <summary>
-    /// The Id for the Registered System that this Request will be based on. 
-    /// Must be owned by the Vendor that creates the Request.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("systemId")]
-    public string SystemId { get; set; }
-
-    /// <summary>
-    /// The organisation number for the SystemUser's Party 
-    /// ( the customer that delegates rights to the systemuser) 
-    /// </summary>
-    [Required]
-    [JsonPropertyName("partyOrgNo")]
-    public string PartyOrgNo { get; set; }
-
     /// <summary>
     /// The set of Rights requested as Required for this system user. 
     /// If already delegated, no change is needed; idempotent.
