@@ -361,12 +361,6 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        Result<ChangeRequestResponse> verified = await VerifySetOfRights(systemUserChangeRequest, toBeChanged, vendor);
-        if (verified.IsProblem)
-        {
-            return verified.Problem;
-        }        
-
         Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
 
         if (party is null || string.IsNullOrEmpty(party.OrgNumber))
@@ -380,6 +374,19 @@ public class ChangeRequestSystemUserService(
         }
 
         Guid partyUuid = party.PartyUuid.Value;
+
+        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(systemUserChangeRequest.RequiredAccessPackages, partyUuid, toBeChanged, true, cancellationToken);
+        if (verifiedRequiredAccessPackages.IsProblem)
+        {
+            return verifiedRequiredAccessPackages.Problem;
+        }
+
+        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(systemUserChangeRequest.UnwantedAccessPackages, partyUuid, toBeChanged, false, cancellationToken);
+
+        if (verifiedUnwantedAccessPackages.IsProblem)
+        {
+            return verifiedUnwantedAccessPackages.Problem;
+        }
 
         DelegationCheckResult delegationCheckFinalResult = new(CanDelegate:false, RightResponses:[], errors:[]);
 
@@ -396,7 +403,7 @@ public class ChangeRequestSystemUserService(
         // Check AccessPackages to be added
         if (systemUserChangeRequest.RequiredAccessPackages?.Count > 0)
         {
-            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, systemUserChangeRequest.RequiredAccessPackages, fromBff: false, cancellationToken);        
+            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, verifiedRequiredAccessPackages.Value, fromBff: false, cancellationToken);        
             if (checkAccessPackages.IsProblem)   
             {
                 return checkAccessPackages.Problem;
@@ -437,9 +444,9 @@ public class ChangeRequestSystemUserService(
         }
 
         // Attempt to Revoke AccessPackages from the SystemUser
-        if (systemUserChangeRequest.UnwantedAccessPackages?.Count > 0)
+        if (verifiedUnwantedAccessPackages.Value?.Count > 0)
         {
-            foreach (AccessPackage accessPackage in systemUserChangeRequest.UnwantedAccessPackages)
+            foreach (AccessPackage accessPackage in verifiedUnwantedAccessPackages.Value)
             {
                 var removeSystemUserResult = await accessManagementClient.DeleteSingleAccessPackageFromSystemUser(partyUuid, new Guid(toBeChanged.Id), accessPackage.Urn, cancellationToken);
                 if (removeSystemUserResult.IsProblem)
