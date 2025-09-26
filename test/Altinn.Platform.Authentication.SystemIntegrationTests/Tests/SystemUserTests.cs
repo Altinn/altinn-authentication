@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.Authorization;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
@@ -151,11 +152,13 @@ public class SystemUserTests : IDisposable
     }
 
     [Fact]
-    public async Task ApproveRequestSystemUserTest()
+    public async Task ApproveRequestSystemUserAndVerifyDecisionTest()
     {
-        // Arrange
+        // Arrange the right to create the System User for
+        const string resourceRegistryResource = "vegardtestressurs";
+        
         var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-        TestState systemInSystemRegister = await CreateSystemInSystemRegister(maskinportenToken);
+        TestState systemInSystemRegister = await CreateSystemInSystemRegister(maskinportenToken, resourceRegistryResource);
 
         var systemUserResponse = await _platformClient.SystemUserClient.CreateSystemUserRequestWithExternalRef(systemInSystemRegister, maskinportenToken, Guid.NewGuid().ToString());
 
@@ -179,16 +182,36 @@ public class SystemUserTests : IDisposable
         await AssertSystemUserRequestStatus(statusResponse, "Accepted");
         Assert.Contains(systemId, await systemUserResponseContent.Content.ReadAsStringAsync());
         Assert.Contains(systemId, await responseByExternalRef.Content.ReadAsStringAsync());
+        
+        var resp = await PerformDecision(id, _testperson.Org,resourceRegistryResource);
+        Assert.Equal("Permit", resp);
+    }
+    
+    private async Task<string?> PerformDecision(string? systemuserUuid,string? partyOrgSystemUserOwner, string resourceId)
+    {
+        //klientdelegeringsressurs med revisorpakke definert i ressursregisteret: "klientdelegeringressurse2e"
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/AccessManagement/systemUserDecisionSingleright.json"))
+            .Replace("{partyOrgSystemUserOwner}", partyOrgSystemUserOwner)
+            .Replace("{systemuserUuid}", systemuserUuid)
+            .Replace("{resourceRegistryId}", resourceId);
+
+        var response =
+            await _platformClient.AccessManagementClient.PostDecision(requestBody);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Decision endpoint failed with: {response.StatusCode}");
+
+        var json = await response.Content.ReadAsStringAsync();
+        var dto = JsonSerializer.Deserialize<DecisionResponseDto>(json);
+        Assert.True(dto?.Response != null, "Response is null for deserialization of decision");
+        return dto.Response.FirstOrDefault()?.Decision;
     }
 
-    private async Task<TestState> CreateSystemInSystemRegister(string? maskinportenToken)
+    private async Task<TestState> CreateSystemInSystemRegister(string? maskinportenToken, string resourceRegistryResource)
     {
         var testState = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
             .WithName("SystemRegister e2e Tests Approve Requests" + Guid.NewGuid())
             .WithClientId(Guid.NewGuid().ToString())
             .WithVendor(_platformClient.EnvironmentHelper.Vendor)
-            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
+            .WithResource(value: resourceRegistryResource, id: "urn:altinn:resource")
             .WithRedirectUrl("https://altinn.no")
             .WithToken(maskinportenToken);
 
