@@ -261,7 +261,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns><see langword="true"/> if the user is authorized to perform the specified action on the resource; otherwise,
         /// <see langword="false"/>.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the response from the policy decision point (PDP) is null or invalid.</exception>
-        public async Task<bool> AuthorizeResourceAccess(string resource, Guid resourceParty, ClaimsPrincipal userPrincipal, string action)
+        private async Task<bool> AuthorizeResourceAccess(string resource, Guid resourceParty, ClaimsPrincipal userPrincipal, string action)
         {
             XacmlJsonRequestRoot request = DecisionHelper.CreateDecisionRequestForResourceRegistryResource(resource, resourceParty, userPrincipal, action);
             XacmlJsonResponse response = await Pdp.GetDecisionForRequest(request);
