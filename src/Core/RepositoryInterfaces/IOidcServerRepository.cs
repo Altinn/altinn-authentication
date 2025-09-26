@@ -6,7 +6,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
     /// Repository abstraction for persisting and retrieving OIDC server configuration/state.
     /// Implementations should use parameterized SQL and avoid logging secrets.
     /// </summary>
-    public interface IOidcServerRepository
+    public interface IOidcServerClientRepository
     {
         /// <summary>
         /// Retrieves a registered OIDC client by its <c>client_id</c>.

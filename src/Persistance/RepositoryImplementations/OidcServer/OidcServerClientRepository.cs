@@ -1,10 +1,7 @@
-﻿using System;
-using System.Data;
-using System.Data.Common;
+﻿using System.Data;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Constants.OidcServer;
-using Altinn.Platform.Authentication.Persistance.Extensions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
@@ -12,9 +9,9 @@ using NpgsqlTypes;
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.OidcServer
 {
     /// <summary>
-    /// Repository for OIDC server data
+    /// Repository for OIDC server client data
     /// </summary>
-    public class OidcServerClientRepository(NpgsqlDataSource dataSource, ILogger<OidcServerClientRepository> logger, TimeProvider timeProvider) : IOidcServerRepository
+    public class OidcServerClientRepository(NpgsqlDataSource dataSource, ILogger<OidcServerClientRepository> logger, TimeProvider timeProvider) : IOidcServerClientRepository
     {
         private readonly NpgsqlDataSource _datasource = dataSource;
         private readonly ILogger<OidcServerClientRepository> _logger = logger;
@@ -23,6 +20,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <inheritdoc/>
         public async Task<OidcClient?> GetClientAsync(string clientId, CancellationToken ct = default)
         {
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                throw new ArgumentException("ClientId is required.");
+            }
+
             const string QUERY = /*strpsql*/ @"SELECT
                         client_id,
                         client_name,
@@ -37,7 +39,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                         allowed_scopes,
                         created_at,
                         updated_at
-                    FROM client
+                    FROM oidcserver.client
                     WHERE client_id = @client_id
                     LIMIT 1;";
 
@@ -106,7 +108,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             var now = _timeProvider.GetUtcNow();
 
             const string SQL = /*strpsql*/ @"
-            INSERT INTO client (
+            INSERT INTO oidcserver.client (
                 client_id,
                 client_name,
                 client_type,
