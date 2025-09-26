@@ -22,6 +22,7 @@
 	</ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.16.0" />
     <Folder Include="Configuration\" />
     <Folder Include="Errors\" />
     <Folder Include="Services\Interfaces\" />
