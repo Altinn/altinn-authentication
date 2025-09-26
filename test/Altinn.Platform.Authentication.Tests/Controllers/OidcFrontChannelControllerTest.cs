@@ -1,15 +1,16 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Configuration;
+﻿using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
@@ -20,6 +21,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     public class OidcFrontChannelControllerTest(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
+        protected IOidcServerClientRepository Repository => Services.GetRequiredService<IOidcServerClientRepository>();
+
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
@@ -42,6 +45,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task Authorize_WhenServiceReturnsRedirectUpstream_Responds302_WithExpectedLocation_AndNoStore()
         {
+            var create = NewClientCreate("c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21");
+            
+            // Act
+            var inserted = await Repository.InsertClientAsync(create);
+
             // Arrange: fake service that forces a RedirectUpstream outcome
             var upstreamUrl = new Uri("https://login.idporten.no/authorize?client_id=test-upstream");
             var upstreamState = "UP-STATE-123";
@@ -87,5 +95,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
             return Path.Combine(unitTestFolder, $"../../../appsettings.json");
         }
+
+        private static OidcClientCreate NewClientCreate(string? id = null) =>
+        new()
+        {
+            ClientId = id ?? $"client-{Guid.NewGuid():N}",
+            ClientName = "Test Client",
+            ClientType = ClientType.Confidential,
+            TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,
+            RedirectUris = new[] { new Uri("https://app.example.com/auth/cb") },
+            AllowedScopes = new[] { "openid", "profile", "email" },
+            ClientSecretHash = "argon2id$v=19$m=65536,t=3,p=1$dummy$salthash", // test-only
+            ClientSecretExpiresAt = null,
+            SecretRotationAt = null,
+            JwksUri = null,
+            JwksJson = null
+        };
+
     }
+
 }
