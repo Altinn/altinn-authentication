@@ -5,8 +5,11 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Policy;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
+using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Common.PEP.Helpers;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -401,6 +404,38 @@ namespace Altinn.Platform.Authentication.Helpers
             if (claim != null && int.TryParse(claim.Value, out int userId))
             {
                 return userId;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Gets the users id
+        /// </summary>
+        /// <param name="context">the http context</param>
+        /// <returns>the logged in users id</returns>
+        public static Guid GetPartyUuId(HttpContext context)
+        {
+            var claim = context.User?.Claims.FirstOrDefault(c => c.Type.Equals(AltinnCoreClaimTypes.PartyUUID));
+            if (claim != null && Guid.TryParse(claim.Value, out Guid partyUuId))
+            {
+                return partyUuId;
+            }
+
+            return Guid.Empty;
+        }
+
+        /// <summary>
+        /// Gets the users id
+        /// </summary>
+        /// <param name="context">the http context</param>
+        /// <returns>the logged in users id</returns>
+        public static int GetPartyId(HttpContext context)
+        {
+            var claim = context.User?.Claims.FirstOrDefault(c => c.Type.Equals(AltinnCoreClaimTypes.PartyID));
+            if (claim != null && int.TryParse(claim.Value, out int partyId))
+            {
+                return partyId;
             }
 
             return 0;

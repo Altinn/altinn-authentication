@@ -21,14 +21,13 @@ public class PartiesClientMock : IPartiesClient
     /// <inheritdoc/>
     public Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(GetTestDataParties().Find(p => p.PartyId == partyId));
+        return Task.FromResult(GetTestDataParties(GetPartiesPath()).Find(p => p.PartyId == partyId));
     }
 
-    private static List<Party> GetTestDataParties()
+    private static List<Party> GetTestDataParties(string partiesPath)
     {
         List<Party> partyList = new List<Party>();
 
-        string partiesPath = GetPartiesPath();
         if (File.Exists(partiesPath))
         {
             string content = File.ReadAllText(partiesPath);
@@ -42,6 +41,12 @@ public class PartiesClientMock : IPartiesClient
     {
         string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
         return Path.Combine(unitTestFolder, "Data", "Parties", "parties.json");
+    }
+
+    private static string GetCustomerPartiesPath()
+    {
+        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder, "Data", "Parties", "customerparties.json");
     }
 
     private static string GetMainUnitsPath(int subunitPartyId)
@@ -80,5 +85,10 @@ public class PartiesClientMock : IPartiesClient
     public Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
+    }
+
+    public Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetTestDataParties(GetCustomerPartiesPath()).Find(p => p.PartyUuid == partyUuId));
     }
 }

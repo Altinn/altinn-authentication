@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Altinn.Authorization.ABAC" Version="0.0.8" />
+    <PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.0" />
     <PackageReference Include="Altinn.Platform.Storage.Interface" Version="4.0.13" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
     <PackageReference Include="Testcontainers" Version="4.6.0" />
@@ -57,6 +57,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\Delegation\CheckDelegationAccessPackageResponse_NotDelegable.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\Parties\customerparties.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\Roles\user_1337\party_500006\roles.json">

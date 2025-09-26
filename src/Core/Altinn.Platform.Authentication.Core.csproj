@@ -13,7 +13,7 @@
 	<ItemGroup>
 		<PackageReference Include="Altinn.Authorization.ProblemDetails" Version="3.3.0" />
 		<PackageReference Include="Altinn.Common.AccessToken" Version="5.0.5" />
-		<PackageReference Include="Altinn.Common.PEP" Version="4.1.2" />
+		<PackageReference Include="Altinn.Common.PEP" Version="4.2.0" />
 		<PackageReference Include="Altinn.Common.AccessTokenClient" Version="3.0.15" />
 		<PackageReference Include="Altinn.Platform.Models" Version="1.6.1" />
 		<PackageReference Include="Altinn.Urn" Version="3.0.0" />
