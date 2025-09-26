@@ -55,14 +55,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Minimal, valid-enough query for the controller route (values won’t matter since we stub the service)
             var url =
                 "/authentication/api/v1/authorize" +
-                "?response_type=code" +
-                "&client_id=arbeidsflate" +
-                "&redirect_uri=https%3A%2F%2Farbeidsflate.example.no%2Fauth%2Fcallback" +
-                "&scope=openid" +
-                "&state=abc" +
-                "&nonce=n" +
-                "&code_challenge=xyz" +
-                "&code_challenge_method=S256";
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb&scope=digdir%3Adialogporten.noconsent+openid+altinn%3Aportal%2Fenduser&acr_values=idporten-loa-substantial&state=3fcfc23e3bd145cabdcdb70ce406c875&client_id=c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21&response_type=code&nonce=58be49a0cb7df5b791a1fef6c854c5e2&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU&code_challenge_method=S256";
 
             // Act
             var resp = await client.GetAsync(url);
