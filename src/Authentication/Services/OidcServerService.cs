@@ -107,17 +107,5 @@ namespace Altinn.Platform.Authentication.Services
         //        requestId,
         //        cookies);
         //}
-
-        private static readonly HashSet<string> AllowedAcrValues = new(
-            new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high" },
-            StringComparer.Ordinal // case-sensitive; change to OrdinalIgnoreCase if you prefer
-        );
-
-        // Allowed UI locales (lowercase, exact)
-        private static readonly HashSet<string> AllowedUiLocales = new(
-            new[] { "nb", "nn", "en" },
-            StringComparer.Ordinal
-        );
-
     }
 }
