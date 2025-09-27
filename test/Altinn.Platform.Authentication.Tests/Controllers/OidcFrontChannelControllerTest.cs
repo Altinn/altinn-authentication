@@ -343,6 +343,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 "&client_id=client-g" +
                 "&response_type=code" +
                 "&state=s123" +
+                
                 // nonce missing
                 "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
                 "&code_challenge_method=S256";
@@ -365,6 +366,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 "&scope=openid" +
                 "&client_id=client-h" +
                 "&response_type=code" +
+                
                 // state missing
                 "&nonce=n123" +
                 "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
@@ -418,6 +420,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
+            
             // You may choose to 400 locally (safer) or still 302 back to the provided redirect_uri if you validated it as absolute.
             // Here we assert 400 local error since the redirect_uri is not one of the registered URIs.
             Assert.Equal(HttpStatusCode.Found, resp.StatusCode);

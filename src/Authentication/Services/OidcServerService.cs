@@ -140,9 +140,6 @@ namespace Altinn.Platform.Authentication.Services
 
             _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
 
-            // (Optional) if your downstream table has a FK column upstream_request_id and a repo method:
-            // await _loginTxRepo.AttachUpstreamAsync(tx.RequestId, up.UpstreamRequestId, cancellationToken);
-
             // ========= 8) Build upstream authorize URL =========
             var authorizeUrl = BuildUpstreamAuthorizeUrl(
                 provider,
