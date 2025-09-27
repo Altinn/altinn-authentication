@@ -66,6 +66,14 @@ namespace Altinn.Platform.Authentication.Services
                 return Fail(request, bindError);
             }
 
+            // ========= 3) Handle PAR / JAR if present =========
+            // TODO: if request.RequestUri != null -> load par_request, verify TTL and client_id match, override parameters
+            // TODO: if request.RequestObject != null -> validate JWS/JWE, extract claims/params (optional phase)
+
+            // ========= 4) Existing IdP session reuse (optional optimization) =========
+            // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age
+            // TODO: if reusable and no prompt=login: proceed to issue downstream authorization_code (future extension)
+
             // ========= 5) Persist login_transaction(downstream) =========
             LoginTransactionCreate transaction = new()
             {
@@ -277,36 +285,5 @@ namespace Altinn.Platform.Authentication.Services
 
             return baseCallback;
         }
-
-        // ========= 3) Handle PAR / JAR if present =========
-        // TODO: if request.RequestUri != null -> load par_request, verify TTL and client_id match, override parameters
-        // TODO: if request.RequestObject != null -> validate JWS/JWE, extract claims/params (optional phase)
-
-        // ========= 4) Existing IdP session reuse (optional optimization) =========
-        // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age
-        // TODO: if reusable and no prompt=login: proceed to issue downstream authorization_code (future extension)
-             
-        //    // ========= 7) Persist login_transaction_upstream =========
-        //    // TODO: insert row bound to requestId with upstream_state, nonce, redirect_uri (our callback), verifier/challenge, etc.
-
-        //    // ========= 8) Cookies to set (optional) =========
-        //    var cookies = new List<CookieInstruction>
-        //    {
-        //        // Example: a correlation cookie or request marker (no PII)
-        //        // new CookieInstruction { Name = "altinn_auth_corr", Value = correlationId, HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTimeOffset.UtcNow.AddMinutes(10) }
-        //    };
-
-        //    // NOTE: On validation failure:
-        //    // return AuthorizeResult.ErrorRedirect(validClientRedirectUri, "invalid_request", "reason", request.State);
-        //    // or if redirect is unsafe:
-        //    // return AuthorizeResult.LocalError(400, "invalid_request", "Bad authorize request");
-
-        //    // ========= 9) Return redirect upstream =========
-        //    return AuthorizeResult.RedirectUpstream(
-        //        upstreamAuthorizeUrl,
-        //        upstreamState,
-        //        requestId,
-        //        cookies);
-        //}
     }
 }
