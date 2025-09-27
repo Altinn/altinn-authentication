@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Services
     /// </summary>
     public class OidcServerService(IOidcServerClientRepository oidcServerClientRepository) : IOidcServerService
     {
-        private IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
+        private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
         private readonly IAuthorizeRequestValidator _basicValidator;
         private readonly IAuthorizeClientPolicyValidator _clientValidator;
 
@@ -108,58 +108,10 @@ namespace Altinn.Platform.Authentication.Services
         //        cookies);
         //}
 
-        private static bool TryAbsoluteUri(string? s, out Uri? uri)
-        {
-            if (!string.IsNullOrWhiteSpace(s) && Uri.TryCreate(s, UriKind.Absolute, out var u))
-            {
-                uri = u;
-                return true;
-            }
-
-            uri = null;
-            return false;
-        }
-
-        private static bool IsBase64Url(string s)
-        {
-            try
-            {
-                _ = Convert.FromBase64String(s.Replace('-', '+').Replace('_', '/').PadRight((s.Length + 3) & ~3, '='));
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         private static readonly HashSet<string> AllowedAcrValues = new(
             new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high" },
             StringComparer.Ordinal // case-sensitive; change to OrdinalIgnoreCase if you prefer
         );
-
-        private static (bool ok, string? offending) AreAcrValuesSupported(string[] acrValues)
-        {
-            if (acrValues is null || acrValues.Length == 0)
-            {
-                return (true, null);
-            }
-
-            foreach (var v in acrValues)
-            {
-                if (string.IsNullOrWhiteSpace(v))
-                {
-                    continue; // treat empty tokens as ignored
-                }
-
-                if (!AllowedAcrValues.Contains(v))
-                {
-                    return (false, v);
-                }
-            }
-
-            return (true, null);
-        }
 
         // Allowed UI locales (lowercase, exact)
         private static readonly HashSet<string> AllowedUiLocales = new(
@@ -167,28 +119,5 @@ namespace Altinn.Platform.Authentication.Services
             StringComparer.Ordinal
         );
 
-        private static (bool Ok, string? Offending) AreUiLocalesSupported(string[]? locales)
-        {
-            if (locales is null || locales.Length == 0)
-            {
-                return (true, null);
-            }
-
-            foreach (var l in locales)
-            {
-                if (string.IsNullOrWhiteSpace(l))
-                {
-                    continue; // ignore empties from weird clients
-                }
-
-                var lc = l.Trim().ToLowerInvariant();
-                if (!AllowedUiLocales.Contains(lc))
-                {
-                    return (false, l);
-                }
-            }
-
-            return (true, null);
-        }
     }
 }
