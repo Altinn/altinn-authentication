@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
+﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -73,6 +74,16 @@ namespace Altinn.Platform.Authentication.Services
                 return Fail("invalid_request", "prompt=none cannot be combined with login or consent.");
             }
 
+            if (request.RedirectUri is null || !request.RedirectUri.IsAbsoluteUri)
+            {
+                return AuthorizeResult.LocalError(400, "invalid_request", "redirect_uri must be an absolute URI.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.State))
+            {
+                return Fail("invalid_request", "state is required to protect against CSRF.");
+            }
+
             // max_age >= 0 (if present)
             if (request.MaxAge is < 0)
             {
@@ -97,11 +108,22 @@ namespace Altinn.Platform.Authentication.Services
                 return Fail("invalid_request", "nonce is required.");
             }
 
-            // If we reach here, basic validation passed.
-            // ... continue with client lookup, redirect_uri exact-match, PKCE storage, etc.
-            // (Return a placeholder for now so code compiles; replace with your actual flow.)
+            // Client verification (later steps will need the client info)
+            OidcClient? client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, CancellationToken.None);
+            if (client is null)
+            {
+                return Fail("unauthorized_client", $"Unknown client_id '{request.ClientId}'.");
+            }
 
-            OidcClient client = await _oidcServerClientRepository.GetClientAsync(request.ClientId);
+            if (!client.RedirectUris.Contains(request.RedirectUri))
+            {
+                return Fail("invalid_request", "redirect_uri not registered for this client.");
+            }
+
+            if (!request.Scopes.All(s => client.AllowedScopes.Contains(s)))
+            {
+                return Fail("invalid_scope", "One or more requested scopes are not allowed for this client.");
+            }
 
             return AuthorizeResult.LocalError(501, "not_implemented", "Next steps: client lookup & upstream routing.");
         }
@@ -156,7 +178,7 @@ namespace Altinn.Platform.Authentication.Services
         //        cookies);
         //}
 
-        static bool TryAbsoluteUri(string? s, out Uri? uri)
+        private static bool TryAbsoluteUri(string? s, out Uri? uri)
         {
             if (!string.IsNullOrWhiteSpace(s) && Uri.TryCreate(s, UriKind.Absolute, out var u))
             {
@@ -168,23 +190,17 @@ namespace Altinn.Platform.Authentication.Services
             return false;
         }
 
-        static bool IsBase64Url(string s)
+        private static bool IsBase64Url(string s)
         {
-            // Allowed: A–Z, a–z, 0–9, '-', '_'; no padding '='
-            for (int i = 0; i < s.Length; i++)
+            try
             {
-                char c = s[i];
-                bool ok = (c >= 'A' && c <= 'Z')
-                       || (c >= 'a' && c <= 'z')
-                       || (c >= '0' && c <= '9')
-                       || c == '-' || c == '_';
-                if (!ok)
-                {
-                    return false;
-                }
+                _ = Convert.FromBase64String(s.Replace('-', '+').Replace('_', '/').PadRight((s.Length + 3) & ~3, '='));
+                return true;
             }
-
-            return true;
+            catch
+            {
+                return false;
+            }
         }
 
         private static readonly HashSet<string> AllowedAcrValues = new(
@@ -221,7 +237,7 @@ namespace Altinn.Platform.Authentication.Services
             StringComparer.Ordinal
         );
 
-        private static (bool ok, string? offending) AreUiLocalesSupported(string[]? locales)
+        private static (bool Ok, string? Offending) AreUiLocalesSupported(string[]? locales)
         {
             if (locales is null || locales.Length == 0)
             {
