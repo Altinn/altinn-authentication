@@ -1,6 +1,8 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +15,7 @@ using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -27,7 +30,8 @@ namespace Altinn.Platform.Authentication.Services
         IAuthorizeClientPolicyValidator authorizeClientPolicyValidator,
         IOptions<OidcProviderSettings> oidcProviderSettings,
         TimeProvider timeProvider,
-        IOidcProvider oidcProvider) : IOidcServerService
+        IOidcProvider oidcProvider,
+        ISigningKeysRetriever signingKeysRetriever) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -38,6 +42,8 @@ namespace Altinn.Platform.Authentication.Services
         private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
         private readonly TimeProvider _timeProvider = timeProvider;
         private readonly IOidcProvider _oidcProvider = oidcProvider;
+        private readonly ISigningKeysRetriever _signingKeysRetriever = signingKeysRetriever;
+        private readonly JwtSecurityTokenHandler _validator = new();
 
         private static readonly string DefaultProviderKey = "idporten";
 
@@ -423,6 +429,32 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return baseCallback;
+        }
+
+        private async Task<JwtSecurityToken> ValidateAndExtractOidcToken(string originalToken, string wellKnownConfigEndpoint, string alternativeWellKnownConfigEndpoint = null)
+        {
+                ICollection<SecurityKey> signingKeys = await _signingKeysRetriever.GetSigningKeys(wellKnownConfigEndpoint);
+                return ValidateToken(originalToken, signingKeys);
+        }
+
+        private JwtSecurityToken ValidateToken(string originalToken, ICollection<SecurityKey> signingKeys)
+        {
+            TokenValidationParameters validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKeys = signingKeys,
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                RequireExpirationTime = true,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromSeconds(10)
+            };
+
+            _validator.ValidateToken(originalToken, validationParameters, out _);
+            _logger.LogInformation("Token is valid");
+
+            JwtSecurityToken token = _validator.ReadJwtToken(originalToken);
+            return token;
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
+using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Persistence.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -28,6 +29,7 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess
             services.AddPersistanceLayer();              // your extension
             services.TryAddSingleton(TimeProvider.System);
             base.ConfigureServices(services);
+            services.AddTransient<IOidcProvider, Mocks.OidcProviderAdvancedMock>();
         }
 
         // ---------- Helpers ----------
