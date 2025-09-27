@@ -1,0 +1,3 @@
+GRANT USAGE ON SCHEMA oidcserver TO auth_authentication;
+GRANT SELECT,INSERT,UPDATE,REFERENCES,DELETE,TRUNCATE,TRIGGER ON ALL TABLES IN SCHEMA oidcserver TO auth_authentication;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA oidcserver TO auth_authentication;

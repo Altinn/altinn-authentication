@@ -1,9 +1,10 @@
+#nullable enable
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Microsoft.Extensions.Logging;
 
-namespace Altinn.Platform.Authentication.Services
+namespace Altinn.Platform.Authentication.Tests.Mocks
 {
     /// <summary>
     /// Oidc provider for mocking OIDC Providers
@@ -20,9 +21,9 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Performs a AccessToken Request as described in https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
         /// </summary>
-        public Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri)
+        public Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri, string? codeVerifier, CancellationToken ct = default)
         {
-            OidcCodeResponse codeResponse = new OidcCodeResponse
+            OidcCodeResponse codeResponse = new()
             {
                 AccessToken = authorizationCode,
                 IdToken = authorizationCode
