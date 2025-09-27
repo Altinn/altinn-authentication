@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
@@ -12,7 +13,6 @@ namespace Altinn.Platform.Authentication.Services
     /// </summary>
     public class OidcServerService(IOidcServerClientRepository oidcServerClientRepository) : IOidcServerService
     {
-
         private IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
 
         /// <summary>
@@ -79,19 +79,23 @@ namespace Altinn.Platform.Authentication.Services
                 return Fail("invalid_request", "max_age must be a non-negative integer.");
             }
 
-            //// ui_locales & acr_values: space-separated tokens with safe charset
-            //if (!AreSpaceSeparatedTokensValid(request.UiLocales))
-            //{
-            //    return Fail("invalid_request", "ui_locales contains invalid characters.");
-            //}
+            (bool acrOk, string badAcr) = AreAcrValuesSupported(request.AcrValues);
+            if (!acrOk)
+            {
+                return Fail("invalid_request", $"acr_values contains unsupported value: '{badAcr}'. Allowed: {string.Join(", ", AllowedAcrValues)}");
+            }
 
-            //if (!AreSpaceSeparatedTokensValid(request.AcrValues))
-            //{
-            //    return Fail("invalid_request", "acr_values contains invalid characters.");
-            //}
+            var (uiOk, badUi) = AreUiLocalesSupported(request.UiLocales);
+            if (!uiOk)
+            {
+                return Fail("invalid_request", $"ui_locales contains unsupported value: '{badUi}'. Allowed: nb, nn, en");
+            }
 
             // nonce recommended (optionally enforce)
-            // if (string.IsNullOrWhiteSpace(request.Nonce)) return Fail("invalid_request", "nonce is required.");
+            if (string.IsNullOrWhiteSpace(request.Nonce))
+            {
+                return Fail("invalid_request", "nonce is required.");
+            }
 
             // If we reach here, basic validation passed.
             // ... continue with client lookup, redirect_uri exact-match, PKCE storage, etc.
@@ -183,5 +187,62 @@ namespace Altinn.Platform.Authentication.Services
             return true;
         }
 
+        private static readonly HashSet<string> AllowedAcrValues = new(
+            new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high" },
+            StringComparer.Ordinal // case-sensitive; change to OrdinalIgnoreCase if you prefer
+        );
+
+        private static (bool ok, string? offending) AreAcrValuesSupported(string[] acrValues)
+        {
+            if (acrValues is null || acrValues.Length == 0)
+            {
+                return (true, null);
+            }
+
+            foreach (var v in acrValues)
+            {
+                if (string.IsNullOrWhiteSpace(v))
+                {
+                    continue; // treat empty tokens as ignored
+                }
+
+                if (!AllowedAcrValues.Contains(v))
+                {
+                    return (false, v);
+                }
+            }
+
+            return (true, null);
+        }
+
+        // Allowed UI locales (lowercase, exact)
+        private static readonly HashSet<string> AllowedUiLocales = new(
+            new[] { "nb", "nn", "en" },
+            StringComparer.Ordinal
+        );
+
+        private static (bool ok, string? offending) AreUiLocalesSupported(string[]? locales)
+        {
+            if (locales is null || locales.Length == 0)
+            {
+                return (true, null);
+            }
+
+            foreach (var l in locales)
+            {
+                if (string.IsNullOrWhiteSpace(l))
+                {
+                    continue; // ignore empties from weird clients
+                }
+
+                var lc = l.Trim().ToLowerInvariant();
+                if (!AllowedUiLocales.Contains(lc))
+                {
+                    return (false, l);
+                }
+            }
+
+            return (true, null);
+        }
     }
 }
