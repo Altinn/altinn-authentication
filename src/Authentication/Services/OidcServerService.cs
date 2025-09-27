@@ -46,7 +46,7 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
-            AuthorizeValidationError basicError = _basicValidator.ValidateBasics(request);
+            AuthorizeValidationError? basicError = _basicValidator.ValidateBasics(request);
             if (basicError is not null)
             {
                 return Fail(request, basicError);
@@ -66,6 +66,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Fail(request, bindError);
             }
 
+            // ========= 5) Persist login_transaction(downstream) =========
             LoginTransactionCreate transaction = new()
             {
                 ClientId = client.ClientId,
@@ -89,6 +90,8 @@ namespace Altinn.Platform.Authentication.Services
             };
 
             LoginTransaction tx = await _loginTxRepo.InsertAsync(transaction, cancellationToken);
+
+            // ========= 6) Choose upstream and derive upstream params =========
             OidcProvider provider = ChooseProvider(request);
                
             var upstreamState = CryptoHelpers.RandomBase64Url(32);
@@ -96,11 +99,54 @@ namespace Altinn.Platform.Authentication.Services
             var upstreamVerifier = Pkce.RandomPkceVerifier();
             var upstreamChallenge = Hashing.Sha256Base64Url(upstreamVerifier);
 
-            // persist upstream row (using provider.AuthorizationEndpoint, TokenEndpoint, ClientId, RedirectUri)
-            var authorizeUrl = BuildUpstreamAuthorizeUrl(provider, upstreamState, upstreamNonce, upstreamChallenge, request, provider.IssuerKey);
+            // ========= 7) Persist login_transaction_upstream =========
+            // NOTE: Store everything you need for callback + token exchange.
+            var upstreamCreate = new UpstreamLoginTransactionCreate
+            {
+                RequestId = tx.RequestId,
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
 
+                Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
+                UpstreamClientId = provider.ClientId,
+                AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
+                TokenEndpoint = new Uri(provider.TokenEndpoint),
+                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : null, // keep null unless you decide to pin
+
+                UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
+
+                State = upstreamState,
+                Nonce = upstreamNonce,
+                Scopes = (provider.Scope ?? "openid").Split(' ', StringSplitOptions.RemoveEmptyEntries),
+                AcrValues = request.AcrValues?.Length > 0 ? request.AcrValues : null,
+                Prompts = request.Prompts?.Length > 0 ? request.Prompts : null,
+                UiLocales = request.UiLocales?.Length > 0 ? request.UiLocales : null,
+                MaxAge = request.MaxAge,
+
+                CodeVerifier = upstreamVerifier,
+                CodeChallenge = upstreamChallenge,
+                CodeChallengeMethod = "S256",
+
+                CorrelationId = request.CorrelationId,
+                CreatedByIp = request.ClientIp,
+                UserAgentHash = request.UserAgentHash
+            };
+
+            _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
+
+            // (Optional) if your downstream table has a FK column upstream_request_id and a repo method:
+            // await _loginTxRepo.AttachUpstreamAsync(tx.RequestId, up.UpstreamRequestId, cancellationToken);
+
+            // ========= 8) Build upstream authorize URL =========
+            var authorizeUrl = BuildUpstreamAuthorizeUrl(
+                provider,
+                upstreamState,
+                upstreamNonce,
+                upstreamChallenge,
+                request,
+                provider.IssuerKey);
+
+            // ========= 9) Return redirect upstream =========
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
-
         }
 
         private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e)
@@ -239,21 +285,7 @@ namespace Altinn.Platform.Authentication.Services
         // ========= 4) Existing IdP session reuse (optional optimization) =========
         // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age
         // TODO: if reusable and no prompt=login: proceed to issue downstream authorization_code (future extension)
-
-        // ========= 5) Persist login_transaction (downstream) =========
-        // TODO: insert login_transaction with:
-        //  - client_id, redirect_uri, scopes[], state, nonce, acr_values, prompt, ui_locales, max_age
-        //  - code_challenge, code_challenge_method='S256'
-        //  - created_at, expires_at = now + 10 min
-        //// Capture generated request_id for correlation.
-        //Guid requestId = Guid.NewGuid(); // replace with DB-generated id
-
-        //    // ========= 6) Choose upstream and derive upstream params =========
-        //    // TODO: select upstream provider by acr_values/scope/policy (ID-porten default)
-        //    // TODO: generate upstream_state, upstream_nonce, upstream_code_verifier (43-128 chars), upstream_code_challenge=S256
-        //    string upstreamState = /* generate cryptographic random */ Guid.NewGuid().ToString("N");
-        //    var upstreamAuthorizeUrl = new Uri("https://login.idporten.no/authorize?..." /* build full URL with params */);
-
+             
         //    // ========= 7) Persist login_transaction_upstream =========
         //    // TODO: insert row bound to requestId with upstream_state, nonce, redirect_uri (our callback), verifier/challenge, etc.
 
