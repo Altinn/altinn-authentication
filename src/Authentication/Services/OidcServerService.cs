@@ -281,5 +281,11 @@ namespace Altinn.Platform.Authentication.Services
 
             return baseCallback;
         }
+
+        /// <inheritdoc/>
+        public Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken ct)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -28,9 +29,9 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("authorize")]
         public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequestDto q, CancellationToken cancellationToken = default)
         {
-            System.Net.IPAddress ip = HttpContext.Connection.RemoteIpAddress;
+            System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();
-            string userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
+            string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
             Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
 
             AuthorizeRequest req;
@@ -82,6 +83,96 @@ namespace Altinn.Platform.Authentication.Controllers
             };
         }
 
+        /// <summary>
+        /// Handles the callback from the upstream OIDC provider.
+        /// </summary>
+        [HttpGet("upstream/callback")]
+        public async Task<IActionResult> UpstreamCallback([FromQuery] UpstreamCallbackDto q, CancellationToken ct = default)
+        {
+            // Gather diagnostics
+            var ip = HttpContext.Connection.RemoteIpAddress;
+            var ua = Request.Headers.UserAgent.ToString();
+            string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
+            Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
+
+            var input = new UpstreamCallbackInput
+            {
+                Code = q.Code,
+                State = q.State,
+                Error = q.Error,
+                ErrorDescription = q.ErrorDescription,
+                Iss = q.Iss,
+                ClientIp = ip!,
+                UserAgentHash = userAgentHash,
+                CorrelationId = corr
+            };
+
+            var result = await _oidcServerService.HandleUpstreamCallback(input, ct);
+
+            // Set no-store for auth responses
+            Response.Headers["Cache-Control"] = "no-store";
+            Response.Headers["Pragma"] = "no-cache";
+
+            foreach (var c in result.Cookies)
+            {
+                Response.Cookies.Append(c.Name, c.Value, new CookieOptions
+                {
+                    HttpOnly = c.HttpOnly,
+                    Secure = c.Secure,
+                    Path = c.Path ?? "/",
+                    Domain = c.Domain,
+                    Expires = c.Expires,
+                    SameSite = c.SameSite
+                });
+            }
+
+            return result.Kind switch
+            {
+                UpstreamCallbackResultKind.RedirectToClient =>
+                    Redirect(BuildDownstreamSuccessRedirect(result.ClientRedirectUri!, result.DownstreamCode!, result.ClientState)),
+
+                UpstreamCallbackResultKind.ErrorRedirectToClient =>
+                    Redirect(BuildOidcErrorRedirect(result.ClientRedirectUri!, result.Error!, result.ErrorDescription, result.ClientState)),
+
+                UpstreamCallbackResultKind.LocalError =>
+                    StatusCode(result.StatusCode ?? 400, result.LocalErrorMessage),
+
+                _ => StatusCode(500)
+            };
+        }
+
+        /// <summary>
+        /// Handles the OIDC front-channel logout request.
+        /// </summary>
+        /// <param name="sid">The session identifier for logout.</param>
+        /// <returns>An <see cref="IActionResult"/> representing the result of the logout request.</returns>
+        [HttpGet("logout/frontchannel")]
+        public IActionResult Logout([FromQuery] string sid) 
+        {
+            throw new System.NotImplementedException();
+        }
+
+        private static string ComputeSha256Base64Url(string input)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            return ComputeSha256Base64Url(bytes);
+        }
+
+        private static string ComputeSha256Base64Url(ReadOnlySpan<byte> data)
+        {
+            // SHA256.HashData is allocation-free and fast
+            Span<byte> hash = stackalloc byte[32];
+            SHA256.HashData(data, hash);
+
+            // Convert to Base64URL: replace '+' -> '-', '/' -> '_', and trim '='
+            string b64 = Convert.ToBase64String(hash);
+            return b64.Replace('+', '-')
+                      .Replace('/', '_')
+                      .TrimEnd('=');
+        }
+
         private static string BuildOidcErrorRedirect(Uri redirectUri, string error, string? errorDescription, string? clientState)
         {
             ArgumentNullException.ThrowIfNull(redirectUri);
@@ -117,51 +208,18 @@ namespace Altinn.Platform.Authentication.Controllers
             return ub.Uri.ToString();
         }
 
-        /// <summary>
-        /// Handles the callback from the upstream OIDC provider.
-        /// </summary>
-        /// <param name="code">The authorization code returned by the provider.</param>
-        /// <param name="state">The state parameter to correlate the request.</param>
-        /// <returns>An <see cref="IActionResult"/> representing the result of the callback.</returns>
-        [HttpGet("upstream/callback")]
-        public async Task<IActionResult> UpstreamCallback([FromQuery] string code, [FromQuery] string state)
+        private static string BuildDownstreamSuccessRedirect(Uri redirectUri, string code, string? state)
         {
-            throw new System.NotImplementedException();
-        }
-
-        /// <summary>
-        /// Handles the OIDC front-channel logout request.
-        /// </summary>
-        /// <param name="sid">The session identifier for logout.</param>
-        /// <returns>An <see cref="IActionResult"/> representing the result of the logout request.</returns>
-        [HttpGet("logout/frontchannel")]
-        public IActionResult Logout([FromQuery] string sid) 
-        {
-            throw new System.NotImplementedException();
-        }
-
-        private static string ComputeSha256Base64Url(string input)
-        {
-            if (input is null)
+            var ub = new UriBuilder(redirectUri);
+            var q = System.Web.HttpUtility.ParseQueryString(ub.Query);
+            q["code"] = code;
+            if (!string.IsNullOrWhiteSpace(state))
             {
-                throw new ArgumentNullException(nameof(input));
+                q["state"] = state;
             }
 
-            var bytes = Encoding.UTF8.GetBytes(input);
-            return ComputeSha256Base64Url(bytes);
-        }
-
-        private static string ComputeSha256Base64Url(ReadOnlySpan<byte> data)
-        {
-            // SHA256.HashData is allocation-free and fast
-            Span<byte> hash = stackalloc byte[32];
-            SHA256.HashData(data, hash);
-
-            // Convert to Base64URL: replace '+' -> '-', '/' -> '_', and trim '='
-            string b64 = Convert.ToBase64String(hash);
-            return b64.Replace('+', '-')
-                      .Replace('/', '_')
-                      .TrimEnd('=');
+            ub.Query = q.ToString()!;
+            return ub.Uri.ToString();
         }
     }
 }
