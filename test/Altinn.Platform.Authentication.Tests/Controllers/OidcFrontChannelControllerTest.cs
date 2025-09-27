@@ -1,39 +1,38 @@
 ﻿using System;
+using System.Data;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
-using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
     /// <summary>
-    /// Front channel tests for <see cref="Altinn.Platform.Authentication.Controllers.OidcFrontChannelController"/>. 
+    /// Front channel tests for <see cref="Altinn.Platform.Authentication.Controllers.OidcFrontChannelController"/>.
     /// </summary>
     public class OidcFrontChannelControllerTest(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         protected IOidcServerClientRepository Repository => Services.GetRequiredService<IOidcServerClientRepository>();
 
+        protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
+
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
-            
+
             string configPath = GetConfigPath();
 
             WebHostBuilder builder = new();
-
             builder.ConfigureAppConfiguration((context, conf) => { conf.AddJsonFile(configPath); });
 
             var configuration = new ConfigurationBuilder()
@@ -41,69 +40,124 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 .Build();
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-
             services.Configure<GeneralSettings>(generalSettingSection);
         }
 
         [Fact]
-        public async Task Authorize_Arbeidsflate_Full_Login_Flow()
+        public async Task Authorize_Persists_Downstream_And_Upstream_And_Redirects()
         {
-            // Build client with DI override for IOidcServerService
+            // Arrange
             using var client = CreateClient();
 
+            // Insert a client that matches the authorize request
             var create = NewClientCreate("c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21");
             _ = await Repository.InsertClientAsync(create);
 
-            // Fake service that returns a redirect but also captures the AuthorizeRequest it receives
-            var upstreamUrl = new Uri("https://login.idporten.no/authorize?client_id=test-upstream");
-            var upstreamState = "UP-STATE-123";
-            var requestId = Guid.NewGuid();
+            // Headers used by the controller to capture IP/UA/correlation
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
+            client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
+            client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
 
-            // Headers we’ll use to derive UA hash and correlation id
-            var userAgent = "AltinnTestClient/1.0 (+https://altinn.no)";
-            var correlationId = Guid.NewGuid().ToString();
+            // Downstream authorize query (what Arbeidsflate would send)
+            const string clientId = "c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21";
+            var redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
+            var state = "3fcfc23e3bd145cabdcdb70ce406c875";
+            var nonce = "58be49a0cb7df5b791a1fef6c854c5e2";
+            var codeChallenge = "CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU";
 
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
-            client.DefaultRequestHeaders.Add("X-Correlation-ID", correlationId);
-
-            // If your app uses ForwardedHeaders middleware to set RemoteIpAddress,
-            // you can also add X-Forwarded-For; otherwise RemoteIp will be 127.0.0.1 (TestServer default).
-            var simulatedIp = "203.0.113.42"; // TEST-NET-3 sample IP
-            client.DefaultRequestHeaders.Add("X-Forwarded-For", simulatedIp);
-
-            // Minimal, valid-enough query (service is stubbed)
             var url =
                 "/authentication/api/v1/authorize" +
-                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                $"?redirect_uri={redirectUri}" +
                 "&scope=openid%20altinn%3Aportal%2Fenduser" +
                 "&acr_values=idporten-loa-substantial" +
-                "&state=3fcfc23e3bd145cabdcdb70ce406c875" +
-                "&client_id=c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21" +
+                $"&state={state}" +
+                $"&client_id={clientId}" +
                 "&response_type=code" +
-                "&nonce=58be49a0cb7df5b791a1fef6c854c5e2" +
-                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                $"&nonce={nonce}" +
+                $"&code_challenge={codeChallenge}" +
                 "&code_challenge_method=S256";
 
             // Act
             var resp = await client.GetAsync(url);
 
-            // Assert HTTP
+            // Assert: HTTP redirect to upstream authorize
             Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-           
-            //Assert.NotNull(resp.Headers.Location);
-            //Assert.Equal(upstreamUrl, resp.Headers.Location);
-            //Assert.True(resp.Headers.CacheControl?.NoStore ?? false);
-            //Assert.Contains("no-cache", resp.Headers.Pragma.ToString(), StringComparison.OrdinalIgnoreCase);
-        }
+            Assert.NotNull(resp.Headers.Location);
 
-        private sealed class FakeOidcServerService : IOidcServerService
-        {
-            private readonly AuthorizeResult _result;
+            // We don't assert the exact upstream URL (it includes a generated state/nonce),
+            // but we require it's absolute and points to an /authorize endpoint.
+            var loc = resp.Headers.Location!;
+            Assert.True(loc.IsAbsoluteUri, "Redirect Location must be absolute.");
+            Assert.Contains("/authorize", loc.AbsolutePath, StringComparison.OrdinalIgnoreCase);
+            Assert.True(resp.Headers.CacheControl?.NoStore ?? false, "Cache-Control must include no-store");
+            Assert.Contains("no-cache", resp.Headers.Pragma.ToString(), StringComparison.OrdinalIgnoreCase);
 
-            public FakeOidcServerService(AuthorizeResult result, CancellationToken ct) => _result = result;
+            // Parse upstream Location query to ensure key params are present
+            var upstreamQuery = System.Web.HttpUtility.ParseQueryString(loc.Query);
+            Assert.Equal("code", upstreamQuery["response_type"]);
+            Assert.False(string.IsNullOrEmpty(upstreamQuery["client_id"]));
+            Assert.False(string.IsNullOrEmpty(upstreamQuery["redirect_uri"]));
+            Assert.Equal("S256", upstreamQuery["code_challenge_method"]);
+            Assert.False(string.IsNullOrEmpty(upstreamQuery["code_challenge"]));
+            Assert.False(string.IsNullOrEmpty(upstreamQuery["state"]));
+            Assert.False(string.IsNullOrEmpty(upstreamQuery["nonce"]));
+            Assert.Equal("openid", upstreamQuery["scope"]); // by default upstream scope should be openid
 
-            public Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken ct)
-                => Task.FromResult(_result);
+            // ===== Verify DB persistence =====
+
+            // 1) Downstream login_transaction exists for (client_id, state)
+            Guid requestId;
+            const string SQL_FIND_DOWNSTREAM = /*strpsql*/ @"
+            SELECT request_id, client_id, state, code_challenge, redirect_uri, status
+            FROM oidcserver.login_transaction
+            WHERE client_id = @client_id AND state = @state
+            LIMIT 1;";
+
+            await using (var cmd = DataSource.CreateCommand(SQL_FIND_DOWNSTREAM))
+            {
+                cmd.Parameters.AddWithValue("client_id", clientId);
+                cmd.Parameters.AddWithValue("state", state);
+
+                await using var reader = await cmd.ExecuteReaderAsync();
+                Assert.True(await reader.ReadAsync(), "Downstream login_transaction row not found.");
+                requestId = reader.GetFieldValue<Guid>("request_id");
+
+                Assert.Equal(clientId, reader.GetFieldValue<string>("client_id"));
+                Assert.Equal(state, reader.GetFieldValue<string>("state"));
+                Assert.Equal(codeChallenge, reader.GetFieldValue<string>("code_challenge"));
+                Assert.Equal("pending", reader.GetFieldValue<string>("status"));
+
+                var storedRedirect = reader.GetFieldValue<string>("redirect_uri");
+                Assert.Equal("https://af.altinn.no/api/cb", storedRedirect);
+            }
+
+            // 2) Upstream login_transaction_upstream exists for that request_id and is pending
+            const string SQL_FIND_UPSTREAM = /*strpsql*/ @"
+            SELECT upstream_request_id, provider, status, state, code_challenge, authorization_endpoint, token_endpoint
+            FROM oidcserver.login_transaction_upstream
+            WHERE request_id = @request_id
+            LIMIT 1;";
+
+            await using (var cmd = DataSource.CreateCommand(SQL_FIND_UPSTREAM))
+            {
+                cmd.Parameters.AddWithValue("request_id", requestId);
+
+                await using var reader = await cmd.ExecuteReaderAsync();
+                Assert.True(await reader.ReadAsync(), "Upstream login_transaction_upstream row not found.");
+
+                var provider = reader.GetFieldValue<string>("provider");
+                var upstreamStatus = reader.GetFieldValue<string>("status");
+                var upstreamAuthzEndpoint = reader.GetFieldValue<string>("authorization_endpoint");
+
+                Assert.False(string.IsNullOrWhiteSpace(provider));
+                Assert.Equal("pending", upstreamStatus);
+                Assert.False(string.IsNullOrWhiteSpace(upstreamAuthzEndpoint));
+
+                // Upstream code_challenge should be generated by server (not equal to downstream challenge)
+                var upstreamChallenge = reader.GetFieldValue<string>("code_challenge");
+                Assert.False(string.IsNullOrWhiteSpace(upstreamChallenge));
+                Assert.NotEqual(codeChallenge, upstreamChallenge);
+            }
         }
 
         private static string GetConfigPath()
@@ -113,27 +167,19 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         private static OidcClientCreate NewClientCreate(string? id = null) =>
-        new()
-        {
-            ClientId = id ?? $"client-{Guid.NewGuid():N}",
-            ClientName = "Test Client",
-            ClientType = ClientType.Confidential,
-            TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,
-            RedirectUris = new[] { new Uri("https://af.altinn.no/api/cb") },
-            AllowedScopes = new[] { "openid", "digdir:dialogporten.noconsent", "altinn:portal/enduser" },
-            ClientSecretHash = "argon2id$v=19$m=65536,t=3,p=1$dummy$salthash", // test-only
-            ClientSecretExpiresAt = null,
-            SecretRotationAt = null,
-            JwksUri = null,
-            JwksJson = null
-        };
-
-        private static string ComputeSha256Base64Url(string input)
-        {
-            using var sha = SHA256.Create();
-            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
-            var b64 = Convert.ToBase64String(bytes);
-            return b64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
-        }
+            new()
+            {
+                ClientId = id ?? $"client-{Guid.NewGuid():N}",
+                ClientName = "Test Client",
+                ClientType = ClientType.Confidential,
+                TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,
+                RedirectUris = new[] { new Uri("https://af.altinn.no/api/cb") },
+                AllowedScopes = new[] { "openid", "digdir:dialogporten.noconsent", "altinn:portal/enduser" },
+                ClientSecretHash = "argon2id$v=19$m=65536,t=3,p=1$dummy$salthash",
+                ClientSecretExpiresAt = null,
+                SecretRotationAt = null,
+                JwksUri = null,
+                JwksJson = null
+            };
     }
 }
