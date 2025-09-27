@@ -88,7 +88,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var resp = await client.GetAsync(url);
 
             // Assert HTTP
-            Assert.Equal(HttpStatusCode.NotImplemented, resp.StatusCode);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
            
             //Assert.NotNull(resp.Headers.Location);
             //Assert.Equal(upstreamUrl, resp.Headers.Location);

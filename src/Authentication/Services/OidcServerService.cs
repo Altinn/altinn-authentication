@@ -1,24 +1,44 @@
-﻿using System;
+﻿#nullable enable
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Model;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services
 {
     /// <summary>
     /// Service that implements the OIDC <c>/authorize</c> front-channel flow for Altinn Authentication as an OP.
     /// </summary>
-    public class OidcServerService(IOidcServerClientRepository oidcServerClientRepository, 
-        ILoginTransactionRepository loginTransactionRepository, 
+    public class OidcServerService(ILogger<OidcServerService> logger, 
+        IOidcServerClientRepository oidcServerClientRepository, 
+        ILoginTransactionRepository loginTransactionRepository,
+        IUpstreamLoginTransactionRepository upstreamLoginTransactionRepository,
         IAuthorizeRequestValidator authorizeRequestValidator, 
-        IAuthorizeClientPolicyValidator authorizeClientPolicyValidator) : IOidcServerService
+        IAuthorizeClientPolicyValidator authorizeClientPolicyValidator,
+        IOptions<OidcProviderSettings> oidcProviderSettings,
+        TimeProvider timeProvider) : IOidcServerService
     {
+        private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
         private readonly ILoginTransactionRepository _loginTxRepo = loginTransactionRepository;
+        private readonly IUpstreamLoginTransactionRepository _upstreamLoginTxRepo = upstreamLoginTransactionRepository;
         private readonly IAuthorizeRequestValidator _basicValidator = authorizeRequestValidator;
         private readonly IAuthorizeClientPolicyValidator _clientValidator = authorizeClientPolicyValidator;
+        private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
+        private readonly TimeProvider _timeProvider = timeProvider;
+
+        private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
         /// Handles an incoming OIDC <c>/authorize</c> request and returns a high-level outcome that the controller converts to HTTP.
@@ -33,14 +53,14 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 2) Client lookup
-            OidcClient client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, cancellationToken);
+            OidcClient? client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, cancellationToken);
             if (client is null)
             {
                 return Fail(request, new AuthorizeValidationError { Error = "unauthorized_client", Description = $"Unknown client_id '{request.ClientId}'." });
             }
 
             // 3) Client-binding validation
-            AuthorizeValidationError bindError = _clientValidator.ValidateClientBinding(request, client);
+            AuthorizeValidationError? bindError = _clientValidator.ValidateClientBinding(request, client);
             if (bindError is not null)
             {
                 return Fail(request, bindError);
@@ -69,8 +89,18 @@ namespace Altinn.Platform.Authentication.Services
             };
 
             LoginTransaction tx = await _loginTxRepo.InsertAsync(transaction, cancellationToken);
+            OidcProvider provider = ChooseProvider(request);
+               
+            var upstreamState = CryptoHelpers.RandomBase64Url(32);
+            var upstreamNonce = CryptoHelpers.RandomBase64Url(32);
+            var upstreamVerifier = Pkce.RandomPkceVerifier();
+            var upstreamChallenge = Hashing.Sha256Base64Url(upstreamVerifier);
 
-            return AuthorizeResult.LocalError(501, "not_implemented", "Next steps: client lookup & upstream routing.");
+            // persist upstream row (using provider.AuthorizationEndpoint, TokenEndpoint, ClientId, RedirectUri)
+            var authorizeUrl = BuildUpstreamAuthorizeUrl(provider, upstreamState, upstreamNonce, upstreamChallenge, request, provider.IssuerKey);
+
+            return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
+
         }
 
         private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e)
@@ -82,6 +112,124 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return AuthorizeResult.LocalError(400, e.Error, e.Description);
+        }
+
+        private static readonly Regex ProviderKeyRegex = new(@"^[a-z0-9._-]+$", RegexOptions.Compiled);
+
+        private OidcProvider ChooseProvider(AuthorizeRequest req)
+        {
+            // 1) Try map ACR → provider key
+            string? key = GetIdProviderFromAcr(req.AcrValues ?? Array.Empty<string>());
+
+            // 3) Try explicit key first
+            if (!string.IsNullOrEmpty(key) && _oidcProviderSettings.TryGetValue(key, out var selected))
+            {
+                _logger.LogDebug("OIDC upstream provider selected via acr mapping: {ProviderKey}", key);
+                return selected;
+            }
+
+            // 4) Fallback to configured default ('idporten')
+            if (_oidcProviderSettings.TryGetValue(DefaultProviderKey, out var defaultIdp))
+            {
+                _logger.LogDebug("OIDC upstream provider defaulted to 'idporten'.");
+                return defaultIdp;
+            }
+
+            // 5) No match → OIDC-style failure (surface as 'server_error' from /authorize)
+            _logger.LogError(
+                "No default OIDC provider configured. Known providers: {Keys}",
+                string.Join(",", _oidcProviderSettings.Keys));
+            throw new ApplicationException("server_error No default OIDC provider configured.");
+        }
+
+        private static string GetIdProviderFromAcr(string[]? acrValues)
+        {
+            if (acrValues is null || acrValues.Length == 0)
+            {
+                return DefaultProviderKey;
+            }
+
+            var set = new HashSet<string>(acrValues, StringComparer.OrdinalIgnoreCase);
+
+            // IdPorten (high/substantial still go to the same upstream)
+            if (set.Contains("idporten-loa-high") || set.Contains("idporten-loa-substantial"))
+            {
+                return "idporten";
+            }
+
+            // Test provider (adjust if you actually want this to go to idporten)
+            if (set.Contains("selfregistered-email"))
+            {
+                return "testidp"; // <-- change to "idporten" if that’s intentional
+            }
+
+            // UDIR/UIDP
+            if (set.Contains("uidp"))
+            {
+                return "uidp";
+            }
+
+            return DefaultProviderKey;
+        }
+
+        private static Uri BuildUpstreamAuthorizeUrl(
+                OidcProvider p,
+                string upstreamState,
+                string upstreamNonce,
+                string upstreamCodeChallenge,
+                AuthorizeRequest incoming,
+                string? issKeyForCallback)
+        {
+            var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
+            q["client_id"] = p.ClientId;
+            q["redirect_uri"] = BuildUpstreamRedirectUri(p, issKeyForCallback).ToString();
+            q["scope"] = string.IsNullOrWhiteSpace(p.Scope) ? "openid" : p.Scope;
+
+            q["state"] = upstreamState;
+            q["nonce"] = upstreamNonce;
+            q["code_challenge"] = upstreamCodeChallenge;
+            q["code_challenge_method"] = "S256";
+
+            if (incoming.AcrValues is { Length: > 0 })
+            {
+                q["acr_values"] = string.Join(' ', incoming.AcrValues);
+            }
+
+            if (incoming.Prompts is { Length: > 0 })
+            {
+                q["prompt"] = string.Join(' ', incoming.Prompts);
+            }
+
+            if (incoming.UiLocales is { Length: > 0 })
+            {
+                q["ui_locales"] = string.Join(' ', incoming.UiLocales);
+            }
+
+            if (incoming.MaxAge is not null)
+            {
+                q["max_age"] = incoming.MaxAge.Value.ToString();
+            }
+
+            var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };
+            return ub.Uri;
+        }
+
+        private static Uri BuildUpstreamRedirectUri(OidcProvider p, string? issKey)
+        {
+            // Your fixed upstream callback base:
+            var baseCallback = new Uri("https://platform.altinn.no/authentication/api/v1/upstream/callback");
+
+            // If you want per-provider routing, append ?iss=key when configured
+            if (p.IncludeIssInRedirectUri && !string.IsNullOrWhiteSpace(issKey))
+            {
+                var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+                q["iss"] = issKey;
+                var ub = new UriBuilder(baseCallback) { Query = q.ToString()! };
+                return ub.Uri;
+            }
+
+            return baseCallback;
         }
 
         // ========= 3) Handle PAR / JAR if present =========
