@@ -1,11 +1,11 @@
-﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
-using Altinn.Platform.Authentication.Core.Services.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -15,6 +15,8 @@ namespace Altinn.Platform.Authentication.Services
     public class OidcServerService(IOidcServerClientRepository oidcServerClientRepository) : IOidcServerService
     {
         private IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
+        private readonly IAuthorizeRequestValidator _basicValidator;
+        private readonly IAuthorizeClientPolicyValidator _clientValidator;
 
         /// <summary>
         /// Handles an incoming OIDC <c>/authorize</c> request and returns a high-level outcome that the controller converts to HTTP.
@@ -22,110 +24,38 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<AuthorizeResult> Authorize(AuthorizeRequest request)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
-            AuthorizeResult Fail(string error, string description)
+            AuthorizeValidationError basicError = _basicValidator.ValidateBasics(request);
+            if (basicError is not null)
             {
-                // If redirect_uri is an absolute URI, prefer an error redirect
-                if (TryAbsoluteUri(request.RedirectUri.AbsoluteUri, out var ru))
-                {
-                    return AuthorizeResult.ErrorRedirect(ru!, error, description, request.State);
-                }
-
-                // Otherwise, we cannot safely redirect → local error
-                return AuthorizeResult.LocalError(400, error, description);
+                return Fail(request, basicError);
             }
 
-            // ========= 0) Guard =========
-            ArgumentNullException.ThrowIfNull(request);
-
-            // ========= 1) Validate basic OIDC semantics =========
-
-            // response_type == "code" (spec is case-sensitive)
-            if (!string.Equals(request.ResponseType, "code", StringComparison.Ordinal))
-            {
-                return Fail("unsupported_response_type", "response_type must be 'code'.");
-            }
-
-            if (!request.Scopes.Contains("openid", StringComparer.Ordinal))
-            {
-                return Fail("invalid_scope", "scope must include 'openid'.");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.CodeChallenge))
-            {
-                return Fail("invalid_request", "code_challenge is required (PKCE).");
-            }
-
-            if (!string.Equals(request.CodeChallengeMethod, "S256", StringComparison.Ordinal))
-            {
-                return Fail("invalid_request", "code_challenge_method must be 'S256'.");
-            }
-
-            // PKCE: verifier-derived challenge constraints (RFC 7636) – length & charset for challenge
-            // challenge is base64url-encoded SHA256; length typically 43-128 and charset base64url
-            if (request.CodeChallenge.Length is < 43 or > 128 || !IsBase64Url(request.CodeChallenge))
-            {
-                return Fail("invalid_request", "code_challenge must be base64url, length 43–128.");
-            }
-
-            // prompt validation: 'none' cannot be combined with 'login' or 'consent'
-            if (request.Prompts.Contains("none", StringComparer.Ordinal) &&
-                (request.Prompts.Contains("login", StringComparer.Ordinal) || request.Prompts.Contains("consent", StringComparer.Ordinal)))
-            {
-                return Fail("invalid_request", "prompt=none cannot be combined with login or consent.");
-            }
-
-            if (request.RedirectUri is null || !request.RedirectUri.IsAbsoluteUri)
-            {
-                return AuthorizeResult.LocalError(400, "invalid_request", "redirect_uri must be an absolute URI.");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.State))
-            {
-                return Fail("invalid_request", "state is required to protect against CSRF.");
-            }
-
-            // max_age >= 0 (if present)
-            if (request.MaxAge is < 0)
-            {
-                return Fail("invalid_request", "max_age must be a non-negative integer.");
-            }
-
-            (bool acrOk, string badAcr) = AreAcrValuesSupported(request.AcrValues);
-            if (!acrOk)
-            {
-                return Fail("invalid_request", $"acr_values contains unsupported value: '{badAcr}'. Allowed: {string.Join(", ", AllowedAcrValues)}");
-            }
-
-            var (uiOk, badUi) = AreUiLocalesSupported(request.UiLocales);
-            if (!uiOk)
-            {
-                return Fail("invalid_request", $"ui_locales contains unsupported value: '{badUi}'. Allowed: nb, nn, en");
-            }
-
-            // nonce recommended (optionally enforce)
-            if (string.IsNullOrWhiteSpace(request.Nonce))
-            {
-                return Fail("invalid_request", "nonce is required.");
-            }
-
-            // Client verification (later steps will need the client info)
-            OidcClient? client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, CancellationToken.None);
+            // 2) Client lookup
+            OidcClient client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, CancellationToken.None);
             if (client is null)
             {
-                return Fail("unauthorized_client", $"Unknown client_id '{request.ClientId}'.");
+                return Fail(request, new AuthorizeValidationError { Error = "unauthorized_client", Description = $"Unknown client_id '{request.ClientId}'." });
             }
 
-            if (!client.RedirectUris.Contains(request.RedirectUri))
+            // 3) Client-binding validation
+            AuthorizeValidationError bindError = _clientValidator.ValidateClientBinding(request, client);
+            if (bindError is not null)
             {
-                return Fail("invalid_request", "redirect_uri not registered for this client.");
-            }
-
-            if (!request.Scopes.All(s => client.AllowedScopes.Contains(s)))
-            {
-                return Fail("invalid_scope", "One or more requested scopes are not allowed for this client.");
+                return Fail(request, bindError);
             }
 
             return AuthorizeResult.LocalError(501, "not_implemented", "Next steps: client lookup & upstream routing.");
+        }
+
+        private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e)
+        {
+            // If we can safely redirect back, do an OIDC error redirect; else local error.
+            if (req.RedirectUri is not null && req.RedirectUri.IsAbsoluteUri)
+            {
+                return AuthorizeResult.ErrorRedirect(req.RedirectUri, e.Error, e.Description, req.State);
+            }
+
+            return AuthorizeResult.LocalError(400, e.Error, e.Description);
         }
 
         // ========= 2) Client lookup & policy =========
