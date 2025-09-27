@@ -16,7 +16,7 @@ namespace Altinn.Platform.Authentication.Controllers
     [Route("authentication/api/v1")]
     public class OidcFrontChannelController(IOidcServerService oidcServerService) : Controller
     {
-        private IOidcServerService _oidcServerService = oidcServerService;
+        private readonly IOidcServerService _oidcServerService = oidcServerService;
 
         /// <summary>
         /// Initiates the OIDC authorization flow.
@@ -84,10 +84,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private static string BuildOidcErrorRedirect(Uri redirectUri, string error, string? errorDescription, string? clientState)
         {
-            if (redirectUri is null)
-            {
-                throw new ArgumentNullException(nameof(redirectUri));
-            }
+            ArgumentNullException.ThrowIfNull(redirectUri);
 
             if (string.IsNullOrWhiteSpace(error))
             {
