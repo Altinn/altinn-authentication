@@ -198,6 +198,67 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
         }
 
+        /// <inheritdoc/>
+        public async Task<LoginTransaction?> GetByRequestIdAsync(Guid requestId, CancellationToken ct = default)
+        {
+            const string SQL = /*strpsql*/ @"
+                SELECT
+                  request_id,
+                  status,
+                  created_at,
+                  expires_at,
+                  completed_at,
+
+                  client_id,
+                  redirect_uri,
+
+                  scopes,
+                  state,
+                  nonce,
+                  acr_values,
+                  prompts,
+                  ui_locales,
+                  max_age,
+
+                  code_challenge,
+                  code_challenge_method,
+
+                  request_uri,
+                  request_object_jwt,
+                  authorization_details,
+
+                  created_by_ip,
+                  user_agent_hash,
+                  correlation_id,
+
+                  upstream_request_id
+                FROM oidcserver.login_transaction
+                WHERE request_id = @request_id
+                LIMIT 1;";
+
+            try
+            {
+                await using var cmd = _ds.CreateCommand(SQL);
+                cmd.Parameters.AddWithValue("request_id", requestId);
+
+                await using var reader = await cmd.ExecuteReaderAsync(ct);
+                if (!await reader.ReadAsync(ct))
+                {
+                    return null;
+                }
+
+                return MapToLoginTransaction(reader);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Authentication // LoginTransactionRepository // GetByRequestIdAsync // request_id={RequestId}",
+                    requestId);
+                throw;
+            }
+        }
+
         private static NpgsqlParameter MakeTextArrayParam(string name, string[]? value) =>
             new(name, NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = (object?)value ?? DBNull.Value };
 

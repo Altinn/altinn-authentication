@@ -153,6 +153,133 @@ namespace Altinn.Platform.Authentication.Services
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
         }
 
+        /// <inheritdoc/>
+        public async Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken ct)
+        {
+            // ===== 0) Guard / basic semantics =====
+            ArgumentNullException.ThrowIfNull(input);
+
+            // We expect either success (code+state) or error(+state). State is required in both.
+            if (string.IsNullOrWhiteSpace(input.State))
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Missing 'state' in upstream callback."
+                };
+            }
+
+            // ===== 1) Load upstream login transaction by state =====
+            // Expected repo method: GetForCallbackByStateAsync(state) → includes request_id, status, expires_at, provider info, etc.
+            UpstreamLoginTransaction? upstreamTx = await _upstreamLoginTxRepo.GetForCallbackByStateAsync(input.State, ct);
+            if (upstreamTx is null)
+            {
+                // We don't know where to redirect safely; local error.
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Unknown or expired upstream state."
+                };
+            }
+
+            // Quickly reject non-pending or expired
+            if (!string.Equals(upstreamTx.Status, "pending", StringComparison.OrdinalIgnoreCase))
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Upstream transaction is not pending."
+                };
+            }
+
+            if (upstreamTx.ExpiresAt <= _timeProvider.GetUtcNow())
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Upstream transaction has expired."
+                };
+            }
+
+            // ===== 2) Load downstream (original) transaction to get validated redirect_uri & original state =====
+            // Expected repo method: GetAsync(requestId) or GetByRequestIdAsync
+            var loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId, ct);
+            if (loginTx is null)
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Downstream transaction not found."
+                };
+            }
+
+            // Safety: We only ever redirect to the redirect_uri we validated on /authorize
+            if (loginTx.RedirectUri is null || !loginTx.RedirectUri.IsAbsoluteUri)
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Stored redirect_uri is invalid."
+                };
+            }
+
+            // ===== 3) If upstream returned an error, map it back to client immediately =====
+            if (!string.IsNullOrWhiteSpace(input.Error))
+            {
+                // Mark upstream as failed (optional, but recommended)
+                //await _upstreamLoginTxRepo.MarkErrorAsync(
+                //    upstreamTx.UpstreamRequestId,
+                //    error: input.Error!,
+                //    errorDescription: input.ErrorDescription,
+                //    ct: ct);
+
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                    ClientRedirectUri = loginTx.RedirectUri,
+                    ClientState = loginTx.State,
+                    Error = input.Error,
+                    ErrorDescription = input.ErrorDescription
+                };
+            }
+
+            // ===== 4) Require 'code' on success path =====
+            if (string.IsNullOrWhiteSpace(input.Code))
+            {
+                // Missing code → client-facing error
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                    ClientRedirectUri = loginTx.RedirectUri,
+                    ClientState = loginTx.State,
+                    Error = "access_denied",
+                    ErrorDescription = "Missing authorization code in upstream callback."
+                };
+            }
+
+            // ===== 5) From here, you will:
+            //  - Exchange 'input.Code' at upstream token endpoint using upstreamTx.CodeVerifier & upstream redirect_uri
+            //  - Validate upstream ID token (iss/aud/exp/nonce/acr/signature)
+            //  - Create/refresh oidc_session
+            //  - Create downstream authorization_code bound to (client_id, redirect_uri, pkce, nonce, scopes, acr, auth_time, sid)
+            //  - Mark upstream tx completed
+            //  - Return RedirectToClient with code + loginTx.State
+
+            // We'll return a temporary local 501 to mark the next TODO section.
+            return new UpstreamCallbackResult
+            {
+                Kind = UpstreamCallbackResultKind.LocalError,
+                StatusCode = 501,
+                LocalErrorMessage = "Next step: token exchange & downstream code issuance."
+            };
+        }
+
         private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e, OidcClient? oidcClient)
         {
             // If we can safely redirect back, do an OIDC error redirect; else local error.
@@ -280,12 +407,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return baseCallback;
-        }
-
-        /// <inheritdoc/>
-        public Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken ct)
-        {
-            throw new NotImplementedException();
         }
     }
 }

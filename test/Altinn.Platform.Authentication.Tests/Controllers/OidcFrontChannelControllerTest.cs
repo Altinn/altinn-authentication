@@ -166,6 +166,80 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task Authorize_Persists_Downstream_And_Upstream_And_Redirects_Including_Callback_AndRedirectTo_DownStreamClient()
+        {
+            // Arrange
+            using var client = CreateClient();
+
+            // Insert a client that matches the authorize request
+            var create = NewClientCreate("c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21");
+            _ = await Repository.InsertClientAsync(create);
+
+            // Headers used by the controller to capture IP/UA/correlation
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
+            client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
+            client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
+
+            // Downstream authorize query (what Arbeidsflate would send)
+            const string clientId = "c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21";
+            var redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
+            var state = "3fcfc23e3bd145cabdcdb70ce406c875";
+            var nonce = "58be49a0cb7df5b791a1fef6c854c5e2";
+            var codeChallenge = "CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU";
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                $"?redirect_uri={redirectUri}" +
+                "&scope=openid%20altinn%3Aportal%2Fenduser" +
+                "&acr_values=idporten-loa-substantial" +
+                $"&state={state}" +
+                $"&client_id={clientId}" +
+                "&response_type=code" +
+                $"&nonce={nonce}" +
+                $"&code_challenge={codeChallenge}" +
+                "&code_challenge_method=S256";
+
+            // Act
+            var resp = await client.GetAsync(url);
+
+            // Assert: HTTP redirect to upstream authorize
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.NotNull(resp.Headers.Location);
+
+            // We don't assert the exact upstream URL (it includes a generated state/nonce),
+            // but we require it's absolute and points to an /authorize endpoint.
+            var loc = resp.Headers.Location!;
+            Assert.True(loc.IsAbsoluteUri, "Redirect Location must be absolute.");
+            Assert.Contains("/authorize", loc.AbsolutePath, StringComparison.OrdinalIgnoreCase);
+            Assert.True(resp.Headers.CacheControl?.NoStore ?? false, "Cache-Control must include no-store");
+            Assert.Contains("no-cache", resp.Headers.Pragma.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            // Parse upstream Location query to ensure key params are present
+            var upstreamQuery = System.Web.HttpUtility.ParseQueryString(loc.Query);
+            Assert.False(string.IsNullOrEmpty(upstreamQuery["state"]));
+            string upstreamState = upstreamQuery["state"];
+           
+            // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
+            // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
+            var providerAuthCode = "idp-code-xyz";
+            var callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(providerAuthCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+
+            var callbackResp = await client.GetAsync(callbackUrl);
+
+            // Should redirect to downstream client redirect_uri with ?code=...&state=original_downstream_state
+            Assert.Equal(HttpStatusCode.Found, callbackResp.StatusCode);
+            Assert.NotNull(callbackResp.Headers.Location);
+            var finalLocation = callbackResp.Headers.Location!;
+            Assert.Equal("https", finalLocation.Scheme);
+            Assert.Equal("af.altinn.no", finalLocation.Host);
+            Assert.Equal("/api/cb", finalLocation.AbsolutePath);
+
+            var finalQuery = System.Web.HttpUtility.ParseQueryString(finalLocation.Query);
+            Assert.False(string.IsNullOrWhiteSpace(finalQuery["code"]), "Downstream code must be present.");
+            Assert.Equal(state, finalQuery["state"]); // original downstream state echoed back
+        }
+
+        [Fact]
         public async Task Authorize_UnknownClient_Returns_LocalError400()
         {
             using var client = CreateClient();
