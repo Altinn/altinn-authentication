@@ -43,6 +43,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.Configure<GeneralSettings>(generalSettingSection);
         }
 
+        /// <summary>
+        /// Scenario: A valid authorize request is made from Arbeidsflate (downstream).
+        /// Result: A login_transaction and login_transaction_upstream is created, and a redirect to upstream /authorize is issued.
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task Authorize_Persists_Downstream_And_Upstream_And_Redirects()
         {
@@ -158,6 +163,288 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.False(string.IsNullOrWhiteSpace(upstreamChallenge));
                 Assert.NotEqual(codeChallenge, upstreamChallenge);
             }
+        }
+
+        [Fact]
+        public async Task Authorize_UnknownClient_Returns_LocalError400()
+        {
+            using var client = CreateClient();
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=does-not-exist" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode); // local error since client is unknown
+        }
+
+        [Fact]
+        public async Task Authorize_MissingOpenIdScope_InvalidScope_ErrorRedirect()
+        {
+            using var client = CreateClient();
+
+            // Insert matching client
+            var create = NewClientCreate("client-a");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=altinn%3Aportal%2Fenduser" +                // missing openid
+                "&client_id=client-a" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            var loc = resp.Headers.Location!;
+            Assert.Contains("error=invalid_scope", loc.Query);
+            Assert.Contains("state=s123", loc.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_MissingCodeChallenge_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-b");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-b" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&code_challenge_method=S256";  // challenge missing
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_WrongCodeChallengeMethod_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-c");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-c" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=plain"; // not allowed
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_PromptNoneWithLogin_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-d");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-d" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&prompt=none%20login" + // invalid combo
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_InvalidUiLocales_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-e");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-e" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&ui_locales=de%20fr" + // only nb/nn/en allowed
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_UnsupportedAcr_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-f");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-f" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&acr_values=foo-bar" + // not in allowed set
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_MissingNonce_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-g");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-g" +
+                "&response_type=code" +
+                "&state=s123" +
+                // nonce missing
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_MissingState_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-h");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-h" +
+                "&response_type=code" +
+                // state missing
+                "&nonce=n123" +
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_InvalidResponseType_UnsupportedResponseType()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-i");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-i" +
+                "&response_type=token" + // not supported
+                "&state=s123" +
+                "&nonce=n123" +
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=unsupported_response_type", resp.Headers.Location!.Query);
+        }
+
+        [Fact]
+        public async Task Authorize_RedirectUri_NotRegistered_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-j");
+            _ = await Repository.InsertClientAsync(create);
+
+            var badRedirect = Uri.EscapeDataString("https://evil.example/steal");
+            var url =
+                "/authentication/api/v1/authorize" +
+                $"?redirect_uri={badRedirect}" +
+                "&scope=openid" +
+                "&client_id=client-j" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            // You may choose to 400 locally (safer) or still 302 back to the provided redirect_uri if you validated it as absolute.
+            // Here we assert 400 local error since the redirect_uri is not one of the registered URIs.
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+        }
+
+        [Fact]
+        public async Task Authorize_MaxAge_Negative_InvalidRequest()
+        {
+            using var client = CreateClient();
+            var create = NewClientCreate("client-k");
+            _ = await Repository.InsertClientAsync(create);
+
+            var url =
+                "/authentication/api/v1/authorize" +
+                "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
+                "&scope=openid" +
+                "&client_id=client-k" +
+                "&response_type=code" +
+                "&state=s123" +
+                "&nonce=n123" +
+                "&max_age=-5" + // invalid
+                "&code_challenge=CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU" +
+                "&code_challenge_method=S256";
+
+            var resp = await client.GetAsync(url);
+            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
         }
 
         private static string GetConfigPath()

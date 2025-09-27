@@ -61,8 +61,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 });
             }
 
-            Response.Headers["Cache-Control"] = "no-store";
-            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
 
             return result.Kind switch
             {
@@ -82,9 +82,42 @@ namespace Altinn.Platform.Authentication.Controllers
             };
         }
 
-        private string BuildOidcErrorRedirect(Uri uri, string v, string errorDescription, string clientState)
+        private static string BuildOidcErrorRedirect(Uri redirectUri, string error, string? errorDescription, string? clientState)
         {
-            throw new NotImplementedException();
+            if (redirectUri is null)
+            {
+                throw new ArgumentNullException(nameof(redirectUri));
+            }
+
+            if (string.IsNullOrWhiteSpace(error))
+            {
+                throw new ArgumentException("error is required", nameof(error));
+            }
+
+            // Sanitize/trim human text to avoid CRLF and overly long URLs
+            static string Sanitize(string s) =>
+                s.Replace("\r", " ").Replace("\n", " ").Trim();
+
+            static string Truncate(string s, int max) =>
+                s.Length <= max ? s : s.Substring(0, max);
+
+            var ub = new UriBuilder(redirectUri);
+            var q = System.Web.HttpUtility.ParseQueryString(ub.Query);
+
+            q["error"] = error;
+
+            if (!string.IsNullOrWhiteSpace(errorDescription))
+            {
+                q["error_description"] = Truncate(Sanitize(errorDescription), 512);
+            }
+
+            if (!string.IsNullOrWhiteSpace(clientState))
+            {
+                q["state"] = clientState;
+            }
+
+            ub.Query = q.ToString()!;  // HttpUtility will URL-encode as needed
+            return ub.Uri.ToString();
         }
 
         /// <summary>

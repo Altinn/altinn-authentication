@@ -44,24 +44,25 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
-            AuthorizeValidationError? basicError = _basicValidator.ValidateBasics(request);
-            if (basicError is not null)
-            {
-                return Fail(request, basicError);
-            }
-
-            // 2) Client lookup
+            // 1) Client lookup
             OidcClient? client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, cancellationToken);
             if (client is null)
             {
-                return Fail(request, new AuthorizeValidationError { Error = "unauthorized_client", Description = $"Unknown client_id '{request.ClientId}'." });
+                return Fail(request, new AuthorizeValidationError { Error = "unauthorized_client", Description = $"Unknown client_id '{request.ClientId}'." }, client);
+            }
+
+            // ========= 2) Basic validation =========
+            AuthorizeValidationError? basicError = _basicValidator.ValidateBasics(request);
+            if (basicError is not null)
+            {
+                return Fail(request, basicError, client);
             }
 
             // 3) Client-binding validation
             AuthorizeValidationError? bindError = _clientValidator.ValidateClientBinding(request, client);
             if (bindError is not null)
             {
-                return Fail(request, bindError);
+                return Fail(request, bindError, client);
             }
 
             // ========= 3) Handle PAR / JAR if present =========
@@ -155,10 +156,10 @@ namespace Altinn.Platform.Authentication.Services
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
         }
 
-        private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e)
+        private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e, OidcClient? oidcClient)
         {
             // If we can safely redirect back, do an OIDC error redirect; else local error.
-            if (req.RedirectUri is not null && req.RedirectUri.IsAbsoluteUri)
+            if (oidcClient != null && req.RedirectUri is not null && req.RedirectUri.IsAbsoluteUri)
             {
                 return AuthorizeResult.ErrorRedirect(req.RedirectUri, e.Error, e.Description, req.State);
             }
