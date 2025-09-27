@@ -89,6 +89,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert HTTP
             Assert.Equal(HttpStatusCode.NotImplemented, resp.StatusCode);
+           
             //Assert.NotNull(resp.Headers.Location);
             //Assert.Equal(upstreamUrl, resp.Headers.Location);
             //Assert.True(resp.Headers.CacheControl?.NoStore ?? false);
