@@ -88,6 +88,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
               {LoginTransactionTable.REQUEST_URI},
               {LoginTransactionTable.REQUEST_OBJECT_JWT},
               {LoginTransactionTable.AUTHORIZATION_DETAILS},
+
               {LoginTransactionTable.CREATED_BY_IP},
               {LoginTransactionTable.USER_AGENT_HASH},
               {LoginTransactionTable.CORRELATION_ID}
@@ -228,18 +229,23 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
             IPAddress? GetIp(string col)
             {
-                if (r.IsDBNull(r.GetOrdinal(col)))
+                int ord = r.GetOrdinal(col);
+                if (r.IsDBNull(ord))
                 {
                     return null;
                 }
 
-                // Npgsql maps INET to (IPAddress, int cidr) or string depending on API; safest is string -> IPAddress.Parse
-                var s = r.GetFieldValue<string>(col);
-                
-                // could be "1.2.3.4" or "1.2.3.4/32" – strip CIDR if present
-                var ipPart = s.Split('/')[0];
-                
-                return IPAddress.TryParse(ipPart, out var ip) ? ip : null;
+                // Preferred: read as NpgsqlInet then take Address (handles IPv4/IPv6 and prefix length)
+                try
+                {
+                    var inet = r.GetFieldValue<NpgsqlInet>(ord);
+                    return inet.Address;
+                }
+                catch (InvalidCastException)
+                {
+                    // Fallback: some Npgsql versions also support IPAddress directly
+                    return r.GetFieldValue<IPAddress>(ord);
+                }
             }
 
             return new LoginTransaction
