@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
@@ -43,7 +44,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task Authorize_WhenServiceReturnsRedirectUpstream_Responds302_WithExpectedLocation_AndNoStore()
+        public async Task Authorize_Arbeidsflate_Full_Login_Flow()
         {
             var create = NewClientCreate("c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21");
             
@@ -56,7 +57,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var requestId = Guid.NewGuid();
 
             var fakeService = new FakeOidcServerService(
-                AuthorizeResult.RedirectUpstream(upstreamUrl, upstreamState, requestId));
+                AuthorizeResult.RedirectUpstream(upstreamUrl, upstreamState, requestId), CancellationToken.None);
 
             using var client = CreateClient();
 
@@ -84,9 +85,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             private readonly AuthorizeResult _result;
 
-            public FakeOidcServerService(AuthorizeResult result) => _result = result;
+            public FakeOidcServerService(AuthorizeResult result, CancellationToken ct) => _result = result;
 
-            public Task<AuthorizeResult> Authorize(AuthorizeRequest request)
+            public Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken ct)
                 => Task.FromResult(_result);
         }
 
@@ -103,8 +104,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ClientName = "Test Client",
             ClientType = ClientType.Confidential,
             TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,
-            RedirectUris = new[] { new Uri("https://app.example.com/auth/cb") },
-            AllowedScopes = new[] { "openid", "profile", "email" },
+            RedirectUris = new[] { new Uri("https://af.altinn.no/api/cb") },
+            AllowedScopes = new[] { "openid", "digdir:dialogporten.noconsent", "altinn:portal/enduser" },
             ClientSecretHash = "argon2id$v=19$m=65536,t=3,p=1$dummy$salthash", // test-only
             ClientSecretExpiresAt = null,
             SecretRotationAt = null,

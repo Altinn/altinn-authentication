@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
@@ -12,16 +10,20 @@ namespace Altinn.Platform.Authentication.Services
     /// <summary>
     /// Service that implements the OIDC <c>/authorize</c> front-channel flow for Altinn Authentication as an OP.
     /// </summary>
-    public class OidcServerService(IOidcServerClientRepository oidcServerClientRepository) : IOidcServerService
+    public class OidcServerService(IOidcServerClientRepository oidcServerClientRepository, 
+        ILoginTransactionRepository loginTransactionRepository, 
+        IAuthorizeRequestValidator authorizeRequestValidator, 
+        IAuthorizeClientPolicyValidator authorizeClientPolicyValidator) : IOidcServerService
     {
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
-        private readonly IAuthorizeRequestValidator _basicValidator;
-        private readonly IAuthorizeClientPolicyValidator _clientValidator;
+        private readonly ILoginTransactionRepository _loginTxRepo = loginTransactionRepository;
+        private readonly IAuthorizeRequestValidator _basicValidator = authorizeRequestValidator;
+        private readonly IAuthorizeClientPolicyValidator _clientValidator = authorizeClientPolicyValidator;
 
         /// <summary>
         /// Handles an incoming OIDC <c>/authorize</c> request and returns a high-level outcome that the controller converts to HTTP.
         /// </summary>
-        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request)
+        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
             AuthorizeValidationError basicError = _basicValidator.ValidateBasics(request);
@@ -31,7 +33,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 2) Client lookup
-            OidcClient client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, CancellationToken.None);
+            OidcClient client = await _oidcServerClientRepository.GetClientAsync(request.ClientId, cancellationToken);
             if (client is null)
             {
                 return Fail(request, new AuthorizeValidationError { Error = "unauthorized_client", Description = $"Unknown client_id '{request.ClientId}'." });
@@ -43,6 +45,30 @@ namespace Altinn.Platform.Authentication.Services
             {
                 return Fail(request, bindError);
             }
+
+            LoginTransactionCreate transaction = new()
+            {
+                ClientId = client.ClientId,
+                RedirectUri = request.RedirectUri!,
+                Scopes = request.Scopes!,
+                State = request.State!,
+                Nonce = request.Nonce!,
+                AcrValues = request.AcrValues,
+                Prompts = request.Prompts,
+                UiLocales = request.UiLocales,
+                MaxAge = request.MaxAge,
+                CodeChallenge = request.CodeChallenge!,
+                CodeChallengeMethod = request.CodeChallengeMethod ?? "S256",
+                RequestUri = request.RequestUri,
+                RequestObjectJwt = request.RequestObject, // if you keep it
+                AuthorizationDetailsJson = null,
+                CreatedByIp = request.ClientIp,                           // captured in controller
+                UserAgentHash = request.UserAgentHash,
+                CorrelationId = request.CorrelationId,
+                ExpiresAt = TimeProvider.System.GetUtcNow().AddMinutes(10)
+            };
+
+            LoginTransaction tx = await _loginTxRepo.InsertAsync(transaction, cancellationToken);
 
             return AuthorizeResult.LocalError(501, "not_implemented", "Next steps: client lookup & upstream routing.");
         }
@@ -57,11 +83,6 @@ namespace Altinn.Platform.Authentication.Services
 
             return AuthorizeResult.LocalError(400, e.Error, e.Description);
         }
-
-        // ========= 2) Client lookup & policy =========
-        // TODO: load client by request.ClientId
-        // TODO: ensure request.RedirectUri exactly matches one of client.redirect_uris
-        // TODO: ensure requested scopes are subset of client.allowed_scopes
 
         // ========= 3) Handle PAR / JAR if present =========
         // TODO: if request.RequestUri != null -> load par_request, verify TTL and client_id match, override parameters

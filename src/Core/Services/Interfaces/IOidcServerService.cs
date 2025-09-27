@@ -12,6 +12,6 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// calling this method.</remarks>
         /// <param name="request">The authorization request containing the necessary details to perform the authorization.  This parameter
         /// cannot be <see langword="null"/>.</param>
-        public Task<AuthorizeResult> Authorize(AuthorizeRequest request);
+        public Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken cancellationToken);
     }
 }

@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,14 +23,20 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Will validate the request, persist a login transaction, and redirect to the upstream OIDC provider.
         /// </summary>
         /// <param name="q">The authorization request parameters.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>An <see cref="IActionResult"/> representing the result of the authorization request.</returns>
         [HttpGet("authorize")]
-        public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequestDto q)
+        public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequestDto q, CancellationToken cancellationToken = default)
         {
+            System.Net.IPAddress ip = HttpContext.Connection.RemoteIpAddress;
+            string ua = Request.Headers.UserAgent.ToString();
+            string userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
+            Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
+
             AuthorizeRequest req;
             try
             {
-                req = AuthorizeRequestMapper.Normalize(q);
+                req = AuthorizeRequestMapper.Normalize(q, ip, userAgentHash, corr);
             }
             catch (ArgumentException ex)
             {
@@ -37,8 +44,9 @@ namespace Altinn.Platform.Authentication.Controllers
                 // Else → local HTML error
                 return BadRequest(ex.Message);
             }
-       
-            AuthorizeResult result = await _oidcServerService.Authorize(req);
+
+            // in OidcFrontChannelController
+            AuthorizeResult result = await _oidcServerService.Authorize(req, cancellationToken);
 
             foreach (var c in result.Cookies)
             {
@@ -100,6 +108,30 @@ namespace Altinn.Platform.Authentication.Controllers
         public IActionResult Logout([FromQuery] string sid) 
         {
             throw new System.NotImplementedException();
+        }
+
+        private static string ComputeSha256Base64Url(string input)
+        {
+            if (input is null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(input);
+            return ComputeSha256Base64Url(bytes);
+        }
+
+        private static string ComputeSha256Base64Url(ReadOnlySpan<byte> data)
+        {
+            // SHA256.HashData is allocation-free and fast
+            Span<byte> hash = stackalloc byte[32];
+            SHA256.HashData(data, hash);
+
+            // Convert to Base64URL: replace '+' -> '-', '/' -> '_', and trim '='
+            string b64 = Convert.ToBase64String(hash);
+            return b64.Replace('+', '-')
+                      .Replace('/', '_')
+                      .TrimEnd('=');
         }
     }
 }
