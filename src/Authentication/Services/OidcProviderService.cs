@@ -32,7 +32,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         public async Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri, string? codeVerifier, CancellationToken ct = default)
         {
-            OidcCodeResponse codeResponse = null;
+            OidcCodeResponse? codeResponse = null;
             Dictionary<string, string> kvps = new Dictionary<string, string>();
  
             // REQUIRED.  The authorization code received from the authorization server.
@@ -54,9 +54,14 @@ namespace Altinn.Platform.Authentication.Services
                 kvps.Add("client_secret", provider.ClientSecret);
             }
 
-            FormUrlEncodedContent formUrlEncodedContent = new FormUrlEncodedContent(kvps);
+            if (!string.IsNullOrWhiteSpace(codeVerifier))
+            {
+                kvps.Add("code_verifier", codeVerifier);
+            }
+
+            FormUrlEncodedContent formUrlEncodedContent = new(kvps);
             
-            HttpResponseMessage response = await _httpClient.PostAsync(provider.TokenEndpoint, formUrlEncodedContent);
+            HttpResponseMessage response = await _httpClient.PostAsync(provider.TokenEndpoint, formUrlEncodedContent, ct);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 string content = await response.Content.ReadAsStringAsync();

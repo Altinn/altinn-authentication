@@ -10,6 +10,7 @@ using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -25,7 +26,8 @@ namespace Altinn.Platform.Authentication.Services
         IAuthorizeRequestValidator authorizeRequestValidator, 
         IAuthorizeClientPolicyValidator authorizeClientPolicyValidator,
         IOptions<OidcProviderSettings> oidcProviderSettings,
-        TimeProvider timeProvider) : IOidcServerService
+        TimeProvider timeProvider,
+        IOidcProvider oidcProvider) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -35,6 +37,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IAuthorizeClientPolicyValidator _clientValidator = authorizeClientPolicyValidator;
         private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
         private readonly TimeProvider _timeProvider = timeProvider;
+        private readonly IOidcProvider _oidcProvider = oidcProvider;
 
         private static readonly string DefaultProviderKey = "idporten";
 
@@ -264,6 +267,9 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // ===== 5) From here, you will:
+            OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
+            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, loginTx.RedirectUri.ToString(), upstreamTx.CodeVerifier, ct);
+
             //  - Exchange 'input.Code' at upstream token endpoint using upstreamTx.CodeVerifier & upstream redirect_uri
             //  - Validate upstream ID token (iss/aud/exp/nonce/acr/signature)
             //  - Create/refresh oidc_session
@@ -317,6 +323,16 @@ namespace Altinn.Platform.Authentication.Services
                 "No default OIDC provider configured. Known providers: {Keys}",
                 string.Join(",", _oidcProviderSettings.Keys));
             throw new ApplicationException("server_error No default OIDC provider configured.");
+        }
+
+        private OidcProvider ChooseProviderByKey(string? key)
+        {
+            if (!string.IsNullOrWhiteSpace(key) && _oidcProviderSettings.TryGetValue(key, out var selected))
+            {
+                 return selected;
+            }
+
+            throw new ArgumentException("Invalid or unknown provider key.", nameof(key));
         }
 
         private static string GetIdProviderFromAcr(string[]? acrValues)
