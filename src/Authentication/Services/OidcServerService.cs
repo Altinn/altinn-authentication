@@ -1,4 +1,11 @@
 ﻿#nullable enable
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
@@ -8,19 +15,8 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
-using Altinn.Platform.Register.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -297,11 +293,6 @@ namespace Altinn.Platform.Authentication.Services
             string upstreamSub = idToken.Subject; // "sub" from upstream token
             string? upstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
 
-            string upstreamExternalId = userAuthenticationModel.ExternalIdentity;    // e.g., PID or email (based on provider config)
-            Guid? partyUuid = userAuthenticationModel.PartyUuid;
-            int? partyId = userAuthenticationModel.PartyID;
-            int? userId = userAuthenticationModel.UserID;
-
             var now = _timeProvider.GetUtcNow();
             var sessionExpires = now.AddHours(8);
 
@@ -316,10 +307,10 @@ namespace Altinn.Platform.Authentication.Services
                 Provider = upstreamTx.Provider,
                 UpstreamIssuer = idToken.Issuer,
                 UpstreamSub = idToken.Subject,
-                SubjectId = upstreamExternalId,   // <- string PID/email/etc
-                SubjectPartyUuid = partyUuid,            // <- Altinn GUID
-                SubjectPartyId = partyId,              // <- legacy
-                SubjectUserId = userId,               // <- legacy
+                SubjectId = userAuthenticationModel.ExternalIdentity,   // <- string PID/email/etc
+                SubjectPartyUuid = userAuthenticationModel.PartyUuid,            // <- Altinn GUID
+                SubjectPartyId = userAuthenticationModel.PartyID,              // <- legacy
+                SubjectUserId = userAuthenticationModel.UserID,               // <- legacy
                 Acr = achievedAcr,
                 AuthTime = authTime,
                 Amr = idToken.Claims.Where(c => c.Type == "amr").Select(c => c.Value).ToArray(),
@@ -330,7 +321,6 @@ namespace Altinn.Platform.Authentication.Services
                 UserAgentHash = upstreamTx.UserAgentHash
             }, 
                 ct);
-
 
             //  - Create downstream authorization_code bound to (client_id, redirect_uri, pkce, nonce, scopes, acr, auth_time, sid)
             //  - Mark upstream tx completed
@@ -486,6 +476,8 @@ namespace Altinn.Platform.Authentication.Services
 
         private async Task IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(userAuthenticationModel);
+
             if (userAuthenticationModel != null && userAuthenticationModel.UserID != 0 && userAuthenticationModel.PartyID != 0 && userAuthenticationModel.PartyUuid != Guid.Empty)
             {
                 return;
@@ -493,10 +485,20 @@ namespace Altinn.Platform.Authentication.Services
 
             UserProfile profile;
 
-            if (!string.IsNullOrEmpty(userAuthenticationModel.SSN))
+            if (!string.IsNullOrEmpty(userAuthenticationModel!.SSN))
             {
                 profile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = userAuthenticationModel.SSN });
                 userAuthenticationModel.PartyUuid = profile.UserUuid;
+                if (profile.PartyId != 0)
+                {
+                    userAuthenticationModel.PartyID = profile.PartyId;
+                }
+
+                if (profile.UserId != 0)
+                {
+                    userAuthenticationModel.UserID = profile.UserId;
+                }
+
                 userAuthenticationModel.PartyID = profile.PartyId;
                 userAuthenticationModel.UserID = profile.UserId;
             }

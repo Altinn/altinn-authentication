@@ -14,22 +14,22 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Gets or sets the user id
         /// </summary>
-        public int UserID { get; set; }
+        public int? UserID { get; set; }
 
         /// <summary>
         /// Gets or sets the username
         /// </summary>
-        public string Username { get; set; }
+        public string? Username { get; set; }
 
         /// <summary>
         /// Gets or sets the SSN
         /// </summary>
-        public string SSN { get; set; }
+        public string? SSN { get; set; }
 
         /// <summary>
         /// Gets or sets the PartyId
         /// </summary>
-        public int PartyID { get; set; }
+        public int? PartyID { get; set; }
 
         /// <summary>
         /// Gets or sets the authentication method
@@ -49,7 +49,7 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Gets or sets the encrypted ticket
         /// </summary>
-        public string EncryptedTicket { get; set; }
+        public string? EncryptedTicket { get; set; }
 
         /// <summary>
         /// Gets or sets a flag stating if the ticket is updated or not
@@ -59,7 +59,7 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Nonce used for OIDC requests
         /// </summary>
-        public string Nonce { get; set; }
+        public string? Nonce { get; set; }
 
         /// <summary>
         /// Additional claims from provider

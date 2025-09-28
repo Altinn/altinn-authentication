@@ -258,7 +258,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             if (userAuthentication.UserID != 0 && userAuthentication.PartyUuid == null)
             {
-                UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID });
+                UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
                 userAuthentication.PartyUuid = profile.UserUuid;
             }
             
