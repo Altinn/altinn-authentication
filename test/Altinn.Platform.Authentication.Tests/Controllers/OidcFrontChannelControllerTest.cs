@@ -1,4 +1,9 @@
-﻿using Altinn.Platform.Authentication.Configuration;
+﻿using System;
+using System.Data;
+using System.IO;
+using System.Net;
+using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -10,11 +15,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using System;
-using System.Data;
-using System.IO;
-using System.Net;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers

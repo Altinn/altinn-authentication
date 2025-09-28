@@ -11,8 +11,10 @@ using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Profile.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -31,7 +33,9 @@ namespace Altinn.Platform.Authentication.Services
         IOptions<OidcProviderSettings> oidcProviderSettings,
         TimeProvider timeProvider,
         IOidcProvider oidcProvider,
-        IUpstreamTokenValidator upstreamTokenValidator) : IOidcServerService
+        IUpstreamTokenValidator upstreamTokenValidator,
+        IUserProfileService userProfileService,
+        IProfile profile) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -43,6 +47,8 @@ namespace Altinn.Platform.Authentication.Services
         private readonly TimeProvider _timeProvider = timeProvider;
         private readonly IOidcProvider _oidcProvider = oidcProvider;
         private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
+        private readonly IUserProfileService _userProfileService = userProfileService;
+        private readonly IProfile _profileService = profile;
 
         private static readonly string DefaultProviderKey = "idporten";
 
@@ -276,6 +282,8 @@ namespace Altinn.Platform.Authentication.Services
             OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, ct);
             JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, ct);
             JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, ct);
+            UserAuthenticationModel userAuthenticationModel = AuthenticationHelper.GetUserFromToken(idToken, provider);
+            await IdentifyOrCreateAltinnUser(userAuthenticationModel, provider);
 
             //  - Exchange 'input.Code' at upstream token endpoint using upstreamTx.CodeVerifier & upstream redirect_uri
             //  - Validate upstream ID token (iss/aud/exp/nonce/acr/signature)
@@ -430,6 +438,36 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return baseCallback;
+        }
+
+        private async Task IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
+        {
+            if (userAuthenticationModel != null && userAuthenticationModel.UserID != 0 && userAuthenticationModel.PartyID != 0 && userAuthenticationModel.PartyUuid != Guid.Empty)
+            {
+                return;
+            }
+
+            UserProfile profile;
+
+            if (!string.IsNullOrEmpty(userAuthenticationModel.SSN))
+            {
+                profile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = userAuthenticationModel.SSN });
+                userAuthenticationModel.PartyUuid = profile.UserUuid;
+                userAuthenticationModel.PartyID = profile.PartyId;
+                userAuthenticationModel.UserID = profile.UserId;
+            }
+            else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
+            {
+                string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
+                profile = await _userProfileService.GetUser(issExternalIdentity);
+
+                if (profile != null)
+                {
+                    userAuthenticationModel.UserID = profile.UserId;
+                    userAuthenticationModel.PartyID = profile.PartyId;
+                    return;
+                }
+            }
         }
     }
 }
