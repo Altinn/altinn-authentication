@@ -4,6 +4,7 @@ using System.Data;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Helpers;
@@ -256,10 +257,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 "/authentication/api/v1/token",
                 new FormUrlEncodedContent(tokenForm));
 
-            string responseBody = await tokenResp.Content.ReadAsStringAsync();
-
             Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
             var json = await tokenResp.Content.ReadAsStringAsync();
+            var tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
 
             // Minimal checks on payload
             using var doc = System.Text.Json.JsonDocument.Parse(json);

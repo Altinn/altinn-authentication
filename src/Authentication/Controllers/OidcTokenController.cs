@@ -49,7 +49,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClientAuth = ParseClientAuth(Request, form)
             };
 
-            var result = await _tokenService.ExchangeAuthorizationCodeAsync(req, ct);
+            TokenResult result = await _tokenService.ExchangeAuthorizationCodeAsync(req, ct);
 
             return result.Kind switch
             {
