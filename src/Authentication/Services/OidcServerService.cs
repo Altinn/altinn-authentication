@@ -1,11 +1,4 @@
 ﻿#nullable enable
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
@@ -15,9 +8,19 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
+using Altinn.Platform.Register.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -35,7 +38,8 @@ namespace Altinn.Platform.Authentication.Services
         IOidcProvider oidcProvider,
         IUpstreamTokenValidator upstreamTokenValidator,
         IUserProfileService userProfileService,
-        IProfile profile) : IOidcServerService
+        IProfile profile,
+        IOidcSessionRepository oidcSessionRepository) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -49,6 +53,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
         private readonly IUserProfileService _userProfileService = userProfileService;
         private readonly IProfile _profileService = profile;
+        private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
 
         private static readonly string DefaultProviderKey = "idporten";
 
@@ -285,9 +290,48 @@ namespace Altinn.Platform.Authentication.Services
             UserAuthenticationModel userAuthenticationModel = AuthenticationHelper.GetUserFromToken(idToken, provider);
             await IdentifyOrCreateAltinnUser(userAuthenticationModel, provider);
 
-            //  - Exchange 'input.Code' at upstream token endpoint using upstreamTx.CodeVerifier & upstream redirect_uri
-            //  - Validate upstream ID token (iss/aud/exp/nonce/acr/signature)
-            //  - Create/refresh oidc_session
+            string achievedAcr = idToken.Claims.FirstOrDefault(c => c.Type == "acr")?.Value ?? upstreamTx.AcrValues?.FirstOrDefault() ?? "idporten-loa-substantial";
+            DateTimeOffset? authTime = idToken.Claims.FirstOrDefault(c => c.Type == "auth_time") is { } atc
+                ? DateTimeOffset.FromUnixTimeSeconds(long.Parse(atc.Value))
+                : null;
+            string upstreamSub = idToken.Subject; // "sub" from upstream token
+            string? upstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
+
+            string upstreamExternalId = userAuthenticationModel.ExternalIdentity;    // e.g., PID or email (based on provider config)
+            Guid? partyUuid = userAuthenticationModel.PartyUuid;
+            int? partyId = userAuthenticationModel.PartyID;
+            int? userId = userAuthenticationModel.UserID;
+
+            var now = _timeProvider.GetUtcNow();
+            var sessionExpires = now.AddHours(8);
+
+            // Generate a new SID only if we *insert*; upsert will reuse if exists
+            string newSid = CryptoHelpers.RandomBase64Url(32);
+
+            // 5.d Create or refresh session
+            OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
+                new OidcSessionCreate
+            {
+                Sid = CryptoHelpers.RandomBase64Url(32),
+                Provider = upstreamTx.Provider,
+                UpstreamIssuer = idToken.Issuer,
+                UpstreamSub = idToken.Subject,
+                SubjectId = upstreamExternalId,   // <- string PID/email/etc
+                SubjectPartyUuid = partyUuid,            // <- Altinn GUID
+                SubjectPartyId = partyId,              // <- legacy
+                SubjectUserId = userId,               // <- legacy
+                Acr = achievedAcr,
+                AuthTime = authTime,
+                Amr = idToken.Claims.Where(c => c.Type == "amr").Select(c => c.Value).ToArray(),
+                ExpiresAt = _timeProvider.GetUtcNow().AddHours(8),
+                UpstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value,
+                Now = _timeProvider.GetUtcNow(),
+                CreatedByIp = upstreamTx.CreatedByIp,
+                UserAgentHash = upstreamTx.UserAgentHash
+            }, 
+                ct);
+
+
             //  - Create downstream authorization_code bound to (client_id, redirect_uri, pkce, nonce, scopes, acr, auth_time, sid)
             //  - Mark upstream tx completed
             //  - Return RedirectToClient with code + loginTx.State

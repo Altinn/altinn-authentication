@@ -4,7 +4,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 
-namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations
+namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.OidcServer
 {
     /// <summary>
     /// Repository implementation for OIDC session management.
@@ -62,6 +62,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations
                 ";
 
             await using var cmd = _ds.CreateCommand(SQL);
+            cmd.Parameters.AddWithValue("sid", c.Sid);
             cmd.Parameters.AddWithValue("subject_id", (object?)c.SubjectId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_uuid", (object?)c.SubjectPartyUuid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_id", (object?)c.SubjectPartyId ?? DBNull.Value);

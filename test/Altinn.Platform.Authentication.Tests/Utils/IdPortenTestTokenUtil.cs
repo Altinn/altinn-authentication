@@ -14,8 +14,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             string locale = "nb";
             string amr = "BankID Mobil";
             string digDirOrgNo = "991825827";
-            DateTime auth_time = DateTime.Now;
-            DateTime iat = DateTime.Now;
+            DateTimeOffset auth_time = DateTimeOffset.Now;
+            DateTimeOffset iat = DateTimeOffset.Now;
 
             OidcCodeResponse response = new()
             {
@@ -30,10 +30,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return response;
         }
 
-        public static string GetIdPortenIDToken(string sub, string pid, string locale, string nonce, string sid, string aud, string[] acr, string amr, DateTime auth_time)
+        public static string GetIdPortenIDToken(string sub, string pid, string locale, string nonce, string sid, string aud, string[] acr, string amr, DateTimeOffset auth_time)
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.idporten.no";
+            claims.Add(new Claim("iss", issuer, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("sub", sub, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("pid", pid, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("locale", locale, ClaimValueTypes.String, issuer));
@@ -41,7 +42,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim("sid", sid, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("aud", aud, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("acr", string.Join(" ", acr), ClaimValueTypes.String, issuer));
-            claims.Add(new Claim("auth_time", auth_time.ToString("o"), ClaimValueTypes.DateTime, issuer));
+            claims.Add(new Claim("auth_time", auth_time.ToUnixTimeSeconds().ToString(), ClaimValueTypes.DateTime, issuer));
             ClaimsIdentity identity = new ClaimsIdentity("mock");
             identity.AddClaims(claims);
             ClaimsPrincipal principal = new(identity);
@@ -49,10 +50,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return token;
         }
 
-        public static string GetIdPortenAccessToken(string sub, string aud, string[] acr, string client_id, string client_amr, string consumer, string[] scope, string pid, DateTime iat)
+        public static string GetIdPortenAccessToken(string sub, string aud, string[] acr, string client_id, string client_amr, string consumer, string[] scope, string pid, DateTimeOffset iat)
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.idporten.no";
+            claims.Add(new Claim("iss", issuer, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("sub", sub, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("aud", aud, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("acr", string.Join(" ", acr), ClaimValueTypes.String, issuer));
@@ -61,7 +63,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim("consumer", consumer, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("scope", string.Join(' ', scope), ClaimValueTypes.String, issuer));
             claims.Add(new Claim("pid", pid, ClaimValueTypes.String, issuer));
-            claims.Add(new Claim("iat", iat.ToString("o"), ClaimValueTypes.DateTime, issuer));
+            claims.Add(new Claim("iat", iat.ToUnixTimeSeconds().ToString(), ClaimValueTypes.DateTime, issuer));
             ClaimsIdentity identity = new("mock");
             identity.AddClaims(claims);
             ClaimsPrincipal principal = new(identity);
