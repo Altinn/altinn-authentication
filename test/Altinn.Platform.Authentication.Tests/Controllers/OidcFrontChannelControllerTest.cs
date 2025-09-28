@@ -259,21 +259,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
             var json = await tokenResp.Content.ReadAsStringAsync();
-            var tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
+            TokenResponseDto tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
 
-            // Minimal checks on payload
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            Assert.True(root.TryGetProperty("access_token", out var at) && at.GetString()?.Length > 0, "access_token missing");
-            Assert.True(root.TryGetProperty("token_type", out var tt) && tt.GetString() == "Bearer", "token_type != Bearer");
-            Assert.True(root.TryGetProperty("expires_in", out var ei) && ei.GetInt32() > 0, "expires_in invalid");
-
-            // If openid scope was requested, id_token should be present
-            if (root.TryGetProperty("scope", out var scopeProp) && scopeProp.GetString()!.Contains("openid", StringComparison.Ordinal))
-            {
-                Assert.True(root.TryGetProperty("id_token", out var idt) && idt.GetString()?.Length > 0, "id_token missing");
-            }
+            Assert.NotNull(tokenResult);
+            Assert.NotNull(tokenResult.access_token);
+            Assert.Equal("Bearer", tokenResult.token_type);
+            Assert.True(tokenResult.expires_in > 0);
+            Assert.NotNull(tokenResult.id_token); // since openid scope was requested
+            Assert.Contains("openid", tokenResult.scope.Split(' '));
+            Assert.Contains("altinn:portal/enduser", tokenResult.scope.Split(' '));
         }
 
         [Fact]
