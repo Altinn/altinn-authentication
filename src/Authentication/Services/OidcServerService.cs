@@ -284,8 +284,8 @@ namespace Altinn.Platform.Authentication.Services
             OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, ct);
             JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, ct);
             JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, ct);
-            UserAuthenticationModel userAuthenticationModel = AuthenticationHelper.GetUserFromToken(idToken, provider);
-            await IdentifyOrCreateAltinnUser(userAuthenticationModel, provider);
+            UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider);
+            await IdentifyOrCreateAltinnUser(userIdenity, provider);
 
             string achievedAcr = idToken.Claims.FirstOrDefault(c => c.Type == "acr")?.Value ?? upstreamTx.AcrValues?.FirstOrDefault() ?? "idporten-loa-substantial";
             DateTimeOffset? authTime = idToken.Claims.FirstOrDefault(c => c.Type == "auth_time") is { } atc
@@ -308,10 +308,10 @@ namespace Altinn.Platform.Authentication.Services
                 Provider = upstreamTx.Provider,
                 UpstreamIssuer = idToken.Issuer,
                 UpstreamSub = idToken.Subject,
-                SubjectId = userAuthenticationModel.ExternalIdentity,   // <- string PID/email/etc
-                SubjectPartyUuid = userAuthenticationModel.PartyUuid,            // <- Altinn GUID
-                SubjectPartyId = userAuthenticationModel.PartyID,              // <- legacy
-                SubjectUserId = userAuthenticationModel.UserID,               // <- legacy
+                SubjectId = userIdenity.SSN ?? userIdenity.ExternalIdentity,   // <- string PID/email/etc
+                SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
+                SubjectPartyId = userIdenity.PartyID,              // <- legacy
+                SubjectUserId = userIdenity.UserID,               // <- legacy
                 Acr = achievedAcr,
                 AuthTime = authTime,
                 Amr = idToken.Claims.Where(c => c.Type == "amr").Select(c => c.Value).ToArray(),
@@ -323,8 +323,6 @@ namespace Altinn.Platform.Authentication.Services
             }, 
                 ct);
 
-            // … you already built `session` above …
-
             // 6) Issue downstream authorization code
             string authCode = CryptoHelpers.RandomBase64Url(32);
             var codeTime = _timeProvider.GetUtcNow();
@@ -335,7 +333,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 Code = authCode,
                 ClientId = loginTx.ClientId,
-                SubjectId = session.SubjectId ?? userAuthenticationModel.ExternalIdentity, // fallback
+                SubjectId = session.SubjectId ?? userIdenity.ExternalIdentity, // fallback
                 SubjectPartyUuid = session.SubjectPartyUuid,
                 SubjectPartyId = session.SubjectPartyId,
                 SubjectUserId = session.SubjectUserId,
