@@ -274,7 +274,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // ===== 5) From here, you will:
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
-            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, loginTx.RedirectUri.ToString(), upstreamTx.CodeVerifier, ct);
+            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, ct);
 
             //  - Exchange 'input.Code' at upstream token endpoint using upstreamTx.CodeVerifier & upstream redirect_uri
             //  - Validate upstream ID token (iss/aud/exp/nonce/acr/signature)

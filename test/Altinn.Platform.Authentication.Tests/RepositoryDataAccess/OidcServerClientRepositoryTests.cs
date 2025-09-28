@@ -29,7 +29,6 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess
             services.AddPersistanceLayer();              // your extension
             services.TryAddSingleton(TimeProvider.System);
             base.ConfigureServices(services);
-            services.AddTransient<IOidcProvider, Mocks.OidcProviderAdvancedMock>();
         }
 
         // ---------- Helpers ----------

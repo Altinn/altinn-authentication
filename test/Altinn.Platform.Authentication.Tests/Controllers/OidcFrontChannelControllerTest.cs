@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Helpers;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Microsoft.AspNetCore.Hosting;
@@ -29,6 +30,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
+            services.AddSingleton<IOidcProvider, Mocks.OidcProviderAdvancedMock>();
 
             string configPath = GetConfigPath();
 
@@ -185,12 +187,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<Altinn.Platform.Authentication.Services.Interfaces.IOidcProvider>());
 
+            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(clientId, state, DataSource);
+            UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
+
             var idpAuthCode = "idp-code-xyz"; // what we will pass on callback
             mock.SetupSuccess(
                 authorizationCode: idpAuthCode,
-                clientId: upstreamQuery["client_id"],
-                redirectUri: upstreamQuery["redirect_uri"],
-                codeVerifier: "aa",
+                clientId: createdUpstreamLogingTransaction.UpstreamClientId,
+                redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
+                codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
                 response: new Altinn.Platform.Authentication.Model.OidcCodeResponse
                 {
                     ExpiresIn = 600,
