@@ -35,7 +35,8 @@ namespace Altinn.Platform.Authentication.Services
         IUpstreamTokenValidator upstreamTokenValidator,
         IUserProfileService userProfileService,
         IProfile profile,
-        IOidcSessionRepository oidcSessionRepository) : IOidcServerService
+        IOidcSessionRepository oidcSessionRepository,
+        IAuthorizationCodeRepository authorizationCodeRepository) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -50,7 +51,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IUserProfileService _userProfileService = userProfileService;
         private readonly IProfile _profileService = profile;
         private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
-
+        private readonly IAuthorizationCodeRepository _authorizationCodeRepo = authorizationCodeRepository;
         private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
@@ -322,16 +323,54 @@ namespace Altinn.Platform.Authentication.Services
             }, 
                 ct);
 
-            //  - Create downstream authorization_code bound to (client_id, redirect_uri, pkce, nonce, scopes, acr, auth_time, sid)
-            //  - Mark upstream tx completed
-            //  - Return RedirectToClient with code + loginTx.State
+            // … you already built `session` above …
 
-            // We'll return a temporary local 501 to mark the next TODO section.
+            // 6) Issue downstream authorization code
+            string authCode = CryptoHelpers.RandomBase64Url(32);
+            var codeTime = _timeProvider.GetUtcNow();
+            var codeExpires = codeTime.AddSeconds(120);
+
+            await _authorizationCodeRepo.InsertAsync(
+                new AuthorizationCodeCreate
+            {
+                Code = authCode,
+                ClientId = loginTx.ClientId,
+                SubjectId = session.SubjectId ?? userAuthenticationModel.ExternalIdentity, // fallback
+                SubjectPartyUuid = session.SubjectPartyUuid,
+                SubjectPartyId = session.SubjectPartyId,
+                SubjectUserId = session.SubjectUserId,
+                SessionId = session.Sid,
+                RedirectUri = loginTx.RedirectUri,
+                Scopes = loginTx.Scopes,
+                Nonce = loginTx.Nonce,
+                Acr = achievedAcr,
+                AuthTime = authTime,
+                CodeChallenge = loginTx.CodeChallenge,
+                CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",
+                ExpiresAt = codeExpires,
+                CreatedByIp = upstreamTx.CreatedByIp,
+                CorrelationId = upstreamTx.CorrelationId
+            }, 
+                ct);
+
+            // 7) Mark upstream transaction as completed
+            await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
+                upstreamTx.UpstreamRequestId,
+                issuer: idToken.Issuer,
+                sub: idToken.Subject,
+                acr: achievedAcr,
+                authTime: authTime,
+                idTokenJti: idToken.Claims.FirstOrDefault(c => c.Type == "jti")?.Value,
+                upstreamSid: upstreamSessionSid,
+                cancellationToken: ct);
+
+            // 8) Redirect back to the client with code + original state
             return new UpstreamCallbackResult
             {
-                Kind = UpstreamCallbackResultKind.LocalError,
-                StatusCode = 501,
-                LocalErrorMessage = "Next step: token exchange & downstream code issuance."
+                Kind = UpstreamCallbackResultKind.RedirectToClient,
+                ClientRedirectUri = loginTx.RedirectUri,
+                DownstreamCode = authCode,
+                ClientState = loginTx.State
             };
         }
 
