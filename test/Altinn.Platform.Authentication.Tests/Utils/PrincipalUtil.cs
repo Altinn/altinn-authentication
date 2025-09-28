@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Core.Constants;
-using Altinn.Platform.Authentication.Tests;
 using AltinnCore.Authentication.Constants;
 
-namespace App.IntegrationTests.Utils
+namespace Altinn.Platform.Authentication.Tests.Utils
 {
     public static class PrincipalUtil
     {
@@ -98,7 +97,7 @@ namespace App.IntegrationTests.Utils
             return token;
         }
 
-        public static string GetOrgToken(string org, string orgNumber = "991825827", string? scope = null, string[]? prefixes = null)
+        public static string GetOrgToken(string org, string orgNumber = "991825827", string scope = null, string[] prefixes = null)
         {
             ClaimsPrincipal principal = GetClaimsPrincipal(org, orgNumber, scope, prefixes);
 
@@ -107,7 +106,7 @@ namespace App.IntegrationTests.Utils
             return token;
         }
 
-        public static ClaimsPrincipal GetClaimsPrincipal(string org, string orgNumber, string? scope = null, string[]? prefixes = null)
+        public static ClaimsPrincipal GetClaimsPrincipal(string org, string orgNumber, string scope = null, string[] prefixes = null)
         {
             string issuer = "www.altinn.no";
 

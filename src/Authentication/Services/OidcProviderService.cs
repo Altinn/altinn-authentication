@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Services
             HttpResponseMessage response = await _httpClient.PostAsync(provider.TokenEndpoint, formUrlEncodedContent, ct);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                string content = await response.Content.ReadAsStringAsync();
+                string content = await response.Content.ReadAsStringAsync(ct);
                 codeResponse = JsonSerializer.Deserialize<OidcCodeResponse>(content);
             }
             else

@@ -1,18 +1,20 @@
-﻿using System;
-using System.Data;
-using System.IO;
-using System.Net;
-using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Configuration;
+﻿using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Helpers;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
+using Altinn.Platform.Authentication.Tests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using System;
+using System.Data;
+using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
@@ -43,6 +45,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
             services.Configure<GeneralSettings>(generalSettingSection);
+            services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
         }
 
         /// <summary>
@@ -191,20 +194,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
 
             var idpAuthCode = "idp-code-xyz"; // what we will pass on callback
+            Guid upstreamSID = Guid.NewGuid();
             mock.SetupSuccess(
                 authorizationCode: idpAuthCode,
                 clientId: createdUpstreamLogingTransaction.UpstreamClientId,
                 redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
                 codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
-                response: new Altinn.Platform.Authentication.Model.OidcCodeResponse
-                {
-                    ExpiresIn = 600,
-                    TokenType = "Bearer",
-                    AccessToken = "at.fake.jwt",
-                    IdToken = "id.fake.jwt",   // your service will validate/parse later
-                    Scope = "openid",
-                    RefreshToken = null
-                });
+                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse("0103871234545", createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues,createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.

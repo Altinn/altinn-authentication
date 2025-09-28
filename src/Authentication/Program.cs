@@ -399,6 +399,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddTransient<IOidcServerService, OidcServerService>();
     services.AddSingleton<IAuthorizeRequestValidator, AuthorizeRequestValidator>();
     services.AddSingleton<IAuthorizeClientPolicyValidator, AuthorizeClientPolicyValidator>();
+    services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     {

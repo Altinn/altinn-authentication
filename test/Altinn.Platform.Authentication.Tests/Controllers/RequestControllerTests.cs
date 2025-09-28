@@ -32,7 +32,6 @@ using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
-using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;

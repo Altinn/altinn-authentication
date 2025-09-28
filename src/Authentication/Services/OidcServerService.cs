@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Services
         IOptions<OidcProviderSettings> oidcProviderSettings,
         TimeProvider timeProvider,
         IOidcProvider oidcProvider,
-        ISigningKeysRetriever signingKeysRetriever) : IOidcServerService
+        IUpstreamTokenValidator upstreamTokenValidator) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -42,8 +42,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
         private readonly TimeProvider _timeProvider = timeProvider;
         private readonly IOidcProvider _oidcProvider = oidcProvider;
-        private readonly ISigningKeysRetriever _signingKeysRetriever = signingKeysRetriever;
-        private readonly JwtSecurityTokenHandler _validator = new();
+        private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
 
         private static readonly string DefaultProviderKey = "idporten";
 
@@ -109,11 +108,11 @@ namespace Altinn.Platform.Authentication.Services
 
             // ========= 6) Choose upstream and derive upstream params =========
             OidcProvider provider = ChooseProvider(request);
-               
-            var upstreamState = CryptoHelpers.RandomBase64Url(32);
-            var upstreamNonce = CryptoHelpers.RandomBase64Url(32);
-            var upstreamVerifier = Pkce.RandomPkceVerifier();
-            var upstreamChallenge = Hashing.Sha256Base64Url(upstreamVerifier);
+
+            string upstreamState = CryptoHelpers.RandomBase64Url(32);
+            string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
+            string upstreamVerifier = Pkce.RandomPkceVerifier();
+            string upstreamChallenge = Hashing.Sha256Base64Url(upstreamVerifier);
 
             // ========= 7) Persist login_transaction_upstream =========
             // NOTE: Store everything you need for callback + token exchange.
@@ -275,6 +274,8 @@ namespace Altinn.Platform.Authentication.Services
             // ===== 5) From here, you will:
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, ct);
+            JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, ct);
+            JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, ct);
 
             //  - Exchange 'input.Code' at upstream token endpoint using upstreamTx.CodeVerifier & upstream redirect_uri
             //  - Validate upstream ID token (iss/aud/exp/nonce/acr/signature)
@@ -429,32 +430,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return baseCallback;
-        }
-
-        private async Task<JwtSecurityToken> ValidateAndExtractOidcToken(string originalToken, string wellKnownConfigEndpoint, string alternativeWellKnownConfigEndpoint = null)
-        {
-                ICollection<SecurityKey> signingKeys = await _signingKeysRetriever.GetSigningKeys(wellKnownConfigEndpoint);
-                return ValidateToken(originalToken, signingKeys);
-        }
-
-        private JwtSecurityToken ValidateToken(string originalToken, ICollection<SecurityKey> signingKeys)
-        {
-            TokenValidationParameters validationParameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKeys = signingKeys,
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                RequireExpirationTime = true,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(10)
-            };
-
-            _validator.ValidateToken(originalToken, validationParameters, out _);
-            _logger.LogInformation("Token is valid");
-
-            JwtSecurityToken token = _validator.ReadJwtToken(originalToken);
-            return token;
         }
     }
 }
