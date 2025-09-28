@@ -170,7 +170,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken ct)
+        public async Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken cancellationToken)
         {
             // ===== 0) Guard / basic semantics =====
             ArgumentNullException.ThrowIfNull(input);
@@ -188,7 +188,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // ===== 1) Load upstream login transaction by state =====
             // Expected repo method: GetForCallbackByStateAsync(state) → includes request_id, status, expires_at, provider info, etc.
-            UpstreamLoginTransaction? upstreamTx = await _upstreamLoginTxRepo.GetForCallbackByStateAsync(input.State, ct);
+            UpstreamLoginTransaction? upstreamTx = await _upstreamLoginTxRepo.GetForCallbackByStateAsync(input.State, cancellationToken);
             if (upstreamTx is null)
             {
                 // We don't know where to redirect safely; local error.
@@ -223,7 +223,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // ===== 2) Load downstream (original) transaction to get validated redirect_uri & original state =====
             // Expected repo method: GetAsync(requestId) or GetByRequestIdAsync
-            var loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId, ct);
+            var loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId, cancellationToken);
             if (loginTx is null)
             {
                 return new UpstreamCallbackResult
@@ -281,9 +281,9 @@ namespace Altinn.Platform.Authentication.Services
 
             // ===== 5) From here, you will:
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
-            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, ct);
-            JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, ct);
-            JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, ct);
+            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
+            JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
+            JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
             UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider);
             await IdentifyOrCreateAltinnUser(userIdenity, provider);
 
@@ -321,7 +321,7 @@ namespace Altinn.Platform.Authentication.Services
                 CreatedByIp = upstreamTx.CreatedByIp,
                 UserAgentHash = upstreamTx.UserAgentHash
             }, 
-                ct);
+                cancellationToken);
 
             // 6) Issue downstream authorization code
             string authCode = CryptoHelpers.RandomBase64Url(32);
@@ -349,7 +349,7 @@ namespace Altinn.Platform.Authentication.Services
                 CreatedByIp = upstreamTx.CreatedByIp,
                 CorrelationId = upstreamTx.CorrelationId
             }, 
-                ct);
+                cancellationToken);
 
             // 7) Mark upstream transaction as completed
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
@@ -360,7 +360,7 @@ namespace Altinn.Platform.Authentication.Services
                 authTime: authTime,
                 idTokenJti: idToken.Claims.FirstOrDefault(c => c.Type == "jti")?.Value,
                 upstreamSid: upstreamSessionSid,
-                cancellationToken: ct);
+                cancellationToken: cancellationToken);
 
             // 8) Redirect back to the client with code + original state
             return new UpstreamCallbackResult

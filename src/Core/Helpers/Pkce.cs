@@ -41,6 +41,21 @@ namespace Altinn.Platform.Authentication.Core.Helpers
 
             string b64 = Convert.ToBase64String(hash);
             return b64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
-        }   
+        }
+
+        public static bool VerifyS256(string storedChallenge, string incomingVerifier)
+        {
+            // verifier charset & length per RFC 7636 (43..128; ALPHA / DIGIT / "-" / "." / "_" / "~")
+            if (string.IsNullOrWhiteSpace(incomingVerifier)) return false;
+            if (incomingVerifier.Length is < 43 or > 128) return false;
+            foreach (var c in incomingVerifier)
+            {
+                bool ok = char.IsLetterOrDigit(c) || c is '-' or '.' or '_' or '~';
+                if (!ok) return false;
+            }
+
+            var computed = Hashing.Sha256Base64Url(incomingVerifier);
+            return string.Equals(storedChallenge, computed, StringComparison.Ordinal);
+        }
     }
 }

@@ -14,6 +14,18 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         private readonly ILogger<AuthorizationCodeRepository> _logger = logger;
 
         /// <inheritdoc/>
+        public Task ConsumeAsync(string code, DateTimeOffset usedAt, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public Task<AuthCodeRow?> GetAsync(string code, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
         public async Task InsertAsync(AuthorizationCodeCreate c, CancellationToken ct = default)
         {
             const string SQL = /*strpsql*/ @"
