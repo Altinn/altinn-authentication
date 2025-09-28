@@ -406,6 +406,40 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             return await cmd.ExecuteNonQueryAsync(ct);
         }
 
+        /// <inheritdoc/>
+        public async Task MarkTokenExchangedAsync(
+            Guid upstreamRequestId,
+            string issuer,
+            string sub,
+            string? acr,
+            DateTimeOffset? authTime,
+            string? idTokenJti,
+            string? upstreamSid,
+            CancellationToken cancellationToken = default)
+        {
+            const string SQL = /*strpsql*/ @"
+            UPDATE oidcserver.login_transaction_upstream
+            SET status = 'completed',
+                token_exchanged_at = NOW(),
+                upstream_issuer = @issuer,
+                upstream_sub = @sub,
+                upstream_acr = @acr,
+                upstream_auth_time = @auth_time,
+                upstream_id_token_jti = @jti,
+                upstream_session_sid = COALESCE(@sid, upstream_session_sid)
+            WHERE upstream_request_id = @id;";
+
+            await using var cmd = _ds.CreateCommand(SQL);
+            cmd.Parameters.AddWithValue("issuer", issuer);
+            cmd.Parameters.AddWithValue("sub", sub);
+            cmd.Parameters.AddWithValue("acr", (object?)acr ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("auth_time", (object?)authTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("jti", (object?)idTokenJti ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("sid", (object?)upstreamSid ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("id", upstreamRequestId);
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
+        }
+
         // ---------- mapping ----------
         private static UpstreamLoginTransaction Map(NpgsqlDataReader r)
         {

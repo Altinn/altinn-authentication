@@ -29,5 +29,18 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
 
         /// <summary>Marks the upstream transaction completed (or cancelled) and sets completed_at.</summary>
         Task<int> MarkCompletedAsync(Guid upstreamRequestId, bool success, DateTimeOffset completedAt, CancellationToken ct = default);
-    }
+
+        /// <summary>
+        /// Marks that the token from the upstream has been exchanged and the relevant claims have been stored in the local token service.
+        /// </summary>
+        Task MarkTokenExchangedAsync(
+          Guid upstreamRequestId,
+          string issuer,
+          string sub,
+          string? acr,
+          DateTimeOffset? authTime,
+          string? idTokenJti,
+          string? upstreamSid,
+          CancellationToken cancellationToken = default);
+    }       
 }
