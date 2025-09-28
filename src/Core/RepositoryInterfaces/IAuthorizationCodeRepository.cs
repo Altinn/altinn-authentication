@@ -8,6 +8,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
 
         Task<AuthCodeRow?> GetAsync(string code, CancellationToken ct = default);
 
-        Task ConsumeAsync(string code, DateTimeOffset usedAt, CancellationToken ct = default);
+        Task<bool> TryConsumeAsync(string code, string clientId, Uri redirectUri, DateTimeOffset usedAt, CancellationToken ct = default);
+
     }
 }

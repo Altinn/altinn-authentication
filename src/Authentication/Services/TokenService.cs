@@ -92,15 +92,10 @@ namespace Altinn.Platform.Authentication.Services
             string? idToken = await tokenIssuer.CreateIdTokenAsync(row, client, now, ct); // include nonce, acr, auth_time, sid
             int expiresIn = (int)Math.Max(0, (atExpires - now).TotalSeconds);
 
-            // 6) Atomically mark code as used (and write jti etc. if needed)
-            try
+            // Now atomically consume
+            if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))
             {
-                await _authorizationCodeRepository.ConsumeAsync(request.Code, now, ct);
-            }
-            catch (DBConcurrencyException)
-            {
-                // Lost race: treat as invalid_grant
-                return TokenResult.InvalidGrant("Code already consumed");
+                return TokenResult.InvalidGrant("Code already used or expired");
             }
 
             return TokenResult.Success(accessToken, idToken, expiresIn, atScope);

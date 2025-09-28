@@ -1,4 +1,6 @@
-﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
+﻿using System.Collections.Generic;
+using System.Data;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -8,21 +10,107 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
     /// <summary>
     /// Repository implementation for authorization code management.
     /// </summary>
-    public sealed class AuthorizationCodeRepository(NpgsqlDataSource ds, ILogger<AuthorizationCodeRepository> logger) : IAuthorizationCodeRepository
+    public sealed class AuthorizationCodeRepository(NpgsqlDataSource ds, ILogger<AuthorizationCodeRepository> logger, TimeProvider time) : IAuthorizationCodeRepository
     {
         private readonly NpgsqlDataSource _ds = ds;
         private readonly ILogger<AuthorizationCodeRepository> _logger = logger;
+        private readonly TimeProvider _time = time;
 
         /// <inheritdoc/>
-        public Task ConsumeAsync(string code, DateTimeOffset usedAt, CancellationToken ct = default)
+        public async Task<bool> TryConsumeAsync(string code, string clientId, Uri redirectUri, DateTimeOffset usedAt, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            const string SQL = /*strpsql*/ @"
+            UPDATE oidcserver.authorization_code
+               SET used = TRUE, used_at = @used_at
+             WHERE code = @code
+               AND client_id = @client_id
+               AND redirect_uri = @redirect_uri
+               AND used = FALSE
+               AND expires_at > NOW();";
+
+            await using var cmd = _ds.CreateCommand(SQL);
+            cmd.Parameters.AddWithValue("code", code);
+            cmd.Parameters.AddWithValue("client_id", clientId);
+            cmd.Parameters.AddWithValue("redirect_uri", redirectUri.ToString());
+            cmd.Parameters.AddWithValue("used_at", usedAt);
+
+            var rows = await cmd.ExecuteNonQueryAsync(ct);
+            return rows == 1;
         }
 
         /// <inheritdoc/>
-        public Task<AuthCodeRow?> GetAsync(string code, CancellationToken ct = default)
+        /// <summary>
+        /// Atomically marks the code as used (only if unused and unexpired) and returns the full row for token issuance.
+        /// Returns null when the code is missing, already used, or expired.
+        /// </summary>
+        public async Task<AuthCodeRow?> GetAsync(string code, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                throw new ArgumentException("code is required", nameof(code));
+            }
+
+            // Single-shot atomic consume using UPDATE ... RETURNING.
+            // If the WHERE predicate fails (used/expired/not found), zero rows are returned.
+            const string SQL = /*strpsql*/ @"
+                SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used, expires_at,
+                       subject_id, subject_party_uuid, subject_party_id, subject_user_id,
+                       session_id, scopes, nonce, acr, auth_time
+                FROM oidcserver.authorization_code
+                WHERE code = @code
+                  AND used = FALSE
+                  AND expires_at > NOW()
+                LIMIT 1;";
+
+            try
+            {
+                await using var cmd = _ds.CreateCommand(SQL);
+                cmd.Parameters.AddWithValue("code", code);
+                cmd.Parameters.AddWithValue("used_at", _time.GetUtcNow());
+
+                await using var reader = await cmd.ExecuteReaderAsync(ct);
+
+                if (!await reader.ReadAsync(ct))
+                {
+                    // Not found, already used, or expired → caller should treat as invalid_grant
+                    return null;
+                }
+
+                // Map the returned row to your domain model
+                var row = new AuthCodeRow
+                {
+                    Code = reader.GetFieldValue<string>("code"),
+                    ClientId = reader.GetFieldValue<string>("client_id"),
+                    RedirectUri = new Uri(reader.GetFieldValue<string>("redirect_uri"), UriKind.Absolute),
+
+                    CodeChallenge = reader.GetFieldValue<string>("code_challenge"),
+                    CodeChallengeMethod = reader.GetFieldValue<string>("code_challenge_method"),
+
+                    Used = reader.GetFieldValue<bool>("used"),
+                    ExpiresAt = reader.GetFieldValue<DateTimeOffset>("expires_at"),
+
+                    SubjectId = reader.GetFieldValue<string>("subject_id"),
+                    SubjectPartyUuid = reader.IsDBNull("subject_party_uuid") ? (Guid?)null : reader.GetFieldValue<Guid>("subject_party_uuid"),
+                    SubjectPartyId = reader.IsDBNull("subject_party_id") ? (int?)null : reader.GetFieldValue<int>("subject_party_id"),
+                    SubjectUserId = reader.IsDBNull("subject_user_id") ? (int?)null : reader.GetFieldValue<int>("subject_user_id"),
+
+                    SessionId = reader.GetFieldValue<string>("session_id"),
+
+                    Scopes = reader.GetFieldValue<string[]>("scopes"),
+                    Nonce = reader.IsDBNull("nonce") ? null : reader.GetFieldValue<string>("nonce"),
+                    Acr = reader.IsDBNull("acr") ? null : reader.GetFieldValue<string>("acr"),
+                    AuthTime = reader.IsDBNull("auth_time") ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>("auth_time")
+                };
+
+                return row;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Authentication // AuthorizationCodeRepository // GetAsync // Failed to consume code");
+                throw;
+            }
         }
 
         /// <inheritdoc/>

@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -152,8 +155,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
             var state = "3fcfc23e3bd145cabdcdb70ce406c875";
             var nonce = "58be49a0cb7df5b791a1fef6c854c5e2";
-            var codeChallenge = "CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU";
 
+            string codeVerifier = Pkce.RandomPkceVerifier();
+            var codeChallenge = Pkce.ComputeS256CodeChallenge(codeVerifier);
+          
             var url =
                 "/authentication/api/v1/authorize" +
                 $"?redirect_uri={redirectUri}" +
@@ -217,9 +222,58 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("af.altinn.no", finalLocation.Host);
             Assert.Equal("/api/cb", finalLocation.AbsolutePath);
 
-            var finalQuery = System.Web.HttpUtility.ParseQueryString(finalLocation.Query);
+            System.Collections.Specialized.NameValueCollection finalQuery = System.Web.HttpUtility.ParseQueryString(finalLocation.Query);
             Assert.False(string.IsNullOrWhiteSpace(finalQuery["code"]), "Downstream code must be present.");
             Assert.Equal(state, finalQuery["state"]); // original downstream state echoed back
+
+            // When you build the authorize URL earlier, use 'computedChallenge' instead of a hardcoded one:
+            // ... &code_challenge={Uri.EscapeDataString(computedChallenge)}&code_challenge_method=S256
+
+            // --- After your existing assertions on final redirect back to the client ---
+
+            // Extract the authorization code from the redirect to the client's redirect_uri
+            var code = finalQuery["code"]!;
+            Assert.False(string.IsNullOrWhiteSpace(code));
+
+            // Now exchange code -> tokens against Altinn's /token endpoint
+            var tokenForm = new Dictionary<string, string>
+            {
+                ["grant_type"] = "authorization_code",
+                ["code"] = code,
+                ["redirect_uri"] = "https://af.altinn.no/api/cb",
+                ["client_id"] = clientId,
+
+                // Client auth for test: since your verifier currently compares strings,
+                // just reuse the stored ClientSecretHash as the presented secret.
+                // (When you switch to real hashing, update this accordingly.)
+                ["client_secret"] = create.ClientSecretHash!,
+
+                // PKCE: must be the exact verifier whose hash you used in /authorize
+                ["code_verifier"] = codeVerifier,
+            };
+
+            using var tokenResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(tokenForm));
+
+            string responseBody = await tokenResp.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
+            var json = await tokenResp.Content.ReadAsStringAsync();
+
+            // Minimal checks on payload
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            Assert.True(root.TryGetProperty("access_token", out var at) && at.GetString()?.Length > 0, "access_token missing");
+            Assert.True(root.TryGetProperty("token_type", out var tt) && tt.GetString() == "Bearer", "token_type != Bearer");
+            Assert.True(root.TryGetProperty("expires_in", out var ei) && ei.GetInt32() > 0, "expires_in invalid");
+
+            // If openid scope was requested, id_token should be present
+            if (root.TryGetProperty("scope", out var scopeProp) && scopeProp.GetString()!.Contains("openid", StringComparison.Ordinal))
+            {
+                Assert.True(root.TryGetProperty("id_token", out var idt) && idt.GetString()?.Length > 0, "id_token missing");
+            }
         }
 
         [Fact]

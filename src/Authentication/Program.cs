@@ -400,6 +400,8 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IAuthorizeRequestValidator, AuthorizeRequestValidator>();
     services.AddSingleton<IAuthorizeClientPolicyValidator, AuthorizeClientPolicyValidator>();
     services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
+    services.AddSingleton<ITokenService, TokenService>();
+    services.AddSingleton<ITokenIssuer, TokenIssuerService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     {

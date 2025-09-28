@@ -19,5 +19,6 @@
         public string? Nonce { get; init; }
         public string? Acr { get; init; }
         public DateTimeOffset? AuthTime { get; init; }
+        public string CodeChallengeMethod { get; set; }
     }
 }
