@@ -301,27 +301,7 @@ namespace Altinn.Platform.Authentication.Services
             string newSid = CryptoHelpers.RandomBase64Url(32);
 
             // 5.d Create or refresh session
-            OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
-                new OidcSessionCreate
-            {
-                Sid = CryptoHelpers.RandomBase64Url(32),
-                Provider = upstreamTx.Provider,
-                UpstreamIssuer = idToken.Issuer,
-                UpstreamSub = idToken.Subject,
-                SubjectId = userIdenity.SSN ?? userIdenity.ExternalIdentity,   // <- string PID/email/etc
-                SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
-                SubjectPartyId = userIdenity.PartyID,              // <- legacy
-                SubjectUserId = userIdenity.UserID,               // <- legacy
-                Acr = achievedAcr,
-                AuthTime = authTime,
-                Amr = idToken.Claims.Where(c => c.Type == "amr").Select(c => c.Value).ToArray(),
-                ExpiresAt = _timeProvider.GetUtcNow().AddHours(8),
-                UpstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value,
-                Now = _timeProvider.GetUtcNow(),
-                CreatedByIp = upstreamTx.CreatedByIp,
-                UserAgentHash = upstreamTx.UserAgentHash
-            }, 
-                cancellationToken);
+            OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, idToken, userIdenity, achievedAcr, authTime, cancellationToken);
 
             // 6) Issue downstream authorization code
             string authCode = CryptoHelpers.RandomBase64Url(32);
@@ -330,25 +310,25 @@ namespace Altinn.Platform.Authentication.Services
 
             await _authorizationCodeRepo.InsertAsync(
                 new AuthorizationCodeCreate
-            {
-                Code = authCode,
-                ClientId = loginTx.ClientId,
-                SubjectId = session.SubjectId ?? userIdenity.ExternalIdentity, // fallback
-                SubjectPartyUuid = session.SubjectPartyUuid,
-                SubjectPartyId = session.SubjectPartyId,
-                SubjectUserId = session.SubjectUserId,
-                SessionId = session.Sid,
-                RedirectUri = loginTx.RedirectUri,
-                Scopes = loginTx.Scopes,
-                Nonce = loginTx.Nonce,
-                Acr = achievedAcr,
-                AuthTime = authTime,
-                CodeChallenge = loginTx.CodeChallenge,
-                CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",
-                ExpiresAt = codeExpires,
-                CreatedByIp = upstreamTx.CreatedByIp,
-                CorrelationId = upstreamTx.CorrelationId
-            }, 
+                {
+                    Code = authCode,
+                    ClientId = loginTx.ClientId,
+                    SubjectId = session.SubjectId ?? userIdenity.ExternalIdentity, // fallback
+                    SubjectPartyUuid = session.SubjectPartyUuid,
+                    SubjectPartyId = session.SubjectPartyId,
+                    SubjectUserId = session.SubjectUserId,
+                    SessionId = session.Sid,
+                    RedirectUri = loginTx.RedirectUri,
+                    Scopes = loginTx.Scopes,
+                    Nonce = loginTx.Nonce,
+                    Acr = achievedAcr,
+                    AuthTime = authTime,
+                    CodeChallenge = loginTx.CodeChallenge,
+                    CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",
+                    ExpiresAt = codeExpires,
+                    CreatedByIp = upstreamTx.CreatedByIp,
+                    CorrelationId = upstreamTx.CorrelationId
+                },
                 cancellationToken);
 
             // 7) Mark upstream transaction as completed
@@ -370,6 +350,32 @@ namespace Altinn.Platform.Authentication.Services
                 DownstreamCode = authCode,
                 ClientState = loginTx.State
             };
+        }
+
+        private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, JwtSecurityToken idToken, UserAuthenticationModel userIdenity, string achievedAcr, DateTimeOffset? authTime, CancellationToken cancellationToken)
+        {
+            OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
+                new OidcSessionCreate
+                {
+                    Sid = CryptoHelpers.RandomBase64Url(32),
+                    Provider = upstreamTx.Provider,
+                    UpstreamIssuer = idToken.Issuer,
+                    UpstreamSub = idToken.Subject,
+                    SubjectId = userIdenity.SSN ?? userIdenity.ExternalIdentity,   // <- string PID/email/etc
+                    SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
+                    SubjectPartyId = userIdenity.PartyID,              // <- legacy
+                    SubjectUserId = userIdenity.UserID,               // <- legacy
+                    Acr = achievedAcr,
+                    AuthTime = authTime,
+                    Amr = idToken.Claims.Where(c => c.Type == "amr").Select(c => c.Value).ToArray(),
+                    ExpiresAt = _timeProvider.GetUtcNow().AddHours(8),
+                    UpstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value,
+                    Now = _timeProvider.GetUtcNow(),
+                    CreatedByIp = upstreamTx.CreatedByIp,
+                    UserAgentHash = upstreamTx.UserAgentHash
+                },
+                cancellationToken);
+            return session;
         }
 
         private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e, OidcClient? oidcClient)
