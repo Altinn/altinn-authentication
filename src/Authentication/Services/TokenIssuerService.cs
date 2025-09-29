@@ -1,12 +1,4 @@
-﻿using Altinn.Platform.Authentication.Configuration;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Core.Services.Interfaces;
-using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Register.Models;
-using AltinnCore.Authentication.Constants;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -15,6 +7,14 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
+using AltinnCore.Authentication.Constants;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -37,16 +37,17 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<string> CreateIdTokenAsync(AuthCodeRow code, OidcClient client, DateTimeOffset now, CancellationToken ct = default)
         {
-            ClaimsPrincipal principal = GetClaimsPrincipal(code);
+            ClaimsPrincipal principal = GetClaimsPrincipal(code, true);
             return await GenerateToken(principal, now.AddMinutes(_generalSettings.JwtValidityMinutes).UtcDateTime);
         }
 
-        private ClaimsPrincipal GetClaimsPrincipal(AuthCodeRow authCodeRow)
+        private ClaimsPrincipal GetClaimsPrincipal(AuthCodeRow authCodeRow, bool isIDToken = false)
         {
             List<Claim> claims = new()
             {
                 new Claim("sub", authCodeRow.SubjectId),
-                new Claim("session_id", authCodeRow.SessionId),
+                new Claim("sid", authCodeRow.SessionId),
+                new Claim("iss", _generalSettings.PlatformEndpoint)
             };
 
             if (authCodeRow.SubjectPartyUuid != null)
@@ -64,9 +65,19 @@ namespace Altinn.Platform.Authentication.Services
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, authCodeRow.SubjectUserId.ToString()!));
             }
 
+            if (authCodeRow.SubjectId != null)
+            {
+                claims.Add(new Claim("pid", authCodeRow.SubjectId));
+            }
+
             if (authCodeRow.Acr != null)
             {
                 claims.Add(new Claim("acr", authCodeRow.Acr));
+            }
+
+            if (authCodeRow.Nonce != null && isIDToken)
+            {
+                claims.Add(new Claim("nonce", authCodeRow.Nonce));
             }
 
             if (authCodeRow.AuthTime != null)
@@ -75,7 +86,7 @@ namespace Altinn.Platform.Authentication.Services
                 claims.Add(new Claim("auth_time", authTimeEpoch.ToString(), ClaimValueTypes.Integer64));
             }
 
-            if (authCodeRow.Scopes != null && authCodeRow.Scopes.Any())
+            if (!isIDToken && authCodeRow.Scopes != null && authCodeRow.Scopes.Any())
             {
                 claims.Add(new Claim("scope", string.Join(" ", authCodeRow.Scopes)));
             }
