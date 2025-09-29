@@ -33,7 +33,7 @@ namespace Altinn.Platform.Authentication.Services
 
         private JwtSecurityToken ValidateToken(string originalToken, ICollection<SecurityKey> signingKeys)
         {
-            TokenValidationParameters validationParameters = new TokenValidationParameters
+            TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKeys = signingKeys,
