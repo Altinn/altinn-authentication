@@ -358,6 +358,9 @@ namespace Altinn.Platform.Authentication.Services
             return authCode;
         }
 
+        /// <summary>
+        /// Creates or updates an OIDC session based on the upstream identity.
+        /// </summary>
         private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, JwtSecurityToken idToken, UserAuthenticationModel userIdenity, string achievedAcr, DateTimeOffset? authTime, CancellationToken cancellationToken)
         {
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
