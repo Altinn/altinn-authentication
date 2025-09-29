@@ -1,4 +1,12 @@
-﻿using System;
+﻿using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
+using AltinnCore.Authentication.Constants;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -7,12 +15,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using Altinn.Platform.Authentication.Configuration;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Core.Services.Interfaces;
-using Altinn.Platform.Authentication.Services.Interfaces;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -49,17 +51,17 @@ namespace Altinn.Platform.Authentication.Services
 
             if (authCodeRow.SubjectPartyUuid != null)
             {
-                claims.Add(new Claim("party_uuid", authCodeRow.SubjectPartyUuid.ToString()!));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, authCodeRow.SubjectPartyUuid.ToString()!));
             }
 
             if (authCodeRow.SubjectPartyId != null)
             {
-                claims.Add(new Claim("party_id", authCodeRow.SubjectPartyId.ToString()!));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, authCodeRow.SubjectPartyId.ToString()!));
             }
 
             if (authCodeRow.SubjectUserId != null)
             {
-                claims.Add(new Claim("user_id", authCodeRow.SubjectUserId.ToString()!));
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, authCodeRow.SubjectUserId.ToString()!));
             }
 
             if (authCodeRow.Acr != null)

@@ -515,7 +515,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
-            if (userAuthenticationModel != null && userAuthenticationModel.UserID != 0 && userAuthenticationModel.PartyID != 0 && userAuthenticationModel.PartyUuid != Guid.Empty)
+            if (userAuthenticationModel != null && userAuthenticationModel.UserID != null && userAuthenticationModel.PartyID != null && userAuthenticationModel.PartyUuid != null)
             {
                 return;
             }
@@ -536,8 +536,10 @@ namespace Altinn.Platform.Authentication.Services
                     userAuthenticationModel.UserID = profile.UserId;
                 }
 
-                userAuthenticationModel.PartyID = profile.PartyId;
-                userAuthenticationModel.UserID = profile.UserId;
+                if (profile.Party.PartyUuid != null)
+                {
+                    userAuthenticationModel.PartyUuid = profile.Party.PartyUuid;
+                }
             }
             else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
             {

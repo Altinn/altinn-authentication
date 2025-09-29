@@ -4,6 +4,7 @@ using System.Data;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
@@ -206,7 +207,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 clientId: createdUpstreamLogingTransaction.UpstreamClientId,
                 redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
                 codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
-                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse("0103871234545", createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues,createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
+                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse("01039012345", createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues,createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
@@ -261,13 +262,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var json = await tokenResp.Content.ReadAsStringAsync();
             TokenResponseDto tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
 
-            Assert.NotNull(tokenResult);
-            Assert.NotNull(tokenResult.access_token);
-            Assert.Equal("Bearer", tokenResult.token_type);
-            Assert.True(tokenResult.expires_in > 0);
-            Assert.NotNull(tokenResult.id_token); // since openid scope was requested
-            Assert.Contains("openid", tokenResult.scope.Split(' '));
-            Assert.Contains("altinn:portal/enduser", tokenResult.scope.Split(' '));
+            // Asserts on token response structure
+            TokenAssertsHelper.AssertTokenResponse(tokenResult);
         }
 
         [Fact]
