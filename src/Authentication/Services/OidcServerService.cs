@@ -304,6 +304,31 @@ namespace Altinn.Platform.Authentication.Services
             OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, idToken, userIdenity, achievedAcr, authTime, cancellationToken);
 
             // 6) Issue downstream authorization code
+            string authCode = await CreateAuthorizationCode(upstreamTx, loginTx, userIdenity, achievedAcr, authTime, session, cancellationToken);
+
+            // 7) Mark upstream transaction as completed
+            await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
+                upstreamTx.UpstreamRequestId,
+                issuer: idToken.Issuer,
+                sub: idToken.Subject,
+                acr: achievedAcr,
+                authTime: authTime,
+                idTokenJti: idToken.Claims.FirstOrDefault(c => c.Type == "jti")?.Value,
+                upstreamSid: upstreamSessionSid,
+                cancellationToken: cancellationToken);
+
+            // 8) Redirect back to the client with code + original state
+            return new UpstreamCallbackResult
+            {
+                Kind = UpstreamCallbackResultKind.RedirectToClient,
+                ClientRedirectUri = loginTx.RedirectUri,
+                DownstreamCode = authCode,
+                ClientState = loginTx.State
+            };
+        }
+
+        private async Task<string> CreateAuthorizationCode(UpstreamLoginTransaction upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, string achievedAcr, DateTimeOffset? authTime, OidcSession session, CancellationToken cancellationToken)
+        {
             string authCode = CryptoHelpers.RandomBase64Url(32);
             var codeTime = _timeProvider.GetUtcNow();
             var codeExpires = codeTime.AddSeconds(120);
@@ -330,26 +355,7 @@ namespace Altinn.Platform.Authentication.Services
                     CorrelationId = upstreamTx.CorrelationId
                 },
                 cancellationToken);
-
-            // 7) Mark upstream transaction as completed
-            await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
-                upstreamTx.UpstreamRequestId,
-                issuer: idToken.Issuer,
-                sub: idToken.Subject,
-                acr: achievedAcr,
-                authTime: authTime,
-                idTokenJti: idToken.Claims.FirstOrDefault(c => c.Type == "jti")?.Value,
-                upstreamSid: upstreamSessionSid,
-                cancellationToken: cancellationToken);
-
-            // 8) Redirect back to the client with code + original state
-            return new UpstreamCallbackResult
-            {
-                Kind = UpstreamCallbackResultKind.RedirectToClient,
-                ClientRedirectUri = loginTx.RedirectUri,
-                DownstreamCode = authCode,
-                ClientState = loginTx.State
-            };
+            return authCode;
         }
 
         private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, JwtSecurityToken idToken, UserAuthenticationModel userIdenity, string achievedAcr, DateTimeOffset? authTime, CancellationToken cancellationToken)
