@@ -118,5 +118,35 @@
     "OnlyHierarchyElementWithNoAccess": false,
     "ChildParties": [
     ]
+  },
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
+    "OrgNumber": "987654321",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "987654321",
+      "Name": "TEST AS",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 600000,
+    "PartyUuid": "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8",
+    "UnitType": "AS",
+    "Name": "TEST AS",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
   }
 ]
