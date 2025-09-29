@@ -98,7 +98,7 @@ namespace Altinn.Platform.Authentication.Services
                 return TokenResult.InvalidGrant("Code already used or expired");
             }
 
-            return TokenResult.Success(accessToken, idToken, expiresIn, atScope);
+            return TokenResult.Success(accessToken, idToken, expiry.ToUnixTimeSeconds(), string.Join(" ", row.Scopes));
         }
 
         private async Task<(OidcClient? client, TokenResult error)> AuthenticateClientAsync(TokenClientAuth auth, CancellationToken ct)
