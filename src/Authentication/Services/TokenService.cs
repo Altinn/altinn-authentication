@@ -3,12 +3,14 @@ using System;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Helpers;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -20,10 +22,12 @@ namespace Altinn.Platform.Authentication.Services
         ITokenIssuer tokenIssuer,
         IAuthorizationCodeRepository authorizationCodeRepository, 
         TimeProvider time,
-        ILogger<TokenService> logger) : ITokenService
+        ILogger<TokenService> logger,
+        IOptions<GeneralSettings> generalSettings) : ITokenService
     {
         private readonly ILogger<TokenService> _logger = logger;
         private readonly IAuthorizationCodeRepository _authorizationCodeRepository = authorizationCodeRepository;
+        private readonly GeneralSettings _generalSettings = generalSettings.Value;
 
         /// <inheritdoc/>
         public async Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest request, CancellationToken ct)
@@ -86,11 +90,10 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 5) Issue tokens (ID + Access)
-            DateTimeOffset now = time.GetUtcNow();
-            var (accessToken, atExpires, atScope) = await tokenIssuer.CreateAccessTokenAsync(row, now, ct);
+            DateTimeOffset expiry = time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes);
 
-            string? idToken = await tokenIssuer.CreateIdTokenAsync(row, client, now, ct); // include nonce, acr, auth_time, sid
-            int expiresIn = (int)Math.Max(0, (atExpires - now).TotalSeconds);
+            string accessToken = await tokenIssuer.CreateAccessTokenAsync(row, expiry, ct);
+            string? idToken = await tokenIssuer.CreateIdTokenAsync(row, client, expiry, ct); // include nonce, acr, auth_time, sid
 
             // Now atomically consume
             if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))

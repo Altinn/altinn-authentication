@@ -9,10 +9,10 @@
         // On success
         public string? AccessToken { get; init; }
         public string? IdToken { get; init; }
-        public int ExpiresIn { get; init; }
+        public long ExpiresIn { get; init; }
         public string? Scope { get; init; }
 
-        public static TokenResult Success(string accessToken, string? idToken, int expiresIn, string? scope) =>
+        public static TokenResult Success(string accessToken, string? idToken, long expiresIn, string? scope) =>
             new() { Kind = TokenResultKind.Success, AccessToken = accessToken, IdToken = idToken, ExpiresIn = expiresIn, Scope = scope };
 
         public static TokenResult InvalidClient(string desc) => new() { Kind = TokenResultKind.InvalidClient, Error = "invalid_client", ErrorDescription = desc };

@@ -27,11 +27,11 @@ namespace Altinn.Platform.Authentication.Services
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
 
         /// <inheritdoc/>
-        public async Task<(string accessToken, DateTimeOffset expiresAt, string scope)> CreateAccessTokenAsync(AuthCodeRow code, DateTimeOffset now, CancellationToken ct = default)
+        public async Task<string> CreateAccessTokenAsync(AuthCodeRow code, DateTimeOffset expires, CancellationToken ct = default)
         {
             ClaimsPrincipal principal = GetClaimsPrincipal(code);
-            string accessToken = await GenerateToken(principal, now.AddMinutes(_generalSettings.JwtValidityMinutes).UtcDateTime);
-            return (accessToken, now.AddMinutes(_generalSettings.JwtValidityMinutes), string.Join(" ", code.Scopes));
+            string accessToken = await GenerateToken(principal, expires);
+            return accessToken;
         }
 
         /// <inheritdoc/>
@@ -97,24 +97,18 @@ namespace Altinn.Platform.Authentication.Services
             return principal;
         }
 
-        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTime? expires = null)
+        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset expires)
         {
             List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
 
             X509Certificate2 certificate = GetLatestCertificateWithRolloverDelay(
                 certificates, _generalSettings.JwtSigningCertificateRolloverDelayHours);
 
-            TimeSpan tokenExpiry = new TimeSpan(0, _generalSettings.JwtValidityMinutes, 0);
-            if (expires == null)
-            {
-                expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds);
-            }
-
             JwtSecurityTokenHandler tokenHandler = new();
             SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
-                Expires = expires,
+                Expires = expires.UtcDateTime,
                 SigningCredentials = new X509SigningCredentials(certificate)
             };
 

@@ -4,7 +4,7 @@
     {
         public string access_token { get; init; } = default!;
         public string token_type { get; init; } = "Bearer";
-        public int expires_in { get; init; }
+        public long expires_in { get; init; }
         public string? id_token { get; init; }
         public string? scope { get; init; }
     }

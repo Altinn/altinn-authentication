@@ -1,13 +1,13 @@
-﻿using Altinn.Authentication.Tests.Mocks;
-using Altinn.Platform.Authentication.Model;
-using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Profile.Models;
-using Altinn.Platform.Register.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Altinn.Authentication.Tests.Mocks;
+using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Profile.Models;
+using Altinn.Platform.Register.Models;
 
 namespace Altinn.Platform.Authentication.Tests.Mocks
 {
