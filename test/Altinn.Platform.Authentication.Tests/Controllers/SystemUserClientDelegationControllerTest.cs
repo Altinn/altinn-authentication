@@ -97,6 +97,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
             SetupGuidMock();
             SetupSystemUserRepositoryMock();
+            SetupSystemUserRepositoryMock_AllSystemUsers();
         }
 
         private static string GetConfigPath()
@@ -127,6 +128,35 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 ReporteeOrgNo = systemUserData[id],
                 AccessPackages = new List<AccessPackage> { new AccessPackage { Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet" } }
             });
+        }
+
+        private void SetupSystemUserRepositoryMock_AllSystemUsers()
+        {
+            var systemUsers = new List<SystemUser>
+            {
+            new SystemUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                ReporteeOrgNo = "123456789",
+                AccessPackages = new List<AccessPackage>
+                {
+                    new AccessPackage { Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet" }
+                }
+            },
+            new SystemUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                ReporteeOrgNo = "987654321",
+                AccessPackages = new List<AccessPackage>
+                {
+                    new AccessPackage { Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet" }
+                }
+            }
+            };
+
+            _systemUserRepository
+                .Setup(r => r.GetAllActiveAgentSystemUsersForParty(It.IsAny<int>()))
+                .ReturnsAsync(systemUsers);
         }
 
         [Fact]
@@ -315,6 +345,34 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetAllAgentSystemUsersForAParty_ValidRequest_ReturnsOk()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            HttpResponseMessage systemUsersResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+            List<SystemUser> result = JsonSerializer.Deserialize<List<SystemUser>>(await systemUsersResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, systemUsersResponse.StatusCode);
+            Assert.True(result is not null);
+            Assert.True(result.Count() > 0);
+        }
+
+        [Fact]
+        public async Task GetAllAgentSystemUsersForAParty_ReturnsUnAuthorized()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage systemUsersRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents");
+            HttpResponseMessage systemUsersResponse = await client.SendAsync(systemUsersRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, systemUsersResponse.StatusCode);
         }
     }
 }
