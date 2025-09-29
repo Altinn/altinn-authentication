@@ -248,6 +248,23 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
+        /// Retrieves a list of all agent system users associated with the authenticated party.
+        /// </summary>
+        /// <remarks>This method requires the caller to be authenticated and authorized with the <see
+        /// cref="AuthzConstants.POLICY_CLIENTDELEGATION_READ"/> policy. The party ID is determined based on the
+        /// caller's authentication context.</remarks>
+        /// <returns>A list of <see cref="SystemUser"/> objects representing the agent system users for the party. Returns an
+        /// empty list if no agent system users are found.</returns>
+        [HttpGet("agents")]
+        [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
+        public async Task<ActionResult<List<SystemUser>>> GetAllAgentSystemUsersForParty()
+        {
+            int partyId = AuthenticationHelper.GetPartyId(HttpContext);
+
+            return await inner.GetListOfAgentSystemUsersPartyHas(partyId);
+        }
+
+        /// <summary>
         /// Determines whether the specified user is authorized to perform a given action on a resource.
         /// </summary>
         /// <remarks>This method evaluates access control by creating a decision request based on the
