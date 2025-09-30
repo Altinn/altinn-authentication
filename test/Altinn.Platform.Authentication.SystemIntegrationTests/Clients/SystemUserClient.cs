@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.VendorClientDelegation;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
@@ -73,7 +74,7 @@ public class SystemUserClient
     {
         var urlGetBySystem =
             Endpoints.GetSystemUserRequestByExternalRef.Url()
-                .Replace("{externalRef}", externalRef)
+                ?.Replace("{externalRef}", externalRef)
                 .Replace("{systemId}", systemId)
                 .Replace("{orgNo}", _platformClient.EnvironmentHelper.Vendor);
 
@@ -166,5 +167,13 @@ public class SystemUserClient
         var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
 
         Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);
+    }
+
+    public async Task<ClientsForDelegationResponseDto?> GetAvailableClientsForVendor(Testuser facilitator, string? systemUserId)
+    {
+        var urlGetBySystem = Endpoints.VendorGetAvailableClients.Url() + $"?agent={systemUserId}";
+        
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
+        return await _platformClient.GetAsyncOnType<ClientsForDelegationResponseDto>(urlGetBySystem, token);
     }
 }

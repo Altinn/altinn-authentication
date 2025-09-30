@@ -131,10 +131,29 @@ public enum Endpoints
 
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/{systemUserId}", "DELETE")]
     DeleteAgentSystemUser,
+    
+    // Enduser / Vendor delegation Endpoints
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients", "GET")]
+    VendorDeleteClient,
+    
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients", "POST")]
+    VendorAddClients,
+    
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients", "POST")]
+    VendorGetAvailableClientsOnAgentSystemUser,
+    
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}", "GET")]
+    VendorGetDelegatedClients,
+    
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients/available", "GET")]
+    VendorGetAvailableClients,
+
 
     // Authorization endpoints
     [EndpointInfo("authorization/api/v1/decision", "POST")]
-    Decision
+    Decision,
+    
+    
 }
 
 [AttributeUsage(AttributeTargets.Field)]

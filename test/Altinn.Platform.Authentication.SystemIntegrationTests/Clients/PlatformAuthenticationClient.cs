@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
@@ -120,6 +121,15 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
+    
+    public async Task<T?> GetAsyncOnType<T>(string? endpoint, string? token)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        return await client.GetFromJsonAsync<T>($"{BaseUrlAuthentication}/{endpoint}");
+    }
+    
 
     public async Task<HttpResponseMessage> GetNextUrl(string? endpoint, string? token)
     {
@@ -343,7 +353,7 @@ public class PlatformAuthenticationClient
         return testuser;
     }
 
-    public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string? systemUserUuid, ITestOutputHelper outputHelper)
+    public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string? systemUserUuid)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -353,7 +363,7 @@ public class PlatformAuthenticationClient
         return await client.GetAsync(endpoint);
     }
 
-    public async Task<HttpResponseMessage> DelegateFromAuthentication(Testuser facilitator, string? systemUserUuid, string requestBodyDelegation, ITestOutputHelper outputHelper)
+    public async Task<HttpResponseMessage> DelegateFromAuthentication(Testuser facilitator, string? systemUserUuid, string requestBodyDelegation)
     {
         var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
 
@@ -364,7 +374,7 @@ public class PlatformAuthenticationClient
         return await PostAsync(url, requestBodyDelegation, tokenFacilitator);
     }
 
-    public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer, ITestOutputHelper outputHelper)
+    public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer)
     {
         var url = Endpoints.DeleteCustomer.Url()
             ?.Replace("{party}", facilitator.AltinnPartyId)
