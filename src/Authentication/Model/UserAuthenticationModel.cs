@@ -104,7 +104,7 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// The amr value
         /// </summary>
-        public string? Amr { get; set; }
+        public string[]? Amr { get; set; }
 
         /// <summary>
         /// Gets or sets the security identifier (SID) associated with the entity.
@@ -115,5 +115,15 @@ namespace Altinn.Platform.Authentication.Model
         /// Gets or sets the authentication time.
         /// </summary>
         public DateTimeOffset? AuthTime { get; set; }
+
+        /// <summary>
+        /// Sets the token issuer (iss from token)
+        /// </summary>
+        public string? TokenIssuer { get; set; }
+
+        /// <summary>
+        /// Gets or sets the subject associated with the token.
+        /// </summary>
+        public string? TokenSubject { get; set; }
     }
 }

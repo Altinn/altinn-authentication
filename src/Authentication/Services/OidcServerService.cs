@@ -87,6 +87,7 @@ namespace Altinn.Platform.Authentication.Services
             // ========= 3) Handle PAR / JAR if present =========
             // TODO: if request.RequestUri != null -> load par_request, verify TTL and client_id match, override parameters
             // TODO: if request.RequestObject != null -> validate JWS/JWE, extract claims/params (optional phase)
+            // NOTE Currently no need to support PAR/JAR for our downstream clients since Arbeidsflate does not support it
 
             // ========= 4) Existing IdP session reuse (optional optimization) =========
             // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age
@@ -136,27 +137,24 @@ namespace Altinn.Platform.Authentication.Services
             UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
             await IdentifyOrCreateAltinnUser(userIdenity, provider);
 
-            string upstreamSub = idToken.Subject; // "sub" from upstream token
-            string? upstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
-
             DateTimeOffset now = _timeProvider.GetUtcNow();
             DateTimeOffset sessionExpires = now.AddMinutes(30);
 
-            // 4.d Create or refresh session
-            OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, idToken, userIdenity, cancellationToken);
+            // 4. Create or refresh session
+            OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
 
             // 5) Issue downstream authorization code
-            string authCode = await CreateAuthorizationCode(upstreamTx, loginTx!, userIdenity, session, cancellationToken);
+            string authCode = await CreateDownstreamAuthorizationCode(upstreamTx, loginTx!, userIdenity, session, cancellationToken);
 
             // 6) Mark upstream transaction as completed
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
                 upstreamTx.UpstreamRequestId,
-                issuer: idToken.Issuer,
-                sub: idToken.Subject,
+                issuer: userIdenity.TokenIssuer!,
+                sub: userIdenity.TokenSubject!,
                 acr: userIdenity.Acr,
                 authTime: userIdenity.AuthTime,
                 idTokenJti: idToken.Claims.FirstOrDefault(c => c.Type == "jti")?.Value,
-                upstreamSid: upstreamSessionSid,
+                upstreamSid: userIdenity.Sid,
                 cancellationToken: cancellationToken);
 
             // 7) Redirect back to the client with code + original state
@@ -362,7 +360,7 @@ namespace Altinn.Platform.Authentication.Services
             return tx;
         }
 
-        private async Task<string> CreateAuthorizationCode(UpstreamLoginTransaction upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, OidcSession session, CancellationToken cancellationToken)
+        private async Task<string> CreateDownstreamAuthorizationCode(UpstreamLoginTransaction upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, OidcSession session, CancellationToken cancellationToken)
         {
             string authCode = CryptoHelpers.RandomBase64Url(32);
             var codeTime = _timeProvider.GetUtcNow();
@@ -396,24 +394,24 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Creates or updates an OIDC session based on the upstream identity.
         /// </summary>
-        private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, JwtSecurityToken idToken, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
+        private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate
                 {
                     Sid = CryptoHelpers.RandomBase64Url(32),
                     Provider = upstreamTx.Provider,
-                    UpstreamIssuer = idToken.Issuer,
-                    UpstreamSub = idToken.Subject,
+                    UpstreamIssuer = userIdenity.TokenIssuer!,
+                    UpstreamSub = userIdenity.TokenSubject!,
                     SubjectId = userIdenity.SSN ?? userIdenity.ExternalIdentity,   // <- string PID/email/etc
                     SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
                     SubjectPartyId = userIdenity.PartyID,              // <- legacy
                     SubjectUserId = userIdenity.UserID,               // <- legacy
                     Acr = userIdenity.Acr,
                     AuthTime = userIdenity.AuthTime,
-                    Amr = idToken.Claims.Where(c => c.Type == "amr").Select(c => c.Value).ToArray(),
+                    Amr = userIdenity.Amr,
                     ExpiresAt = _timeProvider.GetUtcNow().AddHours(8),
-                    UpstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value,
+                    UpstreamSessionSid = userIdenity.Sid,
                     Now = _timeProvider.GetUtcNow(),
                     CreatedByIp = upstreamTx.CreatedByIp,
                     UserAgentHash = upstreamTx.UserAgentHash

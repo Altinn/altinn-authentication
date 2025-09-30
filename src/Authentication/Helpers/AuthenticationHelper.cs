@@ -39,7 +39,9 @@ namespace Altinn.Platform.Authentication.Helpers
                 IsAuthenticated = true,
                 ProviderClaims = new Dictionary<string, List<string>>(),
                 Iss = provider.IssuerKey,
-                AuthenticationMethod = AuthenticationMethod.NotDefined
+                AuthenticationMethod = AuthenticationMethod.NotDefined,
+                TokenIssuer = jwtSecurityToken.Issuer,
+                TokenSubject = jwtSecurityToken.Subject
             };
 
             foreach (Claim claim in jwtSecurityToken.Claims)
@@ -66,13 +68,13 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticateMethod))
                 {
-                    userAuthenticationModel.AuthenticationMethod = (Enum.AuthenticationMethod)System.Enum.Parse(typeof(Enum.AuthenticationMethod), claim.Value);
+                    userAuthenticationModel.AuthenticationMethod = System.Enum.Parse<AuthenticationMethod>(claim.Value);
                     continue;
                 }
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticationLevel))
                 {
-                    userAuthenticationModel.AuthenticationLevel = (Enum.SecurityLevel)System.Enum.Parse(typeof(Enum.SecurityLevel), claim.Value);
+                    userAuthenticationModel.AuthenticationLevel = System.Enum.Parse<SecurityLevel>(claim.Value);
                     continue;
                 }
 
@@ -85,7 +87,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals("amr"))
                 {
-                    userAuthenticationModel.Amr = claim.Value;
+                    userAuthenticationModel.Amr = [claim.Value];
                     userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
                     continue;
                 }
@@ -109,6 +111,12 @@ namespace Altinn.Platform.Authentication.Helpers
                     continue;
                 }
 
+                if (claim.Type.Equals("sid"))
+                {
+                    userAuthenticationModel.Sid = claim.Value;
+                    continue;
+                }
+
                 if (!string.IsNullOrEmpty(provider.ExternalIdentityClaim) && claim.Type.Equals(provider.ExternalIdentityClaim))
                 {
                     userAuthenticationModel.ExternalIdentity = claim.Value;
@@ -128,7 +136,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
             if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
             {
-                userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), provider.DefaultAuthenticationMethod);
+                userAuthenticationModel.AuthenticationMethod = System.Enum.Parse<AuthenticationMethod>(provider.DefaultAuthenticationMethod);
             }
 
             if (accessToken != null)
