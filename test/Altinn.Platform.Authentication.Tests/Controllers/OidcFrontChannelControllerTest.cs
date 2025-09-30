@@ -117,13 +117,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 ["code"] = code,
                 ["redirect_uri"] = testScenario.DownstreamClientCallbackUrl,
                 ["client_id"] = testScenario.DownstreamClientId,
-
-                // Client auth for test: since your verifier currently compares strings,
-                // just reuse the stored ClientSecretHash as the presented secret.
-                // (When you switch to real hashing, update this accordingly.)
-                ["client_secret"] = create.ClientSecretHash!,
-
-                // PKCE: must be the exact verifier whose hash you used in /authorize
+                ["client_secret"] = testScenario.ClientSecret!,
                 ["code_verifier"] = testScenario.DownstreamCodeVerifier,
             };
             return tokenForm;
@@ -460,7 +454,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,
                 RedirectUris = testScenario.RedirectUris,
                 AllowedScopes = testScenario.AllowedScopes,
-                ClientSecretHash = testScenario.ClientSecret,
+                ClientSecretHash = testScenario.HashedClientSecret,
                 ClientSecretExpiresAt = null,
                 SecretRotationAt = null,
                 JwksUri = null,
