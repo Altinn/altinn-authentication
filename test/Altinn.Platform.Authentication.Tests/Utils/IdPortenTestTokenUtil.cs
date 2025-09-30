@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
 using Altinn.Platform.Authentication.Model;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
 {
     public static class IdPortenTestTokenUtil
     {
-        public static OidcCodeResponse GetIdPortenTokenResponse(string pid, string nonce, string sid, string[] acr, string client_id, string[] scope)
+        public static OidcCodeResponse GetIdPortenTokenResponse(string pid, string nonce, string sid, string[] acr, string[] amr, string client_id, string[] scope)
         {
-            string sub = Guid.NewGuid().ToString(); 
+            string sub = Guid.NewGuid().ToString();
             string locale = "nb";
-            string amr = "BankID Mobil";
             string digDirOrgNo = "991825827";
             DateTimeOffset auth_time = DateTimeOffset.Now;
             DateTimeOffset iat = DateTimeOffset.Now;
@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return response;
         }
 
-        public static string GetIdPortenIDToken(string sub, string pid, string locale, string nonce, string sid, string aud, string[] acr, string amr, DateTimeOffset auth_time)
+        public static string GetIdPortenIDToken(string sub, string pid, string locale, string nonce, string sid, string aud, string[] acr, string[] amr, DateTimeOffset auth_time)
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.idporten.no";
@@ -44,7 +44,21 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim("aud", aud, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("acr", string.Join(" ", acr), ClaimValueTypes.String, issuer));
             claims.Add(new Claim("auth_time", auth_time.ToUnixTimeSeconds().ToString(), ClaimValueTypes.DateTime, issuer));
-            claims.Add(new Claim("amr", "[\"TestID\"]", JsonClaimValueTypes.JsonArray));
+            if (amr != null && amr.Length != 0)
+            {
+                var amrr = amr
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct()
+                .ToArray();
+
+                if (amr.Length > 0)
+                {
+                    string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
+                    claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
+                }
+            }
+
             ClaimsIdentity identity = new ClaimsIdentity("mock");
             identity.AddClaims(claims);
             ClaimsPrincipal principal = new(identity);

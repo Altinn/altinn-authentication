@@ -469,6 +469,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 createdUpstreamLogingTransaction.Nonce, 
                 upstreamSID.ToString(), 
                 createdUpstreamLogingTransaction.AcrValues, 
+                testScenario.Amr?.ToArray(),
                 createdUpstreamLogingTransaction.UpstreamClientId, 
                 createdUpstreamLogingTransaction.Scopes);
 

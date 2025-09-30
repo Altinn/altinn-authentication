@@ -1,10 +1,10 @@
-﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Tests.Models;
-using Docker.DotNet.Models;
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Security.Policy;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Tests.Models;
+using Docker.DotNet.Models;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
