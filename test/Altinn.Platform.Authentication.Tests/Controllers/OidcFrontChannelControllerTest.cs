@@ -53,90 +53,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
         }
 
-        /// <summary>
-        /// Scenario: A valid authorize request is made from Arbeidsflate (downstream).
-        /// Result: A login_transaction and login_transaction_upstream is created, and a redirect to upstream /authorize is issued.
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        public async Task Authorize_Persists_Downstream_And_Upstream_And_Redirects()
-        {
-            // Arrange
-            using var client = CreateClient();
-
-            // Insert a client that matches the authorize request
-            var create = NewClientCreate("c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21");
-            _ = await Repository.InsertClientAsync(create);
-
-            // Headers used by the controller to capture IP/UA/correlation
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
-            client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
-            client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
-
-            // Downstream authorize query (what Arbeidsflate would send)
-            const string clientId = "c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21";
-            var redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
-            var state = "3fcfc23e3bd145cabdcdb70ce406c875";
-            var nonce = "58be49a0cb7df5b791a1fef6c854c5e2";
-            var codeChallenge = "CoD_rETvp22kce_Kts2NQdGWc1E0m7bgRcg6oip3DDU";
-
-            var url =
-                "/authentication/api/v1/authorize" +
-                $"?redirect_uri={redirectUri}" +
-                "&scope=openid%20altinn%3Aportal%2Fenduser" +
-                "&acr_values=idporten-loa-substantial" +
-                $"&state={state}" +
-                $"&client_id={clientId}" +
-                "&response_type=code" +
-                $"&nonce={nonce}" +
-                $"&code_challenge={codeChallenge}" +
-                "&code_challenge_method=S256";
-
-            // Act
-            var resp = await client.GetAsync(url);
-
-            // Assert: HTTP redirect to upstream authorize
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.NotNull(resp.Headers.Location);
-
-            // We don't assert the exact upstream URL (it includes a generated state/nonce),
-            // but we require it's absolute and points to an /authorize endpoint.
-            var loc = resp.Headers.Location!;
-            Assert.True(loc.IsAbsoluteUri, "Redirect Location must be absolute.");
-            Assert.Contains("/authorize", loc.AbsolutePath, StringComparison.OrdinalIgnoreCase);
-            Assert.True(resp.Headers.CacheControl?.NoStore ?? false, "Cache-Control must include no-store");
-            Assert.Contains("no-cache", resp.Headers.Pragma.ToString(), StringComparison.OrdinalIgnoreCase);
-
-            // Parse upstream Location query to ensure key params are present
-            var upstreamQuery = System.Web.HttpUtility.ParseQueryString(loc.Query);
-            Assert.Equal("code", upstreamQuery["response_type"]);
-            Assert.False(string.IsNullOrEmpty(upstreamQuery["client_id"]));
-            Assert.False(string.IsNullOrEmpty(upstreamQuery["redirect_uri"]));
-            Assert.Equal("S256", upstreamQuery["code_challenge_method"]);
-            Assert.False(string.IsNullOrEmpty(upstreamQuery["code_challenge"]));
-            Assert.False(string.IsNullOrEmpty(upstreamQuery["state"]));
-            Assert.False(string.IsNullOrEmpty(upstreamQuery["nonce"]));
-            Assert.Equal("openid", upstreamQuery["scope"]); // by default upstream scope should be openid
-
-            // ===== Verify DB persistence =====
-            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(clientId, state, DataSource);
-            Assert.NotNull(loginTransaction);
-            Assert.Equal(clientId, loginTransaction.ClientId);
-            Assert.Equal(state, loginTransaction.State);
-            Assert.Equal(nonce, loginTransaction.Nonce);
-            Assert.Equal(codeChallenge, loginTransaction.CodeChallenge);
-            Assert.Equal("https://af.altinn.no/api/cb", loginTransaction.RedirectUri.ToString());
-            Assert.Equal("pending", loginTransaction.Status);
-
-            UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
-            Assert.NotNull(createdUpstreamLogingTransaction);
-            Assert.False(string.IsNullOrEmpty(createdUpstreamLogingTransaction.Provider));
-            Assert.Equal("pending", createdUpstreamLogingTransaction.Status);
-            Assert.True(createdUpstreamLogingTransaction.AuthorizationEndpoint.IsAbsoluteUri);
-            Assert.False(string.IsNullOrWhiteSpace(createdUpstreamLogingTransaction.CodeChallenge));
-            Assert.NotEqual(codeChallenge, createdUpstreamLogingTransaction.CodeChallenge); // should be different from downstream
-        }
-
         [Fact]
         public async Task Authorize_Persists_Downstream_And_Upstream_And_Redirects_Including_Callback_AndRedirectTo_DownStreamClient()
         {
@@ -145,7 +61,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
 
             // Insert a client that matches the authorize request
-            OidcClientCreate create = NewClientCreate(testScenario.DownstreamClientId);
+            OidcClientCreate create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             string url = testScenario.GetAuthorizationRequestUrl();
@@ -237,16 +153,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_MissingOpenIdScope_InvalidScope_ErrorRedirect()
         {
             using var client = CreateClient();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
 
             // Insert matching client
-            var create = NewClientCreate("client-a");
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=altinn%3Aportal%2Fenduser" +                // missing openid
-                "&client_id=client-a" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 "&nonce=n123" +
@@ -264,14 +181,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_MissingCodeChallenge_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-b");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-b" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 "&nonce=n123" +
@@ -286,14 +206,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_WrongCodeChallengeMethod_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-c");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-c" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 "&nonce=n123" +
@@ -309,14 +232,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_PromptNoneWithLogin_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-d");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-d" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 "&nonce=n123" +
@@ -333,14 +259,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_InvalidUiLocales_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-e");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-e" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 "&nonce=n123" +
@@ -357,14 +286,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_UnsupportedAcr_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-f");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-f" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 "&nonce=n123" +
@@ -381,14 +313,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_MissingNonce_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-g");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-g" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 
@@ -405,14 +340,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_MissingState_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-h");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-h" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 
                 // state missing
@@ -429,14 +367,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_InvalidResponseType_UnsupportedResponseType()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-i");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-i" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=token" + // not supported
                 "&state=s123" +
                 "&nonce=n123" +
@@ -452,7 +393,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_RedirectUri_NotRegistered_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-j");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var badRedirect = Uri.EscapeDataString("https://evil.example/steal");
@@ -460,7 +404,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 "/authentication/api/v1/authorize" +
                 $"?redirect_uri={badRedirect}" +
                 "&scope=openid" +
-                "&client_id=client-j" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 "&nonce=n123" +
@@ -478,14 +422,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_MaxAge_Negative_InvalidRequest()
         {
             using var client = CreateClient();
-            var create = NewClientCreate("client-k");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert matching client
+            var create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
                 "&scope=openid" +
-                "&client_id=client-k" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
                 "&nonce=n123" +
@@ -504,16 +451,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             return Path.Combine(unitTestFolder, $"../../../appsettings.json");
         }
 
-        private static OidcClientCreate NewClientCreate(string? id = null) =>
+        private static OidcClientCreate NewClientCreate(OidcTestScenario testScenario) =>
             new()
             {
-                ClientId = id ?? $"client-{Guid.NewGuid():N}",
+                ClientId = testScenario.DownstreamClientId,
                 ClientName = "Test Client",
                 ClientType = ClientType.Confidential,
                 TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,
-                RedirectUris = new[] { new Uri("https://af.altinn.no/api/cb") },
-                AllowedScopes = new[] { "openid", "digdir:dialogporten.noconsent", "altinn:portal/enduser" },
-                ClientSecretHash = "argon2id$v=19$m=65536,t=3,p=1$dummy$salthash",
+                RedirectUris = testScenario.RedirectUris,
+                AllowedScopes = testScenario.AllowedScopes,
+                ClientSecretHash = testScenario.ClientSecret,
                 ClientSecretExpiresAt = null,
                 SecretRotationAt = null,
                 JwksUri = null,

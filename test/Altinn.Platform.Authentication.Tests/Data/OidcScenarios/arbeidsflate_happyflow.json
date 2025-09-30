@@ -3,5 +3,13 @@
   "Title": "Arbeidsflate - Happy flow",
   "Description": "Test the happy flow for arbeidsflate",
   "Ssn": "01039012345",
-  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb"
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "AllowedScopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
 }

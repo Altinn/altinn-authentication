@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Tests.Models;
+using Docker.DotNet.Models;
+using System;
 using System.Net;
 using System.Net.Http;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Tests.Models;
+using System.Security.Policy;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
@@ -51,6 +53,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(scenario.DownstreamClientCallbackUrl, loginTransaction.RedirectUri.ToString());
             Assert.Equal("openid altinn:portal/enduser", string.Join(" ", loginTransaction.Scopes));
             Assert.Equal("S256", loginTransaction.CodeChallengeMethod);
+            Assert.Equal(scenario.DownstreamCodeChallenge, loginTransaction.CodeChallenge);
+            Assert.Equal("pending", loginTransaction.Status);
             Assert.Equal(scenario.DownstreamCodeChallenge, loginTransaction.CodeChallenge);
         }
 

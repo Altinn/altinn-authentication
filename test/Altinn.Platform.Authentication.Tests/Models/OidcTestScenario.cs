@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+using System;
+using System.Collections.Generic;
 
 namespace Altinn.Platform.Authentication.Tests.Models
 {
@@ -18,13 +20,21 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public string? DownstreamState { get; set; } = null;
 
-        public string DownstreamCodeVerifier { get; internal set; }
+        public string? DownstreamCodeVerifier { get; internal set; }
 
-        public string DownstreamCodeChallenge { get; internal set; }
+        public string? DownstreamCodeChallenge { get; internal set; }
 
         public string DownstreamClientCallbackUrl { get; set; } = "https://af.altinn.no/api/cb";
-        
-        public string UpstreamProviderCode { get; internal set; }
+
+        public string? UpstreamProviderCode { get; internal set; }
+
+        public List<Uri> RedirectUris { get; set; } = [new Uri("https://af.altinn.no/api/cb")];
+
+        public List<string> AllowedScopes { get; set; } = ["openid", "altinn:portal/enduser"];
+
+        public string? ClientSecret { get; set; } 
+
+        public string? HashedClientSecret { get; set; }
 
         public string GetAuthorizationRequestUrl()
         {

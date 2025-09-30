@@ -55,6 +55,12 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 scenario.UpstreamProviderCode = CryptoHelpers.RandomBase64Url(32);
             }
 
+            if (string.IsNullOrEmpty(scenario.ClientSecret))
+            {
+                scenario.ClientSecret = CryptoHelpers.RandomBase64Url(32);
+                scenario.HashedClientSecret = ClientSecretHasher.Hash(scenario.ClientSecret);
+            }
+
             return scenario;
         }
 
