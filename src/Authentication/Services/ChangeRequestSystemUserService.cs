@@ -28,6 +28,7 @@ using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services;
@@ -54,17 +55,21 @@ public class ChangeRequestSystemUserService(
     private int _paginationSize = _paginationOption.Value.Size;
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser)
+    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser, Guid correllationId)
     {
-        Guid newId = Guid.NewGuid();
+        // For now we don't support ChangeRequests for an Agent SystemUser
+        if (systemUser.UserType == Core.Enums.SystemUserType.Agent)
+        {
+            return Problem.SystemUserNotFound;
+        }
 
         var created = new ChangeRequestResponse()
         {
-            Id = newId,
+            Id = correllationId,
             SystemUserId = new Guid(systemUser.Id),
-            ExternalRef = createRequest.ExternalRef,
-            SystemId = createRequest.SystemId,
-            PartyOrgNo = createRequest.PartyOrgNo,
+            ExternalRef = systemUser.ExternalRef,
+            SystemId = systemUser.SystemId,
+            PartyOrgNo = systemUser.ReporteeOrgNo,
             RequiredRights = createRequest.RequiredRights,
             UnwantedRights = createRequest.UnwantedRights,
             RequiredAccessPackages = createRequest.RequiredAccessPackages,
@@ -73,15 +78,15 @@ public class ChangeRequestSystemUserService(
             RedirectUrl = createRequest.RedirectUrl           
         };
 
-        Result<ChangeRequestValidationSet> validationSet = await ValidateChangeRequest(created, vendorOrgNo, createNew: true);
-        if (validationSet.IsProblem)
+        Result<RegisteredSystemResponse> regSystem = await ValidateChangeRequest(created, vendorOrgNo, createNew: true);
+        if (regSystem.IsProblem)
         {
-            return validationSet.Problem;
+            return regSystem.Problem;
         }        
 
         if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
         {
-            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, validationSet.Value.RegisteredSystem);
+            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, regSystem.Value);
             if (valRedirect.IsProblem)
             {
                 return valRedirect.Problem;
@@ -125,34 +130,39 @@ public class ChangeRequestSystemUserService(
     /// If an active SystemUser exists with the same ExternalRequestId, we return a Problem.
     /// If the id's refer to a Rejected or Denied Request, we return a BadRequest, and ask to delete and renew the Request.
     /// </summary>
-    /// <param name="externalRequestId">Combination of SystemId, PartyOrg and External Ref</param>
+    /// <param name="correllationId">The id</param>    
     /// <param name="createNew">Set to true if the attempt is to create a new Request, and false for the Approve call</param>
     /// <returns>Result or Problem</returns>
-    private async Task<Result<bool>> ValidateExternalChangeRequestId(ExternalRequestId externalRequestId, bool createNew)
+    private async Task<Result<bool>> ValidateStatus(Guid correllationId, bool createNew)
     {
-        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByExternalReferences(externalRequestId);
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestById(correllationId);        
 
-        if (res is not null && res.Status == RequestStatus.Accepted.ToString())
-        {
-            return Problem.ExternalRequestIdAlreadyAccepted;
-        }
-
-        if (createNew && res is not null && res.Status == RequestStatus.New.ToString())
+        // Attempting to Create a new Change Request, but a pending Request exists, with the same Correllation-Id
+        if (createNew && res is not null && res.Status == RequestStatus.New.ToString() && res.Id == correllationId)
         {
             return Problem.ExternalRequestIdPending;
         }
 
-        if (createNew && res is not null && res.Status != RequestStatus.New.ToString())
+        // Attempting to Create a new Change Request, but the Request has already been Rejected or Accepted (or Denied)
+        if (createNew && res is not null && res.Status != RequestStatus.New.ToString() && res.Id == correllationId)
         {
-            return Problem.RequestStatusNotNew;
+            return Problem.ChangeRequestStatusNotNewUseCorrellationId;
         }
 
-        if (res is not null && res.Status == RequestStatus.Denied.ToString())
+        // Attempting to Approve a Change Request, but the Status is already Accepted 
+        if (!createNew && res is not null && res.Status == RequestStatus.Accepted.ToString() && res.Id == correllationId)
+        {
+            return Problem.ExternalRequestIdAlreadyAccepted;
+        }
+
+        // Attemptint to Approve a Change Request, but the Status is already Denied
+        if (!createNew && res is not null && res.Status == RequestStatus.Denied.ToString() && res.Id == correllationId)
         {
             return Problem.ExternalRequestIdDenied;
         }
 
-        if (res is not null && res.Status == RequestStatus.Rejected.ToString())
+        // Attemptint to Approve a Change Request, but the Status is already Rejected
+        if (!createNew && res is not null && res.Status == RequestStatus.Rejected.ToString() && res.Id == correllationId)
         {
             return Problem.ExternalRequestIdRejected;
         }
@@ -242,7 +252,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ChangeRequestResponse>> GetChangeRequestByGuid(Guid requestId, OrganisationNumber vendorOrgNo)
     {
-        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? res = await changeRequestRepository.GetChangeRequestById(requestId);
         if (res is null)
         {
             return Problem.RequestNotFound;
@@ -294,7 +304,7 @@ public class ChangeRequestSystemUserService(
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        ChangeRequestResponse? find = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? find = await changeRequestRepository.GetChangeRequestById(requestId);
         if (find is null)
         {
             return Problem.RequestNotFound;
@@ -326,7 +336,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> ApproveAndDelegateChangeOnSystemUser(Guid requestId, int partyId, int userId, CancellationToken cancellationToken)
     {
-        ChangeRequestResponse? systemUserChangeRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? systemUserChangeRequest = await changeRequestRepository.GetChangeRequestById(requestId);
         if (systemUserChangeRequest is null)
         {
             return Problem.RequestNotFound;
@@ -342,6 +352,8 @@ public class ChangeRequestSystemUserService(
         {
             return Problem.SystemIdNotFound;
         }
+
+        OrganisationNumber vendor = OrganisationNumber.CreateFromStringOrgNo(regSystem.SystemVendorOrgNumber);
 
         SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
         if (toBeChanged is null)
@@ -363,6 +375,19 @@ public class ChangeRequestSystemUserService(
 
         Guid partyUuid = party.PartyUuid.Value;
 
+        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(systemUserChangeRequest.RequiredAccessPackages, partyUuid, toBeChanged, true, cancellationToken);
+        if (verifiedRequiredAccessPackages.IsProblem)
+        {
+            return verifiedRequiredAccessPackages.Problem;
+        }
+
+        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(systemUserChangeRequest.UnwantedAccessPackages, partyUuid, toBeChanged, false, cancellationToken);
+
+        if (verifiedUnwantedAccessPackages.IsProblem)
+        {
+            return verifiedUnwantedAccessPackages.Problem;
+        }
+
         DelegationCheckResult delegationCheckFinalResult = new(CanDelegate:false, RightResponses:[], errors:[]);
 
         // Check Single Rights to be added 
@@ -378,7 +403,7 @@ public class ChangeRequestSystemUserService(
         // Check AccessPackages to be added
         if (systemUserChangeRequest.RequiredAccessPackages?.Count > 0)
         {
-            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, systemUserChangeRequest.RequiredAccessPackages, fromBff: false, cancellationToken);        
+            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, verifiedRequiredAccessPackages.Value, fromBff: false, cancellationToken);        
             if (checkAccessPackages.IsProblem)   
             {
                 return checkAccessPackages.Problem;
@@ -419,9 +444,9 @@ public class ChangeRequestSystemUserService(
         }
 
         // Attempt to Revoke AccessPackages from the SystemUser
-        if (systemUserChangeRequest.UnwantedAccessPackages?.Count > 0)
+        if (verifiedUnwantedAccessPackages.Value?.Count > 0)
         {
-            foreach (AccessPackage accessPackage in systemUserChangeRequest.UnwantedAccessPackages)
+            foreach (AccessPackage accessPackage in verifiedUnwantedAccessPackages.Value)
             {
                 var removeSystemUserResult = await accessManagementClient.DeleteSingleAccessPackageFromSystemUser(partyUuid, new Guid(toBeChanged.Id), accessPackage.Urn, cancellationToken);
                 if (removeSystemUserResult.IsProblem)
@@ -445,7 +470,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> RejectChangeOnSystemUser(Guid requestId, int userId, CancellationToken cancellationToken)
     {
-        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestById(requestId);
         if (systemUserRequest is null)
         {
             return Problem.RequestNotFound;
@@ -499,7 +524,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<string>> GetRedirectByChangeRequestId(Guid requestId)
     {
-        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? systemUserRequest = await changeRequestRepository.GetChangeRequestById(requestId);
         if (systemUserRequest is null || systemUserRequest.RedirectUrl is null)
         {
             return Problem.RequestNotFound;
@@ -508,44 +533,18 @@ public class ChangeRequestSystemUserService(
         return systemUserRequest.RedirectUrl;
     }
 
-    private async Task<Result<ChangeRequestValidationSet>> ValidateChangeRequest(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew)
-    {
-        // Set an empty ExternalRef to be equal to the PartyOrgNo
-        if (validateSet.ExternalRef is null || validateSet.ExternalRef == string.Empty)
+    private async Task<Result<RegisteredSystemResponse>> ValidateChangeRequest(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo, bool createNew)
+    {   
+        Result<bool> valRef = await ValidateStatus(validateSet.Id, createNew);
+        if (valRef.IsProblem)
         {
-            validateSet.ExternalRef = validateSet.PartyOrgNo;
-        }
-
-        // The combination of SystemId + Customer's OrgNo and Vendor's External Reference must be unique, for both all Requests and SystemUsers.
-        ExternalRequestId externalRequestId = new()
-        {
-            ExternalRef = validateSet.ExternalRef ?? validateSet.PartyOrgNo,
-            OrgNo = validateSet.PartyOrgNo,
-            SystemId = validateSet.SystemId,
-        };
-
-        SystemUser? systemUser = await systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
-        if (systemUser is null)
-        {
-            return Problem.SystemUserNotFound;
-        }
-
-        // For now we don't support ChangeRequests for an Agent SystemUser
-        if (systemUser.UserType == Core.Enums.SystemUserType.Agent)
-        {
-            return Problem.SystemUserNotFound;
+            return valRef.Problem;
         }
 
         RegisteredSystemResponse? systemInfo = await systemRegisterService.GetRegisteredSystemInfo(validateSet.SystemId);
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
-        }
-
-        Result<bool> valRef = await ValidateExternalChangeRequestId(externalRequestId, createNew);
-        if (valRef.IsProblem)
-        {
-            return valRef.Problem;
         }
 
         Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
@@ -587,24 +586,22 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        return new ChangeRequestValidationSet()
-        {
-            ExternalRequestId = externalRequestId,
-            SystemUser = systemUser,
-            RegisteredSystem = systemInfo
-        };
+        return systemInfo;
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, OrganisationNumber vendorOrgNo)
+    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, SystemUser systemUser, OrganisationNumber vendorOrgNo)
     {
-        Result<ChangeRequestValidationSet> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo, createNew: false);
+        Result<RegisteredSystemResponse> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo, createNew: false);
         if (valSet.IsProblem)
         {
             return valSet.Problem;
         }
 
-        Party party = await partiesClient.GetPartyByOrgNo(valSet.Value.SystemUser.ReporteeOrgNo);
+        ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
+
+        Party party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+
         if (party is null || party.PartyUuid is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -612,13 +609,19 @@ public class ChangeRequestSystemUserService(
 
         Guid partyUuid = (Guid)party.PartyUuid;
 
-        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(verifyRequest.RequiredAccessPackages, partyUuid, valSet.Value.SystemUser, true);
+        Result<List<AccessPackage>> verifiedRequiredAccessPackages = await VerifyAccessPackages(verifyRequest.RequiredAccessPackages, partyUuid, systemUser, true);
         if (verifiedRequiredAccessPackages.IsProblem)
         {
             return verifiedRequiredAccessPackages.Problem;
         }
 
-        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(verifyRequest.UnwantedAccessPackages, partyUuid, valSet.Value.SystemUser, false);
+        if (verifiedRequiredAccessPackages.Value.Count > 0)
+        {
+            changeRequestStatus = ChangeRequestStatus.New;
+        }
+
+        Result<List<AccessPackage>> verifiedUnwantedAccessPackages = await VerifyAccessPackages(verifyRequest.UnwantedAccessPackages, partyUuid, systemUser, false);
+
         if (verifiedUnwantedAccessPackages.IsProblem)
         {
             return verifiedUnwantedAccessPackages.Problem;
@@ -629,7 +632,7 @@ public class ChangeRequestSystemUserService(
             Id = Guid.NewGuid(),
             ExternalRef = verifyRequest.ExternalRef, 
             SystemId = verifyRequest.SystemId,
-            SystemUserId = Guid.Parse(valSet.Value.SystemUser.Id),
+            SystemUserId = Guid.Parse(systemUser.Id),
             PartyOrgNo = verifyRequest.PartyOrgNo,
             RequiredRights = verifyRequest.RequiredRights,
             UnwantedRights = verifyRequest.UnwantedRights,
@@ -907,7 +910,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ChangeRequestResponseInternal>> CheckUserAuthorizationAndGetRequest(Guid requestId)
     {
-        ChangeRequestResponse? req = await changeRequestRepository.GetChangeRequestByInternalId(requestId);
+        ChangeRequestResponse? req = await changeRequestRepository.GetChangeRequestById(requestId);
         if (req == null)
         {
             return Problem.RequestNotFound;

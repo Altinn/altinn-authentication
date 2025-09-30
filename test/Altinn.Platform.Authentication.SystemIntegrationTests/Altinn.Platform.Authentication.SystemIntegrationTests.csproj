@@ -71,6 +71,9 @@
       <None Update="Resources\Testdata\AccessManagement\systemUserDecision.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Resources\Testdata\AccessManagement\systemUserDecisionSingleRight.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

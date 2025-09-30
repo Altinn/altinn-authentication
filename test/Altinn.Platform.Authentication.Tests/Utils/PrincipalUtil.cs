@@ -146,6 +146,7 @@ namespace App.IntegrationTests.Utils
         {
             string issuer = "www.altinn.no";
             ClaimsPrincipal principal = GetUserPrincipal(userId, claims, authenticationLevel);
+            ////principal.Identities.FirstOrDefault().AddClaim(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuId.ToString(), ClaimValueTypes.String, issuer));
             principal.Identities.FirstOrDefault().AddClaim(new Claim(AuthzConstants.CLAIM_SCOPE, scopes, ClaimValueTypes.String, issuer));
             string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
             return token;

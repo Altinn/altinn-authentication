@@ -10,7 +10,9 @@ using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.PEP.Helpers;
 using Altinn.Common.PEP.Interfaces;
+using Altinn.Platform.Authentication.Constants;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
@@ -47,14 +49,37 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
         [HttpGet("clients/available")]
         public async Task<ActionResult<ClientInfoPaginated<ClientInfo>>> GetAvailableClientsForDelegation([FromQuery] Guid agent)
-        {            
+        {
             SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
+            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+
+            if (systemUserErrors.TryToActionResult(out ActionResult errorResult))
+            {
+                return errorResult;
+            }
+
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+
+            if (party is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
+                    Status = 404
+                });
+            }
 
             if (!party.PartyUuid.HasValue)
             {
                 return Unauthorized();
+            }
+
+            bool isAuthorized = await AuthorizeResourceAccess(ClientDelegationResource, party.PartyUuid.Value, User, "read");
+            if (!isAuthorized)
+            {
+                return Forbid();
             }
 
             Guid facilitatorId = party.PartyUuid.Value;
@@ -70,7 +95,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             // Otherwise, get the value
             var customerList = result.Result as OkObjectResult;
-            List<Customer>? customers = customerList.Value as List<Customer>;
+            List<Customer>? customers = customerList?.Value as List<Customer>;
             if (customers == null)
             {
                 return NotFound();
@@ -90,7 +115,24 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
+            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+
+            if (systemUserErrors.TryToActionResult(out ActionResult errorResult))
+            {
+                return errorResult;
+            }
+
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            if (party is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
+                    Status = 404
+                });
+            }
+
             if (!party.PartyUuid.HasValue)
             {
                 return Unauthorized();
@@ -103,7 +145,7 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
-            
+
             // If the result is a problem (not 200 OK), return it directly
             if (result.IsProblem)
             {
@@ -132,13 +174,25 @@ namespace Altinn.Platform.Authentication.Controllers
         public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
             SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
-            if (systemUser is null)
+            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+            ValidationErrorBuilder clientErrors = ValidateClient(client);
+            ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
+            if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
-                ModelState.AddModelError("return", $"SystemUser with Id {agent} Not Found");
-                return ValidationProblem(ModelState);
+                return errorResult;
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            if (party is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
+                    Status = 404
+                });
+            }
+
             if (!party.PartyUuid.HasValue)
             {
                 return Unauthorized();
@@ -153,7 +207,7 @@ namespace Altinn.Platform.Authentication.Controllers
             AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
             {
                 CustomerId = client.ToString(),
-                FacilitatorId = party.PartyUuid.Value.ToString(),                
+                FacilitatorId = party.PartyUuid.Value.ToString(),
             };
 
             var userId = AuthenticationHelper.GetUserId(HttpContext);
@@ -172,7 +226,7 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Delegate a client to the system user
+        /// Remove a client to the system user
         /// </summary>
         /// <param name="agent">the unique identifier of the system user</param>
         /// <param name="client">the id of the customer</param>
@@ -184,13 +238,26 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             Guid delegationId = Guid.Empty;
             SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
-            if (systemUser is null)
+
+            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+            ValidationErrorBuilder clientErrors = ValidateClient(client);
+            ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
+            if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
-                ModelState.AddModelError("return", $"SystemUser with Id {agent} Not Found");
-                return ValidationProblem(ModelState);
+                return errorResult;
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            if (party is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
+                    Status = 404
+                });
+            }
+
             if (!party.PartyUuid.HasValue)
             {
                 return Unauthorized();
@@ -230,7 +297,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 CustomerId = client.ToString(),
                 FacilitatorId = party.PartyUuid.Value.ToString(),
             };
-            
+
             var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, agent, cancellationToken);
 
             // If the result is a problem (not 200 OK), return it directly
@@ -244,7 +311,24 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 Agent = agent,
                 Client = client
-            });           
+            });
+        }
+
+        /// <summary>
+        /// Retrieves a list of all agent system users associated with the authenticated party.
+        /// </summary>
+        /// <remarks>This method requires the caller to be authenticated and authorized with the <see
+        /// cref="AuthzConstants.POLICY_CLIENTDELEGATION_READ"/> policy. The party ID is determined based on the
+        /// caller's authentication context.</remarks>
+        /// <returns>A list of <see cref="SystemUser"/> objects representing the agent system users for the party. Returns an
+        /// empty list if no agent system users are found.</returns>
+        [HttpGet("agents")]
+        [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
+        public async Task<ActionResult<List<SystemUser>>> GetAllAgentSystemUsersForParty()
+        {
+            int partyId = AuthenticationHelper.GetPartyId(HttpContext);
+
+            return await inner.GetListOfAgentSystemUsersPartyHas(partyId);
         }
 
         /// <summary>
@@ -261,7 +345,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns><see langword="true"/> if the user is authorized to perform the specified action on the resource; otherwise,
         /// <see langword="false"/>.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the response from the policy decision point (PDP) is null or invalid.</exception>
-        public async Task<bool> AuthorizeResourceAccess(string resource, Guid resourceParty, ClaimsPrincipal userPrincipal, string action)
+        private async Task<bool> AuthorizeResourceAccess(string resource, Guid resourceParty, ClaimsPrincipal userPrincipal, string action)
         {
             XacmlJsonRequestRoot request = DecisionHelper.CreateDecisionRequestForResourceRegistryResource(resource, resourceParty, userPrincipal, action);
             XacmlJsonResponse response = await Pdp.GetDecisionForRequest(request);
@@ -322,6 +406,64 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return ClientInfoPaginated.Create(clients, null, systemUserInfo);
+        }
+
+        private static ValidationErrorBuilder ValidateSystemUser(SystemUser systemUser, Guid systemUserId)
+        {
+            ValidationErrorBuilder errors = default;
+
+            if (systemUserId == Guid.Empty)
+            {
+                errors.Add(ValidationErrors.SystemUser_Missing_SystemUserId, [
+                    "?agent"
+                ]);
+                return errors;
+            }
+
+            if (systemUser is null)
+            {
+                errors.Add(ValidationErrors.SystemUser_SystemUserId_NotFound, [
+                    "?agent"
+                ]);
+
+                return errors;
+            }
+
+            if (systemUser?.UserType != Core.Enums.SystemUserType.Agent)
+            {
+                errors.Add(ValidationErrors.SystemUser_Invalid_SystemUserId, [
+                    "?agent"
+                ]);
+            }
+
+            return errors;
+        }
+
+        private static ValidationErrorBuilder ValidateClient(Guid client)
+        {
+            ValidationErrorBuilder errors = default;
+            if (client == Guid.Empty)
+            {
+                errors.Add(ValidationErrors.SystemUser_Missing_Invalid_ClientId, [
+                    "?client"
+                    ]);
+            }
+
+            return errors;
+        }
+
+        private static ValidationErrorBuilder MergeValidationErrors(params ValidationErrorBuilder[] errorBuilders)
+        {
+            ValidationErrorBuilder mergedErrors = default;
+            foreach (var errorBuilder in errorBuilders)
+            {
+                foreach (var error in errorBuilder)
+                {
+                    mergedErrors.Add(error);
+                }
+            }
+
+            return mergedErrors;
         }
     }
 }
