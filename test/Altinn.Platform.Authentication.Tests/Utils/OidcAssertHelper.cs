@@ -1,8 +1,8 @@
-﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Tests.Models;
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Tests.Models;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
@@ -26,6 +26,20 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             // Parse upstream Location query to ensure key params are present
             System.Collections.Specialized.NameValueCollection upstreamQuery = System.Web.HttpUtility.ParseQueryString(loc.Query);
             Assert.False(string.IsNullOrEmpty(upstreamQuery["state"]));
+        }
+
+        public static void AssertCallbackResponse(HttpResponseMessage callbackResp, OidcTestScenario testScenario)
+        {
+            Assert.Equal(HttpStatusCode.Found, callbackResp.StatusCode);
+            Assert.NotNull(callbackResp.Headers.Location);
+            var finalLocation = callbackResp.Headers.Location!;
+            Assert.Equal("https", finalLocation.Scheme);
+            Assert.Equal("af.altinn.no", finalLocation.Host);
+            Assert.Equal("/api/cb", finalLocation.AbsolutePath);
+
+            System.Collections.Specialized.NameValueCollection finalQuery = System.Web.HttpUtility.ParseQueryString(finalLocation.Query);
+            Assert.False(string.IsNullOrWhiteSpace(finalQuery["code"]), "Downstream code must be present.");
+            Assert.Equal(testScenario.DownstreamState, finalQuery["state"]); // original downstream state echoed back
         }
 
         public static void AssertLogingTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario)
