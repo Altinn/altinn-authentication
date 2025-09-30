@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Tests.Models;
 using AltinnCore.Authentication.Constants;
 using Xunit;
 
@@ -7,7 +8,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
 {
     public static class TokenAssertsHelper
     {
-        public static void AssertTokenResponse(TokenResponseDto tokenResponseDto)
+        public static void AssertTokenResponse(TokenResponseDto tokenResponseDto, OidcTestScenario testScenario)
         {
             Assert.NotNull(tokenResponseDto);
             Assert.NotNull(tokenResponseDto.access_token);
@@ -16,11 +17,11 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.NotNull(tokenResponseDto.id_token); // since openid scope was requested
             Assert.Contains("openid", tokenResponseDto.scope.Split(' '));
             Assert.Contains("altinn:portal/enduser", tokenResponseDto.scope.Split(' '));
-            AssertAccessToken(tokenResponseDto.access_token);
-            AssertIdToken(tokenResponseDto.id_token);
+            AssertAccessToken(tokenResponseDto.access_token, testScenario);
+            AssertIdToken(tokenResponseDto.id_token, testScenario);
         }
 
-        public static void AssertAccessToken(string accessToken)
+        public static void AssertAccessToken(string accessToken, OidcTestScenario testScenario)
         {
             ClaimsPrincipal accessTokenPrincipal = JwtTokenMock.ValidateToken(accessToken);
             Assert.NotNull(accessTokenPrincipal);
@@ -29,7 +30,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.True(accessTokenPrincipal.Identity.IsAuthenticated);
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && c.Value.Equals(testScenario.Ssn));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyUUID && !string.IsNullOrEmpty(c.Value));
@@ -37,7 +38,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains("openid"));
         }
 
-        public static void AssertIdToken(string accessToken)
+        public static void AssertIdToken(string accessToken, OidcTestScenario testScenario)
         {
             ClaimsPrincipal accessTokenPrincipal = JwtTokenMock.ValidateToken(accessToken);
             Assert.NotNull(accessTokenPrincipal);

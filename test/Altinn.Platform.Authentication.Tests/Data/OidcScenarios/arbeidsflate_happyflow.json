@@ -2,5 +2,6 @@
   "ScenarioId": "Arbeidsflate_HappyFlow",
   "Title": "Arbeidsflate - Happy flow",
   "Description": "Test the happy flow for arbeidsflate",
-  "Ssn": "01039012345"
+  "Ssn": "01039012345",
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb"
 }

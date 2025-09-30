@@ -22,13 +22,14 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public string DownstreamCodeChallenge { get; internal set; }
 
-        public string RedirectUri { get; set; } = "https://af.altinn.no/api/cb";
+        public string DownstreamClientCallbackUrl { get; set; } = "https://af.altinn.no/api/cb";
+        
         public string UpstreamProviderCode { get; internal set; }
 
         public string GetAuthorizationRequestUrl()
         {
             // Downstream authorize query (what Arbeidsflate would send)
-            string redirectUri = Uri.EscapeDataString(RedirectUri);
+            string redirectUri = Uri.EscapeDataString(DownstreamClientCallbackUrl);
 
             string url =
                 "/authentication/api/v1/authorize" +

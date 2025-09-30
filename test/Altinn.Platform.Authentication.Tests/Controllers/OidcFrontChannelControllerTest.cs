@@ -170,37 +170,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
-            var callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
 
-            var callbackResp = await client.GetAsync(callbackUrl);
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
             // Should redirect to downstream client redirect_uri with ?code=...&state=original_downstream_state
             OidcAssertHelper.AssertCallbackResponse(callbackResp, testScenario);
             string code = HttpUtility.ParseQueryString(callbackResp.Headers.Location!.Query)["code"]!;
 
-            // When you build the authorize URL earlier, use 'computedChallenge' instead of a hardcoded one:
-            // ... &code_challenge={Uri.EscapeDataString(computedChallenge)}&code_challenge_method=S256
-
-            // --- After your existing assertions on final redirect back to the client ---
-
-            // Extract the authorization code from the redirect to the client's redirect_uri
-         
-            // Now exchange code -> tokens against Altinn's /token endpoint
-            var tokenForm = new Dictionary<string, string>
-            {
-                ["grant_type"] = "authorization_code",
-                ["code"] = code,
-                ["redirect_uri"] = "https://af.altinn.no/api/cb",
-                ["client_id"] = testScenario.DownstreamClientId,
-
-                // Client auth for test: since your verifier currently compares strings,
-                // just reuse the stored ClientSecretHash as the presented secret.
-                // (When you switch to real hashing, update this accordingly.)
-                ["client_secret"] = create.ClientSecretHash!,
-
-                // PKCE: must be the exact verifier whose hash you used in /authorize
-                ["code_verifier"] = testScenario.DownstreamCodeVerifier,
-            };
+            // === Phase 3: Downstream client redeems code for tokens ===
+            Dictionary<string, string> tokenForm = BuildTokenRequestForm(testScenario, create, code);
 
             using var tokenResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -211,9 +190,28 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             TokenResponseDto tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
 
             // Asserts on token response structure
-            TokenAssertsHelper.AssertTokenResponse(tokenResult);
+            TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario);
         }
 
+        private static Dictionary<string, string> BuildTokenRequestForm(OidcTestScenario testScenario, OidcClientCreate create, string code)
+        {
+            Dictionary<string, string> tokenForm = new()
+            {
+                ["grant_type"] = "authorization_code",
+                ["code"] = code,
+                ["redirect_uri"] = testScenario.DownstreamClientCallbackUrl,
+                ["client_id"] = testScenario.DownstreamClientId,
+
+                // Client auth for test: since your verifier currently compares strings,
+                // just reuse the stored ClientSecretHash as the presented secret.
+                // (When you switch to real hashing, update this accordingly.)
+                ["client_secret"] = create.ClientSecretHash!,
+
+                // PKCE: must be the exact verifier whose hash you used in /authorize
+                ["code_verifier"] = testScenario.DownstreamCodeVerifier,
+            };
+            return tokenForm;
+        }
 
         [Fact]
         public async Task Authorize_UnknownClient_Returns_LocalError400()

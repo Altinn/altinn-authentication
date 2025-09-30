@@ -48,7 +48,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(scenario.DownstreamClientId, loginTransaction.ClientId);
             Assert.Equal(scenario.DownstreamNonce, loginTransaction.Nonce);
             Assert.Equal(scenario.DownstreamState, loginTransaction.State);
-            Assert.Equal(scenario.RedirectUri, loginTransaction.RedirectUri.ToString());
+            Assert.Equal(scenario.DownstreamClientCallbackUrl, loginTransaction.RedirectUri.ToString());
             Assert.Equal("openid altinn:portal/enduser", string.Join(" ", loginTransaction.Scopes));
             Assert.Equal("S256", loginTransaction.CodeChallengeMethod);
             Assert.Equal(scenario.DownstreamCodeChallenge, loginTransaction.CodeChallenge);
