@@ -109,20 +109,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario);
         }
 
-        private static Dictionary<string, string> BuildTokenRequestForm(OidcTestScenario testScenario, OidcClientCreate create, string code)
-        {
-            Dictionary<string, string> tokenForm = new()
-            {
-                ["grant_type"] = "authorization_code",
-                ["code"] = code,
-                ["redirect_uri"] = testScenario.DownstreamClientCallbackUrl,
-                ["client_id"] = testScenario.DownstreamClientId,
-                ["client_secret"] = testScenario.ClientSecret!,
-                ["code_verifier"] = testScenario.DownstreamCodeVerifier,
-            };
-            return tokenForm;
-        }
-
         [Fact]
         public async Task Authorize_UnknownClient_Returns_LocalError400()
         {
@@ -494,6 +480,20 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
             client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
             return client;
+        }
+
+        private static Dictionary<string, string> BuildTokenRequestForm(OidcTestScenario testScenario, OidcClientCreate create, string code)
+        {
+            Dictionary<string, string> tokenForm = new()
+            {
+                ["grant_type"] = "authorization_code",
+                ["code"] = code,
+                ["redirect_uri"] = testScenario.DownstreamClientCallbackUrl,
+                ["client_id"] = testScenario.DownstreamClientId,
+                ["client_secret"] = testScenario.ClientSecret!,
+                ["code_verifier"] = testScenario.DownstreamCodeVerifier,
+            };
+            return tokenForm;
         }
     }
 }

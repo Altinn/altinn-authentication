@@ -2,17 +2,18 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.Security;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Enum;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Register.Models;
 using AltinnCore.Authentication.Constants;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -51,6 +52,8 @@ namespace Altinn.Platform.Authentication.Services
                 new Claim("iss", _generalSettings.PlatformEndpoint)
             };
 
+            SecurityLevel securityLevel = SecurityLevel.SelfIdentifed;
+
             if (authCodeRow.SubjectPartyUuid != null)
             {
                 claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, authCodeRow.SubjectPartyUuid.ToString()!));
@@ -58,7 +61,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (authCodeRow.SubjectPartyId != null)
             {
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, authCodeRow.SubjectPartyId.ToString()!));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, authCodeRow.SubjectPartyId.ToString()!, ClaimValueTypes.Integer64));
             }
 
             if (authCodeRow.SubjectUserId != null)
@@ -74,7 +77,11 @@ namespace Altinn.Platform.Authentication.Services
             if (authCodeRow.Acr != null)
             {
                 claims.Add(new Claim("acr", authCodeRow.Acr));
+                securityLevel = GetAuthenticationLevelForIdPorten(authCodeRow.Acr);
             }
+
+            int securityLevelValue = (int)securityLevel;
+            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, securityLevelValue.ToString(), ClaimValueTypes.Integer64));
 
             if (authCodeRow.Amr != null && authCodeRow.Amr.Count != 0)
             {
@@ -89,6 +96,9 @@ namespace Altinn.Platform.Authentication.Services
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
                 }
+
+                string amrClaim = AuthenticationHelper.GetAuthenticationMethod(string.Join(" ", authCodeRow.Amr)).ToString();
+                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
             }
 
             if (authCodeRow.Nonce != null && isIDToken)
@@ -111,6 +121,21 @@ namespace Altinn.Platform.Authentication.Services
             ClaimsPrincipal principal = new(identity);
 
             return principal;
+        }
+
+        private static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
+        {
+            switch (acr)
+            {
+                case "selfregistered-email":
+                    return Enum.SecurityLevel.NotSensitive;
+                case "idporten-loa-substantial":
+                    return Enum.SecurityLevel.Sensitive;
+                case "idporten-loa-high":
+                    return Enum.SecurityLevel.VerySensitive;
+                default:
+                    return Enum.SecurityLevel.NotSensitive;
+            }
         }
 
         private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset expires)
