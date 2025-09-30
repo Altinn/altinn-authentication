@@ -157,7 +157,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert: HTTP redirect to upstream authorize
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
-           
+
             string upstreamState = System.Web.HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
 
             // Asserting DB persistence after /authorize
@@ -168,16 +168,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario);
 
             // 5) Configure the mock to return a successful token response for this exact callback
-            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
-                Services.GetRequiredService<Altinn.Platform.Authentication.Services.Interfaces.IOidcProvider>());
-            var idpAuthCode = "idp-code-xyz"; // what we will pass on callback
-            Guid upstreamSID = Guid.NewGuid();
-            mock.SetupSuccess(
-                authorizationCode: idpAuthCode,
-                clientId: createdUpstreamLogingTransaction.UpstreamClientId,
-                redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
-                codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
-                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse(testScenario.Ssn, createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues, createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction);
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
@@ -213,7 +204,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 ["grant_type"] = "authorization_code",
                 ["code"] = code,
                 ["redirect_uri"] = "https://af.altinn.no/api/cb",
-                ["client_id"] = testScenario.DownstreamClientId ,
+                ["client_id"] = testScenario.DownstreamClientId,
 
                 // Client auth for test: since your verifier currently compares strings,
                 // just reuse the stored ClientSecretHash as the presented secret.
@@ -234,6 +225,20 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Asserts on token response structure
             TokenAssertsHelper.AssertTokenResponse(tokenResult);
+        }
+
+        private void ConfigureMockProviderTokenResponse(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction)
+        {
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+                Services.GetRequiredService<Altinn.Platform.Authentication.Services.Interfaces.IOidcProvider>());
+            var idpAuthCode = "idp-code-xyz"; // what we will pass on callback
+            Guid upstreamSID = Guid.NewGuid();
+            mock.SetupSuccess(
+                authorizationCode: idpAuthCode,
+                clientId: createdUpstreamLogingTransaction.UpstreamClientId,
+                redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
+                codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
+                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse(testScenario.Ssn, createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues, createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
         }
 
         private HttpClient CreateClientWithHeaders()
