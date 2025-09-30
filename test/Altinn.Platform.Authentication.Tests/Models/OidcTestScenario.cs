@@ -1,4 +1,6 @@
-﻿namespace Altinn.Platform.Authentication.Tests.Models
+﻿using System;
+
+namespace Altinn.Platform.Authentication.Tests.Models
 {
     public class OidcTestScenario
     {
@@ -19,5 +21,27 @@
         public string DownstreamCodeVerifier { get; internal set; }
 
         public string DownstreamCodeChallenge { get; internal set; }
+
+        public string RedirectUri { get; set; } = "https://af.altinn.no/api/cb";
+
+        public string GetAuthorizationRequestUrl()
+        {
+            // Downstream authorize query (what Arbeidsflate would send)
+            string redirectUri = Uri.EscapeDataString(RedirectUri);
+
+            string url =
+                "/authentication/api/v1/authorize" +
+                $"?redirect_uri={redirectUri}" +
+                "&scope=openid%20altinn%3Aportal%2Fenduser" +
+                "&acr_values=idporten-loa-substantial" +
+                $"&state={DownstreamState}" +
+                $"&client_id={DownstreamClientId}" +
+                "&response_type=code" +
+                $"&nonce={DownstreamNonce}" +
+                $"&code_challenge={DownstreamCodeChallenge}" +
+                "&code_challenge_method=S256";
+
+            return url;
+        }
     }
 }

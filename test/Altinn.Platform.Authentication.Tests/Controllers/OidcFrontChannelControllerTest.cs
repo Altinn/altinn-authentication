@@ -20,6 +20,7 @@ using Altinn.Platform.Authentication.Tests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Console;
 using Npgsql;
 using Xunit;
 
@@ -149,46 +150,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             OidcClientCreate create = NewClientCreate(testScenario.DownstreamClientId);
             _ = await Repository.InsertClientAsync(create);
 
-            // Downstream authorize query (what Arbeidsflate would send)
-            string redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
-
-            string url =
-                "/authentication/api/v1/authorize" +
-                $"?redirect_uri={redirectUri}" +
-                "&scope=openid%20altinn%3Aportal%2Fenduser" +
-                "&acr_values=idporten-loa-substantial" +
-                $"&state={testScenario.DownstreamState}" +
-                $"&client_id={testScenario.DownstreamClientId}" +
-                "&response_type=code" +
-                $"&nonce={testScenario.DownstreamNonce}" +
-                $"&code_challenge={testScenario.DownstreamCodeChallenge}" +
-                "&code_challenge_method=S256";
+            string url = testScenario.GetAuthorizationRequestUrl();
 
             // Act
-            HttpResponseMessage resp = await client.GetAsync(url);
+            HttpResponseMessage authorizationRequestResponse = await client.GetAsync(url);
 
             // Assert: HTTP redirect to upstream authorize
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.NotNull(resp.Headers.Location);
-
-            // We don't assert the exact upstream URL (it includes a generated state/nonce),
-            // but we require it's absolute and points to an /authorize endpoint.
-            var loc = resp.Headers.Location!;
-            Assert.True(loc.IsAbsoluteUri, "Redirect Location must be absolute.");
-            Assert.Contains("/authorize", loc.AbsolutePath, StringComparison.OrdinalIgnoreCase);
-            Assert.True(resp.Headers.CacheControl?.NoStore ?? false, "Cache-Control must include no-store");
-            Assert.Contains("no-cache", resp.Headers.Pragma.ToString(), StringComparison.OrdinalIgnoreCase);
-
-            // Parse upstream Location query to ensure key params are present
-            var upstreamQuery = System.Web.HttpUtility.ParseQueryString(loc.Query);
-            Assert.False(string.IsNullOrEmpty(upstreamQuery["state"]));
-            string upstreamState = upstreamQuery["state"];
+            OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
+           
+            string upstreamState = System.Web.HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
 
             // 5) Configure the mock to return a successful token response for this exact callback
             Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<Altinn.Platform.Authentication.Services.Interfaces.IOidcProvider>());
 
             LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.DownstreamState, DataSource);
+            OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario);
+
             UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
 
             var idpAuthCode = "idp-code-xyz"; // what we will pass on callback
