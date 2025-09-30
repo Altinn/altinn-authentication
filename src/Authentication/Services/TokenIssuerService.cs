@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -73,6 +74,21 @@ namespace Altinn.Platform.Authentication.Services
             if (authCodeRow.Acr != null)
             {
                 claims.Add(new Claim("acr", authCodeRow.Acr));
+            }
+
+            if (authCodeRow.Amr != null && authCodeRow.Amr.Count != 0)
+            {
+                var amr = authCodeRow.Amr
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct()
+                .ToArray();
+
+                if (amr.Length > 0)
+                {
+                    string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
+                    claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
+                }
             }
 
             if (authCodeRow.Nonce != null && isIDToken)
