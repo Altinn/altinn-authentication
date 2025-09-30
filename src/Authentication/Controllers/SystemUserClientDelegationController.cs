@@ -61,9 +61,25 @@ namespace Altinn.Platform.Authentication.Controllers
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
 
+            if (party is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
+                    Status = 404
+                });
+            }
+
             if (!party.PartyUuid.HasValue)
             {
                 return Unauthorized();
+            }
+
+            bool isAuthorized = await AuthorizeResourceAccess(ClientDelegationResource, party.PartyUuid.Value, User, "read");
+            if (!isAuthorized)
+            {
+                return Forbid();
             }
 
             Guid facilitatorId = party.PartyUuid.Value;
@@ -107,6 +123,16 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            if (party is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
+                    Status = 404
+                });
+            }
+
             if (!party.PartyUuid.HasValue)
             {
                 return Unauthorized();
@@ -157,6 +183,16 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            if (party is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
+                    Status = 404
+                });
+            }
+
             if (!party.PartyUuid.HasValue)
             {
                 return Unauthorized();
@@ -212,6 +248,16 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            if (party is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
+                    Status = 404
+                });
+            }
+
             if (!party.PartyUuid.HasValue)
             {
                 return Unauthorized();
