@@ -267,7 +267,7 @@ public class SystemUserController : ControllerBase
     [HttpGet("vendor/byquery", Name = "vendor/byquery")]
     public async Task<ActionResult<SystemUser>> GetSingleSystemUserForVendor(
         [FromQuery(Name = "system-id")] string systemId,
-        [FromQuery(Name = "external-ref")] string externalRef,
+        [FromQuery(Name = "external-ref")] string? externalRef,
         [FromQuery(Name = "orgno")] string orgno,
         CancellationToken cancellationToken = default)
     {
@@ -279,7 +279,7 @@ public class SystemUserController : ControllerBase
 
         ExternalRequestId extid = new()
         {
-            ExternalRef = externalRef,  
+            ExternalRef = externalRef ?? orgno,  
             OrgNo = orgno,
             SystemId = systemId            
         };  
