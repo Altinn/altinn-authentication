@@ -292,13 +292,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return result.Problem.ToActionResult();
             }
 
-            AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
-            {
-                CustomerId = client.ToString(),
-                FacilitatorId = party.PartyUuid.Value.ToString(),
-            };
-
-            var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, agent, cancellationToken);
+            var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, party.PartyUuid.Value, cancellationToken);
 
             // If the result is a problem (not 200 OK), return it directly
             // If the result is an ObjectResult and status code is not 200, return it directly
@@ -324,11 +318,26 @@ namespace Altinn.Platform.Authentication.Controllers
         /// empty list if no agent system users are found.</returns>
         [HttpGet("agents")]
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
-        public async Task<ActionResult<List<SystemUser>>> GetAllAgentSystemUsersForParty()
-        {
-            int partyId = AuthenticationHelper.GetPartyId(HttpContext);
+        public async Task<ActionResult<List<SystemUser>>> GetAllAgentSystemUsersForParty([FromQuery] string party)
+        {    
+            Party partyInfo = await PartiesClient.GetPartyByOrgNo(party);
+            if (partyInfo is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for organisation {party}",
+                    Status = 404
+                });
+            }
 
-            return await inner.GetListOfAgentSystemUsersPartyHas(partyId);
+            bool isAuthorized = await AuthorizeResourceAccess(ClientDelegationResource, partyInfo.PartyUuid.Value, User, "read");
+            if (!isAuthorized)
+            {
+                return Forbid();
+            }
+
+            return await inner.GetListOfAgentSystemUsersPartyHas(partyInfo.PartyId);
         }
 
         /// <summary>
