@@ -176,7 +176,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 clientId: createdUpstreamLogingTransaction.UpstreamClientId,
                 redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
                 codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
-                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse("01039012345", createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues, createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
+                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse(testScenario.Ssn, createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues, createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
