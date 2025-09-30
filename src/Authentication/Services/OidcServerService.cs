@@ -55,7 +55,9 @@ namespace Altinn.Platform.Authentication.Services
         private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
-        /// Handles an incoming OIDC <c>/authorize</c> request and returns a high-level outcome that the controller converts to HTTP.
+        /// Handles an incoming OIDC <c>/authorize</c> request from a Downstream client in the Altinn Platform.
+        /// This can be Arbeidsflate or other application.
+        /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
         /// </summary>
         public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken cancellationToken)
         {
@@ -90,74 +92,13 @@ namespace Altinn.Platform.Authentication.Services
             // TODO: if reusable and no prompt=login: proceed to issue downstream authorization_code (future extension)
 
             // ========= 5) Persist login_transaction(downstream) =========
-            LoginTransactionCreate transaction = new()
-            {
-                ClientId = client.ClientId,
-                RedirectUri = request.RedirectUri!,
-                Scopes = request.Scopes!,
-                State = request.State!,
-                Nonce = request.Nonce!,
-                AcrValues = request.AcrValues,
-                Prompts = request.Prompts,
-                UiLocales = request.UiLocales,
-                MaxAge = request.MaxAge,
-                CodeChallenge = request.CodeChallenge!,
-                CodeChallengeMethod = request.CodeChallengeMethod ?? "S256",
-                RequestUri = request.RequestUri,
-                RequestObjectJwt = request.RequestObject, // if you keep it
-                AuthorizationDetailsJson = null,
-                CreatedByIp = request.ClientIp,                           // captured in controller
-                UserAgentHash = request.UserAgentHash,
-                CorrelationId = request.CorrelationId,
-                ExpiresAt = TimeProvider.System.GetUtcNow().AddMinutes(10)
-            };
-
-            LoginTransaction tx = await _loginTxRepo.InsertAsync(transaction, cancellationToken);
+            LoginTransaction tx = await PersistLoginTransaction(request, client, cancellationToken);
 
             // ========= 6) Choose upstream and derive upstream params =========
-            OidcProvider provider = ChooseProvider(request);
-
-            string upstreamState = CryptoHelpers.RandomBase64Url(32);
-            string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
-            string upstreamVerifier = Pkce.RandomPkceVerifier();
-            string upstreamChallenge = Hashing.Sha256Base64Url(upstreamVerifier);
-
-            // ========= 7) Persist login_transaction_upstream =========
-            // NOTE: Store everything you need for callback + token exchange.
-            var upstreamCreate = new UpstreamLoginTransactionCreate
-            {
-                RequestId = tx.RequestId,
-                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
-
-                Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
-                UpstreamClientId = provider.ClientId,
-                AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
-                TokenEndpoint = new Uri(provider.TokenEndpoint),
-                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : null, // keep null unless you decide to pin
-
-                UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
-
-                State = upstreamState,
-                Nonce = upstreamNonce,
-                Scopes = (provider.Scope ?? "openid").Split(' ', StringSplitOptions.RemoveEmptyEntries),
-                AcrValues = request.AcrValues?.Length > 0 ? request.AcrValues : null,
-                Prompts = request.Prompts?.Length > 0 ? request.Prompts : null,
-                UiLocales = request.UiLocales?.Length > 0 ? request.UiLocales : null,
-                MaxAge = request.MaxAge,
-
-                CodeVerifier = upstreamVerifier,
-                CodeChallenge = upstreamChallenge,
-                CodeChallengeMethod = "S256",
-
-                CorrelationId = request.CorrelationId,
-                CreatedByIp = request.ClientIp,
-                UserAgentHash = request.UserAgentHash
-            };
-
-            _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
+            (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
 
             // ========= 8) Build upstream authorize URL =========
-            var authorizeUrl = BuildUpstreamAuthorizeUrl(
+            Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
                 provider,
                 upstreamState,
                 upstreamNonce,
@@ -187,7 +128,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // ===== 1) Load upstream login transaction by state =====
-            // Expected repo method: GetForCallbackByStateAsync(state) → includes request_id, status, expires_at, provider info, etc.
             UpstreamLoginTransaction? upstreamTx = await _upstreamLoginTxRepo.GetForCallbackByStateAsync(input.State, cancellationToken);
             if (upstreamTx is null)
             {
@@ -326,6 +266,80 @@ namespace Altinn.Platform.Authentication.Services
                 ClientState = loginTx.State
             };
         }
+
+        private async Task<(OidcProvider Provider, string UpstreamState, string UpstreamNonce, string UpstreamChallenge)> CreateUpstreamLoginTransaction(AuthorizeRequest request, LoginTransaction tx, CancellationToken cancellationToken)
+        {
+            OidcProvider provider = ChooseProvider(request);
+
+            string upstreamState = CryptoHelpers.RandomBase64Url(32);
+            string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
+            string upstreamVerifier = Pkce.RandomPkceVerifier();
+            string upstreamChallenge = Hashing.Sha256Base64Url(upstreamVerifier);
+
+            // ========= 7) Persist login_transaction_upstream =========
+            // NOTE: Store everything you need for callback + token exchange.
+            var upstreamCreate = new UpstreamLoginTransactionCreate
+            {
+                RequestId = tx.RequestId,
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
+
+                Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
+                UpstreamClientId = provider.ClientId,
+                AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
+                TokenEndpoint = new Uri(provider.TokenEndpoint),
+                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : null, // keep null unless you decide to pin
+
+                UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
+
+                State = upstreamState,
+                Nonce = upstreamNonce,
+                Scopes = (provider.Scope ?? "openid").Split(' ', StringSplitOptions.RemoveEmptyEntries),
+                AcrValues = request.AcrValues?.Length > 0 ? request.AcrValues : null,
+                Prompts = request.Prompts?.Length > 0 ? request.Prompts : null,
+                UiLocales = request.UiLocales?.Length > 0 ? request.UiLocales : null,
+                MaxAge = request.MaxAge,
+
+                CodeVerifier = upstreamVerifier,
+                CodeChallenge = upstreamChallenge,
+                CodeChallengeMethod = "S256",
+
+                CorrelationId = request.CorrelationId,
+                CreatedByIp = request.ClientIp,
+                UserAgentHash = request.UserAgentHash
+            };
+
+            _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
+            return (provider, upstreamState, upstreamNonce, upstreamChallenge);
+        }
+
+        private async Task<LoginTransaction> PersistLoginTransaction(AuthorizeRequest request, OidcClient client, CancellationToken cancellationToken)
+        {
+            LoginTransactionCreate transaction = new()
+            {
+                ClientId = client.ClientId,
+                RedirectUri = request.RedirectUri!,
+                Scopes = request.Scopes!,
+                State = request.State!,
+                Nonce = request.Nonce!,
+                AcrValues = request.AcrValues,
+                Prompts = request.Prompts,
+                UiLocales = request.UiLocales,
+                MaxAge = request.MaxAge,
+                CodeChallenge = request.CodeChallenge!,
+                CodeChallengeMethod = request.CodeChallengeMethod ?? "S256",
+                RequestUri = request.RequestUri,
+                RequestObjectJwt = request.RequestObject, // if you keep it
+                AuthorizationDetailsJson = null,
+                CreatedByIp = request.ClientIp,                           // captured in controller
+                UserAgentHash = request.UserAgentHash,
+                CorrelationId = request.CorrelationId,
+                ExpiresAt = TimeProvider.System.GetUtcNow().AddMinutes(10)
+            };
+
+            LoginTransaction tx = await _loginTxRepo.InsertAsync(transaction, cancellationToken);
+            return tx;
+        }
+
 
         private async Task<string> CreateAuthorizationCode(UpstreamLoginTransaction upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, string achievedAcr, DateTimeOffset? authTime, OidcSession session, CancellationToken cancellationToken)
         {
