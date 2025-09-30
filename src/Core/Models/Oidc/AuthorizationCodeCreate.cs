@@ -14,6 +14,7 @@
         public required IReadOnlyCollection<string> Scopes { get; init; }
         public string? Nonce { get; init; }
         public string? Acr { get; init; }
+        public IReadOnlyCollection<string>? Amr { get; init; }
         public DateTimeOffset? AuthTime { get; init; }
         public required string CodeChallenge { get; init; }        // from downstream request
         public string CodeChallengeMethod { get; init; } = "S256";

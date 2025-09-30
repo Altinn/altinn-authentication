@@ -18,6 +18,7 @@
         public required IReadOnlyCollection<string> Scopes { get; init; }
         public string? Nonce { get; init; }
         public string? Acr { get; init; }
+        public IReadOnlyCollection<string>? Amr { get; init; }
         public DateTimeOffset? AuthTime { get; init; }
         public string CodeChallengeMethod { get; set; }
     }

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.authorization_code (
   scopes                 TEXT[] NOT NULL,
   nonce                  TEXT,
   acr                    TEXT,
+  amr                    TEXT[],
   auth_time              TIMESTAMPTZ,
   code_challenge         TEXT NOT NULL,
   code_challenge_method  TEXT NOT NULL DEFAULT 'S256',

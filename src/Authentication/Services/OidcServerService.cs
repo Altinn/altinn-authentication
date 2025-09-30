@@ -395,6 +395,7 @@ namespace Altinn.Platform.Authentication.Services
                     Scopes = loginTx.Scopes,
                     Nonce = loginTx.Nonce,
                     Acr = userIdenity.Acr,
+                    Amr = userIdenity.Amr,
                     AuthTime = userIdenity.AuthTime,
                     CodeChallenge = loginTx.CodeChallenge,
                     CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",

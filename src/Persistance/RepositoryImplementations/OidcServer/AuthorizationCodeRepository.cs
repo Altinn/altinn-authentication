@@ -55,7 +55,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             const string SQL = /*strpsql*/ @"
                 SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used, expires_at,
                        subject_id, subject_party_uuid, subject_party_id, subject_user_id,
-                       session_id, scopes, nonce, acr, auth_time
+                       session_id, scopes, nonce, acr, amr, auth_time
                 FROM oidcserver.authorization_code
                 WHERE code = @code
                   AND used = FALSE
@@ -99,6 +99,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     Scopes = reader.GetFieldValue<string[]>("scopes"),
                     Nonce = reader.IsDBNull("nonce") ? null : reader.GetFieldValue<string>("nonce"),
                     Acr = reader.IsDBNull("acr") ? null : reader.GetFieldValue<string>("acr"),
+                    Amr = reader.IsDBNull("amr") ? null : reader.GetFieldValue<string[]>("amr"),
                     AuthTime = reader.IsDBNull("auth_time") ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>("auth_time")
                 };
 
@@ -119,12 +120,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             const string SQL = /*strpsql*/ @"
             INSERT INTO oidcserver.authorization_code (
               code, client_id, subject_id, subject_party_uuid, subject_party_id, subject_user_id,
-              session_id, redirect_uri, scopes, nonce, acr, auth_time,
+              session_id, redirect_uri, scopes, nonce, acr, amr, auth_time,
               code_challenge, code_challenge_method, expires_at, created_by_ip, correlation_id
             )
             VALUES (
               @code, @client_id, @subject_id, @subject_party_uuid, @subject_party_id, @subject_user_id,
-              @session_id, @redirect_uri, @scopes, @nonce, @acr, @auth_time,
+              @session_id, @redirect_uri, @scopes, @nonce, @acr, @amr, @auth_time,
               @code_challenge, @code_challenge_method, @expires_at, @created_by_ip, @correlation_id
             );";
 
@@ -140,6 +141,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("scopes", c.Scopes.ToArray());
             cmd.Parameters.AddWithValue("nonce", (object?)c.Nonce ?? DBNull.Value);
             cmd.Parameters.AddWithValue("acr", (object?)c.Acr ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("amr", (object?)c.Amr?.ToArray() ?? DBNull.Value);
             cmd.Parameters.AddWithValue("auth_time", (object?)c.AuthTime ?? DBNull.Value);
             cmd.Parameters.AddWithValue("code_challenge", c.CodeChallenge);
             cmd.Parameters.AddWithValue("code_challenge_method", c.CodeChallengeMethod);
