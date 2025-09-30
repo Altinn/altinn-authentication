@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using System.Security.Policy;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
@@ -34,15 +33,18 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
         /// <param name="provider">authentication provider</param>
+        /// <param name="accessToken">the access token</param>
         /// <returns>user information</returns>
-        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider)
+        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider, JwtSecurityToken? accessToken = null)
         {
             UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel()
             {
                 IsAuthenticated = true,
                 ProviderClaims = new Dictionary<string, List<string>>(),
                 Iss = provider.IssuerKey,
-                AuthenticationMethod = AuthenticationMethod.NotDefined
+                AuthenticationMethod = AuthenticationMethod.NotDefined,
+                TokenIssuer = jwtSecurityToken.Issuer,
+                TokenSubject = jwtSecurityToken.Subject
             };
 
             foreach (Claim claim in jwtSecurityToken.Claims)
@@ -69,13 +71,13 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticateMethod))
                 {
-                    userAuthenticationModel.AuthenticationMethod = (Enum.AuthenticationMethod)System.Enum.Parse(typeof(Enum.AuthenticationMethod), claim.Value);
+                    userAuthenticationModel.AuthenticationMethod = System.Enum.Parse<AuthenticationMethod>(claim.Value);
                     continue;
                 }
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticationLevel))
                 {
-                    userAuthenticationModel.AuthenticationLevel = (Enum.SecurityLevel)System.Enum.Parse(typeof(Enum.SecurityLevel), claim.Value);
+                    userAuthenticationModel.AuthenticationLevel = System.Enum.Parse<SecurityLevel>(claim.Value);
                     continue;
                 }
 
@@ -88,12 +90,14 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals("amr"))
                 {
+                    userAuthenticationModel.Amr = [claim.Value];
                     userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
                     continue;
                 }
 
                 if (claim.Type.Equals("acr"))
                 {
+                    userAuthenticationModel.Acr = claim.Value;
                     userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevelForIdPorten(claim.Value);
                     continue;
                 }
@@ -101,6 +105,18 @@ namespace Altinn.Platform.Authentication.Helpers
                 if (claim.Type.Equals("jti"))
                 {
                     userAuthenticationModel.ExternalSessionId = claim.Value;
+                    continue;
+                }
+
+                if (claim.Type.Equals("auth_time"))
+                {
+                    userAuthenticationModel.AuthTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(claim.Value));
+                    continue;
+                }
+
+                if (claim.Type.Equals("sid"))
+                {
+                    userAuthenticationModel.Sid = claim.Value;
                     continue;
                 }
 
@@ -123,9 +139,22 @@ namespace Altinn.Platform.Authentication.Helpers
 
             if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
             {
-                userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), provider.DefaultAuthenticationMethod);
+                userAuthenticationModel.AuthenticationMethod = System.Enum.Parse<AuthenticationMethod>(provider.DefaultAuthenticationMethod);
             }
 
+            if (accessToken != null)
+            {
+                foreach (Claim claim in accessToken.Claims)
+                {
+                    // Scopes are only returned as part of the access token
+                    if (claim.Type.Equals("scope"))
+                    {
+                        userAuthenticationModel.Scope = claim.Value;
+                        continue;
+                    }
+                }
+            }
+             
             return userAuthenticationModel;
         }
 
