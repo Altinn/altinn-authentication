@@ -58,6 +58,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Handles an incoming OIDC <c>/authorize</c> request from a Downstream client in the Altinn Platform.
         /// This can be Arbeidsflate or other application.
         /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
+        /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
         /// </summary>
         public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken cancellationToken)
         {
@@ -95,14 +96,14 @@ namespace Altinn.Platform.Authentication.Services
             LoginTransaction tx = await PersistLoginTransaction(request, client, cancellationToken);
 
             // ========= 6) Choose upstream and derive upstream params =========
-            (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
+            (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
 
             // ========= 8) Build upstream authorize URL =========
             Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
                 provider,
                 upstreamState,
                 upstreamNonce,
-                upstreamChallenge,
+                upstreamPkceChallenge,
                 request,
                 provider.IssuerKey);
 
@@ -113,115 +114,23 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken cancellationToken)
         {
-            // ===== 0) Guard / basic semantics =====
-            ArgumentNullException.ThrowIfNull(input);
-
-            // We expect either success (code+state) or error(+state). State is required in both.
-            if (string.IsNullOrWhiteSpace(input.State))
+            // ===== 1) Validate input + load upstream transaction =====
+            (UpstreamCallbackResult? callbackResultUpstreamValidation, UpstreamLoginTransaction? upstreamTx) = await ValidateUpstreamCallbackState(input, cancellationToken);
+            if (callbackResultUpstreamValidation != null)
             {
-                return new UpstreamCallbackResult
-                {
-                    Kind = UpstreamCallbackResultKind.LocalError,
-                    StatusCode = 400,
-                    LocalErrorMessage = "Missing 'state' in upstream callback."
-                };
-            }
-
-            // ===== 1) Load upstream login transaction by state =====
-            UpstreamLoginTransaction? upstreamTx = await _upstreamLoginTxRepo.GetForCallbackByStateAsync(input.State, cancellationToken);
-            if (upstreamTx is null)
-            {
-                // We don't know where to redirect safely; local error.
-                return new UpstreamCallbackResult
-                {
-                    Kind = UpstreamCallbackResultKind.LocalError,
-                    StatusCode = 400,
-                    LocalErrorMessage = "Unknown or expired upstream state."
-                };
-            }
-
-            // Quickly reject non-pending or expired
-            if (!string.Equals(upstreamTx.Status, "pending", StringComparison.OrdinalIgnoreCase))
-            {
-                return new UpstreamCallbackResult
-                {
-                    Kind = UpstreamCallbackResultKind.LocalError,
-                    StatusCode = 400,
-                    LocalErrorMessage = "Upstream transaction is not pending."
-                };
-            }
-
-            if (upstreamTx.ExpiresAt <= _timeProvider.GetUtcNow())
-            {
-                return new UpstreamCallbackResult
-                {
-                    Kind = UpstreamCallbackResultKind.LocalError,
-                    StatusCode = 400,
-                    LocalErrorMessage = "Upstream transaction has expired."
-                };
+                return callbackResultUpstreamValidation;
             }
 
             // ===== 2) Load downstream (original) transaction to get validated redirect_uri & original state =====
-            // Expected repo method: GetAsync(requestId) or GetByRequestIdAsync
-            var loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId, cancellationToken);
-            if (loginTx is null)
+            (UpstreamCallbackResult? downStreamValidationResult, LoginTransaction? loginTx) = await ValidateDownstreamCallbackState(input, upstreamTx!, cancellationToken);
+            if (downStreamValidationResult != null)
             {
-                return new UpstreamCallbackResult
-                {
-                    Kind = UpstreamCallbackResultKind.LocalError,
-                    StatusCode = 500,
-                    LocalErrorMessage = "Downstream transaction not found."
-                };
+                return downStreamValidationResult;
             }
 
-            // Safety: We only ever redirect to the redirect_uri we validated on /authorize
-            if (loginTx.RedirectUri is null || !loginTx.RedirectUri.IsAbsoluteUri)
-            {
-                return new UpstreamCallbackResult
-                {
-                    Kind = UpstreamCallbackResultKind.LocalError,
-                    StatusCode = 500,
-                    LocalErrorMessage = "Stored redirect_uri is invalid."
-                };
-            }
-
-            // ===== 3) If upstream returned an error, map it back to client immediately =====
-            if (!string.IsNullOrWhiteSpace(input.Error))
-            {
-                // Mark upstream as failed (optional, but recommended)
-                //await _upstreamLoginTxRepo.MarkErrorAsync(
-                //    upstreamTx.UpstreamRequestId,
-                //    error: input.Error!,
-                //    errorDescription: input.ErrorDescription,
-                //    ct: ct);
-
-                return new UpstreamCallbackResult
-                {
-                    Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
-                    ClientRedirectUri = loginTx.RedirectUri,
-                    ClientState = loginTx.State,
-                    Error = input.Error,
-                    ErrorDescription = input.ErrorDescription
-                };
-            }
-
-            // ===== 4) Require 'code' on success path =====
-            if (string.IsNullOrWhiteSpace(input.Code))
-            {
-                // Missing code → client-facing error
-                return new UpstreamCallbackResult
-                {
-                    Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
-                    ClientRedirectUri = loginTx.RedirectUri,
-                    ClientState = loginTx.State,
-                    Error = "access_denied",
-                    ErrorDescription = "Missing authorization code in upstream callback."
-                };
-            }
-
-            // ===== 5) From here, you will:
-            OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
-            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
+            // ===== 3) Exchange code for tokens =====
+            OidcProvider provider = ChooseProviderByKey(upstreamTx!.Provider);
+            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
             JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
             JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
             UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider);
@@ -237,16 +146,13 @@ namespace Altinn.Platform.Authentication.Services
             var now = _timeProvider.GetUtcNow();
             var sessionExpires = now.AddHours(8);
 
-            // Generate a new SID only if we *insert*; upsert will reuse if exists
-            string newSid = CryptoHelpers.RandomBase64Url(32);
-
-            // 5.d Create or refresh session
+            // 4.d Create or refresh session
             OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, idToken, userIdenity, achievedAcr, authTime, cancellationToken);
 
-            // 6) Issue downstream authorization code
-            string authCode = await CreateAuthorizationCode(upstreamTx, loginTx, userIdenity, achievedAcr, authTime, session, cancellationToken);
+            // 5) Issue downstream authorization code
+            string authCode = await CreateAuthorizationCode(upstreamTx, loginTx!, userIdenity, achievedAcr, authTime, session, cancellationToken);
 
-            // 7) Mark upstream transaction as completed
+            // 6) Mark upstream transaction as completed
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
                 upstreamTx.UpstreamRequestId,
                 issuer: idToken.Issuer,
@@ -257,7 +163,7 @@ namespace Altinn.Platform.Authentication.Services
                 upstreamSid: upstreamSessionSid,
                 cancellationToken: cancellationToken);
 
-            // 8) Redirect back to the client with code + original state
+            // 7) Redirect back to the client with code + original state
             return new UpstreamCallbackResult
             {
                 Kind = UpstreamCallbackResultKind.RedirectToClient,
@@ -267,14 +173,131 @@ namespace Altinn.Platform.Authentication.Services
             };
         }
 
-        private async Task<(OidcProvider Provider, string UpstreamState, string UpstreamNonce, string UpstreamChallenge)> CreateUpstreamLoginTransaction(AuthorizeRequest request, LoginTransaction tx, CancellationToken cancellationToken)
+        /// <summary>
+        /// Validates the downstream callback state by loading the original login transaction.
+        /// </summary>
+        private async Task<(UpstreamCallbackResult? CallbackResultdownstreamValidation, LoginTransaction? LoginTx)> ValidateDownstreamCallbackState(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
+        {
+            LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx!.RequestId, cancellationToken);
+            if (loginTx is null)
+            {
+                return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Downstream transaction not found."
+                }, null);
+            }
+
+            // Safety: We only ever redirect to the redirect_uri we validated on /authorize
+            if (loginTx.RedirectUri is null || !loginTx.RedirectUri.IsAbsoluteUri)
+            {
+                return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Stored redirect_uri is invalid."
+                }, loginTx);
+            }
+
+            // ===== 3) If upstream returned an error, map it back to client immediately =====
+            if (!string.IsNullOrWhiteSpace(input.Error))
+            {
+                // Mark upstream as failed (optional, but recommended)
+                //await _upstreamLoginTxRepo.MarkErrorAsync(
+                //    upstreamTx.UpstreamRequestId,
+                //    error: input.Error!,
+                //    errorDescription: input.ErrorDescription,
+                //    ct: ct);
+
+                return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                    ClientRedirectUri = loginTx.RedirectUri,
+                    ClientState = loginTx.State,
+                    Error = input.Error,
+                    ErrorDescription = input.ErrorDescription
+                }, loginTx);
+            }
+
+            // ===== 4) Require 'code' on success path =====
+            if (string.IsNullOrWhiteSpace(input.Code))
+            {
+                // Missing code → client-facing error
+                return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
+                    ClientRedirectUri = loginTx.RedirectUri,
+                    ClientState = loginTx.State,
+                    Error = "access_denied",
+                    ErrorDescription = "Missing authorization code in upstream callback."
+                }, loginTx);
+            }
+
+            return (CallbackResultdownstreamValidation: null, LoginTx: loginTx);
+        }
+
+        private async Task<(UpstreamCallbackResult? CallbackResult, UpstreamLoginTransaction? UpstreamTranscation)> ValidateUpstreamCallbackState(UpstreamCallbackInput input, CancellationToken cancellationToken)
+        {
+            // ===== 0) Guard / basic semantics =====
+            ArgumentNullException.ThrowIfNull(input);
+
+            // We expect either success (code+state) or error(+state). State is required in both.
+            if (string.IsNullOrWhiteSpace(input.State))
+            {
+                return (CallbackResult: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Missing 'state' in upstream callback."
+                }, UpstreamTranscation: null);
+            }
+
+            // ===== 1) Load upstream login transaction by state =====
+            UpstreamLoginTransaction? upstreamTx = await _upstreamLoginTxRepo.GetForCallbackByStateAsync(input.State, cancellationToken);
+            if (upstreamTx is null)
+            {
+                // We don't know where to redirect safely; local error.
+                return (CallbackResult: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Unknown or expired upstream state."
+                }, UpstreamTranscation: upstreamTx);
+            }
+
+            // Quickly reject non-pending or expired
+            if (!string.Equals(upstreamTx.Status, "pending", StringComparison.OrdinalIgnoreCase))
+            {
+                return (CallbackResult: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Upstream transaction is not pending."
+                }, upstreamTx);
+            }
+
+            if (upstreamTx.ExpiresAt <= _timeProvider.GetUtcNow())
+            {
+                return (CallbackResult: new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 400,
+                    LocalErrorMessage = "Upstream transaction has expired."
+                }, upstreamTx);
+            }
+
+            return (CallbackResult: null, UpstreamTranscation: upstreamTx);
+        }
+
+        private async Task<(OidcProvider Provider, string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(AuthorizeRequest request, LoginTransaction tx, CancellationToken cancellationToken)
         {
             OidcProvider provider = ChooseProvider(request);
 
             string upstreamState = CryptoHelpers.RandomBase64Url(32);
             string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
-            string upstreamVerifier = Pkce.RandomPkceVerifier();
-            string upstreamChallenge = Hashing.Sha256Base64Url(upstreamVerifier);
+            string upstreamPkceVerifier = Pkce.RandomPkceVerifier();
+            string upstreamPkceChallenge = Hashing.Sha256Base64Url(upstreamPkceVerifier);
 
             // ========= 7) Persist login_transaction_upstream =========
             // NOTE: Store everything you need for callback + token exchange.
@@ -299,8 +322,8 @@ namespace Altinn.Platform.Authentication.Services
                 UiLocales = request.UiLocales?.Length > 0 ? request.UiLocales : null,
                 MaxAge = request.MaxAge,
 
-                CodeVerifier = upstreamVerifier,
-                CodeChallenge = upstreamChallenge,
+                CodeVerifier = upstreamPkceVerifier,
+                CodeChallenge = upstreamPkceChallenge,
                 CodeChallengeMethod = "S256",
 
                 CorrelationId = request.CorrelationId,
@@ -309,7 +332,7 @@ namespace Altinn.Platform.Authentication.Services
             };
 
             _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
-            return (provider, upstreamState, upstreamNonce, upstreamChallenge);
+            return (provider, upstreamState, upstreamNonce, upstreamPkceChallenge);
         }
 
         private async Task<LoginTransaction> PersistLoginTransaction(AuthorizeRequest request, OidcClient client, CancellationToken cancellationToken)
@@ -339,7 +362,6 @@ namespace Altinn.Platform.Authentication.Services
             LoginTransaction tx = await _loginTxRepo.InsertAsync(transaction, cancellationToken);
             return tx;
         }
-
 
         private async Task<string> CreateAuthorizationCode(UpstreamLoginTransaction upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, string achievedAcr, DateTimeOffset? authTime, OidcSession session, CancellationToken cancellationToken)
         {

@@ -31,8 +31,9 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
         /// <param name="provider">authentication provider</param>
+        /// <param name="accessToken">the access token</param>
         /// <returns>user information</returns>
-        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider)
+        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider, JwtSecurityToken? accessToken = null)
         {
             UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel()
             {
@@ -123,6 +124,19 @@ namespace Altinn.Platform.Authentication.Helpers
                 userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), provider.DefaultAuthenticationMethod);
             }
 
+            if (accessToken != null)
+            {
+                foreach (Claim claim in accessToken.Claims)
+                {
+                    // Scopes are only returned as part of the access token
+                    if (claim.Type.Equals("scope"))
+                    {
+                        userAuthenticationModel.Scope = claim.Value;
+                        continue;
+                    }
+                }
+            }
+             
             return userAuthenticationModel;
         }
 

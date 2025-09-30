@@ -90,5 +90,10 @@ namespace Altinn.Platform.Authentication.Model
         /// The party uuid
         /// </summary>
         public Guid? PartyUuid { get; set; }
+
+        /// <summary>
+        /// The scopes granted
+        /// </summary>
+        public string? Scope { get; internal set; }
     }
 }
