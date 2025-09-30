@@ -152,9 +152,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Downstream authorize query (what Arbeidsflate would send)
             string redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
 
-            string codeVerifier = Pkce.RandomPkceVerifier();
-            string codeChallenge = Pkce.ComputeS256CodeChallenge(codeVerifier);
-
             string url =
                 "/authentication/api/v1/authorize" +
                 $"?redirect_uri={redirectUri}" +
@@ -164,7 +161,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 $"&nonce={testScenario.DownstreamNonce}" +
-                $"&code_challenge={codeChallenge}" +
+                $"&code_challenge={testScenario.DownstreamCodeChallenge}" +
                 "&code_challenge_method=S256";
 
             // Act
@@ -245,7 +242,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 ["client_secret"] = create.ClientSecretHash!,
 
                 // PKCE: must be the exact verifier whose hash you used in /authorize
-                ["code_verifier"] = codeVerifier,
+                ["code_verifier"] = testScenario.DownstreamCodeVerifier,
             };
 
             using var tokenResp = await client.PostAsync(

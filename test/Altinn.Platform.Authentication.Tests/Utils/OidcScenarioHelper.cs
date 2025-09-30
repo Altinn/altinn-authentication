@@ -38,6 +38,16 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 scenario.DownstreamState = CryptoHelpers.RandomBase64Url(32);
             }
 
+            if (string.IsNullOrEmpty(scenario.DownstreamCodeVerifier))
+            {
+                scenario.DownstreamCodeVerifier = Pkce.RandomPkceVerifier();
+            }
+
+            if (string.IsNullOrEmpty(scenario.DownstreamCodeChallenge))
+                            {
+                scenario.DownstreamCodeChallenge = Pkce.ComputeS256CodeChallenge(scenario.DownstreamCodeVerifier);
+            }
+
             return scenario;
         }
 

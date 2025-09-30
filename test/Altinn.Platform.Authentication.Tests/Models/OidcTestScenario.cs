@@ -15,5 +15,9 @@
         public string? DownstreamNonce { get; set; } = null;
 
         public string? DownstreamState { get; set; } = null;
+
+        public string DownstreamCodeVerifier { get; internal set; }
+
+        public string DownstreamCodeChallenge { get; internal set; }
     }
 }
