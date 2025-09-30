@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Web;
 
 namespace Altinn.Platform.Authentication.Tests.Models
 {
@@ -30,6 +31,8 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public List<Uri> RedirectUris { get; set; } = [new Uri("https://af.altinn.no/api/cb")];
 
+        public List<string> Scopes { get; set; } = ["openid", "altinn:portal/enduser"];
+
         public List<string> AllowedScopes { get; set; } = ["openid", "altinn:portal/enduser"];
 
         public string? ClientSecret { get; set; } 
@@ -44,7 +47,7 @@ namespace Altinn.Platform.Authentication.Tests.Models
             string url =
                 "/authentication/api/v1/authorize" +
                 $"?redirect_uri={redirectUri}" +
-                "&scope=openid%20altinn%3Aportal%2Fenduser" +
+                $"&scope={Uri.EscapeDataString(string.Join(" ", Scopes))}" +
                 "&acr_values=idporten-loa-substantial" +
                 $"&state={DownstreamState}" +
                 $"&client_id={DownstreamClientId}" +

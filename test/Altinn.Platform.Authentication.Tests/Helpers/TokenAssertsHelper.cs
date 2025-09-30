@@ -35,7 +35,10 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyUUID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.UserId && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains("openid"));
+            foreach (string scope in testScenario.Scopes)
+            {
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains(scope));
+            }
         }
 
         public static void AssertIdToken(string accessToken, OidcTestScenario testScenario)

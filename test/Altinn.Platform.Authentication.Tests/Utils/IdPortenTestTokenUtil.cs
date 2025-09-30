@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Model;
@@ -43,6 +44,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim("aud", aud, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("acr", string.Join(" ", acr), ClaimValueTypes.String, issuer));
             claims.Add(new Claim("auth_time", auth_time.ToUnixTimeSeconds().ToString(), ClaimValueTypes.DateTime, issuer));
+            claims.Add(new Claim("amr", "[\"TestID\"]", JsonClaimValueTypes.JsonArray));
             ClaimsIdentity identity = new ClaimsIdentity("mock");
             identity.AddClaims(claims);
             ClaimsPrincipal principal = new(identity);
