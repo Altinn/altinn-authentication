@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using System.Security.Policy;
 using System.Text.RegularExpressions;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
@@ -86,12 +85,14 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals("amr"))
                 {
+                    userAuthenticationModel.Amr = claim.Value;
                     userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
                     continue;
                 }
 
                 if (claim.Type.Equals("acr"))
                 {
+                    userAuthenticationModel.Acr = claim.Value;
                     userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevelForIdPorten(claim.Value);
                     continue;
                 }
@@ -99,6 +100,12 @@ namespace Altinn.Platform.Authentication.Helpers
                 if (claim.Type.Equals("jti"))
                 {
                     userAuthenticationModel.ExternalSessionId = claim.Value;
+                    continue;
+                }
+
+                if (claim.Type.Equals("auth_time"))
+                {
+                    userAuthenticationModel.AuthTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(claim.Value));
                     continue;
                 }
 

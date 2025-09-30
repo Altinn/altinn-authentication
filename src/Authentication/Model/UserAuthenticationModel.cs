@@ -95,5 +95,25 @@ namespace Altinn.Platform.Authentication.Model
         /// The scopes granted
         /// </summary>
         public string? Scope { get; internal set; }
+
+        /// <summary>
+        /// The acr value
+        /// </summary>
+        public string? Acr { get; set; }
+
+        /// <summary>
+        /// The amr value
+        /// </summary>
+        public string? Amr { get; set; }
+
+        /// <summary>
+        /// Gets or sets the security identifier (SID) associated with the entity.
+        /// </summary>
+        public string? Sid { get; set; }
+
+        /// <summary>
+        /// Gets or sets the authentication time.
+        /// </summary>
+        public DateTimeOffset? AuthTime { get; set; }
     }
 }

@@ -128,37 +128,33 @@ namespace Altinn.Platform.Authentication.Services
                 return downStreamValidationResult;
             }
 
-            // ===== 3) Exchange code for tokens =====
+            // ===== 3) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx!.Provider);
             OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
             JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
             JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
-            UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider);
+            UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
             await IdentifyOrCreateAltinnUser(userIdenity, provider);
 
-            string achievedAcr = idToken.Claims.FirstOrDefault(c => c.Type == "acr")?.Value ?? upstreamTx.AcrValues?.FirstOrDefault() ?? "idporten-loa-substantial";
-            DateTimeOffset? authTime = idToken.Claims.FirstOrDefault(c => c.Type == "auth_time") is { } atc
-                ? DateTimeOffset.FromUnixTimeSeconds(long.Parse(atc.Value))
-                : null;
             string upstreamSub = idToken.Subject; // "sub" from upstream token
             string? upstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
 
-            var now = _timeProvider.GetUtcNow();
-            var sessionExpires = now.AddHours(8);
+            DateTimeOffset now = _timeProvider.GetUtcNow();
+            DateTimeOffset sessionExpires = now.AddMinutes(30);
 
             // 4.d Create or refresh session
-            OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, idToken, userIdenity, achievedAcr, authTime, cancellationToken);
+            OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, idToken, userIdenity, cancellationToken);
 
             // 5) Issue downstream authorization code
-            string authCode = await CreateAuthorizationCode(upstreamTx, loginTx!, userIdenity, achievedAcr, authTime, session, cancellationToken);
+            string authCode = await CreateAuthorizationCode(upstreamTx, loginTx!, userIdenity, session, cancellationToken);
 
             // 6) Mark upstream transaction as completed
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
                 upstreamTx.UpstreamRequestId,
                 issuer: idToken.Issuer,
                 sub: idToken.Subject,
-                acr: achievedAcr,
-                authTime: authTime,
+                acr: userIdenity.Acr,
+                authTime: userIdenity.AuthTime,
                 idTokenJti: idToken.Claims.FirstOrDefault(c => c.Type == "jti")?.Value,
                 upstreamSid: upstreamSessionSid,
                 cancellationToken: cancellationToken);
@@ -237,6 +233,9 @@ namespace Altinn.Platform.Authentication.Services
             return (CallbackResultdownstreamValidation: null, LoginTx: loginTx);
         }
 
+        /// <summary>
+        /// Validates the upstream callback state by loading the upstream login transaction.
+        /// </summary>
         private async Task<(UpstreamCallbackResult? CallbackResult, UpstreamLoginTransaction? UpstreamTranscation)> ValidateUpstreamCallbackState(UpstreamCallbackInput input, CancellationToken cancellationToken)
         {
             // ===== 0) Guard / basic semantics =====
@@ -363,7 +362,7 @@ namespace Altinn.Platform.Authentication.Services
             return tx;
         }
 
-        private async Task<string> CreateAuthorizationCode(UpstreamLoginTransaction upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, string achievedAcr, DateTimeOffset? authTime, OidcSession session, CancellationToken cancellationToken)
+        private async Task<string> CreateAuthorizationCode(UpstreamLoginTransaction upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, OidcSession session, CancellationToken cancellationToken)
         {
             string authCode = CryptoHelpers.RandomBase64Url(32);
             var codeTime = _timeProvider.GetUtcNow();
@@ -382,8 +381,8 @@ namespace Altinn.Platform.Authentication.Services
                     RedirectUri = loginTx.RedirectUri,
                     Scopes = loginTx.Scopes,
                     Nonce = loginTx.Nonce,
-                    Acr = achievedAcr,
-                    AuthTime = authTime,
+                    Acr = userIdenity.Acr,
+                    AuthTime = userIdenity.AuthTime,
                     CodeChallenge = loginTx.CodeChallenge,
                     CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",
                     ExpiresAt = codeExpires,
@@ -397,7 +396,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Creates or updates an OIDC session based on the upstream identity.
         /// </summary>
-        private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, JwtSecurityToken idToken, UserAuthenticationModel userIdenity, string achievedAcr, DateTimeOffset? authTime, CancellationToken cancellationToken)
+        private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, JwtSecurityToken idToken, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate
@@ -410,8 +409,8 @@ namespace Altinn.Platform.Authentication.Services
                     SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
                     SubjectPartyId = userIdenity.PartyID,              // <- legacy
                     SubjectUserId = userIdenity.UserID,               // <- legacy
-                    Acr = achievedAcr,
-                    AuthTime = authTime,
+                    Acr = userIdenity.Acr,
+                    AuthTime = userIdenity.AuthTime,
                     Amr = idToken.Claims.Where(c => c.Type == "amr").Select(c => c.Value).ToArray(),
                     ExpiresAt = _timeProvider.GetUtcNow().AddHours(8),
                     UpstreamSessionSid = idToken.Claims.FirstOrDefault(c => c.Type == "sid")?.Value,
