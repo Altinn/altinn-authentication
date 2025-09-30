@@ -73,12 +73,16 @@ public class PartiesClientMock : IPartiesClient
 
     public Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
     {
-        Party party = new()
-        {
-            PartyId = 500000,
-            PartyUuid = new Guid("00000000-0000-0000-0005-000000000000")
-        };
+        Party party = new Party();
+        party.PartyId = 500000;
+        party.PartyUuid = new Guid("00000000-0000-0000-0005-000000000000");
 
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "987654321")
+        {
+            party.PartyId = 600000;
+            party.PartyUuid = new Guid("6bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
+        }
+       
         return Task.FromResult<Party>(party);
     }
     
