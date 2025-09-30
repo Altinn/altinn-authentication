@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Altinn.Authentication.Tests.Mocks;
+using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Tests.Models;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
@@ -25,6 +26,16 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             if (string.IsNullOrEmpty(scenario.DownstreamClientId))
             {
                 scenario.DownstreamClientId = Guid.CreateVersion7().ToString();
+            }
+
+            if (string.IsNullOrEmpty(scenario.DownstreamNonce))
+            {
+                scenario.DownstreamNonce = CryptoHelpers.RandomBase64Url(32);
+            }
+
+            if (string.IsNullOrEmpty(scenario.DownstreamState))
+            {
+                scenario.DownstreamState = CryptoHelpers.RandomBase64Url(32);
             }
 
             return scenario;

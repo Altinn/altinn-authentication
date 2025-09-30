@@ -11,5 +11,9 @@
         public required string Ssn { get; set; }
 
         public string? DownstreamClientId { get; set; } = null;
+
+        public string? DownstreamNonce { get; set; } = null;
+
+        public string? DownstreamState { get; set; } = null;
     }
 }

@@ -151,8 +151,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Downstream authorize query (what Arbeidsflate would send)
             string redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
-            string state = "3fcfc23e3bd145cabdcdb70ce406c875";
-            string nonce = "58be49a0cb7df5b791a1fef6c854c5e2";
 
             string codeVerifier = Pkce.RandomPkceVerifier();
             string codeChallenge = Pkce.ComputeS256CodeChallenge(codeVerifier);
@@ -162,15 +160,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 $"?redirect_uri={redirectUri}" +
                 "&scope=openid%20altinn%3Aportal%2Fenduser" +
                 "&acr_values=idporten-loa-substantial" +
-                $"&state={state}" +
+                $"&state={testScenario.DownstreamState}" +
                 $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
-                $"&nonce={nonce}" +
+                $"&nonce={testScenario.DownstreamNonce}" +
                 $"&code_challenge={codeChallenge}" +
                 "&code_challenge_method=S256";
 
             // Act
-            var resp = await client.GetAsync(url);
+            HttpResponseMessage resp = await client.GetAsync(url);
 
             // Assert: HTTP redirect to upstream authorize
             Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
@@ -193,7 +191,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<Altinn.Platform.Authentication.Services.Interfaces.IOidcProvider>());
 
-            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, state, DataSource);
+            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.DownstreamState, DataSource);
             UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
 
             var idpAuthCode = "idp-code-xyz"; // what we will pass on callback
@@ -222,7 +220,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             System.Collections.Specialized.NameValueCollection finalQuery = System.Web.HttpUtility.ParseQueryString(finalLocation.Query);
             Assert.False(string.IsNullOrWhiteSpace(finalQuery["code"]), "Downstream code must be present.");
-            Assert.Equal(state, finalQuery["state"]); // original downstream state echoed back
+            Assert.Equal(testScenario.DownstreamState, finalQuery["state"]); // original downstream state echoed back
 
             // When you build the authorize URL earlier, use 'computedChallenge' instead of a hardcoded one:
             // ... &code_challenge={Uri.EscapeDataString(computedChallenge)}&code_challenge_method=S256
