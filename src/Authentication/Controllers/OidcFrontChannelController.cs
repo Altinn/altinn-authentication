@@ -90,12 +90,12 @@ namespace Altinn.Platform.Authentication.Controllers
         public async Task<IActionResult> UpstreamCallback([FromQuery] UpstreamCallbackDto q, CancellationToken ct = default)
         {
             // Gather diagnostics
-            var ip = HttpContext.Connection.RemoteIpAddress;
-            var ua = Request.Headers.UserAgent.ToString();
+            System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+            string ua = Request.Headers.UserAgent.ToString();
             string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
             Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
 
-            var input = new UpstreamCallbackInput
+            UpstreamCallbackInput input = new()
             {
                 Code = q.Code,
                 State = q.State,
@@ -107,11 +107,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 CorrelationId = corr
             };
 
-            var result = await _oidcServerService.HandleUpstreamCallback(input, ct);
+            UpstreamCallbackResult result = await _oidcServerService.HandleUpstreamCallback(input, ct);
 
             // Set no-store for auth responses
-            Response.Headers["Cache-Control"] = "no-store";
-            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
 
             foreach (var c in result.Cookies)
             {

@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -122,49 +123,63 @@ namespace Altinn.Platform.Authentication.Services
                 return callbackResultUpstreamValidation;
             }
 
+            Debug.Assert(upstreamTx != null);
+
             // ===== 2) Load downstream (original) transaction to get validated redirect_uri & original state =====
-            (UpstreamCallbackResult? downStreamValidationResult, LoginTransaction? loginTx) = await ValidateDownstreamCallbackState(input, upstreamTx!, cancellationToken);
+            (UpstreamCallbackResult? downStreamValidationResult, LoginTransaction? loginTx) = await ValidateDownstreamCallbackState(input, upstreamTx, cancellationToken);
             if (downStreamValidationResult != null)
             {
                 return downStreamValidationResult;
             }
 
+            Debug.Assert(loginTx != null);
+
             // ===== 3) Exchange upstream code for upstream tokens =====
-            OidcProvider provider = ChooseProviderByKey(upstreamTx!.Provider);
-            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
-            JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
-            JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
-            UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
+            OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
+            UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
             await IdentifyOrCreateAltinnUser(userIdenity, provider);
 
-            DateTimeOffset now = _timeProvider.GetUtcNow();
-            DateTimeOffset sessionExpires = now.AddMinutes(30);
-
-            // 4. Create or refresh session
+            // 4. Create or refresh Altinn session session
             OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
 
+            // TODO How to handle first time login with epost bruker from ID porten if we gonna ask them to connect to existing self identified user.
+
             // 5) Issue downstream authorization code
-            string authCode = await CreateDownstreamAuthorizationCode(upstreamTx, loginTx!, userIdenity, session, cancellationToken);
+            string authCode = await CreateDownstreamAuthorizationCode(upstreamTx, loginTx, userIdenity, session, cancellationToken);
 
             // 6) Mark upstream transaction as completed
+            await MarkUpstreamTokenExchanged(upstreamTx, userIdenity, cancellationToken);
+
+            // 7) Redirect back to the client with code + original state
+            return new UpstreamCallbackResult
+            {
+                Kind = UpstreamCallbackResultKind.RedirectToClient,
+                ClientRedirectUri = loginTx!.RedirectUri,
+                DownstreamCode = authCode,
+                ClientState = loginTx.State
+            };
+        }
+
+        private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
+        {
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
                 upstreamTx.UpstreamRequestId,
                 issuer: userIdenity.TokenIssuer!,
                 sub: userIdenity.TokenSubject!,
                 acr: userIdenity.Acr,
                 authTime: userIdenity.AuthTime,
-                idTokenJti: idToken.Claims.FirstOrDefault(c => c.Type == "jti")?.Value,
+                idTokenJti: userIdenity.ExternalSessionId,
                 upstreamSid: userIdenity.Sid,
                 cancellationToken: cancellationToken);
+        }
 
-            // 7) Redirect back to the client with code + original state
-            return new UpstreamCallbackResult
-            {
-                Kind = UpstreamCallbackResultKind.RedirectToClient,
-                ClientRedirectUri = loginTx.RedirectUri,
-                DownstreamCode = authCode,
-                ClientState = loginTx.State
-            };
+        private async Task<UserAuthenticationModel> ExtractUserIdentityFromUpstream(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, OidcProvider provider, CancellationToken cancellationToken)
+        {
+            OidcCodeResponse codeReponse = await _oidcProvider.GetTokens(input.Code!, provider, upstreamTx.UpstreamRedirectUri.ToString(), upstreamTx.CodeVerifier, cancellationToken);
+            JwtSecurityToken idToken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.IdToken, provider, upstreamTx.Nonce, cancellationToken);
+            JwtSecurityToken accesstoken = await _upstreamTokenValidator.ValidateTokenAsync(codeReponse.AccessToken, provider, null, cancellationToken);
+            UserAuthenticationModel userIdenity = AuthenticationHelper.GetUserFromToken(idToken, provider, accesstoken);
+            return userIdenity;
         }
 
         /// <summary>

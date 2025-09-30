@@ -14,6 +14,7 @@ using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Helpers;
+using Altinn.Platform.Authentication.Tests.Models;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using Microsoft.AspNetCore.Hosting;
@@ -141,33 +142,28 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task Authorize_Persists_Downstream_And_Upstream_And_Redirects_Including_Callback_AndRedirectTo_DownStreamClient()
         {
             // Arrange
-            using var client = CreateClient();
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
 
             // Insert a client that matches the authorize request
-            var create = NewClientCreate("c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21");
+            OidcClientCreate create = NewClientCreate(testScenario.DownstreamClientId);
             _ = await Repository.InsertClientAsync(create);
 
-            // Headers used by the controller to capture IP/UA/correlation
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
-            client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
-            client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
-
             // Downstream authorize query (what Arbeidsflate would send)
-            const string clientId = "c4dbc1b5-7c2e-4ea5-83ec-478ce7c37b21";
-            var redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
-            var state = "3fcfc23e3bd145cabdcdb70ce406c875";
-            var nonce = "58be49a0cb7df5b791a1fef6c854c5e2";
+            string redirectUri = Uri.EscapeDataString("https://af.altinn.no/api/cb");
+            string state = "3fcfc23e3bd145cabdcdb70ce406c875";
+            string nonce = "58be49a0cb7df5b791a1fef6c854c5e2";
 
             string codeVerifier = Pkce.RandomPkceVerifier();
-            var codeChallenge = Pkce.ComputeS256CodeChallenge(codeVerifier);
-          
-            var url =
+            string codeChallenge = Pkce.ComputeS256CodeChallenge(codeVerifier);
+
+            string url =
                 "/authentication/api/v1/authorize" +
                 $"?redirect_uri={redirectUri}" +
                 "&scope=openid%20altinn%3Aportal%2Fenduser" +
                 "&acr_values=idporten-loa-substantial" +
                 $"&state={state}" +
-                $"&client_id={clientId}" +
+                $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 $"&nonce={nonce}" +
                 $"&code_challenge={codeChallenge}" +
@@ -194,10 +190,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string upstreamState = upstreamQuery["state"];
 
             // 5) Configure the mock to return a successful token response for this exact callback
-            var mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<Altinn.Platform.Authentication.Services.Interfaces.IOidcProvider>());
 
-            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(clientId, state, DataSource);
+            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, state, DataSource);
             UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
 
             var idpAuthCode = "idp-code-xyz"; // what we will pass on callback
@@ -207,7 +203,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 clientId: createdUpstreamLogingTransaction.UpstreamClientId,
                 redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
                 codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
-                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse("01039012345", createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues,createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
+                response: IdPortenTestTokenUtil.GetIdPortenTokenResponse("01039012345", createdUpstreamLogingTransaction.Nonce, upstreamSID.ToString(), createdUpstreamLogingTransaction.AcrValues, createdUpstreamLogingTransaction.UpstreamClientId, createdUpstreamLogingTransaction.Scopes));
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
@@ -243,7 +239,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 ["grant_type"] = "authorization_code",
                 ["code"] = code,
                 ["redirect_uri"] = "https://af.altinn.no/api/cb",
-                ["client_id"] = clientId,
+                ["client_id"] = testScenario.DownstreamClientId ,
 
                 // Client auth for test: since your verifier currently compares strings,
                 // just reuse the stored ClientSecretHash as the presented secret.
@@ -264,6 +260,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Asserts on token response structure
             TokenAssertsHelper.AssertTokenResponse(tokenResult);
+        }
+
+        private HttpClient CreateClientWithHeaders()
+        {
+            var client = CreateClient();
+
+            // Headers used by the controller to capture IP/UA/correlation
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
+            client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
+            client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
+            return client;
         }
 
         [Fact]
