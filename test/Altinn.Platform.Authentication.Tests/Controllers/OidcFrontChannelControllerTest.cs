@@ -160,15 +160,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
            
             string upstreamState = System.Web.HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
 
-            // 5) Configure the mock to return a successful token response for this exact callback
-            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
-                Services.GetRequiredService<Altinn.Platform.Authentication.Services.Interfaces.IOidcProvider>());
-
+            // Asserting DB persistence after /authorize
             LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.DownstreamState, DataSource);
             OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario);
 
             UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
+            OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario);
 
+            // 5) Configure the mock to return a successful token response for this exact callback
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+                Services.GetRequiredService<Altinn.Platform.Authentication.Services.Interfaces.IOidcProvider>());
             var idpAuthCode = "idp-code-xyz"; // what we will pass on callback
             Guid upstreamSID = Guid.NewGuid();
             mock.SetupSuccess(

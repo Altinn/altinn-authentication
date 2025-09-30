@@ -39,5 +39,10 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal("S256", loginTransaction.CodeChallengeMethod);
             Assert.Equal(scenario.DownstreamCodeChallenge, loginTransaction.CodeChallenge);
         }
+
+        public static void AssertUpstreamLogingTransaction(UpstreamLoginTransaction createdUpstreamLogingTransaction, OidcTestScenario testScenario)
+        {
+            Assert.NotNull(createdUpstreamLogingTransaction);
+        }
     }
 }
