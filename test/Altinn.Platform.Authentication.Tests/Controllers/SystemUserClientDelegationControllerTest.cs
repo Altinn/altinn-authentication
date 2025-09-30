@@ -633,8 +633,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             HttpClient client = CreateClient();
-
-            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents");
+            string orgnummer = "123456789";
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents?party={orgnummer}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
             HttpResponseMessage systemUsersResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             List<SystemUser> result = JsonSerializer.Deserialize<List<SystemUser>>(await systemUsersResponse.Content.ReadAsStringAsync(), _options);
@@ -645,12 +645,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetAllAgentSystemUsersForAParty_Invalidorgnummer_ReturnsBadRequest()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+            string orgnummer = "123447789";
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents?party={orgnummer}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            HttpResponseMessage systemUsersResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);          
+
+            Assert.Equal(HttpStatusCode.NotFound, systemUsersResponse.StatusCode);
+        }
+
+        [Fact]
         public async Task GetAllAgentSystemUsersForAParty_ReturnsUnAuthorized()
         {
             // Arrange
             HttpClient client = CreateClient();
-
-            HttpRequestMessage systemUsersRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents");
+            string orgnummer = "123456789";
+            HttpRequestMessage systemUsersRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents?party={orgnummer}");
             HttpResponseMessage systemUsersResponse = await client.SendAsync(systemUsersRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Unauthorized, systemUsersResponse.StatusCode);
