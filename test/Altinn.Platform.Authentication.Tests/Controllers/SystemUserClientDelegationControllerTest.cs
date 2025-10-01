@@ -42,6 +42,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
+using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
@@ -428,9 +429,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Guid clientId = Guid.NewGuid();
             Guid systemUserId = new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
+            AgentDelegation agentDelegation = new()
+            {
+                CustomerId = clientId,
+                Access = new List<ClientRoleAccessPackages>
+                {
+                    new ClientRoleAccessPackages
+                    {
+                        Role = "regnskapsfører",
+                        Packages = new[] { "regnskapsforer-med-signeringsrettighet", "regnskapsforer-lonn" }
+                    }
+                }
+            };
 
-            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Content = new StringContent(
+                                                JsonSerializer.Serialize(agentDelegation, _options),
+                                                Encoding.UTF8,
+                                                "application/json");
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             ClientDelegationResponse clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
@@ -445,9 +462,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             HttpClient client = CreateClient();
+            AgentDelegation agentDelegation = new()
+            {
+                CustomerId = Guid.Empty,
+                Access = new List<ClientRoleAccessPackages>
+                {
+                    new ClientRoleAccessPackages
+                    {
+                        Role = "regnskapsfører",
+                        Packages = new[] { "regnskapsforer-med-signeringsrettighet", "regnskapsforer-lonn" }
+                    }
+                }
+            };
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Content = new StringContent(
+                                                JsonSerializer.Serialize(agentDelegation, _options),
+                                                Encoding.UTF8,
+                                                "application/json");
             HttpResponseMessage removeClientResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
@@ -459,9 +492,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
             Assert.Equal("The agent query parameter is missing or invalid", error1.Detail);
 
-            AltinnValidationError error2 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_Invalid_ClientId.ErrorCode);
-            Assert.Equal("?client", error2.Paths.First(p => p.Equals("?client")));
-            Assert.Equal("The client query parameter is missing or invalid", error2.Detail);
+            AltinnValidationError error2 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_ClientInformation.ErrorCode);
+            Assert.Equal("/agentdelegation/customer", error2.Paths.First(p => p.Equals("/agentdelegation/customer")));
+            Assert.Equal("The customer information is missing or invalid", error2.Detail);
         }
 
         [Fact]
@@ -473,8 +506,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid clientId = Guid.NewGuid();
             Guid systemUserId = new Guid("d54a721a-b231-4e28-9245-782697ed2bbb");
 
-            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            AgentDelegation agentDelegation = new()
+            {
+                CustomerId = clientId,
+                Access = new List<ClientRoleAccessPackages>
+                {
+                    new ClientRoleAccessPackages
+                    {
+                        Role = "regnskapsfører",
+                        Packages = new[] { "regnskapsforer-med-signeringsrettighet", "regnskapsforer-lonn" }
+                    }
+                }
+            };
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Content = new StringContent(
+                                    JsonSerializer.Serialize(agentDelegation, _options),
+                                    Encoding.UTF8,
+                                    "application/json");
             HttpResponseMessage removeClientResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
@@ -495,8 +545,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid clientId = Guid.NewGuid();
             Guid systemUserId = new Guid("9a5ef699-84c4-4ac8-a16b-1ee9e32b8cc9");
 
-            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            AgentDelegation agentDelegation = new()
+            {
+                CustomerId = clientId,
+                Access = new List<ClientRoleAccessPackages>
+                {
+                    new ClientRoleAccessPackages
+                    {
+                        Role = "regnskapsfører",
+                        Packages = new[] { "regnskapsforer-med-signeringsrettighet", "regnskapsforer-lonn" }
+                    }
+                }
+            };
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Content = new StringContent(
+                        JsonSerializer.Serialize(agentDelegation, _options),
+                        Encoding.UTF8,
+                        "application/json");
             HttpResponseMessage removeClientResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
@@ -517,8 +584,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid clientId = Guid.NewGuid();
             Guid systemUserId = new("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
 
-            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            AgentDelegation agentDelegation = new()
+            {
+                CustomerId = clientId,
+                Access = new List<ClientRoleAccessPackages>
+                {
+                    new ClientRoleAccessPackages
+                    {
+                        Role = "regnskapsfører",
+                        Packages = new[] { "regnskapsforer-med-signeringsrettighet", "regnskapsforer-lonn" }
+                    }
+                }
+            };
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Content = new StringContent(
+            JsonSerializer.Serialize(agentDelegation, _options),
+            Encoding.UTF8,
+            "application/json");
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
@@ -563,7 +647,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
             Assert.Equal("The agent query parameter is missing or invalid", error1.Detail);
 
-            AltinnValidationError error2 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_Invalid_ClientId.ErrorCode);
+            AltinnValidationError error2 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_ClientParameter.ErrorCode);
             Assert.Equal("?client", error2.Paths.First(p => p.Equals("?client")));
             Assert.Equal("The client query parameter is missing or invalid", error2.Detail);
         }
