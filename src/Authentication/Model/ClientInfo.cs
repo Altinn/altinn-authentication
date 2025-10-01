@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
 
 namespace Altinn.Platform.Authentication.Model
 {
@@ -24,5 +25,10 @@ namespace Altinn.Platform.Authentication.Model
         /// Gets or sets the name of the client organization.
         /// </summary>
         public string ClientOrganizationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of access packages associated with client roles.
+        /// </summary>
+        public List<ClientRoleAccessPackages> Access { get; set; } = [];
     }
 }
