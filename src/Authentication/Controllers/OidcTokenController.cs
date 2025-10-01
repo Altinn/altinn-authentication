@@ -59,7 +59,8 @@ namespace Altinn.Platform.Authentication.Controllers
                     id_token = result.IdToken,
                     token_type = "Bearer",
                     expires_in = result.ExpiresIn,
-                    scope = result.Scope
+                    scope = result.Scope,
+                    refresh_token = result.RefreshToken
                 }),
 
                 TokenResultKind.InvalidClient => Unauthorized(OAuthErrorBody(result.Error!, result.ErrorDescription)),

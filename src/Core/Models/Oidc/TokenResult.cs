@@ -12,8 +12,10 @@
         public long ExpiresIn { get; init; }
         public string? Scope { get; init; }
 
-        public static TokenResult Success(string accessToken, string? idToken, long expiresIn, string? scope) =>
-            new() { Kind = TokenResultKind.Success, AccessToken = accessToken, IdToken = idToken, ExpiresIn = expiresIn, Scope = scope };
+        public string? RefreshToken { get; init; }
+
+        public static TokenResult Success(string accessToken, string? idToken, long expiresIn, string? scope, string? refreshToken) =>
+            new() { Kind = TokenResultKind.Success, AccessToken = accessToken, IdToken = idToken, ExpiresIn = expiresIn, Scope = scope, RefreshToken = refreshToken };
 
         public static TokenResult InvalidClient(string desc) => new() { Kind = TokenResultKind.InvalidClient, Error = "invalid_client", ErrorDescription = desc };
         public static TokenResult InvalidRequest(string desc) => new() { Kind = TokenResultKind.InvalidRequest, Error = "invalid_request", ErrorDescription = desc };

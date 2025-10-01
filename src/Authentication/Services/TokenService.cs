@@ -110,7 +110,7 @@ namespace Altinn.Platform.Authentication.Services
                 return TokenResult.InvalidGrant("Code already used or expired");
             }
 
-            return TokenResult.Success(accessToken, idToken, expiry.ToUnixTimeSeconds(), string.Join(" ", row.Scopes));
+            return TokenResult.Success(accessToken, idToken, expiry.ToUnixTimeSeconds(), string.Join(" ", row.Scopes), refreshToken);
         }
 
         private async Task<(OidcClient? Client, TokenResult Error)> AuthenticateClientAsync(TokenClientAuth auth, CancellationToken ct)
@@ -169,7 +169,7 @@ namespace Altinn.Platform.Authentication.Services
                     return (null, TokenResult.InvalidClient("Client authentication missing"));
             }
 
-            return (client, TokenResult.Success(string.Empty, null, 0, null)); // ignore payload; caller uses returned client
+            return (client, TokenResult.Success(string.Empty, null, 0, null, null)); // ignore payload; caller uses returned client
         }
 
         private async Task<string?> TryIssueInitialRefreshAsync(

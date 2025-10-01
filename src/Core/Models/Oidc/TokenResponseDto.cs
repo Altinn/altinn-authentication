@@ -7,5 +7,6 @@
         public long expires_in { get; init; }
         public string? id_token { get; init; }
         public string? scope { get; init; }
+        public string? refresh_token { get; init; }
     }
 }
