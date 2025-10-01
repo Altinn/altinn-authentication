@@ -119,6 +119,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public int JwtSigningCertificateRolloverDelayHours { get; set; }
 
         /// <summary>
+        /// Server secret for hashing the OIDC refresh token
+        /// </summary>
+        public string OidcRefreshTokenPepper { get; set; }
+
+        /// <summary>
         /// Gets the Altinn Open ID Connect (OIDC) Issuer URL.
         /// </summary>
         public string AltinnOidcIssuerUrl

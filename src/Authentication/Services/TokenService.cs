@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
@@ -23,11 +24,15 @@ namespace Altinn.Platform.Authentication.Services
         IAuthorizationCodeRepository authorizationCodeRepository, 
         TimeProvider time,
         ILogger<TokenService> logger,
-        IOptions<GeneralSettings> generalSettings) : ITokenService
+        IOptions<GeneralSettings> generalSettings,
+        IRefreshTokenRepository refreshTokenRepository,
+        IOidcSessionRepository oidcSessionRepository) : ITokenService
     {
         private readonly ILogger<TokenService> _logger = logger;
         private readonly IAuthorizationCodeRepository _authorizationCodeRepository = authorizationCodeRepository;
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
+        private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
+        private readonly IOidcSessionRepository _oidcSessionRepository = oidcSessionRepository;
 
         /// <inheritdoc/>
         public async Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest request, CancellationToken ct)
@@ -89,11 +94,15 @@ namespace Altinn.Platform.Authentication.Services
                 return TokenResult.InvalidGrant("Invalid PKCE code_verifier");
             }
 
+            OidcSession? oidcSession = await _oidcSessionRepository.GetBySidAsync(row.SessionId, ct);
+
             // 5) Issue tokens (ID + Access)
             DateTimeOffset expiry = time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes);
 
             string accessToken = await tokenIssuer.CreateAccessTokenAsync(row, expiry, ct);
             string? idToken = await tokenIssuer.CreateIdTokenAsync(row, client, expiry, ct); // include nonce, acr, auth_time, sid
+ 
+            string? refreshToken = await TryIssueInitialRefreshAsync(row, oidcSession!, client, time, ct);
 
             // Now atomically consume
             if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))
@@ -104,7 +113,7 @@ namespace Altinn.Platform.Authentication.Services
             return TokenResult.Success(accessToken, idToken, expiry.ToUnixTimeSeconds(), string.Join(" ", row.Scopes));
         }
 
-        private async Task<(OidcClient? client, TokenResult error)> AuthenticateClientAsync(TokenClientAuth auth, CancellationToken ct)
+        private async Task<(OidcClient? Client, TokenResult Error)> AuthenticateClientAsync(TokenClientAuth auth, CancellationToken ct)
         {
             // Look up client
             OidcClient? client = null;
@@ -162,6 +171,73 @@ namespace Altinn.Platform.Authentication.Services
 
             return (client, TokenResult.Success(string.Empty, null, 0, null)); // ignore payload; caller uses returned client
         }
+
+        private async Task<string?> TryIssueInitialRefreshAsync(
+            AuthCodeRow codeRow,
+            OidcSession session,
+            OidcClient client,
+            TimeProvider time,
+            CancellationToken ct)
+        {
+            // Gate by policy
+            if (!client.AllowsRefresh)
+            {
+                return null;
+            }
+
+            // See if we need to have this stored in KeyVault or we can just set it on pod deployment
+
+            byte[] serverPepper = Convert.FromBase64String(_generalSettings.OidcRefreshTokenPepper);
+
+            //if (client.RequireOfflineAccessScope && !codeRow.Scopes.Contains("offline_access"))
+            //{ // Do we really want to do this?
+            //    return null;
+            //}
+
+            // Generate opaque token
+            string refreshToken = CryptoHelpers.RandomBase64Url(48);
+
+            // Fast lookup key + slow hash for storage
+            byte[] lookupKey = RefreshTokenCrypto.ComputeLookupKey(refreshToken, serverPepper);
+            var (hash, salt, iters) = RefreshTokenCrypto.HashForStorage(
+                refreshToken, iterations: 600_000);
+
+            var now = time.GetUtcNow();
+            var sliding = now.AddDays(30);
+            var absolute = now.AddDays(90);
+
+            // One family per (client, subject, session) – makes revocation by session easy
+            Guid familyId = await _refreshTokenRepository.GetOrCreateFamilyAsync(client.ClientId, codeRow.SubjectId, session.Sid, ct);
+
+            await _refreshTokenRepository.InsertAsync(
+                new RefreshTokenRow
+                {
+                    TokenId = Guid.NewGuid(),
+                    FamilyId = familyId,
+                    Status = "active",
+                    LookupKey = lookupKey,
+                    Hash = hash,
+                    Salt = salt,
+                    Iterations = iters,
+
+                    ClientId = codeRow.ClientId,
+                    SubjectId = codeRow.SubjectId,
+                    OpSid = session.Sid,
+
+                    Scopes = codeRow.Scopes.ToArray(),
+                    Acr = session.Acr,
+                    Amr = session.Amr,
+                    AuthTime = session.AuthTime,
+
+                    CreatedAt = now,
+                    ExpiresAt = sliding,
+                    AbsoluteExpiresAt = absolute
+                },
+                ct);
+
+            return refreshToken; // return once; never store raw
+        }
+
     }
 
 }

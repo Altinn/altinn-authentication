@@ -37,6 +37,7 @@ public static class PersistanceDependencyInjection
         AddUpstreamLoginTransactionRepository(services);
         AddOidcSessionRepository(services);
         AddAuthorizationCodeRepository(services);
+        AddRefreshTokenRepository(services);
         return services;
     }
 
@@ -104,6 +105,15 @@ public static class PersistanceDependencyInjection
     private static void AddOidcServerClientRepository(this IServiceCollection services)
     {
         services.TryAddTransient<IOidcServerClientRepository, OidcServerClientRepository>();
+    }
+
+    /// <summary>
+    /// Extension method for DI
+    /// </summary>
+    /// <param name="services">IServiceCollection for parent DI</param>
+    private static void AddRefreshTokenRepository(this IServiceCollection services)
+    {
+        services.TryAddTransient<IRefreshTokenRepository, RefreshTokenRepository>();
     }
 
     /// <summary>

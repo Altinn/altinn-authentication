@@ -22,7 +22,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
 
         // Auth props
         public required string Provider { get; init; }
-        public string? Acr { get; init; }
+        public string? Acr { get; init; }   
         public DateTimeOffset? AuthTime { get; init; }
         public string[]? Amr { get; init; }
 

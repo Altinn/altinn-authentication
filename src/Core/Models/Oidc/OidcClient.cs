@@ -117,6 +117,7 @@
 
         /// <summary>Last update timestamp.</summary>
         public DateTimeOffset? UpdatedAt { get; }
+        public bool AllowsRefresh { get; set; }
 
         public OidcClient(
             string clientId,
