@@ -37,7 +37,8 @@ namespace Altinn.Platform.Authentication.Services
         IUserProfileService userProfileService,
         IProfile profile,
         IOidcSessionRepository oidcSessionRepository,
-        IAuthorizationCodeRepository authorizationCodeRepository) : IOidcServerService
+        IAuthorizationCodeRepository authorizationCodeRepository,
+        IOptions<GeneralSettings> generalSettings) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -53,6 +54,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IProfile _profileService = profile;
         private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
         private readonly IAuthorizationCodeRepository _authorizationCodeRepo = authorizationCodeRepository;
+        private readonly GeneralSettings _generalSettings = generalSettings.Value;
         private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
@@ -427,7 +429,7 @@ namespace Altinn.Platform.Authentication.Services
                     Acr = userIdenity.Acr,
                     AuthTime = userIdenity.AuthTime,
                     Amr = userIdenity.Amr,
-                    ExpiresAt = _timeProvider.GetUtcNow().AddHours(8),
+                    ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
                     UpstreamSessionSid = userIdenity.Sid,
                     Now = _timeProvider.GetUtcNow(),
                     CreatedByIp = upstreamTx.CreatedByIp,

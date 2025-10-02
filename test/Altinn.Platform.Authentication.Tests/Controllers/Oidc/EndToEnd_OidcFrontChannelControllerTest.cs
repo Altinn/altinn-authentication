@@ -149,6 +149,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // 4.3 Basic assertions on rotated response
             TokenAssertsHelper.AssertTokenRefreshResponse(refreshed, testScenario, _fakeTime.GetUtcNow());
 
+            OidcSession refreshedSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+
             // Optional: scopes should be identical to original unless you down-scoped
             Assert.Equal(string.Join(' ', testScenario.Scopes), refreshed.scope);
 
