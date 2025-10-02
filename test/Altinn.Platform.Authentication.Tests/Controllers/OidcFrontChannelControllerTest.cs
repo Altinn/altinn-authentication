@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -107,6 +108,68 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Asserts on token response structure
             TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario);
+
+            // ===== Phase 4: Refresh flow =====
+
+            // 4.1 Assert we got a refresh_token back
+            Assert.False(string.IsNullOrWhiteSpace(tokenResult.refresh_token));
+            Assert.True(IsBase64Url(tokenResult.refresh_token!), "refresh_token must be base64url");
+            string oldRefresh = tokenResult.refresh_token!;
+
+            // 4.2 Use the refresh_token to get new tokens (client_secret_post like initial call)
+            var refreshForm = new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = oldRefresh,
+                ["client_id"] = create.ClientId,
+                ["client_secret"] = testScenario.ClientSecret // assuming your test client has this
+            };
+
+            using var refreshResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(refreshForm));
+
+            Assert.Equal(HttpStatusCode.OK, refreshResp.StatusCode);
+
+            var refreshJson = await refreshResp.Content.ReadAsStringAsync();
+            var refreshed = JsonSerializer.Deserialize<TokenResponseDto>(refreshJson)!;
+
+            // 4.3 Basic assertions on rotated response
+            Assert.False(string.IsNullOrWhiteSpace(refreshed.access_token));
+            Assert.False(string.IsNullOrWhiteSpace(refreshed.refresh_token));
+            Assert.NotEqual(tokenResult.access_token, refreshed.access_token);        // new AT
+            Assert.NotEqual(oldRefresh, refreshed.refresh_token);                     // rotated RT
+            Assert.True(IsBase64Url(refreshed.refresh_token!), "rotated refresh_token must be base64url");
+
+            // Optional: scopes should be identical to original unless you down-scoped
+            Assert.Equal(string.Join(' ', testScenario.Scopes), refreshed.scope);
+
+            // 4.4 Reuse detection: reusing old RT should fail with invalid_grant
+            var reuseForm = new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = oldRefresh,      // the *old* one
+                ["client_id"] = create.ClientId,
+                ["client_secret"] = testScenario.ClientSecret
+            };
+            using var reuseResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(reuseForm));
+
+            // Per spec: 400 invalid_grant
+            Assert.Equal(HttpStatusCode.BadRequest, reuseResp.StatusCode);
+            var reuseJson = await reuseResp.Content.ReadAsStringAsync();
+            var reuseErr = JsonSerializer.Deserialize<Dictionary<string, string>>(reuseJson);
+            Assert.Equal("invalid_grant", reuseErr!["error"]);
+
+            // Helper local function for base64url validation
+            static bool IsBase64Url(string s) =>
+                s.All(c =>
+                    (c >= 'A' && c <= 'Z') ||
+                    (c >= 'a' && c <= 'z') ||
+                    (c >= '0' && c <= '9') ||
+                    c == '-' || c == '_');
+
         }
 
         [Fact]
