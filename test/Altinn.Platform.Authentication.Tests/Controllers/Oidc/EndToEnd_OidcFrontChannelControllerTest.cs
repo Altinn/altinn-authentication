@@ -61,6 +61,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
         }
 
+        /// <summary>
+        /// Scenario:
+        /// User starts at RP (Arbeidsflate), gets redirected to /authorize endpoint.
+        /// 1. /authorize persists downstream transaction and upstream transaction, then redirects to upstream provider.
+        /// 2. User authenticates at upstream provider, which redirects back to /upstream/callback with code + state.
+        /// 3. /upstream/callback redeems code for tokens at upstream provider, then creates downstream code and redirects to RP with code + original state.
+        /// 4. RP redeems code for tokens at /token endpoint.
+        /// 5. RP uses refresh_token at /token endpoint to get new tokens.
+        /// 6. RP tries to reuse old refresh_token at /token endpoint and gets invalid_grant error.
+        /// 7. Asserts on DB persistence after /authorize and /token.
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task Authorize_Persists_Downstream_And_Upstream_And_Redirects_Including_Callback_AndRedirectTo_DownStreamClient()
         {
@@ -74,22 +86,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             string url = testScenario.GetAuthorizationRequestUrl();
 
-            // Act
+            // === Phase 1:  RP initiates the flow by redirecting user to /authorize endpoint. Expected result is a redirect to upstream provider.
             HttpResponseMessage authorizationRequestResponse = await client.GetAsync(url);
 
-            // Assert: HTTP redirect to upstream authorize
-            OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
+            // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
+            (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse);
 
-            string upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
-
-            // Asserting DB persistence after /authorize
-            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.DownstreamState, DataSource);
-            OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario);
-
-            UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
-            OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario);
-
-            // 5) Configure the mock to return a successful token response for this exact callback
+            // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
             ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction);
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
@@ -114,10 +117,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
 
             // Asserts on token response structure
-            TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
+            string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
 
-            // Advance time by 5 minutes (user is active in RP; we’ll now refresh)
-            _fakeTime.Advance(TimeSpan.FromMinutes(5));
+            OidcSession originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+
+            // Advance time by 20 minutes (user is active in RP; we’ll now refresh)
+            _fakeTime.Advance(TimeSpan.FromMinutes(20));
 
             // ===== Phase 4: Refresh flow =====
 
@@ -138,26 +143,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string refreshJson = await refreshResp.Content.ReadAsStringAsync();
             TokenResponseDto refreshed = JsonSerializer.Deserialize<TokenResponseDto>(refreshJson)!;
 
-            TokenAssertsHelper.AssertTokenRefreshResponse(refreshed, testScenario, _fakeTime.GetUtcNow());
-
             // 4.3 Basic assertions on rotated response
-            Assert.False(string.IsNullOrWhiteSpace(refreshed.access_token));
-            Assert.False(string.IsNullOrWhiteSpace(refreshed.refresh_token));
-            Assert.NotEqual(tokenResult.access_token, refreshed.access_token);        // new AT
-            Assert.NotEqual(oldRefresh, refreshed.refresh_token);                     // rotated RT
-            Assert.True(IsBase64Url(refreshed.refresh_token!), "rotated refresh_token must be base64url");
+            TokenAssertsHelper.AssertTokenRefreshResponse(refreshed, testScenario, _fakeTime.GetUtcNow());
 
             // Optional: scopes should be identical to original unless you down-scoped
             Assert.Equal(string.Join(' ', testScenario.Scopes), refreshed.scope);
 
             // 4.4 Reuse detection: reusing old RT should fail with invalid_grant
-            var reuseForm = new Dictionary<string, string>
-            {
-                ["grant_type"] = "refresh_token",
-                ["refresh_token"] = oldRefresh,      // the *old* one
-                ["client_id"] = create.ClientId,
-                ["client_secret"] = testScenario.ClientSecret
-            };
+            var reuseForm = GetRefreshForm(testScenario, create, oldRefresh);
+
             using var reuseResp = await client.PostAsync(
                 "/authentication/api/v1/token",
                 new FormUrlEncodedContent(reuseForm));
@@ -176,6 +170,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                     (c >= '0' && c <= '9') ||
                     c == '-' || c == '_');
 
+        }
+
+        private async Task<(string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse)
+        {
+            OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
+
+            string upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
+
+            // Asserting DB persistence after /authorize
+            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.DownstreamState, DataSource);
+            OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario);
+
+            UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
+            OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario);
+            return (upstreamState, createdUpstreamLogingTransaction);
         }
 
         private static Dictionary<string, string> GetRefreshForm(OidcTestScenario testScenario, OidcClientCreate create, string oldRefresh)
