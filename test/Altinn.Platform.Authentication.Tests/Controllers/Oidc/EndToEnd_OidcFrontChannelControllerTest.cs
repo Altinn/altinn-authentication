@@ -92,8 +92,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
             (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse);
 
+            // Assume it takes 1 minute for the user to authenticate at the upstream provider
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+
             // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
-            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction);
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
@@ -221,7 +224,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 JwksJson = null
             };
 
-        private void ConfigureMockProviderTokenResponse(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction)
+        private void ConfigureMockProviderTokenResponse(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
         {
             Guid upstreamSID = Guid.NewGuid();
             OidcCodeResponse oidcCodeResponse = IdPortenTestTokenUtil.GetIdPortenTokenResponse(
@@ -231,7 +234,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 createdUpstreamLogingTransaction.AcrValues, 
                 testScenario.Amr?.ToArray(),
                 createdUpstreamLogingTransaction.UpstreamClientId, 
-                createdUpstreamLogingTransaction.Scopes);
+                createdUpstreamLogingTransaction.Scopes,
+                authTime);
 
             Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<IOidcProvider>());

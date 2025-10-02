@@ -17,8 +17,8 @@
   amr                  TEXT[],
 
   -- Lifecycle
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at           TIMESTAMPTZ NOT NULL,
+  updated_at           TIMESTAMPTZ NOT NULL,
   last_seen_at         TIMESTAMPTZ,
   expires_at           TIMESTAMPTZ,
 

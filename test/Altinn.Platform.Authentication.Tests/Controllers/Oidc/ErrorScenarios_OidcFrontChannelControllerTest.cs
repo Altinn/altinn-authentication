@@ -387,54 +387,5 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 JwksUri = null,
                 JwksJson = null
             };
-
-        private void ConfigureMockProviderTokenResponse(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction)
-        {
-            Guid upstreamSID = Guid.NewGuid();
-            OidcCodeResponse oidcCodeResponse = IdPortenTestTokenUtil.GetIdPortenTokenResponse(
-                testScenario.Ssn, 
-                createdUpstreamLogingTransaction.Nonce, 
-                upstreamSID.ToString(), 
-                createdUpstreamLogingTransaction.AcrValues, 
-                testScenario.Amr?.ToArray(),
-                createdUpstreamLogingTransaction.UpstreamClientId, 
-                createdUpstreamLogingTransaction.Scopes);
-
-            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
-                Services.GetRequiredService<IOidcProvider>());
-            var idpAuthCode = testScenario.UpstreamProviderCode; // what we will pass on callback
-
-            mock.SetupSuccess(
-                authorizationCode: idpAuthCode,
-                clientId: createdUpstreamLogingTransaction.UpstreamClientId,
-                redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
-                codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
-                response: oidcCodeResponse);
-        }
-
-        private HttpClient CreateClientWithHeaders()
-        {
-            var client = CreateClient();
-
-            // Headers used by the controller to capture IP/UA/correlation
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
-            client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
-            client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
-            return client;
-        }
-
-        private static Dictionary<string, string> BuildTokenRequestForm(OidcTestScenario testScenario, OidcClientCreate create, string code)
-        {
-            Dictionary<string, string> tokenForm = new()
-            {
-                ["grant_type"] = "authorization_code",
-                ["code"] = code,
-                ["redirect_uri"] = testScenario.DownstreamClientCallbackUrl,
-                ["client_id"] = testScenario.DownstreamClientId,
-                ["client_secret"] = testScenario.ClientSecret!,
-                ["code_verifier"] = testScenario.DownstreamCodeVerifier,
-            };
-            return tokenForm;
-        }
     }
 }
