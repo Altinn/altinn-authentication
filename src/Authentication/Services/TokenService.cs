@@ -238,6 +238,9 @@ namespace Altinn.Platform.Authentication.Services
 
                 ClientId = row.ClientId,
                 SubjectId = row.SubjectId,
+                SubjectPartyId = row.SubjectPartyId,
+                SubjectPartyUuid = row.SubjectPartyUuid,
+                SubjectUserId = row.SubjectUserId,
                 OpSid = row.OpSid,
 
                 Scopes = resultingScopes,
@@ -394,6 +397,9 @@ namespace Altinn.Platform.Authentication.Services
 
                     ClientId = codeRow.ClientId,
                     SubjectId = codeRow.SubjectId,
+                    SubjectPartyId = codeRow.SubjectPartyId,
+                    SubjectPartyUuid = codeRow.SubjectPartyUuid,
+                    SubjectUserId = codeRow.SubjectUserId,
                     OpSid = session.Sid,
 
                     Scopes = codeRow.Scopes.ToArray(),

@@ -22,6 +22,19 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             AssertIdToken(tokenResponseDto.id_token, testScenario, now);
         }
 
+        public static void AssertTokenRefreshResponse(TokenResponseDto tokenResponseDto, OidcTestScenario testScenario, DateTimeOffset now)
+        {
+            Assert.NotNull(tokenResponseDto);
+            Assert.NotNull(tokenResponseDto.access_token);
+            Assert.Equal("Bearer", tokenResponseDto.token_type);
+            Assert.True(tokenResponseDto.expires_in > 0);
+            Assert.NotNull(tokenResponseDto.id_token); // since openid scope was requested
+            Assert.Contains("openid", tokenResponseDto.scope.Split(' '));
+            Assert.Contains("altinn:portal/enduser", tokenResponseDto.scope.Split(' '));
+            AssertAccessToken(tokenResponseDto.access_token, testScenario, now);
+            AssertIdToken(tokenResponseDto.id_token, testScenario, now);
+        }
+
         public static void AssertAccessToken(string accessToken, OidcTestScenario testScenario, DateTimeOffset now)
         {
             ClaimsPrincipal accessTokenPrincipal = JwtTokenMock.ValidateToken(accessToken, now);

@@ -134,7 +134,7 @@ WHERE op_sid = @op_sid
             INSERT INTO oidcserver.refresh_token (
                 token_id, family_id, status,
                 lookup_key, hash, salt, iterations,
-                client_id, subject_id, op_sid,
+                client_id, subject_id, subject_party_uuid, subject_party_id, subject_user_id, op_sid,
                 scopes, acr, amr, auth_time,
                 created_at, expires_at, absolute_expires_at,
                 rotated_to_token_id, revoked_at, revoked_reason,
@@ -142,7 +142,7 @@ WHERE op_sid = @op_sid
             ) VALUES (
                 @token_id, @family_id, @status,
                 @lookup_key, @hash, @salt, @iterations,
-                @client_id, @subject_id, @op_sid,
+                @client_id, @subject_id, @subject_party_uuid, @subject_party_id, @subject_user_id, @op_sid,
                 @scopes, @acr, @amr, @auth_time,
                 @created_at, @expires_at, @absolute_expires_at,
                 @rotated_to_token_id, @revoked_at, @revoked_reason,
@@ -161,6 +161,10 @@ WHERE op_sid = @op_sid
 
             cmd.Parameters.AddWithValue("client_id", NpgsqlDbType.Text, row.ClientId);
             cmd.Parameters.AddWithValue("subject_id", NpgsqlDbType.Text, row.SubjectId);
+            cmd.Parameters.AddWithValue("subject_party_uuid", NpgsqlDbType.Uuid, (object?)row.SubjectPartyUuid ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_party_id", NpgsqlDbType.Integer, (object?)row.SubjectPartyId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_user_id", NpgsqlDbType.Integer, (object?)row.SubjectUserId ?? DBNull.Value);
+
             cmd.Parameters.AddWithValue("op_sid", NpgsqlDbType.Text, row.OpSid);
 
             cmd.Parameters.AddWithValue("scopes", NpgsqlDbType.Array | NpgsqlDbType.Text, row.Scopes);
@@ -190,7 +194,7 @@ WHERE op_sid = @op_sid
                 SELECT
                   token_id, family_id, status,
                   lookup_key, hash, salt, iterations,
-                  client_id, subject_id, op_sid,
+                  client_id, subject_id, subject_party_uuid, subject_party_id, subject_user_id, op_sid,
                   scopes, acr, amr, auth_time,
                   created_at, expires_at, absolute_expires_at,
                   rotated_to_token_id, revoked_at, revoked_reason,
@@ -269,6 +273,9 @@ WHERE op_sid = @op_sid
                 Iterations = r.GetInt32(r.GetOrdinal("iterations")),
                 ClientId = r.GetString(r.GetOrdinal("client_id")),
                 SubjectId = r.GetString(r.GetOrdinal("subject_id")),
+                SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? (Guid?)null : r.GetFieldValue<Guid>("subject_party_uuid"),
+                SubjectPartyId = r.IsDBNull("subject_party_id") ? (int?)null : r.GetFieldValue<int>("subject_party_id"),
+                SubjectUserId = r.IsDBNull("subject_user_id") ? (int?)null : r.GetFieldValue<int>("subject_user_id"),
                 OpSid = r.GetString(r.GetOrdinal("op_sid")),
                 Scopes = scopes,
                 Acr = r.IsDBNull(r.GetOrdinal("acr")) ? null : r.GetString(r.GetOrdinal("acr")),
@@ -282,7 +289,7 @@ WHERE op_sid = @op_sid
                 RevokedReason = r.IsDBNull(r.GetOrdinal("revoked_reason")) ? null : r.GetString(r.GetOrdinal("revoked_reason")),
                 UserAgentHash = r.IsDBNull(r.GetOrdinal("user_agent_hash")) ? null : r.GetString(r.GetOrdinal("user_agent_hash")),
                 IpHash = r.IsDBNull(r.GetOrdinal("ip_hash")) ? null : r.GetString(r.GetOrdinal("ip_hash")),
-                SessionId = string.Empty, // Not stored on token row
+                SessionId = r.GetString(r.GetOrdinal("op_sid"))
             };
         }
     }

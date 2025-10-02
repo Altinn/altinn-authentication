@@ -127,13 +127,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string oldRefresh = tokenResult.refresh_token!;
 
             // 4.2 Use the refresh_token to get new tokens (client_secret_post like initial call)
-            var refreshForm = new Dictionary<string, string>
-            {
-                ["grant_type"] = "refresh_token",
-                ["refresh_token"] = oldRefresh,
-                ["client_id"] = create.ClientId,
-                ["client_secret"] = testScenario.ClientSecret // assuming your test client has this
-            };
+            Dictionary<string, string> refreshForm = GetRefreshForm(testScenario, create, oldRefresh);
 
             using var refreshResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -141,8 +135,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             Assert.Equal(HttpStatusCode.OK, refreshResp.StatusCode);
 
-            var refreshJson = await refreshResp.Content.ReadAsStringAsync();
-            var refreshed = JsonSerializer.Deserialize<TokenResponseDto>(refreshJson)!;
+            string refreshJson = await refreshResp.Content.ReadAsStringAsync();
+            TokenResponseDto refreshed = JsonSerializer.Deserialize<TokenResponseDto>(refreshJson)!;
+
+            TokenAssertsHelper.AssertTokenRefreshResponse(refreshed, testScenario, _fakeTime.GetUtcNow());
 
             // 4.3 Basic assertions on rotated response
             Assert.False(string.IsNullOrWhiteSpace(refreshed.access_token));
@@ -180,6 +176,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                     (c >= '0' && c <= '9') ||
                     c == '-' || c == '_');
 
+        }
+
+        private static Dictionary<string, string> GetRefreshForm(OidcTestScenario testScenario, OidcClientCreate create, string oldRefresh)
+        {
+            var refreshForm = new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = oldRefresh,
+                ["client_id"] = create.ClientId,
+                ["client_secret"] = testScenario.ClientSecret // assuming your test client has this
+            };
+            return refreshForm;
         }
 
         private static string GetConfigPath()

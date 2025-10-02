@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Data;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Microsoft.Extensions.Logging;
@@ -24,13 +20,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task<bool> TryConsumeAsync(string code, string clientId, Uri redirectUri, DateTimeOffset usedAt, CancellationToken ct = default)
         {
             const string SQL = /*strpsql*/ @"
-UPDATE oidcserver.authorization_code
-   SET used = TRUE, used_at = @used_at
- WHERE code = @code
-   AND client_id = @client_id
-   AND redirect_uri = @redirect_uri
-   AND used = FALSE
-   AND expires_at > @now;";
+            UPDATE oidcserver.authorization_code
+               SET used = TRUE, used_at = @used_at
+             WHERE code = @code
+               AND client_id = @client_id
+               AND redirect_uri = @redirect_uri
+               AND used = FALSE
+               AND expires_at > @now;";
 
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("code", NpgsqlDbType.Text, code);
@@ -56,14 +52,14 @@ UPDATE oidcserver.authorization_code
             }
 
             const string SQL = /*strpsql*/ @"
-SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used, expires_at,
-       subject_id, subject_party_uuid, subject_party_id, subject_user_id,
-       session_id, scopes, nonce, acr, amr, auth_time
-FROM oidcserver.authorization_code
-WHERE code = @code
-  AND used = FALSE
-  AND expires_at > @now
-LIMIT 1;";
+            SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used, expires_at,
+                    subject_id, subject_party_uuid, subject_party_id, subject_user_id,
+                    session_id, scopes, nonce, acr, amr, auth_time
+            FROM oidcserver.authorization_code
+            WHERE code = @code
+                AND used = FALSE
+                AND expires_at > @now
+            LIMIT 1;";
 
             try
             {
