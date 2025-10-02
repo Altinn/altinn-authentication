@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -12,6 +13,7 @@ using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Abstractions;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -38,61 +40,14 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest request, CancellationToken ct)
         {
             // 1) Basic checks
-            if (string.IsNullOrWhiteSpace(request.Code))
+            (TokenResult? validationErrorResult, OidcClient? client, AuthCodeRow? row) = await ValidateTokenRequest(request,ct);
+            if (validationErrorResult != null)
             {
-                return TokenResult.InvalidRequest("Missing code");
+                return validationErrorResult;
             }
 
-            if (request.RedirectUri is null || !request.RedirectUri.IsAbsoluteUri)
-            {
-                return TokenResult.InvalidRequest("redirect_uri must be absolute");
-            }
-
-            // 2) Authenticate client
-            var (client, clientIdOrError) = await AuthenticateClientAsync(request.ClientAuth, ct);
-            if (client is null)
-            {
-                return clientIdOrError; // an error TokenResult
-            }
-
-            // 3) Load authorization_code row
-            AuthCodeRow? row = await _authorizationCodeRepository.GetAsync(request.Code, ct);
-            if (row is null)
-            {
-                return TokenResult.InvalidGrant("Invalid code");
-            }
-
-            if (row.Used)
-            {
-                return TokenResult.InvalidGrant("Code already used");
-            }
-
-            if (row.ExpiresAt <= time.GetUtcNow())
-            {
-                return TokenResult.InvalidGrant("Code expired");
-            }
-
-            // Bindings
-            if (!string.Equals(row.ClientId, client.ClientId, StringComparison.Ordinal))
-            {
-                return TokenResult.InvalidGrant("Code not issued to this client");
-            }
-
-            if (row.RedirectUri != request.RedirectUri)
-            {
-                return TokenResult.InvalidGrant("redirect_uri mismatch");
-            }
-
-            // 4) PKCE verification
-            if (string.IsNullOrWhiteSpace(request.CodeVerifier))
-            {
-                return TokenResult.InvalidRequest("code_verifier required");
-            }
-
-            if (!Pkce.VerifyS256(row.CodeChallenge, request.CodeVerifier))
-            {
-                return TokenResult.InvalidGrant("Invalid PKCE code_verifier");
-            }
+            Debug.Assert(client != null);
+            Debug.Assert(row != null);
 
             OidcSession? oidcSession = await _oidcSessionRepository.GetBySidAsync(row.SessionId, ct);
 
@@ -116,6 +71,69 @@ namespace Altinn.Platform.Authentication.Services
             await _oidcSessionRepository.TouchLastSeenAsync(oidcSession!.Sid, ct);
 
             return TokenResult.Success(accessToken, idToken, expiry.ToUnixTimeSeconds(), string.Join(" ", row.Scopes), refreshToken);
+        }
+
+        private async Task<(TokenResult? Value, OidcClient? Client, AuthCodeRow? Row)> ValidateTokenRequest(TokenRequest request,  CancellationToken ct)
+        {
+            OidcClient? client;
+            AuthCodeRow? row;
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return (Value: TokenResult.InvalidRequest("Missing code"), Client: null, Row: null);
+            }
+
+            if (request.RedirectUri is null || !request.RedirectUri.IsAbsoluteUri)
+            {
+                return (Value: TokenResult.InvalidRequest("redirect_uri must be absolute"), null, null);
+            }
+
+            // 2) Authenticate client
+            (client, TokenResult clientIdOrError) = await AuthenticateClientAsync(request.ClientAuth, ct);
+            if (client is null)
+            {
+                return (Value: clientIdOrError, null, null); // an error TokenResult
+            }
+
+            // 3) Load authorization_code row
+            row = await _authorizationCodeRepository.GetAsync(request.Code, ct);
+            if (row is null)
+            {
+                return (Value: TokenResult.InvalidGrant("Invalid code"), null, null);
+            }
+
+            if (row.Used)
+            {
+                return (Value: TokenResult.InvalidGrant("Code already used"), null, null);
+            }
+
+            if (row.ExpiresAt <= time.GetUtcNow())
+            {
+                return (Value: TokenResult.InvalidGrant("Code expired"), null, null);
+            }
+
+            // Bindings
+            if (!string.Equals(row.ClientId, client.ClientId, StringComparison.Ordinal))
+            {
+                return (Value: TokenResult.InvalidGrant("Code not issued to this client"), null, null);
+            }
+
+            if (row.RedirectUri != request.RedirectUri)
+            {
+                return (Value: TokenResult.InvalidGrant("redirect_uri mismatch"), null, null);
+            }
+
+            // 4) PKCE verification
+            if (string.IsNullOrWhiteSpace(request.CodeVerifier))
+            {
+                return (Value: TokenResult.InvalidRequest("code_verifier required"), null, null);
+            }
+
+            if (!Pkce.VerifyS256(row.CodeChallenge, request.CodeVerifier))
+            {
+                return (Value: TokenResult.InvalidGrant("Invalid PKCE code_verifier"), null, null);
+            }
+
+            return (Value: null, client, row);
         }
 
         /// <inheritdoc/>
