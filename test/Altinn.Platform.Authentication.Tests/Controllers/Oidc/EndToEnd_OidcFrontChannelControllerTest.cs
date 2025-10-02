@@ -20,6 +20,7 @@ using Altinn.Platform.Authentication.Tests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Npgsql;
 using Xunit;
 
@@ -35,10 +36,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
+        private static readonly FakeTimeProvider _fakeTime = new(
+    DateTimeOffset.Parse("2025-03-01T13:37:00Z")); // any stable baseline for tests
+
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
             services.AddSingleton<IOidcProvider, Mocks.OidcProviderAdvancedMock>();
+            
+            // Make sure **all** app code that depends on TimeProvider gets this fake one
+            services.AddSingleton<TimeProvider>(_fakeTime);
 
             string configPath = GetConfigPath();
 
@@ -107,7 +114,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
 
             // Asserts on token response structure
-            TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario);
+            TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
+
+            // Advance time by 5 minutes (user is active in RP; we’ll now refresh)
+            _fakeTime.Advance(TimeSpan.FromMinutes(5));
 
             // ===== Phase 4: Refresh flow =====
 

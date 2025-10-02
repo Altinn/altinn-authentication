@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.authorization_code (
   auth_time              TIMESTAMPTZ,
   code_challenge         TEXT NOT NULL,
   code_challenge_method  TEXT NOT NULL DEFAULT 'S256',
-  issued_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  issued_at              TIMESTAMPTZ NOT NULL,
   expires_at             TIMESTAMPTZ NOT NULL,
   used                   BOOLEAN NOT NULL DEFAULT FALSE,
   used_at                TIMESTAMPTZ,

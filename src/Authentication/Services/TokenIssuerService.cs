@@ -2,19 +2,14 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Net.Security;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
-using Altinn.Platform.Authentication.Enum;
-using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using AltinnCore.Authentication.Constants;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -23,10 +18,11 @@ namespace Altinn.Platform.Authentication.Services
     /// <summary>
     /// Token issuer service for minting OAuth 2.0 / OIDC tokens.
     /// </summary>
-    public class TokenIssuerService(IJwtSigningCertificateProvider jwtSigningCertificateProvider, IOptions<GeneralSettings> generalSettings) : ITokenIssuer
+    public class TokenIssuerService(IJwtSigningCertificateProvider jwtSigningCertificateProvider, IOptions<GeneralSettings> generalSettings, TimeProvider timeProvider) : ITokenIssuer
     {
         private readonly IJwtSigningCertificateProvider _certificateProvider = jwtSigningCertificateProvider;
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
+        private readonly TimeProvider _timeProvider = timeProvider;
 
         /// <inheritdoc/>
         public async Task<string> CreateAccessTokenAsync(ClaimsPrincipal principal, DateTimeOffset expires, CancellationToken ct = default)
@@ -51,6 +47,8 @@ namespace Altinn.Platform.Authentication.Services
             JwtSecurityTokenHandler tokenHandler = new();
             SecurityTokenDescriptor tokenDescriptor = new()
             {
+                IssuedAt = _timeProvider.GetUtcNow().UtcDateTime,
+                NotBefore = _timeProvider.GetUtcNow().UtcDateTime,
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = expires.UtcDateTime,
                 SigningCredentials = new X509SigningCredentials(certificate)
@@ -66,7 +64,7 @@ namespace Altinn.Platform.Authentication.Services
          List<X509Certificate2> certificates, int rolloverDelayHours)
         {
             // First limit the search to just those certificates that have existed longer than the rollover delay.
-            var rolloverCutoff = DateTime.Now.AddHours(-rolloverDelayHours);
+            var rolloverCutoff = _timeProvider.GetUtcNow().AddHours(-rolloverDelayHours);
             var potentialCerts =
                 certificates.Where(c => c.NotBefore < rolloverCutoff).ToList();
 

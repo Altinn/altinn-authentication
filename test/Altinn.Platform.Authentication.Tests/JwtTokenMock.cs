@@ -121,13 +121,19 @@ namespace Altinn.Platform.Authentication.Tests
         /// and is included in the integration test project as a separate file.
         /// </summary>
         /// <param name="token">The token to be validated.</param>
+        /// <param name="now">Current time if needing to override</param>
         /// <returns>ClaimsPrincipal</returns>
-        public static ClaimsPrincipal ValidateToken(string token)
+        public static ClaimsPrincipal ValidateToken(string token, DateTimeOffset? now = null)
         {
+            if (now == null)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
             X509Certificate2 cert = new X509Certificate2("selfSignedTestCertificatePublic.cer");
             SecurityKey key = new X509SecurityKey(cert);
 
-            TokenValidationParameters validationParameters = new TokenValidationParameters
+            TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
@@ -135,11 +141,14 @@ namespace Altinn.Platform.Authentication.Tests
                 ValidateAudience = false,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(10)
+                ClockSkew = TimeSpan.FromSeconds(10),
+                LifetimeValidator = GetLifetimeValidator(now.Value)
             };
 
-            JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
-            validator.MapInboundClaims = false;
+            JwtSecurityTokenHandler validator = new()
+            {
+                MapInboundClaims = false
+            };
             return validator.ValidateToken(token, validationParameters, out _);
         }
 
@@ -205,6 +214,28 @@ namespace Altinn.Platform.Authentication.Tests
         private static EncryptingCredentials GetEncryptionCredentials()
         {
             return new X509EncryptingCredentials(new X509Certificate2("selfSignedEncryptionTestCertificatePublic.cer"));
+        }
+
+        private static LifetimeValidator GetLifetimeValidator(DateTimeOffset now)
+        {
+            // Use our own "now" for lifetime checks
+            LifetimeValidator lifetimeValidator = (nbf, exp, _token, p) =>
+            {
+                var n = now.UtcDateTime;
+                if (nbf.HasValue && n < nbf.Value - p.ClockSkew)
+                {
+                    return false;
+                }
+
+                if (exp.HasValue && n > exp.Value + p.ClockSkew)
+                {
+                    return false;
+                }
+
+                return true;
+            };
+
+            return lifetimeValidator;
         }
     }
 }

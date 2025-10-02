@@ -399,6 +399,7 @@ namespace Altinn.Platform.Authentication.Services
                     AuthTime = userIdenity.AuthTime,
                     CodeChallenge = loginTx.CodeChallenge,
                     CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",
+                    IssuedAt = codeTime,
                     ExpiresAt = codeExpires,
                     CreatedByIp = upstreamTx.CreatedByIp,
                     CorrelationId = upstreamTx.CorrelationId
