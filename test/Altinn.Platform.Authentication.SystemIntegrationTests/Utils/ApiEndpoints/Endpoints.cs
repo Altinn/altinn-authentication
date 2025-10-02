@@ -78,6 +78,10 @@ public enum Endpoints
 
     [EndpointInfo("authentication/api/v1/systemuser/request/{party}/{requestId}/reject", "POST")]
     RejectSystemUserRequest,
+    
+    [EndpointInfo("authentication/api/v1/systemuser/vendor/byquery?system-id={systemId}&orgno={orgNo}&external-ref={externalRef}", "GET")]
+    GetSystemUserVendorByQuery,
+    
 
     //Change request endpoints
     [EndpointInfo("authentication/api/v1/systemuser/changerequest/vendor", "POST")]

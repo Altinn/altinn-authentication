@@ -190,7 +190,7 @@ public class SystemUserTests : IDisposable
     private async Task<string?> PerformDecision(string? systemuserUuid,string? partyOrgSystemUserOwner, string resourceId)
     {
         //klientdelegeringsressurs med revisorpakke definert i ressursregisteret: "klientdelegeringressurse2e"
-        var requestBody = (await Helper.ReadFile("Resources/Testdata/AccessManagement/systemUserDecisionSingleright.json"))
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/AccessManagement/systemUserDecisionSingleRight.json"))
             .Replace("{partyOrgSystemUserOwner}", partyOrgSystemUserOwner)
             .Replace("{systemuserUuid}", systemuserUuid)
             .Replace("{resourceRegistryId}", resourceId);
