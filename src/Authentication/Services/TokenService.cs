@@ -51,7 +51,7 @@ namespace Altinn.Platform.Authentication.Services
 
             OidcSession? oidcSession = await _oidcSessionRepository.GetBySidAsync(row.SessionId, ct);
 
-            // 5) Issue tokens (ID + Access)
+            // 2) Issue tokens (ID + Access) + refresh token
             DateTimeOffset exchangeTime = time.GetUtcNow();
             DateTimeOffset expiry = exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes);
             ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, true);
@@ -67,6 +67,7 @@ namespace Altinn.Platform.Authentication.Services
                 return TokenResult.InvalidGrant("Code already used or expired");
             }
 
+            // 3) Update OP session (slide expiry, touch last seen)
             await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, exchangeTime, ct);
             await _oidcSessionRepository.TouchLastSeenAsync(oidcSession!.Sid, ct);
 
