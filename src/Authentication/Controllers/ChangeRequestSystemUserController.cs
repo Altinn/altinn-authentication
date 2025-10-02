@@ -89,7 +89,7 @@ public class ChangeRequestSystemUserController(
     {
         if (correllationId == Guid.Empty)
         {
-            return BadRequest("Missing or invalid correlation-id. Generate a unique UUID (RFC 4122) for this Change Request.");
+            return BadRequest("Missing or invalid QueryParameter: correlation-id. Generate a unique UUID (RFC 4122) for this Change Request, and add as a Query Parameter.");
         }
 
         SystemUser? systemUser = null;
