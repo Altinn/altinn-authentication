@@ -1,7 +1,5 @@
 ﻿#nullable enable
 using System;
-using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -11,9 +9,7 @@ using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
-using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
-using AltinnCore.Authentication.Constants;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
