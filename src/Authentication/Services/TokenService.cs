@@ -101,19 +101,23 @@ namespace Altinn.Platform.Authentication.Services
             OidcSession? oidcSession = await _oidcSessionRepository.GetBySidAsync(row.SessionId, ct);
 
             // 5) Issue tokens (ID + Access)
-            DateTimeOffset expiry = time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes);
+            DateTimeOffset refreshTime = time.GetUtcNow();
+            DateTimeOffset expiry = refreshTime.AddMinutes(_generalSettings.JwtValidityMinutes);
             ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, true);
             ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, false);
 
             string? idToken = await tokenIssuer.CreateIdTokenAsync(idTokenPrincipal, client, expiry, ct);
             string accessToken = await tokenIssuer.CreateAccessTokenAsync(accessTokenPrincipal, expiry, ct);
-            string? refreshToken = await TryIssueInitialRefreshAsync(row, oidcSession!, client, time, ct);
+            string? refreshToken = await TryIssueInitialRefreshAsync(row, oidcSession!, client, refreshTime, ct);
 
             // Now atomically consume
             if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))
             {
                 return TokenResult.InvalidGrant("Code already used or expired");
             }
+
+            await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, refreshTime, ct);
+            await _oidcSessionRepository.TouchLastSeenAsync(oidcSession!.Sid, ct);
 
             return TokenResult.Success(accessToken, idToken, expiry.ToUnixTimeSeconds(), string.Join(" ", row.Scopes), refreshToken);
         }
@@ -159,7 +163,7 @@ namespace Altinn.Platform.Authentication.Services
                 return TokenResult.InvalidGrant("Invalid refresh_token");
             }
 
-            var now = time.GetUtcNow();
+            DateTimeOffset now = time.GetUtcNow();
 
             // 4) Status & expiry
             if (!string.Equals(row.Status, "active", StringComparison.Ordinal))
@@ -249,8 +253,8 @@ namespace Altinn.Platform.Authentication.Services
                 AuthTime = row.AuthTime,
 
                 CreatedAt = now,
-                ExpiresAt = now.AddDays(30),            // sliding window (tune policy)
-                AbsoluteExpiresAt = row.AbsoluteExpiresAt, // do NOT extend hard cap,
+                ExpiresAt = now.AddMinutes(_generalSettings.JwtValidityMinutes),            // sliding window (tune policy)
+                AbsoluteExpiresAt = now.AddMinutes(_generalSettings.JwtValidityMinutes), // do NOT extend hard cap,
                 SessionId = row.SessionId,
             };
 
@@ -351,7 +355,7 @@ namespace Altinn.Platform.Authentication.Services
             AuthCodeRow codeRow,
             OidcSession session,
             OidcClient client,
-            TimeProvider time,
+            DateTimeOffset now,
             CancellationToken ct)
         {
             // Gate by policy
@@ -377,9 +381,8 @@ namespace Altinn.Platform.Authentication.Services
             var (hash, salt, iters) = RefreshTokenCrypto.HashForStorage(
                 refreshToken, iterations: 600_000);
 
-            var now = time.GetUtcNow();
-            var sliding = now.AddDays(30);
-            var absolute = now.AddDays(90);
+            DateTimeOffset sliding = now.AddMinutes(_generalSettings.JwtValidityMinutes);
+            DateTimeOffset absolute = now.AddMinutes(_generalSettings.JwtValidityMinutes);
 
             // One family per (client, subject, session) – makes revocation by session easy
             Guid familyId = await _refreshTokenRepository.GetOrCreateFamilyAsync(client.ClientId, codeRow.SubjectId, session.Sid, ct);

@@ -12,5 +12,15 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
 
         /// <summary>Invalidate by SID (on logout).</summary>
         Task<bool> DeleteBySidAsync(string sid, CancellationToken ct = default);
+
+        /// <summary>
+        /// Touch the LastSeen timestamp of the session to now (for sliding expiration).
+        /// </summary>
+        Task TouchLastSeenAsync(string sid, CancellationToken ct = default);
+
+        /// <summary>
+        /// Slide the expiry of the session to a new value, if and only if the new value is later than the current expiry.
+        /// </summary>
+        Task<bool> SlideExpiryToAsync(string sid, DateTimeOffset newExpiresAt, CancellationToken ct = default);
     }
 }

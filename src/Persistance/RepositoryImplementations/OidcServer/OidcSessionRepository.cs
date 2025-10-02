@@ -9,11 +9,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
     /// <summary>
     /// Repository implementation for OIDC session management.
     /// </summary>
-    public sealed class OidcSessionRepository(NpgsqlDataSource ds, ILogger<OidcSessionRepository> logger) : IOidcSessionRepository
+    public sealed class OidcSessionRepository(NpgsqlDataSource ds, ILogger<OidcSessionRepository> logger, TimeProvider timeProvider) : IOidcSessionRepository
     {
         private readonly NpgsqlDataSource _ds = ds;
         private readonly ILogger<OidcSessionRepository> _logger = logger;
         private static readonly string[] EmptyAmr = Array.Empty<string>();
+        private readonly TimeProvider _timeProvider = timeProvider;
 
         /// <summary>
         /// Upsert an OIDC session based on the upstream subject identifier.
@@ -73,7 +74,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("acr", (object?)c.Acr ?? DBNull.Value);
             cmd.Parameters.AddWithValue("auth_time", (object?)c.AuthTime ?? DBNull.Value);
             cmd.Parameters.AddWithValue("amr", (object?)(c.Amr ?? EmptyAmr) ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("now", (object?)(c.Now ?? DateTimeOffset.UtcNow) ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("now", (object?)c.Now ?? DBNull.Value);
             cmd.Parameters.AddWithValue("expires_at", (object?)c.ExpiresAt ?? DBNull.Value);
             cmd.Parameters.AddWithValue("upstream_session_sid", (object?)c.UpstreamSessionSid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("created_by_ip", (object?)c.CreatedByIp ?? DBNull.Value);
@@ -116,6 +117,46 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("sid", sid);
             var n = await cmd.ExecuteNonQueryAsync(ct);
             return n > 0;
+        }
+
+        /// <summary>
+        /// Slides the expiry of an OIDC session to a new value if the new value is later than the current expiry.
+        /// </summary>
+        public async Task<bool> SlideExpiryToAsync(string sid, DateTimeOffset newExpiresAt, CancellationToken ct = default)
+        {
+            const string sql = @"
+                UPDATE oidcserver.oidc_session
+                   SET expires_at = @new_exp,
+                       updated_at = @now,
+                       last_seen_at = @now
+                 WHERE sid = @sid
+                   AND (expires_at IS NULL OR expires_at < @new_exp);";
+
+            var now = _timeProvider.GetUtcNow();
+            await using var cmd = _ds.CreateCommand(sql);
+            cmd.Parameters.AddWithValue("sid", sid);
+            cmd.Parameters.AddWithValue("new_exp", NpgsqlTypes.NpgsqlDbType.TimestampTz, newExpiresAt);
+            cmd.Parameters.AddWithValue("now", NpgsqlTypes.NpgsqlDbType.TimestampTz, now);
+
+            var rows = await cmd.ExecuteNonQueryAsync(ct);
+            return rows > 0;
+        }
+
+        /// <summary>
+        /// Touch the last seen timestamp of an OIDC session to the current time.
+        /// </summary>
+        public async Task TouchLastSeenAsync(string sid, CancellationToken ct = default)
+        {
+            const string sql = @"
+            UPDATE oidcserver.oidc_session
+               SET last_seen_at = @now,
+                   updated_at   = @now
+             WHERE sid = @sid;";
+            var now = _timeProvider.GetUtcNow();
+            await using var cmd = _ds.CreateCommand(sql);
+            cmd.Parameters.AddWithValue("sid", sid);
+            cmd.Parameters.AddWithValue("now", NpgsqlTypes.NpgsqlDbType.TimestampTz, now);
+            await cmd.ExecuteNonQueryAsync(ct);
         }
 
         private static OidcSession Map(NpgsqlDataReader r)
