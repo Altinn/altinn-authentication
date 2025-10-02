@@ -1,7 +1,9 @@
 ﻿#nullable enable
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
@@ -9,7 +11,9 @@ using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
+using AltinnCore.Authentication.Constants;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -98,10 +102,11 @@ namespace Altinn.Platform.Authentication.Services
 
             // 5) Issue tokens (ID + Access)
             DateTimeOffset expiry = time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes);
+            ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, true);
+            ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, false);
 
-            string accessToken = await tokenIssuer.CreateAccessTokenAsync(row, expiry, ct);
-            string? idToken = await tokenIssuer.CreateIdTokenAsync(row, client, expiry, ct); // include nonce, acr, auth_time, sid
- 
+            string? idToken = await tokenIssuer.CreateIdTokenAsync(idTokenPrincipal, client, expiry, ct);
+            string accessToken = await tokenIssuer.CreateAccessTokenAsync(accessTokenPrincipal, expiry, ct);
             string? refreshToken = await TryIssueInitialRefreshAsync(row, oidcSession!, client, time, ct);
 
             // Now atomically consume
@@ -111,6 +116,173 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return TokenResult.Success(accessToken, idToken, expiry.ToUnixTimeSeconds(), string.Join(" ", row.Scopes), refreshToken);
+        }
+
+        /// <inheritdoc/>
+        public async Task<TokenResult> RefreshAsync(RefreshTokenRequest request, CancellationToken ct)
+        {
+            // 1) Basic checks
+            if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            {
+                return TokenResult.InvalidRequest("Missing refresh_token");
+            }
+
+            // 2) Authenticate client (supports Basic, post, private_key_jwt)
+            var (client, clientAuthErr) = await AuthenticateClientAsync(request.ClientAuth, ct);
+            if (client is null)
+            {
+                return clientAuthErr; // InvalidClient or InvalidRequest
+            }
+
+            // 3) Lookup refresh token by HMAC(pepper, token) then PBKDF2 verify
+            byte[] serverPepper;
+            try
+            {
+                serverPepper = Convert.FromBase64String(_generalSettings.OidcRefreshTokenPepper);
+            }
+            catch
+            {
+                _logger.LogError("Refresh token pepper is not configured or invalid.");
+                return TokenResult.ServerError("server configuration error");
+            }
+
+            byte[] lookupKey = RefreshTokenCrypto.ComputeLookupKey(request.RefreshToken, serverPepper);
+            RefreshTokenRow? row = await _refreshTokenRepository.GetByLookupKeyAsync(lookupKey, ct);
+            if (row is null)
+            {
+                // RFC: invalid_grant for unknown/invalid
+                return TokenResult.InvalidGrant("Invalid refresh_token");
+            }
+
+            if (!RefreshTokenCrypto.Verify(request.RefreshToken, row.Salt, row.Iterations, row.Hash))
+            {
+                return TokenResult.InvalidGrant("Invalid refresh_token");
+            }
+
+            var now = time.GetUtcNow();
+
+            // 4) Status & expiry
+            if (!string.Equals(row.Status, "active", StringComparison.Ordinal))
+            {
+                // Reuse detection → revoke entire family
+                await _refreshTokenRepository.RevokeFamilyAsync(row.FamilyId, "reuse-detected", ct);
+                return TokenResult.InvalidGrant("Invalid refresh_token");
+            }
+
+            if (now > row.AbsoluteExpiresAt)
+            {
+                await _refreshTokenRepository.RevokeFamilyAsync(row.FamilyId, "absolute-expired", ct);
+                return TokenResult.InvalidGrant("Invalid refresh_token");
+            }
+
+            if (now > row.ExpiresAt)
+            {
+                await _refreshTokenRepository.RevokeAsync(row.TokenId, "expired", ct);
+                return TokenResult.InvalidGrant("Invalid refresh_token");
+            }
+
+            // 5) Binding checks
+            if (!string.Equals(row.ClientId, client.ClientId, StringComparison.Ordinal))
+            {
+                await _refreshTokenRepository.RevokeFamilyAsync(row.FamilyId, "client-mismatch", ct);
+                return TokenResult.InvalidGrant("Invalid refresh_token");
+            }
+
+            // Optional but recommended: ensure OP session not ended/expired
+            var session = await _oidcSessionRepository.GetBySidAsync(row.OpSid, ct);
+            if (session is null)
+            {
+                await _refreshTokenRepository.RevokeFamilyAsync(row.FamilyId, "session-missing", ct);
+                return TokenResult.InvalidGrant("Invalid refresh_token");
+            }
+
+            if (session.ExpiresAt is DateTimeOffset exp && now > exp)
+            {
+                await _refreshTokenRepository.RevokeFamilyAsync(row.FamilyId, "session-expired", ct);
+                return TokenResult.InvalidGrant("Invalid refresh_token");
+            }
+
+            // 6) Down-scope (if requested); must be subset of original scopes
+            string[] resultingScopes = row.Scopes;
+            if (!string.IsNullOrWhiteSpace(request.Scope))
+            {
+                var requested = request.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (requested.Length == 0)
+                {
+                    return TokenResult.InvalidRequest("scope must be non-empty when provided");
+                }
+
+                resultingScopes = requested.Intersect(row.Scopes, StringComparer.Ordinal).ToArray();
+
+                // If any requested scope is not in the original set, reject (strict subset)
+                if (resultingScopes.Length != requested.Length)
+                {
+                    return TokenResult.InvalidGrant("Requested scope exceeds originally granted scope");
+                }
+            }
+
+            // 7) Rotate refresh token (every use)
+            string newRefreshToken = CryptoHelpers.RandomBase64Url(48);
+            byte[] newLookupKey = RefreshTokenCrypto.ComputeLookupKey(newRefreshToken, serverPepper);
+            var (newHash, newSalt, newIters) = RefreshTokenCrypto.HashForStorage(newRefreshToken, iterations: row.Iterations);
+
+            var newRow = new RefreshTokenRow
+            {
+                TokenId = Guid.NewGuid(),
+                FamilyId = row.FamilyId,
+                Status = "active",
+                LookupKey = newLookupKey,
+                Hash = newHash,
+                Salt = newSalt,
+                Iterations = newIters,
+
+                ClientId = row.ClientId,
+                SubjectId = row.SubjectId,
+                OpSid = row.OpSid,
+
+                Scopes = resultingScopes,
+                Acr = row.Acr,
+                Amr = row.Amr,
+                AuthTime = row.AuthTime,
+
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(30),            // sliding window (tune policy)
+                AbsoluteExpiresAt = row.AbsoluteExpiresAt, // do NOT extend hard cap,
+                SessionId = row.SessionId,
+            };
+
+            await _refreshTokenRepository.InsertAsync(newRow, ct);
+            await _refreshTokenRepository.MarkUsedAsync(row.TokenId, newRow.TokenId, ct);
+
+            // 8) Mint new access token (+ optional ID token)
+            DateTimeOffset atExpiry = now.AddMinutes(_generalSettings.JwtValidityMinutes);
+
+            ClaimsPrincipal accessPrincial = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, isIDToken: false);
+
+            // Preferred: use issuer overloads that take the pieces directly (clean)
+            string accessToken = await tokenIssuer.CreateAccessTokenAsync(
+                accessPrincial,
+                expiry: atExpiry,
+                cancellationToken: ct);
+
+            string? idToken = null;
+            if (resultingScopes.Contains("openid"))
+            {
+                ClaimsPrincipal idtokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, isIDToken: true);
+                idToken = await tokenIssuer.CreateIdTokenAsync(
+                    idtokenPrincipal,
+                    client,
+                    now: atExpiry,
+                    cancellationToken: ct);
+            }
+
+            // 9) Compose response
+            return TokenResult.Success(
+                accessToken: accessToken,
+                idToken: idToken,
+                expiresIn: atExpiry.ToUnixTimeSeconds(),
+                scope: string.Join(' ', resultingScopes),
+                refreshToken: newRefreshToken);
         }
 
         private async Task<(OidcClient? Client, TokenResult Error)> AuthenticateClientAsync(TokenClientAuth auth, CancellationToken ct)
@@ -231,13 +403,12 @@ namespace Altinn.Platform.Authentication.Services
 
                     CreatedAt = now,
                     ExpiresAt = sliding,
-                    AbsoluteExpiresAt = absolute
+                    AbsoluteExpiresAt = absolute,
+                    SessionId = session.Sid,
                 },
                 ct);
 
             return refreshToken; // return once; never store raw
         }
-
     }
-
 }

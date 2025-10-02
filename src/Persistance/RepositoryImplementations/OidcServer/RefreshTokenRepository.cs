@@ -282,6 +282,7 @@ WHERE op_sid = @op_sid
                 RevokedReason = r.IsDBNull(r.GetOrdinal("revoked_reason")) ? null : r.GetString(r.GetOrdinal("revoked_reason")),
                 UserAgentHash = r.IsDBNull(r.GetOrdinal("user_agent_hash")) ? null : r.GetString(r.GetOrdinal("user_agent_hash")),
                 IpHash = r.IsDBNull(r.GetOrdinal("ip_hash")) ? null : r.GetString(r.GetOrdinal("ip_hash")),
+                SessionId = string.Empty, // Not stored on token row
             };
         }
     }

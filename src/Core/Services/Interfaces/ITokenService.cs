@@ -4,6 +4,14 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
 {
     public interface ITokenService
     {
+        /// <summary>
+        /// Exchanges an authorization code for tokens.
+        /// </summary>
         Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest request, CancellationToken ct);
+
+        /// <summary>
+        /// Refreshes tokens using a refresh token.
+        /// </summary>
+        Task<TokenResult> RefreshAsync(RefreshTokenRequest req, CancellationToken ct);
     }
 }

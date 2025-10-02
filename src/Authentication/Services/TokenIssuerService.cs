@@ -29,113 +29,16 @@ namespace Altinn.Platform.Authentication.Services
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
 
         /// <inheritdoc/>
-        public async Task<string> CreateAccessTokenAsync(AuthCodeRow code, DateTimeOffset expires, CancellationToken ct = default)
+        public async Task<string> CreateAccessTokenAsync(ClaimsPrincipal principal, DateTimeOffset expires, CancellationToken ct = default)
         {
-            ClaimsPrincipal principal = GetClaimsPrincipal(code);
             string accessToken = await GenerateToken(principal, expires);
             return accessToken;
         }
 
         /// <inheritdoc/>
-        public async Task<string> CreateIdTokenAsync(AuthCodeRow code, OidcClient client, DateTimeOffset now, CancellationToken ct = default)
+        public async Task<string> CreateIdTokenAsync(ClaimsPrincipal principal, OidcClient client, DateTimeOffset now, CancellationToken ct = default)
         {
-            ClaimsPrincipal principal = GetClaimsPrincipal(code, true);
             return await GenerateToken(principal, now.AddMinutes(_generalSettings.JwtValidityMinutes).UtcDateTime);
-        }
-
-        private ClaimsPrincipal GetClaimsPrincipal(AuthCodeRow authCodeRow, bool isIDToken = false)
-        {
-            List<Claim> claims = new()
-            {
-                new Claim("sub", authCodeRow.SubjectId),
-                new Claim("sid", authCodeRow.SessionId),
-                new Claim("iss", _generalSettings.PlatformEndpoint)
-            };
-
-            SecurityLevel securityLevel = SecurityLevel.SelfIdentifed;
-
-            if (authCodeRow.SubjectPartyUuid != null)
-            {
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, authCodeRow.SubjectPartyUuid.ToString()!));
-            }
-
-            if (authCodeRow.SubjectPartyId != null)
-            {
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, authCodeRow.SubjectPartyId.ToString()!, ClaimValueTypes.Integer64));
-            }
-
-            if (authCodeRow.SubjectUserId != null)
-            {
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, authCodeRow.SubjectUserId.ToString()!));
-            }
-
-            if (authCodeRow.SubjectId != null)
-            {
-                claims.Add(new Claim("pid", authCodeRow.SubjectId));
-            }
-
-            if (authCodeRow.Acr != null)
-            {
-                claims.Add(new Claim("acr", authCodeRow.Acr));
-                securityLevel = GetAuthenticationLevelForIdPorten(authCodeRow.Acr);
-            }
-
-            int securityLevelValue = (int)securityLevel;
-            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, securityLevelValue.ToString(), ClaimValueTypes.Integer64));
-
-            if (authCodeRow.Amr != null && authCodeRow.Amr.Count != 0)
-            {
-                var amr = authCodeRow.Amr
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim())
-                .Distinct()
-                .ToArray();
-
-                if (amr.Length > 0)
-                {
-                    string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
-                    claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
-                }
-
-                string amrClaim = AuthenticationHelper.GetAuthenticationMethod(string.Join(" ", authCodeRow.Amr)).ToString();
-                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
-            }
-
-            if (authCodeRow.Nonce != null && isIDToken)
-            {
-                claims.Add(new Claim("nonce", authCodeRow.Nonce));
-            }
-
-            if (authCodeRow.AuthTime != null)
-            {
-                long authTimeEpoch = ((DateTimeOffset)authCodeRow.AuthTime).ToUnixTimeSeconds();
-                claims.Add(new Claim("auth_time", authTimeEpoch.ToString(), ClaimValueTypes.Integer64));
-            }
-
-            if (!isIDToken && authCodeRow.Scopes != null && authCodeRow.Scopes.Any())
-            {
-                claims.Add(new Claim("scope", string.Join(" ", authCodeRow.Scopes)));
-            }
-
-            ClaimsIdentity identity = new(claims, "Token");
-            ClaimsPrincipal principal = new(identity);
-
-            return principal;
-        }
-
-        private static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
-        {
-            switch (acr)
-            {
-                case "selfregistered-email":
-                    return Enum.SecurityLevel.NotSensitive;
-                case "idporten-loa-substantial":
-                    return Enum.SecurityLevel.Sensitive;
-                case "idporten-loa-high":
-                    return Enum.SecurityLevel.VerySensitive;
-                default:
-                    return Enum.SecurityLevel.NotSensitive;
-            }
         }
 
         private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset expires)
