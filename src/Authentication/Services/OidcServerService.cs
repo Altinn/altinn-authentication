@@ -38,7 +38,8 @@ namespace Altinn.Platform.Authentication.Services
         IProfile profile,
         IOidcSessionRepository oidcSessionRepository,
         IAuthorizationCodeRepository authorizationCodeRepository,
-        IOptions<GeneralSettings> generalSettings) : IOidcServerService
+        IOptions<GeneralSettings> generalSettings,
+        ITokenService tokenService) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -55,6 +56,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
         private readonly IAuthorizationCodeRepository _authorizationCodeRepo = authorizationCodeRepository;
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
+        private readonly ITokenService _tokenService = tokenService;
         private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
