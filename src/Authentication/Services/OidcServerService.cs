@@ -16,6 +16,7 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -157,13 +158,25 @@ namespace Altinn.Platform.Authentication.Services
             // 7 Create Session cookie for the user and AltinnStudio runtime cookie with JWT
             string cookieToken = await _tokenService.CreateCookieToken(session, cancellationToken);
 
+            CookieInstruction altinnStudioRuntime = new()
+            { 
+                Name = "AltinnStudioRuntime", 
+                Value = cookieToken, 
+                HttpOnly = true, 
+                Secure = true, 
+                Path = "/", 
+                SameSite = SameSiteMode.Lax, 
+                Expires = session.ExpiresAt 
+            };
+
             // 8) Redirect back to the client with code + original state
             return new UpstreamCallbackResult
             {
                 Kind = UpstreamCallbackResultKind.RedirectToClient,
                 ClientRedirectUri = loginTx!.RedirectUri,
                 DownstreamCode = authCode,
-                ClientState = loginTx.State
+                ClientState = loginTx.State,
+                Cookies = [altinnStudioRuntime]
             };
         }
 
