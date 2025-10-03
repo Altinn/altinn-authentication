@@ -2,7 +2,7 @@
 
 namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
-    public sealed class RefreshTokenRow
+    public sealed record RefreshTokenRow: OidcBindingContextBase
     {
         public Guid TokenId { get; init; }
         public Guid FamilyId { get; init; }
@@ -24,15 +24,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public byte[] Salt { get; init; } = Array.Empty<byte>();
         public int Iterations { get; init; }
 
-        // Binding / context
-        public string ClientId { get; init; } = string.Empty;
-        public string SubjectId { get; init; } = string.Empty;
         public string OpSid { get; init; } = string.Empty; // FK → oidc_session.sid
-
-        public string[] Scopes { get; init; } = Array.Empty<string>();
-        public string? Acr { get; init; }
-        public string[]? Amr { get; init; }
-        public DateTimeOffset? AuthTime { get; init; }
 
         // Diagnostics / metadata
         public string? UserAgentHash { get; init; }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Data;
 using System.Net;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
 {
     public static class OidcServerDatabaseUtil
     {
-        public static async Task<LoginTransaction> GetDownstreamTransaction(string clientId, string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<LoginTransaction?> GetDownstreamTransaction(string clientId, string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
         {        
             const string SQL_FIND_DOWNSTREAM = /*strpsql*/ @"
             SELECT *
@@ -38,7 +39,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
-        public static async Task<UpstreamLoginTransaction> GetUpstreamtransactrion(Guid requestId, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<UpstreamLoginTransaction?> GetUpstreamtransactrion(Guid requestId, NpgsqlDataSource DataSource, CancellationToken ct = default)
         {
             const string SQL_FIND_UPSTREAM = /*strpsql*/ @"
             SELECT * from oidcserver.login_transaction_upstream
@@ -58,6 +59,44 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
 
                 return MapUpstreamLoginTransaction(reader);
             }
+        }
+
+        public static async Task<OidcSession?> GetOidcSessionAsync(string sid, NpgsqlDataSource _ds, CancellationToken ct = default)
+        {
+            const string SQL = "SELECT * FROM oidcserver.oidc_session WHERE sid=@sid LIMIT 1;";
+            await using var cmd = _ds.CreateCommand(SQL);
+            cmd.Parameters.AddWithValue("sid", sid);
+
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            if (!await r.ReadAsync(ct))
+            {
+                return null;
+            }
+
+            return MapOidcSession(r);
+        }
+
+        private static OidcSession MapOidcSession(NpgsqlDataReader r)
+        {
+            return new OidcSession
+            {
+                Sid = r.GetFieldValue<string>("sid"),
+                SubjectId = r.IsDBNull("subject_id") ? null : r.GetFieldValue<string>("subject_id"),
+                SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? null : r.GetFieldValue<Guid?>("subject_party_uuid"),
+                SubjectPartyId = r.IsDBNull("subject_party_id") ? null : r.GetFieldValue<int?>("subject_party_id"),
+                SubjectUserId = r.IsDBNull("subject_user_id") ? null : r.GetFieldValue<int?>("subject_user_id"),
+                Provider = r.GetFieldValue<string>("provider"),
+                UpstreamIssuer = r.GetFieldValue<string>("upstream_issuer"),
+                UpstreamSub = r.GetFieldValue<string>("upstream_sub"),
+                Acr = r.IsDBNull("acr") ? null : r.GetFieldValue<string>("acr"),
+                AuthTime = r.IsDBNull("auth_time") ? null : r.GetFieldValue<DateTimeOffset?>("auth_time"),
+                Amr = r.IsDBNull("amr") ? null : r.GetFieldValue<string[]>("amr"),
+                CreatedAt = r.GetFieldValue<DateTimeOffset>("created_at"),
+                UpdatedAt = r.GetFieldValue<DateTimeOffset>("updated_at"),
+                ExpiresAt = r.IsDBNull("expires_at") ? null : r.GetFieldValue<DateTimeOffset?>("expires_at"),
+                UpstreamSessionSid = r.IsDBNull("upstream_session_sid") ? null : r.GetFieldValue<string>("upstream_session_sid"),
+                LastSeenAt = r.IsDBNull("last_seen_at") ? null : r.GetFieldValue<DateTimeOffset?>("last_seen_at"),
+            };
         }
 
         private static UpstreamLoginTransaction MapUpstreamLoginTransaction(NpgsqlDataReader r)

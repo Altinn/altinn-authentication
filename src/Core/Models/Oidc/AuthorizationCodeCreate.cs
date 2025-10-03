@@ -18,6 +18,7 @@
         public DateTimeOffset? AuthTime { get; init; }
         public required string CodeChallenge { get; init; }        // from downstream request
         public string CodeChallengeMethod { get; init; } = "S256";
+        public required DateTimeOffset IssuedAt { get; init; }
         public DateTimeOffset ExpiresAt { get; init; }
         public System.Net.IPAddress? CreatedByIp { get; init; }
         public Guid? CorrelationId { get; init; }

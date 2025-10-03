@@ -37,7 +37,9 @@ namespace Altinn.Platform.Authentication.Services
         IUserProfileService userProfileService,
         IProfile profile,
         IOidcSessionRepository oidcSessionRepository,
-        IAuthorizationCodeRepository authorizationCodeRepository) : IOidcServerService
+        IAuthorizationCodeRepository authorizationCodeRepository,
+        IOptions<GeneralSettings> generalSettings,
+        ITokenService tokenService) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -53,6 +55,8 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IProfile _profileService = profile;
         private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
         private readonly IAuthorizationCodeRepository _authorizationCodeRepo = authorizationCodeRepository;
+        private readonly GeneralSettings _generalSettings = generalSettings.Value;
+        private readonly ITokenService _tokenService = tokenService;
         private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
@@ -150,7 +154,10 @@ namespace Altinn.Platform.Authentication.Services
             // 6) Mark upstream transaction as completed
             await MarkUpstreamTokenExchanged(upstreamTx, userIdenity, cancellationToken);
 
-            // 7) Redirect back to the client with code + original state
+            // 7 Create Session cookie for the user and AltinnStudio runtime cookie with JWT
+            string cookieToken = await _tokenService.CreateCookieToken(session, cancellationToken);
+
+            // 8) Redirect back to the client with code + original state
             return new UpstreamCallbackResult
             {
                 Kind = UpstreamCallbackResultKind.RedirectToClient,
@@ -399,6 +406,7 @@ namespace Altinn.Platform.Authentication.Services
                     AuthTime = userIdenity.AuthTime,
                     CodeChallenge = loginTx.CodeChallenge,
                     CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",
+                    IssuedAt = codeTime,
                     ExpiresAt = codeExpires,
                     CreatedByIp = upstreamTx.CreatedByIp,
                     CorrelationId = upstreamTx.CorrelationId
@@ -426,7 +434,7 @@ namespace Altinn.Platform.Authentication.Services
                     Acr = userIdenity.Acr,
                     AuthTime = userIdenity.AuthTime,
                     Amr = userIdenity.Amr,
-                    ExpiresAt = _timeProvider.GetUtcNow().AddHours(8),
+                    ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
                     UpstreamSessionSid = userIdenity.Sid,
                     Now = _timeProvider.GetUtcNow(),
                     CreatedByIp = upstreamTx.CreatedByIp,

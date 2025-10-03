@@ -2,19 +2,14 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Net.Security;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
-using Altinn.Platform.Authentication.Enum;
-using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using AltinnCore.Authentication.Constants;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -23,119 +18,23 @@ namespace Altinn.Platform.Authentication.Services
     /// <summary>
     /// Token issuer service for minting OAuth 2.0 / OIDC tokens.
     /// </summary>
-    public class TokenIssuerService(IJwtSigningCertificateProvider jwtSigningCertificateProvider, IOptions<GeneralSettings> generalSettings) : ITokenIssuer
+    public class TokenIssuerService(IJwtSigningCertificateProvider jwtSigningCertificateProvider, IOptions<GeneralSettings> generalSettings, TimeProvider timeProvider) : ITokenIssuer
     {
         private readonly IJwtSigningCertificateProvider _certificateProvider = jwtSigningCertificateProvider;
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
+        private readonly TimeProvider _timeProvider = timeProvider;
 
         /// <inheritdoc/>
-        public async Task<string> CreateAccessTokenAsync(AuthCodeRow code, DateTimeOffset expires, CancellationToken ct = default)
+        public async Task<string> CreateAccessTokenAsync(ClaimsPrincipal principal, DateTimeOffset expires, CancellationToken ct = default)
         {
-            ClaimsPrincipal principal = GetClaimsPrincipal(code);
             string accessToken = await GenerateToken(principal, expires);
             return accessToken;
         }
 
         /// <inheritdoc/>
-        public async Task<string> CreateIdTokenAsync(AuthCodeRow code, OidcClient client, DateTimeOffset now, CancellationToken ct = default)
+        public async Task<string> CreateIdTokenAsync(ClaimsPrincipal principal, OidcClient client, DateTimeOffset now, CancellationToken ct = default)
         {
-            ClaimsPrincipal principal = GetClaimsPrincipal(code, true);
             return await GenerateToken(principal, now.AddMinutes(_generalSettings.JwtValidityMinutes).UtcDateTime);
-        }
-
-        private ClaimsPrincipal GetClaimsPrincipal(AuthCodeRow authCodeRow, bool isIDToken = false)
-        {
-            List<Claim> claims = new()
-            {
-                new Claim("sub", authCodeRow.SubjectId),
-                new Claim("sid", authCodeRow.SessionId),
-                new Claim("iss", _generalSettings.PlatformEndpoint)
-            };
-
-            SecurityLevel securityLevel = SecurityLevel.SelfIdentifed;
-
-            if (authCodeRow.SubjectPartyUuid != null)
-            {
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, authCodeRow.SubjectPartyUuid.ToString()!));
-            }
-
-            if (authCodeRow.SubjectPartyId != null)
-            {
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, authCodeRow.SubjectPartyId.ToString()!, ClaimValueTypes.Integer64));
-            }
-
-            if (authCodeRow.SubjectUserId != null)
-            {
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, authCodeRow.SubjectUserId.ToString()!));
-            }
-
-            if (authCodeRow.SubjectId != null)
-            {
-                claims.Add(new Claim("pid", authCodeRow.SubjectId));
-            }
-
-            if (authCodeRow.Acr != null)
-            {
-                claims.Add(new Claim("acr", authCodeRow.Acr));
-                securityLevel = GetAuthenticationLevelForIdPorten(authCodeRow.Acr);
-            }
-
-            int securityLevelValue = (int)securityLevel;
-            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, securityLevelValue.ToString(), ClaimValueTypes.Integer64));
-
-            if (authCodeRow.Amr != null && authCodeRow.Amr.Count != 0)
-            {
-                var amr = authCodeRow.Amr
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim())
-                .Distinct()
-                .ToArray();
-
-                if (amr.Length > 0)
-                {
-                    string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
-                    claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
-                }
-
-                string amrClaim = AuthenticationHelper.GetAuthenticationMethod(string.Join(" ", authCodeRow.Amr)).ToString();
-                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
-            }
-
-            if (authCodeRow.Nonce != null && isIDToken)
-            {
-                claims.Add(new Claim("nonce", authCodeRow.Nonce));
-            }
-
-            if (authCodeRow.AuthTime != null)
-            {
-                long authTimeEpoch = ((DateTimeOffset)authCodeRow.AuthTime).ToUnixTimeSeconds();
-                claims.Add(new Claim("auth_time", authTimeEpoch.ToString(), ClaimValueTypes.Integer64));
-            }
-
-            if (!isIDToken && authCodeRow.Scopes != null && authCodeRow.Scopes.Any())
-            {
-                claims.Add(new Claim("scope", string.Join(" ", authCodeRow.Scopes)));
-            }
-
-            ClaimsIdentity identity = new(claims, "Token");
-            ClaimsPrincipal principal = new(identity);
-
-            return principal;
-        }
-
-        private static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
-        {
-            switch (acr)
-            {
-                case "selfregistered-email":
-                    return Enum.SecurityLevel.NotSensitive;
-                case "idporten-loa-substantial":
-                    return Enum.SecurityLevel.Sensitive;
-                case "idporten-loa-high":
-                    return Enum.SecurityLevel.VerySensitive;
-                default:
-                    return Enum.SecurityLevel.NotSensitive;
-            }
         }
 
         private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset expires)
@@ -148,6 +47,8 @@ namespace Altinn.Platform.Authentication.Services
             JwtSecurityTokenHandler tokenHandler = new();
             SecurityTokenDescriptor tokenDescriptor = new()
             {
+                IssuedAt = _timeProvider.GetUtcNow().UtcDateTime,
+                NotBefore = _timeProvider.GetUtcNow().UtcDateTime,
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = expires.UtcDateTime,
                 SigningCredentials = new X509SigningCredentials(certificate)
@@ -163,7 +64,7 @@ namespace Altinn.Platform.Authentication.Services
          List<X509Certificate2> certificates, int rolloverDelayHours)
         {
             // First limit the search to just those certificates that have existed longer than the rollover delay.
-            var rolloverCutoff = DateTime.Now.AddHours(-rolloverDelayHours);
+            var rolloverCutoff = _timeProvider.GetUtcNow().AddHours(-rolloverDelayHours);
             var potentialCerts =
                 certificates.Where(c => c.NotBefore < rolloverCutoff).ToList();
 

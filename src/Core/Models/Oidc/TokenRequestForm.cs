@@ -11,6 +11,10 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         [FromForm(Name = "client_secret")] public string? ClientSecret { get; init; }
         [FromForm(Name = "code_verifier")] public string? CodeVerifier { get; init; }
 
+        [FromForm(Name = "refresh_token")] public string? RefreshToken { get; init; }
+
+        [FromForm(Name = "scope")] public string? Scope { get; init; }
+
         // private_key_jwt support (when you add it)
         [FromForm(Name = "client_assertion_type")] public string? ClientAssertionType { get; init; }
         [FromForm(Name = "client_assertion")] public string? ClientAssertion { get; init; }

@@ -21,8 +21,8 @@ namespace Altinn.Platform.Authentication.Tests
         /// <returns>A new token.</returns>
         public static string GenerateToken(ClaimsPrincipal principal, TimeSpan tokenExpiry)
         {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            JwtSecurityTokenHandler tokenHandler = new();
+            SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds),
@@ -43,8 +43,8 @@ namespace Altinn.Platform.Authentication.Tests
         /// <returns>A new token.</returns>
         public static string GenerateEncryptedToken(ClaimsPrincipal principal, TimeSpan tokenExpiry)
         {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            JwtSecurityTokenHandler tokenHandler = new();
+            SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds),
@@ -63,8 +63,8 @@ namespace Altinn.Platform.Authentication.Tests
         /// <returns>A new token.</returns>
         public static string GenerateEncryptedAndSignedToken(ClaimsPrincipal principal, TimeSpan tokenExpiry)
         {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            JwtSecurityTokenHandler tokenHandler = new();
+            SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds),
@@ -85,15 +85,14 @@ namespace Altinn.Platform.Authentication.Tests
         /// <returns>A new token</returns>
         public static string GenerateAccessToken(string issuer, string app, TimeSpan tokenExpiry)
         {
-            List<Claim> claims = new List<Claim>();
-            claims.Add(new Claim(AccessTokenClaimTypes.App, app, ClaimValueTypes.String, issuer));
+            List<Claim> claims = [new Claim(AccessTokenClaimTypes.App, app, ClaimValueTypes.String, issuer)];
 
-            ClaimsIdentity identity = new ClaimsIdentity("AccessToken");
+            ClaimsIdentity identity = new("AccessToken");
             identity.AddClaims(claims);
-            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+            ClaimsPrincipal principal = new(identity);
 
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            JwtSecurityTokenHandler tokenHandler = new();
+            SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = DateTime.Now.Add(tokenExpiry),
@@ -112,7 +111,7 @@ namespace Altinn.Platform.Authentication.Tests
         {
             string certPath = $"{issuer}-org.pfx";
 
-            X509Certificate2 certIssuer = new X509Certificate2(certPath);
+            X509Certificate2 certIssuer = X509CertificateLoader.LoadCertificateFromFile(certPath);
             return new X509SigningCredentials(certIssuer, SecurityAlgorithms.RsaSha256);
         }
 
@@ -121,13 +120,19 @@ namespace Altinn.Platform.Authentication.Tests
         /// and is included in the integration test project as a separate file.
         /// </summary>
         /// <param name="token">The token to be validated.</param>
+        /// <param name="now">Current time if needing to override</param>
         /// <returns>ClaimsPrincipal</returns>
-        public static ClaimsPrincipal ValidateToken(string token)
+        public static ClaimsPrincipal ValidateToken(string token, DateTimeOffset? now = null)
         {
-            X509Certificate2 cert = new X509Certificate2("selfSignedTestCertificatePublic.cer");
+            if (now == null)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
+            X509Certificate2 cert = X509CertificateLoader.LoadCertificateFromFile("selfSignedTestCertificatePublic.cer");
             SecurityKey key = new X509SecurityKey(cert);
 
-            TokenValidationParameters validationParameters = new TokenValidationParameters
+            TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
@@ -135,11 +140,14 @@ namespace Altinn.Platform.Authentication.Tests
                 ValidateAudience = false,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(10)
+                ClockSkew = TimeSpan.FromSeconds(10),
+                LifetimeValidator = GetLifetimeValidator(now.Value)
             };
 
-            JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
-            validator.MapInboundClaims = false;
+            JwtSecurityTokenHandler validator = new()
+            {
+                MapInboundClaims = false
+            };
             return validator.ValidateToken(token, validationParameters, out _);
         }
 
@@ -148,10 +156,10 @@ namespace Altinn.Platform.Authentication.Tests
         /// </summary>
         public static SecurityToken GetSecurityToken(string token)
         {
-            X509Certificate2 cert = new X509Certificate2("selfSignedTestCertificatePublic.cer");
+            X509Certificate2 cert = X509CertificateLoader.LoadCertificateFromFile("selfSignedTestCertificatePublic.cer");
             SecurityKey key = new X509SecurityKey(cert);
 
-            TokenValidationParameters validationParameters = new TokenValidationParameters
+            TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
@@ -162,7 +170,7 @@ namespace Altinn.Platform.Authentication.Tests
                 ClockSkew = TimeSpan.FromSeconds(10)
             };
 
-            JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
+            JwtSecurityTokenHandler validator = new();
 
             SecurityToken securityToken;
             validator.ValidateToken(token, validationParameters, out securityToken);
@@ -177,14 +185,14 @@ namespace Altinn.Platform.Authentication.Tests
         /// <returns>ClaimsPrincipal</returns>
         public static ClaimsPrincipal ValidateEncryptedAndSignedToken(string token)
         {
-            X509Certificate2 cert = new X509Certificate2("selfSignedTestCertificatePublic.cer");
+            X509Certificate2 cert = X509CertificateLoader.LoadCertificateFromFile("selfSignedTestCertificatePublic.cer");
             SecurityKey key = new X509SecurityKey(cert);
 
-            TokenValidationParameters validationParameters = new TokenValidationParameters
+            TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
-                TokenDecryptionKey = new X509SecurityKey(new X509Certificate2("selfSignedEncryptionTestCertificate.pfx", "qwer1234")),
+                TokenDecryptionKey = new X509SecurityKey(X509CertificateLoader.LoadPkcs12FromFile("selfSignedEncryptionTestCertificate.pfx", "qwer1234", X509KeyStorageFlags.EphemeralKeySet)),
                 ValidateIssuer = false,
                 ValidateAudience = false,
                 RequireExpirationTime = true,
@@ -192,19 +200,41 @@ namespace Altinn.Platform.Authentication.Tests
                 ClockSkew = TimeSpan.FromSeconds(10)
             };
 
-            JwtSecurityTokenHandler validator = new JwtSecurityTokenHandler();
+            JwtSecurityTokenHandler validator = new();
             return validator.ValidateToken(token, validationParameters, out _);
         }
 
         private static SigningCredentials GetSigningCredentials()
         {
-            X509Certificate2 cert = new X509Certificate2("selfSignedTestCertificate.pfx", "qwer1234");
+            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile("selfSignedTestCertificate.pfx", "qwer1234", X509KeyStorageFlags.EphemeralKeySet);
             return new X509SigningCredentials(cert, SecurityAlgorithms.RsaSha256);
         }
 
         private static EncryptingCredentials GetEncryptionCredentials()
         {
-            return new X509EncryptingCredentials(new X509Certificate2("selfSignedEncryptionTestCertificatePublic.cer"));
+            return new X509EncryptingCredentials(X509CertificateLoader.LoadCertificateFromFile("selfSignedEncryptionTestCertificatePublic.cer"));
+        }
+
+        private static LifetimeValidator GetLifetimeValidator(DateTimeOffset now)
+        {
+            // Use our own "now" for lifetime checks
+            LifetimeValidator lifetimeValidator = (nbf, exp, _token, p) =>
+            {
+                var n = now.UtcDateTime;
+                if (nbf.HasValue && n < nbf.Value - p.ClockSkew)
+                {
+                    return false;
+                }
+
+                if (exp.HasValue && n > exp.Value + p.ClockSkew)
+                {
+                    return false;
+                }
+
+                return true;
+            };
+
+            return lifetimeValidator;
         }
     }
 }

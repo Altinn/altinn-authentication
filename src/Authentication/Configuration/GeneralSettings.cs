@@ -68,6 +68,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public int JwtValidityMinutes { get; set; }
 
         /// <summary>
+        /// Max session time in minutes
+        /// </summary>
+        public int MaxSessionTimeInMinutes { get; set; }
+
+        /// <summary>
         /// Gets or sets the hostname
         /// </summary>
         public string HostName { get; set; }

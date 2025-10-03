@@ -10,13 +10,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 {
     public static class IdPortenTestTokenUtil
     {
-        public static OidcCodeResponse GetIdPortenTokenResponse(string pid, string nonce, string sid, string[] acr, string[] amr, string client_id, string[] scope)
+        public static OidcCodeResponse GetIdPortenTokenResponse(string pid, string nonce, string sid, string[] acr, string[] amr, string client_id, string[] scope, DateTimeOffset auth_time)
         {
             string sub = Guid.NewGuid().ToString();
             string locale = "nb";
             string digDirOrgNo = "991825827";
-            DateTimeOffset auth_time = DateTimeOffset.Now;
-            DateTimeOffset iat = DateTimeOffset.Now;
 
             OidcCodeResponse response = new()
             {
@@ -26,7 +24,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 RefreshTokenExpiresIn = 600,
                 Scope = string.Join(' ', scope),
                 IdToken = GetIdPortenIDToken(sub, pid, locale, nonce, sid, client_id, acr, amr, auth_time),
-                AccessToken = GetIdPortenAccessToken(sub, "unspecificed", acr, client_id, "virksomhetssertifikat", digDirOrgNo, scope, pid, iat)
+                AccessToken = GetIdPortenAccessToken(sub, "unspecificed", acr, client_id, "virksomhetssertifikat", digDirOrgNo, scope, pid, auth_time)
             };
             return response;
         }
