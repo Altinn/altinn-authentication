@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             // Common: parse client auth from header or form (kept as your helper)
-            var clientAuth = ParseClientAuth(Request, form);
+            TokenClientAuth clientAuth = ParseClientAuth(Request, form);
 
             switch (form.GrantType)
             {
@@ -54,7 +54,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             return OAuthError("invalid_request", "Missing redirect_uri.");
                         }
 
-                        var req = new TokenRequest
+                        TokenRequest req = new()
                         {
                             GrantType = "authorization_code",
                             Code = form.Code!,
@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             ClientAuth = clientAuth
                         };
 
-                        var result = await _tokenService.ExchangeAuthorizationCodeAsync(req, ct);
+                        TokenResult result = await _tokenService.ExchangeAuthorizationCodeAsync(req, ct);
                         return ToHttpResult(result);
                     }
 
@@ -75,7 +75,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             return OAuthError("invalid_request", "Missing refresh_token.");
                         }
 
-                        var req = new RefreshTokenRequest
+                        RefreshTokenRequest req = new()
                         {
                             GrantType = "refresh_token",
                             RefreshToken = form.RefreshToken!,
@@ -84,7 +84,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             ClientAuth = clientAuth
                         };
 
-                        var result = await _tokenService.RefreshAsync(req, ct);
+                        TokenResult result = await _tokenService.RefreshAsync(req, ct);
                         return ToHttpResult(result);
                     }
 
@@ -106,7 +106,8 @@ namespace Altinn.Platform.Authentication.Controllers
                     token_type = "Bearer",
                     expires_in = result.ExpiresIn,
                     scope = result.Scope,
-                    refresh_token = result.RefreshToken
+                    refresh_token = result.RefreshToken,
+                    refresh_token_expires_in = result.RefreshTokenExpiresIn
                 }),
 
                 TokenResultKind.InvalidClient

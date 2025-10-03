@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Data;
 using System.Net;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
 {
     public static class OidcServerDatabaseUtil
     {
-        public static async Task<LoginTransaction> GetDownstreamTransaction(string clientId, string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<LoginTransaction?> GetDownstreamTransaction(string clientId, string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
         {        
             const string SQL_FIND_DOWNSTREAM = /*strpsql*/ @"
             SELECT *
@@ -38,7 +39,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
-        public static async Task<UpstreamLoginTransaction> GetUpstreamtransactrion(Guid requestId, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<UpstreamLoginTransaction?> GetUpstreamtransactrion(Guid requestId, NpgsqlDataSource DataSource, CancellationToken ct = default)
         {
             const string SQL_FIND_UPSTREAM = /*strpsql*/ @"
             SELECT * from oidcserver.login_transaction_upstream

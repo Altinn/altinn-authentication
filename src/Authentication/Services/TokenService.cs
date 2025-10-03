@@ -71,7 +71,7 @@ namespace Altinn.Platform.Authentication.Services
             await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, exchangeTime, ct);
             await _oidcSessionRepository.TouchLastSeenAsync(oidcSession!.Sid, ct);
 
-            return TokenResult.Success(accessToken, idToken, expiry.ToUnixTimeSeconds(), string.Join(" ", row.Scopes), refreshToken);
+            return TokenResult.Success(accessToken, idToken, _generalSettings.JwtValidityMinutes, string.Join(" ", row.Scopes), refreshToken, _generalSettings.JwtValidityMinutes);
         }
 
         /// <inheritdoc/>
@@ -153,9 +153,10 @@ namespace Altinn.Platform.Authentication.Services
             return TokenResult.Success(
                 accessToken: accessToken,
                 idToken: idToken,
-                expiresIn: atExpiry.ToUnixTimeSeconds(),
+                expiresIn: _generalSettings.JwtValidityMinutes,
                 scope: string.Join(' ', resultingScopes),
-                refreshToken: newRefreshToken);
+                refreshToken: newRefreshToken,
+                _generalSettings.JwtValidityMinutes);
         }
 
         private async Task<(TokenResult? Value, OidcClient? Client, byte[]? ServerPepper, RefreshTokenRow? Row, string[]? ResultingScopes)> ValidateRefreshRequest(RefreshTokenRequest request, DateTimeOffset now, CancellationToken ct)
@@ -379,7 +380,7 @@ namespace Altinn.Platform.Authentication.Services
                     return (null, TokenResult.InvalidClient("Client authentication missing"));
             }
 
-            return (client, TokenResult.Success(string.Empty, null, 0, null, null)); // ignore payload; caller uses returned client
+            return (client, TokenResult.Success(string.Empty, null, 0, null, null, null)); // ignore payload; caller uses returned client
         }
 
         private async Task<string?> TryIssueInitialRefreshAsync(
