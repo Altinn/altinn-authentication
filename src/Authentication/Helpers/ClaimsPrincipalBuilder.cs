@@ -101,6 +101,84 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             return principal;
         }
 
+        /// <summary>
+        /// Create a ClaimsPrincipal based on an OidcSession for AltinnStudio runetime cookie
+        /// </summary>
+        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, bool isIDToken = false)
+        {
+            List<Claim> claims = new()
+            {
+                new Claim("sub", oidcSession.SubjectId),
+                new Claim("sid", oidcSession.Sid),
+                new Claim("iss", iss)
+            };
+
+            SecurityLevel securityLevel = SecurityLevel.SelfIdentifed;
+
+            if (oidcSession.SubjectPartyUuid != null)
+            {
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, oidcSession.SubjectPartyUuid.ToString()!));
+            }
+
+            if (oidcSession.SubjectPartyId != null)
+            {
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, oidcSession.SubjectPartyId.ToString()!, ClaimValueTypes.Integer64));
+            }
+
+            if (oidcSession.SubjectUserId != null)
+            {
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, oidcSession.SubjectUserId.ToString()!));
+            }
+
+            if (oidcSession.SubjectId != null)
+            {
+                claims.Add(new Claim("pid", oidcSession.SubjectId));
+            }
+
+            if (oidcSession.Acr != null)
+            {
+                claims.Add(new Claim("acr", oidcSession.Acr));
+                securityLevel = GetAuthenticationLevelForIdPorten(oidcSession.Acr);
+            }
+
+            int securityLevelValue = (int)securityLevel;
+            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, securityLevelValue.ToString(), ClaimValueTypes.Integer64));
+
+            if (oidcSession.Amr != null && oidcSession.Amr.Count() != 0)
+            {
+                var amr = oidcSession.Amr
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct()
+                .ToArray();
+
+                if (amr.Length > 0)
+                {
+                    string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
+                    claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
+                }
+
+                string amrClaim = AuthenticationHelper.GetAuthenticationMethod(string.Join(" ", oidcSession.Amr)).ToString();
+                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
+            }
+           
+            if (oidcSession.AuthTime != null)
+            {
+                long authTimeEpoch = ((DateTimeOffset)oidcSession.AuthTime).ToUnixTimeSeconds();
+                claims.Add(new Claim("auth_time", authTimeEpoch.ToString(), ClaimValueTypes.Integer64));
+            }
+
+            if (!isIDToken && oidcSession != null && oidcSession.Scopes.Any())
+            {
+                claims.Add(new Claim("scope", string.Join(" ", oidcSession.Scopes)));
+            }
+
+            ClaimsIdentity identity = new(claims, "Token");
+            ClaimsPrincipal principal = new(identity);
+
+            return principal;
+        }
+
         private static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
         {
             switch (acr)

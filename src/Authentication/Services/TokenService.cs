@@ -159,6 +159,11 @@ namespace Altinn.Platform.Authentication.Services
                 _generalSettings.JwtValidityMinutes);
         }
 
+        public Task<string> CreateCookieToken(OidcSession oidcSession, CancellationToken ct)
+        {
+           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.PlatformEndpoint, isIDToken: true);
+        }
+
         private async Task<(TokenResult? Value, OidcClient? Client, byte[]? ServerPepper, RefreshTokenRow? Row, string[]? ResultingScopes)> ValidateRefreshRequest(RefreshTokenRequest request, DateTimeOffset now, CancellationToken ct)
         {
             byte[] serverPepper;

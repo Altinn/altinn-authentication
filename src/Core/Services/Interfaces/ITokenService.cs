@@ -13,5 +13,10 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// Refreshes tokens using a refresh token.
         /// </summary>
         Task<TokenResult> RefreshAsync(RefreshTokenRequest req, CancellationToken ct);
+
+        /// <summary>
+        /// Create a token suitable for use in a cookie from an OIDC session.
+        /// </summary>
+        Task<string> CreateCookieToken(OidcSession oidcSession, CancellationToken ct);
     }
 }

@@ -154,7 +154,10 @@ namespace Altinn.Platform.Authentication.Services
             // 6) Mark upstream transaction as completed
             await MarkUpstreamTokenExchanged(upstreamTx, userIdenity, cancellationToken);
 
-            // 7) Redirect back to the client with code + original state
+            // 7 Create Session cookie for the user and AltinnStudio runtime cookie with JWT
+            string cookieToken = await _tokenService.CreateCookieToken(session, cancellationToken);
+
+            // 8) Redirect back to the client with code + original state
             return new UpstreamCallbackResult
             {
                 Kind = UpstreamCallbackResultKind.RedirectToClient,

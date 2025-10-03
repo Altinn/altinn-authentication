@@ -15,6 +15,7 @@
   acr                  TEXT,
   auth_time            TIMESTAMPTZ,
   amr                  TEXT[],
+  scopes               TEXT[] NOT NULL,
 
   -- Lifecycle
   created_at           TIMESTAMPTZ NOT NULL,

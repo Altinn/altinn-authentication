@@ -20,6 +20,8 @@
         public DateTimeOffset? AuthTime { get; init; }
         public string[]? Amr { get; init; }
 
+        public required IReadOnlyCollection<string> Scopes { get; init; }     // lowercased/distinct
+
         // Lifecycle / diagnostics
         public DateTimeOffset? ExpiresAt { get; init; }
         public DateTimeOffset? Now { get; init; }
