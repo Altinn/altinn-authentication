@@ -63,8 +63,8 @@ namespace Altinn.Platform.Authentication.Tests
         /// <returns>A new token.</returns>
         public static string GenerateEncryptedAndSignedToken(ClaimsPrincipal principal, TimeSpan tokenExpiry)
         {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            JwtSecurityTokenHandler tokenHandler = new();
+            SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds),
@@ -85,15 +85,14 @@ namespace Altinn.Platform.Authentication.Tests
         /// <returns>A new token</returns>
         public static string GenerateAccessToken(string issuer, string app, TimeSpan tokenExpiry)
         {
-            List<Claim> claims = new List<Claim>();
-            claims.Add(new Claim(AccessTokenClaimTypes.App, app, ClaimValueTypes.String, issuer));
+            List<Claim> claims = [new Claim(AccessTokenClaimTypes.App, app, ClaimValueTypes.String, issuer)];
 
-            ClaimsIdentity identity = new ClaimsIdentity("AccessToken");
+            ClaimsIdentity identity = new("AccessToken");
             identity.AddClaims(claims);
-            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+            ClaimsPrincipal principal = new(identity);
 
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            JwtSecurityTokenHandler tokenHandler = new();
+            SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
                 Expires = DateTime.Now.Add(tokenExpiry),
@@ -160,7 +159,7 @@ namespace Altinn.Platform.Authentication.Tests
             X509Certificate2 cert = X509CertificateLoader.LoadCertificateFromFile("selfSignedTestCertificatePublic.cer");
             SecurityKey key = new X509SecurityKey(cert);
 
-            TokenValidationParameters validationParameters = new TokenValidationParameters
+            TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
@@ -189,7 +188,7 @@ namespace Altinn.Platform.Authentication.Tests
             X509Certificate2 cert = X509CertificateLoader.LoadCertificateFromFile("selfSignedTestCertificatePublic.cer");
             SecurityKey key = new X509SecurityKey(cert);
 
-            TokenValidationParameters validationParameters = new TokenValidationParameters
+            TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
