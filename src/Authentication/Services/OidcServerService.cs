@@ -420,6 +420,12 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
+            string[]? scopes = [];
+            if (!string.IsNullOrWhiteSpace(userIdenity.Scope))
+            {
+                scopes = userIdenity.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            }
+
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate
                 {
@@ -434,6 +440,7 @@ namespace Altinn.Platform.Authentication.Services
                     Acr = userIdenity.Acr,
                     AuthTime = userIdenity.AuthTime,
                     Amr = userIdenity.Amr,
+                    Scopes = scopes,
                     ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
                     UpstreamSessionSid = userIdenity.Sid,
                     Now = _timeProvider.GetUtcNow(),

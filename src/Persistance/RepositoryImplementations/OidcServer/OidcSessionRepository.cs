@@ -3,6 +3,7 @@ using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.OidcServer
 {
@@ -48,14 +49,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 INSERT INTO oidcserver.oidc_session (
                     sid, upstream_issuer, upstream_sub, subject_id,
                     subject_party_uuid, subject_party_id, subject_user_id,
-                    provider, acr, auth_time, amr,
+                    provider, acr, auth_time, amr, scopes,
                     created_at, updated_at, last_seen_at, expires_at,
                     upstream_session_sid, created_by_ip, user_agent_hash
                 )
                 SELECT
                     @sid, @upstream_issuer, @upstream_sub, @subject_id,
                     @subject_party_uuid, @subject_party_id, @subject_user_id,
-                    @provider, @acr, @auth_time, @amr,
+                    @provider, @acr, @auth_time, @amr, @scopes,
                     @now, @now, @now, @expires_at,
                     @upstream_session_sid, @created_by_ip, @user_agent_hash
                 WHERE NOT EXISTS (SELECT 1 FROM existing)
@@ -74,6 +75,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("acr", (object?)c.Acr ?? DBNull.Value);
             cmd.Parameters.AddWithValue("auth_time", (object?)c.AuthTime ?? DBNull.Value);
             cmd.Parameters.AddWithValue("amr", (object?)(c.Amr ?? EmptyAmr) ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("scopes", NpgsqlDbType.Array | NpgsqlDbType.Text, c.Scopes.ToArray());
             cmd.Parameters.AddWithValue("now", (object?)c.Now ?? DBNull.Value);
             cmd.Parameters.AddWithValue("expires_at", (object?)c.ExpiresAt ?? DBNull.Value);
             cmd.Parameters.AddWithValue("upstream_session_sid", (object?)c.UpstreamSessionSid ?? DBNull.Value);
@@ -174,6 +176,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 Acr = r.IsDBNull("acr") ? null : r.GetFieldValue<string>("acr"),
                 AuthTime = r.IsDBNull("auth_time") ? null : r.GetFieldValue<DateTimeOffset?>("auth_time"),
                 Amr = r.IsDBNull("amr") ? null : r.GetFieldValue<string[]>("amr"),
+                Scopes = r.GetFieldValue<string[]>("scopes"),
                 CreatedAt = r.GetFieldValue<DateTimeOffset>("created_at"),
                 UpdatedAt = r.GetFieldValue<DateTimeOffset>("updated_at"),
                 ExpiresAt = r.IsDBNull("expires_at") ? null : r.GetFieldValue<DateTimeOffset?>("expires_at"),

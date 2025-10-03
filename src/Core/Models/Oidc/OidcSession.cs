@@ -26,6 +26,8 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public DateTimeOffset? AuthTime { get; init; }
         public string[]? Amr { get; init; }
 
+        public string[] Scopes { get; init; } = Array.Empty<string>();
+
         // Lifecycle
         public DateTimeOffset CreatedAt { get; init; }
         public DateTimeOffset UpdatedAt { get; init; }
