@@ -6,13 +6,13 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Clients;
+using Altinn.Authorization.ServiceDefaults;
 using Altinn.Common.AccessToken;
 using Altinn.Common.AccessToken.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.AccessTokenClient.Services;
 using Altinn.Common.PEP.Authorization;
 using Altinn.Common.PEP.Clients;
-using Altinn.Common.PEP.Configuration;
 using Altinn.Common.PEP.Implementation;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients;
@@ -34,7 +34,6 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Telemetry;
 using AltinnCore.Authentication.JwtCookie;
-using ArchiverService;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
@@ -58,8 +57,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using Yuniql.AspNetCore;
-using Yuniql.Extensibility;
 using Yuniql.PostgreSql;
+using AltinnClusterInfo = Altinn.Platform.Authentication.ServiceDefaults.AltinnClusterInfo;
 
 ILogger logger;
 
@@ -71,18 +70,21 @@ string applicationInsightsConnectionString = string.Empty;
 string postgresAdminConnectionString = string.Empty;
 string postgresUserConnectionString = string.Empty;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = AltinnHost.CreateWebApplicationBuilder("authentication", args);
+var services = builder.Services;
+var config = builder.Configuration;
+var descriptor = builder.GetAltinnServiceDescriptor();
 
 ConfigureSetupLogging();
 
-await SetConfigurationProviders(builder.Configuration);
+await SetConfigurationProviders(config);
 
 ConfigureLogging(builder.Logging);
 
-ConfigureServices(builder.Services, builder.Configuration);
+ConfigureServices(services, config);
 
 // Forwardlimit is set to 2 as our infrastructure has 1 proxy forward. The 2nd value from right to left is read into remoteipaddress property which is the client ip
-//builder.Services.Configure<ForwardedHeadersOptions>(options =>
+//services.Configure<ForwardedHeadersOptions>(options =>
 //{
 //    options.ForwardedHeaders =
 //        ForwardedHeaders.XForwardedFor;
@@ -92,10 +94,10 @@ ConfigureServices(builder.Services, builder.Configuration);
 //    options.RequireHeaderSymmetry = false;
 //});
 
-builder.Services.AddScoped<TrimStringsActionFilter>();
-builder.Services.AddPersistanceLayer();
+services.AddScoped<TrimStringsActionFilter>();
+services.AddPersistanceLayer();
 
-// builder.Services.AddHostedService<Archiver>();
+// services.AddHostedService<Archiver>();
 
 var app = builder.Build();
 
@@ -295,7 +297,7 @@ void ConfigureLogging(ILoggingBuilder logging)
 
 void ConfigureServices(IServiceCollection services, IConfiguration config)
 {
-    services.Configure<AltinnClusterInfo>(builder.Configuration.GetSection("Altinn:ClusterInfo"));
+    services.Configure<AltinnClusterInfo>(config.GetSection("Altinn:ClusterInfo"));
     services.AddSingleton<IConfigureOptions<AltinnClusterInfo>, ConfigureAltinnClusterInfo>();
     services.AddOptions<ForwardedHeadersOptions>()
         .Configure((ForwardedHeadersOptions options, IOptionsMonitor<AltinnClusterInfo> clusterInfoOptions) =>
@@ -360,6 +362,11 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
                  options.RequireHttpsMetadata = false;
              }
          });
+
+    services.TryAddPlatformTokenProvider();
+    services.AddHttpClient<RegisterService>()
+        .AddPlatformAccessTokenHandler();
+    services.AddTransient<ITokenService, TokenService>();
 
     services.AddSingleton(config); 
     services.AddHttpClient<ISblCookieDecryptionService, SblCookieDecryptionService>();
@@ -505,16 +512,16 @@ void Configure()
 
 void ConfigurePostgreSql() 
 {
-    if (builder.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
+    if (config.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
     {
         ConsoleTraceService traceService = new() { IsDebugEnabled = true };
 
-        string workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
+        string workspacePath = Path.Combine(Environment.CurrentDirectory, config.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
         if (builder.Environment.IsDevelopment())
         {
             string connectionString = string.Format(
-            builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminConnectionString"));
-            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
+            config.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminConnectionString"));
+            workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, config.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
             postgresAdminConnectionString = connectionString;
         }
 
