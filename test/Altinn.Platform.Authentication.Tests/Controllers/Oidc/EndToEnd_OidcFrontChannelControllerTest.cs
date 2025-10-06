@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Web;
-using Altinn.Platform.Authentication.Configuration;
+﻿using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Model;
@@ -22,6 +13,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Web;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
@@ -153,6 +154,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // Optional: scopes should be identical to original unless you down-scoped
             Assert.Equal(string.Join(' ', testScenario.Scopes), refreshed.scope);
+
+            // 5 IS redirected to app 
+            HttpResponseMessage appRedirectResponse = await client.GetAsync(
+                "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
 
             // 4.4 Reuse detection: reusing old RT should fail with invalid_grant
             var reuseForm = GetRefreshForm(testScenario, create, oldRefresh);
