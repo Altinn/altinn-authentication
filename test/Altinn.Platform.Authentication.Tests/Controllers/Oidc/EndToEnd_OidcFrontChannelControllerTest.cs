@@ -178,6 +178,29 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string refreshToken = await cookieRefreshResponse.Content.ReadAsStringAsync();
             TokenAssertsHelper.AssertCookieAccessToken(refreshToken, testScenario, _fakeTime.GetUtcNow());
 
+            _fakeTime.Advance(TimeSpan.FromMinutes(5));
+
+            // Second keep alive from App
+            HttpResponseMessage cookieRefreshResponse2 = await client.GetAsync(
+               "/authentication/api/v1/refresh");
+
+            string refreshToken2 = await cookieRefreshResponse.Content.ReadAsStringAsync();
+            TokenAssertsHelper.AssertCookieAccessToken(refreshToken2, testScenario, _fakeTime.GetUtcNow());
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(5));
+
+            // 7 User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
+            Dictionary<string, string> refreshFormAfterAppVisit = GetRefreshForm(testScenario, create, refreshed.refresh_token);
+
+            using var refreshRespAfterAppVisit = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(refreshFormAfterAppVisit));
+
+            Assert.Equal(HttpStatusCode.OK, refreshRespAfterAppVisit.StatusCode);
+
+            string refreshJsonAfterAppVisit = await refreshRespAfterAppVisit.Content.ReadAsStringAsync();
+            TokenResponseDto refreshedAfterAppVisit = JsonSerializer.Deserialize<TokenResponseDto>(refreshJsonAfterAppVisit)!;
+
             // 4.4 Reuse detection: reusing old RT should fail with invalid_grant
             var reuseForm = GetRefreshForm(testScenario, create, oldRefresh);
 
@@ -216,12 +239,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             return (upstreamState, createdUpstreamLogingTransaction);
         }
 
-        private static Dictionary<string, string> GetRefreshForm(OidcTestScenario testScenario, OidcClientCreate create, string oldRefresh)
+        private static Dictionary<string, string> GetRefreshForm(OidcTestScenario testScenario, OidcClientCreate create, string refreshToken)
         {
             var refreshForm = new Dictionary<string, string>
             {
                 ["grant_type"] = "refresh_token",
-                ["refresh_token"] = oldRefresh,
+                ["refresh_token"] = refreshToken,
                 ["client_id"] = create.ClientId,
                 ["client_secret"] = testScenario.ClientSecret // assuming your test client has this
             };
