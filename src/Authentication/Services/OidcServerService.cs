@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -179,6 +180,27 @@ namespace Altinn.Platform.Authentication.Services
             };
         }
 
+        /// <summary>
+        /// Handles refresh of session basded on claims principal
+        /// -
+        /// </summary>
+        public Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct)
+        {
+            Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
+            if (sidClaim == null && _generalSettings.ForceOidc)
+            {
+                throw new InvalidOperationException("No sid claim present in principal");
+            }
+            else if (sidClaim == null)
+            {
+                // TODO: Need to consider this scenario. 
+                return Task.FromResult<OidcSession?>(null);
+            }
+
+            _oidcSessionRepo.SlideExpiryToAsync(sidClaim!.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), ct);
+            return _oidcSessionRepo.GetBySidAsync(sidClaim.Value, ct) ?? throw new InvalidOperationException("No valid session found for sid");
+        }
+
         private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
@@ -347,7 +369,7 @@ namespace Altinn.Platform.Authentication.Services
 
                 State = upstreamState,
                 Nonce = upstreamNonce,
-                Scopes = (provider.Scope ?? "openid").Split(' ', StringSplitOptions.RemoveEmptyEntries),
+                Scopes = request.Scopes,
                 AcrValues = request.AcrValues?.Length > 0 ? request.AcrValues : null,
                 Prompts = request.Prompts?.Length > 0 ? request.Prompts : null,
                 UiLocales = request.UiLocales?.Length > 0 ? request.UiLocales : null,

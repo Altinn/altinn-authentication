@@ -1,11 +1,12 @@
-﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Tests.Models;
-using Docker.DotNet.Models;
-using System;
+﻿using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Policy;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Tests.Helpers;
+using Altinn.Platform.Authentication.Tests.Models;
+using Docker.DotNet.Models;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
@@ -31,7 +32,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.False(string.IsNullOrEmpty(upstreamQuery["state"]));
         }
 
-        public static void AssertCallbackResponse(HttpResponseMessage callbackResp, OidcTestScenario testScenario)
+        public static void AssertCallbackResponse(HttpResponseMessage callbackResp, OidcTestScenario testScenario, DateTimeOffset now)
         {
             Assert.Equal(HttpStatusCode.Found, callbackResp.StatusCode);
             Assert.NotNull(callbackResp.Headers.Location);
@@ -44,7 +45,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.False(string.IsNullOrWhiteSpace(finalQuery["code"]), "Downstream code must be present.");
             Assert.Equal(testScenario.DownstreamState, finalQuery["state"]); // original downstream state echoed back
 
-            AssertHasAltinnStudioRuntimeCookie(callbackResp, out var runtimeCookieValue);
+            AssertHasAltinnStudioRuntimeCookie(callbackResp, out var runtimeCookieValue, testScenario, now);
         }
 
         public static void AssertLogingTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario)
@@ -66,7 +67,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.NotNull(createdUpstreamLogingTransaction);
         }
 
-        public static void AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, out string value)
+        public static void AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario,   DateTimeOffset now)
         {
             Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
 
@@ -89,6 +90,9 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
             // (Optional but recommended) also forbid Max-Age to ensure session-only
             // Assert.DoesNotContain(parts, p => p.StartsWith("Max-Age=", StringComparison.OrdinalIgnoreCase));
+
+            // Assert token from cookie is valid and contains the expected claims
+            TokenAssertsHelper.AssertCookieAccessToken(value, testScenario, now);
         }
     }
 }

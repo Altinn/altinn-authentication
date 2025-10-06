@@ -1,4 +1,5 @@
 ﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
+using System.Security.Claims;
 
 namespace Altinn.Platform.Authentication.Core.Services.Interfaces
 {
@@ -22,6 +23,16 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// <returns>A task that represents the asynchronous operation. The task result contains an  <see
         /// cref="UpstreamCallbackResult"/> object representing the outcome of the callback processing.</returns>
         public Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken ct);
+
+
+        /// <summary>
+        /// Handles refresh of an OIDC session based on the provided principal.Used when the Altinn Studio runtimecookie
+        /// is used as session cookie for OIDC and app tyical refresh endpoint runtime
+        /// </summary>
+        /// <param name="principal">The principal containing all claims including the SID</param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        public Task<OidcSession> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct);
 
     }
 }

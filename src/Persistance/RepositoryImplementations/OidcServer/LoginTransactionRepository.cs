@@ -160,7 +160,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 cmd.Parameters.AddWithValue("state", create.State);
                 cmd.Parameters.AddWithValue("nonce", create.Nonce);
 
-                cmd.Parameters.Add(MakeTextArrayParam("scopes", scopes));
                 cmd.Parameters.Add(MakeTextArrayParam("acr_values", acrValues));
                 cmd.Parameters.Add(MakeTextArrayParam("prompts", prompts));
                 cmd.Parameters.Add(MakeTextArrayParam("ui_locales", uiLocales));

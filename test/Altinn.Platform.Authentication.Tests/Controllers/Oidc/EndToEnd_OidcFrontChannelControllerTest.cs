@@ -1,4 +1,14 @@
-﻿using Altinn.Common.AccessToken.Services;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Web;
+using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -16,16 +26,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.NetworkInformation;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Web;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
@@ -112,7 +112,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
             // Should redirect to downstream client redirect_uri with ?code=...&state=original_downstream_state
-            OidcAssertHelper.AssertCallbackResponse(callbackResp, testScenario);
+            OidcAssertHelper.AssertCallbackResponse(callbackResp, testScenario, _fakeTime.GetUtcNow());
             string code = HttpUtility.ParseQueryString(callbackResp.Headers.Location!.Query)["code"]!;
 
             // === Phase 3: Downstream client redeems code for tokens ===
@@ -169,7 +169,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             _fakeTime.Advance(TimeSpan.FromMinutes(5));
 
-            // 6 Refresh call from app
+            // 6 Refresh call from app. In Apps the frontend Application do call against their 
+            // own keepalive endpoint in app backend to get a new token. The backend in Apps do call against the /refresh endpoint in Authentication.
+            // Code is here: https://github.com/Altinn/app-lib-dotnet/blob/main/src/Altinn.App.Api/Controllers/AuthenticationController.cs#L35
+            HttpResponseMessage cookieRefreshResponse = await client.GetAsync(
+                "/authentication/api/v1/refresh");
+
+            string refreshToken = await cookieRefreshResponse.Content.ReadAsStringAsync();
+            TokenAssertsHelper.AssertCookieAccessToken(refreshToken, testScenario, _fakeTime.GetUtcNow());
 
             // 4.4 Reuse detection: reusing old RT should fail with invalid_grant
             var reuseForm = GetRefreshForm(testScenario, create, oldRefresh);

@@ -16,6 +16,8 @@ using Altinn.Authentication.Integration.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -77,6 +79,8 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
         private readonly IOidcProvider _oidcProvider;
         private readonly IProfile _profileService;
+        private readonly IOidcServerService _oidcServerService;
+        private readonly TimeProvider _timeProvider;
 
         private readonly OidcProviderSettings _oidcProviderSettings;
         private readonly IAntiforgery _antiforgery;
@@ -122,7 +126,9 @@ namespace Altinn.Platform.Authentication.Controllers
             IEventLog eventLog,
             IFeatureManager featureManager,
             IGuidService guidService,
-            IProfile profileService)
+            IProfile profileService,
+            IOidcServerService oidcServerService,
+            TimeProvider timeProvider)
         {
             _logger = logger;
             _generalSettings = generalSettings.Value;
@@ -141,6 +147,8 @@ namespace Altinn.Platform.Authentication.Controllers
             _featureManager = featureManager;
             _guidService = guidService;
             _profileService = profileService;
+            _oidcServerService = oidcServerService;
+            _timeProvider = timeProvider;
             if (_generalSettings.PartnerScopes != null)
             {
                 _partnerScopes = _generalSettings.PartnerScopes.Split(";").ToList();
@@ -285,7 +293,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("refresh")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult> RefreshJwtCookie()
+        public async Task<ActionResult> RefreshJwtCookie(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Starting to refresh token...");
 
@@ -294,6 +302,8 @@ namespace Altinn.Platform.Authentication.Controllers
             _logger.LogInformation("Refreshing token....");
 
             string serializedToken = await GenerateToken(principal);
+
+            OidcSession session = await _oidcServerService.HandleSessionRefresh(principal, cancellationToken);
 
             _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext);
             _logger.LogInformation("End of refreshing token");
@@ -817,45 +827,48 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="principal">The claims principal for the token</param>
         /// <param name="expires">The Expiry time of the token</param>
         /// <returns>A serialized version of the generated JSON Web Token.</returns>
-        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTime? expires = null)
+        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset? expires = null)
         {
             List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
 
-            X509Certificate2 certificate = GetLatestCertificateWithRolloverDelay(
-                certificates, _generalSettings.JwtSigningCertificateRolloverDelayHours);
+            DateTimeOffset now = _timeProvider.GetUtcNow();
 
-            TimeSpan tokenExpiry = new TimeSpan(0, _generalSettings.JwtValidityMinutes, 0);
-            if (expires == null)
-            {
-                expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds);
-            }
+            // If GetLatestCertificateWithRolloverDelay uses "now", pass it in so it also honors TimeProvider.
+            var certificate = GetLatestCertificateWithRolloverDelay(
+                certificates,
+                _generalSettings.JwtSigningCertificateRolloverDelayHours,
+                now);
 
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            var lifetime = TimeSpan.FromMinutes(_generalSettings.JwtValidityMinutes);
+            var exp = (expires ?? now.Add(lifetime)).UtcDateTime;
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var descriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(principal.Identity),
-                Expires = expires,
-                SigningCredentials = new X509SigningCredentials(certificate)
+                Subject = new ClaimsIdentity(principal.Claims),
+                IssuedAt = now.UtcDateTime,     // iat
+                NotBefore = now.UtcDateTime,    // nbf
+                Expires = exp,                  // exp
+                SigningCredentials = new X509SigningCredentials(certificate),
             };
 
-            SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
-            string serializedToken = tokenHandler.WriteToken(token);
-
-            return serializedToken;
+            var token = tokenHandler.CreateToken(descriptor);
+            return tokenHandler.WriteToken(token);
         }
 
         private X509Certificate2 GetLatestCertificateWithRolloverDelay(
-            List<X509Certificate2> certificates, int rolloverDelayHours)
+            List<X509Certificate2> certificates, int rolloverDelayHours, DateTimeOffset now)
         {
             // First limit the search to just those certificates that have existed longer than the rollover delay.
-            var rolloverCutoff = DateTime.Now.AddHours(-rolloverDelayHours);
+            var rolloverCutoff = now.AddHours(-rolloverDelayHours);
             var potentialCerts =
                 certificates.Where(c => c.NotBefore < rolloverCutoff).ToList();
 
             // If no certs could be found, then widen the search to any usable certificate.
             if (!potentialCerts.Any())
             {
-                potentialCerts = certificates.Where(c => c.NotBefore < DateTime.Now).ToList();
+                potentialCerts = certificates.Where(c => c.NotBefore < now).ToList();
             }
 
             // Of the potential certs, return the newest one.
