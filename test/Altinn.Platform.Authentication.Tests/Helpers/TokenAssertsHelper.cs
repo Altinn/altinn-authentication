@@ -92,10 +92,11 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.NotEmpty(accessTokenPrincipal.Claims);
             Assert.True(accessTokenPrincipal.Identity.IsAuthenticated);
 
-            // TODO: Is there any reason not to add issuer when creating cookie token?
-            // Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
+
+            // The 'sub' claim is not included in the cookie token for privacy reasons. TODO verify if this is still the case
             // Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && c.Value.Equals(testScenario.Ssn));
+            Assert.DoesNotContain(accessTokenPrincipal.Claims, c => c.Type == "pid");
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
 
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyID && !string.IsNullOrEmpty(c.Value));

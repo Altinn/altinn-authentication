@@ -162,7 +162,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<string> CreateCookieToken(OidcSession oidcSession, CancellationToken ct)
         {
-           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.PlatformEndpoint, isIDToken: false);
+           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.PlatformEndpoint, isIDToken: false, isAuthCookie: true);
            return tokenIssuer.CreateAccessTokenAsync(principal, time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),  cancellationToken: ct);
         }
 

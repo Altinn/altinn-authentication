@@ -104,7 +104,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         /// <summary>
         /// Create a ClaimsPrincipal based on an OidcSession for AltinnStudio runetime cookie
         /// </summary>
-        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, bool isIDToken = false)
+        public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, bool isIDToken = false, bool isAuthCookie = false)
         {
             List<Claim> claims = new()
             {
@@ -130,7 +130,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, oidcSession.SubjectUserId.ToString()!));
             }
 
-            if (oidcSession.SubjectId != null)
+            if (!isAuthCookie && oidcSession.SubjectId != null)
             {
                 claims.Add(new Claim("pid", oidcSession.SubjectId));
             }
