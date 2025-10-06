@@ -308,7 +308,8 @@ namespace Altinn.Platform.Authentication.Controllers
             _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext);
             _logger.LogInformation("End of refreshing token");
 
-            if (HttpContext.Request.Host.Host.Equals("localhost"))
+            // For test we return cookie also as a cookie
+            if (_generalSettings.PlatformEndpoint.Equals("http://localhost/") && HttpContext.Request.Host.Host.Equals("localhost") && )
             {
                 HttpContext.Response.Cookies.Append(
                     _generalSettings.JwtCookieName,
@@ -319,7 +320,6 @@ namespace Altinn.Platform.Authentication.Controllers
                         Secure = true,
                         SameSite = SameSiteMode.Lax
                     });
-
             }
 
             return Ok(serializedToken);
