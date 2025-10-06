@@ -221,8 +221,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 TokenAssertsHelper.AssertCookieAccessToken(refreshToken2FromSecondApp, testScenario, _fakeTime.GetUtcNow());
             }
 
-            // 4.4 Reuse detection: reusing old RT should fail with invalid_grant
-            var reuseForm = GetRefreshForm(testScenario, create, oldRefresh);
+            // 10 Redirects back to Arbeidsflate after 50 minutes in second app. Doing a new refresh
+            var reuseForm = GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token);
 
             using var reuseResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -233,6 +233,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             var reuseJson = await reuseResp.Content.ReadAsStringAsync();
             var reuseErr = JsonSerializer.Deserialize<Dictionary<string, string>>(reuseJson);
             Assert.Equal("invalid_grant", reuseErr!["error"]);
+
+            // 
 
             // Helper local function for base64url validation
             static bool IsBase64Url(string s) =>
