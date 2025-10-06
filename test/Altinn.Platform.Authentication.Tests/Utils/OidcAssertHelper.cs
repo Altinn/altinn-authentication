@@ -70,15 +70,25 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         {
             Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
 
-            string? raw = setCookies.FirstOrDefault(h => h.StartsWith("AltinnStudioRuntime=", StringComparison.OrdinalIgnoreCase));
+            string? raw = setCookies.FirstOrDefault(h =>
+                h.StartsWith("AltinnStudioRuntime=", StringComparison.OrdinalIgnoreCase));
             Assert.False(string.IsNullOrEmpty(raw), "AltinnStudioRuntime cookie was not set.");
 
-            // Første del før semikolon er selve cookie name=value
-            var firstPart = raw!.Split(';', 2)[0];
-            var kv = firstPart.Split('=', 2);
+            // Split into name/value + attributes
+            var parts = raw!.Split(';').Select(p => p.Trim()).ToArray();
+
+            // name=value
+            var kv = parts[0].Split('=', 2);
             Assert.Equal("AltinnStudioRuntime", kv[0]);
-            value = kv.Length > 1 ? kv[1] : "";
+            value = kv.Length > 1 ? kv[1] : string.Empty;
             Assert.False(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie has empty value.");
+
+            // ❌ Must NOT set Expires or Domain (host-only, session cookie)
+            Assert.DoesNotContain(parts, p => p.StartsWith("Expires=", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(parts, p => p.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase));
+
+            // (Optional but recommended) also forbid Max-Age to ensure session-only
+            // Assert.DoesNotContain(parts, p => p.StartsWith("Max-Age=", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Altinn.Platform.Authentication.Configuration;
+﻿using Altinn.Common.AccessToken.Services;
+using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Model;
@@ -8,9 +9,11 @@ using Altinn.Platform.Authentication.Tests.Helpers;
 using Altinn.Platform.Authentication.Tests.Models;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
+using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
 using System;
@@ -60,6 +63,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
             services.Configure<GeneralSettings>(generalSettingSection);
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
+            services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
+            services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
+            services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
         }
 
         /// <summary>
@@ -155,9 +161,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // Optional: scopes should be identical to original unless you down-scoped
             Assert.Equal(string.Join(' ', testScenario.Scopes), refreshed.scope);
 
-            // 5 IS redirected to app 
+            // 5 Is redirected to app 
             HttpResponseMessage appRedirectResponse = await client.GetAsync(
                 "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+            Assert.Equal(HttpStatusCode.Redirect, appRedirectResponse.StatusCode);
+            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", appRedirectResponse.Headers.Location!.ToString());
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(5));
+
+            // 6 Refresh call from app
 
             // 4.4 Reuse detection: reusing old RT should fail with invalid_grant
             var reuseForm = GetRefreshForm(testScenario, create, oldRefresh);

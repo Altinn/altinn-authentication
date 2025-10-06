@@ -33,7 +33,7 @@ public abstract class WebApplicationTests
     protected IServiceProvider Services => _scope!.ServiceProvider;
 
     protected HttpClient CreateClient()
-        => _webApp!.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+        => _webApp!.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true, BaseAddress = new Uri("https://localhost"), });
 
     protected virtual ValueTask DisposeAsync()
     {

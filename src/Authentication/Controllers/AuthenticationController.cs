@@ -238,6 +238,12 @@ namespace Altinn.Platform.Authentication.Controllers
             }
             else
             {
+                // Verify if user is already authenticated. The just go directly to the target URL
+                if (User.Identity.IsAuthenticated)
+                {
+                    return Redirect(goTo);
+                }
+
                 if (Request.Cookies[_generalSettings.SblAuthCookieName] == null && Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] == null)
                 {
                     return Redirect(sblRedirectUrl);
