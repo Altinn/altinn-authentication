@@ -81,6 +81,6 @@ public class TokenGeneratorController(IOptions<GeneralSettings> generalSettings,
         identity.AddClaims(claims);
         ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
-        return await tokenService.GenerateToken(principal);
+        return await tokenService.GenerateToken(principal, DateTime.UtcNow.AddSeconds(ttl));
     }
 }
