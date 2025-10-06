@@ -309,7 +309,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _logger.LogInformation("End of refreshing token");
 
             // For test we return cookie also as a cookie
-            if (_generalSettings.PlatformEndpoint.Equals("http://localhost/") && HttpContext.Request.Host.Host.Equals("localhost") && )
+            if (_generalSettings.PlatformEndpoint.Equals("http://localhost/") && HttpContext.Request.Host.Host.Equals("localhost"))
             {
                 HttpContext.Response.Cookies.Append(
                     _generalSettings.JwtCookieName,
