@@ -201,6 +201,26 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string refreshJsonAfterAppVisit = await refreshRespAfterAppVisit.Content.ReadAsStringAsync();
             TokenResponseDto refreshedAfterAppVisit = JsonSerializer.Deserialize<TokenResponseDto>(refreshJsonAfterAppVisit)!;
 
+            TokenAssertsHelper.AssertTokenRefreshResponse(refreshedAfterAppVisit, testScenario, _fakeTime.GetUtcNow());
+
+            // 8. User redirects now to another app and will stay there for 50 minutes. 
+            HttpResponseMessage app2RedirectResponse = await client.GetAsync(
+               "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+            Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
+            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", app2RedirectResponse.Headers.Location!.ToString());
+
+            // 9 Multiple refresh calls from second app during 50 minutes. Beeing busy in the app and doing multiple keep alives. 
+            for (int i = 0; i < 9; i++)
+            {
+                _fakeTime.Advance(TimeSpan.FromMinutes(5));
+                
+                // Second keep alive from App
+                HttpResponseMessage cookieRefreshResponseFromSecondApp2 = await client.GetAsync(
+                   "/authentication/api/v1/refresh");
+                string refreshToken2FromSecondApp = await cookieRefreshResponseFromSecondApp2.Content.ReadAsStringAsync();
+                TokenAssertsHelper.AssertCookieAccessToken(refreshToken2FromSecondApp, testScenario, _fakeTime.GetUtcNow());
+            }
+
             // 4.4 Reuse detection: reusing old RT should fail with invalid_grant
             var reuseForm = GetRefreshForm(testScenario, create, oldRefresh);
 
