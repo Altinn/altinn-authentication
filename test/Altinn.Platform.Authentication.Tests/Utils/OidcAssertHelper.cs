@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Tests.Models;
+using Docker.DotNet.Models;
+using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Policy;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Tests.Models;
-using Docker.DotNet.Models;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
@@ -42,6 +43,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             System.Collections.Specialized.NameValueCollection finalQuery = System.Web.HttpUtility.ParseQueryString(finalLocation.Query);
             Assert.False(string.IsNullOrWhiteSpace(finalQuery["code"]), "Downstream code must be present.");
             Assert.Equal(testScenario.DownstreamState, finalQuery["state"]); // original downstream state echoed back
+
+            AssertHasAltinnStudioRuntimeCookie(callbackResp, out var runtimeCookieValue);
         }
 
         public static void AssertLogingTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario)
@@ -61,6 +64,21 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         public static void AssertUpstreamLogingTransaction(UpstreamLoginTransaction createdUpstreamLogingTransaction, OidcTestScenario testScenario)
         {
             Assert.NotNull(createdUpstreamLogingTransaction);
+        }
+
+        public static void AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, out string value)
+        {
+            Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
+
+            string? raw = setCookies.FirstOrDefault(h => h.StartsWith("AltinnStudioRuntime=", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrEmpty(raw), "AltinnStudioRuntime cookie was not set.");
+
+            // Første del før semikolon er selve cookie name=value
+            var firstPart = raw!.Split(';', 2)[0];
+            var kv = firstPart.Split('=', 2);
+            Assert.Equal("AltinnStudioRuntime", kv[0]);
+            value = kv.Length > 1 ? kv[1] : "";
+            Assert.False(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie has empty value.");
         }
     }
 }
