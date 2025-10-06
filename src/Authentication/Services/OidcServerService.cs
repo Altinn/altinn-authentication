@@ -165,8 +165,7 @@ namespace Altinn.Platform.Authentication.Services
                 HttpOnly = true, 
                 Secure = true, 
                 Path = "/", 
-                SameSite = SameSiteMode.Lax, 
-                Expires = session.ExpiresAt 
+                SameSite = SameSiteMode.Lax
             };
 
             // 8) Redirect back to the client with code + original state
