@@ -116,6 +116,10 @@ namespace Altinn.Platform.Authentication.Services
             {
                 // There is a valid session. We just create a code an return straight away.
                 string code = await CreateDownstreamAuthorizationCode(null, tx, existingSession, cancellationToken);
+                return AuthorizeResult.RedirectToDownstreamBasedOnReusedSession(
+                    request.RedirectUri, // safe because validated
+                    code,
+                    request.State!);
             }
 
             // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age

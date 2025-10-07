@@ -11,7 +11,8 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         RedirectUpstream,         // 302 to upstream IdP authorize URL
         ErrorRedirectToClient,    // 302 to client's redirect_uri with OIDC error + state
         LocalError,               // Local HTML error (cannot safely redirect)
-        RenderInteraction         // Render a view (consent / actor selection)
+        RenderInteraction,         // Render a view (consent / actor selection)
+        RedirectToDownstreamBasedOnReusedSession // 302 to client's redirect_uri with code + state based on reused session
     }
 
     /// <summary>
@@ -38,14 +39,23 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
 
         // Common metadata (helpful for logs/tracing)
         public Guid? RequestId { get; init; }            // login_transaction.request_id
+        
         public string? CorrelationId { get; init; }      // if you generate/propagate one
+        
         public IReadOnlyList<CookieInstruction> Cookies { get; init; } = Array.Empty<CookieInstruction>();
 
         // ========== RedirectUpstream payload ==========
         /// <summary>Absolute URL to upstream IdP authorize endpoint.</summary>
         public Uri? UpstreamAuthorizeUrl { get; init; }
+
+        public Uri? DownstreamCallbackUrl { get; init; }
+
         /// <summary>Opaque value your service created to tie upstream callback to our transaction.</summary>
         public string? UpstreamState { get; init; }
+
+        public string? DownstreamState { get; init; }
+
+        public string? DownstreamCode { get; init; }
 
         // ========== ErrorRedirectToClient payload ==========
         /// <summary>Absolute redirect_uri for the client (already validated to belong to the client).</summary>
@@ -79,6 +89,15 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
                 UpstreamAuthorizeUrl = url,
                 UpstreamState = upstreamState,
                 RequestId = requestId,
+                Cookies = (cookies ?? Array.Empty<CookieInstruction>()).ToList()
+            };
+        public static AuthorizeResult RedirectToDownstreamBasedOnReusedSession(Uri clientRedirectUri, string code, string clientState, IEnumerable<CookieInstruction>? cookies = null)
+            => new()
+            {
+                Kind = AuthorizeResultKind.RedirectToDownstreamBasedOnReusedSession,
+                ClientRedirectUri = clientRedirectUri,
+                ClientState = clientState,
+                DownstreamCode = code,
                 Cookies = (cookies ?? Array.Empty<CookieInstruction>()).ToList()
             };
 

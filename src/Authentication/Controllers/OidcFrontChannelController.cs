@@ -72,13 +72,12 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 AuthorizeResultKind.RedirectUpstream
                     => Redirect(result.UpstreamAuthorizeUrl!.ToString()),
-
+                AuthorizeResultKind.RedirectToDownstreamBasedOnReusedSession
+                    => Redirect(BuildDownstreamSuccessRedirect(result.ClientRedirectUri!, result.DownstreamCode!, result.ClientState)),
                 AuthorizeResultKind.ErrorRedirectToClient
                     => Redirect(BuildOidcErrorRedirect(result.ClientRedirectUri!, result.Error!, result.ErrorDescription, result.ClientState)),
-
                 AuthorizeResultKind.LocalError
                     => StatusCode(result.StatusCode ?? 400, result.LocalErrorMessage), // or return View("Error", ...)
-
                 AuthorizeResultKind.RenderInteraction
                     => View(result.ViewName!, result.ViewModel),
 

@@ -245,6 +245,24 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // redirect back to Arbeidsflate with code and state (no intermediate login at IdP).
             HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
 
+            string code2 = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
+
+            // === Phase 3: Downstream client redeems code for tokens ===
+            Dictionary<string, string> tokenForm2 = BuildTokenRequestForm(testScenario, create, code2);
+
+            using var tokenResp2 = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(tokenForm2));
+
+            Assert.Equal(HttpStatusCode.OK, tokenResp2.StatusCode);
+            var json2 = await tokenResp2.Content.ReadAsStringAsync();
+            TokenResponseDto tokenResult2 = JsonSerializer.Deserialize<TokenResponseDto>(json2);
+
+            // Asserts on token response structure
+            string sid2 = TokenAssertsHelper.AssertTokenResponse(tokenResult2, testScenario, _fakeTime.GetUtcNow());
+
+            Assert.Equal(sid, sid2); // should be same session as before
+
             // Helper local function for base64url validation
             static bool IsBase64Url(string s) =>
                 s.All(c =>
@@ -252,7 +270,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                     (c >= 'a' && c <= 'z') ||
                     (c >= '0' && c <= '9') ||
                     c == '-' || c == '_');
-
         }
 
         private async Task<(string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse)
