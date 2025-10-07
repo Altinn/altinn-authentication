@@ -332,6 +332,132 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal("OK", frontChannelContent);
         }
 
+        /// <summary>
+        /// as End-to-end happy path for the OIDC front-channel flow across Altinn components,
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TC2_Auth_Aa_App_Logout_End_To_End_OK()
+        {
+            // Create HttpClient with default headers for IP, UA, correlation. 
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert a client that matches the authorize request
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            // 08:00:00 UTC — start of day: user signs in to Arbeidsflate (RP).
+            // Arbeidsflate redirects the browser to the Altinn Authentication OIDC Provider’s /authorize endpoint.
+            string url = testScenario.GetAuthorizationRequestUrl();
+
+            // === Phase 1: RP (Relying Party) initiates the flow by redirecting user to /authorize endpoint.
+            // Expected result is a redirect to upstream provider.
+            HttpResponseMessage authorizationRequestResponse = await client.GetAsync(url);
+
+            // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
+            (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
+
+            // Assume it takes 1 minute for the user to authenticate at the upstream provider
+            _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
+
+            // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+
+            // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
+            // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            // Should redirect to downstream client redirect_uri with ?code=...&state=original_downstream_state
+            OidcAssertHelper.AssertCallbackResponse(callbackResp, testScenario, _fakeTime.GetUtcNow());
+            string code = HttpUtility.ParseQueryString(callbackResp.Headers.Location!.Query)["code"]!;
+
+            // === Phase 3: Downstream client redeems code for tokens ===
+            Dictionary<string, string> tokenForm = OidcServerTestUtils.BuildTokenRequestForm(testScenario, code);
+
+            using var tokenResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(tokenForm));
+
+            Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
+            TokenResponseDto? tokenResult = await tokenResp.Content.ReadFromJsonAsync<TokenResponseDto>(jsonSerializerOptions);
+
+            // Asserts on token response structure
+            string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
+            Debug.Assert(tokenResult != null);
+
+            OidcSession? originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
+
+            // ===== Phase 4: Working in Arbeidsflate =====
+            // The user is active in Arbeidsflate for a long time. The session is kept Alive alive by doing refreshes.
+            for (int i = 0; i < 20; i++)
+            {
+                Dictionary<string, string> refreshFormLoop = OidcServerTestUtils.GetRefreshForm(testScenario, create, tokenResult.refresh_token!);
+                using HttpResponseMessage refreshRespLoop = await client.PostAsync(
+                    "/authentication/api/v1/token",
+                    new FormUrlEncodedContent(refreshFormLoop));
+                Assert.Equal(HttpStatusCode.OK, refreshRespLoop.StatusCode);
+                string refreshJsonLoop = await refreshRespLoop.Content.ReadAsStringAsync();
+                tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(refreshJsonLoop)!;
+                TokenAssertsHelper.AssertTokenRefreshResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
+                OidcSession? refreshedSessionLoop = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+                Assert.Equal(string.Join(' ', testScenario.Scopes), tokenResult.scope);
+                _fakeTime.Advance(TimeSpan.FromMinutes(5));
+            }
+
+            // ====== Phase 5: Redirect to App in Altinn Apps ======
+            // User select a instance in Arbeidsflate and will be redirected to Altinn Apps to work on the instance. 
+            HttpResponseMessage appRedirectResponse = await client.GetAsync(
+                "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+            Assert.Equal(HttpStatusCode.Redirect, appRedirectResponse.StatusCode);
+            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", appRedirectResponse.Headers.Location!.ToString());
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:26
+
+            // ===== Phase 6: Try to reuse old but still active refresh_token =====
+            // User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
+            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, tokenResult.refresh_token);
+
+            using var refreshRespAfterAppVisit = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(refreshFormAfterAppVisit));
+
+            Assert.Equal(HttpStatusCode.OK, refreshRespAfterAppVisit.StatusCode);
+
+            string refreshJsonAfterAppVisit = await refreshRespAfterAppVisit.Content.ReadAsStringAsync();
+            TokenResponseDto refreshedAfterAppVisit = JsonSerializer.Deserialize<TokenResponseDto>(refreshJsonAfterAppVisit)!;
+
+            TokenAssertsHelper.AssertTokenRefreshResponse(refreshedAfterAppVisit, testScenario, _fakeTime.GetUtcNow());
+
+            // ===== Phase 11: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
+
+            // Verify that session is active before logout
+            OidcSession? beforeLoggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            OidcAssertHelper.AssertValidSession(beforeLoggedOutSession, testScenario, _fakeTime.GetUtcNow());
+            Debug.Assert(beforeLoggedOutSession != null);
+
+            using var logoutResp = await client.GetAsync(
+                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+            string content = await logoutResp.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
+            Assert.StartsWith("https://login.idporten.no/logout", logoutResp.Headers.Location!.ToString());
+
+            OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            Assert.Null(loggedOutSession);
+
+            // Simulate that ID-provider call the front channel logout endpoint
+            using var frontChannelLogoutResp = await client.GetAsync(
+                $"/authentication/api/v1/upstream/frontchannel-logout?iss={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamIssuer)}&sid={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamSessionSid!)}");
+
+            string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
+            Assert.Equal("OK", frontChannelContent);
+        }
+
         private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
         {
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);

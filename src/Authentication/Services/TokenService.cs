@@ -68,9 +68,8 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 3) Update OP session (slide expiry, touch last seen)
-            await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, exchangeTime, ct);
-            await _oidcSessionRepository.TouchLastSeenAsync(oidcSession!.Sid, ct);
-
+            await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes), ct);
+            
             return TokenResult.Success(accessToken, idToken, _generalSettings.JwtValidityMinutes, string.Join(" ", row.Scopes), refreshToken, _generalSettings.JwtValidityMinutes);
         }
 
@@ -126,9 +125,10 @@ namespace Altinn.Platform.Authentication.Services
 
             await _refreshTokenRepository.InsertAsync(newRow, ct);
             await _refreshTokenRepository.MarkUsedAsync(row.TokenId, newRow.TokenId, ct);
-
+            
             // 8) Mint new access token (+ optional ID token)
             DateTimeOffset atExpiry = now.AddMinutes(_generalSettings.JwtValidityMinutes);
+            await _oidcSessionRepository.SlideExpiryToAsync(row.OpSid, atExpiry, ct);
 
             ClaimsPrincipal accessPrincial = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, isIDToken: false);
 
