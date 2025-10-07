@@ -114,7 +114,8 @@ namespace Altinn.Platform.Authentication.Services
             // Verify that found session 
             if (existingSession != null && _timeProvider.GetUtcNow() < existingSession.ExpiresAt)
             {
-               await CreateDownstreamAuthorizationCode(null, tx, null, existingSession, cancellationToken);
+                // There is a valid session. We just create a code an return straight away.
+                string code = await CreateDownstreamAuthorizationCode(null, tx, existingSession, cancellationToken);
             }
 
             // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age
@@ -168,7 +169,7 @@ namespace Altinn.Platform.Authentication.Services
             // TODO How to handle first time login with epost bruker from ID porten if we gonna ask them to connect to existing self identified user.
 
             // 5) Issue downstream authorization code
-            string authCode = await CreateDownstreamAuthorizationCode(upstreamTx, loginTx, userIdenity, session, cancellationToken);
+            string authCode = await CreateDownstreamAuthorizationCode(upstreamTx, loginTx, session, cancellationToken);
 
             // 6) Mark upstream transaction as completed
             await MarkUpstreamTokenExchanged(upstreamTx, userIdenity, cancellationToken);
@@ -433,11 +434,11 @@ namespace Altinn.Platform.Authentication.Services
             return tx;
         }
 
-        private async Task<string> CreateDownstreamAuthorizationCode(UpstreamLoginTransaction? upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, OidcSession session, CancellationToken cancellationToken)
+        private async Task<string> CreateDownstreamAuthorizationCode(UpstreamLoginTransaction? upstreamTx, LoginTransaction loginTx, OidcSession session, CancellationToken cancellationToken)
         {
             string authCode = CryptoHelpers.RandomBase64Url(32);
-            var codeTime = _timeProvider.GetUtcNow();
-            var codeExpires = codeTime.AddSeconds(120);
+            DateTimeOffset codeTime = _timeProvider.GetUtcNow();
+            DateTimeOffset codeExpires = codeTime.AddSeconds(120);
 
             await _authorizationCodeRepo.InsertAsync(
                 new AuthorizationCodeCreate

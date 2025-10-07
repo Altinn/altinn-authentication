@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         // Upstream identity
         public required string UpstreamIssuer { get; init; }
         public required string UpstreamSub { get; init; }
-        public string? SubjectId { get; init; }            // PID/email/etc (policy-defined)
+        public required string SubjectId { get; init; }            // PID/email/etc (policy-defined)
 
         // Altinn mapping
         public Guid? SubjectPartyUuid { get; init; }
