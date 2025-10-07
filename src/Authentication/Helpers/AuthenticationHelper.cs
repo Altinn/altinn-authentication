@@ -554,5 +554,27 @@ namespace Altinn.Platform.Authentication.Helpers
         {
             return systemId.Contains(' ');
         }
+
+        /// <summary>
+        /// Converts a list of <see cref="AccessPackage"/> objects into a list of their URNs.
+        /// </summary>
+        /// <param name="accessPackages">The list of <see cref="AccessPackage"/> objects to process. Cannot be null.</param>
+        /// <returns>A list of strings containing the URNs of the provided <see cref="AccessPackage"/> objects.  Returns an empty
+        /// list if <paramref name="accessPackages"/> is empty.</returns>
+        public static List<string> GetPackagesArrayFromAccessPackages(List<AccessPackage> accessPackages)
+        {
+            List<string> packages = new List<string>();
+            if (accessPackages == null || accessPackages.Count == 0)
+            {
+                return packages;
+            }
+
+            foreach (AccessPackage accessPackage in accessPackages)
+            {
+                packages.Add(accessPackage.Urn!.Split(':')[3]);
+            }
+
+            return packages;
+        }
     }
 }

@@ -24,6 +24,7 @@ using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
 using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
@@ -167,16 +168,16 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Delegate a client to the system user
         /// </summary>
         /// <param name="agent">the unique identifier of the system user</param>
-        /// <param name="agentDelegation">the delegation inpit details to delegate a customer to an agent system user</param>
+        /// <param name="client">the customer identifier for delegating to the agent</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>delegation response</returns>
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_WRITE)]
         [HttpPost("clients")]
-        public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromBody] AgentDelegation agentDelegation, CancellationToken cancellationToken)
+        public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
             SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
             ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
-            ValidationErrorBuilder clientErrors = ValidateClient(agentDelegation.CustomerId, false);
+            ValidationErrorBuilder clientErrors = ValidateClient(client);
             ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
             if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
@@ -205,13 +206,38 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            List<Customer> customers = inner.GetClientsForFacilitator(party.PartyUuid.Value, null).Result.Value as List<Customer>;
+            var customerResult = await inner.GetClientsForFacilitator(party.PartyUuid.Value, null);
+            
+            if (customerResult.Result is ObjectResult objectResult && objectResult.StatusCode != 200)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Problem retreiving the client information",
+                    Detail = $"Unbale to fetch the client information for the client {client}",
+                    Status = 400
+                });
+            }
+
+            // Otherwise, get the value
+            var customerList = customerResult.Result as OkObjectResult;
+            List<Customer>? customers = customerList?.Value as List<Customer>;
+            if (customers == null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Client not found",
+                    Detail = $"Client with client id {client} not found",
+                    Status = 404
+                });
+            }
+
+            Customer customer = customers.Find(c => c.PartyUuid == client);
 
             AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
             {
-                CustomerId = agentDelegation.CustomerId.ToString(),
+                CustomerId = client.ToString(),
                 FacilitatorId = party.PartyUuid.Value.ToString(),
-                Access = agentDelegation.Access
+                Access = customer.Access
             };
 
             var userId = AuthenticationHelper.GetUserId(HttpContext);
@@ -225,7 +251,7 @@ namespace Altinn.Platform.Authentication.Controllers
             return Ok(new ClientDelegationResponse
             {
                 Agent = agent,
-                Client = agentDelegation.CustomerId
+                Client = client
             });
         }
 
@@ -244,7 +270,7 @@ namespace Altinn.Platform.Authentication.Controllers
             SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
-            ValidationErrorBuilder clientErrors = ValidateClient(client, true);
+            ValidationErrorBuilder clientErrors = ValidateClient(client);
             ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
             if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
@@ -392,7 +418,6 @@ namespace Altinn.Platform.Authentication.Controllers
                     ClientId = customer.PartyUuid,
                     ClientOrganizationNumber = customer.OrganizationIdentifier,
                     ClientOrganizationName = customer.DisplayName,
-                    Access = customer.Access
                 });
             }
 
@@ -453,23 +478,14 @@ namespace Altinn.Platform.Authentication.Controllers
             return errors;
         }
 
-        private static ValidationErrorBuilder ValidateClient(Guid client, bool queryParameter)
+        private static ValidationErrorBuilder ValidateClient(Guid client)
         {
             ValidationErrorBuilder errors = default;
             if (client == Guid.Empty)
             {
-                if (queryParameter)
-                {
-                    errors.Add(ValidationErrors.SystemUser_Missing_ClientParameter, [
-                        "?client"
-                    ]);
-                }
-                else
-                {
-                    errors.Add(ValidationErrors.SystemUser_Missing_ClientInformation, [
-                        "/agentdelegation/customer"
-                    ]);
-                }
+                errors.Add(ValidationErrors.SystemUser_Missing_ClientParameter, [
+                    "?client"
+                ]);
             }
 
             return errors;
