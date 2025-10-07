@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
+using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
@@ -166,16 +167,16 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Delegate a client to the system user
         /// </summary>
         /// <param name="agent">the unique identifier of the system user</param>
-        /// <param name="client">the id of the customer</param>
+        /// <param name="agentDelegation">the delegation inpit details to delegate a customer to an agent system user</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>delegation response</returns>
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_WRITE)]
         [HttpPost("clients")]
-        public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
+        public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromBody] AgentDelegation agentDelegation, CancellationToken cancellationToken)
         {
             SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
             ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
-            ValidationErrorBuilder clientErrors = ValidateClient(client);
+            ValidationErrorBuilder clientErrors = ValidateClient(agentDelegation.CustomerId, false);
             ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
             if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
@@ -204,10 +205,13 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
+            List<Customer> customers = inner.GetClientsForFacilitator(party.PartyUuid.Value, null).Result.Value as List<Customer>;
+
             AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
             {
-                CustomerId = client.ToString(),
+                CustomerId = agentDelegation.CustomerId.ToString(),
                 FacilitatorId = party.PartyUuid.Value.ToString(),
+                Access = agentDelegation.Access
             };
 
             var userId = AuthenticationHelper.GetUserId(HttpContext);
@@ -221,7 +225,7 @@ namespace Altinn.Platform.Authentication.Controllers
             return Ok(new ClientDelegationResponse
             {
                 Agent = agent,
-                Client = client
+                Client = agentDelegation.CustomerId
             });
         }
 
@@ -240,7 +244,7 @@ namespace Altinn.Platform.Authentication.Controllers
             SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
-            ValidationErrorBuilder clientErrors = ValidateClient(client);
+            ValidationErrorBuilder clientErrors = ValidateClient(client, true);
             ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
             if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
@@ -292,13 +296,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return result.Problem.ToActionResult();
             }
 
-            AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
-            {
-                CustomerId = client.ToString(),
-                FacilitatorId = party.PartyUuid.Value.ToString(),
-            };
-
-            var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, agent, cancellationToken);
+            var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, party.PartyUuid.Value, cancellationToken);
 
             // If the result is a problem (not 200 OK), return it directly
             // If the result is an ObjectResult and status code is not 200, return it directly
@@ -324,11 +322,26 @@ namespace Altinn.Platform.Authentication.Controllers
         /// empty list if no agent system users are found.</returns>
         [HttpGet("agents")]
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
-        public async Task<ActionResult<List<SystemUser>>> GetAllAgentSystemUsersForParty()
-        {
-            int partyId = AuthenticationHelper.GetPartyId(HttpContext);
+        public async Task<ActionResult<List<SystemUser>>> GetAllAgentSystemUsersForParty([FromQuery] string party)
+        {    
+            Party partyInfo = await PartiesClient.GetPartyByOrgNo(party);
+            if (partyInfo is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Party not found",
+                    Detail = $"No associated party information found for organisation {party}",
+                    Status = 404
+                });
+            }
 
-            return await inner.GetListOfAgentSystemUsersPartyHas(partyId);
+            bool isAuthorized = await AuthorizeResourceAccess(ClientDelegationResource, partyInfo.PartyUuid.Value, User, "read");
+            if (!isAuthorized)
+            {
+                return Forbid();
+            }
+
+            return await inner.GetListOfAgentSystemUsersPartyHas(partyInfo.PartyId);
         }
 
         /// <summary>
@@ -378,7 +391,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 {
                     ClientId = customer.PartyUuid,
                     ClientOrganizationNumber = customer.OrganizationIdentifier,
-                    ClientOrganizationName = customer.DisplayName
+                    ClientOrganizationName = customer.DisplayName,
+                    Access = customer.Access
                 });
             }
 
@@ -439,14 +453,23 @@ namespace Altinn.Platform.Authentication.Controllers
             return errors;
         }
 
-        private static ValidationErrorBuilder ValidateClient(Guid client)
+        private static ValidationErrorBuilder ValidateClient(Guid client, bool queryParameter)
         {
             ValidationErrorBuilder errors = default;
             if (client == Guid.Empty)
             {
-                errors.Add(ValidationErrors.SystemUser_Missing_Invalid_ClientId, [
-                    "?client"
+                if (queryParameter)
+                {
+                    errors.Add(ValidationErrors.SystemUser_Missing_ClientParameter, [
+                        "?client"
                     ]);
+                }
+                else
+                {
+                    errors.Add(ValidationErrors.SystemUser_Missing_ClientInformation, [
+                        "/agentdelegation/customer"
+                    ]);
+                }
             }
 
             return errors;

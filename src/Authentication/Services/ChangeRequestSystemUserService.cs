@@ -272,9 +272,11 @@ public class ChangeRequestSystemUserService(
             PartyOrgNo = res.PartyOrgNo,
             RequiredRights = res.RequiredRights,
             UnwantedRights = res.UnwantedRights,
+            RequiredAccessPackages = res.RequiredAccessPackages,
+            UnwantedAccessPackages = res.UnwantedAccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            SystemUserId = res.SystemUserId
+            SystemUserId = res.SystemUserId            
         };
     }
 
