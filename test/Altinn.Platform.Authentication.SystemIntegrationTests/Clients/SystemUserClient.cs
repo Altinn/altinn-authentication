@@ -172,8 +172,27 @@ public class SystemUserClient
     public async Task<ClientsForDelegationResponseDto?> GetAvailableClientsForVendor(Testuser facilitator, string? systemUserId)
     {
         var urlGetBySystem = Endpoints.VendorGetAvailableClients.Url() + $"?agent={systemUserId}";
-        
+
         var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
         return await _platformClient.GetAsyncOnType<ClientsForDelegationResponseDto>(urlGetBySystem, token);
+    }
+
+    public async Task<HttpResponseMessage> AddClient(Testuser facilitator, string? systemUserId, string clientId)
+    {
+        var urlPost = Endpoints.VendorAddClients.Url()?.Replace("{clientId}", clientId).Replace("{systemUserId}", systemUserId);
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.write");
+        return await _platformClient.PostAsyncWithNoBody(urlPost, token);
+    }
+
+    public Task DelegateAllClientsFromVendorToSystemUser(Testuser facilitator, string? systemUserId, List<ClientInfoDto> customersData)
+    {
+        foreach (ClientInfoDto clientInfoDto in customersData)
+        {
+            var resp = AddClient(facilitator, systemUserId, clientInfoDto.ClientId.ToString());
+            Assert.True(resp.Result.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {resp.Result.StatusCode}");
+        }
+
+        return Task.CompletedTask;
     }
 }

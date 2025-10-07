@@ -136,7 +136,7 @@ public enum Endpoints
     [EndpointInfo("authentication/api/v1/enduser/systemuser/clients", "GET")]
     VendorDeleteClient,
     
-    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients", "POST")]
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}&client={clientId}", "POST")]
     VendorAddClients,
     
     [EndpointInfo("authentication/api/v1/enduser/systemuser/clients", "POST")]

@@ -107,6 +107,15 @@ public class PlatformAuthenticationClient
         var response = await client.PostAsync($"{BaseUrlAuthentication}/{endpoint}", content);
         return response;
     }
+    
+    public async Task<HttpResponseMessage> PostAsyncWithNoBody(string? endpoint, string? token)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        var response = await client.PostAsync($"{BaseUrlAuthentication}/{endpoint}", null);
+        return response;
+    }
 
     /// <summary>
     /// For general Get requests
