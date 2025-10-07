@@ -39,7 +39,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>    
-    public async Task<List<RegisteredSystemResponse>> GetAllActiveSystems()
+    public async Task<List<RegisteredSystemResponse>> GetAllActiveSystems(CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -56,19 +56,57 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 allowedredirecturls,
                 accesspackages
             FROM business_application.system_register sr
-            WHERE sr.is_deleted = FALSE;";
+            WHERE sr.is_deleted = FALSE
+            AND sr.is_visible=TRUE;";
 
         try
         {
             await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
 
-            return await command.ExecuteEnumerableAsync()
+            return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToSystemRegister)
                 .ToListAsync();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetAllActiveSystems // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>    
+    public async Task<List<RegisteredSystemResponse>> GetAllSystemsForVendor(string vendorOrgNumber, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                system_internal_id,
+                system_id,
+                systemvendor_orgnumber, 
+                system_name,
+                name,
+                description,
+                is_deleted,
+                client_id,
+                rights,
+                is_visible,
+                allowedredirecturls,
+                accesspackages
+            FROM business_application.system_register
+            WHERE systemvendor_orgnumber = @systemvendor_orgnumber;";
+
+        try
+        {
+            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER, vendorOrgNumber);
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToSystemRegister)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // SystemRegisterRepository // GetAllSystemsForVendor // Exception");
             throw;
         }
     }
