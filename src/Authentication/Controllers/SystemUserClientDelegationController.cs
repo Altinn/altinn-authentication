@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return NotFound(new ProblemDetails
                 {
-                    Title = "Party not found",
+                    Title = "System Owner not Found",
                     Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
                     Status = 404
                 });
@@ -97,11 +97,8 @@ namespace Altinn.Platform.Authentication.Controllers
 
             // Otherwise, get the value
             var customerList = result.Result as OkObjectResult;
-            List<Customer>? customers = customerList?.Value as List<Customer>;
-            if (customers == null)
-            {
-                return NotFound();
-            }
+            List<Customer>? customers = new List<Customer>();
+            customers = customerList?.Value as List<Customer>;
 
             return MapCustomerToSystemUserInfo(customers, agent, systemUser.ReporteeOrgNo);
         }
@@ -129,7 +126,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return NotFound(new ProblemDetails
                 {
-                    Title = "Party not found",
+                    Title = "System Owner not Found",
                     Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
                     Status = 404
                 });
@@ -189,7 +186,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return NotFound(new ProblemDetails
                 {
-                    Title = "Party not found",
+                    Title = "System Owner not Found",
                     Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
                     Status = 404
                 });
@@ -207,21 +204,19 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             var customerResult = await inner.GetClientsForFacilitator(party.PartyUuid.Value, null);
-            
-            if (customerResult.Result is ObjectResult objectResult && objectResult.StatusCode != 200)
+
+            if (customerResult.Result is not OkObjectResult) 
             {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Problem retreiving the client information",
-                    Detail = $"Unbale to fetch the client information for the client {client}",
-                    Status = 400
-                });
+                return customerResult.Result;
             }
 
             // Otherwise, get the value
             var customerList = customerResult.Result as OkObjectResult;
             List<Customer>? customers = customerList?.Value as List<Customer>;
-            if (customers == null)
+
+            Customer customer = customers?.Find(c => c.PartyUuid == client);
+
+            if (customer == null)
             {
                 return NotFound(new ProblemDetails
                 {
@@ -230,8 +225,6 @@ namespace Altinn.Platform.Authentication.Controllers
                     Status = 404
                 });
             }
-
-            Customer customer = customers.Find(c => c.PartyUuid == client);
 
             AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
             {
@@ -282,7 +275,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return NotFound(new ProblemDetails
                 {
-                    Title = "Party not found",
+                    Title = "System Owner not Found",
                     Detail = $"No associated party information found for systemuser owner {systemUser.ReporteeOrgNo}",
                     Status = 404
                 });

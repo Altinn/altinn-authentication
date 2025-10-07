@@ -83,6 +83,12 @@ public class PartiesClientMock : IPartiesClient
             party.PartyUuid = new Guid("6bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
         }
 
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "123357789")
+        {   
+            party.PartyId = 700000;
+            party.PartyUuid = new Guid("7bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
+        }
+
         if (!string.IsNullOrEmpty(orgNo) && orgNo == "123447789")
         {
             party = null;
