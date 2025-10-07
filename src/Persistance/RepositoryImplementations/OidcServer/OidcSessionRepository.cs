@@ -145,6 +145,47 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <summary>
+        /// Get all SIDs for sessions matching the given upstream issuer and upstream session SID.
+        /// </summary>
+        public async Task<string[]> GetSidsByUpstreamAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken ct = default)
+        {
+            const string SQL = @"
+            SELECT sid
+              FROM oidcserver.oidc_session
+             WHERE upstream_issuer = @iss
+               AND upstream_session_sid = @usid;";
+
+            await using var cmd = _ds.CreateCommand(SQL);
+            cmd.Parameters.AddWithValue("iss", upstreamIssuer);
+            cmd.Parameters.AddWithValue("usid", upstreamSessionSid);
+
+            var list = new List<string>();
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            while (await r.ReadAsync(ct))
+            {
+                list.Add(r.GetFieldValue<string>("sid"));
+            }
+
+            return list.ToArray();
+        }
+
+        /// <summary>
+        /// Delete all OIDC sessions matching the given upstream issuer and upstream session SID.
+        /// </summary>
+        public async Task<int> DeleteByUpstreamAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken ct = default)
+        {
+            const string SQL = @"
+        DELETE FROM oidcserver.oidc_session
+            WHERE upstream_issuer = @iss
+            AND upstream_session_sid = @usid;";
+
+            await using var cmd = _ds.CreateCommand(SQL);
+            cmd.Parameters.AddWithValue("iss", upstreamIssuer);
+            cmd.Parameters.AddWithValue("usid", upstreamSessionSid);
+            return await cmd.ExecuteNonQueryAsync(ct);
+        }
+
+        /// <summary>
         /// Touch the last seen timestamp of an OIDC session to the current time.
         /// </summary>
         public async Task TouchLastSeenAsync(string sid, CancellationToken ct = default)

@@ -40,5 +40,10 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// <param name="ct">The cancellationtoken</param>
         /// <returns></returns>
         public Task<EndSessionResult> EndSessionAsync(EndSessionInput input, CancellationToken ct);
+
+        /// <summary>
+        /// Handles upstream front-channel logout requests.
+        /// </summary>
+        public Task<UpstreamFrontChannelLogoutResult> HandleUpstreamFrontChannelLogoutAsync(UpstreamFrontChannelLogoutInput upstreamFrontChannelLogoutInput, CancellationToken ct);
     }
 }

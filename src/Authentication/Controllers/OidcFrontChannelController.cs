@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
@@ -146,16 +147,51 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Handles the OIDC front-channel logout request.
+        /// Handles front-channel logout requests from upstream OIDC providers.
+        /// Returns simple HTML response with no-store headers and best-effort cookie operations.
         /// </summary>
-        /// <param name="sid">The session identifier for logout.</param>
-        /// <returns>An <see cref="IActionResult"/> representing the result of the logout request.</returns>
-        [HttpGet("logout/frontchannel")]
-        public IActionResult Logout([FromQuery] string sid) 
+        [HttpGet("upstream/frontchannel-logout")]
+        public async Task<IActionResult> UpstreamFrontChannelLogout(
+            [FromQuery] string iss,
+            [FromQuery] string sid,
+            CancellationToken ct = default)
         {
-            throw new System.NotImplementedException();
-        }
+            if (string.IsNullOrWhiteSpace(iss) || string.IsNullOrWhiteSpace(sid))
+            {
+                return BadRequest("Missing iss or sid.");
+            }
 
+            UpstreamFrontChannelLogoutInput logoutInput = new()
+            {
+                Issuer = iss,
+                UpstreamSid = sid,
+                User = HttpContext.User
+            };
+
+            var result = await _oidcServerService.HandleUpstreamFrontChannelLogoutAsync(logoutInput  , ct);
+
+            // No-store
+            Response.Headers[HeaderNames.CacheControl] = "no-store";
+            Response.Headers[HeaderNames.Pragma] = "no-cache";
+
+            // Best-effort cookie ops (may be blocked by 3p cookie settings)
+            foreach (var c in result.Cookies)
+            {
+                Response.Cookies.Append(c.Name, c.Value ?? string.Empty, new CookieOptions
+                {
+                    HttpOnly = c.HttpOnly,
+                    Secure = c.Secure,
+                    Path = c.Path ?? "/",
+                    Domain = c.Domain,
+                    Expires = c.Expires,
+                    SameSite = c.SameSite
+                });
+            }
+
+            // Keep body tiny so IdP iframes finish fast
+            return Content("OK");
+        }
+    
         /// <summary>
         /// OIDC end_session_endpoint – RP-initiated logout.
         /// Accepts id_token_hint, post_logout_redirect_uri, and state.

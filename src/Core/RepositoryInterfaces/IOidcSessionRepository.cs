@@ -22,5 +22,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// Slide the expiry of the session to a new value, if and only if the new value is later than the current expiry.
         /// </summary>
         Task<bool> SlideExpiryToAsync(string sid, DateTimeOffset newExpiresAt, CancellationToken ct = default);
+        Task<string[]> GetSidsByUpstreamAsync(string issuer, string upstreamSid, CancellationToken ct);
+        Task<int> DeleteByUpstreamAsync(string issuer, string upstreamSid, CancellationToken ct);
     }
 }

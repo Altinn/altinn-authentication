@@ -277,6 +277,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcSession loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             Assert.Null(loggedOutSession);
 
+            // TODO: Simulate that ID-provider call the front channel logout endpoint
+
             // Helper local function for base64url validation
             static bool IsBase64Url(string s) =>
                 s.All(c =>
