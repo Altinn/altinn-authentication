@@ -9,7 +9,7 @@
     <PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.0" />
     <PackageReference Include="Altinn.Platform.Storage.Interface" Version="4.0.13" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
-    <PackageReference Include="Testcontainers" Version="4.6.0" />
+    <PackageReference Include="Testcontainers" Version="4.7.0" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.6.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
