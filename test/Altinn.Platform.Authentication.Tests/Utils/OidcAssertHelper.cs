@@ -43,7 +43,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
             System.Collections.Specialized.NameValueCollection finalQuery = System.Web.HttpUtility.ParseQueryString(finalLocation.Query);
             Assert.False(string.IsNullOrWhiteSpace(finalQuery["code"]), "Downstream code must be present.");
-            Assert.Equal(testScenario.DownstreamState, finalQuery["state"]); // original downstream state echoed back
+            Assert.Equal(testScenario.GetDownstreamState(), finalQuery["state"]); // original downstream state echoed back
 
             AssertHasAltinnStudioRuntimeCookie(callbackResp, out var runtimeCookieValue, testScenario, now);
         }
@@ -52,14 +52,14 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         {
             Assert.NotNull(loginTransaction);
             Assert.Equal(scenario.DownstreamClientId, loginTransaction.ClientId);
-            Assert.Equal(scenario.DownstreamNonce, loginTransaction.Nonce);
-            Assert.Equal(scenario.DownstreamState, loginTransaction.State);
+            Assert.Equal(scenario.GetDownstreamNonce(), loginTransaction.Nonce);
+            Assert.Equal(scenario.GetDownstreamState(), loginTransaction.State);
             Assert.Equal(scenario.DownstreamClientCallbackUrl, loginTransaction.RedirectUri.ToString());
             Assert.Equal(string.Join(" ", scenario.Scopes), string.Join(" ", loginTransaction.Scopes));
             Assert.Equal("S256", loginTransaction.CodeChallengeMethod);
-            Assert.Equal(scenario.DownstreamCodeChallenge, loginTransaction.CodeChallenge);
+            Assert.Equal(scenario.GetDownstreamCodeChallenge(), loginTransaction.CodeChallenge);
             Assert.Equal("pending", loginTransaction.Status);
-            Assert.Equal(scenario.DownstreamCodeChallenge, loginTransaction.CodeChallenge);
+            Assert.Equal(scenario.GetDownstreamCodeChallenge(), loginTransaction.CodeChallenge);
         }
 
         public static void AssertUpstreamLogingTransaction(UpstreamLoginTransaction createdUpstreamLogingTransaction, OidcTestScenario testScenario)

@@ -5,6 +5,11 @@ using System.Web;
 
 namespace Altinn.Platform.Authentication.Tests.Models
 {
+    /// <summary>
+    /// Helper model to keep track of an OIDC test scenario.
+    /// To reduce the amount of boilerplate in the test scenario in each test case,
+    /// Support multiple logins in same session
+    /// </summary>
     public class OidcTestScenario
     {
         public required string ScenarioId { get; set; }
@@ -17,13 +22,13 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public string? DownstreamClientId { get; set; } = null;
 
-        public string? DownstreamNonce { get; set; } = null;
+        public string? DaownstreamNonce { get; set; } = null;
 
-        public string? DownstreamState { get; set; } = null;
+        public string? DaownstreamState { get; set; } = null;
 
-        public string? DownstreamCodeVerifier { get; internal set; }
+        public string? DaownstreamCodeVerifier { get; internal set; }
 
-        public string? DownstreamCodeChallenge { get; internal set; }
+        public string? DaownstreamCodeChallenge { get; internal set; }
 
         public string DownstreamClientCallbackUrl { get; set; } = "https://af.altinn.no/api/cb";
 
@@ -39,9 +44,21 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public List<string> Amr { get; set; } = ["BankID Mobil"];
 
-        public string? ClientSecret { get; set; } 
+        public string? ClientSecret { get; set; }
 
         public string? HashedClientSecret { get; set; }
+
+        /// <summary>
+        /// Which is the current login count for this scenario.
+        /// </summary>
+        public int? LoginCount { get; set; } = 1;
+
+        /// <summary>
+        /// The number of upstream logins to perform in this scenario.
+        /// </summary>
+        public int NumberOfLogins { get; set; } = 1;
+
+        public List<LoginTestState> LoginStates { get; set; } = new();
 
         public string GetAuthorizationRequestUrl()
         {
@@ -53,14 +70,54 @@ namespace Altinn.Platform.Authentication.Tests.Models
                 $"?redirect_uri={redirectUri}" +
                 $"&scope={Uri.EscapeDataString(string.Join(" ", Scopes))}" +
                 "&acr_values=idporten-loa-substantial" +
-                $"&state={DownstreamState}" +
+                $"&state={GetDownstreamState()}" +
                 $"&client_id={DownstreamClientId}" +
                 "&response_type=code" +
-                $"&nonce={DownstreamNonce}" +
-                $"&code_challenge={DownstreamCodeChallenge}" +
+                $"&nonce={GetDownstreamNonce()}" +
+                $"&code_challenge={GetDownstreamCodeChallenge()}" +
                 "&code_challenge_method=S256";
 
             return url;
+        }
+
+        public string GetDownstreamState(int loginAttempt = 0)
+        {
+            if (loginAttempt == 0)
+            {
+                loginAttempt = LoginCount ?? 1;
+            }
+
+            return LoginStates[loginAttempt - 1].DownstreamState;
+        }
+
+        public string GetDownstreamNonce(int loginAttempt = 0)
+        {
+            if (loginAttempt == 0)
+            {
+                loginAttempt = LoginCount ?? 1;
+            }
+
+            return LoginStates[loginAttempt - 1].DownstreamNonce;
+        }
+
+        public string GetDownstreamCodeVerifier(int loginAttempt = 0)
+        {
+            if (loginAttempt == 0)
+            {
+                loginAttempt = LoginCount ?? 1;
+            }
+
+            return LoginStates[loginAttempt - 1].DownstreamCodeVerifier;
+        }
+
+        public string GetDownstreamCodeChallenge(int loginAttempt = 0)
+        {
+            if (loginAttempt == 0)
+            {
+                loginAttempt = LoginCount ?? 1;
+            }
+
+            return LoginStates[loginAttempt - 1].DownstreamCodeChallenge;
         }
     }
 }

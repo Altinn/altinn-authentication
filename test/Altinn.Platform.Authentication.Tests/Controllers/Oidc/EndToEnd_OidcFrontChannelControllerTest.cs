@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Web;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Model;
@@ -234,7 +235,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             var reuseErr = JsonSerializer.Deserialize<Dictionary<string, string>>(reuseJson);
             Assert.Equal("invalid_grant", reuseErr!["error"]);
 
-            // 
+            // Arbeidsflate now needs to redirect user to /authorize again to get a new code/refresh_token.
+            // Generates new State and nonce
+            string state = CryptoHelpers.RandomBase64Url(32);
 
             // Helper local function for base64url validation
             static bool IsBase64Url(string s) =>
@@ -253,7 +256,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
 
             // Asserting DB persistence after /authorize
-            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.DownstreamState, DataSource);
+            LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
             OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario);
 
             UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
@@ -340,7 +343,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 ["redirect_uri"] = testScenario.DownstreamClientCallbackUrl,
                 ["client_id"] = testScenario.DownstreamClientId,
                 ["client_secret"] = testScenario.ClientSecret!,
-                ["code_verifier"] = testScenario.DownstreamCodeVerifier,
+                ["code_verifier"] = testScenario.GetDownstreamCodeVerifier(),
             };
             return tokenForm;
         }
