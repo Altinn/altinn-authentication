@@ -278,6 +278,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Null(loggedOutSession);
 
             // TODO: Simulate that ID-provider call the front channel logout endpoint
+            using var frontChannelLogoutResp = await client.GetAsync(
+                $"/authentication/api/v1/upstream/frontchannel-logout?iss={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamIssuer)}&sid={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamSessionSid!)}");
+
+            string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
+            Assert.Equal("OK", frontChannelContent);
 
             // Helper local function for base64url validation
             static bool IsBase64Url(string s) =>

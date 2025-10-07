@@ -555,7 +555,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 RequestId = tx.RequestId,
                 ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
-
+               
                 Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
                 UpstreamClientId = provider.ClientId,
                 AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
