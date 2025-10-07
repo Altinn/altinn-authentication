@@ -92,7 +92,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
 
             // Insert a client that matches the authorize request
-            OidcClientCreate create = NewClientCreate(testScenario);
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
             // The Clock is 08:00:00 UTC and the day Starts with loging in to Arbeidsflate in Altinn.
@@ -123,7 +123,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string code = HttpUtility.ParseQueryString(callbackResp.Headers.Location!.Query)["code"]!;
 
             // === Phase 3: Downstream client redeems code for tokens ===
-            Dictionary<string, string> tokenForm = BuildTokenRequestForm(testScenario, create, code);
+            Dictionary<string, string> tokenForm = OidcServerTestUtils.BuildTokenRequestForm(testScenario, code);
 
             using var tokenResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -137,19 +137,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
 
             OidcSession originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
 
             // Advance time by 20 minutes (user is active in RP; we’ll now refresh)
-            _fakeTime.Advance(TimeSpan.FromMinutes(20));
+            _fakeTime.Advance(TimeSpan.FromMinutes(20)); // 08:21
 
             // ===== Phase 4: Refresh flow =====
 
             // 4.1 Assert we got a refresh_token back
-            Assert.False(string.IsNullOrWhiteSpace(tokenResult.refresh_token));
-            Assert.True(IsBase64Url(tokenResult.refresh_token!), "refresh_token must be base64url");
             string oldRefresh = tokenResult.refresh_token!;
 
             // 4.2 Use the refresh_token to get new tokens (client_secret_post like initial call)
-            Dictionary<string, string> refreshForm = GetRefreshForm(testScenario, create, oldRefresh);
+            Dictionary<string, string> refreshForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, oldRefresh);
 
             using var refreshResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -197,7 +196,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             _fakeTime.Advance(TimeSpan.FromMinutes(5));
 
             // 7 User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
-            Dictionary<string, string> refreshFormAfterAppVisit = GetRefreshForm(testScenario, create, refreshed.refresh_token);
+            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token);
 
             using var refreshRespAfterAppVisit = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -229,7 +228,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             }
 
             // 10 Redirects back to Arbeidsflate after 50 minutes in second app. Doing a new refresh
-            var reuseForm = GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token);
+            var reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token);
 
             using var reuseResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -254,7 +253,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string code2 = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
 
             // === Phase 3: Downstream client redeems code for tokens ===
-            Dictionary<string, string> tokenForm2 = BuildTokenRequestForm(testScenario, create, code2);
+            Dictionary<string, string> tokenForm2 = OidcServerTestUtils.BuildTokenRequestForm(testScenario, code2);
 
             using var tokenResp2 = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -290,14 +289,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
             Assert.Equal("OK", frontChannelContent);
-
-            // Helper local function for base64url validation
-            static bool IsBase64Url(string s) =>
-                s.All(c =>
-                    (c >= 'A' && c <= 'Z') ||
-                    (c >= 'a' && c <= 'z') ||
-                    (c >= '0' && c <= '9') ||
-                    c == '-' || c == '_');
         }
 
         private async Task<(string UpstreamState, UpstreamLoginTransaction CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
@@ -315,39 +306,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             return (upstreamState, createdUpstreamLogingTransaction);
         }
 
-        private static Dictionary<string, string> GetRefreshForm(OidcTestScenario testScenario, OidcClientCreate create, string refreshToken)
-        {
-            var refreshForm = new Dictionary<string, string>
-            {
-                ["grant_type"] = "refresh_token",
-                ["refresh_token"] = refreshToken,
-                ["client_id"] = create.ClientId,
-                ["client_secret"] = testScenario.ClientSecret // assuming your test client has this
-            };
-            return refreshForm;
-        }
-
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
             return Path.Combine(unitTestFolder, $"../../../appsettings.json");
         }
-
-        private static OidcClientCreate NewClientCreate(OidcTestScenario testScenario) =>
-            new()
-            {
-                ClientId = testScenario.DownstreamClientId,
-                ClientName = "Test Client",
-                ClientType = ClientType.Confidential,
-                TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,
-                RedirectUris = testScenario.RedirectUris,
-                AllowedScopes = testScenario.AllowedScopes,
-                ClientSecretHash = testScenario.HashedClientSecret,
-                ClientSecretExpiresAt = null,
-                SecretRotationAt = null,
-                JwksUri = null,
-                JwksJson = null
-            };
 
         private void ConfigureMockProviderTokenResponse(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
         {
@@ -383,20 +346,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
             client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
             return client;
-        }
-
-        private static Dictionary<string, string> BuildTokenRequestForm(OidcTestScenario testScenario, OidcClientCreate create, string code)
-        {
-            Dictionary<string, string> tokenForm = new()
-            {
-                ["grant_type"] = "authorization_code",
-                ["code"] = code,
-                ["redirect_uri"] = testScenario.DownstreamClientCallbackUrl,
-                ["client_id"] = testScenario.DownstreamClientId,
-                ["client_secret"] = testScenario.ClientSecret!,
-                ["code_verifier"] = testScenario.GetDownstreamCodeVerifier(),
-            };
-            return tokenForm;
         }
     }
 }

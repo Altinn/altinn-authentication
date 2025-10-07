@@ -98,5 +98,18 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             // Assert token from cookie is valid and contains the expected claims
             TokenAssertsHelper.AssertCookieAccessToken(value, testScenario, now);
         }
+
+        public static void AssertValidSession(OidcSession oidcSession, OidcTestScenario testScenario, DateTimeOffset now)
+        {
+            Assert.NotNull(oidcSession);
+            Assert.False(string.IsNullOrEmpty(oidcSession.Sid));
+
+            Assert.Equal(testScenario.Amr?.OrderBy(s => s), oidcSession.Amr?.OrderBy(s => s));
+            Assert.Equal(testScenario.Scopes?.OrderBy(s => s), oidcSession.Scopes?.OrderBy(s => s));
+            Assert.True(oidcSession.CreatedAt <= now);
+            Assert.True(oidcSession.UpdatedAt <= now);
+            Assert.Equal(now, oidcSession.LastSeenAt); // not updated yet
+            Assert.True(oidcSession.ExpiresAt > now);
+        }
     }
 }

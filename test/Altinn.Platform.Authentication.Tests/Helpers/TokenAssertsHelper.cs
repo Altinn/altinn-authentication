@@ -18,6 +18,8 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.True(tokenResponseDto.expires_in > 0);
             Assert.NotNull(tokenResponseDto.id_token); // since openid scope was requested
             Assert.NotNull(tokenResponseDto.refresh_token);
+            Assert.True(IsBase64Url(tokenResponseDto.refresh_token!), "refresh_token must be base64url");
+
             Assert.Contains("openid", tokenResponseDto.scope.Split(' '));
             Assert.Contains("altinn:portal/enduser", tokenResponseDto.scope.Split(' '));
             AssertAccessToken(tokenResponseDto.access_token, testScenario, now);
@@ -107,5 +109,12 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains(scope));
             }
         }
+
+        private static bool IsBase64Url(string s) =>
+               s.All(c =>
+                   (c >= 'A' && c <= 'Z') ||
+                   (c >= 'a' && c <= 'z') ||
+                   (c >= '0' && c <= '9') ||
+                   c == '-' || c == '_');
     }
 }

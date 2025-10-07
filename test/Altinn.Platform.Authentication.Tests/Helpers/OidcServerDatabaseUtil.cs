@@ -91,6 +91,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 Acr = r.IsDBNull("acr") ? null : r.GetFieldValue<string>("acr"),
                 AuthTime = r.IsDBNull("auth_time") ? null : r.GetFieldValue<DateTimeOffset?>("auth_time"),
                 Amr = r.IsDBNull("amr") ? null : r.GetFieldValue<string[]>("amr"),
+                Scopes = r.GetFieldValue<string[]>("scopes"),
                 CreatedAt = r.GetFieldValue<DateTimeOffset>("created_at"),
                 UpdatedAt = r.GetFieldValue<DateTimeOffset>("updated_at"),
                 ExpiresAt = r.IsDBNull("expires_at") ? null : r.GetFieldValue<DateTimeOffset?>("expires_at"),
