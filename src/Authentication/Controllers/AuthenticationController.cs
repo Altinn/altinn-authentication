@@ -94,22 +94,6 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
         /// </summary>
-        /// <param name="logger">A generic logger</param>
-        /// <param name="generalSettings">Configuration for the authentication scope.</param>
-        /// <param name="oidcProviderSettings">Configuration for the oidcProviders</param>
-        /// <param name="cookieDecryptionService">A service that can decrypt a .ASPXAUTH cookie.</param>
-        /// <param name="organisationRepository">the repository object that holds valid organisations</param>
-        /// <param name="certificateProvider">Service that can obtain a list of certificates that can be used to generate JSON Web Tokens.</param>
-        /// <param name="userProfileService">Service that can retrieve user profiles.</param>
-        /// <param name="enterpriseUserAuthenticationService">Service that can retrieve enterprise user profile.</param>
-        /// <param name="signingKeysRetriever">The class to use to obtain the signing keys.</param>
-        /// <param name="signingKeysResolver">Signing keys resolver for Altinn Common AccessToken</param>
-        /// <param name="oidcProvider">The OIDC provider</param>
-        /// <param name="antiforgery">The anti forgery service.</param>
-        /// <param name="eventLog">the event logging service</param>
-        /// <param name="featureManager">the feature toggle service</param>
-        /// <param name="guidService">the guid service</param>
-        /// <param name="profileService">the profile service</param>
         public AuthenticationController(
             ILogger<AuthenticationController> logger,
             IOptions<GeneralSettings> generalSettings,

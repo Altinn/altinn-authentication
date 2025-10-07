@@ -335,11 +335,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
         {
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
-
             string? upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
 
-            Debug.Assert(testScenario != null);
             // Asserting DB persistence after /authorize
+            Debug.Assert(testScenario?.DownstreamClientId != null);
             LoginTransaction? loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
             OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario, now);
 
@@ -351,6 +350,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private static string GetConfigPath()
         {
             string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
+            Debug.Assert(unitTestFolder != null, nameof(unitTestFolder) + " != null");
             return Path.Combine(unitTestFolder, $"../../../appsettings.json");
         }
 
