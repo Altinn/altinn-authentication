@@ -80,6 +80,9 @@
     <None Update="Data\SystemChangeLog\ChangeLogCreate.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\SystemRegister_altinn.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterInvalidSystemId.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

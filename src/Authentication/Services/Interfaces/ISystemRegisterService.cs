@@ -24,6 +24,14 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<List<RegisteredSystemResponse>> GetListRegSys(CancellationToken cancellation = default);
 
         /// <summary>
+        /// Retrieves a list of registered systems associated with the specified vendor organization.
+        /// </summary>
+        /// <param name="vendorOrgNumber">The organization number of the vendor whose registered systems are to be retrieved.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>list of systems for vendor</returns>
+        Task<List<RegisteredSystemResponse>> GetListOfSystemsForVendor(string vendorOrgNumber, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider
         /// has set for the Registered System.
         /// </summary>

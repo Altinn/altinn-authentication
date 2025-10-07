@@ -45,7 +45,13 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<List<RegisteredSystemResponse>> GetListRegSys(CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.GetAllActiveSystems();
+            return _systemRegisterRepository.GetAllActiveSystems(cancellation);
+        }
+
+        /// <inheritdoc/>
+        public Task<List<RegisteredSystemResponse>> GetListOfSystemsForVendor(string vendorOrgNumber, CancellationToken cancellationToken = default)
+        {
+            return _systemRegisterRepository.GetAllSystemsForVendor(vendorOrgNumber, cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -158,33 +164,36 @@ namespace Altinn.Platform.Authentication.Services
             var notFoundUrns = new List<string>();
             var notDelegableUrns = new List<string>();
 
-            foreach (AccessPackage accessPackage in accessPackages)
+            if (accessPackages != null && accessPackages.Count > 0)
             {
-                string? urn = accessPackage.Urn;
-
-                if (string.IsNullOrEmpty(urn))
+                foreach (AccessPackage accessPackage in accessPackages!)
                 {
-                    invalidFormatUrns.Add(urn ?? string.Empty);
-                    continue;
-                }
+                    string? urn = accessPackage.Urn;
 
-                string[] urnParts = urn.Split(':');
-                if (urnParts.Length < 4)
-                {
-                    invalidFormatUrns.Add(urn);
-                    continue;
-                }
+                    if (string.IsNullOrEmpty(urn))
+                    {
+                        invalidFormatUrns.Add(urn ?? string.Empty);
+                        continue;
+                    }
 
-                string urnValue = urnParts[3];
-                Package? package = await _accessManagementClient.GetAccessPackage(urnValue);
+                    string[] urnParts = urn.Split(':');
+                    if (urnParts.Length < 4)
+                    {
+                        invalidFormatUrns.Add(urn);
+                        continue;
+                    }
 
-                if (package == null)
-                {
-                    notFoundUrns.Add(urn);
-                }
-                else if (!package.IsDelegable && !package.IsAssignable)
-                {
-                    notDelegableUrns.Add(urn);
+                    string urnValue = urnParts[3];
+                    Package? package = await _accessManagementClient.GetAccessPackage(urnValue);
+
+                    if (package == null)
+                    {
+                        notFoundUrns.Add(urn);
+                    }
+                    else if (!package.IsDelegable && !package.IsAssignable)
+                    {
+                        notDelegableUrns.Add(urn);
+                    }
                 }
             }
 
