@@ -30,7 +30,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
               AND op_sid    = @op_sid
               AND revoked_at IS NULL
             LIMIT 1
-            FOR UPDATE";
+            FOR UPDATE";    
 
             await using (var cmd = new NpgsqlCommand(selectSql, conn, tx))
             {
@@ -75,10 +75,10 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             var ids = new List<Guid>();
             await using var conn = await _dataSource.OpenConnectionAsync(ct);
             const string sql = @"
-SELECT family_id
-FROM oidcserver.refresh_token_family
-WHERE op_sid = @op_sid
-  AND revoked_at IS NULL";
+            SELECT family_id
+            FROM oidcserver.refresh_token_family
+            WHERE op_sid = @op_sid
+              AND revoked_at IS NULL";
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("op_sid", NpgsqlDbType.Text, opSid);
 
@@ -202,10 +202,10 @@ WHERE op_sid = @op_sid
                 FROM oidcserver.refresh_token
                 WHERE lookup_key = @lookup_key
                 LIMIT 1";
-            await using var cmd = new NpgsqlCommand(sql, conn);
+            await using NpgsqlCommand cmd = new(sql, conn);
             cmd.Parameters.AddWithValue("lookup_key", NpgsqlDbType.Bytea, lookupKey);
 
-            await using var reader = await cmd.ExecuteReaderAsync(ct);
+            await using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync(ct);
             if (!await reader.ReadAsync(ct))
             {
                 return null;
@@ -226,7 +226,7 @@ WHERE op_sid = @op_sid
                     revoked_reason = 'rotated'
                 WHERE token_id = @token_id
                   AND status = 'active'";
-            await using var cmd = new NpgsqlCommand(sql, conn);
+            await using NpgsqlCommand cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("token_id", NpgsqlDbType.Uuid, tokenId);
             cmd.Parameters.AddWithValue("rotated_to", NpgsqlDbType.Uuid, rotatedToTokenId);
             await cmd.ExecuteNonQueryAsync(ct);

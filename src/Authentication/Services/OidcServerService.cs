@@ -41,7 +41,8 @@ namespace Altinn.Platform.Authentication.Services
         IOidcSessionRepository oidcSessionRepository,
         IAuthorizationCodeRepository authorizationCodeRepository,
         IOptions<GeneralSettings> generalSettings,
-        ITokenService tokenService) : IOidcServerService
+        ITokenService tokenService,
+        IRefreshTokenRepository refreshTokenRepository) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -59,6 +60,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IAuthorizationCodeRepository _authorizationCodeRepo = authorizationCodeRepository;
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
         private readonly ITokenService _tokenService = tokenService;
+        private readonly IRefreshTokenRepository _refreshTokenRepo = refreshTokenRepository;
         private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
@@ -237,10 +239,10 @@ namespace Altinn.Platform.Authentication.Services
 
             if (!string.IsNullOrWhiteSpace(input.IdTokenHint))
             {
-                var handler = new JwtSecurityTokenHandler();
+                JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
                 if (handler.CanReadToken(input.IdTokenHint))
                 {
-                    var jwt = handler.ReadJwtToken(input.IdTokenHint);
+                    JwtSecurityToken jwt = handler.ReadJwtToken(input.IdTokenHint);
                     hintClientId = jwt.Audiences?.FirstOrDefault();
                     hintSid = jwt.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
                 }
@@ -251,6 +253,7 @@ namespace Altinn.Platform.Authentication.Services
             string? sid = cookieSid ?? hintSid;
 
             // 2) Validate post_logout_redirect_uri (if provided and if we know the client from the hint)
+            // TODO: We need to discuss if we need to support this. What about apps running outside Altinn. 
             Uri? redirect = null;
             if (input.PostLogoutRedirectUri is not null && !string.IsNullOrWhiteSpace(hintClientId))
             {
@@ -273,14 +276,29 @@ namespace Altinn.Platform.Authentication.Services
                 // else: ignore invalid redirect; return OP page
             }
 
+            OidcSession? oidcSession = await _oidcSessionRepo.GetBySidAsync(sid!, ct);
+            if (oidcSession != null)
+            {
+                string issuer = oidcSession.UpstreamIssuer;
+                OidcProvider provider = ChooseProviderByIssuer(issuer);
+                redirect = new Uri(provider.LogoutEndpoint!);
+            }
+
             // 3) Server-side invalidation for this session id
             if (!string.IsNullOrWhiteSpace(sid))
             {
                 // Delete session row
                 await _oidcSessionRepo.DeleteBySidAsync(sid!, ct);
 
-                // OPTIONAL BUT RECOMMENDED: revoke refresh tokens bound to this sid (if you have such a repo)
-                // await _refreshTokenRepo.RevokeBySidAsync(sid!, _timeProvider.GetUtcNow(), ct);
+                // Revoke all refresh tokens for this sid.
+                IReadOnlyList<Guid> families = await _refreshTokenRepo.GetFamiliesByOpSidAsync(sid!, ct);
+                if (families?.Any() == true)
+                {
+                    foreach (Guid family in families)
+                    {
+                        await _refreshTokenRepo.RevokeFamilyAsync(family, "logout", ct);
+                    }
+                }
 
                 // OPTIONAL: purge any unredeemed authorization codes for this sid
                 // await _authorizationCodeRepo.InvalidateBySidAsync(sid!, _timeProvider.GetUtcNow(), ct);
@@ -289,7 +307,7 @@ namespace Altinn.Platform.Authentication.Services
             // 4) Instruct caller to delete the runtime cookie (attributes must match how it was set)
             var deleteRuntime = new CookieInstruction
             {
-                Name = "AltinnStudioRuntime",
+                Name = _generalSettings.JwtCookieName,
                 Value = string.Empty,
                 HttpOnly = true,
                 Secure = true,
@@ -300,6 +318,7 @@ namespace Altinn.Platform.Authentication.Services
                 Expires = DateTimeOffset.UnixEpoch
             };
 
+            // TODO: Delete session cookie also?
             return new EndSessionResult
             {
                 RedirectUri = redirect,
@@ -461,7 +480,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // ========= 7) Persist login_transaction_upstream =========
             // NOTE: Store everything you need for callback + token exchange.
-            var upstreamCreate = new UpstreamLoginTransactionCreate
+            UpstreamLoginTransactionCreate upstreamCreate = new()
             {
                 RequestId = tx.RequestId,
                 ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
@@ -639,6 +658,19 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             throw new ArgumentException("Invalid or unknown provider key.", nameof(key));
+        }
+
+        private OidcProvider ChooseProviderByIssuer(string issuer)
+        {
+            foreach (var p in _oidcProviderSettings.Values)
+            {
+                if (string.Equals(p.Issuer, issuer, StringComparison.OrdinalIgnoreCase))
+                {
+                    return p;
+                }
+            }
+
+            throw new ArgumentException("Invalid or unknown provider issuer.", nameof(issuer));
         }
 
         private static string GetIdProviderFromAcr(string[]? acrValues)

@@ -161,7 +161,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Accepts id_token_hint, post_logout_redirect_uri, and state.
         /// Delegates to the service; controller only appends cookies and returns redirect/page.
         /// </summary>
-        [HttpGet("logout")]
+        [HttpGet("logout2")]
         public async Task<IActionResult> EndSession(
             [FromQuery] string? id_token_hint,
             [FromQuery] string? post_logout_redirect_uri,

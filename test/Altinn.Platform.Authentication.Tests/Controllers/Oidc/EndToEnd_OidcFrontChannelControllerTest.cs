@@ -264,6 +264,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal(sid, sid2); // should be same session as before
 
             // TODO: Logout and assert result. 
+            using var logoutResp = await client.GetAsync(
+                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+            string content = await logoutResp.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
+            Assert.StartsWith("https://login.idporten.no/logout", logoutResp.Headers.Location!.ToString());
 
             // Helper local function for base64url validation
             static bool IsBase64Url(string s) =>
