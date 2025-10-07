@@ -237,7 +237,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // Arbeidsflate now needs to redirect user to /authorize again to get a new code/refresh_token.
             // Generates new State and nonce
-            string state = CryptoHelpers.RandomBase64Url(32);
+            testScenario.SetLoginAttempt(2);
+            
+            string authorizationRequestUrl2 = testScenario.GetAuthorizationRequestUrl();
+
+            // This would be the URL Arbeidsflate redirects the user to. Now the user have a active Altinn Runtime cookie so the response will be a direct
+            // redirect back to Arbeidsflate with code and state (no intermediate login at IdP).
+            HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
 
             // Helper local function for base64url validation
             static bool IsBase64Url(string s) =>

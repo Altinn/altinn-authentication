@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
         /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
         /// </summary>
-        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, CancellationToken cancellationToken)
+        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
             // 1) Client lookup
@@ -96,12 +96,29 @@ namespace Altinn.Platform.Authentication.Services
             // TODO: if request.RequestObject != null -> validate JWS/JWE, extract claims/params (optional phase)
             // NOTE Currently no need to support PAR/JAR for our downstream clients since Arbeidsflate does not support it
 
-            // ========= 4) Existing IdP session reuse (optional optimization) =========
+            // ========= 4) Persist login_transaction(downstream) =========
+            LoginTransaction tx = await PersistLoginTransaction(request, client, cancellationToken);
+
+            // ========= 5) Existing IdP session reuse =========
+            // Is request contains a valid AltinnStudioRuntime cookie there will be a autenticated principal on the request
+            OidcSession? existingSession = null;
+            if (principal.Identity != null && principal.Identity.IsAuthenticated)
+            {
+                Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
+                if (sidClaim != null)
+                {
+                    existingSession = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
+                }
+            }
+
+            // Verify that found session 
+            if (existingSession != null && _timeProvider.GetUtcNow() < existingSession.ExpiresAt)
+            {
+               await CreateDownstreamAuthorizationCode(null, tx, null, existingSession, cancellationToken);
+            }
+
             // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age
             // TODO: if reusable and no prompt=login: proceed to issue downstream authorization_code (future extension)
-
-            // ========= 5) Persist login_transaction(downstream) =========
-            LoginTransaction tx = await PersistLoginTransaction(request, client, cancellationToken);
 
             // ========= 6) Choose upstream and derive upstream params =========
             (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
@@ -416,7 +433,7 @@ namespace Altinn.Platform.Authentication.Services
             return tx;
         }
 
-        private async Task<string> CreateDownstreamAuthorizationCode(UpstreamLoginTransaction upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, OidcSession session, CancellationToken cancellationToken)
+        private async Task<string> CreateDownstreamAuthorizationCode(UpstreamLoginTransaction? upstreamTx, LoginTransaction loginTx, UserAuthenticationModel userIdenity, OidcSession session, CancellationToken cancellationToken)
         {
             string authCode = CryptoHelpers.RandomBase64Url(32);
             var codeTime = _timeProvider.GetUtcNow();
@@ -427,23 +444,23 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     Code = authCode,
                     ClientId = loginTx.ClientId,
-                    SubjectId = session.SubjectId ?? userIdenity.ExternalIdentity, // fallback
+                    SubjectId = session.SubjectId, // fallback
                     SubjectPartyUuid = session.SubjectPartyUuid,
                     SubjectPartyId = session.SubjectPartyId,
                     SubjectUserId = session.SubjectUserId,
                     SessionId = session.Sid,
                     RedirectUri = loginTx.RedirectUri,
-                    Scopes = loginTx.Scopes,
+                    Scopes = session.Scopes,
                     Nonce = loginTx.Nonce,
-                    Acr = userIdenity.Acr,
-                    Amr = userIdenity.Amr,
-                    AuthTime = userIdenity.AuthTime,
+                    Acr = session.Acr,
+                    Amr = session.Amr,
+                    AuthTime = session.AuthTime,
                     CodeChallenge = loginTx.CodeChallenge,
                     CodeChallengeMethod = loginTx.CodeChallengeMethod ?? "S256",
                     IssuedAt = codeTime,
                     ExpiresAt = codeExpires,
-                    CreatedByIp = upstreamTx.CreatedByIp,
-                    CorrelationId = upstreamTx.CorrelationId
+                    CreatedByIp = upstreamTx?.CreatedByIp,
+                    CorrelationId = upstreamTx?.CorrelationId
                 },
                 cancellationToken);
             return authCode;

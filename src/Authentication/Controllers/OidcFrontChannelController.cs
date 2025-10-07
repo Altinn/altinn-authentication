@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using System;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -46,8 +47,10 @@ namespace Altinn.Platform.Authentication.Controllers
                 return BadRequest(ex.Message);
             }
 
+            ClaimsPrincipal claimsPrincipal = HttpContext.User;
+
             // in OidcFrontChannelController
-            AuthorizeResult result = await _oidcServerService.Authorize(req, cancellationToken);
+            AuthorizeResult result = await _oidcServerService.Authorize(req, claimsPrincipal, cancellationToken);
 
             foreach (var c in result.Cookies)
             {

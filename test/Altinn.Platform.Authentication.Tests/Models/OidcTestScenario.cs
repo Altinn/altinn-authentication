@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Web;
+using Altinn.Platform.Authentication.Core.Helpers;
 
 namespace Altinn.Platform.Authentication.Tests.Models
 {
@@ -118,6 +119,24 @@ namespace Altinn.Platform.Authentication.Tests.Models
             }
 
             return LoginStates[loginAttempt - 1].DownstreamCodeChallenge;
+        }
+
+        public void SetLoginAttempt(int attempt)
+        {
+            if (LoginStates.Count < attempt)
+            {
+                LoginTestState state = new LoginTestState()
+                {
+                    DownstreamState = CryptoHelpers.RandomBase64Url(32),
+                    DownstreamNonce = CryptoHelpers.RandomBase64Url(32),
+                    DownstreamCodeVerifier = Pkce.RandomPkceVerifier(),
+                };
+
+                state.DownstreamCodeChallenge = Pkce.ComputeS256CodeChallenge(state.DownstreamCodeVerifier);
+                LoginStates.Add(state);
+            }
+
+            LoginCount = attempt;
         }
     }
 }
