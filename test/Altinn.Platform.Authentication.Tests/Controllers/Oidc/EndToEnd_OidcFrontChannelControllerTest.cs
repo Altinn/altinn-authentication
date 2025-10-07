@@ -143,13 +143,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             _fakeTime.Advance(TimeSpan.FromMinutes(20)); // 08:21
 
             // ===== Phase 4: Refresh flow =====
-
-            // 4.1 Assert we got a refresh_token back
-            string oldRefresh = tokenResult.refresh_token!;
-
-            // 4.2 Use the refresh_token to get new tokens (client_secret_post like initial call)
-            Dictionary<string, string> refreshForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, oldRefresh);
-
+            Dictionary<string, string> refreshForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, tokenResult.refresh_token!);
             using var refreshResp = await client.PostAsync(
                 "/authentication/api/v1/token",
                 new FormUrlEncodedContent(refreshForm));
