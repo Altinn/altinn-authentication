@@ -42,8 +42,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
         private static readonly FakeTimeProvider _fakeTime = new(
-    DateTimeOffset.Parse("2025-03-01T13:37:00Z")); // any stable baseline for tests
+        DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
 
+        /// <summary>
+        /// Configure DI for tests, replacing external dependencies with fakes/mocks.
+        /// </summary>
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
@@ -84,7 +87,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         [Fact]
         public async Task Authorize_Persists_Downstream_And_Upstream_And_Redirects_Including_Callback_AndRedirectTo_DownStreamClient()
         {
-            // Arrange
+            // Create HttpClient with default headers for IP, UA, correlation. 
             using HttpClient client = CreateClientWithHeaders();
             OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
 
@@ -92,16 +95,19 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcClientCreate create = NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
 
+            // The Clock is 08:00:00 UTC and the day Starts with loging in to Arbeidsflate in Altinn.
+            // This will redirect to Altinn Autehnticaiton Authorization Server
             string url = testScenario.GetAuthorizationRequestUrl();
 
-            // === Phase 1:  RP initiates the flow by redirecting user to /authorize endpoint. Expected result is a redirect to upstream provider.
+            // === Phase 1: RP (Relying Party) initiates the flow by redirecting user to /authorize endpoint.
+            // Expected result is a redirect to upstream provider.
             HttpResponseMessage authorizationRequestResponse = await client.GetAsync(url);
 
             // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
-            (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse);
+            (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
 
             // Assume it takes 1 minute for the user to authenticate at the upstream provider
-            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
 
             // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
             ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
@@ -294,7 +300,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                     c == '-' || c == '_');
         }
 
-        private async Task<(string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse)
+        private async Task<(string UpstreamState, UpstreamLoginTransaction CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
         {
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
 
@@ -302,10 +308,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // Asserting DB persistence after /authorize
             LoginTransaction loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
-            OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario);
+            OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario, now);
 
             UpstreamLoginTransaction createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
-            OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario);
+            OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario, now);
             return (upstreamState, createdUpstreamLogingTransaction);
         }
 

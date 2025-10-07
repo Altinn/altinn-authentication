@@ -48,9 +48,10 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             AssertHasAltinnStudioRuntimeCookie(callbackResp, out var runtimeCookieValue, testScenario, now);
         }
 
-        public static void AssertLogingTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario)
+        public static void AssertLogingTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario, DateTimeOffset now)
         {
             Assert.NotNull(loginTransaction);
+            Assert.Equal(now, loginTransaction.CreatedAt);
             Assert.Equal(scenario.DownstreamClientId, loginTransaction.ClientId);
             Assert.Equal(scenario.GetDownstreamNonce(), loginTransaction.Nonce);
             Assert.Equal(scenario.GetDownstreamState(), loginTransaction.State);
@@ -59,12 +60,15 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal("S256", loginTransaction.CodeChallengeMethod);
             Assert.Equal(scenario.GetDownstreamCodeChallenge(), loginTransaction.CodeChallenge);
             Assert.Equal("pending", loginTransaction.Status);
-            Assert.Equal(scenario.GetDownstreamCodeChallenge(), loginTransaction.CodeChallenge);
         }
 
-        public static void AssertUpstreamLogingTransaction(UpstreamLoginTransaction createdUpstreamLogingTransaction, OidcTestScenario testScenario)
+        public static void AssertUpstreamLogingTransaction(UpstreamLoginTransaction createdTx, OidcTestScenario testScenario, DateTimeOffset now)
         {
-            Assert.NotNull(createdUpstreamLogingTransaction);
+            Assert.NotNull(createdTx);
+            Assert.NotNull(createdTx.Status);
+            Assert.Equal("pending", createdTx.Status);
+            Assert.NotNull(createdTx.Nonce);
+            Assert.Equal(now, createdTx.CreatedAt);
         }
 
         public static void AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario,   DateTimeOffset now)
