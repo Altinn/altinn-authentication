@@ -1,5 +1,7 @@
 ﻿#nullable enable
 using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -153,6 +155,63 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             throw new System.NotImplementedException();
         }
+
+        /// <summary>
+        /// OIDC end_session_endpoint – RP-initiated logout.
+        /// Accepts id_token_hint, post_logout_redirect_uri, and state.
+        /// Delegates to the service; controller only appends cookies and returns redirect/page.
+        /// </summary>
+        [HttpGet("logout")]
+        public async Task<IActionResult> EndSession(
+            [FromQuery] string? id_token_hint,
+            [FromQuery] string? post_logout_redirect_uri,
+            [FromQuery] string? state,
+            CancellationToken ct = default)
+        {
+            System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+            string ua = Request.Headers.UserAgent.ToString();
+            string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : ua; // hash if you want, not required here
+
+            var input = new EndSessionInput
+            {
+                IdTokenHint = id_token_hint,
+                PostLogoutRedirectUri = TryParseAbsoluteUri(post_logout_redirect_uri),
+                State = state,
+                User = HttpContext.User,
+                ClientIp = ip,
+                UserAgentHash = userAgentHash
+            };
+
+            EndSessionResult result = await _oidcServerService.EndSessionAsync(input, ct);
+
+            // Set no-store for auth responses
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
+
+            // Apply cookie instructions produced by the service
+            foreach (var c in result.Cookies)
+            {
+                Response.Cookies.Append(c.Name, c.Value ?? string.Empty, new CookieOptions
+                {
+                    HttpOnly = c.HttpOnly,
+                    Secure = c.Secure,
+                    Path = c.Path ?? "/",
+                    Domain = c.Domain,
+                    Expires = c.Expires,
+                    SameSite = c.SameSite
+                });
+            }
+
+            if (result.RedirectUri is not null)
+            {
+                return Redirect(result.RedirectUri.ToString());
+            }
+
+            return Content("You are logged out.");
+        }
+
+        private static Uri? TryParseAbsoluteUri(string? s) =>
+            Uri.TryCreate(s, UriKind.Absolute, out var u) ? u : null;
 
         private static string ComputeSha256Base64Url(string input)
         {

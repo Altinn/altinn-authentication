@@ -24,7 +24,6 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// cref="UpstreamCallbackResult"/> object representing the outcome of the callback processing.</returns>
         public Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken ct);
 
-
         /// <summary>
         /// Handles refresh of an OIDC session based on the provided principal.Used when the Altinn Studio runtimecookie
         /// is used as session cookie for OIDC and app tyical refresh endpoint runtime
@@ -34,5 +33,12 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// <returns></returns>
         public Task<OidcSession> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct);
 
+        /// <summary>
+        /// Handles ending an OIDC session based on the provided input.
+        /// </summary>
+        /// <param name="input">The end session put</param>
+        /// <param name="ct">The cancellationtoken</param>
+        /// <returns></returns>
+        public Task<EndSessionResult> EndSessionAsync(EndSessionInput input, CancellationToken ct);
     }
 }

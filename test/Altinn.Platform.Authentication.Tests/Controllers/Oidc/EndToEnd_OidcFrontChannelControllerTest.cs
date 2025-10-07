@@ -263,6 +263,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             Assert.Equal(sid, sid2); // should be same session as before
 
+            // TODO: Logout and assert result. 
+
             // Helper local function for base64url validation
             static bool IsBase64Url(string s) =>
                 s.All(c =>

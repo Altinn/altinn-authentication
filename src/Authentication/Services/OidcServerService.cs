@@ -223,6 +223,91 @@ namespace Altinn.Platform.Authentication.Services
             return _oidcSessionRepo.GetBySidAsync(sidClaim.Value, ct) ?? throw new InvalidOperationException("No valid session found for sid");
         }
 
+        /// <summary>
+        /// Ends an OIDC session based on the provided input.
+        /// </summary>
+        public async Task<EndSessionResult> EndSessionAsync(EndSessionInput input, CancellationToken ct)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+
+            // 1) Resolve sid and (optionally) client_id from id_token_hint
+            string? cookieSid = input.User?.Claims?.FirstOrDefault(c => c.Type == "sid")?.Value;
+            string? hintClientId = null;
+            string? hintSid = null;
+
+            if (!string.IsNullOrWhiteSpace(input.IdTokenHint))
+            {
+                var handler = new JwtSecurityTokenHandler();
+                if (handler.CanReadToken(input.IdTokenHint))
+                {
+                    var jwt = handler.ReadJwtToken(input.IdTokenHint);
+                    hintClientId = jwt.Audiences?.FirstOrDefault();
+                    hintSid = jwt.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
+                }
+
+                // If you want signature/exp validation, wire in your existing OP token validator here.
+            }
+
+            string? sid = cookieSid ?? hintSid;
+
+            // 2) Validate post_logout_redirect_uri (if provided and if we know the client from the hint)
+            Uri? redirect = null;
+            if (input.PostLogoutRedirectUri is not null && !string.IsNullOrWhiteSpace(hintClientId))
+            {
+                var client = await _oidcServerClientRepository.GetClientAsync(hintClientId!, ct);
+                if (client?.RedirectUris?.Any() == true &&
+                    client.RedirectUris.Contains(input.PostLogoutRedirectUri))
+                {
+                    // Append state if any
+                    var ub = new UriBuilder(input.PostLogoutRedirectUri);
+                    if (!string.IsNullOrWhiteSpace(input.State))
+                    {
+                        var q = System.Web.HttpUtility.ParseQueryString(ub.Query);
+                        q["state"] = input.State;
+                        ub.Query = q.ToString()!;
+                    }
+
+                    redirect = ub.Uri;
+                }
+
+                // else: ignore invalid redirect; return OP page
+            }
+
+            // 3) Server-side invalidation for this session id
+            if (!string.IsNullOrWhiteSpace(sid))
+            {
+                // Delete session row
+                await _oidcSessionRepo.DeleteBySidAsync(sid!, ct);
+
+                // OPTIONAL BUT RECOMMENDED: revoke refresh tokens bound to this sid (if you have such a repo)
+                // await _refreshTokenRepo.RevokeBySidAsync(sid!, _timeProvider.GetUtcNow(), ct);
+
+                // OPTIONAL: purge any unredeemed authorization codes for this sid
+                // await _authorizationCodeRepo.InvalidateBySidAsync(sid!, _timeProvider.GetUtcNow(), ct);
+            }
+
+            // 4) Instruct caller to delete the runtime cookie (attributes must match how it was set)
+            var deleteRuntime = new CookieInstruction
+            {
+                Name = "AltinnStudioRuntime",
+                Value = string.Empty,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+
+                // Use UnixEpoch or MaxAge=0 consistently
+                Expires = DateTimeOffset.UnixEpoch
+            };
+
+            return new EndSessionResult
+            {
+                RedirectUri = redirect,
+                State = input.State,
+                Cookies = new[] { deleteRuntime }
+            };
+        }
+
         private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
