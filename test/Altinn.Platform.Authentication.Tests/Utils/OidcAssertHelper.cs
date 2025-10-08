@@ -46,6 +46,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(testScenario.GetDownstreamState(), finalQuery["state"]); // original downstream state echoed back
 
             AssertHasAltinnStudioRuntimeCookie(callbackResp, out var runtimeCookieValue, testScenario, now);
+            AssertHasAltinnSessionCookie(callbackResp, out var sessionCookieValue, testScenario, now);
         }
 
         public static void AssertLogingTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario, DateTimeOffset now)
@@ -97,6 +98,28 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
             // Assert token from cookie is valid and contains the expected claims
             TokenAssertsHelper.AssertCookieAccessToken(value, testScenario, now);
+        }
+
+        public static void AssertHasAltinnSessionCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario, DateTimeOffset now)
+        {
+            Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
+
+            string? raw = setCookies.FirstOrDefault(h =>
+                h.StartsWith("altinnsession=", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrEmpty(raw), "altinnsession cookie was not set.");
+
+            // Split into name/value + attributes
+            var parts = raw!.Split(';').Select(p => p.Trim()).ToArray();
+
+            // name=value
+            var kv = parts[0].Split('=', 2);
+            Assert.Equal("altinnsession", kv[0]);
+            value = kv.Length > 1 ? kv[1] : string.Empty;
+            Assert.False(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie has empty value.");
+
+            // ❌ Must NOT set Expires or Domain (host-only, session cookie)
+            Assert.DoesNotContain(parts, p => p.StartsWith("Expires=", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(parts, p => p.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase));
         }
 
         public static void AssertValidSession(OidcSession oidcSession, OidcTestScenario testScenario, DateTimeOffset now)
