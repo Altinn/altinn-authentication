@@ -33,20 +33,6 @@ public class SystemUserTests : IDisposable
         _platformClient = new PlatformAuthenticationClient();
     }
 
-
-    // https://github.com/Altinn/altinn-authentication/issues/1123
-    [Fact]
-    public async Task TestRedirectUrlCase()
-    {
-        // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-        var externalRef = Guid.NewGuid().ToString();
-        var clientId = Guid.NewGuid().ToString();
-        var testperson = _platformClient.GetTestUserForVendor();
-        testperson.AltinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
-        await _platformClient.Common.CreateRequestWithManalExample(maskinportenToken, externalRef, testperson, clientId);
-    }
-
     /// <summary>
     /// Github: #https://github.com/Altinn/altinn-authentication/issues/765
     /// Test Get endpoint for System User

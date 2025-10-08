@@ -27,7 +27,7 @@ public class ChangeRequestTests : TestFixture
         _platformAuthentication = new PlatformAuthenticationClient();
     }
 
-    [Fact]
+    [Fact(Skip = "Fikses senere, men kjøres som en del av Playwright testsuite nå schedulert daglig.")]
     public async Task MakeChangeRequestAsVendorTest()
     {
         // Prepare

@@ -8,7 +8,7 @@ public enum Endpoints
     [EndpointInfo("authentication/api/v1/systemregister/vendor", "GET")]
     GetAllSystemsFromRegister,
 
-    [EndpointInfo("authentication/api/v1/systemregister/{systemId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "GET")]
     GetSystemRegisterById,
 
     [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "GET")]
@@ -26,7 +26,7 @@ public enum Endpoints
     [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "DELETE")]
     DeleteSystemSystemRegister,
 
-    [EndpointInfo("authentication/api/v1/systemregister/{systemId}/rights", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}/rights", "GET")]
     GetSystemRegisterRights,
 
     [EndpointInfo("authentication/api/v1/systemregister/vendor", "POST")]

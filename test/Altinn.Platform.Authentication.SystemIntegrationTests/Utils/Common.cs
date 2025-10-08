@@ -67,8 +67,6 @@ public class Common
             await ApproveRequest($"accessmanagement/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve",
                 testuser);
         
-        // https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/request/51642319/3cf62206-7967-49cb-b731-336397af9145/approve
-
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
             "Received status code " + approveResp.StatusCode + "when attempting to approve: " + await approveResp.Content.ReadAsStringAsync() );
 
@@ -147,6 +145,8 @@ public class Common
             .WithName("E2E tests - Redirect URL" + Guid.NewGuid())
             .WithClientId(clientId)
             .WithVendor(testuser.Org)
+            .WithAccessPackage("renovasjon")
+            .WithAccessPackage("jordbruk")
             .WithAllowedRedirectUrls(
                 "https://www.cloud-booking.net/misc/integration.htm?integration=Altinn3&action=authCallback",
                 "https://test.cloud-booking.net/misc/integration.htm?integration=Altinn3&action=authCallback"
