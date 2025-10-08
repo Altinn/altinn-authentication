@@ -92,7 +92,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 allowedredirecturls,
                 accesspackages
             FROM business_application.system_register
-            WHERE sr.is_deleted = FALSE
+            WHERE is_deleted = FALSE
             AND systemvendor_orgnumber = @systemvendor_orgnumber;";
 
         try
