@@ -1,17 +1,4 @@
 {
-  "externalRef": "{externalRef}",
-  "systemId": "{systemId}",
-  "partyOrgNo": "312605031",
-  "requiredRights": [
-    {
-      "resource": [
-        {
-          "id": "urn:altinn:resource",
-          "value": "authentication-e2e-test"
-        }
-      ]
-    }
-  ],
   "unwantedRights": [
     {
       "resource": [
@@ -22,7 +9,19 @@
       ]
     }
   ],
-  "redirectUrl": "https://altinn.no"
+  "requiredRights": [
+    {
+      "resource": [
+        {
+          "value": "authentication-e2e-test",
+          "id": "urn:altinn:resource"
+        }
+      ]
+    }
+  ],
+  "requiredAccessPackages": [
+    {
+      "urn": "urn:altinn:accesspackage:renovasjon"
+    }
+  ]
 }
-
-
