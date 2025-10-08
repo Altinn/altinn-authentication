@@ -5,7 +5,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoin
 public enum Endpoints
 {
     // System Register Endpoints
-    [EndpointInfo("authentication/api/v1/systemregister", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor", "GET")]
     GetAllSystemsFromRegister,
 
     [EndpointInfo("authentication/api/v1/systemregister/{systemId}", "GET")]

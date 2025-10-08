@@ -36,8 +36,7 @@ public class SystemRegisterClient
         var response = await _platformClient.GetAsync(Endpoints.GetAllSystemsFromRegister.Url(), token);
 
         // Assert the response status is OK
-        Assert.True(HttpStatusCode.OK == response.StatusCode,
-            $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
+        Assert.True(HttpStatusCode.OK == response.StatusCode, $"{response.StatusCode}  {await response.Content.ReadAsStringAsync()}");
 
         // Deserialize the JSON content to a list of SystemDto
         var jsonContent = await response.Content.ReadAsStringAsync();

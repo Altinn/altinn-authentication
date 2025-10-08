@@ -64,11 +64,13 @@ public class Common
 
         // Approve
         var approveResp =
-            await ApproveRequest($"authentication/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve",
+            await ApproveRequest($"accessmanagement/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve",
                 testuser);
+        
+        // https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/request/51642319/3cf62206-7967-49cb-b731-336397af9145/approve
 
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
-            "Received status code " + approveResp.StatusCode + "when attempting to approve");
+            "Received status code " + approveResp.StatusCode + "when attempting to approve: " + await approveResp.Content.ReadAsStringAsync() );
 
         return testState.SystemId;
     }

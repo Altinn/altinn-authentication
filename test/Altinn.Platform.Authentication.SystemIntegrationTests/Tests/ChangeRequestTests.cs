@@ -112,6 +112,7 @@ public class ChangeRequestTests : TestFixture
     {
         var approveUrl = Endpoints.ApproveChangeRequest.Url()
             .Replace("{partyId}", testperson.AltinnPartyId)
+            .Replace("{partyId}", testperson.AltinnPartyUuid)
             .Replace("{requestId}", requestId);
 
         var approvalResp =
