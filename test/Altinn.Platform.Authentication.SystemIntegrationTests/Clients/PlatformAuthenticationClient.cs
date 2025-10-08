@@ -103,6 +103,7 @@ public class PlatformAuthenticationClient
             ? null
             : new StringContent(body, System.Text.Encoding.UTF8, "application/json");
 
+        // "https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/request/51571095/5c9580b9-ffd0-4f2e-ba6a-c7d10b65bda3/approve"
         var response = await client.PostAsync($"{BaseUrlAuthentication}/{endpoint}", content);
         return response;
     }
@@ -216,7 +217,7 @@ public class PlatformAuthenticationClient
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
             $"&partyuuid={user.AltinnPartyUuid}" +
-            $"&authLvl=3&ttl=3000";
+            "&authLvl=3&ttl=3000";
 
         var token = await GetAltinnToken(url);
         Assert.True(token != null, "Token retrieval failed for Altinn token");
