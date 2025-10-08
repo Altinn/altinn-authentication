@@ -236,6 +236,12 @@ namespace Altinn.Platform.Authentication.Controllers
                     return Redirect(goTo);
                 }
 
+                // Check to see if we have a valid Session cookie and recreate JWT Based on that
+                if (Request.Cookies[_generalSettings.AltinnSessionCookieName] != null)
+                {
+                    string sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
+                }
+
                 if (Request.Cookies[_generalSettings.SblAuthCookieName] == null && Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] == null)
                 {
                     return Redirect(sblRedirectUrl);
