@@ -4,6 +4,8 @@
     {
         public required string Sid { get; init; }
 
+        public required byte[] SessionHandleHash { get; init; }  // internal reference
+
         // Upstream identity
         public required string UpstreamIssuer { get; init; }
         public required string UpstreamSub { get; init; }

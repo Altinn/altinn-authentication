@@ -5,9 +5,11 @@ using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
@@ -18,6 +20,7 @@ using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -170,7 +173,7 @@ namespace Altinn.Platform.Authentication.Services
             await IdentifyOrCreateAltinnUser(userIdenity, provider);
 
             // 4. Create or refresh Altinn session session
-            OidcSession session = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
+            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
 
             // TODO How to handle first time login with epost bruker from ID porten if we gonna ask them to connect to existing self identified user.
 
@@ -185,12 +188,22 @@ namespace Altinn.Platform.Authentication.Services
 
             CookieInstruction altinnStudioRuntime = new()
             { 
-                Name = "AltinnStudioRuntime", 
+                Name = _generalSettings.JwtCookieName, 
                 Value = cookieToken, 
                 HttpOnly = true, 
                 Secure = true, 
                 Path = "/", 
                 SameSite = SameSiteMode.Lax
+            };
+
+            CookieInstruction altinnSessionCookie = new()
+            {
+                Name = _generalSettings.AltinnSessionCookieName,
+                Value = sessionHandle,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
             };
 
             // 8) Redirect back to the client with code + original state
@@ -200,7 +213,7 @@ namespace Altinn.Platform.Authentication.Services
                 ClientRedirectUri = loginTx!.RedirectUri,
                 DownstreamCode = authCode,
                 ClientState = loginTx.State,
-                Cookies = [altinnStudioRuntime]
+                Cookies = [altinnStudioRuntime, altinnSessionCookie]
             };
         }
 
@@ -649,7 +662,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Creates or updates an OIDC session based on the upstream identity.
         /// </summary>
-        private async Task<OidcSession> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
+        private async Task<(OidcSession OidcSession, string SessionHandle)> CreateOrUpdateOidcSession(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
             string[]? scopes = [];
             if (!string.IsNullOrWhiteSpace(userIdenity.Scope))
@@ -657,10 +670,18 @@ namespace Altinn.Platform.Authentication.Services
                 scopes = userIdenity.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
             }
 
+            // 1) Generate 256-bit random handle for the cookie
+            byte[] handleBytes = RandomNumberGenerator.GetBytes(32);
+            string sessionHandle = ToBase64Url(handleBytes); // this is what you'll set as the cookie value
+
+            // 2) Hash it for storage (HMAC with server-side pepper)
+            byte[] handleHash = HashHandle(handleBytes);
+
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate
                 {
                     Sid = CryptoHelpers.RandomBase64Url(32),
+                    SessionHandleHash = handleHash, // store hash only
                     Provider = upstreamTx.Provider,
                     UpstreamIssuer = userIdenity.TokenIssuer!,
                     UpstreamSub = userIdenity.TokenSubject!,
@@ -679,7 +700,7 @@ namespace Altinn.Platform.Authentication.Services
                     UserAgentHash = upstreamTx.UserAgentHash
                 },
                 cancellationToken);
-            return session;
+            return (session, sessionHandle);
         }
 
         private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e, OidcClient? oidcClient)
@@ -694,6 +715,18 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         private static readonly Regex ProviderKeyRegex = new(@"^[a-z0-9._-]+$", RegexOptions.Compiled);
+
+        private static string ToBase64Url(byte[] bytes) =>
+            WebEncoders.Base64UrlEncode(bytes);
+
+        private static byte[] FromBase64Url(string s) =>
+            WebEncoders.Base64UrlDecode(s);
+
+        private byte[] HashHandle(byte[] handleBytes)
+        {
+            using var hmac = new HMACSHA256(Convert.FromBase64String(_generalSettings.OidcRefreshTokenPepper));
+            return hmac.ComputeHash(handleBytes); // 32 bytes
+        }
 
         private OidcProvider ChooseProvider(AuthorizeRequest req)
         {

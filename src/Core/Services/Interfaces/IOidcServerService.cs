@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// <param name="principal">The principal containing all claims including the SID</param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public Task<OidcSession> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct);
+        public Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct);
 
         /// <summary>
         /// Handles ending an OIDC session based on the provided input.

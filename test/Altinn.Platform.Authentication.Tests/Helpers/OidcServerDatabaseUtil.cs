@@ -81,6 +81,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             return new OidcSession
             {
                 Sid = r.GetFieldValue<string>("sid"),
+                SessionHandle = r.GetFieldValue<byte[]>("session_handle_hash"),
                 SubjectId = r.IsDBNull("subject_id") ? null : r.GetFieldValue<string>("subject_id"),
                 SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? null : r.GetFieldValue<Guid?>("subject_party_uuid"),
                 SubjectPartyId = r.IsDBNull("subject_party_id") ? null : r.GetFieldValue<int?>("subject_party_id"),

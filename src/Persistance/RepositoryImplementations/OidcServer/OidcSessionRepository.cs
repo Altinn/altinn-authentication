@@ -47,14 +47,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     RETURNING s.*
                 )
                 INSERT INTO oidcserver.oidc_session (
-                    sid, upstream_issuer, upstream_sub, subject_id,
+                    sid, session_handle_hash, upstream_issuer, upstream_sub, subject_id,
                     subject_party_uuid, subject_party_id, subject_user_id,
                     provider, acr, auth_time, amr, scopes,
                     created_at, updated_at, last_seen_at, expires_at,
                     upstream_session_sid, created_by_ip, user_agent_hash
                 )
                 SELECT
-                    @sid, @upstream_issuer, @upstream_sub, @subject_id,
+                    @sid, @session_handle_hash, @upstream_issuer, @upstream_sub, @subject_id,
                     @subject_party_uuid, @subject_party_id, @subject_user_id,
                     @provider, @acr, @auth_time, @amr, @scopes,
                     @now, @now, @now, @expires_at,
@@ -65,6 +65,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("sid", c.Sid);
+            cmd.Parameters.AddWithValue("session_handle_hash", NpgsqlDbType.Bytea, c.SessionHandleHash);
             cmd.Parameters.AddWithValue("subject_id", (object?)c.SubjectId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_uuid", (object?)c.SubjectPartyUuid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_id", (object?)c.SubjectPartyId ?? DBNull.Value);
@@ -99,6 +100,25 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             const string SQL = "SELECT * FROM oidcserver.oidc_session WHERE sid=@sid LIMIT 1;";
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("sid", sid);
+
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            if (!await r.ReadAsync(ct))
+            {
+                return null;
+            }
+
+            return Map(r);
+        }
+
+        /// <summary>
+        /// Returns a sessionID by its session handle.
+        /// The session handle is exposed to clients in a cookie, but the hash is stored in the database.
+        /// </summary>
+        public async Task<OidcSession?> GetBySessionHandleAsync(string sessionHandle, CancellationToken ct = default)
+        {
+            const string SQL = "SELECT * FROM oidcserver.oidc_session WHERE session_handle_hash = @handle_hash LIMIT 1;";
+            await using var cmd = _ds.CreateCommand(SQL);
+            cmd.Parameters.AddWithValue("handle_hash", sessionHandle);
 
             await using var r = await cmd.ExecuteReaderAsync(ct);
             if (!await r.ReadAsync(ct))
@@ -207,6 +227,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             return new OidcSession
             {
                 Sid = r.GetFieldValue<string>("sid"),
+                SessionHandle = (byte[])r["session_handle_hash"],
                 SubjectId = r.IsDBNull("subject_id") ? null : r.GetFieldValue<string>("subject_id"),
                 SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? null : r.GetFieldValue<Guid?>("subject_party_uuid"),
                 SubjectPartyId = r.IsDBNull("subject_party_id") ? null : r.GetFieldValue<int?>("subject_party_id"),

@@ -168,5 +168,10 @@ namespace Altinn.Platform.Authentication.Configuration
         /// Scopes for partner authentication with exchange. 
         /// </summary>
         public string PartnerScopes { get; set; }
+
+        /// <summary>
+        /// Defines the Altinn session cookie name
+        /// </summary>
+        public string AltinnSessionCookieName { get; set; } = "altinnsession";
     }
 }
