@@ -18,6 +18,7 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Platform.Register.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -49,6 +50,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="cancellationToken">The Cancellation Token</param>
     /// <returns></returns>    
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [HttpGet]
     public async Task<ActionResult<List<RegisteredSystemDTO>>> GetListOfRegisteredSystems(CancellationToken cancellationToken = default)
     {
@@ -67,11 +69,50 @@ public class SystemRegisterController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves the List of all the Registered Systems, except those marked as deleted.
+    /// </summary>
+    /// <param name="cancellationToken">The Cancellation Token</param>
+    /// <returns></returns>    
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
+    [HttpGet("vendor")]
+    public async Task<ActionResult<List<RegisteredSystemDTO>>> GetListOfRegisteredSystemsForVendor(CancellationToken cancellationToken = default)
+    {
+        ClaimsPrincipal organisation = User;
+        string? orgClaim = organisation?.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
+
+        if (orgClaim is null)
+        {
+            return Forbid();
+        }
+
+        string vendorOrgNumber = AuthenticationHelper.GetOrganizationNumberFromClaim(orgClaim);
+        if (string.IsNullOrEmpty(vendorOrgNumber))
+        {
+            return Forbid();
+        }
+
+        List<RegisteredSystemResponse> lista = [];
+
+        lista.AddRange(await _systemRegisterService.GetListOfSystemsForVendor(vendorOrgNumber, cancellationToken));
+
+        List<RegisteredSystemDTO> registeredSystemDTOs = [];
+
+        foreach (RegisteredSystemResponse system in lista)
+        {
+            registeredSystemDTOs.Add(AuthenticationHelper.MapRegisteredSystemToRegisteredSystemDTO(system));
+        }
+
+        return Ok(registeredSystemDTOs);
+    }
+
+    /// <summary>
     /// Retrieves a Registered System frontend DTO for the systemId.
     /// </summary>
     /// <param name="systemId">The Id of the Registered System </param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [HttpGet("{systemId}")]
     public async Task<ActionResult<RegisteredSystemDTO>> GetRegisteredSystemDto(string systemId, CancellationToken cancellationToken = default)
     {
@@ -172,9 +213,6 @@ public class SystemRegisterController : ControllerBase
         return Ok(new SystemRegisterUpdateResult(true));
     }
 
-    private static List<string> CombineClientIds(IEnumerable<string> current, IEnumerable<string> updated) =>
-        current.Union(updated, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-
     /// <summary>
     /// Retrieves a list of the predfined default rights for the Product type, if any
     /// </summary>
@@ -182,6 +220,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="useOldFormatForApp">The old format for the App</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [HttpGet("{systemId}/rights")]
     public async Task<ActionResult<List<Right>>> GetRightsForRegisteredSystem(string systemId, [FromQuery] bool useOldFormatForApp = false, CancellationToken cancellationToken = default)
     {
@@ -212,6 +251,7 @@ public class SystemRegisterController : ControllerBase
     /// <param name="useOldFormatForApp">The old format for the App</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [HttpGet("{systemId}/accesspackages")]
     public async Task<ActionResult<List<AccessPackage>>> GetAccessPackagesForRegisteredSystem(string systemId, [FromQuery] bool useOldFormatForApp = false, CancellationToken cancellationToken = default)
     {
@@ -411,6 +451,9 @@ public class SystemRegisterController : ControllerBase
         var changeLog = await _systemRegisterService.GetChangeLogAsync(systemInternalId, cancellationToken);
         return Ok(changeLog);
     }
+
+    private static List<string> CombineClientIds(IEnumerable<string> current, IEnumerable<string> updated) =>
+    current.Union(updated, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
     private async Task<ValidationErrorBuilder> ValidateRights(List<Right> rights, CancellationToken cancellationToken)
     {

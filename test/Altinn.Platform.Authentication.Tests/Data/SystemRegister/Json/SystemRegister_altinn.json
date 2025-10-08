@@ -1,0 +1,32 @@
+{
+  "id": "312529750_the_altinn",
+  "vendor": {
+    "authority": "iso6523-actorid-upis",
+    "ID": "0192:312529750"
+  },
+  "name": {
+    "nb": "The Altinn",
+    "en": "The Altinn",
+    "nn": "The Altinn"
+  },
+  "description": {
+    "nb": "Altinn",
+    "en": "Altinn",
+    "nn": "Altinn"
+  },
+  "rights": [
+    {
+      "resource": [
+        {
+          "id": "urn:altinn:resource",
+          "value": "ske-krav-og-betalinger"
+        }
+      ]
+    }
+  ],
+  "softDeleted": false,
+  "clientId": [
+    "024a8745-9538-4ba4-913b-da1770c90527"
+  ],
+  "isVisible": true
+}

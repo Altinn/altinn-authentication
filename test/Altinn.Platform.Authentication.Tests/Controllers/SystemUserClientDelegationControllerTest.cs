@@ -123,7 +123,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 { new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4"), "123456789" },
                 { new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"), "987654321" },
-                { new Guid("d54a721a-b231-4e28-9245-782697ed2bbb"), "555555555" } // Added for Standard user
+                { new Guid("d54a721a-b231-4e28-9245-782697ed2bbb"), "555555555" }, // Added for Standard user
+                { new Guid("88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144"), "123447789" }, // Invalid partyorgno
+                { new Guid("65055192-f4a9-4b47-bc24-46c4b97081c1"), "123357789" }, // Invalid facilitator
             };
 
             _systemUserRepository
@@ -307,6 +309,35 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetAvailableClientsForDelegation_Forbidden()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.read", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetAvailableClientsForDelegation_ReturnsBadRequest_SystemOwner_NotFound()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
+            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);            
+            Assert.Equal("System Owner not Found", problemDetails.Title);
+            Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
+        }
+
+        [Fact]
         public async Task GetClientsDelegatedToSystemUser_ValidRequest_ReturnsOk()
         {
             // Arrange
@@ -422,32 +453,33 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetClientsDelegatedToSystemUser_ReturnsBadRequest_SystemOwner_NotFound()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
+            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal("System Owner not Found", problemDetails.Title);
+            Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
+        }
+
+        [Fact]
         public async Task AddClientToSystemUser_ValidRequest_ReturnsOk()
         {
             // Arrange
             HttpClient client = CreateClient();
 
-            Guid clientId = Guid.NewGuid();
+            Guid clientId = new Guid("f1c7ca59-5bf9-4036-bdb8-15062d992eaa");
             Guid systemUserId = new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
-            AgentDelegation agentDelegation = new()
-            {
-                CustomerId = clientId,
-                Access = new List<ClientRoleAccessPackages>
-                {
-                    new ClientRoleAccessPackages
-                    {
-                        Role = "regnskapsfører",
-                        Packages = new[] { "regnskapsforer-med-signeringsrettighet", "regnskapsforer-lonn" }
-                    }
-                }
-            };
 
-            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
-            clientListRequest.Content = new StringContent(
-                                                JsonSerializer.Serialize(agentDelegation, _options),
-                                                Encoding.UTF8,
-                                                "application/json");
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             ClientDelegationResponse clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
@@ -462,25 +494,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             // Arrange
             HttpClient client = CreateClient();
-            AgentDelegation agentDelegation = new()
-            {
-                CustomerId = Guid.Empty,
-                Access = new List<ClientRoleAccessPackages>
-                {
-                    new ClientRoleAccessPackages
-                    {
-                        Role = "regnskapsfører",
-                        Packages = new[] { "regnskapsforer-med-signeringsrettighet", "regnskapsforer-lonn" }
-                    }
-                }
-            };
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
-            clientListRequest.Content = new StringContent(
-                                                JsonSerializer.Serialize(agentDelegation, _options),
-                                                Encoding.UTF8,
-                                                "application/json");
+
             HttpResponseMessage removeClientResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
@@ -492,9 +509,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
             Assert.Equal("The agent query parameter is missing or invalid", error1.Detail);
 
-            AltinnValidationError error2 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_ClientInformation.ErrorCode);
-            Assert.Equal("/agentdelegation/customer", error2.Paths.First(p => p.Equals("/agentdelegation/customer")));
-            Assert.Equal("The customer information is missing or invalid", error2.Detail);
+            AltinnValidationError error2 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_ClientParameter.ErrorCode);
+            Assert.Equal("?client", error2.Paths.First(p => p.Equals("?client")));
+            Assert.Equal("The client query parameter is missing or invalid", error2.Detail);
         }
 
         [Fact]
@@ -581,31 +598,72 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange
             HttpClient client = CreateClient();
 
-            Guid clientId = Guid.NewGuid();
+            Guid clientId = new("f1c7ca59-5bf9-4036-bdb8-15062d992eaa");
             Guid systemUserId = new("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
 
-            AgentDelegation agentDelegation = new()
-            {
-                CustomerId = clientId,
-                Access = new List<ClientRoleAccessPackages>
-                {
-                    new ClientRoleAccessPackages
-                    {
-                        Role = "regnskapsfører",
-                        Packages = new[] { "regnskapsforer-med-signeringsrettighet", "regnskapsforer-lonn" }
-                    }
-                }
-            };
-
-            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.write", 3));
-            clientListRequest.Content = new StringContent(
-            JsonSerializer.Serialize(agentDelegation, _options),
-            Encoding.UTF8,
-            "application/json");
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
+        }
+
+        [Fact]
+        public async Task AddClientToSystemUser_ReturnsBadRequest_SystemOwner_NotFound()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+            Guid clientId = new("f1c7ca59-5bf9-4036-bdb8-15062d992eaa");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent=88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144&client={clientId}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
+            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal("System Owner not Found", problemDetails.Title);
+            Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
+        }
+
+        [Fact]
+        public async Task AddClientToSystemUser_Retreiving_ClientInformation_Failed()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            Guid clientId = new Guid("f1c7ca59-5bf9-4036-bdb8-15062d992eaa");
+            Guid systemUserId = new Guid("65055192-f4a9-4b47-bc24-46c4b97081c1");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
+            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal("Forbidden", problemDetails.Title);
+            Assert.Equal("Forbidden", problemDetails.Detail);
+        }
+
+        [Fact]
+        public async Task AddClientToSystemUser_Client_NotFound()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            Guid clientId = new Guid("6a734c3a-c707-4bd4-9491-cf0c4c4a54fd");
+            Guid systemUserId = new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read, altinn:clientdelegations.write", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
+            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal("Client not found", problemDetails.Title);
+            Assert.Equal("Client with client id 6a734c3a-c707-4bd4-9491-cf0c4c4a54fd not found", problemDetails.Detail);
         }
 
         [Fact]
@@ -710,6 +768,24 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
+        }
+
+        [Fact]
+        public async Task RemoveClientToSystemUser_ReturnsBadRequest_SystemOwner_NotFound()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+            Guid clientId = new("f1c7ca59-5bf9-4036-bdb8-15062d992eaa");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent=88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144&client={clientId}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
+            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal("System Owner not Found", problemDetails.Title);
+            Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
         }
 
         [Fact]
