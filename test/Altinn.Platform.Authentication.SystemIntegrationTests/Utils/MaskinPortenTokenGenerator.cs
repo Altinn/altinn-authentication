@@ -135,8 +135,7 @@ public class MaskinPortenTokenGenerator
 
         Assert.True(iss != null, "iss is null somehow, check it");
 
-        const string scope = "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemregister.write altinn:authentication/systemuser.request.read altinn:authentication/systemregister.admin";
-
+        const string scope = "altinn:consentrequests.write";
         // Set the current time and expiration time for the token
         var now = DateTimeOffset.UtcNow;
         var exp = now.AddMinutes(1).ToUnixTimeSeconds();

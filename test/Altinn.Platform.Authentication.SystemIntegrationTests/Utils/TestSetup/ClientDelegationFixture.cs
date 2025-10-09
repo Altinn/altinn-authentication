@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.Authorization;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.VendorClientDelegation;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.Builders;
 using Xunit;
@@ -172,6 +173,24 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         //klientdelegeringsressurs med revisorpakke definert i ressursregisteret: "klientdelegeringressurse2e"
         var requestBody = (await Helper.ReadFile("Resources/Testdata/AccessManagement/systemUserDecision.json"))
             .Replace("{customerOrgNo}", customers.First().orgNo)
+            .Replace("{subjectSystemUser}", systemUserId)
+            .Replace("{ResourceId}", "klientdelegeringressurse2e");
+
+        var response =
+            await Platform.AccessManagementClient.PostDecision(requestBody);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Decision endpoint failed with: {response.StatusCode}");
+
+        var json = await response.Content.ReadAsStringAsync();
+        var dto = JsonSerializer.Deserialize<DecisionResponseDto>(json);
+        Assert.True(dto?.Response != null, "Response is null for deserialization of decision");
+        return dto.Response.FirstOrDefault()?.Decision;
+    }
+    
+    public async Task<string?> PerformDecision(string? systemUserId, ClientsForDelegationResponseDto customers)
+    {
+        //klientdelegeringsressurs med revisorpakke definert i ressursregisteret: "klientdelegeringressurse2e"
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/AccessManagement/systemUserDecision.json"))
+            .Replace("{customerOrgNo}", customers.Data!.First().ClientOrganizationNumber)
             .Replace("{subjectSystemUser}", systemUserId)
             .Replace("{ResourceId}", "klientdelegeringressurse2e");
 

@@ -191,6 +191,7 @@ public class SystemUserClient
         {
             var resp = AddClient(facilitator, systemUserId, clientInfoDto.ClientId.ToString());
             Assert.True(resp.Result.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {resp.Result.StatusCode}");
+            break;
         }
 
         return Task.CompletedTask;
