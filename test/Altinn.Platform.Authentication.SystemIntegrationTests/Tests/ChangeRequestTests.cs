@@ -108,7 +108,7 @@ public class ChangeRequestTests : TestFixture
         Assert.Contains(externalRef, systemusersRespons);
     }
 
-    private async Task<HttpResponseMessage> ApproveChangeRequest(string requestId, Testuser testperson)
+    private async Task<HttpResponseMessage> ApproveChangeRequest(string requestId, Testuser? testperson)
     {
         var approveUrl = Endpoints.ApproveChangeRequest.Url()
             .Replace("{partyId}", testperson.AltinnPartyId)

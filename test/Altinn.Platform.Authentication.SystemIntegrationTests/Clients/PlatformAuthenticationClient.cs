@@ -24,14 +24,12 @@ public class PlatformAuthenticationClient
     /// baseUrl for api
     /// </summary>
     public readonly string? BaseUrlAuthentication;
-
-    public readonly string? BaseUrlBff;
-
+    
     public SystemRegisterClient SystemRegisterClient { get; set; }
     public SystemUserClient SystemUserClient { get; set; }
     public AccessManagementClient AccessManagementClient { get; set; }
     public Common Common { get; set; }
-    
+
     private static string? _cachedToken;
     private static DateTime _tokenExpiry;
 
@@ -42,10 +40,8 @@ public class PlatformAuthenticationClient
     {
         EnvironmentHelper = LoadEnvironment();
         BaseUrlAuthentication = GetEnvironment(EnvironmentHelper.Testenvironment);
-        BaseUrlBff = GetEnvironment(EnvironmentHelper.Testenvironment);
         MaskinPortenTokenGenerator = new MaskinPortenTokenGenerator(EnvironmentHelper);
         TestUsers = LoadTestUsers(EnvironmentHelper.Testenvironment);
-
         SystemRegisterClient = new SystemRegisterClient(this);
         SystemUserClient = new SystemUserClient(this);
         AccessManagementClient = new AccessManagementClient(this);
@@ -64,10 +60,18 @@ public class PlatformAuthenticationClient
             throw new FileNotFoundException($"Test users file not found: {fileName}");
         }
 
-        // Read and deserialize the JSON file into a list of Testuser objects
         var json = File.ReadAllText(fileName);
-        return JsonSerializer.Deserialize<List<Testuser>>(json)
-               ?? throw new InvalidOperationException("Failed to deserialize test users.");
+        List<Testuser> testUsers = JsonSerializer.Deserialize<List<Testuser>>(json)
+                                   ?? throw new InvalidOperationException("Failed to deserialize test users.");
+
+        if (testUsers.Count <= 2)
+        {
+            throw new InvalidOperationException(
+                $"Expected at least 3 test users in {fileName}, but found {testUsers.Count}."
+            );
+        }
+
+        return testUsers;
     }
 
     public static string GetEnvironment(string environmentHelperTestenvironment)
@@ -108,12 +112,12 @@ public class PlatformAuthenticationClient
         var response = await client.PostAsync($"{BaseUrlAuthentication}/{endpoint}", content);
         return response;
     }
-    
+
     public async Task<HttpResponseMessage> PostAsyncWithNoBody(string? endpoint, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var response = await client.PostAsync($"{BaseUrlAuthentication}/{endpoint}", null);
         return response;
     }
@@ -131,7 +135,7 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetAsync($"{BaseUrlAuthentication}/{endpoint}");
     }
-    
+
     public async Task<T?> GetAsyncOnType<T>(string? endpoint, string? token)
     {
         using var client = new HttpClient();
@@ -139,7 +143,7 @@ public class PlatformAuthenticationClient
             new AuthenticationHeaderValue("Bearer", token);
         return await client.GetFromJsonAsync<T>($"{BaseUrlAuthentication}/{endpoint}");
     }
-    
+
 
     public async Task<HttpResponseMessage> GetNextUrl(string? endpoint, string? token)
     {
@@ -196,7 +200,7 @@ public class PlatformAuthenticationClient
             $"Failed to retrieve exchange token: {response.StatusCode} {await response.Content.ReadAsStringAsync()}");
     }
 
-    public Testuser FindTestUserByRole(string role)
+    public Testuser? FindTestUserByRole(string role)
     {
         var testUser = TestUsers.LastOrDefault(user => user.Role?.Equals(role, StringComparison.OrdinalIgnoreCase) == true);
         return testUser ?? throw new Exception($"Unable to find test user with role: {role}");
@@ -227,7 +231,7 @@ public class PlatformAuthenticationClient
     /// <param name="user">User read from test config (testusers.at.json)</param>
     /// <param name="scopes">space separated list of scopes</param>
     /// <returns>The Altinn test token as a string</returns>
-    public async Task<string?> GetPersonalAltinnToken(Testuser user, string scopes = "")
+    public async Task<string?> GetPersonalAltinnToken(Testuser? user, string scopes = "")
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
@@ -236,7 +240,7 @@ public class PlatformAuthenticationClient
             $"&userid={user.UserId}" +
             $"&partyid={user.AltinnPartyId}" +
             $"&partyuuid={user.AltinnPartyUuid}" +
-            "&authLvl=3&ttl=3000";
+            "&authLvl=3&ttl=10000";
 
         var token = await GetAltinnToken(url);
         Assert.True(token != null, "Token retrieval failed for Altinn token");
@@ -323,6 +327,7 @@ public class PlatformAuthenticationClient
         {
             return _cachedToken;
         }
+
         var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
         _cachedToken = token;
@@ -338,7 +343,7 @@ public class PlatformAuthenticationClient
         return token;
     }
 
-    public async Task<HttpResponseMessage> DeleteRequest(string? endpoint, Testuser testperson)
+    public async Task<HttpResponseMessage> DeleteRequest(string? endpoint, Testuser? testperson)
     {
         // Get the Altinn token
         var altinnToken = await GetPersonalAltinnToken(testperson);
@@ -348,7 +353,7 @@ public class PlatformAuthenticationClient
         return response;
     }
 
-    public Testuser GetTestUserForVendor()
+    public Testuser? GetTestUserForVendor()
     {
         var vendor = EnvironmentHelper.Vendor;
 
@@ -356,14 +361,14 @@ public class PlatformAuthenticationClient
                ?? throw new Exception($"Test user not found for organization: {vendor}");
     }
 
-    public async Task<Testuser> GetTestUserAndTokenForCategory(String category)
+    public async Task<Testuser> GetTestUserAndTokenForCategory(string category)
     {
-        var testuser = TestUsers.Find(user => user.Category!.Equals(category)) ?? throw new Exception("Unable to find testuser with category");
+        var testuser = TestUsers.Find(user => user.Category.Equals(category)) ?? throw new Exception("Unable to find testuser with category");
         testuser.AltinnToken = await GetPersonalAltinnToken(testuser);
         return testuser;
     }
 
-    public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string? systemUserUuid)
+    public async Task<HttpResponseMessage> GetCustomerList(Testuser? testuser, string? systemUserUuid)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -373,7 +378,7 @@ public class PlatformAuthenticationClient
         return await client.GetAsync(endpoint);
     }
 
-    public async Task<HttpResponseMessage> DelegateFromAuthentication(Testuser facilitator, string? systemUserUuid, string requestBodyDelegation)
+    public async Task<HttpResponseMessage> DelegateFromAuthentication(Testuser? facilitator, string? systemUserUuid, string requestBodyDelegation)
     {
         var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
 
@@ -386,20 +391,8 @@ public class PlatformAuthenticationClient
 
     public async Task<HttpResponseMessage> DeleteDelegation(Testuser facilitator, DelegationResponseDto selectedCustomer)
     {
-        var url = Endpoints.DeleteCustomer.Url()
-            ?.Replace("{party}", facilitator.AltinnPartyId)
+        var url = Endpoints.DeleteCustomer.Url().Replace("{party}", facilitator.AltinnPartyId)
             .Replace("{delegationId}", selectedCustomer.delegationId);
-
-        url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
-
-        return await Delete(url, facilitator.AltinnToken);
-    }
-
-    public async Task<HttpResponseMessage> DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
-    {
-        var url = Endpoints.DeleteAgentSystemUser.Url()
-            ?.Replace("{party}", facilitator.AltinnPartyId)
-            .Replace("{systemUserId}", systemUserId);
 
         url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
 
@@ -422,17 +415,17 @@ public class PlatformAuthenticationClient
 
         var root = JsonNode.Parse(initialJson);
         var systemUsersList = root?["data"]?.AsArray();
-        
+
         //Assert all system users are present
         Assert.NotNull(systemUsersList);
         Assert.Equal(20, systemUsersList.Count);
-        
+
         var resp = await GetNextUrl(nextUrl, maskinportenToken);
         Assert.NotNull(resp);
 
         var respBody = await resp.Content.ReadAsStringAsync();
         nextUrl = ExtractNextUrl(respBody);
-        
+
         Assert.Null(nextUrl);
 
         root = JsonNode.Parse(respBody);

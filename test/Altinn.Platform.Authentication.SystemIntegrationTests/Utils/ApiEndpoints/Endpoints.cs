@@ -137,7 +137,7 @@ public enum Endpoints
     DeleteAgentSystemUser,
     
     // Enduser / Vendor delegation Endpoints
-    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients", "GET")]
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}&client={clientId}", "GET")]
     VendorDeleteClient,
     
     [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}&client={clientId}", "POST")]

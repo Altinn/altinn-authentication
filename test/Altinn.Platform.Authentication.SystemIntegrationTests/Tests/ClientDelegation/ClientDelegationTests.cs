@@ -40,32 +40,31 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
     public async Task CreateSystemUserClientRequestTest(string accessPackage, string expectedDecision, string testCategory)
     {
         var externalRef = Guid.NewGuid().ToString();
-        Testuser facilitator = await _fixture.Platform.GetTestUserAndTokenForCategory(testCategory);
+        _fixture.Facilitator = await _fixture.Platform.GetTestUserAndTokenForCategory(testCategory);
 
-        await _fixture.SetupAndApproveSystemUser(facilitator, accessPackage, externalRef);
+        await _fixture.SetupAndApproveSystemUser(_fixture.Facilitator, accessPackage, externalRef);
 
         var systemUser =
-            await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, facilitator,
-                externalRef);
+            await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, _fixture.Facilitator, externalRef);
 
-        List<CustomerListDto> customers = await _fixture.GetCustomers(facilitator, systemUser?.Id);
+        List<CustomerListDto> customers = await _fixture.GetCustomers(_fixture.Facilitator, systemUser?.Id);
 
         // Act: Delegate customer
-        List<DelegationResponseDto> allDelegations = await _fixture.DelegateCustomerToSystemUser(facilitator, systemUser?.Id, customers);
+        List<DelegationResponseDto> allDelegations = await _fixture.DelegateCustomerToSystemUser(_fixture.Facilitator, systemUser?.Id, customers);
 
         // Verify decision end point to verify Rights given
-        var decision = await _fixture.PerformDecision(systemUser?.Id, customers);
+        var decision = await _fixture.PerformDecision(systemUser.Id, customers.First().orgNo);
         Assert.True(decision == expectedDecision, $"Decision was not {expectedDecision} but: {decision}");
 
         // Cleanup: Delete delegation(s)
-        await _fixture.RemoveDelegations(allDelegations, facilitator);
+        await _fixture.RemoveDelegations(allDelegations, _fixture.Facilitator);
 
         // Verify maskinporten endpoint, externalRef set to name of access package
-        await _fixture.Platform.Common.GetTokenForSystemUser(_fixture.ClientId, facilitator.Org, externalRef);
+        await _fixture.Platform.Common.GetTokenForSystemUser(_fixture.ClientId, _fixture.Facilitator?.Org, externalRef);
 
         // Delete System user and System
         var deleteAgentUserResponse =
-            await _fixture.Platform.DeleteAgentSystemUser(systemUser?.Id, facilitator);
+            await _fixture.Platform.SystemUserClient.DeleteAgentSystemUser(systemUser?.Id, _fixture.Facilitator);
         Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode,
             "Was unable to delete System User: Error code: " + deleteAgentUserResponse.StatusCode);
     }

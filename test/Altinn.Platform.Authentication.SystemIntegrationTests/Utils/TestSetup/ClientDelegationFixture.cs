@@ -15,6 +15,8 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
 {
     public required string SystemId;
     public string? VendorTokenMaskinporten;
+    public string? SystemUserId;
+    public Testuser? Facilitator;
     public string? ClientId { get; set; }
 
     public async Task InitializeAsync()
@@ -38,10 +40,10 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
     public async Task DisposeAsync()
     {
         await Platform.Common.DeleteSystem(SystemId, VendorTokenMaskinporten);
+        await Platform.SystemUserClient.DeleteAgentSystemUser(SystemUserId,Facilitator);
     }
 
-    // Consider moving this to Common
-    public async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
+    private async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
     {
         var maskinportenToken = await Platform.GetMaskinportenTokenForVendor();
         var vendorId = Platform.EnvironmentHelper.Vendor;
@@ -67,7 +69,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         return systemId;
     }
 
-    public async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef)
+    public async Task SetupAndApproveSystemUser(Testuser? facilitator, string accessPackage, string externalRef)
     {
         var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
             .Replace("{systemId}", SystemId)
@@ -136,7 +138,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         return await Platform.GetAsync(url, maskinportenToken);
     }
     
-    public async Task<List<CustomerListDto>> GetCustomers(Testuser facilitator, string? systemUserId, bool allCustomers = false)
+    public async Task<List<CustomerListDto>> GetCustomers(Testuser? facilitator, string? systemUserId, bool allCustomers = false)
     {
         var customerListResp = await Platform.GetCustomerList(facilitator, systemUserId);
 
@@ -167,12 +169,13 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
             Assert.True(deleteResponse.IsSuccessStatusCode, $"Failed to delete delegation {delegation.delegationId}");
         }
     }
-
-    public async Task<string?> PerformDecision(string? systemUserId, List<CustomerListDto> customers)
+     
+    
+    public async Task<string?> PerformDecision(string? systemUserId, string? customerOrg)
     {
         //klientdelegeringsressurs med revisorpakke definert i ressursregisteret: "klientdelegeringressurse2e"
         var requestBody = (await Helper.ReadFile("Resources/Testdata/AccessManagement/systemUserDecision.json"))
-            .Replace("{customerOrgNo}", customers.First().orgNo)
+            .Replace("{customerOrgNo}", customerOrg)
             .Replace("{subjectSystemUser}", systemUserId)
             .Replace("{ResourceId}", "klientdelegeringressurse2e");
 
@@ -186,25 +189,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         return dto.Response.FirstOrDefault()?.Decision;
     }
     
-    public async Task<string?> PerformDecision(string? systemUserId, ClientsForDelegationResponseDto customers)
-    {
-        //klientdelegeringsressurs med revisorpakke definert i ressursregisteret: "klientdelegeringressurse2e"
-        var requestBody = (await Helper.ReadFile("Resources/Testdata/AccessManagement/systemUserDecision.json"))
-            .Replace("{customerOrgNo}", customers.Data!.First().ClientOrganizationNumber)
-            .Replace("{subjectSystemUser}", systemUserId)
-            .Replace("{ResourceId}", "klientdelegeringressurse2e");
-
-        var response =
-            await Platform.AccessManagementClient.PostDecision(requestBody);
-        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Decision endpoint failed with: {response.StatusCode}");
-
-        var json = await response.Content.ReadAsStringAsync();
-        var dto = JsonSerializer.Deserialize<DecisionResponseDto>(json);
-        Assert.True(dto?.Response != null, "Response is null for deserialization of decision");
-        return dto.Response.FirstOrDefault()?.Decision;
-    }
-    
-    public async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser facilitator, string? systemUserId, List<CustomerListDto> customersToDelegate)
+    public async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser? facilitator, string? systemUserId, List<CustomerListDto> customersToDelegate)
     {
         List<DelegationResponseDto> responses = [];
 
