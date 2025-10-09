@@ -504,7 +504,6 @@ public class SystemUserController : ControllerBase
     [HttpGet("agent/{party}/clients")]
     public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
     {
-        List<Customer> ret = [];
         var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
 
         if (result.IsSuccess)

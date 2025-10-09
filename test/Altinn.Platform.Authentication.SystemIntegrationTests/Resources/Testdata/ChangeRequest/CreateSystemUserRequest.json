@@ -12,5 +12,13 @@
       ]
     }
   ],
+  "accessPackages": [
+    {
+      "urn": "urn:altinn:accesspackage:renovasjon"
+    },
+    {
+      "urn": "urn:altinn:accesspackage:jordbruk"
+    }
+  ],
   "redirectUrl": "{redirectUrl}"
 }

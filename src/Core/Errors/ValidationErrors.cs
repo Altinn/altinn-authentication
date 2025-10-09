@@ -114,10 +114,4 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemUser_Missing_ClientParameter { get; }
         = _factory.Create(16, "The client query parameter is missing or invalid");
-
-    /// <summary>
-    /// Gets a validation error descriptor for invalid or missing client id
-    /// </summary>
-    public static ValidationErrorDescriptor SystemUser_Missing_ClientInformation { get; }
-        = _factory.Create(17, "The customer information is missing or invalid");
 }

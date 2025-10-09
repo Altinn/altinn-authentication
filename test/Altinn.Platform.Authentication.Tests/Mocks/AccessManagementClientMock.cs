@@ -304,6 +304,11 @@ public class AccessManagementClientMock: IAccessManagementClient
             return Task.FromResult<Result<List<ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
         }
 
+        if (facilitatorId.ToString() == "7bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
+        {
+            return Task.FromResult<Result<List<ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+        }
+
         JsonSerializerOptions options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
