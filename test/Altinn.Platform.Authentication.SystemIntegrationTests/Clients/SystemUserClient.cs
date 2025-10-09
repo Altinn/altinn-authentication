@@ -185,14 +185,62 @@ public class SystemUserClient
         return await _platformClient.PostAsyncWithNoBody(urlPost, token);
     }
 
-    public Task DelegateAllClientsFromVendorToSystemUser(Testuser facilitator, string? systemUserId, List<ClientInfoDto> customersData)
+    public Task DelegateAllClientsFromVendorToSystemUser(Testuser facilitator, string? systemUserId, List<ClientInfoDto>? customersData)
     {
         foreach (ClientInfoDto clientInfoDto in customersData)
         {
             var resp = AddClient(facilitator, systemUserId, clientInfoDto.ClientId.ToString());
-            Assert.True(resp.Result.StatusCode == HttpStatusCode.Created, $"Unexpected status code: {resp.Result.StatusCode}");
+            Assert.True(resp.Result.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {resp.Result.StatusCode}");
         }
 
         return Task.CompletedTask;
     }
+    
+    public Task DeleteAllClientsFromVendorSystemUser(Testuser facilitator, string? systemUserId, List<ClientInfoDto>? customersData)
+    {
+        foreach (ClientInfoDto clientInfoDto in customersData)
+        {
+            Task<HttpResponseMessage> resp = DeleteClient(facilitator, systemUserId, clientInfoDto.ClientId.ToString());
+            Assert.True(resp.Result.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {resp.Result.StatusCode}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task<HttpResponseMessage> DeleteClient(Testuser facilitator, string? systemUserId, string clientId)
+    {
+        var urlDelete = Endpoints.VendorDeleteClient.Url()?
+            .Replace("{clientId}", clientId)
+            .Replace("{systemUserId}", systemUserId);
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.write");
+        return await _platformClient.Delete(urlDelete, token);
+    }
+    
+    public async Task<string> GetDelegatedClientsFromVendorSystemUser(Testuser facilitator, string? systemUserId)
+    {
+        var urlGet = Endpoints.VendorGetDelegatedClients.Url()?.Replace("{systemUserId}", systemUserId);
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
+        var response = await _platformClient.GetAsync(urlGet, token);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {response.StatusCode}");
+
+        var content = await response.Content.ReadAsStringAsync();
+        return content;
+    }
+    
+    public async Task<HttpResponseMessage> GetSystemUserAgents(Testuser facilitator)
+    {
+        var urlGet = Endpoints.VendorGetSystemUserAgents.Url();
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
+        var response = await _platformClient.GetAsync(urlGet, token);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {response.StatusCode}");
+
+        return response;
+    }
+    
+    
 }

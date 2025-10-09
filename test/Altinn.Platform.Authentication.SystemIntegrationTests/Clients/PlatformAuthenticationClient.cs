@@ -165,7 +165,7 @@ public class PlatformAuthenticationClient
     /// <param name="endpoint"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    public async Task<HttpResponseMessage> Delete(string endpoint, string? token)
+    public async Task<HttpResponseMessage> Delete(string? endpoint, string? token)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -337,7 +337,7 @@ public class PlatformAuthenticationClient
         return token;
     }
 
-    public async Task<HttpResponseMessage> DeleteRequest(string endpoint, Testuser testperson)
+    public async Task<HttpResponseMessage> DeleteRequest(string? endpoint, Testuser testperson)
     {
         // Get the Altinn token
         var altinnToken = await GetPersonalAltinnToken(testperson);

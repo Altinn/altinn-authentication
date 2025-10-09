@@ -13,7 +13,7 @@ public class ClientsForDelegationResponseDto
     public SystemUserInformationDto SystemUserInformation { get; set; } = default!;
 
     [JsonPropertyName("data")]
-    public List<ClientInfoDto> Data { get; set; } = new();
+    public List<ClientInfoDto>? Data { get; set; } = new();
 }
 
 public class SystemUserInformationDto

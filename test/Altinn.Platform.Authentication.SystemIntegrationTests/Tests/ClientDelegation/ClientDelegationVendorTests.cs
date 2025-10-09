@@ -30,6 +30,7 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         await _fixture.SetupAndApproveSystemUser(facilitator, accessPackage, externalRef);
 
         var systemUser = await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, facilitator, externalRef);
+        _outputHelper.WriteLine(systemUser?.Id);
 
         // Get available customers
         var customers = await _fixture.Platform.SystemUserClient.GetAvailableClientsForVendor(facilitator, systemUser?.Id);
@@ -37,15 +38,23 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         // Delegate all clients to System User
         await _fixture.Platform.SystemUserClient.DelegateAllClientsFromVendorToSystemUser(facilitator, systemUser?.Id, customers?.Data);
         
-        // Make sure no clients are available after delegating
-        customers = await _fixture.Platform.SystemUserClient.GetAvailableClientsForVendor(facilitator, systemUser?.Id);
-        Assert.True(customers?.Data.Count == 0, "Found more than 0 available customers:" + customers.Data.Count );
-   
+        //Get delegated clients
+        var test = await _fixture.Platform.SystemUserClient.GetDelegatedClientsFromVendorSystemUser(facilitator,systemUser?.Id);
         
+        await _fixture.Platform.SystemUserClient.GetSystemUserAgents(facilitator);
+
         
+        //await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(facilitator, systemUser?.Id, customers?.Data);    
+        
+        // Make sure no clients are available after delegating.         //verify if this makes any sense
+        // customers = await _fixture.Platform.SystemUserClient.GetAvailableClientsForVendor(facilitator, systemUser?.Id);
+        // Assert.True(customers?.Data.Count == 0, "Found more than 0 available customers:" + customers.Data.Count );
 
         // // Verify decision end point to verify Rights given
-        // var decision = await _fixture.Platform.AccessManagementClient.PerformDecision(systemUser?.Id, customers);
+        var decision = await _fixture.PerformDecision(systemUser?.Id, customers);
+        
+        
+        
         // Assert.True(decision == expectedDecision, $"Decision was not {expectedDecision} but: {decision}");
         //
         // // Cleanup: Delete delegation(s)

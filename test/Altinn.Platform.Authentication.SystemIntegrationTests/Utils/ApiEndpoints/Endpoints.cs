@@ -139,8 +139,8 @@ public enum Endpoints
     [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}&client={clientId}", "POST")]
     VendorAddClients,
     
-    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients", "POST")]
-    VendorGetAvailableClientsOnAgentSystemUser,
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/agents", "POST")]
+    VendorGetSystemUserAgents,
     
     [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}", "GET")]
     VendorGetDelegatedClients,
