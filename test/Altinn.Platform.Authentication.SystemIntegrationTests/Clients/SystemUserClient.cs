@@ -80,6 +80,28 @@ public class SystemUserClient
 
         return await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
     }
+    
+    public async Task<string> GetSystemUserVendorByQuery(string systemId, string orgNo, string externalRef, string? maskinportenToken)
+    {
+        var url = Endpoints.GetSystemUserVendorByQuery.Url()
+            ?.Replace("{systemId}", systemId)
+            .Replace("{orgNo}", orgNo)
+            .Replace("{externalRef}", externalRef);
+
+        var response = await _platformClient.GetAsync(url, maskinportenToken);
+
+        // Assert 200 OK
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // Extract just the "id" field
+        var content = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(content);
+        var id = doc.RootElement.GetProperty("id").GetString();
+
+        Assert.False(string.IsNullOrWhiteSpace(id), "Response JSON did not contain a valid 'id'");
+
+        return id!;
+    }
 
     public async Task<string> CreateSystemUserRequestWithoutExternalRef(TestState testState, string? maskinportenToken)
     {
