@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.Authorization;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.VendorClientDelegation;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.Builders;
 using Xunit;
@@ -16,7 +15,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
     public required string SystemId;
     public string? VendorTokenMaskinporten;
     public string? SystemUserId;
-    public Testuser? Facilitator;
+    public required Testuser Facilitator;
     public string? ClientId { get; set; }
 
     public async Task InitializeAsync()

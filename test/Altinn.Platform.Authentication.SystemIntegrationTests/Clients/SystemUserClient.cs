@@ -226,60 +226,55 @@ public class SystemUserClient
     }
 
     private async Task<HttpResponseMessage> DeleteClient(Testuser facilitator, string? systemUserId, string clientId)
-        {
-            var urlDelete = Endpoints.VendorDeleteClient.Url()
-                .Replace("{clientId}", clientId)
-                .Replace("{systemUserId}", systemUserId);
+    {
+        var urlDelete = Endpoints.VendorDeleteClient.Url()
+            .Replace("{clientId}", clientId)
+            .Replace("{systemUserId}", systemUserId);
 
-            var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.write altinn:clientdelegations.read");
-            return await _platformClient.Delete(urlDelete, token);
-        }
-
-        public async Task<ClientsForDelegationResponseDto> GetDelegatedClientsFromVendorSystemUser(Testuser? facilitator, string? systemUserId)
-        {
-            var urlGet = Endpoints.VendorGetDelegatedClients.Url().Replace("{systemUserId}", systemUserId);
-
-            var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
-            var response = await _platformClient.GetAsync(urlGet, token);
-
-            Assert.True(response.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {response.StatusCode}");
-
-            var content = await response.Content.ReadAsStringAsync();
-
-            // ClientsForDelegationResponseDto
-            ClientsForDelegationResponseDto resp = JsonSerializer.Deserialize<ClientsForDelegationResponseDto>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            }) ?? throw new Exception("Unable to deserialize ");
-            return resp;
-        }
-
-        public async Task<List<SystemUserAgentDto>> GetSystemUserAgents(Testuser? facilitator)
-        {
-            var urlGet = Endpoints.VendorGetSystemUserAgents.Url() + $"?party={facilitator.Org}";
-
-            var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
-            var response = await _platformClient.GetAsync(urlGet, token);
-
-            Assert.True(response.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {response.StatusCode}");
-
-            var json = await response.Content.ReadAsStringAsync();
-            List<SystemUserAgentDto>? agents = JsonSerializer.Deserialize<List<SystemUserAgentDto>>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            return agents ?? [];
-        }
-
-        public async Task<HttpResponseMessage> DeleteAgentSystemUser(string? systemUserId, Testuser? facilitator)
-        {
-            var url = Endpoints.DeleteAgentSystemUser.Url()
-                ?.Replace("{party}", facilitator.AltinnPartyId)
-                .Replace("{systemUserId}", systemUserId);
-
-            url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
-
-            return await _platformClient.Delete(url, facilitator.AltinnToken);
-        }
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.write altinn:clientdelegations.read");
+        return await _platformClient.Delete(urlDelete, token);
     }
+
+    public async Task<ClientsForDelegationResponseDto> GetDelegatedClientsFromVendorSystemUser(Testuser? facilitator, string? systemUserId)
+    {
+        var urlGet = Endpoints.VendorGetDelegatedClients.Url().Replace("{systemUserId}", systemUserId);
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
+        var response = await _platformClient.GetAsync(urlGet, token);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {response.StatusCode}");
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        // ClientsForDelegationResponseDto
+        ClientsForDelegationResponseDto resp = JsonSerializer.Deserialize<ClientsForDelegationResponseDto>(content, Common.JsonSerializerOptions)
+                                               ?? throw new Exception("Unable to deserialize ");
+        return resp;
+    }
+
+    public async Task<List<SystemUserAgentDto>> GetSystemUserAgents(Testuser facilitator)
+    {
+        var urlGet = Endpoints.VendorGetSystemUserAgents.Url() + $"?party={facilitator.Org}";
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
+        var response = await _platformClient.GetAsync(urlGet, token);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {response.StatusCode}");
+
+        var json = await response.Content.ReadAsStringAsync();
+        List<SystemUserAgentDto>? agents = JsonSerializer.Deserialize<List<SystemUserAgentDto>>(json, Common.JsonSerializerOptions);
+
+        return agents ?? [];
+    }
+
+    public async Task DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
+    {
+        var url = Endpoints.DeleteAgentSystemUser.Url()
+            .Replace("{party}", facilitator.AltinnPartyId)
+            .Replace("{systemUserId}", systemUserId);
+
+        url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
+
+        await _platformClient.Delete(url, facilitator.AltinnToken);
+    }
+}
