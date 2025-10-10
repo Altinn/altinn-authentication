@@ -44,7 +44,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private static readonly FakeTimeProvider _fakeTime = new(
         DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
 
-        private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+        private readonly JsonSerializerOptions jsonSerializerOptions = new()
         {
             PropertyNameCaseInsensitive = true
         };
