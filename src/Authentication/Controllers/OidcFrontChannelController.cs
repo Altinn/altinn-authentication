@@ -33,6 +33,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("authorize")]
         public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequestDto q, CancellationToken cancellationToken = default)
         {
+            cancellationToken = CancellationToken.None;
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();
             string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
@@ -94,6 +95,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("upstream/callback")]
         public async Task<IActionResult> UpstreamCallback([FromQuery] UpstreamCallbackDto q, CancellationToken ct = default)
         {
+            ct = CancellationToken.None;
             // Gather diagnostics
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();

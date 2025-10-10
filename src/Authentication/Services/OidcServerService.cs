@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -408,6 +409,43 @@ namespace Altinn.Platform.Authentication.Services
             {
                 TerminatedSessions = deleted,
                 Cookies = cookies
+            };
+        }
+
+        /// <summary>
+        /// Handles the authentication process based on the provided session input.
+        /// </summary>
+        public async Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInput, CancellationToken ct)
+        {
+            byte[] handleHash = HashHandle(FromBase64Url(sessionInput.SessionHandle));
+
+            // Try to load session by handle
+            OidcSession? oidcSession = await _oidcSessionRepo.GetBySessionHandleAsync(handleHash, ct);   
+            if (oidcSession != null && oidcSession.ExpiresAt > _timeProvider.GetUtcNow())
+            {
+                string token = await _tokenService.CreateCookieToken(oidcSession, ct);
+                CookieInstruction cookieInstruction
+                    = new()
+                {
+                    Name = _generalSettings.JwtCookieName,
+                    Value = token,
+                    HttpOnly = true,
+                    Secure = true,
+                    Path = "/",
+                    SameSite = SameSiteMode.Lax
+                };
+
+                await _oidcSessionRepo.SlideExpiryToAsync(oidcSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), ct);
+                return new AuthenticateFromSessionResult
+                {
+                    Kind = AuthenticateFromSessionResultKind.Success,
+                    Cookies = [cookieInstruction]
+                };
+            }
+
+            return new AuthenticateFromSessionResult()
+            {
+                Kind = AuthenticateFromSessionResultKind.NoValidSession
             };
         }
 

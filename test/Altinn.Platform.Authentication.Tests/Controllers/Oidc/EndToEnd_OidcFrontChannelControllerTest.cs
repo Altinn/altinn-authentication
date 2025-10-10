@@ -508,6 +508,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private HttpClient CreateClientWithHeaders()
         {
             var client = CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(30000);
 
             // Headers used by the controller to capture IP/UA/correlation
             client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");

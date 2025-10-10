@@ -1,18 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web;
 using Altinn.Authentication.Integration.Configuration;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
@@ -38,9 +25,21 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
-
 using Newtonsoft.Json.Linq;
-
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web;
 using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
 
 namespace Altinn.Platform.Authentication.Controllers
@@ -240,6 +239,25 @@ namespace Altinn.Platform.Authentication.Controllers
                 if (Request.Cookies[_generalSettings.AltinnSessionCookieName] != null)
                 {
                     string sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
+                    AuthenticateFromSessionInput sessionCookieInput = new AuthenticateFromSessionInput { SessionHandle = sessionCookie };
+                    AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
+                    if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
+                    {
+                        foreach (var c in authenticateFromSessionResult.Cookies)
+                        {
+                            Response.Cookies.Append(c.Name, c.Value, new CookieOptions
+                            {
+                                HttpOnly = c.HttpOnly,
+                                Secure = c.Secure,
+                                Path = c.Path ?? "/",
+                                Domain = c.Domain,
+                                Expires = c.Expires,
+                                SameSite = c.SameSite
+                            });
+                        }
+
+                        return Redirect(goTo);
+                    }
                 }
 
                 if (Request.Cookies[_generalSettings.SblAuthCookieName] == null && Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] == null)
