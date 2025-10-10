@@ -333,9 +333,26 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
-        /// as End-to-end happy path for the OIDC front-channel flow across Altinn components,
+        /// Validates the full end-to-end happy path of the OIDC front-channel flow across Altinn components.
+        /// 
+        /// This test simulates a complete user journey starting from sign-in in Altinn Arbeidsflate (Relying Party)
+        /// through the Altinn Authentication OIDC Provider and an upstream IdP (e.g., ID-porten), and back again.
+        /// It verifies correct persistence and lifecycle handling of login transactions, token exchanges, and session
+        /// management, including refresh tokens and application redirection.
+        /// 
+        /// The scenario covers:
+        /// 1. User login initiated by Arbeidsflate via the /authorize endpoint.
+        /// 2. Upstream provider callback to Altinn Authentication with authorization code.
+        /// 3. Token issuance and verification of access, ID, and refresh tokens.
+        /// 4. Long-lived session with multiple refresh cycles over simulated time.
+        /// 5. Redirect to an Altinn App without valid cookie but with active Authentication session.
+        /// 6. Successful token refresh after app visit.
+        /// 7. User logout in Arbeidsflate, ensuring proper session invalidation and propagation to upstream provider,
+        ///    including successful handling of the upstream front-channel logout request.
+        /// 
+        /// The test ensures correct state transitions, token structures, session persistence, and cleanup behavior
+        /// in a normal (non-error) OIDC flow across the complete Altinn authentication architecture.
         /// </summary>
-        /// <returns></returns>
         [Fact]
         public async Task TC2_Auth_Aa_App_Logout_End_To_End_OK()
         {
@@ -409,7 +426,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             }
 
             // ====== Phase 5: Redirect to App in Altinn Apps ======
-            // User select a instance in Arbeidsflate and will be redirected to Altinn Apps to work on the instance. 
+            // User select a instance in Arbeidsflate and will be redirected to Altinn Apps to work on the instance. There is no valid cooke, but should still work since the user have a valid session in Authentication.
             HttpResponseMessage appRedirectResponse = await client.GetAsync(
                 "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
             Assert.Equal(HttpStatusCode.Redirect, appRedirectResponse.StatusCode);
@@ -432,7 +449,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             TokenAssertsHelper.AssertTokenRefreshResponse(refreshedAfterAppVisit, testScenario, _fakeTime.GetUtcNow());
 
-            // ===== Phase 11: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
+            // ===== Phase 7: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
 
             // Verify that session is active before logout
             OidcSession? beforeLoggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
