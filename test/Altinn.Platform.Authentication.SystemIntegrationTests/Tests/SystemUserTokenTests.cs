@@ -7,7 +7,6 @@ using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 
@@ -17,7 +16,6 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 [Trait("Category", "IntegrationTest")]
 public class SystemUserTokenTests : TestFixture
 {
-    private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformClient;
     private const string SystemId = "312605031_Team-Authentication-SystemuserE2E-User-Do-Not-Delete";
 
@@ -26,9 +24,8 @@ public class SystemUserTokenTests : TestFixture
     /// To find relevant api endpoints: https://docs.altinn.studio/nb/api/authentication/spec/#/RequestSystemUser
     /// </summary>
     ///
-    public SystemUserTokenTests(ITestOutputHelper outputHelper)
+    public SystemUserTokenTests()
     {
-        _outputHelper = outputHelper;
         _platformClient = new PlatformAuthenticationClient();
     }
 
@@ -38,7 +35,7 @@ public class SystemUserTokenTests : TestFixture
         // Setup
         var systemUser = await GetSystemUserOnSystemId(SystemId);
 
-        //Only way to use this token is by using the "fake" altinn token service, not allowed to configure this in samarbeidsportalen
+        // Only way to use this token is by using the "fake" altinn token service, not allowed to configure this in samarbeidsportalen
         const string scopes = "altinn:maskinporten/systemuser.read";
 
         var altinnEnterpriseToken =
@@ -143,7 +140,7 @@ public class SystemUserTokenTests : TestFixture
         var testuser = _platformClient.TestUsers.Find(testUser => testUser.Org!.Equals(_platformClient.EnvironmentHelper.Vendor))
                        ?? throw new Exception($"Test user not found for organization: {_platformClient.EnvironmentHelper.Vendor}");
 
-        var systemUsers = await _platformClient.SystemUserClient.GetSystemUsersForTestUser(testuser);
+        List<SystemUser> systemUsers = await _platformClient.SystemUserClient.GetSystemUsersForTestUser(testuser);
 
         return systemUsers.Find(user => user.SystemId == systemId);
     }
@@ -155,6 +152,4 @@ public class SystemUserTokenTests : TestFixture
         base64 = base64.Replace('-', '+').Replace('_', '/'); // Convert URL-safe Base64 to standard Base64
         return base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '='); // Ensure proper padding
     }
-    
-    
 }

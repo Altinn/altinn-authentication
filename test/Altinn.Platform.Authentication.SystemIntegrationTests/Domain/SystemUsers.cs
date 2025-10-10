@@ -2,7 +2,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 
 public class SystemUser
 {
-    public string? Id { get; set; }
+    public required string Id { get; set; }
     public string? IntegrationTitle { get; set; }
     public string? SystemId { get; set; }
     public string? ProductName { get; set; }

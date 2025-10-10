@@ -40,7 +40,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
     public async Task DisposeAsync()
     {
         await Platform.Common.DeleteSystem(SystemId, VendorTokenMaskinporten);
-        await Platform.SystemUserClient.DeleteAgentSystemUser(SystemUserId,Facilitator);
+        await Platform.SystemUserClient.DeleteAgentSystemUser(SystemUserId, Facilitator);
     }
 
     private async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
@@ -69,7 +69,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         return systemId;
     }
 
-    public async Task SetupAndApproveSystemUser(Testuser? facilitator, string accessPackage, string externalRef)
+    public async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef)
     {
         var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
             .Replace("{systemId}", SystemId)
@@ -94,7 +94,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         Assert.Contains(SystemId, await systemUserResponse.ReadAsStringAsync());
 
         var approveUrl = Endpoints.ApproveAgentRequest.Url()
-            ?.Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{requestId}", requestId);
 
         var approveResponse = await Platform.Common.ApproveRequest(approveUrl, facilitator);
@@ -102,10 +102,10 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
 
         await AssertStatusSystemUserRequest(requestId, "Accepted", VendorTokenMaskinporten);
     }
-    
+
     private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string? maskinportenToken)
     {
-        var getRequestByIdUrl = Endpoints.GetVendorAgentRequestById.Url()?.Replace("{requestId}", requestId);
+        var getRequestByIdUrl = Endpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
         var responseGetByRequestId = await Platform.GetAsync(getRequestByIdUrl, maskinportenToken);
 
         Assert.True(HttpStatusCode.OK == responseGetByRequestId.StatusCode);
@@ -114,31 +114,8 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         var status = Common.ExtractPropertyFromJson(await responseGetByRequestId.Content.ReadAsStringAsync(), "status");
         Assert.True(expectedStatus.Equals(status), $"Status is not {expectedStatus} but: {status}");
     }
-    
-    public async Task AssertSystemUserAgentCreated(string systemId, string externalRef, string? maskinportenToken)
-    {
-        // Verify system user was updated // created (Does in fact not verify anything was updated, but easier to add in the future
-        var respGetSystemUsersForVendor =
-            await Platform.Common.GetSystemUserForVendor(systemId, maskinportenToken);
-        var systemusersRespons = await respGetSystemUsersForVendor.ReadAsStringAsync();
 
-        // Assert systemId
-        Assert.Contains(systemId, systemusersRespons);
-        Assert.Contains(externalRef, systemusersRespons);
-    }
-
-    public async Task<HttpResponseMessage> GetVendorAgentRequestByExternalRef(string systemId, string orgNo,
-        string externalRef, string maskinportenToken)
-    {
-        var url = Endpoints.GetVendorAgentRequestByExternalRef.Url()
-            ?.Replace("{systemId}", systemId)
-            .Replace("{orgNo}", orgNo)
-            .Replace("{externalRef}", externalRef);
-
-        return await Platform.GetAsync(url, maskinportenToken);
-    }
-    
-    public async Task<List<CustomerListDto>> GetCustomers(Testuser? facilitator, string? systemUserId, bool allCustomers = false)
+    public async Task<List<CustomerListDto>> GetCustomers(Testuser facilitator, string? systemUserId, bool allCustomers = false)
     {
         var customerListResp = await Platform.GetCustomerList(facilitator, systemUserId);
 
@@ -151,17 +128,14 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         Assert.NotNull(customers);
         Assert.True(customers.Count > 0, $"Found no customers for systemuser with Id {systemUserId}");
 
-        Assert.True(customerListResp?.StatusCode == HttpStatusCode.OK,
-            $"Unable to get customer list, returned status code: {customerListResp?.StatusCode} for system: {systemUserId}");
-
-        Assert.NotNull(customers);
-        Assert.True(customers.Count > 0, $"Found no customers for systemuser with Id {systemUserId}");
-
+        Assert.True(customerListResp.StatusCode == HttpStatusCode.OK,
+            $"Unable to get customer list, returned status code: {customerListResp.StatusCode} for system: {systemUserId}");
+        
         List<CustomerListDto> customersToDelegate = allCustomers ? customers : customers.Take(1).ToList();
         return customersToDelegate;
     }
-    
-     public async Task RemoveDelegations(List<DelegationResponseDto> allDelegations, Testuser facilitator)
+
+    public async Task RemoveDelegations(List<DelegationResponseDto> allDelegations, Testuser facilitator)
     {
         foreach (var delegation in allDelegations)
         {
@@ -169,8 +143,8 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
             Assert.True(deleteResponse.IsSuccessStatusCode, $"Failed to delete delegation {delegation.delegationId}");
         }
     }
-     
-    
+
+
     public async Task<string?> PerformDecision(string? systemUserId, string? customerOrg)
     {
         //klientdelegeringsressurs med revisorpakke definert i ressursregisteret: "klientdelegeringressurse2e"
@@ -188,8 +162,8 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
         Assert.True(dto?.Response != null, "Response is null for deserialization of decision");
         return dto.Response.FirstOrDefault()?.Decision;
     }
-    
-    public async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser? facilitator, string? systemUserId, List<CustomerListDto> customersToDelegate)
+
+    public async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser facilitator, string? systemUserId, List<CustomerListDto> customersToDelegate)
     {
         List<DelegationResponseDto> responses = [];
 
@@ -208,7 +182,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
             Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
 
             var delegationContent = await delegationResponse.Content.ReadAsStringAsync();
-            var parsedList = JsonSerializer.Deserialize<List<DelegationResponseDto>>(delegationContent);
+            List<DelegationResponseDto>? parsedList = JsonSerializer.Deserialize<List<DelegationResponseDto>>(delegationContent);
             var parsedDelegation = parsedList?.FirstOrDefault();
             Assert.NotNull(parsedDelegation);
             responses.Add(parsedDelegation);

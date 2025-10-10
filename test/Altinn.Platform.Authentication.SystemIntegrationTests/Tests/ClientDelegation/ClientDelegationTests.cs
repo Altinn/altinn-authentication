@@ -2,19 +2,15 @@ using System.Net;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDelegation;
 
 public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 {
-    private readonly ITestOutputHelper _outputHelper;
     private readonly ClientDelegationFixture _fixture;
-    private static readonly string[] value = new[] { "string" };
 
-    public ClientDelegationTests(ClientDelegationFixture fixture, ITestOutputHelper outputHelper)
+    public ClientDelegationTests(ClientDelegationFixture fixture)
     {
-        _outputHelper = outputHelper;
         _fixture = fixture;
     }
 
@@ -31,8 +27,8 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
     /// - Other packages result in "NotApplicable" if access is not valid for the facilitator's relation
     /// </summary>
     [Theory]
-    [InlineData("regnskapsforer-lonn", "NotApplicable", "facilitator-regn-og-revisor")]
     [InlineData("ansvarlig-revisor", "Permit", "facilitator-regn-og-revisor")]
+    [InlineData("regnskapsforer-lonn", "NotApplicable", "facilitator-regn-og-revisor")]
     [InlineData("forretningsforer-eiendom", "NotApplicable", "facilitator-forretningsfoerer")]
     [InlineData("regnskapsforer-med-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
     [InlineData("regnskapsforer-uten-signeringsrettighet", "NotApplicable", "facilitator-regn-og-revisor")]
@@ -46,27 +42,27 @@ public class ClientDelegationTests : IClassFixture<ClientDelegationFixture>
 
         var systemUser =
             await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, _fixture.Facilitator, externalRef);
-
-        List<CustomerListDto> customers = await _fixture.GetCustomers(_fixture.Facilitator, systemUser?.Id);
+        
+        // Assert that system user was found
+        Assert.True(systemUser is not null);
+        
+        List<CustomerListDto> customers = await _fixture.GetCustomers(_fixture.Facilitator, systemUser.Id);
 
         // Act: Delegate customer
-        List<DelegationResponseDto> allDelegations = await _fixture.DelegateCustomerToSystemUser(_fixture.Facilitator, systemUser?.Id, customers);
-
-        // Verify decision end point to verify Rights given
-        var decision = await _fixture.PerformDecision(systemUser.Id, customers.First().orgNo);
-        Assert.True(decision == expectedDecision, $"Decision was not {expectedDecision} but: {decision}");
+        List<DelegationResponseDto> allDelegations = await _fixture.DelegateCustomerToSystemUser(_fixture.Facilitator, systemUser.Id, customers);
+        
+        // Perform decisiojn for each customer
+        foreach (CustomerListDto customerListDto in customers)
+        {
+            var decision = await _fixture.PerformDecision(systemUser.Id, customerListDto.orgNo);
+            Assert.True(decision == expectedDecision, $"Decision was not {expectedDecision} but: {decision}");
+        }
 
         // Cleanup: Delete delegation(s)
         await _fixture.RemoveDelegations(allDelegations, _fixture.Facilitator);
 
         // Verify maskinporten endpoint, externalRef set to name of access package
         await _fixture.Platform.Common.GetTokenForSystemUser(_fixture.ClientId, _fixture.Facilitator?.Org, externalRef);
-
-        // Delete System user and System
-        var deleteAgentUserResponse =
-            await _fixture.Platform.SystemUserClient.DeleteAgentSystemUser(systemUser?.Id, _fixture.Facilitator);
-        Assert.True(HttpStatusCode.OK == deleteAgentUserResponse.StatusCode,
-            "Was unable to delete System User: Error code: " + deleteAgentUserResponse.StatusCode);
     }
 
    

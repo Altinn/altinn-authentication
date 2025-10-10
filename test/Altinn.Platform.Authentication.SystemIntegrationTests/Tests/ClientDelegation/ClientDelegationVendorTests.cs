@@ -1,23 +1,29 @@
-using System.Diagnostics;
-using System.Net;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.VendorClientDelegation;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests.ClientDelegation;
 
 public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture>
 {
-    private readonly ITestOutputHelper _outputHelper;
     private readonly ClientDelegationFixture _fixture;
 
-    public ClientDelegationVendorTests(ClientDelegationFixture fixture, ITestOutputHelper outputHelper)
+    public ClientDelegationVendorTests(ClientDelegationFixture fixture)
     {
-        _outputHelper = outputHelper;
         _fixture = fixture;
     }
+    
+    /// <summary>
+    /// Tester Klientdelegerings-API-et i Altinn Authentication for sluttbruker-api - "Fasilitator" kan identifisere seg med
+    /// idportentoken og leverandørene kan lage integrasjoner som lar delegere til Systembruker i egne Sluttbrukersystemer
+    /// 
+    /// Verifiserer at en agentsystembruker kan hente, delegere og fjerne klienter,
+    /// samt at beslutningsendepunktet returnerer korrekt tilgang etter endring.
+    /// Krever autentisering med Idportentoken vekslet til Altinn-token (sluttbrukertoken). Disse testene bruker Altinntoken direkte
+    /// 
+    /// API-Dokumentasjon: https://docs.altinn.studio/nb/api/authentication/systemuserapi/clientdelegation/
+    /// </summary>
 
     [Theory]
     [InlineData("ansvarlig-revisor", "Permit", "facilitator-regn-og-revisor")]
@@ -28,6 +34,7 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
     [InlineData("revisormedarbeider", "NotApplicable", "facilitator-regn-og-revisor")]
     public async Task CreateSystemUserClientRequestTest(string accessPackage, string expectedDecision, string testCategory)
     {
+        // Arrange - create a System User
         var externalRef = Guid.NewGuid().ToString();
         _fixture.Facilitator = await _fixture.Platform.GetTestUserAndTokenForCategory(testCategory);
 
@@ -39,29 +46,33 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         Assert.True(systemUserExist);
 
         var systemUser = await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, _fixture.Facilitator, externalRef);
-        _fixture.SystemUserId = systemUser?.Id;
-
+        Assert.True(systemUser is not null);
+        
+        _fixture.SystemUserId = systemUser.Id;
+        
         // Get available customers
-        var customers = await _fixture.Platform.SystemUserClient.GetAvailableClientsForVendor(_fixture.Facilitator, systemUser?.Id);
+        var customers = await _fixture.Platform.SystemUserClient.GetAvailableClientsForVendor(_fixture.Facilitator, systemUser.Id);
         Assert.True(customers.Data is not null);
 
+        // Dont take all of 'em
         List<ClientInfoDto> clients = customers.Data.Take(3).ToList();
 
         // Delegate all clients to System User
-        await _fixture.Platform.SystemUserClient.DelegateAllClientsFromVendorToSystemUser(_fixture.Facilitator, systemUser?.Id, clients);
+        await _fixture.Platform.SystemUserClient.DelegateAllClientsFromVendorToSystemUser(_fixture.Facilitator, systemUser.Id, clients);
 
-        //Get delegated clients - works but verify you get clients
-        ClientsForDelegationResponseDto? delegatedClients = await _fixture.Platform.SystemUserClient.GetDelegatedClientsFromVendorSystemUser(_fixture.Facilitator, systemUser?.Id);
+        //Get delegated clients
+        ClientsForDelegationResponseDto delegatedClients = await _fixture.Platform.SystemUserClient.GetDelegatedClientsFromVendorSystemUser(_fixture.Facilitator, systemUser.Id);
 
         // Verify decision end point to verify Rights given
-        var decision = await _fixture.PerformDecision(systemUser?.Id, clients.First().ClientOrganizationNumber);
+        var decision = await _fixture.PerformDecision(_fixture.SystemUserId, clients.First().ClientOrganizationNumber);
         Assert.Equal(expectedDecision, decision);
 
-        await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(_fixture.Facilitator, systemUser?.Id, delegatedClients?.Data);
+        //Remove clients so system user can be deleted later
+        await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(_fixture.Facilitator, systemUser.Id, delegatedClients.Data);
     }
 
     [Fact]
-    public async Task DecisionFalse()
+    public async Task DecisionFalseWhenDeletingClient()
     {
         // Arrange
         const string accessPackage = "ansvarlig-revisor";
@@ -83,7 +94,7 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         Assert.NotNull(available.Data);
         
         //Pick just one client
-        var client = available.Data!.First();
+        var client = available.Data.First();
 
         // Delegate one client
         await _fixture.Platform.SystemUserClient.DelegateAllClientsFromVendorToSystemUser(_fixture.Facilitator , systemUser.Id, [client]);
@@ -95,7 +106,7 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         // Get delegated clients
         var delegated = await _fixture.Platform.SystemUserClient
             .GetDelegatedClientsFromVendorSystemUser(_fixture.Facilitator , systemUser.Id);
-        Assert.NotNull(delegated?.Data);
+        Assert.NotNull(delegated.Data);
 
         // Act: delete all delegated clients
         await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(_fixture.Facilitator , systemUser.Id, delegated.Data);

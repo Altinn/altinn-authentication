@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.VendorClientDelegation;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
@@ -53,7 +52,7 @@ public class SystemUserClient
         return JsonSerializer.Deserialize<List<SystemUser>>(content, Common.JsonSerializerOptions) ?? [];
     }
 
-    public async Task<List<SystemUser>> GetSystemUsersForTestUser(Testuser? testuser)
+    public async Task<List<SystemUser>> GetSystemUsersForTestUser(Testuser testuser)
     {
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testuser);
         var resp = await GetSystemuserForParty(testuser.AltinnPartyId, altinnToken);
@@ -64,7 +63,7 @@ public class SystemUserClient
 
     public async Task<HttpResponseMessage> GetSystemUserById(string systemId, string? token)
     {
-        var urlGetBySystem = Endpoints.GetSystemUsersBySystemForVendor.Url()?.Replace("{systemId}", systemId);
+        var urlGetBySystem = Endpoints.GetSystemUsersBySystemForVendor.Url().Replace("{systemId}", systemId);
         return await _platformClient.GetAsync(urlGetBySystem, token);
     }
 
@@ -73,17 +72,17 @@ public class SystemUserClient
     {
         var urlGetBySystem =
             Endpoints.GetSystemUserRequestByExternalRef.Url()
-                ?.Replace("{externalRef}", externalRef)
+                .Replace("{externalRef}", externalRef)
                 .Replace("{systemId}", systemId)
                 .Replace("{orgNo}", _platformClient.EnvironmentHelper.Vendor);
 
         return await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
     }
 
-    public async Task<string> GetSystemUserVendorByQuery(string systemId, string orgNo, string externalRef, string? maskinportenToken)
+    public async Task<string> GetSystemUserVendorByQuery(string systemId, string? orgNo, string externalRef, string? maskinportenToken)
     {
         var url = Endpoints.GetSystemUserVendorByQuery.Url()
-            ?.Replace("{systemId}", systemId)
+            .Replace("{systemId}", systemId)
             .Replace("{orgNo}", orgNo)
             .Replace("{externalRef}", externalRef);
 
@@ -99,7 +98,7 @@ public class SystemUserClient
 
         Assert.False(string.IsNullOrWhiteSpace(id), "Response JSON did not contain a valid 'id'");
 
-        return id!;
+        return id;
     }
 
     public async Task<string> CreateSystemUserRequestWithoutExternalRef(TestState testState, string? maskinportenToken)
@@ -149,19 +148,6 @@ public class SystemUserClient
         return content;
     }
 
-    public async Task ApproveSystemUserRequest(Testuser? testuser, string requestId)
-    {
-        var approveUrl = Endpoints.ApproveSystemUserRequest.Url()
-            ?.Replace("{partyId}", testuser.AltinnPartyId)
-            .Replace("{party}", testuser.AltinnPartyId)
-            .Replace("{requestId}", requestId);
-
-        var approveResponse = await ApproveRequest(approveUrl, testuser);
-
-        Assert.True(approveResponse.StatusCode == HttpStatusCode.OK,
-            $"Approval failed with status code: {approveResponse.StatusCode}");
-    }
-
     public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
     {
         // Get the Altinn token
@@ -175,7 +161,7 @@ public class SystemUserClient
     public async Task DeleteSystemUser(string? altinnPartyId, string? systemUserId)
     {
         var deleteUrl = Endpoints.DeleteSystemUserById.Url()
-            ?.Replace("{party}", altinnPartyId)
+            .Replace("{party}", altinnPartyId)
             .Replace("{systemUserId}", systemUserId);
         var deleteResponse = await _platformClient.DeleteRequest(deleteUrl, _platformClient.GetTestUserForVendor());
 
@@ -215,13 +201,13 @@ public class SystemUserClient
 
     public async Task<HttpResponseMessage> AddClient(Testuser? facilitator, string? systemUserId, string clientId)
     {
-        var urlPost = Endpoints.VendorAddClients.Url()?.Replace("{clientId}", clientId).Replace("{systemUserId}", systemUserId);
+        var urlPost = Endpoints.VendorAddClients.Url().Replace("{clientId}", clientId).Replace("{systemUserId}", systemUserId);
 
         var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.write");
         return await _platformClient.PostAsyncWithNoBody(urlPost, token);
     }
 
-    public Task DelegateAllClientsFromVendorToSystemUser(Testuser? facilitator, string? systemUserId, List<ClientInfoDto>? customersData)
+    public Task DelegateAllClientsFromVendorToSystemUser(Testuser facilitator, string? systemUserId, List<ClientInfoDto> customersData)
     {
         foreach (ClientInfoDto clientInfoDto in customersData)
         {
@@ -253,9 +239,9 @@ public class SystemUserClient
         return await _platformClient.Delete(urlDelete, token);
     }
 
-    public async Task<ClientsForDelegationResponseDto?> GetDelegatedClientsFromVendorSystemUser(Testuser? facilitator, string? systemUserId)
+    public async Task<ClientsForDelegationResponseDto> GetDelegatedClientsFromVendorSystemUser(Testuser? facilitator, string? systemUserId)
     {
-        var urlGet = Endpoints.VendorGetDelegatedClients.Url()?.Replace("{systemUserId}", systemUserId);
+        var urlGet = Endpoints.VendorGetDelegatedClients.Url().Replace("{systemUserId}", systemUserId);
 
         var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
         var response = await _platformClient.GetAsync(urlGet, token);
@@ -265,10 +251,10 @@ public class SystemUserClient
         var content = await response.Content.ReadAsStringAsync();
 
         // ClientsForDelegationResponseDto
-        ClientsForDelegationResponseDto? resp = JsonSerializer.Deserialize<ClientsForDelegationResponseDto>(content, new JsonSerializerOptions
+        ClientsForDelegationResponseDto resp = JsonSerializer.Deserialize<ClientsForDelegationResponseDto>(content, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
-        });
+        }) ?? throw new Exception("Unable to deserialize ");
         return resp;
     }
 

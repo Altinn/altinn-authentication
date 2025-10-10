@@ -353,7 +353,7 @@ public class PlatformAuthenticationClient
         return response;
     }
 
-    public Testuser? GetTestUserForVendor()
+    public Testuser GetTestUserForVendor()
     {
         var vendor = EnvironmentHelper.Vendor;
 
@@ -368,7 +368,7 @@ public class PlatformAuthenticationClient
         return testuser;
     }
 
-    public async Task<HttpResponseMessage> GetCustomerList(Testuser? testuser, string? systemUserUuid)
+    public async Task<HttpResponseMessage> GetCustomerList(Testuser testuser, string? systemUserUuid)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
@@ -378,12 +378,12 @@ public class PlatformAuthenticationClient
         return await client.GetAsync(endpoint);
     }
 
-    public async Task<HttpResponseMessage> DelegateFromAuthentication(Testuser? facilitator, string? systemUserUuid, string requestBodyDelegation)
+    public async Task<HttpResponseMessage> DelegateFromAuthentication(Testuser facilitator, string? systemUserUuid, string requestBodyDelegation)
     {
         var tokenFacilitator = await GetPersonalAltinnToken(facilitator);
 
         var url = Endpoints.DelegationAuthentication.Url()
-            ?.Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
             .Replace("{systemUserUuid}", systemUserUuid);
 
         return await PostAsync(url, requestBodyDelegation, tokenFacilitator);
