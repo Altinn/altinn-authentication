@@ -147,6 +147,14 @@ namespace Altinn.Platform.Authentication.Services
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public Task<AuthorizeResult> AuthorizeClientLess(AuthorizeClientlessRequest request, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <inheritdoc/>
         public async Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken cancellationToken)
         {
@@ -948,5 +956,6 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
         }
+
     }
 }

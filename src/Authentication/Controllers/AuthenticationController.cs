@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
@@ -213,6 +214,18 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         await IdentifyOrCreateAltinnUser(userAuthentication, provider);
                     }
+                }
+                else if (_generalSettings.ForceOidc)
+                {
+                    AuthorizeResult result = await _oidcServerService.AuthorizeClientLess(new AuthorizeClientlessRequest { GoTo = goTo, RequestedIss = oidcissuer }, cancellationToken);
+                    return result.Kind switch
+                    {
+                        AuthorizeResultKind.RedirectUpstream
+                            => Redirect(result.UpstreamAuthorizeUrl!.ToString()),
+                        AuthorizeResultKind.LocalError
+                            => StatusCode(result.StatusCode ?? 400, result.LocalErrorMessage), // or return View("Error", ...)
+                        _ => StatusCode(500)
+                    };
                 }
                 else
                 {
