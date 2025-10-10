@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.VendorClientDelegation;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Xunit;
@@ -35,8 +35,7 @@ public class SystemUserClient
 
     public async Task<HttpResponseMessage> GetSystemuserForPartyAgent(string? party, string? token)
     {
-        var urlGetBySystem = Endpoints.GetSystemUsersByPartyAgent.Url()
-            .Replace("{party}", party);
+        var urlGetBySystem = Endpoints.GetSystemUsersByPartyAgent.Url().Replace("{party}", party);
         var response = await _platformClient.GetAsync(urlGetBySystem, token);
 
         Assert.True(HttpStatusCode.OK == response.StatusCode,
@@ -45,7 +44,7 @@ public class SystemUserClient
         return response;
     }
 
-    public async Task<List<SystemUser>> GetSystemUsersForAgentTestUser(Testuser testuser, String externalRef = "")
+    public async Task<List<SystemUser>> GetSystemUsersForAgentTestUser(Testuser testuser)
     {
         var resp = await GetSystemuserForPartyAgent(testuser.AltinnPartyId, testuser.AltinnToken);
 
@@ -64,7 +63,7 @@ public class SystemUserClient
 
     public async Task<HttpResponseMessage> GetSystemUserById(string systemId, string? token)
     {
-        var urlGetBySystem = Endpoints.GetSystemUsersBySystemForVendor.Url()?.Replace("{systemId}", systemId);
+        var urlGetBySystem = Endpoints.GetSystemUsersBySystemForVendor.Url().Replace("{systemId}", systemId);
         return await _platformClient.GetAsync(urlGetBySystem, token);
     }
 
@@ -79,11 +78,11 @@ public class SystemUserClient
 
         return await _platformClient.GetAsync(urlGetBySystem, maskinportenToken);
     }
-    
-    public async Task<string> GetSystemUserVendorByQuery(string systemId, string orgNo, string externalRef, string? maskinportenToken)
+
+    public async Task<string> GetSystemUserVendorByQuery(string systemId, string? orgNo, string externalRef, string? maskinportenToken)
     {
         var url = Endpoints.GetSystemUserVendorByQuery.Url()
-            ?.Replace("{systemId}", systemId)
+            .Replace("{systemId}", systemId)
             .Replace("{orgNo}", orgNo)
             .Replace("{externalRef}", externalRef);
 
@@ -99,7 +98,7 @@ public class SystemUserClient
 
         Assert.False(string.IsNullOrWhiteSpace(id), "Response JSON did not contain a valid 'id'");
 
-        return id!;
+        return id;
     }
 
     public async Task<string> CreateSystemUserRequestWithoutExternalRef(TestState testState, string? maskinportenToken)
@@ -149,20 +148,7 @@ public class SystemUserClient
         return content;
     }
 
-    public async Task ApproveSystemUserRequest(Testuser testuser, string requestId)
-    {
-        var approveUrl = Endpoints.ApproveSystemUserRequest.Url()
-            ?.Replace("{partyId}", testuser.AltinnPartyId)
-            .Replace("{party}", testuser.AltinnPartyId)
-            .Replace("{requestId}", requestId);
-
-        var approveResponse = await ApproveRequest(approveUrl, testuser);
-
-        Assert.True(approveResponse.StatusCode == HttpStatusCode.OK,
-            $"Approval failed with status code: {approveResponse.StatusCode}");
-    }
-
-    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
+    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
     {
         // Get the Altinn token
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
@@ -188,5 +174,107 @@ public class SystemUserClient
         var putResponse = await _platformClient.PutAsync(putUrl, requestBody, token);
 
         Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);
+    }
+
+    public async Task<ClientsForDelegationResponseDto> GetAvailableClientsForVendor(Testuser? facilitator, string? systemUserId, bool requireNonEmpty = true)
+    {
+        var url = Endpoints.VendorGetAvailableClients.Url() + $"?agent={systemUserId}";
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
+
+        // Call and assert HTTP 200
+        var response = await _platformClient.GetAsync(url, token);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // Deserialize
+        var clients = JsonSerializer.Deserialize<ClientsForDelegationResponseDto>(await response.Content.ReadAsStringAsync());
+
+        Assert.NotNull(clients);
+        if (requireNonEmpty)
+        {
+            Assert.NotNull(clients.Data);
+            Assert.True(clients.Data.Count > 0, "No clients found for vendor");
+        }
+
+        return clients;
+    }
+
+    public async Task<HttpResponseMessage> AddClient(Testuser? facilitator, string? systemUserId, string clientId)
+    {
+        var urlPost = Endpoints.VendorAddClients.Url().Replace("{clientId}", clientId).Replace("{systemUserId}", systemUserId);
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.write");
+        return await _platformClient.PostAsyncWithNoBody(urlPost, token);
+    }
+
+    public async Task DelegateAllClientsFromVendorToSystemUser(Testuser facilitator, string? systemUserId, List<ClientInfoDto> customersData)
+    {
+        foreach (ClientInfoDto clientInfoDto in customersData)
+        {
+            HttpResponseMessage resp = await AddClient(facilitator, systemUserId, clientInfoDto.ClientId.ToString());
+            Assert.True(resp.StatusCode == HttpStatusCode.OK, $"Failed to add client: Unexpected status code: {resp.StatusCode}");
+        }
+    }
+
+    public async Task DeleteAllClientsFromVendorSystemUser(Testuser facilitator, string systemUserId, List<ClientInfoDto> customersData)
+    {
+        foreach (ClientInfoDto clientInfoDto in customersData)
+        {
+            HttpResponseMessage resp = await DeleteClient(facilitator, systemUserId, clientInfoDto.ClientId.ToString());
+            Assert.True(resp.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {resp.StatusCode}");
+        }
+    }
+
+    private async Task<HttpResponseMessage> DeleteClient(Testuser facilitator, string? systemUserId, string clientId)
+    {
+        var urlDelete = Endpoints.VendorDeleteClient.Url()
+            .Replace("{clientId}", clientId)
+            .Replace("{systemUserId}", systemUserId);
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.write altinn:clientdelegations.read");
+        return await _platformClient.Delete(urlDelete, token);
+    }
+
+    public async Task<ClientsForDelegationResponseDto> GetDelegatedClientsFromVendorSystemUser(Testuser? facilitator, string? systemUserId)
+    {
+        var urlGet = Endpoints.VendorGetDelegatedClients.Url().Replace("{systemUserId}", systemUserId);
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
+        var response = await _platformClient.GetAsync(urlGet, token);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {response.StatusCode}");
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        // ClientsForDelegationResponseDto
+        ClientsForDelegationResponseDto resp = JsonSerializer.Deserialize<ClientsForDelegationResponseDto>(content, Common.JsonSerializerOptions)
+                                               ?? throw new Exception("Unable to deserialize ");
+        return resp;
+    }
+
+    public async Task<List<SystemUserAgentDto>> GetSystemUserAgents(Testuser facilitator)
+    {
+        var urlGet = Endpoints.VendorGetSystemUserAgents.Url() + $"?party={facilitator.Org}";
+
+        var token = await _platformClient.GetPersonalAltinnToken(facilitator, "altinn:clientdelegations.read");
+        var response = await _platformClient.GetAsync(urlGet, token);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Unexpected status code: {response.StatusCode}");
+
+        var json = await response.Content.ReadAsStringAsync();
+        List<SystemUserAgentDto>? agents = JsonSerializer.Deserialize<List<SystemUserAgentDto>>(json, Common.JsonSerializerOptions);
+
+        return agents ?? [];
+    }
+
+    public async Task DeleteAgentSystemUser(string? systemUserId, Testuser facilitator)
+    {
+        var url = Endpoints.DeleteAgentSystemUser.Url()
+            .Replace("{party}", facilitator.AltinnPartyId)
+            .Replace("{systemUserId}", systemUserId);
+
+        url += $"?facilitatorId={facilitator.AltinnPartyUuid}";
+
+        await _platformClient.Delete(url, facilitator.AltinnToken);
     }
 }

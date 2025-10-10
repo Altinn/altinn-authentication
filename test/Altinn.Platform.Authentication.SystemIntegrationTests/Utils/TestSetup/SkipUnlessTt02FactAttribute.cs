@@ -1,7 +1,7 @@
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Xunit;
 
-namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
+namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 
 [Trait("Category", "IntegrationTest")]
 public sealed class SkipUnlessTt02FactAttribute : FactAttribute

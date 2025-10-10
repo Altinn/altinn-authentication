@@ -1,12 +1,10 @@
 using System.Net;
-using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 
@@ -18,12 +16,10 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 [Trait("Category", "IntegrationTest")]
 public class ChangeRequestTests : TestFixture
 {
-    private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformAuthentication;
 
-    public ChangeRequestTests(ITestOutputHelper outputHelper)
+    public ChangeRequestTests()
     {
-        _outputHelper = outputHelper;
         _platformAuthentication = new PlatformAuthenticationClient();
     }
 

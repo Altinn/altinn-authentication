@@ -4,7 +4,7 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoin
 
 public static class ApiEndpointExtensions
 {
-    public static string? Url(this Endpoints endpoint)
+    public static string Url(this Endpoints endpoint)
     {
         return endpoint.GetType()
                    .GetField(endpoint.ToString())?

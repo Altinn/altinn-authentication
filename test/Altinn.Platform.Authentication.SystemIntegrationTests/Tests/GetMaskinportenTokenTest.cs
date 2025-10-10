@@ -38,5 +38,6 @@ public class GetMaskinportenTokenTest
     {
         var maskinportenToken = await _platformAuthenticationClient.GetMaskinportenTokenForVendor();
         Assert.NotNull(maskinportenToken);
+        _testOutputHelper.WriteLine(maskinportenToken);
     }
 }

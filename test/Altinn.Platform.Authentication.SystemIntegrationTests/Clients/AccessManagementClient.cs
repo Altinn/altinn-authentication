@@ -1,8 +1,4 @@
-using System.Net;
-using System.Net.Http.Headers;
-using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
-using Xunit;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 

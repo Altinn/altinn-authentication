@@ -43,12 +43,6 @@ public class TestState
         return this;
     }
 
-    public TestState WithAccessPackage(string? accessPackageId)
-    {
-        AccessPackage = accessPackageId;
-        return this;
-    }
-
     public TestState WithClientId(string clientId)
     {
         ClientId = clientId;

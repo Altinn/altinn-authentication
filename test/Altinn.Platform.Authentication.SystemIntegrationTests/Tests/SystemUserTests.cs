@@ -443,7 +443,7 @@ public class SystemUserTests : IDisposable
         return content;
     }
 
-    private async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
+    private async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
     {
         // Get the Altinn token
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
@@ -495,7 +495,7 @@ public class SystemUserTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    private async Task ApproveSystemUserRequest(Testuser testuser, string requestId, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
+    private async Task ApproveSystemUserRequest(Testuser? testuser, string requestId, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
     {
         var approveUrl = Endpoints.ApproveSystemUserRequest.Url()
             .Replace("{party}", testuser.AltinnPartyId)
