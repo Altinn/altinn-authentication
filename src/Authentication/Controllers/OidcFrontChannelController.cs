@@ -94,8 +94,6 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("upstream/callback")]
         public async Task<IActionResult> UpstreamCallback([FromQuery] UpstreamCallbackDto q, CancellationToken ct = default)
         {
-            ct = CancellationToken.None;
-
             // Gather diagnostics
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();

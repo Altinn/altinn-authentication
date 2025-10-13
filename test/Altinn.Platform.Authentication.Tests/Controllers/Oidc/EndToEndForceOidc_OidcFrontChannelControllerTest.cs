@@ -597,8 +597,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcCodeResponse oidcCodeResponse = IdPortenTestTokenUtil.GetIdPortenTokenResponse(
                 testScenario.Ssn, 
                 createdUpstreamLogingTransaction.Nonce, 
-                upstreamSID.ToString(), 
-                createdUpstreamLogingTransaction.AcrValues, 
+                upstreamSID.ToString(),
+                testScenario.Acr.ToArray(), 
                 testScenario.Amr?.ToArray(),
                 createdUpstreamLogingTransaction.UpstreamClientId, 
                 createdUpstreamLogingTransaction.Scopes,
