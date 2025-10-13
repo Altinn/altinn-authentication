@@ -514,6 +514,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
             (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, app2RedirectResponse, _fakeTime.GetUtcNow());
+
+            // Assume it takes 1 minute for the user to authenticate at the upstream provider
+            _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
+
+            // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+
+            // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
+            // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
         }
 
         private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)

@@ -196,41 +196,23 @@ namespace Altinn.Platform.Authentication.Services
 
             Debug.Assert(upstreamTx != null);
 
-            // ===== 2) Load downstream (original) transaction to get validated redirect_uri & original state =====
-            (UpstreamCallbackResult? downStreamValidationResult, LoginTransaction? loginTx) = await ValidateDownstreamCallbackState(input, upstreamTx, cancellationToken);
-            if (downStreamValidationResult != null)
-            {
-                return downStreamValidationResult;
-            }
-
-            Debug.Assert(loginTx != null);
-
-            // ===== 3) Exchange upstream code for upstream tokens =====
+            // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
             await IdentifyOrCreateAltinnUser(userIdenity, provider);
 
-            // 4. Create or refresh Altinn session session
+            // 3. Create or refresh Altinn session session
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
 
-            // TODO How to handle first time login with epost bruker from ID porten if we gonna ask them to connect to existing self identified user.
-
-            // 5) Issue downstream authorization code
-            string authCode = await CreateDownstreamAuthorizationCode(upstreamTx, loginTx, session, cancellationToken);
-
-            // 6) Mark upstream transaction as completed
-            await MarkUpstreamTokenExchanged(upstreamTx, userIdenity, cancellationToken);
-
-            // 7 Create Session cookie for the user and AltinnStudio runtime cookie with JWT
             string cookieToken = await _tokenService.CreateCookieToken(session, cancellationToken);
 
             CookieInstruction altinnStudioRuntime = new()
-            { 
-                Name = _generalSettings.JwtCookieName, 
-                Value = cookieToken, 
-                HttpOnly = true, 
-                Secure = true, 
-                Path = "/", 
+            {
+                Name = _generalSettings.JwtCookieName,
+                Value = cookieToken,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
                 SameSite = SameSiteMode.Lax
             };
 
@@ -244,15 +226,54 @@ namespace Altinn.Platform.Authentication.Services
                 SameSite = SameSiteMode.Lax,
             };
 
-            // 8) Redirect back to the client with code + original state
-            return new UpstreamCallbackResult
+            UpstreamCallbackResult? upstreamCallbackResult = null;
+
+            // TODO How to handle first time login with epost bruker from ID porten if we gonna ask them to connect to existing self identified user.
+            if (upstreamTx.RequestId != null)
             {
-                Kind = UpstreamCallbackResultKind.RedirectToClient,
-                ClientRedirectUri = loginTx!.RedirectUri,
-                DownstreamCode = authCode,
-                ClientState = loginTx.State,
-                Cookies = [altinnStudioRuntime, altinnSessionCookie]
-            };
+                // 4) Load downstream (original) transaction to get validated redirect_uri & original state =====
+                (UpstreamCallbackResult? downStreamValidationResult, LoginTransaction? loginTx) = await ValidateDownstreamCallbackState(input, upstreamTx, cancellationToken);
+                if (downStreamValidationResult != null)
+                {
+                    return downStreamValidationResult;
+                }
+
+                Debug.Assert(loginTx != null);
+
+                // 5) Issue downstream authorization code
+                string authCode = await CreateDownstreamAuthorizationCode(upstreamTx, loginTx, session, cancellationToken);
+                upstreamCallbackResult = new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.RedirectToClient,
+                    ClientRedirectUri = loginTx!.RedirectUri,
+                    DownstreamCode = authCode,
+                    ClientState = loginTx.State,
+                    Cookies = [altinnStudioRuntime, altinnSessionCookie]
+                };
+            }
+            else if (upstreamTx.ClientLessRequestId != null)
+            {
+                ClientlessRequest? clientlessRequest = await _clientlessRequestRepository.GetByRequestIdAsync(upstreamTx.ClientLessRequestId.Value, cancellationToken);
+                Debug.Assert(clientlessRequest != null);
+                upstreamCallbackResult = new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.RedirectToClient,
+                    ClientRedirectUri = new Uri(clientlessRequest.GotoUrl),
+                    DownstreamCode = null,
+                    ClientState = null,
+                    Cookies = [altinnStudioRuntime, altinnSessionCookie]
+                };
+            }
+            
+            Debug.Assert(upstreamCallbackResult != null);
+
+            // 6) Mark upstream transaction as completed
+            await MarkUpstreamTokenExchanged(upstreamTx, userIdenity, cancellationToken);
+
+            // 7 Create Session cookie for the user and AltinnStudio runtime cookie with JWT
+
+            // 8) Redirect back to the client with code + original state
+            return upstreamCallbackResult;
         }
 
         /// <summary>
