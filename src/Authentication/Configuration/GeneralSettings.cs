@@ -155,6 +155,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public bool ForceOidc { get; set; }
 
         /// <summary>
+        /// Enables the authorization server
+        /// </summary>
+        public bool AuthorizationServerEnabled { get; set; }
+
+        /// <summary>
         /// Name of Oidc Nonce cookie
         /// </summary>
         public string OidcNonceCookieName { get; set; } = "oidcnonce";

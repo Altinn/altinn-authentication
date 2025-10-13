@@ -75,6 +75,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
+
+            services.PostConfigure<GeneralSettings>(o =>
+            {
+                o.ForceOidc = false;   // “true” group
+                o.EnableOidc = true;  // must be true for ForceOidc to have effect
+                o.AuthorizationServerEnabled = true; // must be true for OIDC to work
+            });
         }
 
         /// <summary>

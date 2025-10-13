@@ -81,6 +81,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             {
                 o.ForceOidc = true;   // “true” group
                 o.EnableOidc = true;  // must be true for ForceOidc to have effect
+                o.AuthorizationServerEnabled = true; // must be true for OIDC to work
             });
         }
 

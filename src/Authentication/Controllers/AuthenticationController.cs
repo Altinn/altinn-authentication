@@ -211,8 +211,40 @@ namespace Altinn.Platform.Authentication.Controllers
                         await IdentifyOrCreateAltinnUser(userAuthentication, provider);
                     }
                 }
-                else if (_generalSettings.ForceOidc)
+                else if (_generalSettings.AuthorizationServerEnabled)
                 {
+                    // Flow for Authorization Server Active
+                    // Verify if user is already authenticated. The just go directly to the target URL
+                    if (User.Identity.IsAuthenticated)
+                    {
+                        return Redirect(goTo);
+                    }
+
+                    // Check to see if we have a valid Session cookie and recreate JWT Based on that
+                    if (Request.Cookies[_generalSettings.AltinnSessionCookieName] != null)
+                    {
+                        string sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
+                        AuthenticateFromSessionInput sessionCookieInput = new AuthenticateFromSessionInput { SessionHandle = sessionCookie };
+                        AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
+                        if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
+                        {
+                            foreach (var c in authenticateFromSessionResult.Cookies)
+                            {
+                                Response.Cookies.Append(c.Name, c.Value, new CookieOptions
+                                {
+                                    HttpOnly = c.HttpOnly,
+                                    Secure = c.Secure,
+                                    Path = c.Path ?? "/",
+                                    Domain = c.Domain,
+                                    Expires = c.Expires,
+                                    SameSite = c.SameSite
+                                });
+                            }
+
+                            return Redirect(goTo);
+                        }
+                    }
+
                     Response.Headers.CacheControl = "no-store";
                     Response.Headers.Pragma = "no-cache";
                     System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
