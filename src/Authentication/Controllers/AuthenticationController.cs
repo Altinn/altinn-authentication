@@ -213,7 +213,22 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
                 else if (_generalSettings.ForceOidc)
                 {
-                    AuthorizeResult result = await _oidcServerService.AuthorizeClientLess(new AuthorizeClientlessRequest { GoTo = goTo, RequestedIss = oidcissuer }, cancellationToken);
+                    System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+                    string ua = Request.Headers.UserAgent.ToString();
+                    string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
+                    Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
+
+                    AuthorizeClientlessRequest authorizeClientlessRequest = new AuthorizeClientlessRequest()
+                    {
+                        GoTo = goTo,
+                        RequestedIss = oidcissuer,
+                        ClientIp = ip,
+                        UserAgentHash = userAgentHash,
+                        CorrelationId = corr,
+                        AcrValues = []
+                    };
+
+                    AuthorizeResult result = await _oidcServerService.AuthorizeClientLess(authorizeClientlessRequest, cancellationToken);
                     return result.Kind switch
                     {
                         AuthorizeResultKind.RedirectUpstream
@@ -1209,6 +1224,27 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return false;
+        }
+
+        private static string ComputeSha256Base64Url(string input)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            return ComputeSha256Base64Url(bytes);
+        }
+
+        private static string ComputeSha256Base64Url(ReadOnlySpan<byte> data)
+        {
+            // SHA256.HashData is allocation-free and fast
+            Span<byte> hash = stackalloc byte[32];
+            SHA256.HashData(data, hash);
+
+            // Convert to Base64URL: replace '+' -> '-', '/' -> '_', and trim '='
+            string b64 = Convert.ToBase64String(hash);
+            return b64.Replace('+', '-')
+                      .Replace('/', '_')
+                      .TrimEnd('=');
         }
     }
 }

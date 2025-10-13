@@ -21,6 +21,11 @@
         public const string REQUEST_ID = "request_id";
 
         /// <summary>
+        /// The name of the column in the database that stores the clientless request ID.
+        /// </summary>
+        public const string CLIENT_LESS_REQUEST_ID = "clientless_request_id";
+
+        /// <summary>
         /// The name of the column in the database that stores the client ID.
         /// </summary>
         public const string STATUS = "status";

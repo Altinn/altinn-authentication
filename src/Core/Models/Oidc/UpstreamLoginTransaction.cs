@@ -10,7 +10,12 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
     public sealed class UpstreamLoginTransaction
     {
         public required Guid UpstreamRequestId { get; init; }
-        public required Guid RequestId { get; init; }
+        
+        public Guid? RequestId { get; init; }
+
+        public Guid? ClientLessRequestId { get; set; }
+
+
         public required string Status { get; init; }
         public required DateTimeOffset CreatedAt { get; init; }
         public required DateTimeOffset ExpiresAt { get; init; }

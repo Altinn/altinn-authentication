@@ -29,14 +29,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.clientless_request (
   CONSTRAINT chk_clientless_status
     CHECK (status IN ('pending','completed','cancelled','error')),
   CONSTRAINT chk_clientless_times
-    CHECK (expires_at > created_at),
-
-  -- DB-level shape check; host allowlist enforcement stays in code
-  CONSTRAINT chk_clientless_goto_shape
-    CHECK (
-      goto_url ~ '^/([^/].*)?$'                           -- relative path starting with single slash (no scheme)
-      OR goto_url ~ '^(?i:https)://[^\\s]+'               -- or absolute https URL
-    )
+    CHECK (expires_at > created_at)
 );
 
 -- Indexes

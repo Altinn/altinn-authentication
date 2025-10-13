@@ -33,7 +33,6 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("authorize")]
         public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequestDto q, CancellationToken cancellationToken = default)
         {
-            cancellationToken = CancellationToken.None;
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();
             string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);

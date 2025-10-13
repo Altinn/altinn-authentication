@@ -1,4 +1,6 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Oidc
+﻿using System.Net;
+
+namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
     /// <summary>
     /// Defined a open authorize request without client_id. Typical requested by Altinn Apps or other applications in Altinn Platform that do not have a client_id.
@@ -10,5 +12,8 @@
         public string? RequestedIss { get; init; }
 
         public string[]? AcrValues { get; init; }
+        public IPAddress? ClientIp { get; init; }
+        public string? UserAgentHash { get; init; }
+        public Guid? CorrelationId { get; init; }
     }
 }

@@ -1,14 +1,22 @@
-﻿using System.Net;
+﻿using Microsoft.Identity.Client;
+using System.Net;
 
 namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
-    public sealed record ClientlessRequestCreate(
-        Guid RequestId,
-        DateTimeOffset ExpiresAt,
-        string Issuer,
-        string GotoUrl,
-        IPAddress? CreatedByIp,
-        string? UserAgentHash,
-        Guid? CorrelationId
-    );
+    public sealed class ClientlessRequestCreate
+    {
+        public Guid RequestId { get; init; }
+
+        public DateTimeOffset ExpiresAt { get; init; }
+
+        public string Issuer {  get; init; }
+
+        public string? GotoUrl {  get; init; }
+
+        public IPAddress? CreatedByIp { get; init; }
+
+        public string? UserAgentHash { get; set; } 
+
+        public Guid? CorrelationId { get; init; }
+    }
 }

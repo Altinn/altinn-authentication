@@ -501,19 +501,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             HttpResponseMessage app2RedirectResponse = await client.GetAsync(
                "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
-            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", app2RedirectResponse.Headers.Location!.ToString());
+            Assert.StartsWith("https://login.idporten.no/authorize?response_type=code&client_id=345345s&redirect_uri=https%3a%2f%2fplatform.altinn.no%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
 
-            // ==== Phase 9: Keep alive flow from second App in Altinn Apps =====
-            for (int i = 0; i < 9; i++)
-            {
-                _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:41 08:46 08:51 08:56 08:59 09:06 09:11 09:16 09:21
+            string location = app2RedirectResponse.Headers.Location!.ToString();
 
-                // Second keep alive from App
-                HttpResponseMessage cookieRefreshResponseFromSecondApp2 = await client.GetAsync(
-                   "/authentication/api/v1/refresh");
-                string refreshToken2FromSecondApp = await cookieRefreshResponseFromSecondApp2.Content.ReadAsStringAsync();
-                TokenAssertsHelper.AssertCookieAccessToken(refreshToken2FromSecondApp, testScenario, _fakeTime.GetUtcNow());
-            }
+            string state = HttpUtility.ParseQueryString(new Uri(location).Query)["state"]!;
+            string nonce = HttpUtility.ParseQueryString(new Uri(location).Query)["nonce"]!;
+            string codeChallenge = HttpUtility.ParseQueryString(new Uri(location).Query)["code_challenge"]!;
+            Assert.NotNull(nonce);
+            Assert.NotNull(state);
+            Assert.NotNull(codeChallenge);
         }
 
         private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)

@@ -47,7 +47,8 @@ namespace Altinn.Platform.Authentication.Services
         IAuthorizationCodeRepository authorizationCodeRepository,
         IOptions<GeneralSettings> generalSettings,
         ITokenService tokenService,
-        IRefreshTokenRepository refreshTokenRepository) : IOidcServerService
+        IRefreshTokenRepository refreshTokenRepository,
+        IClientlessRequestRepository clientlessRequestRepository) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -66,6 +67,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
         private readonly ITokenService _tokenService = tokenService;
         private readonly IRefreshTokenRepository _refreshTokenRepo = refreshTokenRepository;
+        private readonly IClientlessRequestRepository _clientlessRequestRepository = clientlessRequestRepository;
         private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
@@ -151,11 +153,35 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Authorize clientless is used for flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
         /// </summary>
-        public Task<AuthorizeResult> AuthorizeClientLess(AuthorizeClientlessRequest request, CancellationToken cancellationToken)
+        public async Task<AuthorizeResult> AuthorizeClientLess(AuthorizeClientlessRequest request, CancellationToken cancellationToken)
         {
-           OidcProvider provider = ChooseProvider(request);
-           
-            throw new NotImplementedException();
+            OidcProvider provider = ChooseProvider(request);
+
+            ClientlessRequestCreate clientlessRequestCreate = new()
+            {
+                RequestId = Guid.NewGuid(),
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
+                Issuer = provider.Issuer,
+                GotoUrl = request.GoTo,
+                CreatedByIp = request.ClientIp,
+                UserAgentHash = request.UserAgentHash,
+                CorrelationId = request.CorrelationId
+            };
+
+            await _clientlessRequestRepository.InsertAsync(clientlessRequestCreate, cancellationToken);
+
+            (string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(clientlessRequestCreate, provider, cancellationToken);
+
+            Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
+            provider,
+            upstreamState,
+            upstreamNonce,
+            upstreamPkceChallenge,
+            request,
+            provider.IssuerKey);
+
+            // ========= 9) Return redirect upstream =========
+            return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, clientlessRequestCreate.RequestId);
         }
 
         /// <inheritdoc/>
@@ -487,7 +513,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         private async Task<(UpstreamCallbackResult? CallbackResultdownstreamValidation, LoginTransaction? LoginTx)> ValidateDownstreamCallbackState(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
         {
-            LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx!.RequestId, cancellationToken);
+            LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx!.RequestId.Value, cancellationToken);
             if (loginTx is null)
             {
                 return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
@@ -647,50 +673,44 @@ namespace Altinn.Platform.Authentication.Services
             return (provider, upstreamState, upstreamNonce, upstreamPkceChallenge);
         }
 
-        //private async Task<(OidcProvider Provider, string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(AuthorizeClientlessRequest request, CancellationToken cancellationToken)
-        //{
-        //    OidcProvider provider = ChooseProvider(request);
+        private async Task<(string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(ClientlessRequestCreate request, OidcProvider provider, CancellationToken cancellationToken)
+        {
+            string upstreamState = CryptoHelpers.RandomBase64Url(32);
+            string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
+            string upstreamPkceVerifier = Pkce.RandomPkceVerifier();
+            string upstreamPkceChallenge = Hashing.Sha256Base64Url(upstreamPkceVerifier);
 
-        //    string upstreamState = CryptoHelpers.RandomBase64Url(32);
-        //    string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
-        //    string upstreamPkceVerifier = Pkce.RandomPkceVerifier();
-        //    string upstreamPkceChallenge = Hashing.Sha256Base64Url(upstreamPkceVerifier);
+            // ========= 7) Persist login_transaction_upstream =========
+            // NOTE: Store everything you need for callback + token exchange.
+            UpstreamLoginTransactionCreate upstreamCreate = new()
+            {
+                ClientLessRequestId = request.RequestId, 
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
 
-        //    // ========= 7) Persist login_transaction_upstream =========
-        //    // NOTE: Store everything you need for callback + token exchange.
-        //    UpstreamLoginTransactionCreate upstreamCreate = new()
-        //    {
-        //        RequestId = tx.RequestId,
-        //        ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
+                Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
+                UpstreamClientId = provider.ClientId,
+                AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
+                TokenEndpoint = new Uri(provider.TokenEndpoint),
+                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : null, // keep null unless you decide to pin
 
-        //        Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
-        //        UpstreamClientId = provider.ClientId,
-        //        AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
-        //        TokenEndpoint = new Uri(provider.TokenEndpoint),
-        //        JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : null, // keep null unless you decide to pin
+                UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
 
-        //        UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
+                State = upstreamState,
+                Nonce = upstreamNonce,
+                Scopes = provider.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
 
-        //        State = upstreamState,
-        //        Nonce = upstreamNonce,
-        //        Scopes = request.Scopes,
-        //        AcrValues = request.AcrValues?.Length > 0 ? request.AcrValues : null,
-        //        Prompts = request.Prompts?.Length > 0 ? request.Prompts : null,
-        //        UiLocales = request.UiLocales?.Length > 0 ? request.UiLocales : null,
-        //        MaxAge = request.MaxAge,
+                CodeVerifier = upstreamPkceVerifier,
+                CodeChallenge = upstreamPkceChallenge,
+                CodeChallengeMethod = "S256",
 
-        //        CodeVerifier = upstreamPkceVerifier,
-        //        CodeChallenge = upstreamPkceChallenge,
-        //        CodeChallengeMethod = "S256",
+                CorrelationId = request.CorrelationId,
+                CreatedByIp = request.CreatedByIp,
+                UserAgentHash = request.UserAgentHash
+            };
 
-        //        CorrelationId = request.CorrelationId,
-        //        CreatedByIp = request.ClientIp,
-        //        UserAgentHash = request.UserAgentHash
-        //    };
-
-        //    _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
-        //    return (provider, upstreamState, upstreamNonce, upstreamPkceChallenge);
-        //}
+            _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
+            return (upstreamState, upstreamNonce, upstreamPkceChallenge);
+        }
 
         private async Task<LoginTransaction> PersistLoginTransaction(AuthorizeRequest request, OidcClient client, CancellationToken cancellationToken)
         {
@@ -975,6 +995,34 @@ namespace Altinn.Platform.Authentication.Services
             if (incoming.MaxAge is not null)
             {
                 q["max_age"] = incoming.MaxAge.Value.ToString();
+            }
+
+            var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };
+            return ub.Uri;
+        }
+
+        private static Uri BuildUpstreamAuthorizeUrl(
+               OidcProvider p,
+               string upstreamState,
+               string upstreamNonce,
+               string upstreamCodeChallenge,
+               AuthorizeClientlessRequest incoming,
+               string? issKeyForCallback)
+        {
+            var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
+            q["client_id"] = p.ClientId;
+            q["redirect_uri"] = BuildUpstreamRedirectUri(p, issKeyForCallback).ToString();
+            q["scope"] = string.IsNullOrWhiteSpace(p.Scope) ? "openid" : p.Scope;
+
+            q["state"] = upstreamState;
+            q["nonce"] = upstreamNonce;
+            q["code_challenge"] = upstreamCodeChallenge;
+            q["code_challenge_method"] = "S256";
+
+            if (incoming.AcrValues is { Length: > 0 })
+            {
+                q["acr_values"] = string.Join(' ', incoming.AcrValues);
             }
 
             var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };

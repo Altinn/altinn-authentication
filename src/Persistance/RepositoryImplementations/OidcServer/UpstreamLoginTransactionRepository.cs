@@ -24,9 +24,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task<UpstreamLoginTransaction> InsertAsync(UpstreamLoginTransactionCreate create, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(create);
-            if (create.RequestId == Guid.Empty)
+            if (create.RequestId == Guid.Empty && create.ClientLessRequestId == Guid.Empty)
             {
-                throw new ArgumentException("RequestId required.", nameof(create));
+                throw new ArgumentException("RequestId or ClientLessRequestId is required.", nameof(create));
             }
 
             if (string.IsNullOrWhiteSpace(create.Provider))
@@ -86,6 +86,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 INSERT INTO {UpstreamLoginTransactionTable.TABLE} (
                     {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID},
                     {UpstreamLoginTransactionTable.REQUEST_ID},
+                    {UpstreamLoginTransactionTable.CLIENT_LESS_REQUEST_ID},
                     {UpstreamLoginTransactionTable.STATUS},
                     {UpstreamLoginTransactionTable.CREATED_AT},
                     {UpstreamLoginTransactionTable.EXPIRES_AT},
@@ -117,6 +118,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 VALUES (
                     @upstream_request_id,
                     @request_id,
+                    @clientless_request_id,
                     'pending',
                     @created_at,
                     @expires_at,
@@ -148,6 +150,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 RETURNING
                   {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID},
                   {UpstreamLoginTransactionTable.REQUEST_ID},
+                  {UpstreamLoginTransactionTable.CLIENT_LESS_REQUEST_ID},
                   {UpstreamLoginTransactionTable.STATUS},
                   {UpstreamLoginTransactionTable.CREATED_AT},
                   {UpstreamLoginTransactionTable.EXPIRES_AT},
@@ -195,7 +198,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 await using var cmd = _ds.CreateCommand(SQL);
 
                 cmd.Parameters.AddWithValue("upstream_request_id", upstreamRequestId);
-                cmd.Parameters.AddWithValue("request_id", create.RequestId);
+                cmd.Parameters.AddWithValue("request_id", DbNullIfEmpty(create.RequestId));
+                cmd.Parameters.AddWithValue("clientless_request_id", DbNullIfEmpty(create.ClientLessRequestId));
                 cmd.Parameters.AddWithValue("created_at", now);
                 cmd.Parameters.AddWithValue("expires_at", create.ExpiresAt);
 
@@ -255,6 +259,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 SELECT
                   {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID},
                   {UpstreamLoginTransactionTable.REQUEST_ID},
+                  {UpstreamLoginTransactionTable.CLIENT_LESS_REQUEST_ID},
                   {UpstreamLoginTransactionTable.STATUS},
                   {UpstreamLoginTransactionTable.CREATED_AT},
                   {UpstreamLoginTransactionTable.EXPIRES_AT},
@@ -453,6 +458,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 return u;
             }
 
+            static Guid? GetGuidOrNull(NpgsqlDataReader rr, string col)
+            {
+                var ord = rr.GetOrdinal(col);
+                return rr.IsDBNull(ord) ? (Guid?)null : rr.GetFieldValue<Guid>(ord);
+            }
+
             static string[] GetArray(NpgsqlDataReader rr, string col) =>
                 rr.IsDBNull(rr.GetOrdinal(col)) ? Array.Empty<string>() : rr.GetFieldValue<string[]>(col);
 
@@ -478,7 +489,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             return new UpstreamLoginTransaction
             {
                 UpstreamRequestId = r.GetFieldValue<Guid>(UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID),
-                RequestId = r.GetFieldValue<Guid>(UpstreamLoginTransactionTable.REQUEST_ID),
+                RequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.REQUEST_ID),
+                ClientLessRequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.CLIENT_LESS_REQUEST_ID),
                 Status = r.GetFieldValue<string>(UpstreamLoginTransactionTable.STATUS),
                 CreatedAt = r.GetFieldValue<DateTimeOffset>(UpstreamLoginTransactionTable.CREATED_AT),
                 ExpiresAt = r.GetFieldValue<DateTimeOffset>(UpstreamLoginTransactionTable.EXPIRES_AT),
@@ -522,5 +534,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 UserAgentHash = r.IsDBNull(r.GetOrdinal(UpstreamLoginTransactionTable.USER_AGENT_HASH)) ? null : r.GetFieldValue<string>(UpstreamLoginTransactionTable.USER_AGENT_HASH)
             };
         }
+
+        private static object DbNullIfEmpty(Guid value)
+    => value == Guid.Empty ? DBNull.Value : value;
     }
 }
