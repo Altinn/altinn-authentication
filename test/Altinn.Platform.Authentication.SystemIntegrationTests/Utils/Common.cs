@@ -26,8 +26,7 @@ public class Common
     private SystemRegisterClient SystemRegisterClient => _platformClient.SystemRegisterClient;
     private SystemUserClient SystemUserClient => _platformClient.SystemUserClient;
 
-    public async Task<string> CreateAndApproveSystemUserRequest(string? maskinportenToken, string externalRef,
-        Testuser testuser, string clientId)
+    public async Task<string> CreateAndApproveSystemUserRequest(string? maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
         var testState = new TestState("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
             .WithClientId(clientId)
@@ -93,7 +92,7 @@ public class Common
         return resp.Content;
     }
 
-    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
+    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
     {
         // Use the PostAsync method for the approval request
         var response = await _platformClient.PostAsync(endpoint, string.Empty, testperson.AltinnToken);
@@ -140,10 +139,9 @@ public class Common
             $"[Response was {response.StatusCode} : Response body was: {await response.Content.ReadAsStringAsync()}]");
     }
 
-    public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser,
-        string externalRef = "")
+    public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser, string externalRef)
     {
-        var systemUsers = await SystemUserClient.GetSystemUsersForAgentTestUser(testuser);
+        List<SystemUser> systemUsers = await SystemUserClient.GetSystemUsersForAgentTestUser(testuser);
         return systemUsers.Find(user => user.SystemId == systemId && user.ExternalRef == externalRef);
     }
 

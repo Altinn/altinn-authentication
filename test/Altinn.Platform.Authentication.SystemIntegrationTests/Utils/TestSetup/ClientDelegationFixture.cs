@@ -1,7 +1,11 @@
 using System.Net;
 using System.Text.Json;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Domain.Authorization;
+using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.Builders;
 using Xunit;
+
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
@@ -10,6 +14,8 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
 {
     public required string SystemId;
     public string? VendorTokenMaskinporten;
+    public string? SystemUserId;
+    public required Testuser Facilitator;
     public string? ClientId { get; set; }
 
     public async Task InitializeAsync()
@@ -26,17 +32,17 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
             "urn:altinn:accesspackage:skattegrunnlag",
             "urn:altinn:accesspackage:forretningsforer-eiendom"
         ];
-        
+
         SystemId = await CreateSystemWithAccessPackages(accessPackages);
     }
 
     public async Task DisposeAsync()
     {
         await Platform.Common.DeleteSystem(SystemId, VendorTokenMaskinporten);
+        await Platform.SystemUserClient.DeleteAgentSystemUser(SystemUserId, Facilitator);
     }
-    
-    // Consider moving this to Common
-    public async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
+
+    private async Task<string> CreateSystemWithAccessPackages(string[] accessPackages)
     {
         var maskinportenToken = await Platform.GetMaskinportenTokenForVendor();
         var vendorId = Platform.EnvironmentHelper.Vendor;
@@ -60,5 +66,127 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
 
         await Common.AssertResponse(response, HttpStatusCode.OK);
         return systemId;
+    }
+
+    public async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef)
+    {
+        var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
+            .Replace("{systemId}", SystemId)
+            .Replace("{externalRef}", externalRef)
+            .Replace("{accessPackage}", accessPackage)
+            .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
+
+        var userResponse = await Platform.PostAsync(Endpoints.PostAgentClientRequest.Url(),
+            clientRequestBody, VendorTokenMaskinporten);
+
+        var userResponseContent = await userResponse.Content.ReadAsStringAsync();
+        Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
+            $"Unexpected status: {userResponse.StatusCode} - {userResponseContent}");
+
+        var requestId = Common.ExtractPropertyFromJson(userResponseContent, "id");
+        await AssertStatusSystemUserRequest(requestId, "New", VendorTokenMaskinporten);
+
+        var systemUserResponse =
+            await Platform.Common.GetSystemUserForVendorAgent(SystemId, VendorTokenMaskinporten);
+
+        Assert.NotNull(systemUserResponse);
+        Assert.Contains(SystemId, await systemUserResponse.ReadAsStringAsync());
+
+        var approveUrl = Endpoints.ApproveAgentRequest.Url()
+            .Replace("{facilitatorPartyId}", facilitator.AltinnPartyId)
+            .Replace("{requestId}", requestId);
+
+        var approveResponse = await Platform.Common.ApproveRequest(approveUrl, facilitator);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        await AssertStatusSystemUserRequest(requestId, "Accepted", VendorTokenMaskinporten);
+    }
+
+    private async Task AssertStatusSystemUserRequest(string requestId, string expectedStatus, string? maskinportenToken)
+    {
+        var getRequestByIdUrl = Endpoints.GetVendorAgentRequestById.Url().Replace("{requestId}", requestId);
+        var responseGetByRequestId = await Platform.GetAsync(getRequestByIdUrl, maskinportenToken);
+
+        Assert.True(HttpStatusCode.OK == responseGetByRequestId.StatusCode);
+        Assert.Contains(requestId, await responseGetByRequestId.Content.ReadAsStringAsync());
+
+        var status = Common.ExtractPropertyFromJson(await responseGetByRequestId.Content.ReadAsStringAsync(), "status");
+        Assert.True(expectedStatus.Equals(status), $"Status is not {expectedStatus} but: {status}");
+    }
+
+    public async Task<List<CustomerListDto>> GetCustomers(Testuser facilitator, string? systemUserId, bool allCustomers = false)
+    {
+        var customerListResp = await Platform.GetCustomerList(facilitator, systemUserId);
+
+        Assert.True(customerListResp.StatusCode == HttpStatusCode.OK,
+            $"Unable to get customer list, returned status code: {customerListResp.StatusCode} for system: {systemUserId}");
+
+        var customerContent = await customerListResp.Content.ReadAsStringAsync();
+        var customers = JsonSerializer.Deserialize<List<CustomerListDto>>(customerContent);
+
+        Assert.NotNull(customers);
+        Assert.True(customers.Count > 0, $"Found no customers for systemuser with Id {systemUserId}");
+
+        Assert.True(customerListResp.StatusCode == HttpStatusCode.OK,
+            $"Unable to get customer list, returned status code: {customerListResp.StatusCode} for system: {systemUserId}");
+        
+        List<CustomerListDto> customersToDelegate = allCustomers ? customers : customers.Take(1).ToList();
+        return customersToDelegate;
+    }
+
+    public async Task RemoveDelegations(List<DelegationResponseDto> allDelegations, Testuser facilitator)
+    {
+        foreach (var delegation in allDelegations)
+        {
+            var deleteResponse = await Platform.DeleteDelegation(facilitator, delegation);
+            Assert.True(deleteResponse.IsSuccessStatusCode, $"Failed to delete delegation {delegation.delegationId}");
+        }
+    }
+
+
+    public async Task<string?> PerformDecision(string? systemUserId, string? customerOrg)
+    {
+        //klientdelegeringsressurs med revisorpakke definert i ressursregisteret: "klientdelegeringressurse2e"
+        var requestBody = (await Helper.ReadFile("Resources/Testdata/AccessManagement/systemUserDecision.json"))
+            .Replace("{customerOrgNo}", customerOrg)
+            .Replace("{subjectSystemUser}", systemUserId)
+            .Replace("{ResourceId}", "klientdelegeringressurse2e");
+
+        var response =
+            await Platform.AccessManagementClient.PostDecision(requestBody);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Decision endpoint failed with: {response.StatusCode}");
+
+        var json = await response.Content.ReadAsStringAsync();
+        var dto = JsonSerializer.Deserialize<DecisionResponseDto>(json);
+        Assert.True(dto?.Response != null, "Response is null for deserialization of decision");
+        return dto.Response.FirstOrDefault()?.Decision;
+    }
+
+    public async Task<List<DelegationResponseDto>> DelegateCustomerToSystemUser(Testuser facilitator, string? systemUserId, List<CustomerListDto> customersToDelegate)
+    {
+        List<DelegationResponseDto> responses = [];
+
+        foreach (var customer in customersToDelegate)
+        {
+            var requestBody = JsonSerializer.Serialize(new
+            {
+                customerId = customer.id,
+                facilitatorId = facilitator.AltinnPartyUuid,
+                access = customer.access ?? []
+            });
+
+            var delegationResponse =
+                await Platform.DelegateFromAuthentication(facilitator, systemUserId, requestBody);
+            Assert.NotNull(delegationResponse);
+            Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
+
+            var delegationContent = await delegationResponse.Content.ReadAsStringAsync();
+            List<DelegationResponseDto>? parsedList = JsonSerializer.Deserialize<List<DelegationResponseDto>>(delegationContent);
+            var parsedDelegation = parsedList?.FirstOrDefault();
+            Assert.NotNull(parsedDelegation);
+            responses.Add(parsedDelegation);
+        }
+
+        return responses;
     }
 }

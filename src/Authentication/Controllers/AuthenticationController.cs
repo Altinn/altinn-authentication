@@ -607,6 +607,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 UserProfile userProfile = await _userProfileService.GetUser(pid);
+                UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = pid });
 
                 string issuer = _generalSettings.AltinnOidcIssuerUrl;
 
@@ -634,6 +635,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userProfile.UserName, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userProfile.PartyId.ToString(), ClaimValueTypes.Integer32, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, profile.UserUuid.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authMethod, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue, ClaimValueTypes.Integer32, issuer));
                 claims.AddRange(token.Claims);
