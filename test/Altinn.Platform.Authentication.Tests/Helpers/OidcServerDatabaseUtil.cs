@@ -61,6 +61,28 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
+        public static async Task<UpstreamLoginTransaction?> GetUpstreamtransactrion(string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        {
+            const string SQL_FIND_UPSTREAM = /*strpsql*/ @"
+            SELECT * from oidcserver.login_transaction_upstream
+            WHERE state = @state
+            LIMIT 1;";
+
+            await using (var cmd = DataSource.CreateCommand(SQL_FIND_UPSTREAM))
+            {
+                cmd.Parameters.AddWithValue("state", state);
+
+                await using var reader = await cmd.ExecuteReaderAsync();
+
+                if (!await reader.ReadAsync(ct))
+                {
+                    return null;
+                }
+
+                return MapUpstreamLoginTransaction(reader);
+            }
+        }
+
         public static async Task<OidcSession?> GetOidcSessionAsync(string sid, NpgsqlDataSource _ds, CancellationToken ct = default)
         {
             const string SQL = "SELECT * FROM oidcserver.oidc_session WHERE sid=@sid LIMIT 1;";
@@ -113,6 +135,12 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 return u;
             }
 
+            static Guid? GetGuidOrNull(NpgsqlDataReader rr, string col)
+            {
+                var ord = rr.GetOrdinal(col);
+                return rr.IsDBNull(ord) ? (Guid?)null : rr.GetFieldValue<Guid>(ord);
+            }
+
             static string[] GetArray(NpgsqlDataReader rr, string col) =>
                 rr.IsDBNull(rr.GetOrdinal(col)) ? Array.Empty<string>() : rr.GetFieldValue<string[]>(col);
 
@@ -138,7 +166,8 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             return new UpstreamLoginTransaction
             {
                 UpstreamRequestId = r.GetFieldValue<Guid>(UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID),
-                RequestId = r.GetFieldValue<Guid>(UpstreamLoginTransactionTable.REQUEST_ID),
+                RequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.REQUEST_ID),
+                ClientLessRequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.CLIENT_LESS_REQUEST_ID),
                 Status = r.GetFieldValue<string>(UpstreamLoginTransactionTable.STATUS),
                 CreatedAt = r.GetFieldValue<DateTimeOffset>(UpstreamLoginTransactionTable.CREATED_AT),
                 ExpiresAt = r.GetFieldValue<DateTimeOffset>(UpstreamLoginTransactionTable.EXPIRES_AT),

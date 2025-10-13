@@ -511,6 +511,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.NotNull(nonce);
             Assert.NotNull(state);
             Assert.NotNull(codeChallenge);
+
+            // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
+            (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, app2RedirectResponse, _fakeTime.GetUtcNow());
         }
 
         private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
@@ -518,13 +521,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
             string? upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
 
-            // Asserting DB persistence after /authorize
-            Debug.Assert(testScenario?.DownstreamClientId != null);
-            LoginTransaction? loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
-            OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario, now);
-
-            UpstreamLoginTransaction? createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(loginTransaction.RequestId, DataSource);
+            UpstreamLoginTransaction? createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(upstreamState, DataSource);
+            Assert.NotNull(createdUpstreamLogingTransaction);
             OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario, now);
+
+            if (createdUpstreamLogingTransaction.RequestId != null)
+            {
+                // Asserting DB persistence after /authorize
+                Debug.Assert(testScenario?.DownstreamClientId != null);
+                LoginTransaction? loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
+                OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario, now);
+            }
+
             return (upstreamState, createdUpstreamLogingTransaction);
         }
 

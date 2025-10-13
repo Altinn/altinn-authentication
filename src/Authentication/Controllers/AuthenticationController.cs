@@ -213,6 +213,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
                 else if (_generalSettings.ForceOidc)
                 {
+                    Response.Headers.CacheControl = "no-store";
+                    Response.Headers.Pragma = "no-cache";
                     System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
                     string ua = Request.Headers.UserAgent.ToString();
                     string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
