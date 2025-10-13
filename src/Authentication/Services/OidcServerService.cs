@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Identity.Client;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -148,10 +149,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <summary>
-        /// 
+        /// Authorize clientless is used for flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
         /// </summary>
         public Task<AuthorizeResult> AuthorizeClientLess(AuthorizeClientlessRequest request, CancellationToken cancellationToken)
         {
+           OidcProvider provider = ChooseProvider(request);
+           
             throw new NotImplementedException();
         }
 
@@ -644,6 +647,51 @@ namespace Altinn.Platform.Authentication.Services
             return (provider, upstreamState, upstreamNonce, upstreamPkceChallenge);
         }
 
+        //private async Task<(OidcProvider Provider, string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(AuthorizeClientlessRequest request, CancellationToken cancellationToken)
+        //{
+        //    OidcProvider provider = ChooseProvider(request);
+
+        //    string upstreamState = CryptoHelpers.RandomBase64Url(32);
+        //    string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
+        //    string upstreamPkceVerifier = Pkce.RandomPkceVerifier();
+        //    string upstreamPkceChallenge = Hashing.Sha256Base64Url(upstreamPkceVerifier);
+
+        //    // ========= 7) Persist login_transaction_upstream =========
+        //    // NOTE: Store everything you need for callback + token exchange.
+        //    UpstreamLoginTransactionCreate upstreamCreate = new()
+        //    {
+        //        RequestId = tx.RequestId,
+        //        ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
+
+        //        Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
+        //        UpstreamClientId = provider.ClientId,
+        //        AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
+        //        TokenEndpoint = new Uri(provider.TokenEndpoint),
+        //        JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : null, // keep null unless you decide to pin
+
+        //        UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
+
+        //        State = upstreamState,
+        //        Nonce = upstreamNonce,
+        //        Scopes = request.Scopes,
+        //        AcrValues = request.AcrValues?.Length > 0 ? request.AcrValues : null,
+        //        Prompts = request.Prompts?.Length > 0 ? request.Prompts : null,
+        //        UiLocales = request.UiLocales?.Length > 0 ? request.UiLocales : null,
+        //        MaxAge = request.MaxAge,
+
+        //        CodeVerifier = upstreamPkceVerifier,
+        //        CodeChallenge = upstreamPkceChallenge,
+        //        CodeChallengeMethod = "S256",
+
+        //        CorrelationId = request.CorrelationId,
+        //        CreatedByIp = request.ClientIp,
+        //        UserAgentHash = request.UserAgentHash
+        //    };
+
+        //    _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
+        //    return (provider, upstreamState, upstreamNonce, upstreamPkceChallenge);
+        //}
+
         private async Task<LoginTransaction> PersistLoginTransaction(AuthorizeRequest request, OidcClient client, CancellationToken cancellationToken)
         {
             LoginTransactionCreate transaction = new()
@@ -800,6 +848,44 @@ namespace Altinn.Platform.Authentication.Services
             throw new ApplicationException("server_error No default OIDC provider configured.");
         }
 
+        private OidcProvider ChooseProvider(AuthorizeClientlessRequest req)
+        {
+            if (req.RequestedIss is not null)
+            {
+                foreach (var p in _oidcProviderSettings.Values)
+                {
+                    if (string.Equals(p.Issuer, req.RequestedIss, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(p.IssuerKey, req.RequestedIss, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return p;
+                    }
+                }
+            }
+
+            // 1) Try map ACR → provider key
+            string? key = GetIdProviderFromAcr(req.AcrValues ?? Array.Empty<string>());
+
+            // 3) Try explicit key first
+            if (!string.IsNullOrEmpty(key) && _oidcProviderSettings.TryGetValue(key, out var selected))
+            {
+                _logger.LogDebug("OIDC upstream provider selected via acr mapping: {ProviderKey}", key);
+                return selected;
+            }
+
+            // 4) Fallback to configured default ('idporten')
+            if (_oidcProviderSettings.TryGetValue(DefaultProviderKey, out var defaultIdp))
+            {
+                _logger.LogDebug("OIDC upstream provider defaulted to 'idporten'.");
+                return defaultIdp;
+            }
+
+            // 5) No match → OIDC-style failure (surface as 'server_error' from /authorize)
+            _logger.LogError(
+                "No default OIDC provider configured. Known providers: {Keys}",
+                string.Join(",", _oidcProviderSettings.Keys));
+            throw new ApplicationException("server_error No default OIDC provider configured.");
+        }
+
         private OidcProvider ChooseProviderByKey(string? key)
         {
             if (!string.IsNullOrWhiteSpace(key) && _oidcProviderSettings.TryGetValue(key, out var selected))
@@ -838,10 +924,9 @@ namespace Altinn.Platform.Authentication.Services
                 return "idporten";
             }
 
-            // Test provider (adjust if you actually want this to go to idporten)
             if (set.Contains("selfregistered-email"))
             {
-                return "testidp"; // <-- change to "idporten" if that’s intentional
+                return "idporten";
             }
 
             // UDIR/UIDP

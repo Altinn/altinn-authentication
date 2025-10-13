@@ -5,8 +5,10 @@
     /// </summary>
     public sealed class AuthorizeClientlessRequest
     {
-       public string GoTo { get; init; }
+       public string? GoTo { get; init; }
 
-        public string RequestedIss { get; init; }
+        public string? RequestedIss { get; init; }
+
+        public string[]? AcrValues { get; init; }
     }
 }

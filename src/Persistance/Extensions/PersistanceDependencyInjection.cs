@@ -38,6 +38,7 @@ public static class PersistanceDependencyInjection
         AddOidcSessionRepository(services);
         AddAuthorizationCodeRepository(services);
         AddRefreshTokenRepository(services);
+        AddClientlessRequestRepository(services);
         return services;
     }
 
@@ -141,6 +142,15 @@ public static class PersistanceDependencyInjection
     private static void AddLoginTransactionRepository(this IServiceCollection services)
     {
         services.TryAddTransient<ILoginTransactionRepository, LoginTransactionRepository>();
+    }
+
+    /// <summary>
+    /// Extension method for DI
+    /// </summary>
+    /// <param name="services">IServiceCollection for parent DI</param>
+    private static void AddClientlessRequestRepository(this IServiceCollection services)
+    {
+        services.TryAddTransient<IClientlessRequestRepository, ClientlessRequestRepository>();
     }
 
     /// <summary>
