@@ -257,7 +257,7 @@ namespace Altinn.Platform.Authentication.Services
                 Debug.Assert(clientlessRequest != null);
                 upstreamCallbackResult = new UpstreamCallbackResult
                 {
-                    Kind = UpstreamCallbackResultKind.RedirectToClient,
+                    Kind = UpstreamCallbackResultKind.RedirectToGoTo,
                     ClientRedirectUri = new Uri(clientlessRequest.GotoUrl),
                     DownstreamCode = null,
                     ClientState = null,

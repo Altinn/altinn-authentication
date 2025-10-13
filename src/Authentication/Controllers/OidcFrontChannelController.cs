@@ -137,7 +137,8 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 UpstreamCallbackResultKind.RedirectToClient =>
                     Redirect(BuildDownstreamSuccessRedirect(result.ClientRedirectUri!, result.DownstreamCode!, result.ClientState)),
-
+                UpstreamCallbackResultKind.RedirectToGoTo =>
+                    Redirect(result.ClientRedirectUri!.AbsoluteUri),
                 UpstreamCallbackResultKind.ErrorRedirectToClient =>
                     Redirect(BuildOidcErrorRedirect(result.ClientRedirectUri!, result.Error!, result.ErrorDescription, result.ClientState)),
 

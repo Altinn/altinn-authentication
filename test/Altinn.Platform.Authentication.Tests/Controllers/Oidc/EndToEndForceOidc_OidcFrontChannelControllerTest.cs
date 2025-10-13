@@ -526,6 +526,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            Assert.Equal(HttpStatusCode.Redirect, callbackResp.StatusCode);
+            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", callbackResp.Headers.Location!.ToString());
         }
 
         private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
