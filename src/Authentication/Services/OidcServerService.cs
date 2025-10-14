@@ -533,10 +533,20 @@ namespace Altinn.Platform.Authentication.Services
                         SameSite = SameSiteMode.Lax
                     };
 
+                CookieInstruction altinnSessionCookie = new()
+                {
+                    Name = _generalSettings.AltinnSessionCookieName,
+                    Value = sessionHandle,
+                    HttpOnly = true,
+                    Secure = true,
+                    Path = "/",
+                    SameSite = SameSiteMode.Lax,
+                };
+
                 return new AuthenticateFromAltinn2TicketResult
                 {
                     Kind = AuthenticateFromAltinn2TicketResultKind.Success,
-                    Cookies = [cookieInstruction]
+                    Cookies = [cookieInstruction, altinnSessionCookie]
                 };
             }
 
@@ -553,6 +563,7 @@ namespace Altinn.Platform.Authentication.Services
             model.Acr = AuthenticationHelper.GetAcrForAuthenticationLevel(model.AuthenticationLevel);
             model.TokenIssuer = model.Iss;
             model.TokenSubject = model.PartyUuid.ToString();
+            model.Scope = _generalSettings.DefaultPortalScopes;
         }
  
         private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)

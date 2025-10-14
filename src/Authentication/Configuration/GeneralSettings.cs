@@ -155,6 +155,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public bool ForceOidc { get; set; }
 
         /// <summary>
+        /// Scopes set when there is no client id (Altinn Apps) or source is Altinn 2
+        /// </summary>
+        public string DefaultPortalScopes { get; set; } = "openid digdir:dialogporten.noconsentaltinn:portal/enduser";
+
+        /// <summary>
         /// Enables the authorization server
         /// </summary>
         public bool AuthorizationServerEnabled { get; set; }

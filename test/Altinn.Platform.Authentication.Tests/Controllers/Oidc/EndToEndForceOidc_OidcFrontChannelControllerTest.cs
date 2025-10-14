@@ -668,6 +668,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
             Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", app2RedirectResponse.Headers.Location!.ToString());
+
+            OidcAssertHelper.AssertAuthorizedRedirect(app2RedirectResponse, testScenario, _fakeTime.GetUtcNow());
         }
 
         private static string GetConfigPath()

@@ -2,11 +2,9 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Security.Policy;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Tests.Helpers;
 using Altinn.Platform.Authentication.Tests.Models;
-using Docker.DotNet.Models;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
@@ -133,6 +131,12 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.True(oidcSession.UpdatedAt <= now);
             Assert.Equal(now, oidcSession.LastSeenAt); // not updated yet
             Assert.True(oidcSession.ExpiresAt > now);
+        }
+
+        public static void AssertAuthorizedRedirect(HttpResponseMessage authorizedRedirectResponse, OidcTestScenario testScenario, DateTimeOffset dateTimeOffset)
+        {
+            AssertHasAltinnStudioRuntimeCookie(authorizedRedirectResponse, out string runtimeValue, testScenario, dateTimeOffset);
+            AssertHasAltinnSessionCookie(authorizedRedirectResponse, out string value, testScenario, dateTimeOffset);
         }
     }
 }
