@@ -484,9 +484,31 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
-        /// aaplication redirect to Altinn Authentication to get a token. The user have a valid session in Authentication and should be redirected back to the application with a code.
+        /// End-to-end happy path where:
+        /// 1) A user opens an Altinn App (not authenticated there) which redirects to the standard
+        ///    authentication endpoint (with a <c>goto</c> URL). Altinn Authentication builds a PAR/JAR-style
+        ///    upstream authorize request (incl. <c>state</c>, <c>nonce</c>, PKCE <c>code_challenge</c>) and
+        ///    redirects to the upstream IdP.
+        /// 2) After a successful upstream login, the upstream callback to Altinn Authentication is simulated;
+        ///    Altinn Authenticaiton creates a session i database and creates a AltinnStudioRuntime cookie with JWT and redirects the browser back to the original app.
+        /// 3) Over time, the app keeps the Altinn session alive by calling <c>/authentication/api/v1/refresh</c>
+        ///    repeatedly; each response is validated as a usable cookie-based access token.
+        /// 4) Later, the user visits Arbeidsflate. Because an Altinn session is active, the authorization request
+        ///    short-circuits: Altinn immediately returns a new authorization code without re-authenticating upstream.
+        ///    The test redeems that code at <c>/authentication/api/v1/token</c> and validates the token response,
+        ///    extracting the current <c>sid</c>.
+        /// 5) The user logs out from Arbeidsflate via <c>/authentication/api/v1/logout2</c>. The test verifies:
+        ///    (a) browser is redirected to the upstream IdP’s logout endpoint,
+        ///    (b) the Altinn OIDC session is removed from the database,
+        ///    (c) a simulated upstream front-channel logout call to
+        ///        <c>/authentication/api/v1/upstream/frontchannel-logout</c> returns <c>200 OK</c> with body <c>"OK"</c>.
         /// </summary>
-        /// <returns></returns>
+        /// <remarks>
+        /// - Verifies correct propagation and validation of OIDC artifacts (<c>state</c>, <c>nonce</c>, PKCE).
+        /// - Asserts persistence and cleanup of <c>LoginTransaction</c>/<c>UpstreamLoginTransaction</c> and <c>OidcSession</c>.
+        /// - Uses a fake clock to simulate elapsed time for refresh and later authorization.
+        /// - Confirms redirect targets for both login and logout and validates issued tokens and session lifecycle.
+        /// </remarks>
         [Fact]
         public async Task TC3_Auth_App_Aa_Logout_End_To_End_OK()
         {
