@@ -852,30 +852,22 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_ExpectedAgentUserType;
             }
 
-            Result<List<ConnectionDto>> delegations = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitatorId);
-            if (delegations.IsSuccess && delegations.Value.Count > 0)
+            Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
+            if (result.IsProblem)
             {
-                return Problem.AgentSystemUser_HasDelegations;
-            }
-            else
-            {
-                Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
-                if (result.IsProblem)
+                if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
                 {
-                    if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
-                    {
-                        await _repository.SetDeleteSystemUserById(systemUserId);
-                        return true;
-                    }
-                    else
-                    {
-                        return result.Problem;
-                    }
+                    await _repository.SetDeleteSystemUserById(systemUserId);
+                    return true;
                 }
-
-                await _repository.SetDeleteSystemUserById(systemUserId);
-                return true;
+                else
+                {
+                    return result.Problem;
+                }
             }
+
+            await _repository.SetDeleteSystemUserById(systemUserId);
+            return true;
         }
 
         /// <inheritdoc/>
