@@ -252,7 +252,33 @@ namespace Altinn.Platform.Authentication.Controllers
                     string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
                     Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
 
-                    AuthorizeClientlessRequest authorizeClientlessRequest = new AuthorizeClientlessRequest()
+                    string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
+                    string encryptedTicket = Request.Cookies[cookieName];
+
+                    if (encryptedTicket != null)
+                    {
+                        AuthenticateFromAltinn2TicketInput ticketInput = new() { EncryptedTicket = encryptedTicket, CreatedByIp = ip, UserAgentHash = userAgentHash, CorrelationId = corr };
+                        AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
+                        if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success))
+                        {
+                            foreach (var c in ticketResult.Cookies)
+                            {
+                                Response.Cookies.Append(c.Name, c.Value, new CookieOptions
+                                {
+                                    HttpOnly = c.HttpOnly,
+                                    Secure = c.Secure,
+                                    Path = c.Path ?? "/",
+                                    Domain = c.Domain,
+                                    Expires = c.Expires,
+                                    SameSite = c.SameSite
+                                });
+                            }
+
+                            return Redirect(goTo);
+                        }
+                    }
+
+                    AuthorizeClientlessRequest authorizeClientlessRequest = new()
                     {
                         GoTo = goTo,
                         RequestedIss = oidcissuer,
@@ -297,7 +323,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 if (Request.Cookies[_generalSettings.AltinnSessionCookieName] != null)
                 {
                     string sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
-                    AuthenticateFromSessionInput sessionCookieInput = new AuthenticateFromSessionInput { SessionHandle = sessionCookie };
+                    AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookie };
                     AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
                     if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
                     {
@@ -323,29 +349,37 @@ namespace Altinn.Platform.Authentication.Controllers
                     return Redirect(sblRedirectUrl);
                 }
 
-                try
+                string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
+                string encryptedTicket = Request.Cookies[cookieName];
+                if (_generalSettings.AuthorizationServerEnabled)
                 {
-                    string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
-                    string encryptedTicket = Request.Cookies[cookieName];
-                    userAuthentication = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
+                    AuthenticateFromAltinn2TicketInput ticketInput = new AuthenticateFromAltinn2TicketInput { EncryptedTicket = encryptedTicket };
+                    AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
                 }
-                catch (SblBridgeResponseException sblBridgeException)
+                else
                 {
-                    _logger.LogWarning(sblBridgeException, "SBL Bridge replied with {StatusCode} - {ReasonPhrase}", sblBridgeException.Response.StatusCode, sblBridgeException.Response.ReasonPhrase);
-                    return StatusCode(StatusCodes.Status503ServiceUnavailable);
-                }
-            }
+                    try
+                    {
+                        userAuthentication = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
+                    }
+                    catch (SblBridgeResponseException sblBridgeException)
+                    {
+                        _logger.LogWarning(sblBridgeException, "SBL Bridge replied with {StatusCode} - {ReasonPhrase}", sblBridgeException.Response.StatusCode, sblBridgeException.Response.ReasonPhrase);
+                        return StatusCode(StatusCodes.Status503ServiceUnavailable);
+                    }
 
-            if (userAuthentication.UserID != 0 && userAuthentication.PartyUuid == null)
-            {
-                UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
-                userAuthentication.PartyUuid = profile.UserUuid;
-            }
-            
-            if (userAuthentication != null && userAuthentication.IsAuthenticated)
-            {
-                await CreateTokenCookie(userAuthentication);
-                return Redirect(goTo);
+                    if (userAuthentication.UserID != 0 && userAuthentication.PartyUuid == null)
+                    {
+                        UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
+                        userAuthentication.PartyUuid = profile.UserUuid;
+                    }
+
+                    if (userAuthentication != null && userAuthentication.IsAuthenticated)
+                    {
+                        await CreateTokenCookie(userAuthentication);
+                        return Redirect(goTo);
+                    }
+                }
             }
 
             return Redirect(sblRedirectUrl);

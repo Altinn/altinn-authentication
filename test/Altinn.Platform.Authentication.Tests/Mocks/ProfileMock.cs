@@ -36,7 +36,19 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
                 return Task.FromResult(userProfile);
             }
+            else if (profileLookup.UserId != 0)
+            {
+                userProfile = profileList.Find(p => p.UserId == profileLookup.UserId);
+                if (userProfile == null)
+                {
+                    userProfile.Party = new Party() { PartyId = profileLookup.UserId };
+                    userProfile.UserId = profileLookup.UserId;
+                    userProfile.UserUuid = Guid.NewGuid();
+                }
 
+                return Task.FromResult(userProfile);
+            }
+        
             return Task.FromResult(userProfile);
         }
 

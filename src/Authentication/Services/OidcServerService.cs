@@ -20,6 +20,7 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
+using CommunityToolkit.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
@@ -48,7 +49,8 @@ namespace Altinn.Platform.Authentication.Services
         IOptions<GeneralSettings> generalSettings,
         ITokenService tokenService,
         IRefreshTokenRepository refreshTokenRepository,
-        IClientlessRequestRepository clientlessRequestRepository) : IOidcServerService
+        IClientlessRequestRepository clientlessRequestRepository,
+        ISblCookieDecryptionService sblCookieDecryptionService) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -68,6 +70,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ITokenService _tokenService = tokenService;
         private readonly IRefreshTokenRepository _refreshTokenRepo = refreshTokenRepository;
         private readonly IClientlessRequestRepository _clientlessRequestRepository = clientlessRequestRepository;
+        private readonly ISblCookieDecryptionService _cookieDecryptionService = sblCookieDecryptionService;
         private static readonly string DefaultProviderKey = "idporten";
 
         /// <summary>
@@ -199,7 +202,7 @@ namespace Altinn.Platform.Authentication.Services
             // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
-            await IdentifyOrCreateAltinnUser(userIdenity, provider);
+            userIdenity = await IdentifyOrCreateAltinnUser(userIdenity);
 
             // 3. Create or refresh Altinn session session
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
@@ -507,6 +510,51 @@ namespace Altinn.Platform.Authentication.Services
             };
         }
 
+        /// <summary>
+        /// Handles the authentication process based on the provided Altinn2 ticket input.
+        /// </summary>
+        public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput sessionInfo, CancellationToken ct)
+        {
+            UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(sessionInfo.EncryptedTicket);
+            userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel);
+            EnrichIdentityFromLegacyValues(userAuthenticationModel);
+            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(sessionInfo, userAuthenticationModel, ct);
+            if (session != null && session.ExpiresAt > _timeProvider.GetUtcNow())
+            {
+                string token = await _tokenService.CreateCookieToken(session, ct);
+                CookieInstruction cookieInstruction
+                    = new()
+                    {
+                        Name = _generalSettings.JwtCookieName,
+                        Value = token,
+                        HttpOnly = true,
+                        Secure = true,
+                        Path = "/",
+                        SameSite = SameSiteMode.Lax
+                    };
+
+                return new AuthenticateFromAltinn2TicketResult
+                {
+                    Kind = AuthenticateFromAltinn2TicketResultKind.Success,
+                    Cookies = [cookieInstruction]
+                };
+            }
+
+            return new AuthenticateFromAltinn2TicketResult()
+            {
+                Kind = AuthenticateFromAltinn2TicketResultKind.NoValidSession
+            };
+        }
+        
+        private void EnrichIdentityFromLegacyValues(UserAuthenticationModel model)
+        {
+            model.Iss = "www.altinn.no";
+            model.Amr = [AuthenticationHelper.GetAmrFromAuthenticationMethod(model.AuthenticationMethod)];
+            model.Acr = AuthenticationHelper.GetAcrForAuthenticationLevel(model.AuthenticationLevel);
+            model.TokenIssuer = model.Iss;
+            model.TokenSubject = model.PartyUuid.ToString();
+        }
+ 
         private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
@@ -838,6 +886,51 @@ namespace Altinn.Platform.Authentication.Services
             return (session, sessionHandle);
         }
 
+        /// <summary>
+        /// Method that creates or updates an OIDC session based on the Altinn2 ticket identity.
+        /// This can be deleted in the future when Altinn2 is decommissioned.
+        /// </summary>
+        private async Task<(OidcSession OidcSession, string SessionHandle)> CreateOrUpdateOidcSessionFromAltinn2Ticket(AuthenticateFromAltinn2TicketInput authInput,  UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
+        {
+            string[]? scopes = [];
+            if (!string.IsNullOrWhiteSpace(userIdenity.Scope))
+            {
+                scopes = userIdenity.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            }
+
+            // 1) Generate 256-bit random handle for the cookie
+            byte[] handleBytes = RandomNumberGenerator.GetBytes(32);
+            string sessionHandle = ToBase64Url(handleBytes); // this is what you'll set as the cookie value
+
+            // 2) Hash it for storage (HMAC with server-side pepper)
+            byte[] handleHash = HashHandle(handleBytes);
+
+            OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
+                new OidcSessionCreate
+                {
+                    Sid = CryptoHelpers.RandomBase64Url(32),
+                    SessionHandleHash = handleHash, // store hash only
+                    Provider = "altinn2",
+                    UpstreamIssuer = userIdenity.TokenIssuer!,
+                    UpstreamSub = userIdenity.TokenSubject!,
+                    SubjectId = userIdenity.SSN ?? userIdenity.ExternalIdentity,   // <- string PID/email/etc
+                    SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
+                    SubjectPartyId = userIdenity.PartyID,              // <- legacy
+                    SubjectUserId = userIdenity.UserID,               // <- legacy
+                    Acr = userIdenity.Acr,
+                    AuthTime = userIdenity.AuthTime,
+                    Amr = userIdenity.Amr,
+                    Scopes = scopes,
+                    ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
+                    UpstreamSessionSid = userIdenity.Sid,
+                    Now = _timeProvider.GetUtcNow(),
+                    CreatedByIp = authInput.CreatedByIp,
+                    UserAgentHash = authInput.UserAgentHash
+                },
+                cancellationToken);
+            return (session, sessionHandle);
+        }
+
         private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e, OidcClient? oidcClient)
         {
             // If we can safely redirect back, do an OIDC error redirect; else local error.
@@ -1067,13 +1160,13 @@ namespace Altinn.Platform.Authentication.Services
             return baseCallback;
         }
 
-        private async Task IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
+        private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel)
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
             if (userAuthenticationModel != null && userAuthenticationModel.UserID != null && userAuthenticationModel.PartyID != null && userAuthenticationModel.PartyUuid != null)
             {
-                return;
+                return userAuthenticationModel;
             }
 
             UserProfile profile;
@@ -1106,10 +1199,23 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     userAuthenticationModel.UserID = profile.UserId;
                     userAuthenticationModel.PartyID = profile.PartyId;
-                    return;
+                    return userAuthenticationModel;
                 }
             }
+            else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
+            {
+                profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthenticationModel.UserID.Value });
+                userAuthenticationModel.PartyUuid = profile.UserUuid;
+                if (profile.PartyId != 0)
+                {
+                    userAuthenticationModel.PartyID = profile.PartyId;
+                    userAuthenticationModel.PartyUuid = profile.Party.PartyUuid;
+                    userAuthenticationModel.SSN = profile.Party.SSN;
+                    return userAuthenticationModel;
+                }
+            }
+            
+            return userAuthenticationModel;
         }
-
     }
 }

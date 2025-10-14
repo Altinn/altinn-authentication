@@ -21,6 +21,12 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public required string Ssn { get; set; }
 
+        public int? UserId { get; set; }
+
+        public int? PartyId { get; set; }
+
+        public string? UserName { get; set; }
+
         public string? DownstreamClientId { get; set; } = null;
 
         public string? DaownstreamNonce { get; set; } = null;
@@ -125,7 +131,7 @@ namespace Altinn.Platform.Authentication.Tests.Models
         {
             if (LoginStates.Count < attempt)
             {
-                LoginTestState state = new LoginTestState()
+                LoginTestState state = new()
                 {
                     DownstreamState = CryptoHelpers.RandomBase64Url(32),
                     DownstreamNonce = CryptoHelpers.RandomBase64Url(32),

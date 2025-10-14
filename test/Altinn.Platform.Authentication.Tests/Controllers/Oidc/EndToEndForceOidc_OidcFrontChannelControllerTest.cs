@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -13,6 +14,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
@@ -26,6 +28,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
+using Moq;
 using Npgsql;
 using Xunit;
 
@@ -41,6 +44,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         protected IOidcServerClientRepository Repository => Services.GetRequiredService<IOidcServerClientRepository>();
 
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
+
+        private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
 
         private static readonly FakeTimeProvider _fakeTime = new(
         DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
@@ -76,6 +81,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
+            services.AddSingleton(_cookieDecryptionService.Object);
 
             services.PostConfigure<GeneralSettings>(o =>
             {
@@ -636,11 +642,54 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             return (upstreamState, createdUpstreamLogingTransaction);
         }
 
+        /// <summary>
+        /// Test that verifies flow when it startes with Altinn 2 login
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TC4_Auth_A2_App_Aa_Logout_End_To_End_OK()
+        {
+            // Create HttpClient with default headers for IP, UA, correlation. 
+            using HttpClient client = CreateClientWithHeaders(new()
+            {
+                [".AspxAuth"] = "DummyAuthToken12345"
+            });
+
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+            ConfigureSblTokenMockByScenario(testScenario);
+
+            // Insert a client that matches the authorize request
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            // === Phase 1: User redirects an app in Altinn Apps and is not authenticated. The app redirects to the standard authentication endpoint with goto URL
+            // It already has a .ASPXauth that is valid and can be used to create a session in Authentication
+            HttpResponseMessage app2RedirectResponse = await client.GetAsync(
+               "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+            Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
+            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", app2RedirectResponse.Headers.Location!.ToString());
+        }
+
         private static string GetConfigPath()
         {
             string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
             Debug.Assert(unitTestFolder != null, nameof(unitTestFolder) + " != null");
             return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+        }
+
+        private void ConfigureSblTokenMockByScenario(OidcTestScenario scenario)
+        {
+            UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel
+            {
+                IsAuthenticated = true,
+                AuthenticationLevel = SecurityLevel.QuiteSensitive,
+                AuthenticationMethod = AuthenticationMethod.AltinnPIN,
+                PartyID = scenario.PartyId,
+                UserID = scenario.UserId,
+                Username = scenario.UserName
+            };
+
+            _cookieDecryptionService.Setup(s => s.DecryptTicket(It.IsAny<string>())).ReturnsAsync(userAuthenticationModel);
         }
 
         private void ConfigureMockProviderTokenResponse(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
@@ -668,7 +717,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 response: oidcCodeResponse);
         }
 
-        private HttpClient CreateClientWithHeaders()
+        private HttpClient CreateClientWithHeaders(Dictionary<string, string>? cookies = null)
         {
             var client = CreateClient();
             client.Timeout = TimeSpan.FromSeconds(30000);
@@ -677,6 +726,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
             client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
             client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
+
+            if (cookies is not null && cookies.Count > 0)
+            {
+                // Build a single Cookie header: "name=value; name2=value2"
+                var pairs = cookies.Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value)}");
+                var headerValue = string.Join("; ", pairs);
+                client.DefaultRequestHeaders.Remove("Cookie"); // in case called twice
+                client.DefaultRequestHeaders.Add("Cookie", headerValue);
+            }
+
             return client;
         }
     }

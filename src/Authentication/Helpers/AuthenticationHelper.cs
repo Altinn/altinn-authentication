@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text.RegularExpressions;
-using Altinn.Authentication.Core.Problems;
+﻿using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
@@ -15,6 +9,13 @@ using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 #nullable enable
 
@@ -162,16 +163,19 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         public static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
         {
-            switch (acr)
+            switch (acr.ToLower(CultureInfo.InvariantCulture))
             {
-                case "Level0":
-                    return Enum.SecurityLevel.NotSensitive;
-                case "Level3":
-                    return Enum.SecurityLevel.Sensitive;
-                case "Level4":
-                    return Enum.SecurityLevel.VerySensitive;
+                case "level0":
+                case "idporten-loa-low":
+                    return SecurityLevel.SelfIdentifed;
+                case "level3":
+                case "idporten-loa-substantial":
+                    return SecurityLevel.Sensitive;
+                case "level4":
+                case "idporten-loa-high":
+                    return SecurityLevel.VerySensitive;
                 default:
-                    return Enum.SecurityLevel.NotSensitive;
+                    return SecurityLevel.SelfIdentifed;
             }
         }
 
@@ -203,6 +207,47 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return Enum.AuthenticationMethod.NotDefined;
+        }
+
+        /// <summary>
+        /// Maps the specified <see cref="AuthenticationMethod"/> to its corresponding Authentication Method Reference
+        /// (AMR) value.
+        /// </summary>
+        /// <param name="method">The authentication method to map.</param>
+        /// <returns>A string representing the AMR value for the specified authentication method.  Returns an empty string if the
+        /// authentication method is not recognized.</returns>
+        public static string GetAmrFromAuthenticationMethod(AuthenticationMethod method)
+        {
+            return method switch
+            {
+                AuthenticationMethod.MinIDPin => "Minid-PIN",
+                AuthenticationMethod.MinIDOTC => "Minid-OTC",
+                AuthenticationMethod.Commfides => "Commfides",
+                AuthenticationMethod.BuyPass => "Buypass",
+                AuthenticationMethod.BankID => "BankID",
+                AuthenticationMethod.BankIDMobil => "BankID Mobil",
+                AuthenticationMethod.EIDAS => "eIDAS",
+                AuthenticationMethod.MaskinPorten => "maskinporten",
+                AuthenticationMethod.IdportenTestId => "testid",
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Inverse of GetAuthenticationLevelForIdPorten.
+        /// Maps a SecurityLevel to a canonical ID-porten acr value.
+        /// </summary>
+        /// <param name="level">The Altinn security level.</param>
+        /// <returns>Canonical acr string representing the given level.</returns>
+        public static string GetAcrForAuthenticationLevel(SecurityLevel level)
+        {
+            return level switch
+            {
+                SecurityLevel.SelfIdentifed => "idporten-loa-low",
+                SecurityLevel.Sensitive => "idporten-loa-substantial",
+                SecurityLevel.VerySensitive => "idporten-loa-high",
+                _ => "idporten-loa-low" // Fallback for levels without direct ID-porten mapping
+            };
         }
 
         /// <summary>
