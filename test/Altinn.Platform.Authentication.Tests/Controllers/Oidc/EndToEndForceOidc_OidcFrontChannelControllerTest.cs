@@ -801,7 +801,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         {
             // Create HttpClient with default headers for IP, UA, correlation. 
             using HttpClient client = CreateClientWithHeaders();
-            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Existing_UidpUser");
 
             // Insert a client that matches the authorize request
             OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
@@ -809,9 +809,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 1: User redirects an app in Altinn Apps and is not authenticated. The app redirects to the standard authentication endpoint with goto URL
             HttpResponseMessage app2RedirectResponse = await client.GetAsync(
-               "/authentication/api/v1/authentication?iss=uidp&goto=https%3A%2F%2Fudir.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+               "/authentication/api/v1/authentication?iss=uidp-anonym&goto=https%3A%2F%2Fudir.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
-            Assert.StartsWith("https://uidp-qa.udir.no/connect/authorize?response_type=code&client_id=asdf34argf&redirect_uri=https%3a%2f%2fplatform.altinn.no%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
+            Assert.StartsWith("https://uidp.udir.no/connect/authorize?response_type=code&client_id=sdfdsfeasfyhyy&redirect_uri=https%3a%2f%2fplatform.altinn.no%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
 
             string location = app2RedirectResponse.Headers.Location!.ToString();
 
