@@ -624,26 +624,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal("OK", frontChannelContent);
         }
 
-        private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
-        {
-            OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
-            string? upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
-
-            UpstreamLoginTransaction? createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(upstreamState, DataSource);
-            Assert.NotNull(createdUpstreamLogingTransaction);
-            OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario, now);
-
-            if (createdUpstreamLogingTransaction.RequestId != null)
-            {
-                // Asserting DB persistence after /authorize
-                Debug.Assert(testScenario?.DownstreamClientId != null);
-                LoginTransaction? loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
-                OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario, now);
-            }
-
-            return (upstreamState, createdUpstreamLogingTransaction);
-        }
-
         /// <summary>
         /// Test that verifies flow when it startes with Altinn 2 login
         /// </summary>
@@ -812,11 +792,49 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Null(loggedOutSession);
         }
 
+        [Fact]
+        public async Task TC6_UIDPAuth_App_Aa_Logout_End_To_End_OK()
+        {
+            // Create HttpClient with default headers for IP, UA, correlation. 
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert a client that matches the authorize request
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            // === Phase 1: User redirects an app in Altinn Apps and is not authenticated. The app redirects to the standard authentication endpoint with goto URL
+            HttpResponseMessage app2RedirectResponse = await client.GetAsync(
+               "/authentication/api/v1/authentication?iss=uidp&goto=https%3A%2F%2Fudir.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+            Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
+            Assert.StartsWith("https://uidp-qa.udir.no/connect/authorize?response_type=code&client_id=asdf34argf&redirect_uri=https%3a%2f%2fplatform.altinn.no%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
+        }
+
         private static string GetConfigPath()
         {
             string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
             Debug.Assert(unitTestFolder != null, nameof(unitTestFolder) + " != null");
             return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+        }
+
+        private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
+        {
+            OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
+            string? upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
+
+            UpstreamLoginTransaction? createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(upstreamState, DataSource);
+            Assert.NotNull(createdUpstreamLogingTransaction);
+            OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario, now);
+
+            if (createdUpstreamLogingTransaction.RequestId != null)
+            {
+                // Asserting DB persistence after /authorize
+                Debug.Assert(testScenario?.DownstreamClientId != null);
+                LoginTransaction? loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
+                OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario, now);
+            }
+
+            return (upstreamState, createdUpstreamLogingTransaction);
         }
 
         private void ConfigureSblTokenMockByScenario(OidcTestScenario scenario)
