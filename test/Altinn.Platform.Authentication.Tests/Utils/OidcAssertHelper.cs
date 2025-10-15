@@ -98,6 +98,28 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             TokenAssertsHelper.AssertCookieAccessToken(value, testScenario, now);
         }
 
+        public static void AssertDeleteAltinnStudioRuntimeCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario, DateTimeOffset now)
+        {
+            Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
+
+            string? raw = setCookies.FirstOrDefault(h =>
+                h.StartsWith("AltinnStudioRuntime=", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrEmpty(raw), "AltinnStudioRuntime cookie was not set.");
+
+            // Split into name/value + attributes
+            var parts = raw!.Split(';').Select(p => p.Trim()).ToArray();
+
+            // name=value
+            var kv = parts[0].Split('=', 2);
+            Assert.Equal("AltinnStudioRuntime", kv[0]);
+            value = kv.Length > 1 ? kv[1] : string.Empty;
+            Assert.True(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie did not have a empty value.");
+
+            // ❌ Must NOT set Expires or Domain (host-only, session cookie)
+            Assert.Contains(parts, p => p.StartsWith("expires=Thu, 01 Jan 1970 00:00:00 GMT", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(parts, p => p.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase));
+        }
+
         public static void AssertHasAltinnSessionCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario, DateTimeOffset now)
         {
             Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
@@ -137,6 +159,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         {
             AssertHasAltinnStudioRuntimeCookie(authorizedRedirectResponse, out string runtimeValue, testScenario, dateTimeOffset);
             AssertHasAltinnSessionCookie(authorizedRedirectResponse, out string value, testScenario, dateTimeOffset);
+        }
+
+        internal static void AssertLogoutRedirect(HttpResponseMessage logoutResp, OidcTestScenario testScenario)
+        {
+            AssertDeleteAltinnStudioRuntimeCookie(logoutResp, out string runtimeValue, testScenario, DateTimeOffset.UtcNow);
         }
     }
 }

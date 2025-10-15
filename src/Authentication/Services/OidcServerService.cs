@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -355,8 +356,16 @@ namespace Altinn.Platform.Authentication.Services
             if (oidcSession != null)
             {
                 string issuer = oidcSession.UpstreamIssuer;
-                OidcProvider provider = ChooseProviderByIssuer(issuer);
-                redirect = new Uri(provider.LogoutEndpoint!);
+                if (issuer.Equals(AuthzConstants.ISSUER_ALTINN_PORTAL, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Session was created based on Altinn 2 ticket. Redirect back to Altinn 2 for logout
+                    redirect = new Uri(_generalSettings.SBLLogoutEndpoint);
+                }
+                else
+                {
+                    OidcProvider provider = ChooseProviderByIssuer(issuer);
+                    redirect = new Uri(provider.LogoutEndpoint!);
+                }
             }
 
             // 3) Server-side invalidation for this session id
@@ -558,7 +567,7 @@ namespace Altinn.Platform.Authentication.Services
         
         private void EnrichIdentityFromLegacyValues(UserAuthenticationModel model)
         {
-            model.Iss = "www.altinn.no";
+            model.Iss = AuthzConstants.ISSUER_ALTINN_PORTAL;
             model.Amr = [AuthenticationHelper.GetAmrFromAuthenticationMethod(model.AuthenticationMethod)];
             model.Acr = AuthenticationHelper.GetAcrForAuthenticationLevel(model.AuthenticationLevel);
             model.TokenIssuer = model.Iss;

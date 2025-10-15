@@ -95,5 +95,10 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Used for internal SystemUser APIs
         /// </summary>
         public const string SCOPE_INTERNAL_OR_PLATFORM_ACCESS = "altinn:authentication/systemuser.admin";
+
+        /// <summary>
+        /// Issuer when session is created based on Altinn 2 Ticket
+        /// </summary>
+        public const string ISSUER_ALTINN_PORTAL = "SBL";
     }
 }

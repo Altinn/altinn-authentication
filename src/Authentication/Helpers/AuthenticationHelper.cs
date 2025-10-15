@@ -229,6 +229,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 AuthenticationMethod.EIDAS => "eIDAS",
                 AuthenticationMethod.MaskinPorten => "maskinporten",
                 AuthenticationMethod.IdportenTestId => "testid",
+                AuthenticationMethod.AltinnPIN => "AltinnPIN",
                 _ => string.Empty
             };
         }
