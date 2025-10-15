@@ -792,6 +792,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Null(loggedOutSession);
         }
 
+        /// <summary>
+        /// Scenario for UIDP user with existing profile in Altinn
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task TC6_UIDPAuth_App_Aa_Logout_End_To_End_OK()
         {
@@ -808,6 +812,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                "/authentication/api/v1/authentication?iss=uidp&goto=https%3A%2F%2Fudir.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
             Assert.StartsWith("https://uidp-qa.udir.no/connect/authorize?response_type=code&client_id=asdf34argf&redirect_uri=https%3a%2f%2fplatform.altinn.no%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
+
+            string location = app2RedirectResponse.Headers.Location!.ToString();
+
+            string state = HttpUtility.ParseQueryString(new Uri(location).Query)["state"]!;
+            string nonce = HttpUtility.ParseQueryString(new Uri(location).Query)["nonce"]!;
+            string codeChallenge = HttpUtility.ParseQueryString(new Uri(location).Query)["code_challenge"]!;
+            Assert.NotNull(nonce);
+            Assert.NotNull(state);
+            Assert.NotNull(codeChallenge);
+
+            // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
+            (string? upstreamState, UpstreamLoginTransaction? createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, app2RedirectResponse, _fakeTime.GetUtcNow());
+            Debug.Assert(createdUpstreamLogingTransaction != null);
+
+            // Assume it takes 1 minute for the user to authenticate at the upstream provider
+            _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
         }
 
         private static string GetConfigPath()
