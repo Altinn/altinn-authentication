@@ -70,7 +70,7 @@ namespace Altinn.Platform.Authentication.Services
             // 3) Update OP session (slide expiry, touch last seen)
             await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes), ct);
             
-            return TokenResult.Success(accessToken, idToken, _generalSettings.JwtValidityMinutes, string.Join(" ", row.Scopes), refreshToken, _generalSettings.JwtValidityMinutes);
+            return TokenResult.Success(accessToken, idToken, _generalSettings.JwtValidityMinutes * 60, string.Join(" ", row.Scopes), refreshToken, _generalSettings.JwtValidityMinutes * 60);
         }
 
         /// <inheritdoc/>

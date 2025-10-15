@@ -193,6 +193,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
             TokenResponseDto? tokenResult = await tokenResp.Content.ReadFromJsonAsync<TokenResponseDto>(jsonSerializerOptions);
+            string tokenString = await tokenResp.Content.ReadAsStringAsync();
 
             // Asserts on token response structure
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());

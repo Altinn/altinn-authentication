@@ -1,10 +1,10 @@
-﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
+﻿using System;
+using System.Linq;
+using System.Security.Claims;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Tests.Models;
 using AltinnCore.Authentication.Constants;
-using System;
-using System.Linq;
-using System.Security.Claims;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Helpers
@@ -17,9 +17,11 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.NotNull(tokenResponseDto.access_token);
             Assert.Equal("Bearer", tokenResponseDto.token_type);
             Assert.True(tokenResponseDto.expires_in > 0);
+            Assert.True(tokenResponseDto.expires_in == 1800);
             Assert.NotNull(tokenResponseDto.id_token); // since openid scope was requested
             Assert.NotNull(tokenResponseDto.refresh_token);
             Assert.True(IsBase64Url(tokenResponseDto.refresh_token!), "refresh_token must be base64url");
+            Assert.True(tokenResponseDto.refresh_token_expires_in == 1800);
 
             Assert.Contains("openid", tokenResponseDto.scope.Split(' '));
             Assert.Contains("altinn:portal/enduser", tokenResponseDto.scope.Split(' '));

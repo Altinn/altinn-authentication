@@ -930,7 +930,16 @@ namespace Altinn.Platform.Authentication.Services
             // 2) Hash it for storage (HMAC with server-side pepper)
             byte[] handleHash = HashHandle(handleBytes);
 
-            string? externalId = userIdenity.SSN != null ? $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}" : null;
+            string? externalId = null;
+
+            if (!string.IsNullOrEmpty(userIdenity.SSN))
+            {
+                externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
+            }
+            else if (!string.IsNullOrEmpty(userIdenity.Username))
+            {
+                externalId = $"{AltinnCoreClaimTypes.UserName}:{userIdenity.Username}";
+            }
 
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate

@@ -47,16 +47,19 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, oidcBindingContext.SubjectUserId.ToString()!));
             }
 
-            if (oidcBindingContext.ExternalId != null)
+            if (oidcBindingContext.ExternalId != null && oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.PersonIdentifier))
             {
-                // Set a clean ssn claim without prefix since this is the way PID is set by ID-porten
                 claims.Add(new Claim("pid", oidcBindingContext.ExternalId.Replace($"{AltinnCoreClaimTypes.PersonIdentifier}:", string.Empty)));
+            }
+            else if (oidcBindingContext.ExternalId != null && oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.UserName))
+            {
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, oidcBindingContext.ExternalId.Replace($"{AltinnCoreClaimTypes.UserName}:", string.Empty)));
             }
 
             if (oidcBindingContext.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcBindingContext.Acr));
-                securityLevel = GetAuthenticationLevelForIdPorten(oidcBindingContext.Acr);
+                securityLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(oidcBindingContext.Acr);
             }
 
             int securityLevelValue = (int)securityLevel;
@@ -135,11 +138,15 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             {
                 claims.Add(new Claim("pid", oidcSession.ExternalId.Replace($"{AltinnCoreClaimTypes.PersonIdentifier}:", string.Empty)));
             }
+            else if (oidcSession.ExternalId != null && oidcSession.ExternalId.StartsWith(AltinnCoreClaimTypes.UserName))
+            {
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, oidcSession.ExternalId.Replace($"{AltinnCoreClaimTypes.UserName}:", string.Empty)));
+            }
 
             if (oidcSession.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcSession.Acr));
-                securityLevel = GetAuthenticationLevelForIdPorten(oidcSession.Acr);
+                securityLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(oidcSession.Acr);
             }
 
             int securityLevelValue = (int)securityLevel;
@@ -178,21 +185,6 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             ClaimsPrincipal principal = new(identity);
 
             return principal;
-        }
-
-        private static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
-        {
-            switch (acr)
-            {
-                case "selfregistered-email":
-                    return Enum.SecurityLevel.NotSensitive;
-                case "idporten-loa-substantial":
-                    return Enum.SecurityLevel.Sensitive;
-                case "idporten-loa-high":
-                    return Enum.SecurityLevel.VerySensitive;
-                default:
-                    return Enum.SecurityLevel.NotSensitive;
-            }
         }
     }
 }
