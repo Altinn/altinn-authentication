@@ -53,7 +53,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
             const string SQL = /*strpsql*/ @"
             SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used, expires_at,
-                    subject_id, subject_party_uuid, subject_party_id, subject_user_id,
+                    subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id,
                     session_id, scopes, nonce, acr, amr, auth_time
             FROM oidcserver.authorization_code
             WHERE code = @code
@@ -88,6 +88,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     ExpiresAt = reader.GetFieldValue<DateTimeOffset>("expires_at"),
 
                     SubjectId = reader.GetFieldValue<string>("subject_id"),
+                    ExternalId = reader.IsDBNull("external_id") ? null : reader.GetFieldValue<string>("external_id"),
                     SubjectPartyUuid = reader.IsDBNull("subject_party_uuid") ? (Guid?)null : reader.GetFieldValue<Guid>("subject_party_uuid"),
                     SubjectPartyId = reader.IsDBNull("subject_party_id") ? (int?)null : reader.GetFieldValue<int>("subject_party_id"),
                     SubjectUserId = reader.IsDBNull("subject_user_id") ? (int?)null : reader.GetFieldValue<int>("subject_user_id"),
@@ -115,12 +116,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         {
             const string SQL = /*strpsql*/ @"
             INSERT INTO oidcserver.authorization_code (
-              code, client_id, subject_id, subject_party_uuid, subject_party_id, subject_user_id,
+              code, client_id, subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id,
               session_id, redirect_uri, scopes, nonce, acr, amr, auth_time,
               code_challenge, code_challenge_method, issued_at, expires_at, created_by_ip, correlation_id
             )
             VALUES (
-              @code, @client_id, @subject_id, @subject_party_uuid, @subject_party_id, @subject_user_id,
+              @code, @client_id, @subject_id, @external_id, @subject_party_uuid, @subject_party_id, @subject_user_id,
               @session_id, @redirect_uri, @scopes, @nonce, @acr, @amr, @auth_time,
               @code_challenge, @code_challenge_method, @issued_at, @expires_at, @created_by_ip, @correlation_id
             );";
@@ -129,6 +130,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("code", NpgsqlDbType.Text, c.Code);
             cmd.Parameters.AddWithValue("client_id", NpgsqlDbType.Text, c.ClientId);
             cmd.Parameters.AddWithValue("subject_id", NpgsqlDbType.Text, c.SubjectId);
+            cmd.Parameters.AddWithValue("external_id", NpgsqlDbType.Text, (object?)c.ExternalId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_uuid", NpgsqlDbType.Uuid, (object?)c.SubjectPartyUuid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_id", NpgsqlDbType.Integer, (object?)c.SubjectPartyId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_user_id", NpgsqlDbType.Integer, (object?)c.SubjectUserId ?? DBNull.Value);

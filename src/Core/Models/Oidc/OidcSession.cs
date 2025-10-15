@@ -24,11 +24,16 @@
         /// Gets the upstream subject identifier. This is the 'sub' claim from the upstream identity provider.
         /// </summary>
         public required string UpstreamSub { get; init; }
-        
+
         /// <summary>
-        /// Gets the unique identifier for the subject, such as a PID, email, or other policy-defined value.
+        /// Gets the unique partyurn for the specific subject. Owned by Altinn Register
         /// </summary>
         public required string SubjectId { get; init; }
+
+        /// <summary>
+        /// Gets the global unique identifier for the subject, such as a PID, email, or other policy-defined value that externally identifies the user.
+        /// </summary>
+        public string? ExternalId { get; init; }
 
         /// <summary>
         /// Unique identifier for the subject party (organization) if applicable. Owned by Altinn Register

@@ -2,8 +2,9 @@
   sid                  TEXT PRIMARY KEY,
   -- Upstream identity
   upstream_issuer      TEXT NOT NULL,
-  upstream_sub         TEXT NOT NULL,      -- OIDC 'sub' from upstream
-  subject_id           TEXT,               -- upstream-derived external id: PID/email/etc (your policy)
+  upstream_sub         TEXT NOT NULL,		-- OIDC 'sub' from upstream
+  subject_id           TEXT,				-- urn:altinn:party:uuid:{subject_party_uuid} 
+  external_id          TEXT,					-- upstream-derived external id: PID/email/etc (your policy)
   session_handle_hash BYTEA, 
 
   -- Altinn identity mapping

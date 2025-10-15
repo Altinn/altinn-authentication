@@ -107,6 +107,7 @@ namespace Altinn.Platform.Authentication.Services
 
                 ClientId = row.ClientId,
                 SubjectId = row.SubjectId,
+                ExternalId = row.ExternalId,
                 SubjectPartyId = row.SubjectPartyId,
                 SubjectPartyUuid = row.SubjectPartyUuid,
                 SubjectUserId = row.SubjectUserId,
@@ -439,6 +440,7 @@ namespace Altinn.Platform.Authentication.Services
 
                     ClientId = codeRow.ClientId,
                     SubjectId = codeRow.SubjectId,
+                    ExternalId = codeRow.ExternalId,
                     SubjectPartyId = codeRow.SubjectPartyId,
                     SubjectPartyUuid = codeRow.SubjectPartyUuid,
                     SubjectUserId = codeRow.SubjectUserId,

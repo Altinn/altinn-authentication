@@ -9,7 +9,9 @@
         // Upstream identity
         public required string UpstreamIssuer { get; init; }
         public required string UpstreamSub { get; init; }
-        public string? SubjectId { get; init; }            // PID/email/etc
+        public string? SubjectId { get; init; }        // urn:altinn:party:uuid:23423.-32
+
+        public string? ExternalId { get; init; }           // PID/email/etc
 
         // Altinn mapping
         public Guid? SubjectPartyUuid { get; init; }

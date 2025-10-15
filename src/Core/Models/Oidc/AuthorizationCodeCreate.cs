@@ -5,7 +5,9 @@
     {
         public required string Code { get; init; }                 // base64url, ≥128 bits
         public required string ClientId { get; init; }
-        public required string SubjectId { get; init; }            // upstream external id (pid/email)
+        public required string SubjectId { get; init; }       //urn:altinn:party:uuid:{partuudi}
+
+        public string? ExternalId { get; init; }   // upstream external id (pid/email)
         public Guid? SubjectPartyUuid { get; init; }
         public int? SubjectPartyId { get; init; }
         public int? SubjectUserId { get; init; }

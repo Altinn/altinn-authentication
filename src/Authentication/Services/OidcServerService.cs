@@ -842,6 +842,7 @@ namespace Altinn.Platform.Authentication.Services
                     Code = authCode,
                     ClientId = loginTx.ClientId,
                     SubjectId = session.SubjectId, // fallback
+                    ExternalId = session.ExternalId,    
                     SubjectPartyUuid = session.SubjectPartyUuid,
                     SubjectPartyId = session.SubjectPartyId,
                     SubjectUserId = session.SubjectUserId,
@@ -881,6 +882,8 @@ namespace Altinn.Platform.Authentication.Services
             // 2) Hash it for storage (HMAC with server-side pepper)
             byte[] handleHash = HashHandle(handleBytes);
 
+            string? externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
+
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate
                 {
@@ -892,7 +895,8 @@ namespace Altinn.Platform.Authentication.Services
                     SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
                     SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
                     SubjectPartyId = userIdenity.PartyID,              // <- legacy
-                    SubjectUserId = userIdenity.UserID,               // <- legacy
+                    SubjectUserId = userIdenity.UserID,         
+                    ExternalId = externalId,
                     Acr = userIdenity.Acr,
                     AuthTime = userIdenity.AuthTime,
                     Amr = userIdenity.Amr,
@@ -926,6 +930,8 @@ namespace Altinn.Platform.Authentication.Services
             // 2) Hash it for storage (HMAC with server-side pepper)
             byte[] handleHash = HashHandle(handleBytes);
 
+            string? externalId = userIdenity.SSN != null ? $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}" : null;
+
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate
                 {
@@ -935,6 +941,7 @@ namespace Altinn.Platform.Authentication.Services
                     UpstreamIssuer = userIdenity.TokenIssuer!,
                     UpstreamSub = userIdenity.TokenSubject!,
                     SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
+                    ExternalId = externalId,
                     SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
                     SubjectPartyId = userIdenity.PartyID,              // <- legacy
                     SubjectUserId = userIdenity.UserID,               // <- legacy

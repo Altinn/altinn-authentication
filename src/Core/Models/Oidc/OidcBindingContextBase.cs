@@ -12,6 +12,8 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public required string ClientId { get; init; }
         public required string SubjectId { get; init; }
 
+        public string? ExternalId { get; init; }
+
         /// <summary>
         /// Server-side OP session id this artifact is bound to.
         /// (Harmonized name used across models.)

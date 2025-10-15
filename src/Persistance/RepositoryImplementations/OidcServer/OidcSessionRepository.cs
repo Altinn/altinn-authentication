@@ -34,10 +34,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     SET acr                  = @acr,
                         auth_time            = @auth_time,
                         amr                  = @amr,
-                        subject_id           = @subject_id,
-                        subject_party_uuid   = @subject_party_uuid,
-                        subject_party_id     = @subject_party_id,
-                        subject_user_id      = @subject_user_id,
                         updated_at           = @now,
                         last_seen_at         = @now,
                         expires_at           = @expires_at,
@@ -47,14 +43,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     RETURNING s.*
                 )
                 INSERT INTO oidcserver.oidc_session (
-                    sid, session_handle_hash, upstream_issuer, upstream_sub, subject_id,
+                    sid, session_handle_hash, upstream_issuer, upstream_sub, subject_id, external_id,
                     subject_party_uuid, subject_party_id, subject_user_id,
                     provider, acr, auth_time, amr, scopes,
                     created_at, updated_at, last_seen_at, expires_at,
                     upstream_session_sid, created_by_ip, user_agent_hash
                 )
                 SELECT
-                    @sid, @session_handle_hash, @upstream_issuer, @upstream_sub, @subject_id,
+                    @sid, @session_handle_hash, @upstream_issuer, @upstream_sub, @subject_id, @external_id,
                     @subject_party_uuid, @subject_party_id, @subject_user_id,
                     @provider, @acr, @auth_time, @amr, @scopes,
                     @now, @now, @now, @expires_at,
@@ -67,6 +63,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("sid", c.Sid);
             cmd.Parameters.AddWithValue("session_handle_hash", NpgsqlDbType.Bytea, c.SessionHandleHash);
             cmd.Parameters.AddWithValue("subject_id", (object?)c.SubjectId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("external_id", (object?)c.ExternalId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_uuid", (object?)c.SubjectPartyUuid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_id", (object?)c.SubjectPartyId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_user_id", (object?)c.SubjectUserId ?? DBNull.Value);
@@ -229,6 +226,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 Sid = r.GetFieldValue<string>("sid"),
                 SessionHandle = (byte[])r["session_handle_hash"],
                 SubjectId = r.IsDBNull("subject_id") ? null : r.GetFieldValue<string>("subject_id"),
+                ExternalId = r.IsDBNull("external_id") ? null : r.GetFieldValue<string>("external_id"),
                 SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? null : r.GetFieldValue<Guid?>("subject_party_uuid"),
                 SubjectPartyId = r.IsDBNull("subject_party_id") ? null : r.GetFieldValue<int?>("subject_party_id"),
                 SubjectUserId = r.IsDBNull("subject_user_id") ? null : r.GetFieldValue<int?>("subject_user_id"),

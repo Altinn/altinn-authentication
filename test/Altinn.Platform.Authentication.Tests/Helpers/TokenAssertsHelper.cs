@@ -1,9 +1,10 @@
-﻿using System;
-using System.Linq;
-using System.Security.Claims;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
+﻿using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Tests.Models;
 using AltinnCore.Authentication.Constants;
+using System;
+using System.Linq;
+using System.Security.Claims;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Helpers
@@ -76,7 +77,13 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.True(accessTokenPrincipal.Identity.IsAuthenticated);
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && !string.IsNullOrEmpty(c.Value));
+            string method = accessTokenPrincipal.Claims.First(c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod).Value;
+            if (!method.Equals(AuthenticationMethod.SelfIdentified.ToString()))
+            {
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && !string.IsNullOrEmpty(c.Value));
+            }
+
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
             string sid = accessTokenPrincipal.Claims.First(c => c.Type == "sid").Value;
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "acr" && !string.IsNullOrEmpty(c.Value));

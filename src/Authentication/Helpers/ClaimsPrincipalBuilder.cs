@@ -47,9 +47,10 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, oidcBindingContext.SubjectUserId.ToString()!));
             }
 
-            if (oidcBindingContext.SubjectId != null)
+            if (oidcBindingContext.ExternalId != null)
             {
-                claims.Add(new Claim("pid", oidcBindingContext.SubjectId));
+                // Set a clean ssn claim without prefix since this is the way PID is set by ID-porten
+                claims.Add(new Claim("pid", oidcBindingContext.ExternalId.Replace($"{AltinnCoreClaimTypes.PersonIdentifier}:", string.Empty)));
             }
 
             if (oidcBindingContext.Acr != null)
@@ -130,9 +131,9 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, oidcSession.SubjectUserId.ToString()!));
             }
 
-            if (!isAuthCookie && oidcSession.SubjectId != null)
+            if (!isAuthCookie && oidcSession.ExternalId != null && oidcSession.ExternalId.StartsWith(AltinnCoreClaimTypes.PersonIdentifier))
             {
-                claims.Add(new Claim("pid", oidcSession.SubjectId));
+                claims.Add(new Claim("pid", oidcSession.ExternalId.Replace($"{AltinnCoreClaimTypes.PersonIdentifier}:", string.Empty)));
             }
 
             if (oidcSession.Acr != null)

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.refresh_token (
   -- Binding / context
   client_id          TEXT NOT NULL,
   subject_id         TEXT NOT NULL,
+  external_id        TEXT NULL,
   subject_party_uuid UUID,
   subject_party_id   INTEGER,
   subject_user_id    INTEGER,
