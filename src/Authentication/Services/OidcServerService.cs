@@ -21,6 +21,7 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
+using AltinnCore.Authentication.Constants;
 using CommunityToolkit.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
@@ -888,7 +889,7 @@ namespace Altinn.Platform.Authentication.Services
                     Provider = upstreamTx.Provider,
                     UpstreamIssuer = userIdenity.TokenIssuer!,
                     UpstreamSub = userIdenity.TokenSubject!,
-                    SubjectId = userIdenity.SSN ?? userIdenity.ExternalIdentity,   // <- string PID/email/etc
+                    SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
                     SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
                     SubjectPartyId = userIdenity.PartyID,              // <- legacy
                     SubjectUserId = userIdenity.UserID,               // <- legacy
@@ -933,7 +934,7 @@ namespace Altinn.Platform.Authentication.Services
                     Provider = "altinn2",
                     UpstreamIssuer = userIdenity.TokenIssuer!,
                     UpstreamSub = userIdenity.TokenSubject!,
-                    SubjectId = userIdenity.SSN ?? userIdenity.ExternalIdentity,   // <- string PID/email/etc
+                    SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
                     SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
                     SubjectPartyId = userIdenity.PartyID,              // <- legacy
                     SubjectUserId = userIdenity.UserID,               // <- legacy

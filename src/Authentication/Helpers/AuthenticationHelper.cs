@@ -204,6 +204,8 @@ namespace Altinn.Platform.Authentication.Helpers
                     return Enum.AuthenticationMethod.MaskinPorten;
                 case "testid":
                     return AuthenticationMethod.IdportenTestId;
+                case "SelfIdentified":
+                    return AuthenticationMethod.SelfIdentified;
             }
 
             return Enum.AuthenticationMethod.NotDefined;
@@ -230,6 +232,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 AuthenticationMethod.MaskinPorten => "maskinporten",
                 AuthenticationMethod.IdportenTestId => "testid",
                 AuthenticationMethod.AltinnPIN => "AltinnPIN",
+                AuthenticationMethod.SelfIdentified => "SelfIdentified",
                 _ => string.Empty
             };
         }

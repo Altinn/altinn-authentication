@@ -1,0 +1,25 @@
+{
+  "ScenarioId": "Selvidentifisert_Altinn2",
+  "Title": "Selvidentifisert fra Altinn 2",
+  "Description": "En selvidentifisert bruker som først logger på via Altinn 2",
+  "Ssn": null,
+  "UserId": 20202020,
+  "PartyId": 20202020,
+  "UserName": "SuperSelfie",
+  "Amr": ["SelfIdentified"],
+  "Acr": ["level0"],
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "Scopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}

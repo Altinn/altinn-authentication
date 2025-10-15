@@ -19,5 +19,24 @@
     "ProfileSettingPreference": {
       "Language": "nb"
     }
+  },
+  {
+    "UserId": 20202020,
+    "UserUuid": "52f1750b-8e8b-4d4b-a12d-3655d62625db",
+    "UserName": "sophie",
+    "PhoneNumber": null,
+    "Email": "2516356@altinnstudiotestusers.com",
+    "PartyId": 20202020,
+    "Party": {
+      "PartyId": 20202020,
+      "PartyUuid": "52f1750b-8e8b-4d4b-a12d-3655d62625db",
+      "Name": null,
+      "SSN": null,
+      "Person": null
+    },
+    "UserType": 2,
+    "ProfileSettingPreference": {
+      "Language": "nb"
+    }
   }
 ]
