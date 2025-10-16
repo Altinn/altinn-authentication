@@ -1238,6 +1238,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     userAuthenticationModel.UserID = profile.UserId;
                     userAuthenticationModel.PartyID = profile.PartyId;
+                    userAuthenticationModel.PartyUuid = profile.Party.PartyUuid;
                     return userAuthenticationModel;
                 }
 

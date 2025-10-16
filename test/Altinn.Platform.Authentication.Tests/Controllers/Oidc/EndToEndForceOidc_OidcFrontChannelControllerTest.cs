@@ -845,6 +845,39 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             Assert.Equal(HttpStatusCode.Redirect, callbackResp.StatusCode);
             Assert.StartsWith("https://udir.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", callbackResp.Headers.Location!.ToString());
+
+            // === Phase 3: Uses the app for an extensive periode. The app triggers refreshes to keep the session alive =====
+            for (int i = 0; i < 9; i++)
+            {
+                _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:41 08:46 08:51 08:56 08:59 09:06 09:11 09:16 09:21
+
+                // Second keep alive from App
+                HttpResponseMessage cookieRefreshResponseFromSecondApp2 = await client.GetAsync(
+                   "/authentication/api/v1/refresh");
+                string refreshToken2FromSecondApp = await cookieRefreshResponseFromSecondApp2.Content.ReadAsStringAsync();
+                TokenAssertsHelper.AssertCookieAccessToken(refreshToken2FromSecondApp, testScenario, _fakeTime.GetUtcNow());
+            }
+
+            // ==== Phase 4: Goes to Arbeidsflate  =====
+            // The user does not have a valid session in Arbeidsflate. So user is redirected to the standard authorize endpoint with new state, nonce and pkce values.
+            string authorizationRequestUrl2 = testScenario.GetAuthorizationRequestUrl();
+
+            // This would be the URL Arbeidsflate redirects the user to. Now the user have a active Altinn Runtime cookie so the response will be a direct
+            // redirect back to Arbeidsflate with code and state (no intermediate login at IdP).
+            HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
+
+            string code = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
+
+            // Gets the new code from the callback response and redeems at /token endpoint
+            Dictionary<string, string> tokenForm = OidcServerTestUtils.BuildTokenRequestForm(testScenario, code);
+
+            using var tokenResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(tokenForm));
+
+            Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
+            string json = await tokenResp.Content.ReadAsStringAsync();
+            TokenResponseDto? tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
         }
 
         private static string GetConfigPath()

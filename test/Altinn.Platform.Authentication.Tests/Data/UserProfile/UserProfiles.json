@@ -42,7 +42,7 @@
 
   {
     "UserId": 30303030,
-    "UserUuid": "52f1750b-8e8b-4d4b-a12d-3655d62625db",
+    "UserUuid": "46eaad59-9d49-4546-8fca-accf764a8baa",
     "UserName": "uidp_ej2krar0cl833",
     "ExternalIdentity": "uidp-anonym:33a633c47ef2f656978f957532ce6d0de6f5e13f1e0618b37b4b2a70573e5551",
     "PhoneNumber": null,
@@ -50,7 +50,7 @@
     "PartyId": 30303030,
     "Party": {
       "PartyId": 30303030,
-      "PartyUuid": "52f1750b-8e8b-4d4b-a12d-3655d62625db",
+      "PartyUuid": "46eaad59-9d49-4546-8fca-accf764a8baa",
       "Name": null,
       "SSN": null,
       "Person": null
