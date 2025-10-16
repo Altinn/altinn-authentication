@@ -21,6 +21,8 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public required string Ssn { get; set; }
 
+        public string? ExternalIdentity { get; set; }
+
         public int? UserId { get; set; }
 
         public int? PartyId { get; set; }

@@ -4,11 +4,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Tests.Models;
 
 namespace Altinn.Platform.Authentication.Tests.Utils
 {
-    public static class IdPortenTestTokenUtil
+    public static class IDProviderTestTokenUtil
     {
         public static OidcCodeResponse GetIdPortenTokenResponse(string pid, string nonce, string sid, string[] acr, string[] amr, string client_id, string[] scope, DateTimeOffset auth_time)
         {
@@ -78,6 +80,73 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim("scope", string.Join(' ', scope), ClaimValueTypes.String, issuer));
             claims.Add(new Claim("pid", pid, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("iat", iat.ToUnixTimeSeconds().ToString(), ClaimValueTypes.DateTime, issuer));
+            ClaimsIdentity identity = new("mock");
+            identity.AddClaims(claims);
+            ClaimsPrincipal principal = new(identity);
+            string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
+            return token;
+        }
+
+        public static OidcCodeResponse GetUidpTokenResponse(OidcTestScenario scenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
+        {
+            string sub = Guid.NewGuid().ToString();
+            string locale = "nb";
+            string digDirOrgNo = "991825827";
+
+            OidcCodeResponse response = new()
+            {
+                TokenType = "bearer",
+                ExpiresIn = 600,
+                RefreshToken = "dummy-refresh",
+                RefreshTokenExpiresIn = 600,
+                Scope = string.Join(' ', createdUpstreamLogingTransaction.Scopes),
+                IdToken = GetUidpIdToken(scenario, createdUpstreamLogingTransaction, authTime),
+                AccessToken = GetUidpAccessToken(scenario, createdUpstreamLogingTransaction, authTime)
+            };
+            return response;
+        }
+
+        public static string GetUidpIdToken(OidcTestScenario scenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
+        {
+            Guid upstreamSID = Guid.NewGuid();
+            List<Claim> claims = [];
+            string issuer = "uidp.udir.no";
+            claims.Add(new Claim("iss", issuer, ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("sub", scenario.ExternalIdentity, ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("scope", string.Join(' ', createdUpstreamLogingTransaction.Scopes), ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("nonce", createdUpstreamLogingTransaction.Nonce, ClaimValueTypes.String, issuer));
+
+            if (scenario.CustomClaims != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in scenario.CustomClaims)
+                {
+                    claims.Add(new Claim(kvp.Key, kvp.Value, ClaimValueTypes.String, issuer));
+                }
+            }
+
+            ClaimsIdentity identity = new("mock");
+            identity.AddClaims(claims);
+            ClaimsPrincipal principal = new(identity);
+            string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
+            return token;
+        }
+
+        public static string GetUidpAccessToken(OidcTestScenario scenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
+        {
+            List<Claim> claims = [];
+            string issuer = "uidp.udir.no";
+            claims.Add(new Claim("iss", issuer, ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("sub", scenario.ExternalIdentity, ClaimValueTypes.String, issuer));
+            claims.Add(new Claim("scope", string.Join(' ', createdUpstreamLogingTransaction.Scopes), ClaimValueTypes.String, issuer));
+
+            if (scenario.CustomClaims != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in scenario.CustomClaims)
+                {
+                    claims.Add(new Claim(kvp.Key, kvp.Value, ClaimValueTypes.String, issuer));
+                }
+            }
+
             ClaimsIdentity identity = new("mock");
             identity.AddClaims(claims);
             ClaimsPrincipal principal = new(identity);

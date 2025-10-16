@@ -507,7 +507,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private void ConfigureMockProviderTokenResponse(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
         {
             Guid upstreamSID = Guid.NewGuid();
-            OidcCodeResponse oidcCodeResponse = IdPortenTestTokenUtil.GetIdPortenTokenResponse(
+            OidcCodeResponse oidcCodeResponse = IDProviderTestTokenUtil.GetIdPortenTokenResponse(
                 testScenario.Ssn, 
                 createdUpstreamLogingTransaction.Nonce, 
                 upstreamSID.ToString(), 

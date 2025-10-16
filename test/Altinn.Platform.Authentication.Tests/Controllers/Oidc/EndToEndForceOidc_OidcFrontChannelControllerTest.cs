@@ -20,9 +20,11 @@ using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Helpers;
+using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.Models;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
+using Altinn.Platform.Profile.Models;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -47,6 +49,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
+        private readonly Mock<IUserProfileService> _userProfileService = new();
 
         private static readonly FakeTimeProvider _fakeTime = new(
         DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
@@ -83,6 +86,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton(_cookieDecryptionService.Object);
+            services.AddSingleton(_userProfileService.Object);
 
             services.PostConfigure<GeneralSettings>(o =>
             {
@@ -828,6 +832,19 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // Assume it takes 1 minute for the user to authenticate at the upstream provider
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
+
+            // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
+            ConfigureMockUidpProviderTokenResponseUidp(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+            await ConfigureProfileMock(testScenario);
+
+            // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
+            // Our proxy service (below) will fabricate a downstream code and redirect to the original app that was requested. 
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode!)}&state={Uri.EscapeDataString(upstreamState!)}";
+
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            Assert.Equal(HttpStatusCode.Redirect, callbackResp.StatusCode);
+            Assert.StartsWith("https://udir.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", callbackResp.Headers.Location!.ToString());
         }
 
         private static string GetConfigPath()
@@ -875,7 +892,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private void ConfigureMockProviderTokenResponse(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
         {
             Guid upstreamSID = Guid.NewGuid();
-            OidcCodeResponse oidcCodeResponse = IdPortenTestTokenUtil.GetIdPortenTokenResponse(
+            OidcCodeResponse oidcCodeResponse = IDProviderTestTokenUtil.GetIdPortenTokenResponse(
                 testScenario.Ssn, 
                 createdUpstreamLogingTransaction.Nonce, 
                 upstreamSID.ToString(),
@@ -884,6 +901,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 createdUpstreamLogingTransaction.UpstreamClientId, 
                 createdUpstreamLogingTransaction.Scopes,
                 authTime);
+
+            Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
+                Services.GetRequiredService<IOidcProvider>());
+            var idpAuthCode = testScenario.UpstreamProviderCode; // what we will pass on callback
+
+            mock.SetupSuccess(
+                authorizationCode: idpAuthCode,
+                clientId: createdUpstreamLogingTransaction.UpstreamClientId,
+                redirectUri: createdUpstreamLogingTransaction.UpstreamRedirectUri.ToString(),
+                codeVerifier: createdUpstreamLogingTransaction.CodeVerifier,
+                response: oidcCodeResponse);
+        }
+
+        private void ConfigureMockUidpProviderTokenResponseUidp(OidcTestScenario testScenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
+        {
+            OidcCodeResponse oidcCodeResponse = IDProviderTestTokenUtil.GetUidpTokenResponse(testScenario, createdUpstreamLogingTransaction, authTime);
 
             Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<IOidcProvider>());
@@ -917,6 +950,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             }
 
             return client;
+        }
+
+        private async Task ConfigureProfileMock(OidcTestScenario oidcTestScenario)
+        {
+            ProfileMock profileMock = new ProfileMock();
+            UserProfile profile = await profileMock.GetUserProfile(new UserProfileLookup() { UserId = oidcTestScenario.UserId.Value });
+            profile.ExternalIdentity = oidcTestScenario.ExternalIdentity;
+            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(profile);
         }
     }
 }

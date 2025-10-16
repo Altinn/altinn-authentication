@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using System.Xml.Serialization;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
@@ -204,7 +206,7 @@ namespace Altinn.Platform.Authentication.Services
             // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
-            userIdenity = await IdentifyOrCreateAltinnUser(userIdenity);
+            userIdenity = await IdentifyOrCreateAltinnUser(userIdenity, provider);
 
             // 3. Create or refresh Altinn session session
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
@@ -526,7 +528,7 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput sessionInfo, CancellationToken ct)
         {
             UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(sessionInfo.EncryptedTicket);
-            userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel);
+            userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
             EnrichIdentityFromLegacyValues(userAuthenticationModel);
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(sessionInfo, userAuthenticationModel, ct);
             if (session != null && session.ExpiresAt > _timeProvider.GetUtcNow())
@@ -1197,7 +1199,7 @@ namespace Altinn.Platform.Authentication.Services
             return baseCallback;
         }
 
-        private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel)
+        private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
@@ -1238,6 +1240,17 @@ namespace Altinn.Platform.Authentication.Services
                     userAuthenticationModel.PartyID = profile.PartyId;
                     return userAuthenticationModel;
                 }
+
+                UserProfile userToCreate = new()
+                {
+                    ExternalIdentity = issExternalIdentity,
+                    UserName = CreateUserName(userAuthenticationModel, provider),
+                    UserType = Profile.Enums.UserType.SelfIdentified
+                };
+
+                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
+                userAuthenticationModel.UserID = userCreated.UserId;
+                userAuthenticationModel.PartyID = userCreated.PartyId;
             }
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {
@@ -1253,6 +1266,25 @@ namespace Altinn.Platform.Authentication.Services
             }
             
             return userAuthenticationModel;
+        }
+
+        private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
+        {
+            string hashedIdentity = HashNonce(userAuthenticationModel.ExternalIdentity).Substring(5, 10);
+            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            hashedIdentity = rgx.Replace(hashedIdentity, string.Empty);
+
+            return provider.UserNamePrefix + hashedIdentity.ToLower() + DateTime.Now.Millisecond;
+        }
+
+        private static string HashNonce(string nonce)
+        {
+            using (SHA256 nonceHash = SHA256.Create())
+            {
+                byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(nonce);
+                byte[] byteArrayResult = nonceHash.ComputeHash(byteArrayResultOfRawData);
+                return Convert.ToBase64String(byteArrayResult);
+            }
         }
     }
 }
