@@ -1258,6 +1258,8 @@ namespace Altinn.Platform.Authentication.Services
                     userAuthenticationModel.PartyID = profile.PartyId;
                     userAuthenticationModel.PartyUuid = profile.Party.PartyUuid;
                     userAuthenticationModel.Username = profile.UserName;
+                    userAuthenticationModel.Amr = ["SelfIdentified"];
+                    userAuthenticationModel.Acr = "Selfidentified";
                     return userAuthenticationModel;
                 }
 
