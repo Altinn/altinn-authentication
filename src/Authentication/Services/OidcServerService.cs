@@ -905,32 +905,41 @@ namespace Altinn.Platform.Authentication.Services
             // 2) Hash it for storage (HMAC with server-side pepper)
             byte[] handleHash = HashHandle(handleBytes);
 
+            string? externalId = null;
+            if (!string.IsNullOrEmpty(userIdenity.SSN))
+            {
+                externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
+            }
+            else if (!string.IsNullOrEmpty(userIdenity.ExternalIdentity))
+            {
+                externalId = userIdenity.ExternalIdentity;
+            }
 
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
-                new OidcSessionCreate
-                {
-                    Sid = CryptoHelpers.RandomBase64Url(32),
-                    SessionHandleHash = handleHash, // store hash only
-                    Provider = upstreamTx.Provider,
-                    UpstreamIssuer = userIdenity.TokenIssuer!,
-                    UpstreamSub = userIdenity.TokenSubject!,
-                    SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
-                    SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
-                    SubjectPartyId = userIdenity.PartyID,              // <- legacy
-                    SubjectUserId = userIdenity.UserID,
-                    SubjectUserName = userIdenity.Username,  // <- legacy
-                    ExternalId = userIdenity.ExternalIdentity,
-                    Acr = userIdenity.Acr,
-                    AuthTime = userIdenity.AuthTime,
-                    Amr = userIdenity.Amr,
-                    Scopes = scopes,
-                    ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
-                    UpstreamSessionSid = userIdenity.Sid,
-                    Now = _timeProvider.GetUtcNow(),
-                    CreatedByIp = upstreamTx.CreatedByIp,
-                    UserAgentHash = upstreamTx.UserAgentHash
-                },
-                cancellationToken);
+                    new OidcSessionCreate
+                    {
+                        Sid = CryptoHelpers.RandomBase64Url(32),
+                        SessionHandleHash = handleHash, // store hash only
+                        Provider = upstreamTx.Provider,
+                        UpstreamIssuer = userIdenity.TokenIssuer!,
+                        UpstreamSub = userIdenity.TokenSubject!,
+                        SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
+                        SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
+                        SubjectPartyId = userIdenity.PartyID,              // <- legacy
+                        SubjectUserId = userIdenity.UserID,
+                        SubjectUserName = userIdenity.Username,  // <- legacy
+                        ExternalId = externalId,
+                        Acr = userIdenity.Acr,
+                        AuthTime = userIdenity.AuthTime,
+                        Amr = userIdenity.Amr,
+                        Scopes = scopes,
+                        ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
+                        UpstreamSessionSid = userIdenity.Sid,
+                        Now = _timeProvider.GetUtcNow(),
+                        CreatedByIp = upstreamTx.CreatedByIp,
+                        UserAgentHash = upstreamTx.UserAgentHash
+                    },
+                    cancellationToken);
             return (session, sessionHandle);
         }
 
