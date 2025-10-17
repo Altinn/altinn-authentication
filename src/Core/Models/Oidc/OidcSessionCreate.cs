@@ -18,6 +18,8 @@
         public int? SubjectPartyId { get; init; }
         public int? SubjectUserId { get; init; }
 
+        public string? SubjectUserName { get; init; }
+
         // Auth props
         public required string Provider { get; init; }
         public string? Acr { get; init; }

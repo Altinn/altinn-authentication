@@ -25,6 +25,8 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public int? SubjectPartyId { get; init; }
         public int? SubjectUserId { get; init; }
 
+        public string? SubjectUserName { get; init; }
+
         // Token issuance context
         public string[] Scopes { get; init; } = Array.Empty<string>();
         public string? Acr { get; init; }

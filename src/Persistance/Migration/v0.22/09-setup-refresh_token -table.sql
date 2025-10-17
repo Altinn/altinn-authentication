@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.refresh_token (
   subject_party_uuid UUID,
   subject_party_id   INTEGER,
   subject_user_id    INTEGER,
+  subject_user_name    TEXT,
   op_sid             TEXT NOT NULL,
   scopes             TEXT[] NOT NULL,
   acr                TEXT,

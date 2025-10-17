@@ -47,13 +47,18 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, oidcBindingContext.SubjectUserId.ToString()!));
             }
 
+            if (oidcBindingContext.SubjectUserName != null)
+            {
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, oidcBindingContext.SubjectUserName));
+            }
+
             if (oidcBindingContext.ExternalId != null && oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.PersonIdentifier))
             {
                 claims.Add(new Claim("pid", oidcBindingContext.ExternalId.Replace($"{AltinnCoreClaimTypes.PersonIdentifier}:", string.Empty)));
             }
-            else if (oidcBindingContext.ExternalId != null && oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.UserName))
+            else if (oidcBindingContext.ExternalId != null)
             {
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, oidcBindingContext.ExternalId.Replace($"{AltinnCoreClaimTypes.UserName}:", string.Empty)));
+                claims.Add(new Claim("orgsub", oidcBindingContext.ExternalId, string.Empty));
             }
 
             if (oidcBindingContext.Acr != null)
@@ -138,9 +143,10 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             {
                 claims.Add(new Claim("pid", oidcSession.ExternalId.Replace($"{AltinnCoreClaimTypes.PersonIdentifier}:", string.Empty)));
             }
-            else if (oidcSession.ExternalId != null && oidcSession.ExternalId.StartsWith(AltinnCoreClaimTypes.UserName))
+
+            if (oidcSession.SubjectUserName != null)
             {
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, oidcSession.ExternalId.Replace($"{AltinnCoreClaimTypes.UserName}:", string.Empty)));
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, oidcSession.SubjectUserName, string.Empty));
             }
 
             if (oidcSession.Acr != null)

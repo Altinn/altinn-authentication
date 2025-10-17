@@ -11,6 +11,8 @@
         public Guid? SubjectPartyUuid { get; init; }
         public int? SubjectPartyId { get; init; }
         public int? SubjectUserId { get; init; }
+
+        public string? SubjectUserName { get; init; }
         public required string SessionId { get; init; }            // oidc_session.sid
         public required Uri RedirectUri { get; init; }
         public required IReadOnlyCollection<string> Scopes { get; init; }

@@ -596,7 +596,6 @@ namespace Altinn.Platform.Authentication.Services
             model.Acr = AuthenticationHelper.GetAcrForAuthenticationLevel(model.AuthenticationLevel);
             model.TokenIssuer = model.Iss;
             model.TokenSubject = model.PartyUuid.ToString();
-            model.Scope = _generalSettings.DefaultPortalScopes;
         }
  
         private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
@@ -869,6 +868,7 @@ namespace Altinn.Platform.Authentication.Services
                     SubjectPartyUuid = session.SubjectPartyUuid,
                     SubjectPartyId = session.SubjectPartyId,
                     SubjectUserId = session.SubjectUserId,
+                    SubjectUserName = session.SubjectUserName,
                     SessionId = session.Sid,
                     RedirectUri = loginTx.RedirectUri,
                     Scopes = session.Scopes,
@@ -905,7 +905,6 @@ namespace Altinn.Platform.Authentication.Services
             // 2) Hash it for storage (HMAC with server-side pepper)
             byte[] handleHash = HashHandle(handleBytes);
 
-            string? externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
 
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate
@@ -918,8 +917,9 @@ namespace Altinn.Platform.Authentication.Services
                     SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
                     SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
                     SubjectPartyId = userIdenity.PartyID,              // <- legacy
-                    SubjectUserId = userIdenity.UserID,         
-                    ExternalId = externalId,
+                    SubjectUserId = userIdenity.UserID,
+                    SubjectUserName = userIdenity.Username,  // <- legacy
+                    ExternalId = userIdenity.ExternalIdentity,
                     Acr = userIdenity.Acr,
                     AuthTime = userIdenity.AuthTime,
                     Amr = userIdenity.Amr,
@@ -959,10 +959,6 @@ namespace Altinn.Platform.Authentication.Services
             {
                 externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
             }
-            else if (!string.IsNullOrEmpty(userIdenity.Username))
-            {
-                externalId = $"{AltinnCoreClaimTypes.UserName}:{userIdenity.Username}";
-            }
 
             OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
                 new OidcSessionCreate
@@ -976,7 +972,8 @@ namespace Altinn.Platform.Authentication.Services
                     ExternalId = externalId,
                     SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
                     SubjectPartyId = userIdenity.PartyID,              // <- legacy
-                    SubjectUserId = userIdenity.UserID,               // <- legacy
+                    SubjectUserId = userIdenity.UserID,    
+                    SubjectUserName = userIdenity.Username,  // <- legacy
                     Acr = userIdenity.Acr,
                     AuthTime = userIdenity.AuthTime,
                     Amr = userIdenity.Amr,
@@ -1260,6 +1257,7 @@ namespace Altinn.Platform.Authentication.Services
                     userAuthenticationModel.UserID = profile.UserId;
                     userAuthenticationModel.PartyID = profile.PartyId;
                     userAuthenticationModel.PartyUuid = profile.Party.PartyUuid;
+                    userAuthenticationModel.Username = profile.UserName;
                     return userAuthenticationModel;
                 }
 

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.authorization_code (
   subject_party_uuid     UUID,
   subject_party_id       INTEGER,
   subject_user_id        INTEGER,
+  subject_user_name       TEXT,
   session_id             TEXT NOT NULL,             -- FK to oidc_session.sid (optional FK)
   redirect_uri           TEXT NOT NULL,
   scopes                 TEXT[] NOT NULL,

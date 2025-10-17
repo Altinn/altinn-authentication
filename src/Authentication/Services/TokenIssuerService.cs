@@ -32,9 +32,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<string> CreateIdTokenAsync(ClaimsPrincipal principal, OidcClient client, DateTimeOffset now, CancellationToken ct = default)
+        public async Task<string> CreateIdTokenAsync(ClaimsPrincipal principal, OidcClient client, DateTimeOffset expires, CancellationToken ct = default)
         {
-            return await GenerateToken(principal, now.AddMinutes(_generalSettings.JwtValidityMinutes).UtcDateTime);
+            return await GenerateToken(principal, expires);
         }
 
         private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset expires)

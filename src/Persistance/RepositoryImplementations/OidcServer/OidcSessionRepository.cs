@@ -44,14 +44,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 )
                 INSERT INTO oidcserver.oidc_session (
                     sid, session_handle_hash, upstream_issuer, upstream_sub, subject_id, external_id,
-                    subject_party_uuid, subject_party_id, subject_user_id,
+                    subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
                     provider, acr, auth_time, amr, scopes,
                     created_at, updated_at, last_seen_at, expires_at,
                     upstream_session_sid, created_by_ip, user_agent_hash
                 )
                 SELECT
                     @sid, @session_handle_hash, @upstream_issuer, @upstream_sub, @subject_id, @external_id,
-                    @subject_party_uuid, @subject_party_id, @subject_user_id,
+                    @subject_party_uuid, @subject_party_id, @subject_user_id, @subject_user_name,
                     @provider, @acr, @auth_time, @amr, @scopes,
                     @now, @now, @now, @expires_at,
                     @upstream_session_sid, @created_by_ip, @user_agent_hash
@@ -67,6 +67,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("subject_party_uuid", (object?)c.SubjectPartyUuid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_party_id", (object?)c.SubjectPartyId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_user_id", (object?)c.SubjectUserId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_user_name", (object?)c.SubjectUserName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("provider", c.Provider);
             cmd.Parameters.AddWithValue("upstream_issuer", c.UpstreamIssuer);
             cmd.Parameters.AddWithValue("upstream_sub", c.UpstreamSub);
@@ -230,6 +231,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? null : r.GetFieldValue<Guid?>("subject_party_uuid"),
                 SubjectPartyId = r.IsDBNull("subject_party_id") ? null : r.GetFieldValue<int?>("subject_party_id"),
                 SubjectUserId = r.IsDBNull("subject_user_id") ? null : r.GetFieldValue<int?>("subject_user_id"),
+                SubjectUserName = r.IsDBNull("subject_user_name") ? null : r.GetFieldValue<string>("subject_user_name"),
                 Provider = r.GetFieldValue<string>("provider"),
                 UpstreamIssuer = r.GetFieldValue<string>("upstream_issuer"),
                 UpstreamSub = r.GetFieldValue<string>("upstream_sub"),

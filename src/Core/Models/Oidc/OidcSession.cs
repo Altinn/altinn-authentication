@@ -51,6 +51,11 @@
         public int? SubjectUserId { get; init; }
 
         /// <summary>
+        /// The username of the subject if applicable.
+        /// </summary>
+        public string? SubjectUserName { get; init; }
+
+        /// <summary>
         /// Key of the configured identity provider used for authentication.
         /// </summary>
         public required string Provider { get; init; }

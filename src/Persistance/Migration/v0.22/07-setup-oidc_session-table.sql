@@ -11,6 +11,7 @@
   subject_party_uuid   UUID,               -- main Altinn ID
   subject_party_id     INTEGER,            -- legacy
   subject_user_id      INTEGER,            -- legacy
+  subject_user_name	   TEXT,               -- legacy
 
   -- Auth properties
   provider             TEXT NOT NULL,      -- 'idporten'|'uidp'|'testidp'...
