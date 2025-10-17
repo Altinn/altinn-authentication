@@ -14,11 +14,12 @@ public interface IChangeRequestRepository
     Task<Result<bool>> CreateChangeRequest(ChangeRequestResponse createRequest);
 
     /// <summary>
-    /// Gets a ChangeRequest model by the internal Guid ( which later is repurposed as the SystemUser Id )
+    /// Gets a ChangeRequest model by the Guid, which is both the Primary Key in the db, 
+    /// and the CorrellationId used by the Vendor for this Change Request
     /// </summary>
-    /// <param name="internalId">Internal Request guid</param>
+    /// <param name="id">Request guid</param>
     /// <returns>Create Request model</returns>
-    Task<ChangeRequestResponse?> GetChangeRequestByInternalId (Guid internalId);
+    Task<ChangeRequestResponse?> GetChangeRequestById (Guid id);
 
     /// <summary>
     /// Gets a ChangeRequest model by the three external references

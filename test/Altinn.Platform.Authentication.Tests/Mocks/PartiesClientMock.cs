@@ -21,14 +21,13 @@ public class PartiesClientMock : IPartiesClient
     /// <inheritdoc/>
     public Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(GetTestDataParties().Find(p => p.PartyId == partyId));
+        return Task.FromResult(GetTestDataParties(GetPartiesPath()).Find(p => p.PartyId == partyId));
     }
 
-    private static List<Party> GetTestDataParties()
+    private static List<Party> GetTestDataParties(string partiesPath)
     {
         List<Party> partyList = new List<Party>();
 
-        string partiesPath = GetPartiesPath();
         if (File.Exists(partiesPath))
         {
             string content = File.ReadAllText(partiesPath);
@@ -42,6 +41,12 @@ public class PartiesClientMock : IPartiesClient
     {
         string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
         return Path.Combine(unitTestFolder, "Data", "Parties", "parties.json");
+    }
+
+    private static string GetCustomerPartiesPath()
+    {
+        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder, "Data", "Parties", "customerparties.json");
     }
 
     private static string GetMainUnitsPath(int subunitPartyId)
@@ -68,11 +73,26 @@ public class PartiesClientMock : IPartiesClient
 
     public Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
     {
-        Party party = new()
+        Party party = new Party();
+        party.PartyId = 500000;
+        party.PartyUuid = new Guid("00000000-0000-0000-0005-000000000000");
+
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "987654321")
         {
-            PartyId = 500000,
-            PartyUuid = new Guid("00000000-0000-0000-0005-000000000000")
-        };
+            party.PartyId = 600000;
+            party.PartyUuid = new Guid("6bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
+        }
+
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "123357789")
+        {   
+            party.PartyId = 700000;
+            party.PartyUuid = new Guid("7bb78d06-70b2-45f6-85bc-19ca7b4d34d8");
+        }
+
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "123447789")
+        {
+            party = null;
+        }
 
         return Task.FromResult<Party>(party);
     }
@@ -80,5 +100,10 @@ public class PartiesClientMock : IPartiesClient
     public Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
+    }
+
+    public Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetTestDataParties(GetCustomerPartiesPath()).Find(p => p.PartyUuid == partyUuId));
     }
 }

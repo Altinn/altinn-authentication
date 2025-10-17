@@ -465,7 +465,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemUserType == SystemUserType.Standard && rights is not null && rights.Count > 0)
             {
-                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], fromBff:false, cancellationToken);
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, rights, fromBff:false, cancellationToken);
 
                 if (delegationCheckFinalResult?.RightResponses is null)
                 {
@@ -790,7 +790,7 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         DelegationId = item.DelegationId,
                         CustomerId = item.FromEntityId,
-                        AgentSystemUserId = (Guid)systemUser.SystemInternalId!
+                        AgentSystemUserId = new Guid(systemUser.Id!)
                     };
 
                     theList.Add(newDel);
@@ -852,30 +852,22 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_ExpectedAgentUserType;
             }
 
-            Result<List<ConnectionDto>> delegations = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitatorId);
-            if (delegations.IsSuccess && delegations.Value.Count > 0)
+            Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
+            if (result.IsProblem)
             {
-                return Problem.AgentSystemUser_HasDelegations;
-            }
-            else
-            {
-                Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
-                if (result.IsProblem)
+                if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
                 {
-                    if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
-                    {
-                        await _repository.SetDeleteSystemUserById(systemUserId);
-                        return true;
-                    }
-                    else
-                    {
-                        return result.Problem;
-                    }
+                    await _repository.SetDeleteSystemUserById(systemUserId);
+                    return true;
                 }
-
-                await _repository.SetDeleteSystemUserById(systemUserId);
-                return true;
+                else
+                {
+                    return result.Problem;
+                }
             }
+
+            await _repository.SetDeleteSystemUserById(systemUserId);
+            return true;
         }
 
         /// <inheritdoc/>
@@ -989,7 +981,8 @@ namespace Altinn.Platform.Authentication.Services
                     AgentSystemUserId = item.To.Id,
                     DelegationId = item.Id,
                     CustomerId = item.From.Id,
-                    AssignmentId = item.Delegation.ToId
+                    AssignmentId = item.Delegation.ToId,
+                    CustomerName = item.From.Name
                 };
 
                 result.Add(newDel);

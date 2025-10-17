@@ -692,7 +692,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             if (response.StatusCode == System.Net.HttpStatusCode.OK && response01.StatusCode == System.Net.HttpStatusCode.OK && response02.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
                 HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
@@ -705,9 +705,51 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task SystemRegister_Get_ListofAll_NoData()
         {
             HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister");
+            HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            List<RegisteredSystemResponse> list = JsonSerializer.Deserialize<List<RegisteredSystemResponse>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
+            Assert.True(list.Count == 0);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Get_ListofAll_For_Vendor()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+
+            string dataFileName01 = "Data/SystemRegister/Json/SystemRegister01.json";
+            HttpClient createClient2 = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response01 = await SystemRegisterTestHelper.CreateSystemRegister(createClient2, dataFileName01);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response01.StatusCode);
+
+            string dataFileName03 = "Data/SystemRegister/Json/SystemRegister_altinn.json";
+            HttpClient createClient3 = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response03 = await SystemRegisterTestHelper.CreateSystemRegister(createClient3, dataFileName03);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response03.StatusCode);
+
+            string dataFileName04 = "Data/SystemRegister/Json/SystemRegisterWithAccessPackageNull.json";
+            HttpClient createClient4 = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response04 = await SystemRegisterTestHelper.CreateSystemRegister(createClient4, dataFileName04);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response04.StatusCode);
+
+            HttpClient client = GetAuthenticatedClient(Write, "312529750");
+                
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor");
+            HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+            List<RegisteredSystemDTO> list = JsonSerializer.Deserialize<List<RegisteredSystemDTO>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
+            Assert.Single(list);            
+        }
+
+        [Fact]
+        public async Task SystemRegister_Get_Systems_Vendor_NoData()
+        {
+            HttpClient client = GetAuthenticatedClient(Write, "312529750");
+
+            HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor");
             HttpResponseMessage getAllResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             List<RegisteredSystemResponse> list = JsonSerializer.Deserialize<List<RegisteredSystemResponse>>(await getAllResponse.Content.ReadAsStringAsync(), _options);
             Assert.True(list.Count == 0);
@@ -782,7 +824,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
                 string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
                 JsonSerializerOptions options = new JsonSerializerOptions()
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -831,7 +873,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 string name = "991825827_the_matrix";
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
@@ -857,7 +899,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 string name = "991825827_system_with_app";
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
@@ -891,7 +933,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 string name = "991825827_system_with_app";
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights?useoldformatforapp=true");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
@@ -929,7 +971,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 string name = "991825827_system_with_app_and_resource";
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
@@ -975,7 +1017,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 string name = "991825827_system_with_app_and_resource";
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights?useoldformatforapp=true");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
@@ -1010,7 +1052,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 string name = "991825827_the_matrix";
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/rights");
                 HttpResponseMessage rightsResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
@@ -1030,7 +1072,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 string name = "991825827_the_matrix";
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/accesspackages");
                 HttpResponseMessage responseMessage = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
@@ -1051,7 +1093,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             {
                 string name = "991825827_the_matrix";
                 HttpClient client = CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokenUtil.GetTestToken());
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
 
                 HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/{name}/accesspackages");
                 HttpResponseMessage responseMessage = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);

@@ -32,6 +32,10 @@
     }
   ],
     {allowedRedirectUrls},
+"accessPackages" : [ {
+"urn" : "urn:altinn:accesspackage:renovasjon"
+}, {
+"urn" : "urn:altinn:accesspackage:jordbruk"}                   ],
   "isVisible": false,
   "ClientId": [
     "{clientId}"

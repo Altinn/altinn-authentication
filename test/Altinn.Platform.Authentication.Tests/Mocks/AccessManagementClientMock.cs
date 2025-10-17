@@ -212,7 +212,12 @@ public class AccessManagementClientMock: IAccessManagementClient
     public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
     {
         List<ConnectionDto> delegations = [];
-        
+
+        if ( systemUserId == new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"))
+        {
+            return delegations;
+        }
+
         if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232") || facilitator == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17") || facilitator == new Guid("23478729-1ffa-49c7-a3d0-6e0d08540e9a"))
         {
             return delegations;
@@ -224,7 +229,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         { 
             From = new EntityParty()
             {
-                Id = Guid.NewGuid(),
+                Id = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"),
             },
             To = new EntityParty()
             {
@@ -240,7 +245,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             {
                 Id = delegationId,
                 FacilitatorId = facilitator,
-                FromId = Guid.NewGuid(),// value not from our input
+                FromId = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"),// value not from our input
                 ToId = Guid.NewGuid() // the Assignment Id
             }
         });
@@ -289,7 +294,17 @@ public class AccessManagementClientMock: IAccessManagementClient
 
     public Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
+        if (facilitatorId.ToString() == "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
+        {
+            return Task.FromResult<Result<List<ClientDto>>>(new List<ClientDto>());
+        }
+
         if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
+        {
+            return Task.FromResult<Result<List<ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+        }
+
+        if (facilitatorId.ToString() == "7bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
         {
             return Task.FromResult<Result<List<ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
         }

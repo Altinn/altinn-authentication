@@ -255,6 +255,46 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// An endpoint where the Vendor can retrieve a SystemUser
+    /// by the organisation number, system-id and optionally the external-ref
+    /// </summary>
+    /// <param name="systemId">Required: the id the vendor system used</param>
+    /// <param name="externalRef">Optional: a disambiguation string</param>
+    /// <param name="orgno">Required: the organisation number for the Reportee (owner of the SystemUser)</param>
+    /// <param name="cancellationToken">the cancellationtoken</param>
+    /// <returns>The SystemUser model</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
+    [HttpGet("vendor/byquery", Name = "vendor/byquery")]
+    public async Task<ActionResult<SystemUser>> GetSingleSystemUserForVendor(
+        [FromQuery(Name = "system-id")] string systemId,
+        [FromQuery(Name = "external-ref")] string? externalRef,
+        [FromQuery(Name = "orgno")] string orgno,
+        CancellationToken cancellationToken = default)
+    {
+        OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        {
+            return Unauthorized();
+        }
+
+        ExternalRequestId extid = new()
+        {
+            ExternalRef = externalRef ?? orgno,  
+            OrgNo = orgno,
+            SystemId = systemId            
+        };  
+
+        SystemUser? toBeFound = await _systemUserService.GetSystemUserByExternalRequestId(extid);
+
+        if (toBeFound is not null)
+        {
+            return Ok(toBeFound);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
     /// Retrieves a list of SystemUsers the Vendor has for a given system they own.
     /// </summary>
     /// <param name="systemId">The system the Vendor wants the list for</param>
@@ -462,9 +502,8 @@ public class SystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/clients")]
-    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] CustomerRoleType customerRoleType, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
     {
-        List<Customer> ret = [];
         var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
 
         if (result.IsSuccess)

@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Altinn.Authorization.ABAC" Version="0.0.8" />
+    <PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.0" />
     <PackageReference Include="Altinn.Platform.Storage.Interface" Version="4.0.13" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.9.0" />
@@ -72,6 +72,9 @@
     <None Update="Data\OidcScenarios\arbeidsflate_happyflow.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\Parties\customerparties.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\Roles\user_1337\party_500006\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -88,6 +91,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemChangeLog\ChangeLogCreate.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\SystemRegister\Json\SystemRegister_altinn.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterInvalidSystemId.json">

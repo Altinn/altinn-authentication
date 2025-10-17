@@ -38,6 +38,11 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
+        public Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser, Guid correllationId)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<Result<bool>> DeleteChangeRequestByRequestId(Guid requestId)
         {
             throw new NotImplementedException();
@@ -78,7 +83,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             throw new NotImplementedException();
         }
 
-        public Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse validateSet, OrganisationNumber vendorOrgNo)
+        public Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse validateSet, SystemUser systemUser, OrganisationNumber vendorOrgNo)
         {
             throw new NotImplementedException();
         }

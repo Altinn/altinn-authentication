@@ -90,4 +90,28 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_Invalid_SystemId_Spaces { get; }
         = _factory.Create(13, "System ID cannot have spaces in id (leading, trailing or in between the id)");
+
+    /// <summary>
+    /// Gets a validation error descriptor for system user id that does not exist
+    /// </summary>
+    public static ValidationErrorDescriptor SystemUser_Missing_SystemUserId { get; }
+        = _factory.Create(14, "The agent query parameter is missing or invalid");
+
+    /// <summary>
+    /// Gets a validation error descriptor for system user id that does not exist
+    /// </summary>
+    public static ValidationErrorDescriptor SystemUser_SystemUserId_NotFound { get; }
+        = _factory.Create(14, "System user not found");
+
+    /// <summary>
+    /// Gets a validation error descriptor for invalid system user id
+    /// </summary>
+    public static ValidationErrorDescriptor SystemUser_Invalid_SystemUserId { get; }
+        = _factory.Create(15, "SystemUser is not a valid system user of type agent");
+
+    /// <summary>
+    /// Gets a validation error descriptor for invalid or missing client query parameter
+    /// </summary>
+    public static ValidationErrorDescriptor SystemUser_Missing_ClientParameter { get; }
+        = _factory.Create(16, "The client query parameter is missing or invalid");
 }

@@ -100,5 +100,25 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Issuer when session is created based on Altinn 2 Ticket
         /// </summary>
         public const string ISSUER_ALTINN_PORTAL = "SBL";
+
+        /// <summary>
+        /// Policy tag for reading client delegation information
+        /// </summary>
+        public const string POLICY_CLIENTDELEGATION_READ = "ClientDelegationRead";
+
+        /// <summary>
+        /// Scope for reading client delegation information
+        /// </summary>
+        public const string SCOPE_CLIENTDELEGATION_READ = "altinn:clientdelegations.read";
+
+        /// <summary>
+        /// Policy tag for writing client delegation information
+        /// </summary>
+        public const string POLICY_CLIENTDELEGATION_WRITE = "ClientDelegationWrite";
+
+        /// <summary>
+        /// Scope for writing client delegation information
+        /// </summary>
+        public const string SCOPE_CLIENTDELEGATION_WRITE = "altinn:clientdelegations.write";
     }
 }
