@@ -80,7 +80,7 @@ namespace Altinn.Platform.Authentication.Tests.Models
                 "/authentication/api/v1/authorize" +
                 $"?redirect_uri={redirectUri}" +
                 $"&scope={Uri.EscapeDataString(string.Join(" ", Scopes))}" +
-                "&acr_values=idporten-loa-substantial" +
+                $"&acr_values={GetAcr()}" +
                 $"&state={GetDownstreamState()}" +
                 $"&client_id={DownstreamClientId}" +
                 "&response_type=code" +
@@ -147,6 +147,11 @@ namespace Altinn.Platform.Authentication.Tests.Models
             }
 
             LoginCount = attempt;
+        }
+
+        private string GetAcr()
+        {
+            return Acr[0];
         }
     }
 }

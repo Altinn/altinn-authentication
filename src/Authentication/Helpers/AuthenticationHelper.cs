@@ -209,6 +209,8 @@ namespace Altinn.Platform.Authentication.Helpers
                     return AuthenticationMethod.IdportenTestId;
                 case "SelfIdentified":
                     return AuthenticationMethod.SelfIdentified;
+                case "Minid-APP":
+                    return AuthenticationMethod.MinIDApp;
             }
 
             return Enum.AuthenticationMethod.NotDefined;

@@ -1015,7 +1015,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         {
             // Create HttpClient with default headers for IP, UA, correlation. 
             using HttpClient client = CreateClientWithHeaders();
-            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_Level34");
 
             // Insert a client that matches the authorize request
             OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
@@ -1083,108 +1083,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcSession? refreshedSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             Assert.Equal(string.Join(' ', testScenario.Scopes), refreshed.scope);
 
-            // ====== Phase 5: Redirect to App in Altinn Apps ======
-            // User select a instance in Arbeidsflate and will be redirected to Altinn Apps to work on the instance. 
-            HttpResponseMessage appRedirectResponse = await client.GetAsync(
-                "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
-            Assert.Equal(HttpStatusCode.Redirect, appRedirectResponse.StatusCode);
-            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", appRedirectResponse.Headers.Location!.ToString());
+            // ===== Phase 5: User has to low level to access a corresponence in arbeidsflate that requires level 4. User is redirected to /authorize again to elevate level =====
+            // Update test scenario to require level4
+            testScenario.Acr = ["BankID Mobil"];
+            testScenario.Amr = ["idporten-loa-high"];
+            testScenario.SetLoginAttempt(2);
 
-            _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:26
+            // 08:00:00 UTC — start of day: user signs in to Arbeidsflate (RP).
+            // Arbeidsflate redirects the browser to the Altinn Authentication OIDC Provider’s /authorize endpoint.
+            string upgradeUrl = testScenario.GetAuthorizationRequestUrl();
 
-            // ===== Phase 6: Keep alive flow from App =====
-            // In Apps the frontend Application do call against their 
-            // own keepalive endpoint in app backend to get a new token. The backend in Apps do call against the /refresh endpoint in Authentication.
-            // Code is here: https://github.com/Altinn/app-lib-dotnet/blob/main/src/Altinn.App.Api/Controllers/AuthenticationController.cs#L35
-            HttpResponseMessage cookieRefreshResponse = await client.GetAsync(
-                "/authentication/api/v1/refresh");
+            // === Phase 1: RP (Relying Party) initiates the flow by redirecting user to /authorize endpoint.
+            // Expected result is a redirect to upstream provider.
+            HttpResponseMessage authorizationUpgradeRequestResponse = await client.GetAsync(upgradeUrl);
 
-            string refreshToken = await cookieRefreshResponse.Content.ReadAsStringAsync();
-            TokenAssertsHelper.AssertCookieAccessToken(refreshToken, testScenario, _fakeTime.GetUtcNow());
+            // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
+            (string? upstreamUpgradeState, UpstreamLoginTransaction? createdUpstreamUpgradeLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
 
-            _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:31
-
-            // Second keep alive from App
-            HttpResponseMessage cookieRefreshResponse2 = await client.GetAsync(
-               "/authentication/api/v1/refresh");
-
-            string refreshToken2 = await cookieRefreshResponse.Content.ReadAsStringAsync();
-            TokenAssertsHelper.AssertCookieAccessToken(refreshToken2, testScenario, _fakeTime.GetUtcNow());
-
-            _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:36
-
-            // ===== Phase 7: Try to reuse old but still active refresh_token =====
-            // User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
-            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token);
-
-            using var refreshRespAfterAppVisit = await client.PostAsync(
-                "/authentication/api/v1/token",
-                new FormUrlEncodedContent(refreshFormAfterAppVisit));
-
-            Assert.Equal(HttpStatusCode.OK, refreshRespAfterAppVisit.StatusCode);
-
-            string refreshJsonAfterAppVisit = await refreshRespAfterAppVisit.Content.ReadAsStringAsync();
-            TokenResponseDto refreshedAfterAppVisit = JsonSerializer.Deserialize<TokenResponseDto>(refreshJsonAfterAppVisit)!;
-
-            TokenAssertsHelper.AssertTokenRefreshResponse(refreshedAfterAppVisit, testScenario, _fakeTime.GetUtcNow());
-
-            // === Phase 8: User redirects to another app in Altinn Apps and stays there for 50 minutes.
-            HttpResponseMessage app2RedirectResponse = await client.GetAsync(
-               "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
-            Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
-            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", app2RedirectResponse.Headers.Location!.ToString());
-
-            // ==== Phase 9: Keep alive flow from second App in Altinn Apps =====
-            for (int i = 0; i < 9; i++)
-            {
-                _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:41 08:46 08:51 08:56 08:59 09:06 09:11 09:16 09:21
-
-                // Second keep alive from App
-                HttpResponseMessage cookieRefreshResponseFromSecondApp2 = await client.GetAsync(
-                   "/authentication/api/v1/refresh");
-                string refreshToken2FromSecondApp = await cookieRefreshResponseFromSecondApp2.Content.ReadAsStringAsync();
-                TokenAssertsHelper.AssertCookieAccessToken(refreshToken2FromSecondApp, testScenario, _fakeTime.GetUtcNow());
-            }
-
-            // ==== Phase 10: Returns to Arbeidsflate  =====
-            // The refresh token should now be expired (max lifetime is 30 minutes and the token was issued at 08:01).
-            // Arbeidsflate needs to redirect user to /authorize again to get a new code/refresh_token.
-            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token);
-
-            using var reuseResp = await client.PostAsync(
-                "/authentication/api/v1/token",
-                new FormUrlEncodedContent(reuseForm));
-
-            Assert.Equal(HttpStatusCode.BadRequest, reuseResp.StatusCode);
-            string reuseJson = await reuseResp.Content.ReadAsStringAsync();
-            var reuseErr = JsonSerializer.Deserialize<Dictionary<string, string>>(reuseJson);
-            Assert.Equal("invalid_grant", reuseErr!["error"]);
-
-            testScenario.SetLoginAttempt(2); // Set next login attempt to get new state/nonce and pkce values
-
-            string authorizationRequestUrl2 = testScenario.GetAuthorizationRequestUrl();
-
-            // This would be the URL Arbeidsflate redirects the user to. Now the user have a active Altinn Runtime cookie so the response will be a direct
-            // redirect back to Arbeidsflate with code and state (no intermediate login at IdP).
-            HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
-
-            string code2 = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
-
-            // Gets the new code from the callback response and redeems at /token endpoint
-            Dictionary<string, string> tokenForm2 = OidcServerTestUtils.BuildTokenRequestForm(testScenario, code2);
-
-            using var tokenResp2 = await client.PostAsync(
-                "/authentication/api/v1/token",
-                new FormUrlEncodedContent(tokenForm2));
-
-            Assert.Equal(HttpStatusCode.OK, tokenResp2.StatusCode);
-            var json2 = await tokenResp2.Content.ReadAsStringAsync();
-            TokenResponseDto? tokenResult2 = JsonSerializer.Deserialize<TokenResponseDto>(json2);
-
-            // Asserts on token response structure
-            string sid2 = TokenAssertsHelper.AssertTokenResponse(tokenResult2, testScenario, _fakeTime.GetUtcNow());
-
-            Assert.Equal(sid, sid2); // should be same session as before
+            // Assume it takes 1 minute for the user to authenticate at the upstream provider
+            _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
 
             // ===== Phase 11: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
 
