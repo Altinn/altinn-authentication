@@ -49,7 +49,7 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public List<string> AllowedScopes { get; set; } = ["openid", "altinn:portal/enduser"];
 
-        public List<string> Acr { get; set; } = ["idporten-loa-substantial"];
+        public List<string> Acr { get; set; } = ["idporten-loa-high"];
 
         public List<string> Amr { get; set; } = ["BankID Mobil"];
 
