@@ -19,7 +19,8 @@
   },
   "Scopes": [
     "openid",
-    "elevundersokelsen"
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
   ],
   "AllowedScopes": [
     "openid",

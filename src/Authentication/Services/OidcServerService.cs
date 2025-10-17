@@ -207,6 +207,7 @@ namespace Altinn.Platform.Authentication.Services
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
             userIdenity = await IdentifyOrCreateAltinnUser(userIdenity, provider);
+            AddLocalScopes(userIdenity);
 
             // 3. Create or refresh Altinn session session
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
@@ -530,6 +531,7 @@ namespace Altinn.Platform.Authentication.Services
             UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(sessionInfo.EncryptedTicket);
             userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
             EnrichIdentityFromLegacyValues(userAuthenticationModel);
+            AddLocalScopes(userAuthenticationModel);
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(sessionInfo, userAuthenticationModel, ct);
             if (session != null && session.ExpiresAt > _timeProvider.GetUtcNow())
             {
@@ -567,7 +569,26 @@ namespace Altinn.Platform.Authentication.Services
                 Kind = AuthenticateFromAltinn2TicketResultKind.NoValidSession
             };
         }
-        
+
+        private void AddLocalScopes(UserAuthenticationModel userAuthenticationModel)
+        {
+            string[] localScopes = _generalSettings.DefaultPortalScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (userAuthenticationModel.Scope is null)
+            {
+                userAuthenticationModel.Scope = string.Join(' ', localScopes);
+            }
+            else
+            {
+                HashSet<string> scopes = userAuthenticationModel.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+                foreach (string s in localScopes)
+                {
+                    scopes.Add(s);
+                }
+
+                userAuthenticationModel.Scope = string.Join(' ', scopes);
+            }
+        }
+
         private void EnrichIdentityFromLegacyValues(UserAuthenticationModel model)
         {
             model.Iss = AuthzConstants.ISSUER_ALTINN_PORTAL;
