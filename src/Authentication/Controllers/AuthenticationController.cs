@@ -5,13 +5,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
-using Altinn.Authentication.Integration.Configuration;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
@@ -31,7 +29,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
@@ -76,6 +73,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
         private readonly IOidcProvider _oidcProvider;
         private readonly IProfile _profileService;
+        private readonly ITokenService _tokenService;
 
         private readonly OidcProviderSettings _oidcProviderSettings;
         private readonly IAntiforgery _antiforgery;
@@ -105,6 +103,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="featureManager">the feature toggle service</param>
         /// <param name="guidService">the guid service</param>
         /// <param name="profileService">the profile service</param>
+        /// <param name="tokenService">the token service</param>
         public AuthenticationController(
             ILogger<AuthenticationController> logger,
             IOptions<GeneralSettings> generalSettings,
@@ -121,7 +120,8 @@ namespace Altinn.Platform.Authentication.Controllers
             IEventLog eventLog,
             IFeatureManager featureManager,
             IGuidService guidService,
-            IProfile profileService)
+            IProfile profileService,
+            ITokenService tokenService)
         {
             _logger = logger;
             _generalSettings = generalSettings.Value;
@@ -140,6 +140,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _featureManager = featureManager;
             _guidService = guidService;
             _profileService = profileService;
+            _tokenService = tokenService;
             if (_generalSettings.PartnerScopes != null)
             {
                 _partnerScopes = _generalSettings.PartnerScopes.Split(";").ToList();
@@ -286,7 +287,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             _logger.LogInformation("Refreshing token....");
 
-            string serializedToken = await GenerateToken(principal);
+            string serializedToken = await _tokenService.GenerateToken(principal);
 
             _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext);
             _logger.LogInformation("End of refreshing token");
@@ -387,7 +388,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 identity.AddClaims(claims);
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
-                string serializedToken = await GenerateToken(principal);
+                string serializedToken = await _tokenService.GenerateToken(principal);
 
                 return Ok(serializedToken);
             }
@@ -509,7 +510,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 identity.AddClaims(claims);
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
-                string serializedToken = await GenerateToken(principal);
+                string serializedToken = await _tokenService.GenerateToken(principal);
                 _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
                 return Ok(serializedToken);
             }
@@ -654,7 +655,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 identity.AddClaims(claims);
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
-                string serializedToken = await GenerateToken(principal, token.ValidTo);
+                string serializedToken = await _tokenService.GenerateToken(principal, token.ValidTo);
                 _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
                 return Ok(serializedToken);
             }
@@ -804,59 +805,6 @@ namespace Altinn.Platform.Authentication.Controllers
             string redirectHost = string.Join(".", goToList);
 
             return validHost.Equals(redirectHost);
-        }
-
-        /// <summary>
-        /// Generates a token and serialize it to a compact format
-        /// </summary>
-        /// <param name="principal">The claims principal for the token</param>
-        /// <param name="expires">The Expiry time of the token</param>
-        /// <returns>A serialized version of the generated JSON Web Token.</returns>
-        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTime? expires = null)
-        {
-            List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
-
-            X509Certificate2 certificate = GetLatestCertificateWithRolloverDelay(
-                certificates, _generalSettings.JwtSigningCertificateRolloverDelayHours);
-
-            TimeSpan tokenExpiry = new TimeSpan(0, _generalSettings.JwtValidityMinutes, 0);
-            if (expires == null)
-            {
-                expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds);
-            }
-
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(principal.Identity),
-                Expires = expires,
-                SigningCredentials = new X509SigningCredentials(certificate)
-            };
-
-            SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
-            string serializedToken = tokenHandler.WriteToken(token);
-
-            return serializedToken;
-        }
-
-        private X509Certificate2 GetLatestCertificateWithRolloverDelay(
-            List<X509Certificate2> certificates, int rolloverDelayHours)
-        {
-            // First limit the search to just those certificates that have existed longer than the rollover delay.
-            var rolloverCutoff = DateTime.Now.AddHours(-rolloverDelayHours);
-            var potentialCerts =
-                certificates.Where(c => c.NotBefore < rolloverCutoff).ToList();
-
-            // If no certs could be found, then widen the search to any usable certificate.
-            if (!potentialCerts.Any())
-            {
-                potentialCerts = certificates.Where(c => c.NotBefore < DateTime.Now).ToList();
-            }
-
-            // Of the potential certs, return the newest one.
-            return potentialCerts
-                .OrderByDescending(c => c.NotBefore)
-                .FirstOrDefault();
         }
         
         private async Task IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
@@ -1132,7 +1080,7 @@ namespace Altinn.Platform.Authentication.Controllers
             ClaimsIdentity identity = new ClaimsIdentity(_generalSettings.ClaimsIdentity);
             identity.AddClaims(claims);
             ClaimsPrincipal principal = new ClaimsPrincipal(identity);
-            string serializedToken = await GenerateToken(principal);
+            string serializedToken = await _tokenService.GenerateToken(principal);
             _eventLog.CreateAuthenticationEventAsync(_featureManager, userAuthentication, AuthenticationEventType.Authenticate, HttpContext);
             CreateJwtCookieAndAppendToResponse(serializedToken);
             if (userAuthentication.TicketUpdated)
