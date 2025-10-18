@@ -26,6 +26,7 @@ using Altinn.Platform.Authentication.Health;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
+using Altinn.Platform.Authentication.Middlewares;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -499,6 +500,7 @@ void Configure()
     app.UseRouting();
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseMiddleware<RawJsonInspectionMiddleware>();
     app.MapControllers();
     app.MapHealthChecks("/health");
 }
