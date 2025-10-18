@@ -43,7 +43,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc />
         public async Task<UserAuthenticationModel> DecryptTicket(string encryptedTicket)
         {
-            DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(UserAuthenticationModel));
+            DataContractJsonSerializer serializer = new(typeof(UserAuthenticationModel));
             Uri endpointUrl = new Uri($"{_generalSettings.BridgeAuthnApiEndpoint}tickets");
 
             string userData = JsonSerializer.Serialize(new UserAuthenticationModel { EncryptedTicket = encryptedTicket });

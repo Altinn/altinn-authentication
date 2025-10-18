@@ -68,6 +68,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public int JwtValidityMinutes { get; set; }
 
         /// <summary>
+        /// Max session time in minutes
+        /// </summary>
+        public int MaxSessionTimeInMinutes { get; set; }
+
+        /// <summary>
         /// Gets or sets the hostname
         /// </summary>
         public string HostName { get; set; }
@@ -119,6 +124,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public int JwtSigningCertificateRolloverDelayHours { get; set; }
 
         /// <summary>
+        /// Server secret for hashing the OIDC refresh token
+        /// </summary>
+        public string OidcRefreshTokenPepper { get; set; }
+
+        /// <summary>
         /// Gets the Altinn Open ID Connect (OIDC) Issuer URL.
         /// </summary>
         public string AltinnOidcIssuerUrl
@@ -145,6 +155,16 @@ namespace Altinn.Platform.Authentication.Configuration
         public bool ForceOidc { get; set; }
 
         /// <summary>
+        /// Scopes set when there is no client id (Altinn Apps) or source is Altinn 2
+        /// </summary>
+        public string DefaultPortalScopes { get; set; } = "openid digdir:dialogporten.noconsent altinn:portal/enduser";
+
+        /// <summary>
+        /// Enables the authorization server
+        /// </summary>
+        public bool AuthorizationServerEnabled { get; set; }
+
+        /// <summary>
         /// Name of Oidc Nonce cookie
         /// </summary>
         public string OidcNonceCookieName { get; set; } = "oidcnonce";
@@ -158,5 +178,10 @@ namespace Altinn.Platform.Authentication.Configuration
         /// Scopes for partner authentication with exchange. 
         /// </summary>
         public string PartnerScopes { get; set; }
+
+        /// <summary>
+        /// Defines the Altinn session cookie name
+        /// </summary>
+        public string AltinnSessionCookieName { get; set; } = "altinnsession";
     }
 }

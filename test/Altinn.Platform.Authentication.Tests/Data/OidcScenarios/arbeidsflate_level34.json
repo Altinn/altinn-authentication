@@ -1,0 +1,25 @@
+{
+  "ScenarioId": "Arbeidsflate_Level34",
+  "Title": "Arbeidsflate - Happy flow",
+  "Description": "Test the happy flow for arbeidsflate. Bruker logger på med Bankid på mobil hos ID-porten",
+  "Ssn": "01039012345",
+  "UserId": 2516356,
+  "PartyId": 5780927,
+  "UserName": "sophie",
+  "Acr": [ "idporten-loa-substantial" ],
+  "Amr": [ "Minid-APP" ],
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "Scopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}
