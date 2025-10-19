@@ -762,6 +762,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
 
             string code = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
+            Assert.NotEmpty(code);
 
             // Gets the new code from the callback response and redeems at /token endpoint
             Dictionary<string, string> tokenForm = OidcServerTestUtils.BuildTokenRequestForm(testScenario, code);
