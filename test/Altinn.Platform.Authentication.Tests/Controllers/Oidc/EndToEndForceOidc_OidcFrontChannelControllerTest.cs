@@ -179,7 +179,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -402,7 +402,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -558,7 +558,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original app that was requested. 
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode!)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -649,7 +649,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         /// - Tokens are correctly bound to the authenticated Altinn session.
         /// - Logout removes all session data and redirects to Altinn 2 logout as expected.
         /// </summary>
-
         [Fact]
         public async Task TC4_Auth_A2_App_Aa_Logout_End_To_End_OK()
         {
@@ -751,7 +750,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         /// - Tokens are correctly issued and bound to the Altinn session.
         /// - Logout invalidates the session and redirects to Altinn 2 logout, ensuring full cleanup.
         /// </summary>
-
         [Fact]
         public async Task TC5_Selfidentified_Auth_A2_App_Aa_Logout_End_To_End_OK()
         {
@@ -852,7 +850,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         /// - Session persistence and refresh behave as expected across multiple relying parties.
         /// - Logout triggers the upstream UIDP end session and fully removes the Altinn session from the database.
         /// </summary>
-
         [Fact]
         public async Task TC6_UIDPAuth_App_Aa_Logout_End_To_End_OK()
         {
@@ -892,7 +889,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original app that was requested. 
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode!)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -973,7 +970,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         /// - Refresh requests correctly extend session lifetime.
         /// - Logout triggers upstream UIDP logout and removes the Altinn session record from the database.
         /// </summary>
-
         [Fact]
         public async Task TC7_UIDPAuth_NewUser_App_Aa_Logout_End_To_End_OK()
         {
@@ -1013,7 +1009,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original app that was requested. 
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode!)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -1123,7 +1119,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -1195,7 +1191,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 6: simulate provider redirecting back to Altinn with code + upstream state for the upgrade authentication request ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
-            string upgradeCallbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamUpgradeState!)}";
+            string upgradeCallbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamUpgradeState!)}";
 
             HttpResponseMessage upgradeCallbackResp = await client.GetAsync(upgradeCallbackUrl);
 
@@ -1235,7 +1231,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidUpgraded, DataSource);
             Assert.Null(loggedOutSession);
-
 
             // Simulate that ID-provider call the front channel logout endpoint
             using var frontChannelLogoutResp = await client.GetAsync(
@@ -1303,7 +1298,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<IOidcProvider>());
-            var idpAuthCode = testScenario.UpstreamProviderCode; // what we will pass on callback
+            var idpAuthCode = testScenario.GetUpstreamProviderCode(); // what we will pass on callback
 
             mock.SetupSuccess(
                 authorizationCode: idpAuthCode,
@@ -1319,7 +1314,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<IOidcProvider>());
-            var idpAuthCode = testScenario.UpstreamProviderCode; // what we will pass on callback
+            var idpAuthCode = testScenario.GetUpstreamProviderCode(); // what we will pass on callback
 
             mock.SetupSuccess(
                 authorizationCode: idpAuthCode,

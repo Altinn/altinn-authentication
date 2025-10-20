@@ -168,7 +168,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -390,7 +390,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -519,7 +519,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             Mocks.OidcProviderAdvancedMock mock = Assert.IsType<Mocks.OidcProviderAdvancedMock>(
                 Services.GetRequiredService<IOidcProvider>());
-            var idpAuthCode = testScenario.UpstreamProviderCode; // what we will pass on callback
+            var idpAuthCode = testScenario.GetUpstreamProviderCode(); // what we will pass on callback
 
             mock.SetupSuccess(
                 authorizationCode: idpAuthCode,

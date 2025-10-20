@@ -41,8 +41,6 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public string DownstreamClientCallbackUrl { get; set; } = "https://af.altinn.no/api/cb";
 
-        public string? UpstreamProviderCode { get; internal set; }
-
         public List<Uri> RedirectUris { get; set; } = [new Uri("https://af.altinn.no/api/cb")];
 
         public List<string> Scopes { get; set; } = ["openid", "altinn:portal/enduser"];
@@ -131,6 +129,16 @@ namespace Altinn.Platform.Authentication.Tests.Models
             return LoginStates[loginAttempt - 1].DownstreamCodeChallenge;
         }
 
+        public string GetUpstreamProviderCode(int loginAttempt = 0)
+        {
+            if (loginAttempt == 0)
+            {
+                loginAttempt = LoginCount ?? 1;
+            }
+
+            return LoginStates[loginAttempt - 1].UpstreamProviderCode;
+        }
+
         public void SetLoginAttempt(int attempt)
         {
             if (LoginStates.Count < attempt)
@@ -140,6 +148,7 @@ namespace Altinn.Platform.Authentication.Tests.Models
                     DownstreamState = CryptoHelpers.RandomBase64Url(32),
                     DownstreamNonce = CryptoHelpers.RandomBase64Url(32),
                     DownstreamCodeVerifier = Pkce.RandomPkceVerifier(),
+                    UpstreamProviderCode = CryptoHelpers.RandomBase64Url(32)
                 };
 
                 state.DownstreamCodeChallenge = Pkce.ComputeS256CodeChallenge(state.DownstreamCodeVerifier);
