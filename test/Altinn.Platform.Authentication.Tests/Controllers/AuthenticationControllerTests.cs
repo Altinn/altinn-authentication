@@ -27,12 +27,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
-
 using Moq;
 using Newtonsoft.Json;
-
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
