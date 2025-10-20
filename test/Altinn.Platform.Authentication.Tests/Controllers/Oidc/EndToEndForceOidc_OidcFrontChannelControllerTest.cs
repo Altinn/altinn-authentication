@@ -84,6 +84,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
+            services.AddSingleton<IProfile, ProfileFileMock>();
             services.AddSingleton(_cookieDecryptionService.Object);
             services.AddSingleton(_userProfileService.Object);
 
@@ -1348,7 +1349,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         private async Task ConfigureProfileMock(OidcTestScenario oidcTestScenario)
         {
-            ProfileMock profileMock = new ProfileMock();
+            ProfileFileMock profileMock = new ProfileFileMock();
             if (!string.IsNullOrEmpty(oidcTestScenario.ExternalIdentity) && oidcTestScenario.UserId == null)
             {
                 UserProfile? profile = null;
