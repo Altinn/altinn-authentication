@@ -14,7 +14,6 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
-using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -629,9 +628,28 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
-        /// Test that verifies flow when it startes with Altinn 2 login
+        /// End-to-end scenario verifying authentication, session persistence, and logout 
+        /// when the flow originates from an existing Altinn 2 (.ASPXAUTH) login.
+        /// 
+        /// The test covers:
+        /// 1. Initial access to an Altinn App where the user is already authenticated via Altinn 2.
+        ///    - Validates that the .ASPXAUTH cookie is accepted and converted into a valid Altinn OIDC session.
+        ///    - Confirms redirect back to the application without invoking any upstream identity provider.
+        /// 2. Repeated session refreshes through the /refresh endpoint, ensuring that the Altinn session 
+        ///    remains active during extended usage.
+        /// 3. Access to Arbeidsflate (RP) while a valid Altinn Runtime session exists, verifying 
+        ///    that reauthentication is bypassed and the user is directly authorized.
+        /// 4. Token issuance via /token endpoint and validation of session linkage and claims integrity.
+        /// 5. Logout flow — verifying that logout triggers the correct redirect to the local Altinn 2 
+        ///    logout endpoint and that the Altinn session is fully invalidated in the database.
+        /// 
+        /// Expected results:
+        /// - Altinn 2 authentication cookie is successfully upgraded into an Altinn OIDC session.
+        /// - Session refresh and reuse work seamlessly across applications.
+        /// - Tokens are correctly bound to the authenticated Altinn session.
+        /// - Logout removes all session data and redirects to Altinn 2 logout as expected.
         /// </summary>
-        /// <returns></returns>
+
         [Fact]
         public async Task TC4_Auth_A2_App_Aa_Logout_End_To_End_OK()
         {
@@ -713,9 +731,27 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
-        /// Test that verifies flow when it startes with Altinn 2 login
+        /// End-to-end scenario verifying authentication, session management, and logout 
+        /// when the flow starts with an existing Altinn 2 (.ASPXAUTH) login.
+        /// 
+        /// The test covers:
+        /// 1. Initial access to an Altinn App where the user is already authenticated through Altinn 2.
+        ///    - Validates that the .ASPXAUTH cookie is accepted and transformed into an Altinn OIDC session.
+        ///    - Confirms redirect back to the original application without upstream provider interaction.
+        /// 2. Continuous session refresh handling through the /refresh endpoint during active app usage.
+        /// 3. Accessing Arbeidsflate (RP) while the Altinn Runtime session is active, verifying 
+        ///    that a new authorization request reuses the existing authenticated session.
+        /// 4. Token redemption for Arbeidsflate via /token endpoint and validation of token structure and claims.
+        /// 5. Logout flow — verifying that logout correctly removes the Altinn OIDC session and 
+        ///    redirects to the local Altinn 2 logout endpoint.
+        /// 
+        /// Expected results:
+        /// - The Altinn 2 authentication cookie is seamlessly converted into a valid Altinn OIDC session.
+        /// - Session refresh extends validity without reauthentication.
+        /// - Tokens are correctly issued and bound to the Altinn session.
+        /// - Logout invalidates the session and redirects to Altinn 2 logout, ensuring full cleanup.
         /// </summary>
-        /// <returns></returns>
+
         [Fact]
         public async Task TC5_Selfidentified_Auth_A2_App_Aa_Logout_End_To_End_OK()
         {
@@ -798,9 +834,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
-        /// Scenario for UIDP user with existing profile in Altinn
+        /// End-to-end scenario verifying authentication, session management, and logout for a UIDP user 
+        /// with an existing profile in Altinn across multiple relying parties (Altinn App and Arbeidsflate).
+        ///
+        /// The test covers:
+        /// 1. Initial authentication via UIDP when accessing an Altinn App.
+        ///    - Validates redirect to the upstream provider and creation of login transactions.
+        /// 2. Callback handling and redirect back to the original Altinn App after upstream login.
+        /// 3. Ongoing session refreshes to ensure the user remains authenticated during extended app usage.
+        /// 4. Accessing Arbeidsflate with an active Altinn Runtime session, verifying reuse of existing 
+        ///    authentication without a new upstream login.
+        /// 5. Token redemption and session verification for Arbeidsflate.
+        /// 6. Logout flow — verifying coordinated logout propagation to both Altinn and the upstream UIDP provider.
+        /// 
+        /// Expected results:
+        /// - The existing Altinn profile is correctly linked to the UIDP identity.
+        /// - Session persistence and refresh behave as expected across multiple relying parties.
+        /// - Logout triggers the upstream UIDP end session and fully removes the Altinn session from the database.
         /// </summary>
-        /// <returns></returns>
+
         [Fact]
         public async Task TC6_UIDPAuth_App_Aa_Logout_End_To_End_OK()
         {
@@ -903,9 +955,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
-        /// Scenario for UIDP user with existing profile in Altinn
+        /// End-to-end scenario verifying authentication, session handling, and logout for a UIDP user 
+        /// with an existing profile in Altinn across multiple relying parties (Altinn App and Arbeidsflate).
+        /// 
+        /// The test covers:
+        /// 1. Initial authentication via UIDP when accessing an Altinn App.
+        ///    - Validates redirect to the upstream provider and creation of login transactions.
+        /// 2. Successful callback and redirection back to the original Altinn App after upstream login.
+        /// 3. Continuous session refreshes to keep the session alive over time.
+        /// 4. Accessing Arbeidsflate with an existing Altinn Runtime session, verifying reuse of the active session 
+        ///    without triggering a new upstream authentication.
+        /// 5. Token redemption and session validation for Arbeidsflate.
+        /// 6. Logout flow — ensuring coordinated logout from both Altinn and the upstream UIDP provider.
+        /// 
+        /// Expected results:
+        /// - Login transactions and sessions are correctly persisted and reused between Altinn App and Arbeidsflate.
+        /// - Refresh requests correctly extend session lifetime.
+        /// - Logout triggers upstream UIDP logout and removes the Altinn session record from the database.
         /// </summary>
-        /// <returns></returns>
+
         [Fact]
         public async Task TC7_UIDPAuth_NewUser_App_Aa_Logout_End_To_End_OK()
         {
@@ -1008,9 +1076,22 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
-        /// Scenario for testing 
+        /// End-to-end scenario verifying authentication level elevation (Level 3 → Level 4) 
+        /// and complete session lifecycle for an Arbeidsflate (RP) user through the Altinn 
+        /// Authentication OIDC Provider.
+        /// 
+        /// The test covers:
+        /// 1. Initial authentication at Level 3 via the upstream provider.
+        /// 2. Token issuance, session creation, and refresh flow validation.
+        /// 3. Detection of insufficient authentication level when accessing a Level 4 resource.
+        /// 4. Re-authentication (upgrade to Level 4) and issuance of a new session and tokens.
+        /// 5. Logout flow — verifying both Altinn and upstream (ID-porten) logout propagation.
+        /// 
+        /// Expected results:
+        /// - Tokens and sessions are correctly created, refreshed, upgraded, and invalidated.
+        /// - Previous session is removed when elevating from Level 3 to Level 4.
+        /// - Logout redirects to ID-porten and removes session records in Altinn DB.
         /// </summary>
-        /// <returns></returns>
         [Fact]
         public async Task TC8_Auth_Level3_Aa_Level_4_Af_Logout_End_To_End_OK()
         {
@@ -1032,6 +1113,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
             (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
+            Debug.Assert(createdUpstreamLogingTransaction != null);
 
             // Assume it takes 1 minute for the user to authenticate at the upstream provider
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
@@ -1089,6 +1171,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcSession? originalSessionBeforeUpgrade = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(originalSessionBeforeUpgrade, testScenario, _fakeTime.GetUtcNow());
 
+            // Update test scenario to require level4
             testScenario.Acr = ["idporten-loa-high"]; 
             testScenario.Amr = ["BankID Mobil"];
             testScenario.SetLoginAttempt(2);
@@ -1097,14 +1180,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // Arbeidsflate redirects the browser to the Altinn Authentication OIDC Provider’s /authorize endpoint.
             string upgradeUrl = testScenario.GetAuthorizationRequestUrl();
 
-            // Expected result is a redirect to upstream provider.
+            // Expected result is a redirect to upstream provider. Uers has a valid AltinnStudioRuntime cooke and code will verify if that is connectd to a session with to low level.
             HttpResponseMessage authorizationUpgradeRequestResponse = await client.GetAsync(upgradeUrl);
 
             // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
             (string? upstreamUpgradeState, UpstreamLoginTransaction? createdUpstreamUpgradeLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationUpgradeRequestResponse, _fakeTime.GetUtcNow());
             Debug.Assert(createdUpstreamUpgradeLogingTransaction != null);
 
-            // Assume it takes 1 minute for the user to authenticate at the upstream provider
+            // Assume it takes 1 minute for the user to authenticate at the upstream provider. Now with BankID level 4
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
 
             // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
@@ -1120,7 +1203,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcAssertHelper.AssertCallbackResponse(upgradeCallbackResp, testScenario, _fakeTime.GetUtcNow());
             string upgradeCode = HttpUtility.ParseQueryString(upgradeCallbackResp.Headers.Location!.Query)["code"]!;
             OidcSession? originalSessionAfterUpgrade = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
-            Assert.True(originalSessionAfterUpgrade == null);
+            Assert.Null(originalSessionAfterUpgrade);
 
             // === Phase 7: Downstream client redeems code for tokens for upgraded session ===
             Dictionary<string, string> tokenFormUpgrade = OidcServerTestUtils.BuildTokenRequestForm(testScenario, upgradeCode);
@@ -1138,8 +1221,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string sidUpgraded = TokenAssertsHelper.AssertTokenResponse(tokenResultUpgrade, testScenario, _fakeTime.GetUtcNow());
             OidcSession? upgradedSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidUpgraded, DataSource);
             OidcAssertHelper.AssertValidSession(upgradedSession, testScenario, _fakeTime.GetUtcNow());
+            Debug.Assert(upgradedSession != null);
 
-            // ===== Phase 11: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
+            // ===== Phase 8: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
 
             // Verify that session is active before logout
             using var logoutResp = await client.GetAsync(
@@ -1151,6 +1235,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidUpgraded, DataSource);
             Assert.Null(loggedOutSession);
+
 
             // Simulate that ID-provider call the front channel logout endpoint
             using var frontChannelLogoutResp = await client.GetAsync(

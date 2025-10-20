@@ -148,7 +148,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.False(string.IsNullOrEmpty(oidcSession.Sid));
 
             Assert.Equal(testScenario.Amr?.OrderBy(s => s), oidcSession.Amr?.OrderBy(s => s));
-           
+    
             foreach (string scope in testScenario.Scopes)
             { 
                 Assert.Contains(scope, oidcSession.Scopes);
