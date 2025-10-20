@@ -1086,31 +1086,62 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // ===== Phase 5: User has to low level to access a corresponence in arbeidsflate that requires level 4. User is redirected to /authorize again to elevate level =====
             // Update test scenario to require level4
-            testScenario.Acr = ["BankID Mobil"];
-            testScenario.Amr = ["idporten-loa-high"];
+            OidcSession? originalSessionBeforeUpgrade = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            OidcAssertHelper.AssertValidSession(originalSessionBeforeUpgrade, testScenario, _fakeTime.GetUtcNow());
+
+            testScenario.Acr = ["idporten-loa-high"]; 
+            testScenario.Amr = ["BankID Mobil"];
             testScenario.SetLoginAttempt(2);
 
             // 08:00:00 UTC — start of day: user signs in to Arbeidsflate (RP).
             // Arbeidsflate redirects the browser to the Altinn Authentication OIDC Provider’s /authorize endpoint.
             string upgradeUrl = testScenario.GetAuthorizationRequestUrl();
 
-            // === Phase 1: RP (Relying Party) initiates the flow by redirecting user to /authorize endpoint.
             // Expected result is a redirect to upstream provider.
             HttpResponseMessage authorizationUpgradeRequestResponse = await client.GetAsync(upgradeUrl);
 
             // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
-            (string? upstreamUpgradeState, UpstreamLoginTransaction? createdUpstreamUpgradeLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
+            (string? upstreamUpgradeState, UpstreamLoginTransaction? createdUpstreamUpgradeLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationUpgradeRequestResponse, _fakeTime.GetUtcNow());
+            Debug.Assert(createdUpstreamUpgradeLogingTransaction != null);
 
             // Assume it takes 1 minute for the user to authenticate at the upstream provider
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
 
+            // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamUpgradeLogingTransaction, _fakeTime.GetUtcNow());
+
+            // === Phase 6: simulate provider redirecting back to Altinn with code + upstream state for the upgrade authentication request ===
+            // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
+            string upgradeCallbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.UpstreamProviderCode)}&state={Uri.EscapeDataString(upstreamUpgradeState!)}";
+
+            HttpResponseMessage upgradeCallbackResp = await client.GetAsync(upgradeCallbackUrl);
+
+            // Should redirect to downstream client redirect_uri with ?code=...&state=original_downstream_state
+            OidcAssertHelper.AssertCallbackResponse(upgradeCallbackResp, testScenario, _fakeTime.GetUtcNow());
+            string upgradeCode = HttpUtility.ParseQueryString(upgradeCallbackResp.Headers.Location!.Query)["code"]!;
+            OidcSession? originalSessionAfterUpgrade = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            Assert.True(originalSessionAfterUpgrade == null);
+
+            // === Phase 7: Downstream client redeems code for tokens for upgraded session ===
+            Dictionary<string, string> tokenFormUpgrade = OidcServerTestUtils.BuildTokenRequestForm(testScenario, upgradeCode);
+
+            using var upgradeTokenResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(tokenFormUpgrade));
+
+            Assert.Equal(HttpStatusCode.OK, upgradeTokenResp.StatusCode);
+            TokenResponseDto? tokenResultUpgrade = await upgradeTokenResp.Content.ReadFromJsonAsync<TokenResponseDto>(jsonSerializerOptions);
+            string updateTokenString = await upgradeTokenResp.Content.ReadAsStringAsync();
+            Debug.Assert(tokenResult != null);
+
+            // Asserts on token response structure
+            string sidUpgraded = TokenAssertsHelper.AssertTokenResponse(tokenResultUpgrade, testScenario, _fakeTime.GetUtcNow());
+            OidcSession? upgradedSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidUpgraded, DataSource);
+            OidcAssertHelper.AssertValidSession(upgradedSession, testScenario, _fakeTime.GetUtcNow());
+
             // ===== Phase 11: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
 
             // Verify that session is active before logout
-            OidcSession? beforeLoggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
-            OidcAssertHelper.AssertValidSession(beforeLoggedOutSession, testScenario, _fakeTime.GetUtcNow());
-            Debug.Assert(beforeLoggedOutSession != null);
-
             using var logoutResp = await client.GetAsync(
                 "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
@@ -1118,12 +1149,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
             Assert.StartsWith("https://login.idporten.no/logout", logoutResp.Headers.Location!.ToString());
 
-            OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidUpgraded, DataSource);
             Assert.Null(loggedOutSession);
 
             // Simulate that ID-provider call the front channel logout endpoint
             using var frontChannelLogoutResp = await client.GetAsync(
-                $"/authentication/api/v1/upstream/frontchannel-logout?iss={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamIssuer)}&sid={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamSessionSid!)}");
+                $"/authentication/api/v1/upstream/frontchannel-logout?iss={HttpUtility.UrlEncode(upgradedSession.UpstreamIssuer)}&sid={HttpUtility.UrlEncode(upgradedSession.UpstreamSessionSid!)}");
 
             string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);

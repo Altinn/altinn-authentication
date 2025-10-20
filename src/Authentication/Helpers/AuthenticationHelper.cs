@@ -29,6 +29,8 @@ namespace Altinn.Platform.Authentication.Helpers
     /// </summary>
     public static class AuthenticationHelper
     {
+        private const string IdPortenAcrHigh = "idporten-loa-high";
+
         /// <summary>
         /// Get user information from the token
         /// </summary>
@@ -655,6 +657,25 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return packages;
+        }
+
+        /// <summary>
+        /// Verifies if an ACR upgrade is needed based on the current and requested ACR values.
+        /// </summary>
+        internal static bool NeedAcrUpgrade(string? currentAcr, string[] reqeuestedAcr)
+        {
+           string requestAcr = string.Join(string.Empty, reqeuestedAcr);
+           if (string.IsNullOrEmpty(currentAcr))
+           {
+               return false;
+           }
+
+           if (requestAcr.Equals(IdPortenAcrHigh) && (string.IsNullOrEmpty(currentAcr) || !currentAcr.Equals(IdPortenAcrHigh)))
+           {
+                return true;
+           }
+
+           return false;
         }
     }
 }

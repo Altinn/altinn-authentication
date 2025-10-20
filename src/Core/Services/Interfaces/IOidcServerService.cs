@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// calling this method.</remarks>
         /// <param name="request">The authorization request containing the necessary details to perform the authorization.  This parameter
         /// cannot be <see langword="null"/>.</param>
-        public Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal,  CancellationToken cancellationToken);
+        public Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken);
 
         /// <summary>
         /// This is used for clientless flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
@@ -29,7 +29,7 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// <param name="ct">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains an  <see
         /// cref="UpstreamCallbackResult"/> object representing the outcome of the callback processing.</returns>
-        public Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken ct);
+        public Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, string? existingSessionHandle, CancellationToken ct);
 
         /// <summary>
         /// Based on session from cookie, verify session is valid and return result with a new valid Jwt token/AltinnRuntime cookie.

@@ -1,16 +1,16 @@
 ﻿#nullable enable
 using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 
 namespace Altinn.Platform.Authentication.Controllers
@@ -19,9 +19,10 @@ namespace Altinn.Platform.Authentication.Controllers
     /// Controller for handling OIDC front-channel authentication endpoints.
     /// </summary>
     [Route("authentication/api/v1")]
-    public class OidcFrontChannelController(IOidcServerService oidcServerService) : Controller
+    public class OidcFrontChannelController(IOidcServerService oidcServerService, IOptions<GeneralSettings> generalSettings) : Controller
     {
         private readonly IOidcServerService _oidcServerService = oidcServerService;
+        private readonly GeneralSettings _generalSettings = generalSettings.Value;
 
         /// <summary>
         /// Initiates the OIDC authorization flow.
@@ -37,6 +38,7 @@ namespace Altinn.Platform.Authentication.Controllers
             string ua = Request.Headers.UserAgent.ToString();
             string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
             Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
+            string? sessionHandle = Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out var sh) ? sh : null;
 
             AuthorizeRequest req;
             try
@@ -53,7 +55,7 @@ namespace Altinn.Platform.Authentication.Controllers
             ClaimsPrincipal claimsPrincipal = HttpContext.User;
 
             // in OidcFrontChannelController
-            AuthorizeResult result = await _oidcServerService.Authorize(req, claimsPrincipal, cancellationToken);
+            AuthorizeResult result = await _oidcServerService.Authorize(req, claimsPrincipal, sessionHandle, cancellationToken);
 
             foreach (var c in result.Cookies)
             {
@@ -112,7 +114,9 @@ namespace Altinn.Platform.Authentication.Controllers
                 CorrelationId = corr
             };
 
-            UpstreamCallbackResult result = await _oidcServerService.HandleUpstreamCallback(input, ct);
+            string? sessionHandle = Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out var sh) ? sh : null;
+
+            UpstreamCallbackResult result = await _oidcServerService.HandleUpstreamCallback(input, sessionHandle, ct);
 
             // Set no-store for auth responses
             Response.Headers.CacheControl = "no-store";

@@ -83,7 +83,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
         /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
         /// </summary>
-        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, CancellationToken cancellationToken)
+        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
             // 1) Client lookup
@@ -126,16 +126,25 @@ namespace Altinn.Platform.Authentication.Services
                     existingSession = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
                 }
             }
+            else if (!string.IsNullOrEmpty(sessionHandle))
+            {
+                byte[] sessionHandleByte = Convert.FromBase64String(sessionHandle);
+                existingSession = await _oidcSessionRepo.GetBySessionHandleAsync(sessionHandleByte, cancellationToken);
+            }
 
             // Verify that found session 
             if (existingSession != null && _timeProvider.GetUtcNow() < existingSession.ExpiresAt)
             {
-                // There is a valid session. We just create a code an return straight away.
-                string code = await CreateDownstreamAuthorizationCode(null, tx, existingSession, cancellationToken);
-                return AuthorizeResult.RedirectToDownstreamBasedOnReusedSession(
-                    request.RedirectUri, // safe because validated
-                    code,
-                    request.State!);
+                // Check if existing session meets ACR requirements from request
+                if (!AuthenticationHelper.NeedAcrUpgrade(existingSession.Acr, request.AcrValues))
+                {
+                    // There is a valid session with high enough ACR. We just create a code an return straight away.
+                    string code = await CreateDownstreamAuthorizationCode(null, tx, existingSession, cancellationToken);
+                    return AuthorizeResult.RedirectToDownstreamBasedOnReusedSession(
+                        request.RedirectUri, // safe because validated
+                        code,
+                        request.State!);
+                }
             }
 
             // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age
@@ -192,13 +201,25 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, CancellationToken cancellationToken)
+        public async Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, string? existingSessionHandle, CancellationToken cancellationToken)
         {
             // ===== 1) Validate input + load upstream transaction =====
             (UpstreamCallbackResult? callbackResultUpstreamValidation, UpstreamLoginTransaction? upstreamTx) = await ValidateUpstreamCallbackState(input, cancellationToken);
             if (callbackResultUpstreamValidation != null)
             {
                 return callbackResultUpstreamValidation;
+            }
+
+            // Check if there is an existing session to be removed
+            if (existingSessionHandle != null)
+            {
+                byte[] handleHash = HashHandle(FromBase64Url(existingSessionHandle));
+
+                OidcSession? currentSession = await _oidcSessionRepo.GetBySessionHandleAsync(handleHash, cancellationToken);
+                if (currentSession != null)
+                {
+                    await _oidcSessionRepo.DeleteBySidAsync(currentSession.Sid, cancellationToken);
+                }
             }
 
             Debug.Assert(upstreamTx != null);
