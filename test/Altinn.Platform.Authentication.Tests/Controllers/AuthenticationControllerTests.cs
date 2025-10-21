@@ -50,6 +50,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private IConfiguration _configuration;
+        private readonly DateTimeOffset testTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
 
         protected override void ConfigureServices(IServiceCollection services)
         {
@@ -143,7 +144,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
 
             Assert.NotNull(principal);
 
@@ -1731,7 +1732,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Get the altinn token
             string token = await response.Content.ReadAsStringAsync();
-            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token, new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
             string altinnSessionId = altinnTokenPrincipal.FindFirstValue("jti");
 
             url = "/authentication/api/v1/refresh";
@@ -1740,7 +1741,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             refreshClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             HttpResponseMessage refreshedTokenMessage = await refreshClient.GetAsync(url);
             string refreshedToken = await refreshedTokenMessage.Content.ReadAsStringAsync();
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
 
             Assert.NotNull(principal);
             Assert.NotEqual(jti, principal.FindFirstValue("jti"));
@@ -1911,7 +1912,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupDateTimeMock()
         {
-            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
 
         private void SetupGuidMock()
