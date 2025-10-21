@@ -1768,7 +1768,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 "digdir",
                 "991825827",
                 "altinn:authentication/systemregister.admin",
-                prefixes, TestTime);
+                prefixes, 
+                TestTime);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
