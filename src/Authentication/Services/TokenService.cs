@@ -122,6 +122,7 @@ namespace Altinn.Platform.Authentication.Services
                 ExpiresAt = now.AddMinutes(_generalSettings.JwtValidityMinutes),            // sliding window (tune policy)
                 AbsoluteExpiresAt = row.AbsoluteExpiresAt, // do NOT extend hard cap,
                 SessionId = row.SessionId,
+                ProviderClaims = row.ProviderClaims,
             };
 
             await _refreshTokenRepository.InsertAsync(newRow, ct);
@@ -455,6 +456,7 @@ namespace Altinn.Platform.Authentication.Services
                     ExpiresAt = sliding,
                     AbsoluteExpiresAt = absolute,
                     SessionId = session.Sid,
+                    ProviderClaims = session.ProviderClaims
                 },
                 ct);
 

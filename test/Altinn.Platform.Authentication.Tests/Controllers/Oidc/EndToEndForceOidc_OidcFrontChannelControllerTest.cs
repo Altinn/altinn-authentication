@@ -929,10 +929,24 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
             string json = await tokenResp.Content.ReadAsStringAsync();
             TokenResponseDto? tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
+            Debug.Assert(tokenResult != null);
 
             // Asserts on token response structure
             string sidFromCodeResponse = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
 
+            // ===== Phase 4: Refresh flow =====
+            // RP (Arbeidsflate) uses refresh_token to get new tokens. The user is still active in Arbeidsflate. Session is expanded
+            Dictionary<string, string> refreshForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, tokenResult.refresh_token!);
+            using HttpResponseMessage refreshResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(refreshForm));
+
+            Assert.Equal(HttpStatusCode.OK, refreshResp.StatusCode);
+            string refreshJson = await refreshResp.Content.ReadAsStringAsync();
+            TokenResponseDto refreshed = JsonSerializer.Deserialize<TokenResponseDto>(refreshJson)!;
+            TokenAssertsHelper.AssertTokenRefreshResponse(refreshed, testScenario, _fakeTime.GetUtcNow());
+            OidcSession? refreshedSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
+            
             // ===== Phase 5: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
 
             // Verify that session is active before logout
