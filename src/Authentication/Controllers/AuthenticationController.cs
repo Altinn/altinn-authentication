@@ -206,12 +206,12 @@ namespace Altinn.Platform.Authentication.Controllers
                         return BadRequest("Invalid nonce");
                     }
 
-                    if (userAuthentication.UserID == 0)
+                    if (!userAuthentication.UserID.HasValue)
                     {
                         await IdentifyOrCreateAltinnUser(userAuthentication, provider);
                     }
 
-                    if (userAuthentication.UserID != 0 && userAuthentication.PartyUuid == null)
+                    if (userAuthentication.UserID.HasValue && userAuthentication.PartyUuid == null)
                     {
                         UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
                         userAuthentication.PartyUuid = profile.UserUuid;

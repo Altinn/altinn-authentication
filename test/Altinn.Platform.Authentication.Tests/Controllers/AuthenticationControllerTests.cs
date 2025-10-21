@@ -934,7 +934,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
             Assert.NotNull(claimPrincipal);
             Assert.NotNull(claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")));
             Assert.Equal("234234",  claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")).Value);
@@ -1018,7 +1018,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
             Assert.NotNull(claimPrincipal);
             Assert.NotNull(claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")));
             Assert.Equal("234235", claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")).Value);
