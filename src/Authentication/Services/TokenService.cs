@@ -155,10 +155,10 @@ namespace Altinn.Platform.Authentication.Services
             return TokenResult.Success(
                 accessToken: accessToken,
                 idToken: idToken,
-                expiresIn: _generalSettings.JwtValidityMinutes,
+                expiresIn: _generalSettings.JwtValidityMinutes * 60,
                 scope: string.Join(' ', resultingScopes),
                 refreshToken: newRefreshToken,
-                _generalSettings.JwtValidityMinutes);
+                _generalSettings.JwtValidityMinutes * 60);
         }
 
         /// <inheritdoc/>
