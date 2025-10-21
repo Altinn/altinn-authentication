@@ -160,6 +160,11 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         private string GetAcr()
         {
+            if (Acr == null || Acr.Count == 0)
+            {
+                throw new InvalidOperationException("Acr list must contain at least one value.");
+            }
+
             return Acr[0];
         }
     }
