@@ -1226,7 +1226,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal(HttpStatusCode.OK, upgradeTokenResp.StatusCode);
             TokenResponseDto? tokenResultUpgrade = await upgradeTokenResp.Content.ReadFromJsonAsync<TokenResponseDto>(jsonSerializerOptions);
             string updateTokenString = await upgradeTokenResp.Content.ReadAsStringAsync();
-            Debug.Assert(tokenResult != null);
+            Debug.Assert(tokenResultUpgrade != null);
 
             // Asserts on token response structure
             string sidUpgraded = TokenAssertsHelper.AssertTokenResponse(tokenResultUpgrade, testScenario, _fakeTime.GetUtcNow());
