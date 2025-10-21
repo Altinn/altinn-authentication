@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Npgsql;
@@ -131,23 +132,26 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         {
             await using var conn = await _dataSource.OpenConnectionAsync(ct);
             const string sql = @"
-            INSERT INTO oidcserver.refresh_token (
-                token_id, family_id, status,
-                lookup_key, hash, salt, iterations,
-                client_id, subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id, op_sid,
-                scopes, acr, amr, auth_time,
-                created_at, expires_at, absolute_expires_at,
-                rotated_to_token_id, revoked_at, revoked_reason,
-                user_agent_hash, ip_hash
-            ) VALUES (
-                @token_id, @family_id, @status,
-                @lookup_key, @hash, @salt, @iterations,
-                @client_id, @subject_id, @external_id, @subject_party_uuid, @subject_party_id, @subject_user_id, @op_sid,
-                @scopes, @acr, @amr, @auth_time,
-                @created_at, @expires_at, @absolute_expires_at,
-                @rotated_to_token_id, @revoked_at, @revoked_reason,
-                @user_agent_hash, @ip_hash
-            )";
+                INSERT INTO oidcserver.refresh_token (
+                    token_id, family_id, status,
+                    lookup_key, hash, salt, iterations,
+                    client_id, subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id, op_sid,
+                    scopes, acr, amr, auth_time,
+                    created_at, expires_at, absolute_expires_at,
+                    rotated_to_token_id, revoked_at, revoked_reason,
+                    user_agent_hash, ip_hash,
+                    custom_claims
+                ) VALUES (
+                    @token_id, @family_id, @status,
+                    @lookup_key, @hash, @salt, @iterations,
+                    @client_id, @subject_id, @external_id, @subject_party_uuid, @subject_party_id, @subject_user_id, @op_sid,
+                    @scopes, @acr, @amr, @auth_time,
+                    @created_at, @expires_at, @absolute_expires_at,
+                    @rotated_to_token_id, @revoked_at, @revoked_reason,
+                    @user_agent_hash, @ip_hash,
+                    @custom_claims
+                )";
+
             await using var cmd = new NpgsqlCommand(sql, conn);
 
             cmd.Parameters.AddWithValue("token_id", NpgsqlDbType.Uuid, row.TokenId);
@@ -183,6 +187,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
             cmd.Parameters.AddWithValue("user_agent_hash", NpgsqlDbType.Text, (object?)row.UserAgentHash ?? DBNull.Value);
             cmd.Parameters.AddWithValue("ip_hash", NpgsqlDbType.Text, (object?)row.IpHash ?? DBNull.Value);
+            cmd.Parameters.Add(JsonbParam("custom_claims", row.CustomClaims));
 
             await cmd.ExecuteNonQueryAsync(ct);
         }
@@ -199,10 +204,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                   scopes, acr, amr, auth_time,
                   created_at, expires_at, absolute_expires_at,
                   rotated_to_token_id, revoked_at, revoked_reason,
-                  user_agent_hash, ip_hash
+                  user_agent_hash, ip_hash,
+                  custom_claims                    -- <--- NEW
                 FROM oidcserver.refresh_token
                 WHERE lookup_key = @lookup_key
                 LIMIT 1";
+
             await using NpgsqlCommand cmd = new(sql, conn);
             cmd.Parameters.AddWithValue("lookup_key", NpgsqlDbType.Bytea, lookupKey);
 
@@ -291,8 +298,28 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 RevokedReason = r.IsDBNull(r.GetOrdinal("revoked_reason")) ? null : r.GetString(r.GetOrdinal("revoked_reason")),
                 UserAgentHash = r.IsDBNull(r.GetOrdinal("user_agent_hash")) ? null : r.GetString(r.GetOrdinal("user_agent_hash")),
                 IpHash = r.IsDBNull(r.GetOrdinal("ip_hash")) ? null : r.GetString(r.GetOrdinal("ip_hash")),
-                SessionId = r.GetString(r.GetOrdinal("op_sid"))
+                SessionId = r.GetString(r.GetOrdinal("op_sid")),
+                CustomClaims = ReadDictJsonb(r, "custom_claims")
             };
+        }
+
+        private static NpgsqlParameter JsonbParam(string name, Dictionary<string, string>? dict)
+        {
+            return new NpgsqlParameter(name, NpgsqlDbType.Jsonb)
+            {
+                Value = dict is null ? DBNull.Value : JsonSerializer.Serialize(dict)
+            };
+        }
+
+        private static Dictionary<string, string>? ReadDictJsonb(NpgsqlDataReader r, string col)
+        {
+            if (r.IsDBNull(col))
+            {
+                return null;
+            }
+
+            var json = r.GetFieldValue<string>(col); // jsonb → text
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(json);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Microsoft.Extensions.Logging;
@@ -52,14 +53,15 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
 
             const string SQL = /*strpsql*/ @"
-            SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used, expires_at,
-                    subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
-                    session_id, scopes, nonce, acr, amr, auth_time
-            FROM oidcserver.authorization_code
-            WHERE code = @code
-                AND used = FALSE
-                AND expires_at > @now
-            LIMIT 1;";
+                SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used, expires_at,
+                       subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
+                       session_id, scopes, nonce, acr, amr, auth_time,
+                       custom_claims
+                  FROM oidcserver.authorization_code
+                 WHERE code = @code
+                   AND used = FALSE
+                   AND expires_at > @now
+                 LIMIT 1;";
 
             try
             {
@@ -100,7 +102,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     Nonce = reader.IsDBNull("nonce") ? null : reader.GetFieldValue<string>("nonce"),
                     Acr = reader.IsDBNull("acr") ? null : reader.GetFieldValue<string>("acr"),
                     Amr = reader.IsDBNull("amr") ? null : reader.GetFieldValue<string[]>("amr"),
-                    AuthTime = reader.IsDBNull("auth_time") ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>("auth_time")
+                    AuthTime = reader.IsDBNull("auth_time") ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>("auth_time"),
+                    CustomClaims = ReadDictJsonb(reader, "custom_claims")
                 };
 
                 return row;
@@ -116,16 +119,18 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task InsertAsync(AuthorizationCodeCreate c, CancellationToken ct = default)
         {
             const string SQL = /*strpsql*/ @"
-            INSERT INTO oidcserver.authorization_code (
-              code, client_id, subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
-              session_id, redirect_uri, scopes, nonce, acr, amr, auth_time,
-              code_challenge, code_challenge_method, issued_at, expires_at, created_by_ip, correlation_id
-            )
-            VALUES (
-              @code, @client_id, @subject_id, @external_id, @subject_party_uuid, @subject_party_id, @subject_user_id, @subject_user_name,
-              @session_id, @redirect_uri, @scopes, @nonce, @acr, @amr, @auth_time,
-              @code_challenge, @code_challenge_method, @issued_at, @expires_at, @created_by_ip, @correlation_id
-            );";
+                INSERT INTO oidcserver.authorization_code (
+                  code, client_id, subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
+                  session_id, redirect_uri, scopes, nonce, acr, amr, auth_time,
+                  code_challenge, code_challenge_method, issued_at, expires_at, created_by_ip, correlation_id,
+                  custom_claims
+                )
+                VALUES (
+                  @code, @client_id, @subject_id, @external_id, @subject_party_uuid, @subject_party_id, @subject_user_id, @subject_user_name,
+                  @session_id, @redirect_uri, @scopes, @nonce, @acr, @amr, @auth_time,
+                  @code_challenge, @code_challenge_method, @issued_at, @expires_at, @created_by_ip, @correlation_id,
+                  @custom_claims
+                );";
 
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("code", NpgsqlDbType.Text, c.Code);
@@ -149,6 +154,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("expires_at", NpgsqlDbType.TimestampTz, c.ExpiresAt);
             cmd.Parameters.AddWithValue("created_by_ip", NpgsqlDbType.Inet, (object?)c.CreatedByIp ?? DBNull.Value);
             cmd.Parameters.AddWithValue("correlation_id", NpgsqlDbType.Uuid, (object?)c.CorrelationId ?? DBNull.Value);
+            cmd.Parameters.Add(JsonbParam("custom_claims", c.CustomClaims));
 
             try
             {
@@ -159,6 +165,25 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 _logger.LogError(ex, "AuthorizationCodeRepository.InsertAsync failed for client_id={ClientId}", c.ClientId);
                 throw;
             }
+        }
+
+        private static NpgsqlParameter JsonbParam(string name, Dictionary<string, string>? dict)
+        {
+            return new NpgsqlParameter(name, NpgsqlDbType.Jsonb)
+            {
+                Value = dict is null ? DBNull.Value : JsonSerializer.Serialize(dict)
+            };
+        }
+
+        private static Dictionary<string, string>? ReadDictJsonb(NpgsqlDataReader r, string col)
+        {
+            if (r.IsDBNull(col))
+            {
+                return null;
+            }
+
+            var json = r.GetFieldValue<string>(col); // jsonb → text
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(json);
         }
     }
 }

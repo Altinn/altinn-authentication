@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text.Json;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Microsoft.Extensions.Logging;
@@ -37,7 +38,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                         updated_at           = @now,
                         last_seen_at         = @now,
                         expires_at           = @expires_at,
-                        upstream_session_sid = COALESCE(@upstream_session_sid, s.upstream_session_sid)
+                        upstream_session_sid = COALESCE(@upstream_session_sid, s.upstream_session_sid),
+                        custom_claims        = COALESCE(@custom_claims, s.custom_claims)
                     FROM existing e
                     WHERE s.sid = e.sid
                     RETURNING s.*
@@ -47,17 +49,17 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
                     provider, acr, auth_time, amr, scopes,
                     created_at, updated_at, last_seen_at, expires_at,
-                    upstream_session_sid, created_by_ip, user_agent_hash
+                    upstream_session_sid, created_by_ip, user_agent_hash, custom_claims
                 )
                 SELECT
                     @sid, @session_handle_hash, @upstream_issuer, @upstream_sub, @subject_id, @external_id,
                     @subject_party_uuid, @subject_party_id, @subject_user_id, @subject_user_name,
                     @provider, @acr, @auth_time, @amr, @scopes,
                     @now, @now, @now, @expires_at,
-                    @upstream_session_sid, @created_by_ip, @user_agent_hash
+                    @upstream_session_sid, @created_by_ip, @user_agent_hash, @custom_claims
                 WHERE NOT EXISTS (SELECT 1 FROM existing)
                 RETURNING *;
-                ";
+            ";
 
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("sid", c.Sid);
@@ -80,6 +82,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("upstream_session_sid", (object?)c.UpstreamSessionSid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("created_by_ip", (object?)c.CreatedByIp ?? DBNull.Value);
             cmd.Parameters.AddWithValue("user_agent_hash", (object?)c.UserAgentHash ?? DBNull.Value);
+            cmd.Parameters.Add(JsonbParam("custom_claims", c.CustomClaims));
 
             await using var reader = await cmd.ExecuteReaderAsync(ct);
             if (!await reader.ReadAsync(ct))
@@ -220,6 +223,26 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             await cmd.ExecuteNonQueryAsync(ct);
         }
 
+        private static object ToJsonb(Dictionary<string, string>? dict)
+        {
+            if (dict is null)
+            {
+                return DBNull.Value;
+            }
+
+            // Serialize to string to avoid requiring special JSON mapping configuration
+            var json = System.Text.Json.JsonSerializer.Serialize(dict);
+            return new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Jsonb, Value = json };
+        }
+
+        private static NpgsqlParameter JsonbParam(string name, Dictionary<string, string>? dict)
+        {
+            return new NpgsqlParameter(name, NpgsqlDbType.Jsonb)
+            {
+                Value = dict is null ? DBNull.Value : JsonSerializer.Serialize(dict)
+            };
+        }
+
         private static OidcSession Map(NpgsqlDataReader r)
         {
             return new OidcSession
@@ -244,6 +267,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 ExpiresAt = r.IsDBNull("expires_at") ? null : r.GetFieldValue<DateTimeOffset?>("expires_at"),
                 UpstreamSessionSid = r.IsDBNull("upstream_session_sid") ? null : r.GetFieldValue<string>("upstream_session_sid"),
                 LastSeenAt = r.IsDBNull("last_seen_at") ? null : r.GetFieldValue<DateTimeOffset?>("last_seen_at"),
+                CustomClaims = r.IsDBNull("custom_claims") ? null : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(r.GetFieldValue<string>("custom_claims"))
             };
         }
     }

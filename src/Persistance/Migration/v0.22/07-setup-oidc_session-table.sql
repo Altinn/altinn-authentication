@@ -19,6 +19,7 @@
   auth_time            TIMESTAMPTZ,
   amr                  TEXT[],
   scopes               TEXT[] NOT NULL,
+  custom_claims			JSONB NULL,
 
   -- Lifecycle
   created_at           TIMESTAMPTZ NOT NULL,

@@ -31,6 +31,9 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public string[] Scopes { get; init; } = Array.Empty<string>();
         public string? Acr { get; init; }
         public string[]? Amr { get; init; }
+
+        public Dictionary<string, string>? CustomClaims { get; set; }
+
         public DateTimeOffset? AuthTime { get; init; }
 
         // Subject & session binding (for token claims)

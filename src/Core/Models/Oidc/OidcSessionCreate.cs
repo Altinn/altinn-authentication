@@ -26,6 +26,8 @@
         public DateTimeOffset? AuthTime { get; init; }
         public string[]? Amr { get; init; }
 
+        public Dictionary<string, string>? CustomClaims { get; set; }
+
         public required IReadOnlyCollection<string> Scopes { get; init; }     // lowercased/distinct
 
         // Lifecycle / diagnostics

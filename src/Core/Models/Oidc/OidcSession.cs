@@ -66,6 +66,11 @@
         public string? Acr { get; init; }
 
         /// <summary>
+        /// A set of custom claims associated with the session. Defined per upstream identity provider. Example usage is FEIDE to store info about school and class
+        /// </summary>
+        public Dictionary<string, string>? CustomClaims { get; set; }
+
+        /// <summary>
         /// The time when the user was authenticated (auth_time claim) as per OIDC spec.
         /// </summary>
         public DateTimeOffset? AuthTime { get; init; }

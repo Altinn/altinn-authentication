@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.authorization_code (
   session_id             TEXT NOT NULL,             -- FK to oidc_session.sid (optional FK)
   redirect_uri           TEXT NOT NULL,
   scopes                 TEXT[] NOT NULL,
+  custom_claims			JSONB NULL,
   nonce                  TEXT,
   acr                    TEXT,
   amr                    TEXT[],
