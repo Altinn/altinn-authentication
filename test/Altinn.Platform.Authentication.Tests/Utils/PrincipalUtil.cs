@@ -11,10 +11,15 @@ namespace Altinn.Platform.Authentication.Tests.Utils
     {
         public static readonly string AltinnCoreClaimTypesOrg = "urn:altinn:org";
 
-        public static string GetToken(int userId, List<Claim> claims, int authenticationLevel = 2, bool addPortalScope = false)
+        public static string GetToken(int userId, List<Claim> claims, int authenticationLevel = 2, bool addPortalScope = false, DateTimeOffset? now = null)
         {
+            if (now == null)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
             ClaimsPrincipal principal = GetUserPrincipal(userId, claims, authenticationLevel, addPortalScope);
-            string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
+            string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1), now);
             return token;
         }
 
@@ -98,11 +103,16 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return token;
         }
 
-        public static string GetOrgToken(string org, string orgNumber = "991825827", string scope = null, string[] prefixes = null)
+        public static string GetOrgToken(string org, string orgNumber = "991825827", string scope = null, string[] prefixes = null, DateTimeOffset? now = null)
         {
+            if (now == null)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
             ClaimsPrincipal principal = GetClaimsPrincipal(org, orgNumber, scope, prefixes);
 
-            string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
+            string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1), now);
 
             return token;
         }
@@ -141,13 +151,18 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return new ClaimsPrincipal(identity);
         }
 
-        public static string GetClientDelegationToken(int userId, List<Claim> claims, string scopes, int authenticationLevel = 2)
+        public static string GetClientDelegationToken(int userId, List<Claim> claims, string scopes, int authenticationLevel = 2, DateTimeOffset? now = null)
         {
+            if (now == null)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
             string issuer = "www.altinn.no";
             ClaimsPrincipal principal = GetUserPrincipal(userId, claims, authenticationLevel);
             ////principal.Identities.FirstOrDefault().AddClaim(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuId.ToString(), ClaimValueTypes.String, issuer));
             principal.Identities.FirstOrDefault().AddClaim(new Claim(AuthzConstants.CLAIM_SCOPE, scopes, ClaimValueTypes.String, issuer));
-            string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
+            string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1), now);
             return token;
         }
 

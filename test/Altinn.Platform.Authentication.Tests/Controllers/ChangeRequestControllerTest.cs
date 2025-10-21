@@ -52,6 +52,7 @@ public class ChangeRequestControllerTest(
     WebApplicationFixture webApplicationFixture)
     : WebApplicationTests(dbFixture, webApplicationFixture)
 {
+    private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
     private readonly Mock<IUserProfileService> _userProfileService = new();
@@ -190,7 +191,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -317,7 +318,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -375,7 +376,7 @@ public class ChangeRequestControllerTest(
         // Get and Approve the Change Request
         string requestId = createdResponse.Id.ToString();
         HttpClient client3 = CreateClient();
-        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         xacmlJsonResults = GetDecisionResultSingle();
         _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
@@ -407,7 +408,7 @@ public class ChangeRequestControllerTest(
         });
 
         HttpClient client4 = CreateClient();
-        client4.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client4.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         string getSystemUserEndpoint = $"/authentication/api/v1/systemuser/{partyId}/{systemUserIdFromChangeRequest}";
         HttpRequestMessage getSystemUserRequestMessage = new(HttpMethod.Get, getSystemUserEndpoint);
@@ -492,7 +493,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -594,7 +595,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -733,7 +734,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -886,7 +887,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1033,7 +1034,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1097,7 +1098,7 @@ public class ChangeRequestControllerTest(
         // Approve the Change Request
         string requestId = createdResponse.Id.ToString();
         HttpClient client3 = CreateClient();
-        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         string getChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}";
         HttpRequestMessage getChangeRequestMessage = new(HttpMethod.Get, getChangeRequestEndpoint);
@@ -1117,7 +1118,7 @@ public class ChangeRequestControllerTest(
         });
 
         HttpClient client4 = CreateClient();
-        client4.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client4.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         string getSystemUserEndpoint = $"/authentication/api/v1/systemuser/{partyId}/{systemUserIdFromChangeRequest}";
         HttpRequestMessage getSystemUserRequestMessage = new(HttpMethod.Get, getSystemUserEndpoint);
@@ -1197,7 +1198,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1259,7 +1260,7 @@ public class ChangeRequestControllerTest(
         // Reject the Change Request
         string requestId = createdResponse.Id.ToString();
         HttpClient client3 = CreateClient();
-        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         string approveChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/{partyId}/{requestId}/reject";
         HttpRequestMessage approveChangeRequestMessage = new(HttpMethod.Post, approveChangeRequestEndpoint);
@@ -1335,7 +1336,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1495,7 +1496,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1585,7 +1586,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1692,7 +1693,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1833,7 +1834,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1973,7 +1974,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2112,7 +2113,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2308,7 +2309,7 @@ public class ChangeRequestControllerTest(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2489,7 +2490,7 @@ public class ChangeRequestControllerTest(
 
     private void SetupDateTimeMock()
     {
-        timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+        timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
     }
 
     private void SetupGuidMock()
@@ -2501,7 +2502,7 @@ public class ChangeRequestControllerTest(
     {
         HttpClient client = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         JsonSerializerOptions options = new JsonSerializerOptions()
         {
@@ -2521,7 +2522,7 @@ public class ChangeRequestControllerTest(
     private static string AddSystemUserRequestWriteTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
@@ -2529,7 +2530,7 @@ public class ChangeRequestControllerTest(
     private static string AddSystemUserRequestReadTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }

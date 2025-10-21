@@ -18,15 +18,22 @@ namespace Altinn.Platform.Authentication.Tests
         /// </summary>
         /// <param name="principal">The claims principal to include in the token.</param>
         /// <param name="tokenExpiry">How long the token should be valid for.</param>
+        /// <param name="now">Current time if needing to override</param>
         /// <returns>A new token.</returns>
-        public static string GenerateToken(ClaimsPrincipal principal, TimeSpan tokenExpiry)
+        public static string GenerateToken(ClaimsPrincipal principal, TimeSpan tokenExpiry, DateTimeOffset? now = null)
         {
+            if (!now.HasValue)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
             JwtSecurityTokenHandler tokenHandler = new();
             SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
-                Expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds),
+                Expires = now.Value.UtcDateTime.AddSeconds(tokenExpiry.TotalSeconds),
                 SigningCredentials = GetSigningCredentials(),
+                NotBefore = now.Value.UtcDateTime,
             };
 
             SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
@@ -40,15 +47,22 @@ namespace Altinn.Platform.Authentication.Tests
         /// </summary>
         /// <param name="principal">The claims principal to include in the token.</param>
         /// <param name="tokenExpiry">How long the token should be valid for.</param>
+        /// <param name="now">The overriden now</param>
         /// <returns>A new token.</returns>
-        public static string GenerateEncryptedToken(ClaimsPrincipal principal, TimeSpan tokenExpiry)
+        public static string GenerateEncryptedToken(ClaimsPrincipal principal, TimeSpan tokenExpiry, DateTimeOffset? now = null)
         {
+            if (now == null)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
             JwtSecurityTokenHandler tokenHandler = new();
             SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
-                Expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds),
+                Expires = now.Value.UtcDateTime.AddSeconds(tokenExpiry.TotalSeconds),
                 EncryptingCredentials = GetEncryptionCredentials(),
+                NotBefore = now.Value.UtcDateTime
             };
 
             string token = tokenHandler.CreateEncodedJwt(tokenDescriptor);
@@ -60,14 +74,20 @@ namespace Altinn.Platform.Authentication.Tests
         /// </summary>
         /// <param name="principal">The claims principal to include in the token.</param>
         /// <param name="tokenExpiry">How long the token should be valid for.</param>
+        /// <param name="now">The overriden time</param>
         /// <returns>A new token.</returns>
-        public static string GenerateEncryptedAndSignedToken(ClaimsPrincipal principal, TimeSpan tokenExpiry)
+        public static string GenerateEncryptedAndSignedToken(ClaimsPrincipal principal, TimeSpan tokenExpiry, DateTimeOffset? now = null)
         {
+            if (now == null)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
             JwtSecurityTokenHandler tokenHandler = new();
             SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
-                Expires = DateTime.UtcNow.AddSeconds(tokenExpiry.TotalSeconds),
+                Expires = now.Value.UtcDateTime.AddSeconds(tokenExpiry.TotalSeconds),
                 EncryptingCredentials = GetEncryptionCredentials(),
                 SigningCredentials = GetSigningCredentials(),
             };
@@ -82,9 +102,15 @@ namespace Altinn.Platform.Authentication.Tests
         /// <param name="issuer">The issuer of the token. E.g. studio</param>
         /// <param name="app">The application the token is generated for</param>
         /// <param name="tokenExpiry">How long the token should be valid for.</param>
+        /// <param name="now">The overriden time</param>
         /// <returns>A new token</returns>
-        public static string GenerateAccessToken(string issuer, string app, TimeSpan tokenExpiry)
+        public static string GenerateAccessToken(string issuer, string app, TimeSpan tokenExpiry, DateTimeOffset? now = null)
         {
+            if (now == null)
+            {
+                now = DateTimeOffset.UtcNow;
+            }
+
             List<Claim> claims = [new Claim(AccessTokenClaimTypes.App, app, ClaimValueTypes.String, issuer)];
 
             ClaimsIdentity identity = new("AccessToken");
@@ -95,7 +121,7 @@ namespace Altinn.Platform.Authentication.Tests
             SecurityTokenDescriptor tokenDescriptor = new()
             {
                 Subject = new ClaimsIdentity(principal.Identity),
-                Expires = DateTime.Now.Add(tokenExpiry),
+                Expires = now.Value.UtcDateTime.Add(tokenExpiry),
                 SigningCredentials = GetAccesTokenCredentials(issuer),
                 Audience = "platform.altinn.no",
                 Issuer = issuer
