@@ -58,7 +58,10 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Authentication // OidcServerRepository // GetClientAsync // client_id={ClientId}", clientId);
+                var sanitizedClientId = clientId.Replace(Environment.NewLine, string.Empty)
+                                                  .Replace("\r", string.Empty)
+                                                  .Replace("\n", string.Empty);
+                _logger.LogError(ex, "Authentication // OidcServerRepository // GetClientAsync // client_id={ClientId}", sanitizedClientId);
                 throw;
             }
         }
