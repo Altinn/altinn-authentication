@@ -106,7 +106,7 @@
         public DateTimeOffset ExpiresAt { get; init; }
 
         /// <summary>
-        /// The IP address from which the authorization code was reqestd.
+        /// The IP address from which the authorization code was requested.
         /// </summary>
         public System.Net.IPAddress? CreatedByIp { get; init; }
 
