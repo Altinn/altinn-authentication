@@ -210,6 +210,18 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         await IdentifyOrCreateAltinnUser(userAuthentication, provider);
                     }
+
+                    if (userAuthentication.UserID != 0 && userAuthentication.PartyUuid == null)
+                    {
+                        UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
+                        userAuthentication.PartyUuid = profile.UserUuid;
+                    }
+
+                    if (userAuthentication != null && userAuthentication.IsAuthenticated)
+                    {
+                        await CreateTokenCookie(userAuthentication);
+                        return Redirect(goTo);
+                    }
                 }
                 else if (_generalSettings.AuthorizationServerEnabled)
                 {

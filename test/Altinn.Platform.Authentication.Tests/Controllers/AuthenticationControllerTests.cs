@@ -644,7 +644,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("idprovider.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -682,7 +682,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("idporten.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -763,7 +763,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
             Assert.NotNull(claimPrincipal);
 
             // Validate that default Altinn Portal scope is added to the token
@@ -812,7 +812,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("idprovider.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -846,7 +846,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
             Assert.NotNull(claimPrincipal);
 
             // Validate that default Altinn Portal scope is added to the token
@@ -1058,7 +1058,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("idprovider.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -1115,7 +1115,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("idprovider.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -1167,7 +1167,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("idporten.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -1204,7 +1204,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("idporten.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
