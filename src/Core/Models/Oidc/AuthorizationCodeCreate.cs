@@ -73,7 +73,7 @@
         /// <summary>
         /// List of custom claims associated with the session. Defined per upstream identity provider.
         /// </summary>
-        public Dictionary<string, List<string>>? CustomClaims { get; set; }
+        public Dictionary<string, List<string>>? ProviderClaims { get; set; }
 
         /// <summary>
         /// The Amr claim as per OIDC spec. Array of strings describing the authentication methods used.

@@ -103,7 +103,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     Acr = reader.IsDBNull("acr") ? null : reader.GetFieldValue<string>("acr"),
                     Amr = reader.IsDBNull("amr") ? null : reader.GetFieldValue<string[]>("amr"),
                     AuthTime = reader.IsDBNull("auth_time") ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>("auth_time"),
-                    CustomClaims = ReadDictJsonb(reader, "provider_claims")
+                    ProviderClaims = ReadDictJsonb(reader, "provider_claims")
                 };
 
                 return row;
@@ -154,7 +154,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("expires_at", NpgsqlDbType.TimestampTz, c.ExpiresAt);
             cmd.Parameters.AddWithValue("created_by_ip", NpgsqlDbType.Inet, (object?)c.CreatedByIp ?? DBNull.Value);
             cmd.Parameters.AddWithValue("correlation_id", NpgsqlDbType.Uuid, (object?)c.CorrelationId ?? DBNull.Value);
-            cmd.Parameters.Add(JsonbParam("provider_claims", c.CustomClaims));
+            cmd.Parameters.Add(JsonbParam("provider_claims", c.ProviderClaims));
 
             try
             {

@@ -32,7 +32,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public string? Acr { get; init; }
         public string[]? Amr { get; init; }
 
-        public Dictionary<string, List<string>>? CustomClaims { get; set; }
+        public Dictionary<string, List<string>>? ProviderClaims { get; set; }
 
         public DateTimeOffset? AuthTime { get; init; }
 

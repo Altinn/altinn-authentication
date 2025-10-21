@@ -116,11 +116,14 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim("scope", string.Join(' ', createdUpstreamLogingTransaction.Scopes), ClaimValueTypes.String, issuer));
             claims.Add(new Claim("nonce", createdUpstreamLogingTransaction.Nonce, ClaimValueTypes.String, issuer));
 
-            if (scenario.CustomClaims != null)
+            if (scenario.ProviderClaims != null)
             {
-                foreach (KeyValuePair<string, string> kvp in scenario.CustomClaims)
+                foreach (KeyValuePair<string, List<string>> kvp in scenario.ProviderClaims)
                 {
-                    claims.Add(new Claim(kvp.Key, kvp.Value, ClaimValueTypes.String, issuer));
+                    foreach (string claimValue in kvp.Value)
+                    {
+                        claims.Add(new Claim(kvp.Key, claimValue, ClaimValueTypes.String, issuer));
+                    }
                 }
             }
 
@@ -139,11 +142,14 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim("sub", scenario.ExternalIdentity, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("scope", string.Join(' ', createdUpstreamLogingTransaction.Scopes), ClaimValueTypes.String, issuer));
 
-            if (scenario.CustomClaims != null)
+            if (scenario.ProviderClaims != null)
             {
-                foreach (KeyValuePair<string, string> kvp in scenario.CustomClaims)
+                foreach (KeyValuePair<string, List<string>> kvp in scenario.ProviderClaims)
                 {
-                    claims.Add(new Claim(kvp.Key, kvp.Value, ClaimValueTypes.String, issuer));
+                    foreach (string claimValue in kvp.Value)
+                    {
+                        claims.Add(new Claim(kvp.Key, claimValue, ClaimValueTypes.String, issuer));
+                    }
                 }
             }
 

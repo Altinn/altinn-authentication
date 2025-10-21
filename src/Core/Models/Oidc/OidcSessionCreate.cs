@@ -26,7 +26,7 @@
         public DateTimeOffset? AuthTime { get; init; }
         public string[]? Amr { get; init; }
 
-        public Dictionary<string, List<string>>? CustomClaims { get; set; }
+        public Dictionary<string, List<string>>? ProviderClaims { get; set; }
 
         public required IReadOnlyCollection<string> Scopes { get; init; }     // lowercased/distinct
 

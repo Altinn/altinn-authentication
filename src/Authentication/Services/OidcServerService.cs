@@ -902,7 +902,8 @@ namespace Altinn.Platform.Authentication.Services
                     IssuedAt = codeTime,
                     ExpiresAt = codeExpires,
                     CreatedByIp = upstreamTx?.CreatedByIp,
-                    CorrelationId = upstreamTx?.CorrelationId
+                    CorrelationId = upstreamTx?.CorrelationId,
+                    ProviderClaims = session.ProviderClaims
                 },
                 cancellationToken);
             return authCode;
@@ -959,6 +960,7 @@ namespace Altinn.Platform.Authentication.Services
                         Now = _timeProvider.GetUtcNow(),
                         CreatedByIp = upstreamTx.CreatedByIp,
                         UserAgentHash = upstreamTx.UserAgentHash,
+                        ProviderClaims = userIdenity.ProviderClaims,
                     },
                     cancellationToken);
             return (session, sessionHandle);

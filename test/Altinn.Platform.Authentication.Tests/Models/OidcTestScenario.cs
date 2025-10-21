@@ -51,7 +51,7 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public List<string> Amr { get; set; } = ["BankID Mobil"];
 
-        public Dictionary<string, string>? CustomClaims { get; set; }
+        public Dictionary<string, List<string>>? ProviderClaims { get; set; }
 
         public string? ClientSecret { get; set; }
 

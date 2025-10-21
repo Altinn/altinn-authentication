@@ -10,12 +10,12 @@
   "Amr": [ "SelfIdentified" ],
   "Acr": [ "level0" ],
   "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
-  "CustomClaims": {
-    "urn:feide:aarstrinn": "10",
-    "urn:feide:klasse": "10A",
-    "urn:feide:skoleeier:orgnr": "123456789",
-    "urn:feide:skole:orgnr": "987654321",
-    "urn:elevundersokelsen:undersokelse.id": "test-undersokelse"
+  "ProviderClaims": {
+    "urn:feide:aarstrinn": [ "10" ],
+    "urn:feide:klasse": [ "10A" ],
+    "urn:feide:skoleeier:orgnr": [ "123456789" ],
+    "urn:feide:skole:orgnr": [ "987654321" ],
+    "urn:elevundersokelsen:undersokelse.id": [ "test-undersokelse" ]
   },
   "Scopes": [
     "openid",

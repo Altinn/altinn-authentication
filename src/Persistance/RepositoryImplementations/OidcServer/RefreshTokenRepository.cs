@@ -187,7 +187,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
             cmd.Parameters.AddWithValue("user_agent_hash", NpgsqlDbType.Text, (object?)row.UserAgentHash ?? DBNull.Value);
             cmd.Parameters.AddWithValue("ip_hash", NpgsqlDbType.Text, (object?)row.IpHash ?? DBNull.Value);
-            cmd.Parameters.Add(JsonbParam("provider_claims", row.CustomClaims));
+            cmd.Parameters.Add(JsonbParam("provider_claims", row.ProviderClaims));
 
             await cmd.ExecuteNonQueryAsync(ct);
         }
@@ -299,7 +299,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 UserAgentHash = r.IsDBNull(r.GetOrdinal("user_agent_hash")) ? null : r.GetString(r.GetOrdinal("user_agent_hash")),
                 IpHash = r.IsDBNull(r.GetOrdinal("ip_hash")) ? null : r.GetString(r.GetOrdinal("ip_hash")),
                 SessionId = r.GetString(r.GetOrdinal("op_sid")),
-                CustomClaims = ReadDictJsonb(r, "provider_claims")
+                ProviderClaims = ReadDictJsonb(r, "provider_claims")
             };
         }
 

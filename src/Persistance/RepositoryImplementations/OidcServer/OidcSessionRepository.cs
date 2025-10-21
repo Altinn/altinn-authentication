@@ -82,7 +82,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("upstream_session_sid", (object?)c.UpstreamSessionSid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("created_by_ip", (object?)c.CreatedByIp ?? DBNull.Value);
             cmd.Parameters.AddWithValue("user_agent_hash", (object?)c.UserAgentHash ?? DBNull.Value);
-            cmd.Parameters.Add(JsonbParam("provider_claims", c.CustomClaims));
+            cmd.Parameters.Add(JsonbParam("provider_claims", c.ProviderClaims));
 
             await using var reader = await cmd.ExecuteReaderAsync(ct);
             if (!await reader.ReadAsync(ct))
@@ -266,7 +266,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 ExpiresAt = r.IsDBNull("expires_at") ? null : r.GetFieldValue<DateTimeOffset?>("expires_at"),
                 UpstreamSessionSid = r.IsDBNull("upstream_session_sid") ? null : r.GetFieldValue<string>("upstream_session_sid"),
                 LastSeenAt = r.IsDBNull("last_seen_at") ? null : r.GetFieldValue<DateTimeOffset?>("last_seen_at"),
-                CustomClaims = r.IsDBNull("provider_claims") ? null : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(r.GetFieldValue<string>("provider_claims"))
+                ProviderClaims = r.IsDBNull("provider_claims") ? null : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, List<string>>>(r.GetFieldValue<string>("provider_claims"))
             };
         }
     }
