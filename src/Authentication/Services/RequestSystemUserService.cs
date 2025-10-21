@@ -138,6 +138,7 @@ public class RequestSystemUserService(
         var created = new RequestSystemResponse()
         {
             Id = newId,
+            IntegrationTitle = createRequest.IntegrationTitle?.Trim() ?? (systemInfo.Name.TryGetValue("nb", out string? value) ? value : null),
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
@@ -222,6 +223,7 @@ public class RequestSystemUserService(
         var created = new AgentRequestSystemResponse()
         {
             Id = newId,
+            IntegrationTitle = createAgentRequest.IntegrationTitle?.Trim() ?? (systemInfo.Name.TryGetValue("nb", out string? value) ? value : null),
             ExternalRef = createAgentRequest.ExternalRef,
             SystemId = createAgentRequest.SystemId,
             PartyOrgNo = createAgentRequest.PartyOrgNo,
@@ -343,6 +345,7 @@ public class RequestSystemUserService(
         return new RequestSystemResponse()
         {
             Id = res.Id,
+            IntegrationTitle = res.IntegrationTitle,
             ExternalRef = res.ExternalRef,
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
@@ -371,6 +374,7 @@ public class RequestSystemUserService(
         return new RequestSystemResponse()
         {
             Id = res.Id,
+            IntegrationTitle = res.IntegrationTitle,
             ExternalRef = res.ExternalRef,
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
@@ -404,6 +408,7 @@ public class RequestSystemUserService(
         return new AgentRequestSystemResponse()
         {
             Id = res.Id,
+            IntegrationTitle = res.IntegrationTitle,
             ExternalRef = res.ExternalRef,
             SystemId = res.SystemId,
             PartyOrgNo = res.PartyOrgNo,
@@ -453,6 +458,7 @@ public class RequestSystemUserService(
         var request = new RequestSystemResponse
         {
             Id = find.Id,
+            IntegrationTitle = find.IntegrationTitle,
             SystemId = find.SystemId,
             ExternalRef = find.ExternalRef,
             Rights = find.Rights,
@@ -488,6 +494,7 @@ public class RequestSystemUserService(
         var request = new AgentRequestSystemResponse
         {
             Id = find.Id,
+            IntegrationTitle = find.IntegrationTitle,
             SystemId = find.SystemId,
             ExternalRef = find.ExternalRef,
             AccessPackages = find.AccessPackages,
@@ -647,7 +654,7 @@ public class RequestSystemUserService(
             toBeInserted = new SystemUser
             {
                 SystemId = systemUserRequest.SystemId,
-                IntegrationTitle = systemName,
+                IntegrationTitle = systemUserRequest.IntegrationTitle ?? systemName,
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = systemUserRequest.PartyOrgNo,
@@ -674,7 +681,7 @@ public class RequestSystemUserService(
             {
                 Id = agentSystemUserRequest.Id.ToString(),
                 SystemId = agentSystemUserRequest.SystemId,
-                IntegrationTitle = systemName,
+                IntegrationTitle = agentSystemUserRequest.IntegrationTitle ?? systemName,
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = agentSystemUserRequest.PartyOrgNo,

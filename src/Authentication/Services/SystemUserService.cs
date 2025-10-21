@@ -397,6 +397,7 @@ namespace Altinn.Platform.Authentication.Services
             int userId, 
             string? externalRef, 
             Guid? requestId, 
+            string? integrationTitle = default,
             List<AccessPackage>? accessPackages = default, 
             List<Right>? rights = default, 
             CancellationToken cancellationToken = default)
@@ -504,7 +505,7 @@ namespace Altinn.Platform.Authentication.Services
                 Id = requestId.ToString()!,
                 ReporteeOrgNo = party.OrgNumber,
                 SystemInternalId = regSystem.InternalId,
-                IntegrationTitle = systemName,
+                IntegrationTitle = integrationTitle ?? systemName,
                 SystemId = systemId,
                 PartyId = partyId,
                 UserType = systemUserType,
@@ -600,6 +601,7 @@ namespace Altinn.Platform.Authentication.Services
                 userId, 
                 externalRef:request.ExternalRef, 
                 request.Id, 
+                request.IntegrationTitle,
                 request.AccessPackages, 
                 null, 
                 cancellationToken);
@@ -619,6 +621,7 @@ namespace Altinn.Platform.Authentication.Services
                 userId, 
                 externalRef: request.ExternalRef, 
                 request.Id, 
+                request.IntegrationTitle,
                 request.AccessPackages, 
                 request.Rights, 
                 cancellationToken);
@@ -852,30 +855,22 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_ExpectedAgentUserType;
             }
 
-            Result<List<ConnectionDto>> delegations = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitatorId);
-            if (delegations.IsSuccess && delegations.Value.Count > 0)
+            Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
+            if (result.IsProblem)
             {
-                return Problem.AgentSystemUser_HasDelegations;
-            }
-            else
-            {
-                Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
-                if (result.IsProblem)
+                if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
                 {
-                    if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
-                    {
-                        await _repository.SetDeleteSystemUserById(systemUserId);
-                        return true;
-                    }
-                    else
-                    {
-                        return result.Problem;
-                    }
+                    await _repository.SetDeleteSystemUserById(systemUserId);
+                    return true;
                 }
-
-                await _repository.SetDeleteSystemUserById(systemUserId);
-                return true;
+                else
+                {
+                    return result.Problem;
+                }
             }
+
+            await _repository.SetDeleteSystemUserById(systemUserId);
+            return true;
         }
 
         /// <inheritdoc/>
