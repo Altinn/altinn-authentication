@@ -140,7 +140,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     created_at, expires_at, absolute_expires_at,
                     rotated_to_token_id, revoked_at, revoked_reason,
                     user_agent_hash, ip_hash,
-                    custom_claims
+                    provider_claims
                 ) VALUES (
                     @token_id, @family_id, @status,
                     @lookup_key, @hash, @salt, @iterations,
@@ -149,7 +149,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     @created_at, @expires_at, @absolute_expires_at,
                     @rotated_to_token_id, @revoked_at, @revoked_reason,
                     @user_agent_hash, @ip_hash,
-                    @custom_claims
+                    @provider_claims
                 )";
 
             await using var cmd = new NpgsqlCommand(sql, conn);
@@ -187,7 +187,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
             cmd.Parameters.AddWithValue("user_agent_hash", NpgsqlDbType.Text, (object?)row.UserAgentHash ?? DBNull.Value);
             cmd.Parameters.AddWithValue("ip_hash", NpgsqlDbType.Text, (object?)row.IpHash ?? DBNull.Value);
-            cmd.Parameters.Add(JsonbParam("custom_claims", row.CustomClaims));
+            cmd.Parameters.Add(JsonbParam("provider_claims", row.CustomClaims));
 
             await cmd.ExecuteNonQueryAsync(ct);
         }
@@ -205,7 +205,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                   created_at, expires_at, absolute_expires_at,
                   rotated_to_token_id, revoked_at, revoked_reason,
                   user_agent_hash, ip_hash,
-                  custom_claims                    -- <--- NEW
+                  provider_claims
                 FROM oidcserver.refresh_token
                 WHERE lookup_key = @lookup_key
                 LIMIT 1";
@@ -299,11 +299,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 UserAgentHash = r.IsDBNull(r.GetOrdinal("user_agent_hash")) ? null : r.GetString(r.GetOrdinal("user_agent_hash")),
                 IpHash = r.IsDBNull(r.GetOrdinal("ip_hash")) ? null : r.GetString(r.GetOrdinal("ip_hash")),
                 SessionId = r.GetString(r.GetOrdinal("op_sid")),
-                CustomClaims = ReadDictJsonb(r, "custom_claims")
+                CustomClaims = ReadDictJsonb(r, "provider_claims")
             };
         }
 
-        private static NpgsqlParameter JsonbParam(string name, Dictionary<string, string>? dict)
+        private static NpgsqlParameter JsonbParam(string name, Dictionary<string, List<string>>? dict)
         {
             return new NpgsqlParameter(name, NpgsqlDbType.Jsonb)
             {
@@ -311,15 +311,15 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             };
         }
 
-        private static Dictionary<string, string>? ReadDictJsonb(NpgsqlDataReader r, string col)
+        private static Dictionary<string, List<string>>? ReadDictJsonb(NpgsqlDataReader r, string col)
         {
             if (r.IsDBNull(col))
             {
                 return null;
             }
 
-            var json = r.GetFieldValue<string>(col); // jsonb → text
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            var json = r.GetFieldValue<string>(col); // jsonb -> text
+            return JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json);
         }
     }
 }

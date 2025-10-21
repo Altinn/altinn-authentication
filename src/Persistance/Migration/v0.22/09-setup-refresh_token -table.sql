@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.refresh_token (
   scopes             TEXT[] NOT NULL,
   acr                TEXT,
   amr                TEXT[],
- custom_claims	     JSONB NULL,
+ provider_claims	     JSONB NULL,
   auth_time          TIMESTAMPTZ,
   -- Lifetimes
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),

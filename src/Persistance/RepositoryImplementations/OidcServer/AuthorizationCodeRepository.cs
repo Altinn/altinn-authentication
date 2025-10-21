@@ -56,7 +56,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 SELECT code, client_id, redirect_uri, code_challenge, code_challenge_method, used, expires_at,
                        subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
                        session_id, scopes, nonce, acr, amr, auth_time,
-                       custom_claims
+                       provider_claims
                   FROM oidcserver.authorization_code
                  WHERE code = @code
                    AND used = FALSE
@@ -103,7 +103,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     Acr = reader.IsDBNull("acr") ? null : reader.GetFieldValue<string>("acr"),
                     Amr = reader.IsDBNull("amr") ? null : reader.GetFieldValue<string[]>("amr"),
                     AuthTime = reader.IsDBNull("auth_time") ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>("auth_time"),
-                    CustomClaims = ReadDictJsonb(reader, "custom_claims")
+                    CustomClaims = ReadDictJsonb(reader, "provider_claims")
                 };
 
                 return row;
@@ -123,13 +123,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                   code, client_id, subject_id, external_id, subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
                   session_id, redirect_uri, scopes, nonce, acr, amr, auth_time,
                   code_challenge, code_challenge_method, issued_at, expires_at, created_by_ip, correlation_id,
-                  custom_claims
+                  provider_claims
                 )
                 VALUES (
                   @code, @client_id, @subject_id, @external_id, @subject_party_uuid, @subject_party_id, @subject_user_id, @subject_user_name,
                   @session_id, @redirect_uri, @scopes, @nonce, @acr, @amr, @auth_time,
                   @code_challenge, @code_challenge_method, @issued_at, @expires_at, @created_by_ip, @correlation_id,
-                  @custom_claims
+                  @provider_claims
                 );";
 
             await using var cmd = _ds.CreateCommand(SQL);
@@ -154,7 +154,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("expires_at", NpgsqlDbType.TimestampTz, c.ExpiresAt);
             cmd.Parameters.AddWithValue("created_by_ip", NpgsqlDbType.Inet, (object?)c.CreatedByIp ?? DBNull.Value);
             cmd.Parameters.AddWithValue("correlation_id", NpgsqlDbType.Uuid, (object?)c.CorrelationId ?? DBNull.Value);
-            cmd.Parameters.Add(JsonbParam("custom_claims", c.CustomClaims));
+            cmd.Parameters.Add(JsonbParam("provider_claims", c.CustomClaims));
 
             try
             {
@@ -167,7 +167,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
         }
 
-        private static NpgsqlParameter JsonbParam(string name, Dictionary<string, string>? dict)
+        private static NpgsqlParameter JsonbParam(string name, Dictionary<string, List<string>>? dict)
         {
             return new NpgsqlParameter(name, NpgsqlDbType.Jsonb)
             {
@@ -175,15 +175,15 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             };
         }
 
-        private static Dictionary<string, string>? ReadDictJsonb(NpgsqlDataReader r, string col)
+        private static Dictionary<string, List<string>>? ReadDictJsonb(NpgsqlDataReader r, string col)
         {
             if (r.IsDBNull(col))
             {
                 return null;
             }
 
-            var json = r.GetFieldValue<string>(col); // jsonb → text
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            var json = r.GetFieldValue<string>(col); // jsonb -> text
+            return JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json);
         }
     }
 }

@@ -958,7 +958,7 @@ namespace Altinn.Platform.Authentication.Services
                         UpstreamSessionSid = userIdenity.Sid,
                         Now = _timeProvider.GetUtcNow(),
                         CreatedByIp = upstreamTx.CreatedByIp,
-                        UserAgentHash = upstreamTx.UserAgentHash
+                        UserAgentHash = upstreamTx.UserAgentHash,
                     },
                     cancellationToken);
             return (session, sessionHandle);
