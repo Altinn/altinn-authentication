@@ -314,7 +314,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Authentication // UpstreamLoginTransactionRepository // GetForCallbackByStateAsync // state={State}", upstreamState);
+                var sanitizedState = upstreamState.Replace("\r", "").Replace("\n", "");
+                _logger.LogError(ex, "Authentication // UpstreamLoginTransactionRepository // GetForCallbackByStateAsync // state={State}", sanitizedState);
                 throw;
             }
         }
