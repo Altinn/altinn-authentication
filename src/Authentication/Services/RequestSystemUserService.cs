@@ -674,7 +674,7 @@ public class RequestSystemUserService(
             {
                 Id = agentSystemUserRequest.Id.ToString(),
                 SystemId = agentSystemUserRequest.SystemId,
-                IntegrationTitle = systemName,
+                IntegrationTitle = agentSystemUserRequest.IntegrationTitle ?? systemName,
                 SystemInternalId = regSystem?.InternalId,
                 PartyId = partyId.ToString(),
                 ReporteeOrgNo = agentSystemUserRequest.PartyOrgNo,
