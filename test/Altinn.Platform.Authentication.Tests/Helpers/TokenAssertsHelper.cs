@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
@@ -68,6 +69,14 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             {
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains(scope));
             }
+
+            if (testScenario.ProviderClaims != null)
+            {
+                foreach (KeyValuePair<string, List<string>> kvp in testScenario.ProviderClaims)
+                {
+                    Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == kvp.Key && !string.IsNullOrEmpty(c.Value));
+                }
+            }
         }
 
         public static string AssertIdToken(string accessToken, OidcTestScenario testScenario, DateTimeOffset now)
@@ -120,6 +129,14 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             foreach (string scope in testScenario.Scopes)
             {
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains(scope));
+            }
+
+            if (testScenario.ProviderClaims != null)
+            {
+                foreach (KeyValuePair<string, List<string>> kvp in testScenario.ProviderClaims)
+                {
+                    Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == kvp.Key && !string.IsNullOrEmpty(c.Value));
+                }
             }
         }
 

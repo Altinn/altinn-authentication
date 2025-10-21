@@ -131,12 +131,19 @@ namespace Altinn.Platform.Authentication.Helpers
                 // General claims handling
                 if (provider.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
                 {
-                    if (!userAuthenticationModel.ProviderClaims.ContainsKey(claim.Type))
+                    // Needs to specialhandle sub claim Since we are using it already
+                    string claimTypeName = claim.Type.ToString(); 
+                    if (claimTypeName.Equals("sub"))
                     {
-                        userAuthenticationModel.ProviderClaims.Add(claim.Type, new List<string>());
+                        claimTypeName = "provider:sub";
                     }
 
-                    userAuthenticationModel.ProviderClaims[claim.Type].Add(claim.Value);
+                    if (!userAuthenticationModel.ProviderClaims.ContainsKey(claimTypeName))
+                    {
+                        userAuthenticationModel.ProviderClaims.Add(claimTypeName, []);
+                    }
+
+                    userAuthenticationModel.ProviderClaims[claimTypeName].Add(claim.Value);
                 }
             }
 

@@ -67,6 +67,17 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 securityLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(oidcBindingContext.Acr);
             }
 
+            if (oidcBindingContext.ProviderClaims != null)
+            {
+                foreach (KeyValuePair<string, List<string>> kvp in oidcBindingContext.ProviderClaims)
+                {
+                    foreach (string claimValue in kvp.Value)
+                    {
+                        claims.Add(new Claim(kvp.Key, claimValue));
+                    }
+                }
+            }
+
             int securityLevelValue = (int)securityLevel;
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, securityLevelValue.ToString(), ClaimValueTypes.Integer64));
 
@@ -153,6 +164,17 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             {
                 claims.Add(new Claim("acr", oidcSession.Acr));
                 securityLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(oidcSession.Acr);
+            }
+
+            if (oidcSession.ProviderClaims != null)
+            {
+                foreach (KeyValuePair<string, List<string>> kvp in oidcSession.ProviderClaims)
+                {
+                    foreach (string claimValue in kvp.Value)
+                    {
+                        claims.Add(new Claim(kvp.Key, claimValue));
+                    }
+                }
             }
 
             int securityLevelValue = (int)securityLevel;
