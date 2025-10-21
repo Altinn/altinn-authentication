@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿#nullable enable
+using System.Net;
 
 namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
@@ -14,14 +15,13 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
             Guid? correlationId = null)
         {
             static string[] SplitSpace(string? s) =>
-                string.IsNullOrWhiteSpace(s) ? Array.Empty<string>() :
-                s.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string.IsNullOrWhiteSpace(s) ? [] :
+                s.Split([' '], StringSplitOptions.RemoveEmptyEntries);
 
             static string[] SplitLocales(string? s) =>
-                string.IsNullOrWhiteSpace(s) ? Array.Empty<string>() :
-                s.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-            var redirect = Uri.TryCreate(dto.RedirectUri ?? "", UriKind.Absolute, out var uri)
+                string.IsNullOrWhiteSpace(s) ? [] :
+                s.Split([' ', ','], StringSplitOptions.RemoveEmptyEntries);
+            _ = Uri.TryCreate(dto.RedirectUri ?? "", UriKind.Absolute, out var uri)
                 ? uri
                 : null;
 
