@@ -138,7 +138,7 @@ public class RequestSystemUserService(
         var created = new RequestSystemResponse()
         {
             Id = newId,
-            IntegrationTitle = createRequest.IntegrationTitle,
+            IntegrationTitle = createRequest.IntegrationTitle?.Trim() ?? (systemInfo.Name.TryGetValue("nb", out string? value) ? value : null),
             ExternalRef = createRequest.ExternalRef,
             SystemId = createRequest.SystemId,
             PartyOrgNo = createRequest.PartyOrgNo,
@@ -223,7 +223,7 @@ public class RequestSystemUserService(
         var created = new AgentRequestSystemResponse()
         {
             Id = newId,
-            IntegrationTitle = createAgentRequest.IntegrationTitle,
+            IntegrationTitle = createAgentRequest.IntegrationTitle?.Trim() ?? (systemInfo.Name.TryGetValue("nb", out string? value) ? value : null),
             ExternalRef = createAgentRequest.ExternalRef,
             SystemId = createAgentRequest.SystemId,
             PartyOrgNo = createAgentRequest.PartyOrgNo,
