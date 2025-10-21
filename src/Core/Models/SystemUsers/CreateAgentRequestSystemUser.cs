@@ -10,6 +10,12 @@ namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 public class CreateAgentRequestSystemUser()
 {
     /// <summary>
+    /// An optional name used only in display on UI. If not set by the request it will default to the System-Name. 
+    /// </summary>
+    [JsonPropertyName("integrationTitle")]
+    public string? IntegrationTitle { get; set; }
+
+    /// <summary>
     /// Either just the same as the PartyOrgNo for the customer, 
     /// or a TenantId or other form of disambiguation Id,
     /// the Vendor has control over themselves to ensure uniqueness.

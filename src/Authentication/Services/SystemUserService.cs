@@ -397,6 +397,7 @@ namespace Altinn.Platform.Authentication.Services
             int userId, 
             string? externalRef, 
             Guid? requestId, 
+            string? integrationTitle = default,
             List<AccessPackage>? accessPackages = default, 
             List<Right>? rights = default, 
             CancellationToken cancellationToken = default)
@@ -504,7 +505,7 @@ namespace Altinn.Platform.Authentication.Services
                 Id = requestId.ToString()!,
                 ReporteeOrgNo = party.OrgNumber,
                 SystemInternalId = regSystem.InternalId,
-                IntegrationTitle = systemName,
+                IntegrationTitle = integrationTitle ?? systemName,
                 SystemId = systemId,
                 PartyId = partyId,
                 UserType = systemUserType,
@@ -600,6 +601,7 @@ namespace Altinn.Platform.Authentication.Services
                 userId, 
                 externalRef:request.ExternalRef, 
                 request.Id, 
+                request.IntegrationTitle,
                 request.AccessPackages, 
                 null, 
                 cancellationToken);
@@ -619,6 +621,7 @@ namespace Altinn.Platform.Authentication.Services
                 userId, 
                 externalRef: request.ExternalRef, 
                 request.Id, 
+                request.IntegrationTitle,
                 request.AccessPackages, 
                 request.Rights, 
                 cancellationToken);
