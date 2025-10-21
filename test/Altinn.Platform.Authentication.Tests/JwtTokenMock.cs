@@ -111,7 +111,7 @@ namespace Altinn.Platform.Authentication.Tests
         {
             string certPath = $"{issuer}-org.pfx";
 
-            X509Certificate2 certIssuer = X509CertificateLoader.LoadCertificateFromFile(certPath);
+            X509Certificate2 certIssuer = X509CertificateLoader.LoadPkcs12FromFile(certPath, password: default);
             return new X509SigningCredentials(certIssuer, SecurityAlgorithms.RsaSha256);
         }
 
