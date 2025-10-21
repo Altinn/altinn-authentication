@@ -76,7 +76,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-
+            services.AddSingleton<IProfile, ProfileFileMock>();
             services.PostConfigure<GeneralSettings>(o =>
             {
                 o.ForceOidc = false;   // “true” group
