@@ -786,7 +786,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal, token.ValidTo);
-                _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
+                await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
                 return Ok(serializedToken);
             }
             catch (Exception ex)

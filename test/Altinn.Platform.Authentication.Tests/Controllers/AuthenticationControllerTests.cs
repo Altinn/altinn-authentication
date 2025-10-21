@@ -458,7 +458,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
 
             Assert.NotNull(principal);
 
@@ -506,7 +506,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
 
             Assert.NotNull(principal);
 
@@ -583,7 +583,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             }
 
             Assert.NotNull(token);
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
             Assert.NotNull(principal);
 
             Assert.True(principal.Claims.ToList().Exists(c => c.Type == "urn:altinn:party:uuid"));
@@ -1412,7 +1412,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
             SecurityToken securityToken = JwtTokenMock.GetSecurityToken(token);
             SecurityToken securityTokenExternal = JwtTokenMock.GetSecurityToken(externalToken);
 
@@ -1464,7 +1464,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
             SecurityToken securityToken = JwtTokenMock.GetSecurityToken(token);
             SecurityToken securityTokenExternal = JwtTokenMock.GetSecurityToken(externalToken);
 
@@ -1667,7 +1667,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
 
             Assert.NotNull(principal);
 
@@ -1897,7 +1897,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string externalSessionId = null)
         {
             AuthenticationEvent authenticationEvent = new AuthenticationEvent();
-            authenticationEvent.Created = new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero);
+            authenticationEvent.Created = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
             authenticationEvent.AuthenticationMethod = authMethod;
             authenticationEvent.AuthenticationLevel = authLevel;
             authenticationEvent.OrgNumber = orgNumber;
