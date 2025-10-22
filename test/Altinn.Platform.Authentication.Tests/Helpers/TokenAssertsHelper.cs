@@ -79,30 +79,30 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
-        public static string AssertIdToken(string accessToken, OidcTestScenario testScenario, DateTimeOffset now)
+        public static string AssertIdToken(string idToken, OidcTestScenario testScenario, DateTimeOffset now)
         {
-            ClaimsPrincipal accessTokenPrincipal = JwtTokenMock.ValidateToken(accessToken, now);
-            Assert.NotNull(accessTokenPrincipal);
-            Assert.NotNull(accessTokenPrincipal.Identity);
-            Assert.NotEmpty(accessTokenPrincipal.Claims);
-            Assert.True(accessTokenPrincipal.Identity.IsAuthenticated);
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && !string.IsNullOrEmpty(c.Value));
-            string method = accessTokenPrincipal.Claims.First(c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod).Value;
+            ClaimsPrincipal idTokenPrincipal = JwtTokenMock.ValidateToken(idToken, now);
+            Assert.NotNull(idTokenPrincipal);
+            Assert.NotNull(idTokenPrincipal.Identity);
+            Assert.NotEmpty(idTokenPrincipal.Claims);
+            Assert.True(idTokenPrincipal.Identity.IsAuthenticated);
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && !string.IsNullOrEmpty(c.Value));
+            string method = idTokenPrincipal.Claims.First(c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod).Value;
             if (!method.Equals(AuthenticationMethod.SelfIdentified.ToString()))
             {
-                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && !string.IsNullOrEmpty(c.Value));
+                Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "pid" && !string.IsNullOrEmpty(c.Value));
             }
 
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
-            string sid = accessTokenPrincipal.Claims.First(c => c.Type == "sid").Value;
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "acr" && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "amr" && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyID && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyUUID && !string.IsNullOrEmpty(c.Value));
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.UserId && !string.IsNullOrEmpty(c.Value));
-            Assert.DoesNotContain(accessTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains("openid"));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
+            string sid = idTokenPrincipal.Claims.First(c => c.Type == "sid").Value;
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "acr" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "amr" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyID && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyUUID && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.UserId && !string.IsNullOrEmpty(c.Value));
+            Assert.DoesNotContain(idTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains("openid"));
 
             return sid;
         }
