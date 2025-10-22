@@ -36,7 +36,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// <b>OIDC reason:</b> Used to look up the client’s metadata, allowed <c>redirect_uri</c> values, and policy (OIDC Core §2, §3.1.2.1).
         /// <para><b>Validation:</b> Must match a known client; otherwise, the request is invalid.</para>
         /// </remarks>
-        public string? ClientId { get; init; } = default!;
+        public required string ClientId { get; init; }
 
         /// <summary>
         /// The exact redirect target for the authorization response.
@@ -46,7 +46,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// <para><b>Security:</b> Must exactly match a pre-registered URI for the <c>client_id</c> to prevent open-redirect attacks.</para>
         /// <para><b>Altinn:</b> Strict exact match required.</para>
         /// </remarks>
-        public Uri RedirectUri { get; init; } = default!;
+        public required Uri RedirectUri { get; init; }
 
         /// <summary>
         /// The requested scopes.
@@ -83,7 +83,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// <b>OIDC/OAuth reason:</b> PKCE (RFC 7636) binds the authorization code to a client-held secret (<c>code_verifier</c>) to prevent code interception.
         /// <para><b>Altinn:</b> Required for public/native/Spa clients; recommended for all clients.</para>
         /// </remarks>
-        public string? CodeChallenge { get; init; } = default!;
+        public required string CodeChallenge { get; init; }
 
         /// <summary>
         /// The PKCE code challenge method. 
