@@ -408,6 +408,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);
             yield return new Result<PackagePermission>(problemInstance);
+            yield break;
         }
         else
         {
@@ -421,5 +422,27 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             yield return packagePermission;
         }
+    }
+
+    public Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
+    {
+        string dataFileName = string.Empty;
+        if (systemUserId == new Guid("ec6831bc-379c-469a-8e41-d37d398772c9"))
+        {
+            dataFileName = "Data/Delegation/RightsForSystemUser.json";
+        }
+        else if (systemUserId == new Guid("ec6831bc-379c-469a-8e41-d37d398772c8"))
+        {
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_FailedToGetDelegatedRights);
+            return Task.FromResult<Result<List<RightDelegation>>>(problemInstance);
+        }
+        else
+        {
+            dataFileName = "Data/Delegation/RightsForSystemUser.json";
+        }
+
+        string content = File.ReadAllText(dataFileName);
+        List<RightDelegation> delegatedRights = JsonSerializer.Deserialize<List<RightDelegation>>(content, _serializerOptions)!;
+        return Task.FromResult<Result<List<RightDelegation>>>(delegatedRights);
     }
 }

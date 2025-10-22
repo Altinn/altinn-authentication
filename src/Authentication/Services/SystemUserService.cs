@@ -951,8 +951,16 @@ namespace Altinn.Platform.Authentication.Services
             Guid partyUuId = party.PartyUuid.Value;
 
             string systemId = systemUser.SystemId;
-            List<Right> rights = await _registerRepository.GetRightsForRegisteredSystem(systemId);
-            var delegatedPackages = await GetAccessPackagesForSystemUser(partyUuId, new Guid(systemUser.Id), cancellationToken);
+
+            var rightsResult = await GetDelegatedRightsForSystemUser(systemUserId, partyId, cancellationToken);
+
+            if (rightsResult.IsProblem)
+            {
+                return Problem.AccessPackage_FailedToGetDelegatedRights;
+            }
+
+            List<Right> rights = rightsResult.Value;
+            var delegatedPackages = await GetAccessPackagesForSystemUser(partyUuId, systemUserId, cancellationToken);
             if (delegatedPackages.IsProblem)
             {
                 return Problem.AccessPackage_FailedToGetDelegatedPackages;
@@ -962,12 +970,42 @@ namespace Altinn.Platform.Authentication.Services
 
             StandardSystemUserDelegations standardSystemUserDelegations = new StandardSystemUserDelegations
             {
-                SystemUserId = new Guid(systemUser.Id),
+                SystemUserId = systemUserId,
                 AccessPackages = accessPackagesForSystemUser,
                 Rights = rights
             };
 
             return standardSystemUserDelegations;
+        }
+
+        /// <summary>
+        /// Gets the delegated rights for a standard system user
+        /// </summary>
+        /// <param name="systemUserId">the unique identifier for the system user </param>
+        /// <param name="partyId">the unique identifier for the party</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns>lsit of delegated rights for the system user</returns>
+        public async Task<Result<List<Right>>> GetDelegatedRightsForSystemUser(Guid systemUserId, int partyId, CancellationToken cancellationToken)
+        {
+            var rightsDelegationResult = await _accessManagementClient.GetSingleRightDelegationsForStandardUser(systemUserId, partyId, cancellationToken);
+            if (rightsDelegationResult.IsProblem)
+            {
+                return rightsDelegationResult.Problem!;
+            }
+
+            List<RightDelegation> rightDelegations = rightsDelegationResult.Value;
+            
+            // Map RightDelegation to Right model
+            var rights = rightDelegations.Select(rd => new Right
+            {
+                Resource = rd.Resource.Select(attr => new AttributePair
+                {
+                    Id = attr.Id,
+                    Value = attr.Value
+                }).ToList(),
+            }).ToList();
+
+            return rights;
         }
 
         private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
@@ -1046,15 +1084,23 @@ namespace Altinn.Platform.Authentication.Services
 
         private async Task<Result<List<AccessPackage>>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
         {
-            var packagePermissions = await _accessManagementClient.GetAccessPackagesForSystemUser(partyUuId, systemUserId, cancellationToken).ToListAsync(cancellationToken);
+            List<PackagePermission> packagePermissions = [];
 
-            List<PackagePermission> delegations = packagePermissions
-                .Where(r => r.IsSuccess && r.Value is not null)
-                .Select(r => r.Value!)
-                .ToList();
+            await foreach (var result in _accessManagementClient.GetAccessPackagesForSystemUser(partyUuId, systemUserId, cancellationToken))
+            {
+                if (result.IsProblem)
+                {
+                    return result.Problem;
+                }
+
+                if (result.IsSuccess && result.Value is not null)
+                {
+                    packagePermissions.Add(result.Value);
+                }
+            }
 
             // 3. Process results
-            GetDelegatedPackagesFromDelegations(delegations, out List<AccessPackage> accessPackages);
+            GetDelegatedPackagesFromDelegations(packagePermissions, out List<AccessPackage> accessPackages);
             return accessPackages;
         }
 
@@ -1072,6 +1118,6 @@ namespace Altinn.Platform.Authentication.Services
                     accessPackages.Add(accessPackage);
                 }
             }
-        }
+        }        
     }
 }
