@@ -388,10 +388,14 @@ public class RequestRepository : IRequestRepository
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
+        string integrationTitle = reader.IsDBNull("integration_title")
+            ? string.Empty
+            : reader.GetFieldValue<string>("integration_title");
+
         RequestSystemResponse response = new()
         {
             Id = reader.GetFieldValue<Guid>("id"),
-            IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
+            IntegrationTitle = integrationTitle,
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
@@ -419,10 +423,14 @@ public class RequestRepository : IRequestRepository
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
+        string integrationTitle = reader.IsDBNull("integration_title")
+            ? string.Empty
+            : reader.GetFieldValue<string>("integration_title");
+
         AgentRequestSystemResponse response = new()
         {
             Id = reader.GetFieldValue<Guid>("id"),
-            IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
+            IntegrationTitle = integrationTitle,
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
