@@ -1,5 +1,7 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Core.Constants;
@@ -25,7 +27,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
         public static ClaimsPrincipal GetUserPrincipal(int userId, List<Claim> extClaims, int authenticationLevel = 2, bool addPortalScope = false)
         {
-            List<Claim> claims = new List<Claim>();
+            List<Claim> claims = [];
             string issuer = "www.altinn.no";
             claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.ToString(), ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userId.ToString(), ClaimValueTypes.String, issuer));
@@ -44,23 +46,23 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 claims.AddRange(extClaims);
             }
 
-            ClaimsIdentity identity = new ClaimsIdentity("mock");
+            ClaimsIdentity identity = new("mock");
             identity.AddClaims(claims);
-            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+            ClaimsPrincipal principal = new(identity);
             return principal;
         }
 
         public static string GetOrgToken(string org, int authenticationLevel = 3)
         {
-            List<Claim> claims = new List<Claim>();
+            List<Claim> claims = [];
             string issuer = "www.altinn.no";
             claims.Add(new Claim(AltinnCoreClaimTypes.Org, org, ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "Buypass", ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authenticationLevel.ToString(), ClaimValueTypes.Integer32, issuer));
 
-            ClaimsIdentity identity = new ClaimsIdentity("mock");
+            ClaimsIdentity identity = new("mock");
             identity.AddClaims(claims);
-            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+            ClaimsPrincipal principal = new(identity);
             string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
 
             return token;
@@ -69,7 +71,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         public static string GetSelfIdentifiedUserToken(
             string username, string partyId,  string userId)
         {
-            List<Claim> claims = new List<Claim>();
+            List<Claim> claims = [];
             string issuer = "www.altinn.no";
             claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.ToString(), ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userId.ToString(), ClaimValueTypes.String, issuer));
@@ -78,9 +80,9 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "SelfIdentified", ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "0", ClaimValueTypes.Integer32, issuer));
 
-            ClaimsIdentity identity = new ClaimsIdentity("mock");
+            ClaimsIdentity identity = new("mock");
             identity.AddClaims(claims);
-            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+            ClaimsPrincipal principal = new(identity);
             string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
 
             return token;
@@ -88,22 +90,22 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
         public static string GetOrgToken(string org, string orgNo, int authenticationLevel = 4)
         {
-            List<Claim> claims = new List<Claim>();
+            List<Claim> claims = [];
             string issuer = "www.altinn.no";
             claims.Add(new Claim(AltinnCoreClaimTypes.Org, org, ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.OrgNumber, orgNo, ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, "BankID", ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authenticationLevel.ToString(), ClaimValueTypes.Integer32, issuer));
 
-            ClaimsIdentity identity = new ClaimsIdentity("mock");
+            ClaimsIdentity identity = new("mock");
             identity.AddClaims(claims);
-            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+            ClaimsPrincipal principal = new(identity);
             string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1));
 
             return token;
         }
 
-        public static string GetOrgToken(string org, string orgNumber = "991825827", string scope = null, string[] prefixes = null, DateTimeOffset? now = null)
+        public static string GetOrgToken(string org, string orgNumber = "991825827", string? scope = null, string[]? prefixes = null, DateTimeOffset? now = null)
         {
             if (now == null)
             {
@@ -117,11 +119,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return token;
         }
 
-        public static ClaimsPrincipal GetClaimsPrincipal(string org, string orgNumber, string scope = null, string[] prefixes = null)
+        public static ClaimsPrincipal GetClaimsPrincipal(string org, string orgNumber, string? scope = null, string[]? prefixes = null)
         {
             string issuer = "www.altinn.no";
 
-            List<Claim> claims = new List<Claim>();
+            List<Claim> claims = [];
             if (!string.IsNullOrEmpty(org))
             {
                 claims.Add(new Claim(AltinnCoreClaimTypesOrg, org, ClaimValueTypes.String, issuer));
@@ -145,7 +147,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "3", ClaimValueTypes.Integer32, issuer));
             claims.Add(new Claim("consumer", GetOrgNoObject(orgNumber)));
 
-            ClaimsIdentity identity = new ClaimsIdentity("mock-org");
+            ClaimsIdentity identity = new("mock-org");
             identity.AddClaims(claims);
 
             return new ClaimsPrincipal(identity);
@@ -161,7 +163,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             string issuer = "www.altinn.no";
             ClaimsPrincipal principal = GetUserPrincipal(userId, claims, authenticationLevel);
             ////principal.Identities.FirstOrDefault().AddClaim(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuId.ToString(), ClaimValueTypes.String, issuer));
-            principal.Identities.FirstOrDefault().AddClaim(new Claim(AuthzConstants.CLAIM_SCOPE, scopes, ClaimValueTypes.String, issuer));
+            Debug.Assert(principal.Identities.FirstOrDefault() != null);
+            principal.Identities.FirstOrDefault()!.AddClaim(new Claim(AuthzConstants.CLAIM_SCOPE, scopes, ClaimValueTypes.String, issuer));
             string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1), now);
             return token;
         }
