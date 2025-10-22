@@ -691,7 +691,7 @@ public class AccessManagementClient : IAccessManagementClient
     public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (party == 0)
+        if (party <= 0)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
