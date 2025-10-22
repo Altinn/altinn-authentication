@@ -2,6 +2,9 @@
 
 namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
+    /// <summary>
+    /// Defines an unregistered client request record.
+    /// </summary>
     public sealed record UnregisteredClientRequest(
         Guid RequestId,
         UnregisteredClientRequestStatus Status,
