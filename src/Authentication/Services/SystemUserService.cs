@@ -984,7 +984,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="systemUserId">the unique identifier for the system user </param>
         /// <param name="partyId">the unique identifier for the party</param>
         /// <param name="cancellationToken">the cancellation token</param>
-        /// <returns>lsit of delegated rights for the system user</returns>
+        /// <returns>list of delegated rights for the system user</returns>
         public async Task<Result<List<Right>>> GetDelegatedRightsForSystemUser(Guid systemUserId, int partyId, CancellationToken cancellationToken)
         {
             var rightsDelegationResult = await _accessManagementClient.GetSingleRightDelegationsForStandardUser(systemUserId, partyId, cancellationToken);

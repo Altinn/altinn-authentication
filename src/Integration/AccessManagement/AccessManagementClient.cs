@@ -700,19 +700,19 @@ public class AccessManagementClient : IAccessManagementClient
         {
             return Problem.SystemUserNotFound;
         }
-    ;
 
         string endpointUrl = $"internal/{party}/rights/delegation/offered?to={systemUserId}";
 
         try
         {
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
                 return await response.Content.ReadFromJsonAsync<List<RightDelegation>>(_serializerOptions, cancellationToken) ?? [];
             }
 
+            _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {party}. StatusCode: {response.StatusCode}");
             return Problem.AccessPackage_FailedToGetDelegatedRights;
 
         }

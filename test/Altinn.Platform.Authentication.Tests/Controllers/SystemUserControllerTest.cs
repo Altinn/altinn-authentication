@@ -2128,7 +2128,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange            
             var systemUserId = new Guid("ec6831bc-379c-469a-8e41-d37d398772c9");
             var partyId = 500000;
-            ////var partyId = 51574835;
             var partyUuid = new Guid("2c8481d9-725f-4b21-b037-1de20b03466f");
 
             var systemUser = new SystemUser
@@ -2143,9 +2142,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 PartyUuid = partyUuid,
                 OrgNumber = "312615398"
             };
-
-            var rights = new List<Right> { new Right { Action = "Read" } };
-            var accessPackages = new List<AccessPackage> { new AccessPackage { Urn = "urn:altinn:accesspackage:skattegrunnlag" } };
 
             var systemUserRepoMock = new Mock<ISystemUserRepository>();
             systemUserRepoMock.Setup(r => r.GetSystemUserById(systemUserId)).ReturnsAsync(systemUser);
@@ -2187,9 +2183,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 OrgNumber = "312615398"
             };
 
-            var rights = new List<Right> { new Right { Action = "Read" } };
-            var accessPackages = new List<AccessPackage> { new AccessPackage { Urn = "urn:altinn:accesspackage:skattegrunnlag" } };
-
             var systemUserRepoMock = new Mock<ISystemUserRepository>();
             systemUserRepoMock.Setup(r => r.GetSystemUserById(systemUserId)).ReturnsAsync(systemUser);
 
@@ -2227,9 +2220,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 PartyUuid = partyUuid,
                 OrgNumber = "312615398"
             };
-
-            var rights = new List<Right> { new Right { Action = "Read" } };
-            var accessPackages = new List<AccessPackage> { new AccessPackage { Urn = "urn:altinn:accesspackage:skattegrunnlag" } };
 
             var systemUserRepoMock = new Mock<ISystemUserRepository>();
             systemUserRepoMock.Setup(r => r.GetSystemUserById(systemUserId)).ReturnsAsync(systemUser);
