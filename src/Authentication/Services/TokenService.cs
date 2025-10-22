@@ -13,7 +13,6 @@ using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Abstractions;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -66,6 +65,12 @@ namespace Altinn.Platform.Authentication.Services
             ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, true);
             ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, false);
 
+            // Now atomically consume
+            if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))
+            {
+                return TokenResult.InvalidGrant("Code already used or expired");
+            }
+
             string? idToken = null;
             if (row.Scopes.Contains("openid", StringComparer.Ordinal))
             {
@@ -74,12 +79,6 @@ namespace Altinn.Platform.Authentication.Services
 
             string accessToken = await tokenIssuer.CreateAccessTokenAsync(accessTokenPrincipal, tokenExpiration, ct);
             string? refreshToken = await TryIssueInitialRefreshAsync(row, oidcSession!, client, exchangeTime, ct);
-
-            // Now atomically consume
-            if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))
-            {
-                return TokenResult.InvalidGrant("Code already used or expired");
-            }
 
             // 3) Update OP session (slide expiry, touch last seen)
             await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes), ct);
