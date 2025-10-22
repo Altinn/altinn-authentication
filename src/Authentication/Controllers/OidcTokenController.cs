@@ -161,7 +161,12 @@ namespace Altinn.Platform.Authentication.Controllers
             if (!string.IsNullOrEmpty(form.ClientAssertionType) &&
                 !string.IsNullOrEmpty(form.ClientAssertion))
             {
-                return TokenClientAuth.PrivateKeyJwt(form.ClientId!, form.ClientAssertionType!, form.ClientAssertion!);
+                if (string.IsNullOrEmpty(form.ClientId))
+                {
+                    return TokenClientAuth.Missing();
+                }
+
+                return TokenClientAuth.PrivateKeyJwt(form.ClientId, form.ClientAssertionType!, form.ClientAssertion!);
             }
 
             // Public clients (PKCE only)
