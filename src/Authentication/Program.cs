@@ -380,7 +380,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IPublicSigningKeyProvider, PublicSigningKeyProvider>();
     services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
     services.AddSingleton<IEFormidlingAccessValidator, EFormidlingAccessValidator>();
-    services.AddHttpClient<IOidcProvider, OidcProviderService>();
+    services.AddScoped<IOidcServerService, OidcServerService>();
     services.AddSingleton<IAuthentication, AuthenticationCore>();
     services.AddSingleton<IEventsQueueClient, EventsQueueClient>();
     services.AddSingleton<IEventLog, EventLogService>();
