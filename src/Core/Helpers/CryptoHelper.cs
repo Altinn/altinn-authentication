@@ -14,6 +14,11 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         /// The final string length will be ~4/3 of this, without padding.</param>
         public static string RandomBase64Url(int byteLength = 32)
         {
+            if (byteLength <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(byteLength), "Must be > 0.");
+            }
+
             byte[] buffer = new byte[byteLength];
             RandomNumberGenerator.Fill(buffer);
 
