@@ -41,6 +41,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.request(
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -51,6 +52,7 @@ public class RequestRepository : IRequestRepository
                 redirect_urls)
             VALUES(
                 @id,
+                @integration_title,
                 @external_ref,
                 @system_id,
                 @party_org_no,
@@ -65,6 +67,7 @@ public class RequestRepository : IRequestRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("id", createRequest.Id);
+            command.Parameters.AddWithValue("integration_title", createRequest.IntegrationTitle ?? string.Empty); 
             command.Parameters.AddWithValue("external_ref", createRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
@@ -98,6 +101,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             INSERT INTO business_application.request(
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -107,6 +111,7 @@ public class RequestRepository : IRequestRepository
                 redirect_urls)
             VALUES(
                 @id,
+                @integration_title,
                 @external_ref,
                 @system_id,
                 @party_org_no,
@@ -120,6 +125,7 @@ public class RequestRepository : IRequestRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("id", createAgentRequest.Id);
+            command.Parameters.AddWithValue("integration_title", createAgentRequest.IntegrationTitle ?? string.Empty);
             command.Parameters.AddWithValue("external_ref", createAgentRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createAgentRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createAgentRequest.PartyOrgNo);
@@ -151,6 +157,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -194,6 +201,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -235,6 +243,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -273,6 +282,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -378,9 +388,14 @@ public class RequestRepository : IRequestRepository
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
+        string integrationTitle = reader.IsDBNull("integration_title")
+            ? string.Empty
+            : reader.GetFieldValue<string>("integration_title");
+
         RequestSystemResponse response = new()
         {
             Id = reader.GetFieldValue<Guid>("id"),
+            IntegrationTitle = integrationTitle,
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
@@ -408,9 +423,14 @@ public class RequestRepository : IRequestRepository
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
         }
 
+        string integrationTitle = reader.IsDBNull("integration_title")
+            ? string.Empty
+            : reader.GetFieldValue<string>("integration_title");
+
         AgentRequestSystemResponse response = new()
         {
             Id = reader.GetFieldValue<Guid>("id"),
+            IntegrationTitle = integrationTitle,
             ExternalRef = reader.GetFieldValue<string>("external_ref"),
             SystemId = reader.GetFieldValue<string>("system_id"),
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
@@ -434,6 +454,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -471,6 +492,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,
@@ -626,6 +648,7 @@ public class RequestRepository : IRequestRepository
         const string QUERY = /*strpsql*/@"
             SELECT 
                 id,
+                integration_title,
                 external_ref,
                 system_id,
                 party_org_no,

@@ -1238,6 +1238,139 @@ public class RequestControllerTests(
     }
 
     [Fact]
+    public async Task Set_IntegrationTitle_Success()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            IntegrationTitle = "does this work",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        //// Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+
+        int partyId = 500000;
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+        string getEndpoint = $"/authentication/api/v1/systemuser/vendor/byquery?system-id={req.SystemId}&orgno={req.PartyOrgNo}&external-ref={req.ExternalRef}";
+        HttpRequestMessage getRequestMessage = new(HttpMethod.Get, getEndpoint);
+        HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
+
+        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        Assert.NotNull(systemuser);
+        Assert.Equal(systemuser.IntegrationTitle, req.IntegrationTitle);
+    }
+
+    [Fact]
+    public async Task Dont_Set_IntegrationTitle_Success()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        //// Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+
+        int partyId = 500000;
+
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
+        HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+        HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+        string getEndpoint = $"/authentication/api/v1/systemuser/vendor/byquery?system-id={req.SystemId}&orgno={req.PartyOrgNo}&external-ref={req.ExternalRef}";
+        HttpRequestMessage getRequestMessage = new(HttpMethod.Get, getEndpoint);
+        HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
+
+        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        Assert.NotNull(systemuser);
+        Assert.Equal("The Matrix", systemuser.IntegrationTitle);
+    }
+
+    [Fact]
     public async Task Approve_Request_By_RequestId_Forbidden()
     {
         // Create System used for test
