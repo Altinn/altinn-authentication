@@ -86,7 +86,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 INSERT INTO {UpstreamLoginTransactionTable.TABLE} (
                     {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID},
                     {UpstreamLoginTransactionTable.REQUEST_ID},
-                    {UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_LESS_REQUEST_ID},
+                    {UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_REQUEST_ID},
                     {UpstreamLoginTransactionTable.STATUS},
                     {UpstreamLoginTransactionTable.CREATED_AT},
                     {UpstreamLoginTransactionTable.EXPIRES_AT},
@@ -150,7 +150,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 RETURNING
                   {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID},
                   {UpstreamLoginTransactionTable.REQUEST_ID},
-                  {UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_LESS_REQUEST_ID},
+                  {UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_REQUEST_ID},
                   {UpstreamLoginTransactionTable.STATUS},
                   {UpstreamLoginTransactionTable.CREATED_AT},
                   {UpstreamLoginTransactionTable.EXPIRES_AT},
@@ -259,7 +259,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 SELECT
                   {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID},
                   {UpstreamLoginTransactionTable.REQUEST_ID},
-                  {UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_LESS_REQUEST_ID},
+                  {UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_REQUEST_ID},
                   {UpstreamLoginTransactionTable.STATUS},
                   {UpstreamLoginTransactionTable.CREATED_AT},
                   {UpstreamLoginTransactionTable.EXPIRES_AT},
@@ -494,7 +494,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             {
                 UpstreamRequestId = r.GetFieldValue<Guid>(UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID),
                 RequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.REQUEST_ID),
-                UnregisteredClientRequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_LESS_REQUEST_ID),
+                UnregisteredClientRequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_REQUEST_ID),
                 Status = r.GetFieldValue<string>(UpstreamLoginTransactionTable.STATUS),
                 CreatedAt = r.GetFieldValue<DateTimeOffset>(UpstreamLoginTransactionTable.CREATED_AT),
                 ExpiresAt = r.GetFieldValue<DateTimeOffset>(UpstreamLoginTransactionTable.EXPIRES_AT),

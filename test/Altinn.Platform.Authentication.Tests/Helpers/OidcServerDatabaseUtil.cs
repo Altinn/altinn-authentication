@@ -168,7 +168,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             {
                 UpstreamRequestId = r.GetFieldValue<Guid>(UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID),
                 RequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.REQUEST_ID),
-                UnregisteredClientRequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_LESS_REQUEST_ID),
+                UnregisteredClientRequestId = GetGuidOrNull(r, UpstreamLoginTransactionTable.UNREGISTERED_CLIENT_REQUEST_ID),
                 Status = r.GetFieldValue<string>(UpstreamLoginTransactionTable.STATUS),
                 CreatedAt = r.GetFieldValue<DateTimeOffset>(UpstreamLoginTransactionTable.CREATED_AT),
                 ExpiresAt = r.GetFieldValue<DateTimeOffset>(UpstreamLoginTransactionTable.EXPIRES_AT),
