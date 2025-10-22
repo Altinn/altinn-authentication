@@ -433,7 +433,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 {UpstreamLoginTransactionTable.UPSTREAM_AUTH_TIME} = @auth_time,
                 {UpstreamLoginTransactionTable.UPSTREAM_ID_TOKEN_JTI} = @jti,
                 {UpstreamLoginTransactionTable.UPSTREAM_SESSION_SID} = COALESCE(@sid, {UpstreamLoginTransactionTable.UPSTREAM_SESSION_SID})
-            WHERE {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID} = @id;";
+            WHERE {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID} = @id
+            AND {UpstreamLoginTransactionTable.STATUS}
+            IN('callback_received', 'token_exchanged')";
 
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("issuer", issuer);
