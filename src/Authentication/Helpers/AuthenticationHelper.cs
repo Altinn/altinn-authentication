@@ -93,8 +93,10 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals("amr"))
                 {
-                    userAuthenticationModel.Amr = [claim.Value];
-                    userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
+                    List<string> list = userAuthenticationModel.Amr?.ToList() ?? [];
+                    list.Add(claim.Value);
+                    userAuthenticationModel.Amr = [.. list];
+                    userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(list.First());
                     continue;
                 }
 
