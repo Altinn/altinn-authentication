@@ -18,7 +18,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public string? RequestedIss { get; init; }
 
         /// <summary>
-        /// If set , defines the requested acr values to be used for the authentication.
+        /// If set, defines the requested acr values to be used for the authentication.
         /// </summary>
         public string[]? AcrValues { get; init; }
 
