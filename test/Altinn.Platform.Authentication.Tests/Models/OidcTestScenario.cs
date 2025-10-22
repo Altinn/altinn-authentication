@@ -31,14 +31,6 @@ namespace Altinn.Platform.Authentication.Tests.Models
 
         public string? DownstreamClientId { get; set; } = null;
 
-        public string? DaownstreamNonce { get; set; } = null;
-
-        public string? DaownstreamState { get; set; } = null;
-
-        public string? DaownstreamCodeVerifier { get; internal set; }
-
-        public string? DaownstreamCodeChallenge { get; internal set; }
-
         public string DownstreamClientCallbackUrl { get; set; } = "https://af.altinn.no/api/cb";
 
         public List<Uri> RedirectUris { get; set; } = [new Uri("https://af.altinn.no/api/cb")];
