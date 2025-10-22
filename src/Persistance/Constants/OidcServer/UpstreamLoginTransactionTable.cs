@@ -26,7 +26,7 @@
         public const string UNREGISTERED_CLIENT_REQUEST_ID = "unregistered_client_request_id";
 
         /// <summary>
-        /// The name of the column in the database that stores the client ID.
+        /// The name of the column in the database that stores the status.
         /// </summary>
         public const string STATUS = "status";
 
@@ -151,37 +151,37 @@
         public const string TOKEN_EXCHANGED_AT = "token_exchanged_at";
 
         /// <summary>
-        /// The name of the column in the database that stores the ID token.
+        /// The name of the column in the database that stores the upstream_issuer.
         /// </summary>
         public const string UPSTREAM_ISSUER = "upstream_issuer";
 
         /// <summary>
-        /// The name of the column in the database that stores the ID token.
+        /// The name of the column in the database that stores the upstream subject.
         /// </summary>
         public const string UPSTREAM_SUB = "upstream_sub";
 
         /// <summary>
-        /// The name of the column in the database that stores the ID token.
+        /// The name of the column in the database that stores the upstream acr.
         /// </summary>
         public const string UPSTREAM_ACR = "upstream_acr";
 
         /// <summary>
-        /// The name of the column in the database that stores the ID token.
+        /// The name of the column in the database that stores the upstream auth time.
         /// </summary>
         public const string UPSTREAM_AUTH_TIME = "upstream_auth_time";
 
         /// <summary>
-        /// The name of the column in the database that stores the ID token.
+        /// The name of the column in the database that stores the upstream ID token jti.
         /// </summary>
         public const string UPSTREAM_ID_TOKEN_JTI = "upstream_id_token_jti";
 
         /// <summary>
-        /// The name of the column in the database that stores the ID token.
+        /// The name of the column in the database that stores the upstream session sid.
         /// </summary>
         public const string UPSTREAM_SESSION_SID = "upstream_session_sid";
 
         /// <summary>
-        /// The name of the column in the database that stores the ID token.
+        /// The name of the column in the database that stores the correlation ID.
         /// </summary>
         public const string CORRELATION_ID = "correlation_id";
 
