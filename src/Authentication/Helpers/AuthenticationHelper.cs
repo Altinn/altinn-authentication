@@ -248,7 +248,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 AuthenticationMethod.IdportenTestId => "testid",
                 AuthenticationMethod.AltinnPIN => "AltinnPIN",
                 AuthenticationMethod.SelfIdentified => "SelfIdentified",
-                AuthenticationMethod.MinIDApp => "Minid-APP"
+                AuthenticationMethod.MinIDApp => "Minid-APP",
                 _ => string.Empty
             };
         }
