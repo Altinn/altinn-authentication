@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         
         public Guid? RequestId { get; init; }
 
-        public Guid? ClientLessRequestId { get; set; }
+        public Guid? UnregisteredClientRequestId { get; set; }
 
 
         public required string Status { get; init; }

@@ -53,7 +53,7 @@ namespace Altinn.Platform.Authentication.Services
         IOptions<GeneralSettings> generalSettings,
         ITokenService tokenService,
         IRefreshTokenRepository refreshTokenRepository,
-        IClientlessRequestRepository clientlessRequestRepository,
+        IUnregisteredClientRepository unregisteredClientRequestRepository,
         ISblCookieDecryptionService sblCookieDecryptionService) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
@@ -73,7 +73,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
         private readonly ITokenService _tokenService = tokenService;
         private readonly IRefreshTokenRepository _refreshTokenRepo = refreshTokenRepository;
-        private readonly IClientlessRequestRepository _clientlessRequestRepository = clientlessRequestRepository;
+        private readonly IUnregisteredClientRepository _unregisteredClientRequestRepository = unregisteredClientRequestRepository;
         private readonly ISblCookieDecryptionService _cookieDecryptionService = sblCookieDecryptionService;
         private static readonly string DefaultProviderKey = "idporten";
 
@@ -167,13 +167,13 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <summary>
-        /// Authorize clientless is used for flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
+        /// Authorize unregistered client is used for flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
         /// </summary>
-        public async Task<AuthorizeResult> AuthorizeClientLess(AuthorizeClientlessRequest request, CancellationToken cancellationToken)
+        public async Task<AuthorizeResult> AuthorizeUnregisteredClient(AuthorizeUnregisteredClientRequest request, CancellationToken cancellationToken)
         {
             OidcProvider provider = ChooseProvider(request);
 
-            ClientlessRequestCreate clientlessRequestCreate = new()
+            UnregisteredClientRequestCreate unregisteredClientRequestCreate = new()
             {
                 RequestId = Guid.NewGuid(),
                 ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
@@ -184,9 +184,9 @@ namespace Altinn.Platform.Authentication.Services
                 CorrelationId = request.CorrelationId
             };
 
-            await _clientlessRequestRepository.InsertAsync(clientlessRequestCreate, cancellationToken);
+            await _unregisteredClientRequestRepository.InsertAsync(unregisteredClientRequestCreate, cancellationToken);
 
-            (string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(clientlessRequestCreate, provider, cancellationToken);
+            (string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(unregisteredClientRequestCreate, provider, cancellationToken);
 
             Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
             provider,
@@ -197,7 +197,7 @@ namespace Altinn.Platform.Authentication.Services
             provider.IssuerKey);
 
             // ========= 9) Return redirect upstream =========
-            return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, clientlessRequestCreate.RequestId);
+            return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, unregisteredClientRequestCreate.RequestId);
         }
 
         /// <inheritdoc/>
@@ -280,14 +280,14 @@ namespace Altinn.Platform.Authentication.Services
                     Cookies = [altinnStudioRuntime, altinnSessionCookie]
                 };
             }
-            else if (upstreamTx.ClientLessRequestId != null)
+            else if (upstreamTx.UnregisteredClientRequestId != null)
             {
-                ClientlessRequest? clientlessRequest = await _clientlessRequestRepository.GetByRequestIdAsync(upstreamTx.ClientLessRequestId.Value, cancellationToken);
-                Debug.Assert(clientlessRequest != null);
+                UnregisteredClientRequest? unregisteredClientRequest = await _unregisteredClientRequestRepository.GetByRequestIdAsync(upstreamTx.UnregisteredClientRequestId.Value, cancellationToken);
+                Debug.Assert(unregisteredClientRequest != null);
                 upstreamCallbackResult = new UpstreamCallbackResult
                 {
                     Kind = UpstreamCallbackResultKind.RedirectToGoTo,
-                    ClientRedirectUri = new Uri(clientlessRequest.GotoUrl),
+                    ClientRedirectUri = new Uri(unregisteredClientRequest.GotoUrl),
                     DownstreamCode = null,
                     ClientState = null,
                     Cookies = [altinnStudioRuntime, altinnSessionCookie]
@@ -806,7 +806,7 @@ namespace Altinn.Platform.Authentication.Services
             return (provider, upstreamState, upstreamNonce, upstreamPkceChallenge);
         }
 
-        private async Task<(string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(ClientlessRequestCreate request, OidcProvider provider, CancellationToken cancellationToken)
+        private async Task<(string UpstreamState, string UpstreamNonce, string UpstreamPkceChallenge)> CreateUpstreamLoginTransaction(UnregisteredClientRequestCreate request, OidcProvider provider, CancellationToken cancellationToken)
         {
             string upstreamState = CryptoHelpers.RandomBase64Url(32);
             string upstreamNonce = CryptoHelpers.RandomBase64Url(32);
@@ -817,7 +817,7 @@ namespace Altinn.Platform.Authentication.Services
             // NOTE: Store everything you need for callback + token exchange.
             UpstreamLoginTransactionCreate upstreamCreate = new()
             {
-                ClientLessRequestId = request.RequestId, 
+                UnregisteredClientRequestId = request.RequestId, 
                 ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10),
 
                 Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
@@ -1071,7 +1071,7 @@ namespace Altinn.Platform.Authentication.Services
             throw new ApplicationException("server_error No default OIDC provider configured.");
         }
 
-        private OidcProvider ChooseProvider(AuthorizeClientlessRequest req)
+        private OidcProvider ChooseProvider(AuthorizeUnregisteredClientRequest req)
         {
             if (req.RequestedIss is not null)
             {
@@ -1209,7 +1209,7 @@ namespace Altinn.Platform.Authentication.Services
                string upstreamState,
                string upstreamNonce,
                string upstreamCodeChallenge,
-               AuthorizeClientlessRequest incoming,
+               AuthorizeUnregisteredClientRequest incoming,
                string? issKeyForCallback)
         {
             var q = System.Web.HttpUtility.ParseQueryString(string.Empty);

@@ -8,7 +8,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public Guid RequestId { get; init; }
 
         /// FK to client less request
-        public Guid ClientLessRequestId { get; init; }
+        public Guid UnregisteredClientRequestId { get; init; }
 
         // lifecycle
         public required DateTimeOffset ExpiresAt { get; init; }   // e.g., now + 10 min

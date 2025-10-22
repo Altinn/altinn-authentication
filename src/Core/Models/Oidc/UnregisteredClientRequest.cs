@@ -2,9 +2,9 @@
 
 namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
-    public sealed record ClientlessRequest(
+    public sealed record UnregisteredClientRequest(
         Guid RequestId,
-        ClientlessRequestStatus Status,
+        UnregisteredClientRequestStatus Status,
         DateTimeOffset CreatedAt,
         DateTimeOffset ExpiresAt,
         DateTimeOffset? CompletedAt,

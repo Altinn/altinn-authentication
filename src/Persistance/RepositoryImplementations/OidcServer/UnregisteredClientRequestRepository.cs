@@ -7,28 +7,28 @@ using NpgsqlTypes;
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.OidcServer
 {
     /// <summary>
-    /// Provides methods for managing clientless requests in the OIDC server database.
+    /// Provides methods for managing unregistered_client requests in the OIDC server database.
     /// </summary>
-    /// <remarks>This repository is responsible for creating, updating, retrieving, and deleting clientless
+    /// <remarks>This repository is responsible for creating, updating, retrieving, and deleting unregistered_client
     /// request records. It uses an <see cref="NpgsqlDataSource"/> for database access and a <see cref="TimeProvider"/>
     /// to ensure consistent time-based operations. All operations are asynchronous and designed to work with
     /// PostgreSQL.</remarks>
-    public sealed class ClientlessRequestRepository(NpgsqlDataSource dataSource, TimeProvider timeProvider)
-        : IClientlessRequestRepository
+    public sealed class UnregisteredClientRequestRepository(NpgsqlDataSource dataSource, TimeProvider timeProvider)
+        : IUnregisteredClientRepository
     {
         private readonly NpgsqlDataSource _dataSource = dataSource;
         private readonly TimeProvider _timeProvider = timeProvider;
 
         /// <summary>
-        /// Inserts a new clientless request into the database with a status of 'pending'.
+        /// Inserts a new unregistered_client request into the database with a status of 'pending'.
         /// </summary>
-        public async Task InsertAsync(ClientlessRequestCreate create, CancellationToken ct)
+        public async Task InsertAsync(UnregisteredClientRequestCreate create, CancellationToken ct)
         {
             // Use TimeProvider for created_at; don't rely on DB clock
             DateTimeOffset createdAt = _timeProvider.GetUtcNow();
 
             const string sql = @"
-            INSERT INTO oidcserver.clientless_request
+            INSERT INTO oidcserver.unregistered_client_request
             (request_id, status, created_at, expires_at, issuer, goto_url, created_by_ip, user_agent_hash, correlation_id)
             VALUES (@request_id, 'pending', @created_at, @expires_at, @issuer, @goto_url, @created_by_ip, @user_agent_hash, @correlation_id);";
 
@@ -62,14 +62,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <summary>
-        /// Gets a clientless request by its unique request ID.
+        /// Gets a unregistered_client request by its unique request ID.
         /// </summary>
-        public async Task<ClientlessRequest?> GetByRequestIdAsync(Guid requestId, CancellationToken ct)
+        public async Task<UnregisteredClientRequest?> GetByRequestIdAsync(Guid requestId, CancellationToken ct)
         {
             const string sql = @"
             SELECT request_id, status, created_at, expires_at, completed_at,
                     issuer, goto_url, upstream_request_id, created_by_ip, user_agent_hash, correlation_id, handled_by_callback
-                FROM oidcserver.clientless_request
+                FROM oidcserver.unregistered_client_request
                 WHERE request_id = @request_id;";
 
             await using var conn = await _dataSource.OpenConnectionAsync(ct);
@@ -86,13 +86,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <summary>
-        /// Marks the status of a clientless request. If the new status is terminal (completed, cancelled, error),
+        /// Marks the status of a unregistered_client request. If the new status is terminal (completed, cancelled, error),
         /// </summary>
-        public async Task<bool> MarkStatusAsync(Guid requestId, ClientlessRequestStatus newStatus, DateTimeOffset whenUtc, string? handledByCallback, CancellationToken ct)
+        public async Task<bool> MarkStatusAsync(Guid requestId, UnregisteredClientRequestStatus newStatus, DateTimeOffset whenUtc, string? handledByCallback, CancellationToken ct)
         {
             // Use provided 'whenUtc' (from TimeProvider) for completed_at
             const string sql = @"
-            UPDATE oidcserver.clientless_request
+            UPDATE oidcserver.unregistered_client_request
                SET status = @status,
                    completed_at = CASE
                        WHEN @status IN ('completed','cancelled','error') THEN @when_utc
@@ -121,7 +121,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <summary>
-        /// Sweeps (hard-deletes) expired clientless requests in small batches to avoid long transactions.
+        /// Sweeps (hard-deletes) expired unregistered_client requests in small batches to avoid long transactions.
         /// </summary>
         public async Task<int> SweepExpiredAsync(DateTimeOffset nowUtc, int limit, CancellationToken ct)
         {
@@ -129,12 +129,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             const string sql = @"
             WITH dead AS (
                 SELECT request_id
-                  FROM oidcserver.clientless_request
+                  FROM oidcserver.unregistered_client_request
                  WHERE expires_at < @now
                  ORDER BY expires_at
                  LIMIT @lim
             )
-            DELETE FROM oidcserver.clientless_request cr
+            DELETE FROM oidcserver.unregistered_client_request cr
             USING dead
             WHERE cr.request_id = dead.request_id;";
 
@@ -148,7 +148,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             return rows;
         }
 
-        private static ClientlessRequest Map(NpgsqlDataReader rdr)
+        private static UnregisteredClientRequest Map(NpgsqlDataReader rdr)
         {
             var requestId = rdr.GetGuid(0);
             var status = FromDb(rdr.GetString(1));
@@ -182,7 +182,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             var correlationId = rdr.IsDBNull(10) ? (Guid?)null : rdr.GetGuid(10);
             var handledByCallback = rdr.IsDBNull(11) ? null : rdr.GetString(11);
 
-            return new ClientlessRequest(
+            return new UnregisteredClientRequest(
                 requestId,
                 status,
                 createdAtOffset,
@@ -197,21 +197,21 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 handledByCallback);
         }
 
-        private static string ToDb(ClientlessRequestStatus s) => s switch
+        private static string ToDb(UnregisteredClientRequestStatus s) => s switch
         {
-            ClientlessRequestStatus.Pending => "pending",
-            ClientlessRequestStatus.Completed => "completed",
-            ClientlessRequestStatus.Cancelled => "cancelled",
-            ClientlessRequestStatus.Error => "error",
+            UnregisteredClientRequestStatus.Pending => "pending",
+            UnregisteredClientRequestStatus.Completed => "completed",
+            UnregisteredClientRequestStatus.Cancelled => "cancelled",
+            UnregisteredClientRequestStatus.Error => "error",
             _ => throw new ArgumentOutOfRangeException(nameof(s), s, null)
         };
 
-        private static ClientlessRequestStatus FromDb(string s) => s switch
+        private static UnregisteredClientRequestStatus FromDb(string s) => s switch
         {
-            "pending" => ClientlessRequestStatus.Pending,
-            "completed" => ClientlessRequestStatus.Completed,
-            "cancelled" => ClientlessRequestStatus.Cancelled,
-            "error" => ClientlessRequestStatus.Error,
+            "pending" => UnregisteredClientRequestStatus.Pending,
+            "completed" => UnregisteredClientRequestStatus.Completed,
+            "cancelled" => UnregisteredClientRequestStatus.Cancelled,
+            "error" => UnregisteredClientRequestStatus.Error,
             _ => throw new InvalidOperationException($"Unknown status '{s}'.")
         };
     }

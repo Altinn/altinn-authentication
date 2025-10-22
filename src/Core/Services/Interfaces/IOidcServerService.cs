@@ -16,11 +16,11 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         public Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken);
 
         /// <summary>
-        /// This is used for clientless flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
+        /// This is used for unregistered_client flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.
         /// Used by Altinn Apps and other application in Altinn Platform that do not have a client_id.
         /// Result is needed information to redirect to upstream with a valid 
         /// </summary>
-        public Task<AuthorizeResult> AuthorizeClientLess(AuthorizeClientlessRequest request, CancellationToken cancellationToken);
+        public Task<AuthorizeResult> AuthorizeUnregisteredClient(AuthorizeUnregisteredClientRequest request, CancellationToken cancellationToken);
 
         /// <summary>
         /// Handles an upstream callback by processing the provided input and returning the result.

@@ -1,6 +1,6 @@
 ﻿namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
-    public enum ClientlessRequestStatus
+    public enum UnregisteredClientRequestStatus
     {
         Pending,
         Completed,

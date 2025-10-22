@@ -21,9 +21,9 @@
         public const string REQUEST_ID = "request_id";
 
         /// <summary>
-        /// The name of the column in the database that stores the clientless request ID.
+        /// The name of the column in the database that stores the unregistered_client request ID.
         /// </summary>
-        public const string CLIENT_LESS_REQUEST_ID = "clientless_request_id";
+        public const string UNREGISTERED_CLIENT_LESS_REQUEST_ID = "unregistered_client_request_id";
 
         /// <summary>
         /// The name of the column in the database that stores the client ID.

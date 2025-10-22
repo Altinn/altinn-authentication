@@ -290,7 +290,7 @@ namespace Altinn.Platform.Authentication.Controllers
                         }
                     }
 
-                    AuthorizeClientlessRequest authorizeClientlessRequest = new()
+                    AuthorizeUnregisteredClientRequest authorizeUnregisteredClientRequest = new()
                     {
                         GoTo = goTo,
                         RequestedIss = oidcissuer,
@@ -300,7 +300,7 @@ namespace Altinn.Platform.Authentication.Controllers
                         AcrValues = []
                     };
 
-                    AuthorizeResult result = await _oidcServerService.AuthorizeClientLess(authorizeClientlessRequest, cancellationToken);
+                    AuthorizeResult result = await _oidcServerService.AuthorizeUnregisteredClient(authorizeUnregisteredClientRequest, cancellationToken);
                     return result.Kind switch
                     {
                         AuthorizeResultKind.RedirectUpstream

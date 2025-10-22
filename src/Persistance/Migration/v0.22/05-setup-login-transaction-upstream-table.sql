@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.login_transaction_upstream (
 
   -- Exactly one of these must be non-null:
   request_id                 UUID NULL,                                -- FK → login_transaction.request_id
-  clientless_request_id      UUID NULL,                                -- FK → clientless_request.request_id
+  unregistered_client_request_id      UUID NULL,                                -- FK → unregistered_client_request.request_id
 
   status                     TEXT NOT NULL DEFAULT 'pending',          -- 'pending'|'callback_received'|'token_exchanged'|'completed'|'error'|'cancelled'
   created_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -64,14 +64,14 @@ CREATE TABLE IF NOT EXISTS oidcserver.login_transaction_upstream (
     REFERENCES oidcserver.login_transaction (request_id)
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_up_clientless_tx
-    FOREIGN KEY (clientless_request_id)
-    REFERENCES oidcserver.clientless_request (request_id)
+  CONSTRAINT fk_up_unregistered_client_tx
+    FOREIGN KEY (unregistered_client_request_id)
+    REFERENCES oidcserver.unregistered_client_request (request_id)
     ON DELETE CASCADE,
 
-  -- Enforce "exactly one of request_id or clientless_request_id is set"
+  -- Enforce "exactly one of request_id or unregistered_client__request_id is set"
   CONSTRAINT chk_up_downstream_xor
-    CHECK (num_nonnulls(request_id, clientless_request_id) = 1),
+    CHECK (num_nonnulls(request_id, unregistered_client_request_id) = 1),
 
   CONSTRAINT chk_up_status
     CHECK (status IN ('pending','callback_received','token_exchanged','completed','error','cancelled')),
@@ -88,17 +88,17 @@ CREATE TABLE IF NOT EXISTS oidcserver.login_transaction_upstream (
 -- Fast join/lookup by downstream origin
 CREATE INDEX IF NOT EXISTS idx_up_request_id
   ON oidcserver.login_transaction_upstream (request_id);
-CREATE INDEX IF NOT EXISTS idx_up_clientless_request_id
-  ON oidcserver.login_transaction_upstream (clientless_request_id);
+CREATE INDEX IF NOT EXISTS idx_up_unregistered_client_request_id
+  ON oidcserver.login_transaction_upstream (unregistered_client_request_id);
 
 -- Optional: ensure at most one upstream txn per downstream origin
 CREATE UNIQUE INDEX IF NOT EXISTS uq_up_per_request
   ON oidcserver.login_transaction_upstream (request_id)
   WHERE request_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_up_per_clientless
-  ON oidcserver.login_transaction_upstream (clientless_request_id)
-  WHERE clientless_request_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_up_per_unregistered_client
+  ON oidcserver.login_transaction_upstream (unregistered_client_request_id)
+  WHERE unregistered_client_request_id IS NOT NULL;
 
 -- Find by upstream state quickly (callback hot path)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_up_state_active
