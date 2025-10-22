@@ -380,7 +380,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddSingleton<IPublicSigningKeyProvider, PublicSigningKeyProvider>();
     services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
     services.AddSingleton<IEFormidlingAccessValidator, EFormidlingAccessValidator>();
-    services.AddScoped<IOidcServerService, OidcServerService>();
+    services.AddHttpClient<IOidcProvider, OidcProviderService>();
     services.AddSingleton<IAuthentication, AuthenticationCore>();
     services.AddSingleton<IEventsQueueClient, EventsQueueClient>();
     services.AddSingleton<IEventLog, EventLogService>();
@@ -396,7 +396,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
     services.AddTransient<IAuthorizationHandler, AccessTokenHandler>();
     services.AddTransient<DelegationHelper, DelegationHelper>();
-    services.AddTransient<IOidcServerService, OidcServerService>();
+    services.AddScoped<IOidcServerService, OidcServerService>();
     services.AddSingleton<IAuthorizeRequestValidator, AuthorizeRequestValidator>();
     services.AddSingleton<IAuthorizeClientPolicyValidator, AuthorizeClientPolicyValidator>();
     services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
