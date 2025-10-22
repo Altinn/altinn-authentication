@@ -39,7 +39,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
-        public static async Task<UpstreamLoginTransaction?> GetUpstreamtransactrion(Guid requestId, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<UpstreamLoginTransaction?> GetUpstreamTransaction(Guid requestId, NpgsqlDataSource DataSource, CancellationToken ct = default)
         {
             const string SQL_FIND_UPSTREAM = /*strpsql*/ @"
             SELECT * from oidcserver.login_transaction_upstream
@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
-        public static async Task<UpstreamLoginTransaction?> GetUpstreamtransactrion(string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<UpstreamLoginTransaction?> GetUpstreamTransaction(string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
         {
             const string SQL_FIND_UPSTREAM = /*strpsql*/ @"
             SELECT * from oidcserver.login_transaction_upstream

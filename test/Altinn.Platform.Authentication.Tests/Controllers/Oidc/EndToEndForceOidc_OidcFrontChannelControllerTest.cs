@@ -1269,7 +1269,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
             string? upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
 
-            UpstreamLoginTransaction? createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(upstreamState, DataSource);
+            UpstreamLoginTransaction? createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamTransaction(upstreamState, DataSource);
             Assert.NotNull(createdUpstreamLogingTransaction);
             OidcAssertHelper.AssertUpstreamLoginTransaction(createdUpstreamLogingTransaction, testScenario, now);
 
