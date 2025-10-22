@@ -28,7 +28,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 cmd.Parameters.AddWithValue("client_id", clientId);
                 cmd.Parameters.AddWithValue("state", state);
 
-                await using var reader = await cmd.ExecuteReaderAsync();
+                await using var reader = await cmd.ExecuteReaderAsync(ct);
 
                 if (!await reader.ReadAsync(ct))
                 {
@@ -50,7 +50,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             {
                 cmd.Parameters.AddWithValue("request_id", requestId);
 
-                await using var reader = await cmd.ExecuteReaderAsync();
+                await using var reader = await cmd.ExecuteReaderAsync(ct);
 
                 if (!await reader.ReadAsync(ct))
                 {
@@ -72,7 +72,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             {
                 cmd.Parameters.AddWithValue("state", state);
 
-                await using var reader = await cmd.ExecuteReaderAsync();
+                await using var reader = await cmd.ExecuteReaderAsync(ct);
 
                 if (!await reader.ReadAsync(ct))
                 {
