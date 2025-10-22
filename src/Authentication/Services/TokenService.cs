@@ -142,15 +142,15 @@ namespace Altinn.Platform.Authentication.Services
             await _refreshTokenRepository.MarkUsedAsync(row.TokenId, newRow.TokenId, ct);
             
             // 8) Mint new access token (+ optional ID token)
-            DateTimeOffset atExpiry = now.AddMinutes(_generalSettings.JwtValidityMinutes);
-            await _oidcSessionRepository.SlideExpiryToAsync(row.OpSid, atExpiry, ct);
+            DateTimeOffset tokenExpiration = now.AddMinutes(_generalSettings.JwtValidityMinutes);
+            await _oidcSessionRepository.SlideExpiryToAsync(row.OpSid, tokenExpiration, ct);
 
             ClaimsPrincipal accessPrincial = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, isIDToken: false);
 
             // Preferred: use issuer overloads that take the pieces directly (clean)
             string accessToken = await tokenIssuer.CreateAccessTokenAsync(
                 accessPrincial,
-                expiry: atExpiry,
+                tokenExpiration,
                 cancellationToken: ct);
 
             string? idToken = null;
@@ -160,7 +160,7 @@ namespace Altinn.Platform.Authentication.Services
                 idToken = await tokenIssuer.CreateIdTokenAsync(
                     idtokenPrincipal,
                     client,
-                    now: atExpiry,
+                    tokenExpiration,
                     cancellationToken: ct);
             }
 
