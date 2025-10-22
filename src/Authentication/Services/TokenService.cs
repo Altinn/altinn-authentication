@@ -407,7 +407,16 @@ namespace Altinn.Platform.Authentication.Services
 
             // See if we need to have this stored in KeyVault or we can just set it on pod deployment
 
-            byte[] serverPepper = Convert.FromBase64String(_generalSettings.OidcRefreshTokenPepper);
+            byte[] serverPepper;
+            try
+            {
+                serverPepper = Convert.FromBase64String(_generalSettings.OidcRefreshTokenPepper);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Refresh token pepper is not configured or invalid.");
+                return null; // fail closed: issue no refresh token, still return access/id token
+            }
 
             //if (client.RequireOfflineAccessScope && !codeRow.Scopes.Contains("offline_access"))
             //{ // Do we really want to do this?
