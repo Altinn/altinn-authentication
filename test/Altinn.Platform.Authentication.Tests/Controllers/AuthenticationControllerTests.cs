@@ -1022,7 +1022,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(claimPrincipal);
             Assert.NotNull(claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")));
             Assert.Equal("234235", claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")).Value);
-            Assert.Equal("2346t44663423s", claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("sub")).Value);
+            Assert.Equal("2346t44663423s", claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("provider:sub")).Value);
         }
 
         /// <summary>
