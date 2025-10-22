@@ -1,6 +1,10 @@
--- Table: business_application.request
+-- Tables: business_application.request
+--		   business_application.request_archive
 
 -- ALTER TABLE business_application.request
 
 ALTER TABLE business_application.request
-ADD COLUMN integration_title varchar(255);
+ADD COLUMN IF NOT EXISTS integration_title varchar(255);
+
+ALTER TABLE business_application.request_archive
+ADD COLUMN IF NOT EXISTS integration_title varchar(255);
