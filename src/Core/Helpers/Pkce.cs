@@ -46,6 +46,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         public static bool VerifyS256(string storedChallenge, string incomingVerifier)
         {
             // verifier charset & length per RFC 7636 (43..128; ALPHA / DIGIT / "-" / "." / "_" / "~")
+            if (string.IsNullOrEmpty(storedChallenge)) return false;
             if (string.IsNullOrWhiteSpace(incomingVerifier)) return false;
             if (incomingVerifier.Length is < 43 or > 128) return false;
             foreach (var c in incomingVerifier)
