@@ -549,7 +549,7 @@ namespace Altinn.Platform.Authentication.Services
             EnrichIdentityFromLegacyValues(userAuthenticationModel);
             AddLocalScopes(userAuthenticationModel);
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(sessionInfo, userAuthenticationModel, ct);
-            if (session != null && session.ExpiresAt > _timeProvider.GetUtcNow())
+            if (session is not null && session.ExpiresAt.HasValue && session.ExpiresAt.Value > _timeProvider.GetUtcNow())
             {
                 string token = await _tokenService.CreateCookieToken(session, ct);
                 CookieInstruction cookieInstruction
