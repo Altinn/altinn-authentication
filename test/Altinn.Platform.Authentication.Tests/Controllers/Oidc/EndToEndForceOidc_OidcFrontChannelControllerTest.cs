@@ -1271,7 +1271,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             UpstreamLoginTransaction? createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamtransactrion(upstreamState, DataSource);
             Assert.NotNull(createdUpstreamLogingTransaction);
-            OidcAssertHelper.AssertUpstreamLogingTransaction(createdUpstreamLogingTransaction, testScenario, now);
+            OidcAssertHelper.AssertUpstreamLoginTransaction(createdUpstreamLogingTransaction, testScenario, now);
 
             if (createdUpstreamLogingTransaction.RequestId != null)
             {

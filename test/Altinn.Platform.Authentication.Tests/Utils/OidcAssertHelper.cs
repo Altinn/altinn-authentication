@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal("pending", loginTransaction.Status);
         }
 
-        public static void AssertUpstreamLogingTransaction(UpstreamLoginTransaction createdTx, OidcTestScenario testScenario, DateTimeOffset now)
+        public static void AssertUpstreamLoginTransaction(UpstreamLoginTransaction createdTx, OidcTestScenario testScenario, DateTimeOffset now)
         {
             Assert.NotNull(createdTx);
             Assert.NotNull(createdTx.Status);
