@@ -21,10 +21,18 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
             static string[] SplitLocales(string? s) =>
                 string.IsNullOrWhiteSpace(s) ? [] :
                 s.Split([' ', ','], StringSplitOptions.RemoveEmptyEntries);
-             if (!Uri.TryCreate(dto.RedirectUri, UriKind.Absolute, out var uri))
-             {
-                 throw new ArgumentException("redirect_uri must be an absolute URI.", nameof(dto));
-             }
+
+            if (string.IsNullOrWhiteSpace(dto.RedirectUri))
+            {
+                throw new ArgumentException("redirect_uri is required.", nameof(dto));
+            }
+            
+            if (!Uri.TryCreate(dto.RedirectUri, UriKind.Absolute, out var uri))
+            {
+               throw new ArgumentException($"redirect_uri must be an absolute URI. Received: {dto.RedirectUri}", nameof(dto));
+            }
+
+
             return new AuthorizeRequest
             {
                 ResponseType = dto.ResponseType ?? "code",
