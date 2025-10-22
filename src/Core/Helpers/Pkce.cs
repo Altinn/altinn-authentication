@@ -22,7 +22,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             RandomNumberGenerator.Fill(buf);
 
             for (int i = 0; i < length; i++)
-                chars[i] = Alphabet[buf[i] % Alphabet.Length];
+                chars[i] = Alphabet[RandomNumberGenerator.GetInt32(0, Alphabet.Length)];
 
             return new string(chars);
         }
