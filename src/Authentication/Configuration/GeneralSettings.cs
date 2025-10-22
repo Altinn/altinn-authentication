@@ -126,7 +126,7 @@ namespace Altinn.Platform.Authentication.Configuration
         /// <summary>
         /// Server secret for hashing the OIDC refresh token
         /// </summary>
-        public string OidcRefreshTokenPepper { get; set; }
+        public required string OidcRefreshTokenPepper { get; set; }
 
         /// <summary>
         /// Gets the Altinn Open ID Connect (OIDC) Issuer URL.

@@ -50,8 +50,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IUserProfileService> _userProfileService = new();
 
-        private static readonly FakeTimeProvider _fakeTime = new(
-        DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
+        private FakeTimeProvider _fakeTime = null!;
 
         private readonly JsonSerializerOptions jsonSerializerOptions = new()
         {
@@ -64,6 +63,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
+            _fakeTime = new(DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
+            
             services.AddSingleton<IOidcProvider, Mocks.OidcProviderAdvancedMock>();
             
             // Make sure **all** app code that depends on TimeProvider gets this fake one

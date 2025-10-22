@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Configuration;
+﻿using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Model;
@@ -16,7 +10,14 @@ using Altinn.Platform.Authentication.Tests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
@@ -31,9 +32,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
+        private FakeTimeProvider _fakeTime = null!;
+
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
+
+            _fakeTime = new(DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
+
             services.AddSingleton<IOidcProvider, Mocks.OidcProviderAdvancedMock>();
 
             string configPath = GetConfigPath();
