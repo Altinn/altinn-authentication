@@ -157,7 +157,10 @@ namespace Altinn.Platform.Authentication.Helpers
 
             if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
             {
-                userAuthenticationModel.AuthenticationMethod = System.Enum.Parse<AuthenticationMethod>(provider.DefaultAuthenticationMethod);
+                if (System.Enum.TryParse<AuthenticationMethod>(provider.DefaultAuthenticationMethod, ignoreCase: true, out var defaultMethod))
+                {
+                    userAuthenticationModel.AuthenticationMethod = defaultMethod;
+                }
             }
 
             if (accessToken != null)
