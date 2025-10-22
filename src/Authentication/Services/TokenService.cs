@@ -50,6 +50,15 @@ namespace Altinn.Platform.Authentication.Services
             Debug.Assert(row != null);
 
             OidcSession? oidcSession = await _oidcSessionRepository.GetBySidAsync(row.SessionId, ct);
+            if (oidcSession is null)
+            {
+                return TokenResult.InvalidGrant("OP session not found");
+            }
+
+            if (oidcSession.ExpiresAt is DateTimeOffset exp && time.GetUtcNow() > exp)
+            {
+                return TokenResult.InvalidGrant("OP session expired");
+            }
 
             // 2) Issue tokens (ID + Access) + refresh token
             DateTimeOffset exchangeTime = time.GetUtcNow();
