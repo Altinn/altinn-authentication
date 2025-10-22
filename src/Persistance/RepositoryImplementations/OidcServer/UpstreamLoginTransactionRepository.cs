@@ -79,8 +79,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 throw new ArgumentException("CodeChallenge required.", nameof(create));
             }
 
-            var now = _time.GetUtcNow();
-            var upstreamRequestId = Guid.NewGuid();
+            DateTimeOffset now = _time.GetUtcNow();
+            Guid upstreamRequestId = Guid.NewGuid();
 
             const string SQL = /*strpsql*/ $@"
                 INSERT INTO {UpstreamLoginTransactionTable.TABLE} (
@@ -413,7 +413,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task MarkTokenExchangedAsync(
+        public async Task<int> MarkTokenExchangedAsync(
             Guid upstreamRequestId,
             string issuer,
             string sub,
@@ -423,27 +423,28 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             string? upstreamSid,
             CancellationToken cancellationToken = default)
         {
-            const string SQL = /*strpsql*/ @"
-            UPDATE oidcserver.login_transaction_upstream
-            SET status = 'completed',
-                token_exchanged_at = NOW(),
-                upstream_issuer = @issuer,
-                upstream_sub = @sub,
-                upstream_acr = @acr,
-                upstream_auth_time = @auth_time,
-                upstream_id_token_jti = @jti,
-                upstream_session_sid = COALESCE(@sid, upstream_session_sid)
-            WHERE upstream_request_id = @id;";
+            const string SQL = /*strpsql*/ $@"
+            UPDATE {UpstreamLoginTransactionTable.TABLE}
+            SET {UpstreamLoginTransactionTable.STATUS} = 'completed',
+                {UpstreamLoginTransactionTable.TOKEN_EXCHANGED_AT} = @exchanged_at,
+                {UpstreamLoginTransactionTable.UPSTREAM_ISSUER} = @issuer,
+                {UpstreamLoginTransactionTable.UPSTREAM_SUB} = @sub,
+                {UpstreamLoginTransactionTable.UPSTREAM_ACR} = @acr,
+                {UpstreamLoginTransactionTable.UPSTREAM_AUTH_TIME} = @auth_time,
+                {UpstreamLoginTransactionTable.UPSTREAM_ID_TOKEN_JTI} = @jti,
+                {UpstreamLoginTransactionTable.UPSTREAM_SESSION_SID} = COALESCE(@sid, {UpstreamLoginTransactionTable.UPSTREAM_SESSION_SID})
+            WHERE {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID} = @id;";
 
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("issuer", issuer);
+            cmd.Parameters.AddWithValue("exchanged_at", _time.GetUtcNow());
             cmd.Parameters.AddWithValue("sub", sub);
             cmd.Parameters.AddWithValue("acr", (object?)acr ?? DBNull.Value);
             cmd.Parameters.AddWithValue("auth_time", (object?)authTime ?? DBNull.Value);
             cmd.Parameters.AddWithValue("jti", (object?)idTokenJti ?? DBNull.Value);
             cmd.Parameters.AddWithValue("sid", (object?)upstreamSid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("id", upstreamRequestId);
-            await cmd.ExecuteNonQueryAsync(cancellationToken);
+            return await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         // ---------- mapping ----------

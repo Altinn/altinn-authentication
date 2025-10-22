@@ -33,7 +33,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// <summary>
         /// Marks that the token from the upstream has been exchanged and the relevant claims have been stored in the local token service.
         /// </summary>
-        Task MarkTokenExchangedAsync(
+        Task<int> MarkTokenExchangedAsync(
           Guid upstreamRequestId,
           string issuer,
           string sub,
