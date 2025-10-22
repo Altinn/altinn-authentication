@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         public static bool Verify(string? storedHash, string presentedSecret)
         {
-            if (string.IsNullOrWhiteSpace(storedHash))
+            if (string.IsNullOrWhiteSpace(storedHash) || string.IsNullOrWhiteSpace(presentedSecret))
             {
                 return false;
             }
