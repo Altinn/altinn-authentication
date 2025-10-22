@@ -32,12 +32,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<string> CreateIdTokenAsync(ClaimsPrincipal principal, OidcClient client, DateTimeOffset expires, CancellationToken ct = default)
+        public async Task<string> CreateIdTokenAsync(ClaimsPrincipal principal, OidcClient client, DateTimeOffset tokenExpiration, CancellationToken ct = default)
         {
-            return await GenerateToken(principal, expires);
+            return await GenerateToken(principal, tokenExpiration);
         }
 
-        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset expires)
+        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset tokenExpiration)
         {
             List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
 
@@ -50,7 +50,7 @@ namespace Altinn.Platform.Authentication.Services
                 IssuedAt = _timeProvider.GetUtcNow().UtcDateTime,
                 NotBefore = _timeProvider.GetUtcNow().UtcDateTime,
                 Subject = new ClaimsIdentity(principal.Identity),
-                Expires = expires.UtcDateTime,
+                Expires = tokenExpiration.UtcDateTime,
                 SigningCredentials = new X509SigningCredentials(certificate)
             };
 

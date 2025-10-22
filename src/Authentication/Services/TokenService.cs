@@ -62,12 +62,17 @@ namespace Altinn.Platform.Authentication.Services
 
             // 2) Issue tokens (ID + Access) + refresh token
             DateTimeOffset exchangeTime = time.GetUtcNow();
-            DateTimeOffset expiry = exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes);
+            DateTimeOffset tokenExpiration = exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes);
             ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, true);
             ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, false);
 
-            string? idToken = await tokenIssuer.CreateIdTokenAsync(idTokenPrincipal, client, expiry, ct);
-            string accessToken = await tokenIssuer.CreateAccessTokenAsync(accessTokenPrincipal, expiry, ct);
+            string? idToken = null;
+            if (row.Scopes.Contains("openid", StringComparer.Ordinal))
+            {
+                idToken = await tokenIssuer.CreateIdTokenAsync(idTokenPrincipal, client, tokenExpiration, cancellationToken: ct);
+            }
+
+            string accessToken = await tokenIssuer.CreateAccessTokenAsync(accessTokenPrincipal, tokenExpiration, ct);
             string? refreshToken = await TryIssueInitialRefreshAsync(row, oidcSession!, client, exchangeTime, ct);
 
             // Now atomically consume
