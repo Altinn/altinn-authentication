@@ -70,21 +70,24 @@ namespace Altinn.Platform.Authentication.Services
         private X509Certificate2 GetLatestCertificateWithRolloverDelay(
          List<X509Certificate2> certificates, int rolloverDelayHours)
         {
-            // First limit the search to just those certificates that have existed longer than the rollover delay.
-            var rolloverCutoff = _timeProvider.GetUtcNow().AddHours(-rolloverDelayHours);
-            var potentialCerts =
-                certificates.Where(c => c.NotBefore < rolloverCutoff).ToList();
+            // Limit to certs older than the rollover delay (UTC)
+            DateTime rolloverCutoffUtc = _timeProvider.GetUtcNow().AddHours(-rolloverDelayHours).UtcDateTime;
+            List<X509Certificate2> potentialCerts = certificates.Where(c => c.NotBefore.ToUniversalTime() <= rolloverCutoffUtc).ToList();
 
             // If no certs could be found, then widen the search to any usable certificate.
-            if (!potentialCerts.Any())
+            if (potentialCerts.Count == 0)
             {
-                potentialCerts = certificates.Where(c => c.NotBefore < DateTime.Now).ToList();
+                var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                potentialCerts = [.. certificates.Where(c => c.NotBefore.ToUniversalTime() <= nowUtc)];
             }
 
             // Of the potential certs, return the newest one.
-            return potentialCerts
-                .OrderByDescending(c => c.NotBefore)
-                .FirstOrDefault();
+            if (!potentialCerts.Any())
+            { 
+                throw new InvalidOperationException("No valid JWT signing certificate available.");
+            }
+
+            return potentialCerts.OrderByDescending(c => c.NotBefore).First();
         }
     }
 }
