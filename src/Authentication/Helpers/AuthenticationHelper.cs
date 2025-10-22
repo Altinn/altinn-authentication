@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Altinn.Authentication.Core.Problems;
+﻿using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.PEP.Helpers;
@@ -19,6 +11,15 @@ using Altinn.Platform.Authentication.Model;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Net.Security;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -74,13 +75,22 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticateMethod))
                 {
-                    userAuthenticationModel.AuthenticationMethod = System.Enum.Parse<AuthenticationMethod>(claim.Value);
+                    if (System.Enum.TryParse<AuthenticationMethod>(claim.Value, ignoreCase: true, out var method))
+                    {
+                        userAuthenticationModel.AuthenticationMethod = method;
+                    }
+
                     continue;
                 }
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticationLevel))
                 {
-                    userAuthenticationModel.AuthenticationLevel = System.Enum.Parse<SecurityLevel>(claim.Value);
+  
+                    if (System.Enum.TryParse<SecurityLevel>(claim.Value, ignoreCase: true, out var level))
+                    {
+                        userAuthenticationModel.AuthenticationLevel = level;
+                    }
+
                     continue;
                 }
 
