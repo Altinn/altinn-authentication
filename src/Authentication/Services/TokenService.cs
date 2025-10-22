@@ -383,6 +383,7 @@ namespace Altinn.Platform.Authentication.Services
                         return (null, TokenResult.InvalidClient("Unknown client_id"));
                     }
 
+                    // We dont support public clients. Client is required to authenticate
                     return (null, TokenResult.InvalidClient("Client authentication required"));
                    
                 case TokenClientAuthType.Missing:
