@@ -16,7 +16,7 @@
         public required string ClientId { get; init; }
 
         /// <summary>
-        /// The unique partyurn for the specific subject. Owned by Altinn Register example: urn:altinn:party:uuid:{partuuid}
+        /// The unique party URN for the subject. Owned by Altinn Register. Example: urn:altinn:party:uuid:{partyuuid}
         /// </summary>
         public required string SubjectId { get; init; }       
 
@@ -73,7 +73,7 @@
         /// <summary>
         /// List of custom claims associated with the session. Defined per upstream identity provider.
         /// </summary>
-        public Dictionary<string, List<string>>? ProviderClaims { get; set; }
+        public Dictionary<string, List<string>>? ProviderClaims { get; init; }
 
         /// <summary>
         /// The Amr claim as per OIDC spec. Array of strings describing the authentication methods used.
@@ -93,7 +93,7 @@
         /// <summary>
         /// Code challenge method for PKCE support.
         /// </summary>
-        public string CodeChallengeMethod { get; init; } = "S256";
+        public required string CodeChallengeMethod { get; init; } = "S256";
         
         /// <summary>
         /// Gets the date and time at which the token was issued.
@@ -103,7 +103,7 @@
         /// <summary>
         /// Gets the date and time at which the item expires.
         /// </summary>
-        public DateTimeOffset ExpiresAt { get; init; }
+        public required DateTimeOffset ExpiresAt { get; init; }
 
         /// <summary>
         /// The IP address from which the authorization code was requested.
