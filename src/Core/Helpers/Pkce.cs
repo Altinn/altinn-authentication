@@ -54,8 +54,17 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 if (!ok) return false;
             }
 
-            var computed = Hashing.Sha256Base64Url(incomingVerifier);
-            return string.Equals(storedChallenge, computed, StringComparison.Ordinal);
+            string computed = Hashing.Sha256Base64Url(incomingVerifier);
+            
+            // Constant-time comparison to prevent timing attacks
+            if (storedChallenge.Length != computed.Length)
+            {
+                return false;
+            }
+            
+            byte[] storedBytes = Encoding.ASCII.GetBytes(storedChallenge);
+            byte[] computedBytes = Encoding.ASCII.GetBytes(computed);
+            return CryptographicOperations.FixedTimeEquals(storedBytes, computedBytes);
         }
     }
 }
