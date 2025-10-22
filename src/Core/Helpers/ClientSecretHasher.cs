@@ -16,25 +16,5 @@ namespace Altinn.Platform.Authentication.Core.Helpers
 
             return $"pbkdf2$sha256$i={iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
         }
-
-        public static bool Verify(string secret, string stored)
-        {
-            // Format: pbkdf2$sha256$i=ITER$SALTB64$HASHB64
-            var parts = stored.Split('$');
-            if (parts.Length != 5 || parts[0] != "pbkdf2" || parts[1] != "sha256") return false;
-
-            int iterations = int.Parse(parts[2].AsSpan(2)); // skip "i="
-            byte[] salt = Convert.FromBase64String(parts[3]);
-            byte[] expected = Convert.FromBase64String(parts[4]);
-
-            byte[] actual = Rfc2898DeriveBytes.Pbkdf2(
-                password: secret,
-                salt: salt,
-                iterations: iterations,
-                hashAlgorithm: HashAlgorithmName.SHA256,
-                outputLength: expected.Length);
-
-            return CryptographicOperations.FixedTimeEquals(actual, expected);
-        }
     }
 }
