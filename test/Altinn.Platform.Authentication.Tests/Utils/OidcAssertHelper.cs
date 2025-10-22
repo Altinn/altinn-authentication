@@ -47,7 +47,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             AssertHasAltinnSessionCookie(callbackResp, out var sessionCookieValue, testScenario, now);
         }
 
-        public static void AssertLogingTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario, DateTimeOffset now)
+        public static void AssertLoginTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario, DateTimeOffset now)
         {
             Assert.NotNull(loginTransaction);
             Assert.Equal(now, loginTransaction.CreatedAt);

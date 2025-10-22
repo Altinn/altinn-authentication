@@ -1278,7 +1278,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 // Asserting DB persistence after /authorize
                 Debug.Assert(testScenario?.DownstreamClientId != null);
                 LoginTransaction? loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
-                OidcAssertHelper.AssertLogingTransaction(loginTransaction, testScenario, now);
+                OidcAssertHelper.AssertLoginTransaction(loginTransaction, testScenario, now);
             }
 
             return (upstreamState, createdUpstreamLogingTransaction);
