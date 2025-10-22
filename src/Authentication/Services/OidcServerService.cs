@@ -776,7 +776,7 @@ namespace Altinn.Platform.Authentication.Services
                 UpstreamClientId = provider.ClientId,
                 AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
                 TokenEndpoint = new Uri(provider.TokenEndpoint),
-                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : null, // keep null unless you decide to pin
+                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : new Uri(provider.WellKnownConfigEndpoint), // keep null unless you decide to pin
 
                 UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
 
@@ -819,7 +819,7 @@ namespace Altinn.Platform.Authentication.Services
                 UpstreamClientId = provider.ClientId,
                 AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
                 TokenEndpoint = new Uri(provider.TokenEndpoint),
-                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : null, // keep null unless you decide to pin
+                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : new Uri(provider.WellKnownConfigEndpoint), // keep null unless you decide to pin
 
                 UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
 
