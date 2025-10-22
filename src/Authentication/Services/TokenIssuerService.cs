@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -37,19 +38,25 @@ namespace Altinn.Platform.Authentication.Services
             return await GenerateToken(principal, tokenExpiration);
         }
 
-        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset tokenExpiration)
+        private async Task<string> GenerateToken(ClaimsPrincipal principal, DateTimeOffset tokenExpiration, string? audience = null)
         {
             List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
 
             X509Certificate2 certificate = GetLatestCertificateWithRolloverDelay(
                 certificates, _generalSettings.JwtSigningCertificateRolloverDelayHours);
 
+            if (!certificate.HasPrivateKey)
+            {
+                throw new InvalidOperationException("Selected JWT signing certificate has no private key.");
+            }
+
             JwtSecurityTokenHandler tokenHandler = new();
             SecurityTokenDescriptor tokenDescriptor = new()
             {
                 IssuedAt = _timeProvider.GetUtcNow().UtcDateTime,
                 NotBefore = _timeProvider.GetUtcNow().UtcDateTime,
-                Subject = new ClaimsIdentity(principal.Identity),
+                Subject = new ClaimsIdentity(principal.Claims, (principal.Identity as ClaimsIdentity)?.AuthenticationType),
+                Audience = audience,
                 Expires = tokenExpiration.UtcDateTime,
                 SigningCredentials = new X509SigningCredentials(certificate)
             };

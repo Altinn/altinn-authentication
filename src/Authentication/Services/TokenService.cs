@@ -145,11 +145,11 @@ namespace Altinn.Platform.Authentication.Services
             DateTimeOffset tokenExpiration = now.AddMinutes(_generalSettings.JwtValidityMinutes);
             await _oidcSessionRepository.SlideExpiryToAsync(row.OpSid, tokenExpiration, ct);
 
-            ClaimsPrincipal accessPrincial = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, isIDToken: false);
+            ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, isIDToken: false);
 
             // Preferred: use issuer overloads that take the pieces directly (clean)
             string accessToken = await tokenIssuer.CreateAccessTokenAsync(
-                accessPrincial,
+                accessPrincipal,
                 tokenExpiration,
                 cancellationToken: ct);
 
