@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         Task<OidcSession?> GetBySidAsync(string sid, CancellationToken ct = default);
 
         /// <summary>
-        /// Load by session handle 
+        /// Load by session handle hash (never accepts raw handles).
         /// </summary>
         Task<OidcSession?> GetBySessionHandleHashAsync(byte[] sessionHandleHash, CancellationToken ct = default);
 
