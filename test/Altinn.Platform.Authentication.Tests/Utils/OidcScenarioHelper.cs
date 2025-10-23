@@ -35,7 +35,9 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             }
 
             if (scenario.LoginStates == null || scenario.LoginStates.Count == 0)
-            { 
+            {
+                scenario.LoginStates ??= [];
+
                 LoginTestState state = new()
                 {
                     DownstreamState = CryptoHelpers.RandomBase64Url(32),

@@ -927,7 +927,7 @@ namespace Altinn.Platform.Authentication.Services
                 CreatedByIp = request.ClientIp,                           // captured in controller
                 UserAgentHash = request.UserAgentHash,
                 CorrelationId = request.CorrelationId,
-                ExpiresAt = TimeProvider.System.GetUtcNow().AddMinutes(10)
+                ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(10)
             };
 
             LoginTransaction tx = await _loginTxRepo.InsertAsync(transaction, cancellationToken);
