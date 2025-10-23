@@ -154,7 +154,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 goTo = HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName];
             }
 
-            if (!Uri.TryCreate(goTo, UriKind.Absolute, out Uri goToUri) || !IsValidRedirectUri(goToUri.Host))
+            if (!Uri.TryCreate(goTo, UriKind.Absolute, out Uri validatedGoToUri) || !IsValidRedirectUri(validatedGoToUri.Host))
             {
                 return Redirect($"{_generalSettings.BaseUrl}");
             }
@@ -220,7 +220,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     if (userAuthentication != null && userAuthentication.IsAuthenticated)
                     {
                         await CreateTokenCookie(userAuthentication);
-                        return Redirect(goTo);
+                        return Redirect(validatedGoToUri.ToString());
                     }
                 }
                 else if (_generalSettings.AuthorizationServerEnabled)
@@ -229,7 +229,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     // Verify if user is already authenticated. The just go directly to the target URL
                     if (User.Identity.IsAuthenticated)
                     {
-                        return Redirect(goTo);
+                        return Redirect(validatedGoToUri.ToString());
                     }
 
                     // Check to see if we have a valid Session cookie and recreate JWT Based on that
@@ -253,7 +253,7 @@ namespace Altinn.Platform.Authentication.Controllers
                                 });
                             }
 
-                            return Redirect(goTo);
+                            return Redirect(validatedGoToUri.ToString());
                         }
                     }
 
@@ -286,7 +286,7 @@ namespace Altinn.Platform.Authentication.Controllers
                                 });
                             }
 
-                            return Redirect(goTo);
+                            return Redirect(validatedGoToUri.ToString());
                         }
                     }
 
@@ -317,7 +317,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                     // Create Nonce. One is added to a cookie and another is sent as nonce parameter to OIDC provider
                     string nonce = CreateNonce(HttpContext);
-                    CreateGoToCookie(HttpContext, goTo);
+                    CreateGoToCookie(HttpContext, validatedGoToUri.ToString());
 
                     // Redirect to OIDC Provider
                     return Redirect(CreateAuthenticationRequest(provider, tokens.RequestToken, nonce));
@@ -328,7 +328,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 // Verify if user is already authenticated. The just go directly to the target URL
                 if (User.Identity.IsAuthenticated)
                 {
-                    return Redirect(goTo);
+                    return Redirect(validatedGoToUri.ToString());
                 }
 
                 // Check to see if we have a valid Session cookie and recreate JWT Based on that
@@ -352,7 +352,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             });
                         }
 
-                        return Redirect(goTo);
+                        return Redirect(validatedGoToUri.ToString());
                     }
                 }
 
@@ -389,7 +389,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     if (userAuthentication != null && userAuthentication.IsAuthenticated)
                     {
                         await CreateTokenCookie(userAuthentication);
-                        return Redirect(goTo);
+                        return Redirect(validatedGoToUri.ToString());
                     }
                 }
             }
@@ -943,7 +943,7 @@ namespace Altinn.Platform.Authentication.Controllers
             string validHost = _generalSettings.HostName;
             int segments = _generalSettings.HostName.Split('.').Length;
 
-            List<string> goToList = Enumerable.Reverse(new List<string>(goToHost.Split('.'))).Take(segments).Reverse().ToList();
+            List<string> goToList = [.. Enumerable.Reverse([.. goToHost.Split('.')]).Take(segments).Reverse()];
             string redirectHost = string.Join(".", goToList);
 
             return validHost.Equals(redirectHost);
