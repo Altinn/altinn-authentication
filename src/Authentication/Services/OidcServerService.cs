@@ -1372,7 +1372,8 @@ namespace Altinn.Platform.Authentication.Services
 
         private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)
         {
-            string hashedIdentity = HashNonce(userAuthenticationModel.ExternalIdentity).Substring(5, 10);
+            ArgumentNullException.ThrowIfNull(userAuthenticationModel?.ExternalIdentity, nameof(userAuthenticationModel));
+            string hashedIdentity = HashIDentity(userAuthenticationModel.ExternalIdentity).Substring(5, 10);
             Regex rgx = new Regex("[^a-zA-Z0-9 -]");
             hashedIdentity = rgx.Replace(hashedIdentity, string.Empty);
 
@@ -1381,9 +1382,12 @@ namespace Altinn.Platform.Authentication.Services
                     + CryptoHelpers.RandomBase64Url(6);
         }
 
-        private static string HashNonce(string nonce)
+        /// <summary>
+        /// Create a hashed identity based on external identity. This was created for UDIR need for anonymity for users and the need for showing a user name.
+        /// </summary>
+        private static string HashIDentity(string externalIDentity)
         {
-            byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(nonce);
+            byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(externalIDentity);
             byte[] byteArrayResult = SHA256.HashData(byteArrayResultOfRawData);
             return Convert.ToBase64String(byteArrayResult);
         }
