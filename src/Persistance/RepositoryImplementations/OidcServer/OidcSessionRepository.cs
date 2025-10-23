@@ -115,11 +115,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// Returns a sessionID by its session handle.
         /// The session handle is exposed to clients in a cookie, but the hash is stored in the database.
         /// </summary>
-        public async Task<OidcSession?> GetBySessionHandleAsync(byte[] sessionHandle, CancellationToken ct = default)
+        public async Task<OidcSession?> GetBySessionHandleHashAsync(byte[] sessionHandleHash, CancellationToken ct = default)
         {
             const string SQL = "SELECT * FROM oidcserver.oidc_session WHERE session_handle_hash = @handle_hash LIMIT 1;";
             await using var cmd = _ds.CreateCommand(SQL);
-            cmd.Parameters.AddWithValue("handle_hash", sessionHandle);
+            cmd.Parameters.AddWithValue("handle_hash", sessionHandleHash);
 
             await using var r = await cmd.ExecuteReaderAsync(ct);
             if (!await r.ReadAsync(ct))

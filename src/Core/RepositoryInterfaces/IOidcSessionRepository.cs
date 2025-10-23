@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// <summary>
         /// Load by session handle 
         /// </summary>
-        Task<OidcSession?> GetBySessionHandleAsync(byte[] sessionHandle, CancellationToken ct = default);
+        Task<OidcSession?> GetBySessionHandleHashAsync(byte[] sessionHandleHash, CancellationToken ct = default);
 
         /// <summary>Invalidate by SID (on logout).</summary>
         Task<bool> DeleteBySidAsync(string sid, CancellationToken ct = default);

@@ -124,7 +124,7 @@ namespace Altinn.Platform.Authentication.Services
             else if (!string.IsNullOrEmpty(sessionHandle))
             {
                 byte[] sessionHandleByte = FromBase64Url(sessionHandle);
-                existingSession = await _oidcSessionRepo.GetBySessionHandleAsync(sessionHandleByte, cancellationToken);
+                existingSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(sessionHandleByte, cancellationToken);
             }
 
             // Verify that found session 
@@ -213,7 +213,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 byte[] handleHash = HashHandle(FromBase64Url(existingSessionHandle));
 
-                OidcSession? currentSession = await _oidcSessionRepo.GetBySessionHandleAsync(handleHash, cancellationToken);
+                OidcSession? currentSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(handleHash, cancellationToken);
                 if (currentSession != null)
                 {
                     await _oidcSessionRepo.DeleteBySidAsync(currentSession.Sid, cancellationToken);
@@ -569,7 +569,7 @@ namespace Altinn.Platform.Authentication.Services
             byte[] handleHash = HashHandle(FromBase64Url(sessionInput.SessionHandle));
 
             // Try to load session by handle
-            OidcSession? oidcSession = await _oidcSessionRepo.GetBySessionHandleAsync(handleHash, ct);
+            OidcSession? oidcSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(handleHash, ct);
             if (oidcSession is not null
                   && oidcSession.ExpiresAt.HasValue
                   && oidcSession.ExpiresAt.Value > _timeProvider.GetUtcNow())
