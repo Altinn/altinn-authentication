@@ -4,20 +4,20 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
 {
     public interface IUnregisteredClientRepository
     {
-        Task InsertAsync(UnregisteredClientRequestCreate create, CancellationToken ct);
+        Task InsertAsync(UnregisteredClientRequestCreate create, CancellationToken cancellationToken);
 
-        Task<UnregisteredClientRequest?> GetByRequestIdAsync(Guid requestId, CancellationToken ct);
+        Task<UnregisteredClientRequest?> GetByRequestIdAsync(Guid requestId, CancellationToken cancellationToken);
 
         /// <summary>
         /// Generic status transition by request id (e.g., cancel/error). Will also set completed_at if terminal.
         /// Returns false on not found or already terminal (unless setting same status).
         /// </summary>
-        Task<bool> MarkStatusAsync(Guid requestId, UnregisteredClientRequestStatus newStatus, DateTimeOffset whenUtc, string? handledByCallback, CancellationToken ct);
+        Task<bool> MarkStatusAsync(Guid requestId, UnregisteredClientRequestStatus newStatus, DateTimeOffset whenUtc, string? handledByCallback, CancellationToken cancellationToken);
 
         /// <summary>
         /// Hard-delete expired rows. Use a limit to avoid long transactions.
         /// Returns number of rows deleted.
         /// </summary>
-        Task<int> SweepExpiredAsync(DateTimeOffset nowUtc, int limit, CancellationToken ct);
+        Task<int> SweepExpiredAsync(DateTimeOffset nowUtc, int limit, CancellationToken cancellationToken);
     }
 }

@@ -23,7 +23,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Inserts a new unregistered_client request into the database with a status of 'pending'.
         /// </summary>
-        public async Task InsertAsync(UnregisteredClientRequestCreate create, CancellationToken ct)
+        public async Task InsertAsync(UnregisteredClientRequestCreate create, CancellationToken cancellationToken)
         {
             // Use TimeProvider for created_at; don't rely on DB clock
             DateTimeOffset createdAt = _timeProvider.GetUtcNow();
@@ -33,7 +33,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             (request_id, status, created_at, expires_at, issuer, goto_url, created_by_ip, user_agent_hash, correlation_id)
             VALUES (@request_id, 'pending', @created_at, @expires_at, @issuer, @goto_url, @created_by_ip, @user_agent_hash, @correlation_id);";
 
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             await using var cmd = new NpgsqlCommand(sql, conn);
 
             // Explicit types for timestamptz
@@ -59,13 +59,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 Value = (object?)create.CorrelationId ?? DBNull.Value
             });
 
-            _ = await cmd.ExecuteNonQueryAsync(ct);
+            _ = await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <summary>
         /// Gets a unregistered_client request by its unique request ID.
         /// </summary>
-        public async Task<UnregisteredClientRequest?> GetByRequestIdAsync(Guid requestId, CancellationToken ct)
+        public async Task<UnregisteredClientRequest?> GetByRequestIdAsync(Guid requestId, CancellationToken cancellationToken)
         {
             const string sql = @"
             SELECT request_id, status, created_at, expires_at, completed_at,
@@ -73,12 +73,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
               FROM oidcserver.unregistered_client_request
              WHERE request_id = @request_id;";
 
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.Add(new NpgsqlParameter("request_id", NpgsqlDbType.Uuid) { Value = requestId });
 
-            await using var rdr = await cmd.ExecuteReaderAsync(ct);
-            if (!await rdr.ReadAsync(ct))
+            await using var rdr = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (!await rdr.ReadAsync(cancellationToken))
             {
                 return null;
             }
@@ -89,7 +89,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Marks the status of a unregistered_client request. If the new status is terminal (completed, cancelled, error),
         /// </summary>
-        public async Task<bool> MarkStatusAsync(Guid requestId, UnregisteredClientRequestStatus newStatus, DateTimeOffset whenUtc, string? handledByCallback, CancellationToken ct)
+        public async Task<bool> MarkStatusAsync(Guid requestId, UnregisteredClientRequestStatus newStatus, DateTimeOffset whenUtc, string? handledByCallback, CancellationToken cancellationToken)
         {
             // Use provided 'whenUtc' (from TimeProvider) for completed_at
             const string sql = @"
@@ -106,7 +106,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     OR status = @status          -- idempotent
                );";
 
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             await using var cmd = new NpgsqlCommand(sql, conn);
 
             cmd.Parameters.Add(new NpgsqlParameter("request_id", NpgsqlDbType.Uuid) { Value = requestId });
@@ -117,14 +117,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 Value = (object?)handledByCallback ?? DBNull.Value
             });
 
-            var rows = await cmd.ExecuteNonQueryAsync(ct);
+            var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
             return rows == 1;
         }
 
         /// <summary>
         /// Sweeps (hard-deletes) expired unregistered_client requests in small batches to avoid long transactions.
         /// </summary>
-        public async Task<int> SweepExpiredAsync(DateTimeOffset nowUtc, int limit, CancellationToken ct)
+        public async Task<int> SweepExpiredAsync(DateTimeOffset nowUtc, int limit, CancellationToken cancellationToken)
         {
             // Use provided 'nowUtc' (from TimeProvider); delete in small batches
             const string sql = @"
@@ -139,13 +139,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             USING dead
             WHERE cr.request_id = dead.request_id;";
 
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             await using var cmd = new NpgsqlCommand(sql, conn);
 
             cmd.Parameters.Add(new NpgsqlParameter("now", NpgsqlDbType.TimestampTz) { Value = nowUtc });
             cmd.Parameters.Add(new NpgsqlParameter("lim", NpgsqlDbType.Integer) { Value = limit });
 
-            var rows = await cmd.ExecuteNonQueryAsync(ct);
+            var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
             return rows;
         }
 
