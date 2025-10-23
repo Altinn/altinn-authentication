@@ -10,7 +10,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
     {
         public static OidcTestScenario GetScenario(string scenarioId)
         {
-            OidcTestScenario scenario = null;
+            OidcTestScenario scenario;
             string path = GetOidcScenarioPath(scenarioId);
 
             if (File.Exists(path))
