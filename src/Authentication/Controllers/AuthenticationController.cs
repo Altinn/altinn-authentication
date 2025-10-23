@@ -141,6 +141,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         /// <param name="goTo">The url to redirect to if everything validates ok</param>
         /// <param name="dontChooseReportee">Parameter to indicate disabling of reportee selection in Altinn Portal.</param>
+        /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>redirect to correct url based on the validation of the form authentication sbl cookie</returns>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status302Found)]
