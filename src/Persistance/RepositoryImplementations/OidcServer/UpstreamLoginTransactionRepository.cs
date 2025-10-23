@@ -26,7 +26,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             ArgumentNullException.ThrowIfNull(create);
             bool hasDownstream = create.RequestId != Guid.Empty; 
             bool hasUnregistered = create.UnregisteredClientRequestId != Guid.Empty; 
-            if (!(hasDownstream ^ hasUnregistered)) 
+            // Exactly one of hasDownstream or hasUnregistered must be true (not both, not neither)
+            if (hasDownstream == hasUnregistered) 
             { 
                 throw new ArgumentException("Exactly one of RequestId or UnregisteredClientRequestId must be set.", nameof(create)); 
             }
