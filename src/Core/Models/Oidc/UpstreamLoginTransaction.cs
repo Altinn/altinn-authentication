@@ -57,21 +57,6 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public required string UpstreamClientId { get; init; }
 
         /// <summary>
-        /// OIDC discovery authorization_endpoint where the browser is redirected.
-        /// </summary>
-        public required Uri AuthorizationEndpoint { get; init; }
-
-        /// <summary>
-        /// OIDC discovery token_endpoint used by Altinn to exchange the authorization code for tokens.
-        /// </summary>
-        public required Uri TokenEndpoint { get; init; }
-
-        /// <summary>
-        /// OIDC discovery jwks_uri for validating upstream ID Token signatures (optional if keys are pre-provisioned).
-        /// </summary>
-        public Uri? JwksUri { get; init; }
-
-        /// <summary>
         /// Redirect URI registered at the upstream IdP for Altinn's upstream client; must match exactly at the IdP.
         /// </summary>
         public required Uri UpstreamRedirectUri { get; init; }

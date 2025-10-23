@@ -835,9 +835,6 @@ namespace Altinn.Platform.Authentication.Services
                
                 Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
                 UpstreamClientId = provider.ClientId,
-                AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
-                TokenEndpoint = new Uri(provider.TokenEndpoint),
-                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : new Uri(provider.WellKnownConfigEndpoint), // keep null unless you decide to pin
 
                 UpstreamRedirectUri = BuildUpstreamRedirectUri(),
 
@@ -878,10 +875,6 @@ namespace Altinn.Platform.Authentication.Services
 
                 Provider = provider.IssuerKey ?? provider.Issuer, // stable key for routing/ops
                 UpstreamClientId = provider.ClientId,
-                AuthorizationEndpoint = new Uri(provider.AuthorizationEndpoint),
-                TokenEndpoint = new Uri(provider.TokenEndpoint),
-                JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : new Uri(provider.WellKnownConfigEndpoint), // keep null unless you decide to pin
-
                 UpstreamRedirectUri = BuildUpstreamRedirectUri(),
 
                 State = upstreamState,

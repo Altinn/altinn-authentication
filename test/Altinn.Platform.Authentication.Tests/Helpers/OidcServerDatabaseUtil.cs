@@ -174,10 +174,6 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
 
                 Provider = r.GetFieldValue<string>(UpstreamLoginTransactionTable.PROVIDER),
                 UpstreamClientId = r.GetFieldValue<string>(UpstreamLoginTransactionTable.UPSTREAM_CLIENT_ID),
-                AuthorizationEndpoint = ToAbs(r.GetFieldValue<string>(UpstreamLoginTransactionTable.AUTHORIZATION_ENDPOINT)),
-                TokenEndpoint = ToAbs(r.GetFieldValue<string>(UpstreamLoginTransactionTable.TOKEN_ENDPOINT)),
-                JwksUri = r.IsDBNull(r.GetOrdinal(UpstreamLoginTransactionTable.JWKS_URI)) ? null : ToAbs(r.GetFieldValue<string>(UpstreamLoginTransactionTable.JWKS_URI)),
-
                 UpstreamRedirectUri = ToAbs(r.GetFieldValue<string>(UpstreamLoginTransactionTable.UPSTREAM_REDIRECT_URI)),
 
                 State = r.GetFieldValue<string>(UpstreamLoginTransactionTable.STATE),

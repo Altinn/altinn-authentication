@@ -16,10 +16,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         // which upstream we target
         public required string Provider { get; init; }            // e.g., "idporten"
         public required string UpstreamClientId { get; init; }
-        public required Uri AuthorizationEndpoint { get; init; }
-        public required Uri TokenEndpoint { get; init; }
-        public Uri? JwksUri { get; init; }
-
+       
         // our upstream callback
         public required Uri UpstreamRedirectUri { get; init; }
 

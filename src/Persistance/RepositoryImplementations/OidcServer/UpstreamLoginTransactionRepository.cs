@@ -43,16 +43,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 throw new ArgumentException("UpstreamClientId required.", nameof(create));
             }
 
-            if (create.AuthorizationEndpoint is null || !create.AuthorizationEndpoint.IsAbsoluteUri)
-            {
-                throw new ArgumentException("AuthorizationEndpoint must be absolute.", nameof(create));
-            }
-
-            if (create.TokenEndpoint is null || !create.TokenEndpoint.IsAbsoluteUri)
-            {
-                throw new ArgumentException("TokenEndpoint must be absolute.", nameof(create));
-            }
-
             if (create.UpstreamRedirectUri is null || !create.UpstreamRedirectUri.IsAbsoluteUri)
             {
                 throw new ArgumentException("UpstreamRedirectUri must be absolute.", nameof(create));
@@ -97,9 +87,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
                     {UpstreamLoginTransactionTable.PROVIDER},
                     {UpstreamLoginTransactionTable.UPSTREAM_CLIENT_ID},
-                    {UpstreamLoginTransactionTable.AUTHORIZATION_ENDPOINT},
-                    {UpstreamLoginTransactionTable.TOKEN_ENDPOINT},
-                    {UpstreamLoginTransactionTable.JWKS_URI},
 
                     {UpstreamLoginTransactionTable.UPSTREAM_REDIRECT_URI},
 
@@ -129,10 +116,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
                     @provider,
                     @upstream_client_id,
-                    @authorization_endpoint,
-                    @token_endpoint,
-                  @jwks_uri,
-
+                   
                   @upstream_redirect_uri,
 
                   @state,
@@ -162,10 +146,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
                   {UpstreamLoginTransactionTable.PROVIDER},
                   {UpstreamLoginTransactionTable.UPSTREAM_CLIENT_ID},
-                  {UpstreamLoginTransactionTable.AUTHORIZATION_ENDPOINT},
-                  {UpstreamLoginTransactionTable.TOKEN_ENDPOINT},
-                  {UpstreamLoginTransactionTable.JWKS_URI},
-
+                 
                   {UpstreamLoginTransactionTable.UPSTREAM_REDIRECT_URI},
 
                   {UpstreamLoginTransactionTable.STATE},
@@ -209,9 +190,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
                 cmd.Parameters.AddWithValue("provider", create.Provider);
                 cmd.Parameters.AddWithValue("upstream_client_id", create.UpstreamClientId);
-                cmd.Parameters.AddWithValue("authorization_endpoint", create.AuthorizationEndpoint.ToString());
-                cmd.Parameters.AddWithValue("token_endpoint", create.TokenEndpoint.ToString());
-                cmd.Parameters.AddWithValue("jwks_uri", (object?)create.JwksUri?.ToString() ?? DBNull.Value);
 
                 cmd.Parameters.AddWithValue("upstream_redirect_uri", create.UpstreamRedirectUri.ToString());
 
@@ -270,9 +248,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                   {UpstreamLoginTransactionTable.COMPLETED_AT},
                   {UpstreamLoginTransactionTable.PROVIDER},
                   {UpstreamLoginTransactionTable.UPSTREAM_CLIENT_ID},
-                  {UpstreamLoginTransactionTable.AUTHORIZATION_ENDPOINT},
-                  {UpstreamLoginTransactionTable.TOKEN_ENDPOINT},
-                  {UpstreamLoginTransactionTable.JWKS_URI},
                   {UpstreamLoginTransactionTable.UPSTREAM_REDIRECT_URI},
                   {UpstreamLoginTransactionTable.STATE},
                   {UpstreamLoginTransactionTable.NONCE},
@@ -506,10 +481,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
                 Provider = r.GetFieldValue<string>(UpstreamLoginTransactionTable.PROVIDER),
                 UpstreamClientId = r.GetFieldValue<string>(UpstreamLoginTransactionTable.UPSTREAM_CLIENT_ID),
-                AuthorizationEndpoint = ToAbs(r.GetFieldValue<string>(UpstreamLoginTransactionTable.AUTHORIZATION_ENDPOINT)),
-                TokenEndpoint = ToAbs(r.GetFieldValue<string>(UpstreamLoginTransactionTable.TOKEN_ENDPOINT)),
-                JwksUri = r.IsDBNull(r.GetOrdinal(UpstreamLoginTransactionTable.JWKS_URI)) ? null : ToAbs(r.GetFieldValue<string>(UpstreamLoginTransactionTable.JWKS_URI)),
-
                 UpstreamRedirectUri = ToAbs(r.GetFieldValue<string>(UpstreamLoginTransactionTable.UPSTREAM_REDIRECT_URI)),
 
                 State = r.GetFieldValue<string>(UpstreamLoginTransactionTable.STATE),

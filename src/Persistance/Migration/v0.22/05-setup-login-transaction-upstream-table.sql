@@ -17,9 +17,6 @@ CREATE TABLE IF NOT EXISTS oidcserver.login_transaction_upstream (
   -- Which upstream IdP/client and endpoints we used
   provider                   TEXT NOT NULL,
   upstream_client_id         TEXT NOT NULL,
-  authorization_endpoint     TEXT NOT NULL,
-  token_endpoint             TEXT NOT NULL,
-  jwks_uri                   TEXT,
 
   -- Our upstream redirect (Altinn’s callback registered at IdP)
   upstream_redirect_uri      TEXT NOT NULL,

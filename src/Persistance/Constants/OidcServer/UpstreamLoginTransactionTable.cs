@@ -56,21 +56,6 @@
         public const string UPSTREAM_CLIENT_ID = "upstream_client_id";
 
         /// <summary>
-        /// The name of the column in the database that stores the upstream redirect URI.
-        /// </summary>
-        public const string AUTHORIZATION_ENDPOINT = "authorization_endpoint";
-
-        /// <summary>
-        /// The name of the column in the database that stores the upstream token endpoint.
-        /// </summary>
-        public const string TOKEN_ENDPOINT = "token_endpoint";
-
-        /// <summary>
-        /// The name of the column in the database that stores the upstream JWKS URI.
-        /// </summary>
-        public const string JWKS_URI = "jwks_uri";
-
-        /// <summary>
         /// the name of the column in the database that stores the upstream redirect URI.
         /// </summary>
         public const string UPSTREAM_REDIRECT_URI = "upstream_redirect_uri";
