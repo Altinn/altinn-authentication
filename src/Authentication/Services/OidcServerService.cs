@@ -1,15 +1,4 @@
 ﻿#nullable enable
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
@@ -21,10 +10,24 @@ using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
 using AltinnCore.Authentication.Constants;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.IO;
+using System.Linq;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -471,12 +474,22 @@ namespace Altinn.Platform.Authentication.Services
                 Expires = DateTimeOffset.UnixEpoch
             };
 
-            // TODO: Delete session cookie also?
+            CookieInstruction deleteSession = new CookieInstruction
+            {
+                Name = _generalSettings.AltinnSessionCookieName,
+                Value = string.Empty,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UnixEpoch
+            };
+            
             return new EndSessionResult
             {
                 RedirectUri = redirect,
                 State = input.State,
-                Cookies = [deleteRuntime]
+                Cookies = [deleteRuntime, deleteSession]
             };
         }
 
@@ -559,9 +572,11 @@ namespace Altinn.Platform.Authentication.Services
             byte[] handleHash = HashHandle(FromBase64Url(sessionInput.SessionHandle));
 
             // Try to load session by handle
-            OidcSession? oidcSession = await _oidcSessionRepo.GetBySessionHandleAsync(handleHash, ct);   
-            if (oidcSession != null && oidcSession.ExpiresAt > _timeProvider.GetUtcNow())
-            {
+            OidcSession? oidcSession = await _oidcSessionRepo.GetBySessionHandleAsync(handleHash, ct);
+            if (oidcSession is not null
+                  && oidcSession.ExpiresAt.HasValue
+                  && oidcSession.ExpiresAt.Value > _timeProvider.GetUtcNow())
+            { 
                 string token = await _tokenService.CreateCookieToken(oidcSession, ct);
                 CookieInstruction cookieInstruction
                     = new()
@@ -1085,7 +1100,7 @@ namespace Altinn.Platform.Authentication.Services
 
         private byte[] HashHandle(byte[] handleBytes)
         {
-            using var hmac = new HMACSHA256(Convert.FromBase64String(_generalSettings.OidcRefreshTokenPepper));
+            using HMACSHA256 hmac = new(DecodePepper(_generalSettings.OidcRefreshTokenPepper));
             return hmac.ComputeHash(handleBytes); // 32 bytes
         }
 
@@ -1385,6 +1400,23 @@ namespace Altinn.Platform.Authentication.Services
                 byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(nonce);
                 byte[] byteArrayResult = nonceHash.ComputeHash(byteArrayResultOfRawData);
                 return Convert.ToBase64String(byteArrayResult);
+            }
+        }
+
+        private static byte[] DecodePepper(string value)
+        {
+            try
+            {
+                return Convert.FromBase64String(value);
+            }
+            catch (FormatException)
+            {
+                // Try Base64Url normalization
+                string normalized = value.Replace('-', '+').Replace('_', '/');
+                int pad = (4 - (normalized.Length % 4)) % 4;
+                normalized = normalized + new string('=', pad);
+                try { return Convert.FromBase64String(normalized); }
+                catch (Exception ex) { throw new ApplicationException("Invalid OidcRefreshTokenPepper; must be Base64/Base64Url.", ex); }
             }
         }
     }
