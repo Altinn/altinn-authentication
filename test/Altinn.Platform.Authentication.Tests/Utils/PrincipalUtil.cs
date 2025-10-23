@@ -15,10 +15,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
         public static string GetToken(int userId, List<Claim> claims, int authenticationLevel = 2, bool addPortalScope = false, DateTimeOffset? now = null)
         {
-            if (now == null)
-            {
-                now = DateTimeOffset.UtcNow;
-            }
+            now ??= DateTimeOffset.UtcNow;
 
             ClaimsPrincipal principal = GetUserPrincipal(userId, claims, authenticationLevel, addPortalScope);
             string token = JwtTokenMock.GenerateToken(principal, new TimeSpan(1, 1, 1), now);
