@@ -488,7 +488,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     var inet = rr.GetFieldValue<NpgsqlTypes.NpgsqlInet>(ord);
                     return inet.Address;
                 }
-                catch
+                catch (InvalidCastException)
                 {
                     return rr.GetFieldValue<System.Net.IPAddress>(ord);
                 }
