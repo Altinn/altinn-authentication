@@ -29,7 +29,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Validate the token issued by an upstream OIDC provider.
         /// </summary>
-        public async Task<JwtSecurityToken> ValidateTokenAsync(string token, OidcProvider provider, string? nonce, CancellationToken ct = default)
+        public async Task<JwtSecurityToken> ValidateTokenAsync(string token, OidcProvider provider, string? nonce, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(token))
             {

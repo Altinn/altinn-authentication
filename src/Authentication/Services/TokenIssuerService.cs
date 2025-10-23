@@ -26,14 +26,14 @@ namespace Altinn.Platform.Authentication.Services
         private readonly TimeProvider _timeProvider = timeProvider;
 
         /// <inheritdoc/>
-        public async Task<string> CreateAccessTokenAsync(ClaimsPrincipal principal, DateTimeOffset expires, CancellationToken ct = default)
+        public async Task<string> CreateAccessTokenAsync(ClaimsPrincipal principal, DateTimeOffset expires, CancellationToken cancellationToken = default)
         {
             string accessToken = await GenerateToken(principal, expires);
             return accessToken;
         }
 
         /// <inheritdoc/>
-        public async Task<string> CreateIdTokenAsync(ClaimsPrincipal principal, OidcClient client, DateTimeOffset tokenExpiration, CancellationToken ct = default)
+        public async Task<string> CreateIdTokenAsync(ClaimsPrincipal principal, OidcClient client, DateTimeOffset tokenExpiration, CancellationToken cancellationToken = default)
         {
             return await GenerateToken(principal, tokenExpiration);
         }

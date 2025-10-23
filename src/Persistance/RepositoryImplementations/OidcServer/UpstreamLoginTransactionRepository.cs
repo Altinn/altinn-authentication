@@ -21,7 +21,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         private readonly TimeProvider _time = timeProvider;
 
         /// <inheritdoc/>
-        public async Task<UpstreamLoginTransaction> InsertAsync(UpstreamLoginTransactionCreate create, CancellationToken ct = default)
+        public async Task<UpstreamLoginTransaction> InsertAsync(UpstreamLoginTransactionCreate create, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(create);
             bool hasDownstream = create.RequestId != Guid.Empty; 
@@ -219,8 +219,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 cmd.Parameters.Add(new NpgsqlParameter("created_by_ip", NpgsqlDbType.Inet) { Value = (object?)create.CreatedByIp ?? DBNull.Value });
                 cmd.Parameters.AddWithValue("user_agent_hash", (object?)create.UserAgentHash ?? DBNull.Value);
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
-                if (!await reader.ReadAsync(ct))
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     throw new DataException("INSERT upstream_login_transaction returned no row.");
                 }
@@ -235,7 +235,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task<UpstreamLoginTransaction?> GetForCallbackByStateAsync(string upstreamState, CancellationToken ct = default)
+        public async Task<UpstreamLoginTransaction?> GetForCallbackByStateAsync(string upstreamState, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ $@"
                 SELECT
@@ -283,8 +283,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 await using var cmd = _ds.CreateCommand(SQL);
                 cmd.Parameters.AddWithValue("state", upstreamState);
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
-                if (!await reader.ReadAsync(ct))
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     return null;
                 }
@@ -300,7 +300,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task<int> SetCallbackSuccessAsync(Guid upstreamRequestId, string authCode, DateTimeOffset receivedAt, CancellationToken ct = default)
+        public async Task<int> SetCallbackSuccessAsync(Guid upstreamRequestId, string authCode, DateTimeOffset receivedAt, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ $@"
                 UPDATE {UpstreamLoginTransactionTable.TABLE}
@@ -314,11 +314,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("code", authCode);
             cmd.Parameters.AddWithValue("received_at", receivedAt);
             cmd.Parameters.AddWithValue("id", upstreamRequestId);
-            return await cmd.ExecuteNonQueryAsync(ct);
+            return await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <inheritdoc/>
-        public async Task<int> SetCallbackErrorAsync(Guid upstreamRequestId, string error, string? errorDescription, DateTimeOffset receivedAt, CancellationToken ct = default)
+        public async Task<int> SetCallbackErrorAsync(Guid upstreamRequestId, string error, string? errorDescription, DateTimeOffset receivedAt, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ $@"
         UPDATE {UpstreamLoginTransactionTable.TABLE}
@@ -334,7 +334,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("desc", (object?)errorDescription ?? DBNull.Value);
             cmd.Parameters.AddWithValue("received_at", receivedAt);
             cmd.Parameters.AddWithValue("id", upstreamRequestId);
-            return await cmd.ExecuteNonQueryAsync(ct);
+            return await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -347,7 +347,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             string? idTokenJti,
             string? sessionSid,
             DateTimeOffset exchangedAt,
-            CancellationToken ct = default)
+            CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ $@"
             UPDATE {UpstreamLoginTransactionTable.TABLE}
@@ -371,11 +371,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("jti", (object?)idTokenJti ?? DBNull.Value);
             cmd.Parameters.AddWithValue("sid", (object?)sessionSid ?? DBNull.Value);
             cmd.Parameters.AddWithValue("id", upstreamRequestId);
-            return await cmd.ExecuteNonQueryAsync(ct);
+            return await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <inheritdoc/>
-        public async Task<int> MarkCompletedAsync(Guid upstreamRequestId, bool success, DateTimeOffset completedAt, CancellationToken ct = default)
+        public async Task<int> MarkCompletedAsync(Guid upstreamRequestId, bool success, DateTimeOffset completedAt, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ $@"
             UPDATE {UpstreamLoginTransactionTable.TABLE}
@@ -388,7 +388,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("status", success ? "completed" : "cancelled");
             cmd.Parameters.AddWithValue("completed_at", completedAt);
             cmd.Parameters.AddWithValue("id", upstreamRequestId);
-            return await cmd.ExecuteNonQueryAsync(ct);
+            return await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <inheritdoc/>

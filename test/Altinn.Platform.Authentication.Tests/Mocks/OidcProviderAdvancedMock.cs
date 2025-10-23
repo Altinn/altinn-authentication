@@ -66,7 +66,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             OidcProvider provider,
             string redirect_uri,
             string? codeVerifier,
-            CancellationToken ct = default)
+            CancellationToken cancellationToken = default)
         {
             // Find the first rule whose non-null fields match the inputs.
             var match = _rules.FirstOrDefault(r =>
@@ -81,7 +81,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     $"FakeOidcProvider: no rule matched (code='{authorizationCode}', clientId='{provider?.ClientId}', redirect_uri='{redirect_uri}', verifier='{codeVerifier ?? "<null>"}').");
             }
 
-            return await match.Handler(authorizationCode, provider, redirect_uri, codeVerifier, ct);
+            return await match.Handler(authorizationCode, provider, redirect_uri, codeVerifier, cancellationToken);
         }
 
         private sealed record Rule(

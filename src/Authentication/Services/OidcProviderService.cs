@@ -30,7 +30,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Performs a AccessToken Request as described in https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
         /// </summary>
-        public async Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri, string? codeVerifier, CancellationToken ct = default)
+        public async Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri, string? codeVerifier, CancellationToken cancellationToken = default)
         {
             OidcCodeResponse? codeResponse = null;
             Dictionary<string, string> kvps = new Dictionary<string, string>();
@@ -61,10 +61,10 @@ namespace Altinn.Platform.Authentication.Services
 
             FormUrlEncodedContent formUrlEncodedContent = new(kvps);
             
-            HttpResponseMessage response = await _httpClient.PostAsync(provider.TokenEndpoint, formUrlEncodedContent, ct);
+            HttpResponseMessage response = await _httpClient.PostAsync(provider.TokenEndpoint, formUrlEncodedContent, cancellationToken);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                string content = await response.Content.ReadAsStringAsync(ct);
+                string content = await response.Content.ReadAsStringAsync(cancellationToken);
                 codeResponse = JsonSerializer.Deserialize<OidcCodeResponse>(content);
             }
             else

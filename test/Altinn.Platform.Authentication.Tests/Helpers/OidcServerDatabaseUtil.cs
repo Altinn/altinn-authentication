@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
 {
     public static class OidcServerDatabaseUtil
     {
-        public static async Task<LoginTransaction?> GetDownstreamTransaction(string clientId, string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<LoginTransaction?> GetDownstreamTransaction(string clientId, string state, NpgsqlDataSource DataSource, CancellationToken cancellationToken = default)
         {        
             const string SQL_FIND_DOWNSTREAM = /*strpsql*/ @"
             SELECT *
@@ -26,9 +26,9 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 cmd.Parameters.AddWithValue("client_id", clientId);
                 cmd.Parameters.AddWithValue("state", state);
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
 
-                if (!await reader.ReadAsync(ct))
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     return null;
                 }
@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
-        public static async Task<UpstreamLoginTransaction?> GetUpstreamTransaction(Guid requestId, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<UpstreamLoginTransaction?> GetUpstreamTransaction(Guid requestId, NpgsqlDataSource DataSource, CancellationToken cancellationToken = default)
         {
             const string SQL_FIND_UPSTREAM = /*strpsql*/ @"
             SELECT * from oidcserver.login_transaction_upstream
@@ -48,9 +48,9 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             {
                 cmd.Parameters.AddWithValue("request_id", requestId);
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
 
-                if (!await reader.ReadAsync(ct))
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     return null;
                 }
@@ -59,7 +59,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
-        public static async Task<UpstreamLoginTransaction?> GetUpstreamTransaction(string state, NpgsqlDataSource DataSource, CancellationToken ct = default)
+        public static async Task<UpstreamLoginTransaction?> GetUpstreamTransaction(string state, NpgsqlDataSource DataSource, CancellationToken cancellationToken = default)
         {
             const string SQL_FIND_UPSTREAM = /*strpsql*/ @"
             SELECT * from oidcserver.login_transaction_upstream
@@ -70,9 +70,9 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             {
                 cmd.Parameters.AddWithValue("state", state);
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
 
-                if (!await reader.ReadAsync(ct))
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     return null;
                 }
@@ -81,14 +81,14 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             }
         }
 
-        public static async Task<OidcSession?> GetOidcSessionAsync(string sid, NpgsqlDataSource _ds, CancellationToken ct = default)
+        public static async Task<OidcSession?> GetOidcSessionAsync(string sid, NpgsqlDataSource _ds, CancellationToken cancellationToken = default)
         {
             const string SQL = "SELECT * FROM oidcserver.oidc_session WHERE sid=@sid LIMIT 1;";
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("sid", sid);
 
-            await using var r = await cmd.ExecuteReaderAsync(ct);
-            if (!await r.ReadAsync(ct))
+            await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (!await r.ReadAsync(cancellationToken))
             {
                 return null;
             }

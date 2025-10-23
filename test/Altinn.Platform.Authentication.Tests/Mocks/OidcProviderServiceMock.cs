@@ -21,7 +21,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// <summary>
         /// Performs a AccessToken Request as described in https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
         /// </summary>
-        public Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri, string? codeVerifier, CancellationToken ct = default)
+        public Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri, string? codeVerifier, CancellationToken cancellationToken = default)
         {
             OidcCodeResponse codeResponse = new()
             {

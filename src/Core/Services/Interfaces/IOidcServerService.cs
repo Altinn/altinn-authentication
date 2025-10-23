@@ -26,41 +26,41 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// Handles an upstream callback by processing the provided input and returning the result.
         /// </summary>
         /// <param name="input">The input data required to process the upstream callback.</param>
-        /// <param name="ct">A cancellation token that can be used to cancel the operation.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains an  <see
         /// cref="UpstreamCallbackResult"/> object representing the outcome of the callback processing.</returns>
-        public Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, string? existingSessionHandle, CancellationToken ct);
+        public Task<UpstreamCallbackResult> HandleUpstreamCallback(UpstreamCallbackInput input, string? existingSessionHandle, CancellationToken cancellationToken);
 
         /// <summary>
         /// Based on session from cookie, verify session is valid and return result with a new valid Jwt token/AltinnRuntime cookie.
         /// </summary>
-        public Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInfo, CancellationToken ct);
+        public Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInfo, CancellationToken cancellationToken);
 
         /// <summary>
         /// Based on Altinn 2 ticket, verify session is valid and return result with a new valid Jwt token/AltinnRuntime cookie.
         /// </summary>
-        public Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput sessionInfo, CancellationToken ct);
+        public Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput sessionInfo, CancellationToken cancellationToken);
 
         /// <summary>
         /// Handles refresh of an OIDC session based on the provided principal.Used when the Altinn Studio runtimecookie
         /// is used as session cookie for OIDC and app tyical refresh endpoint runtime
         /// </summary>
-        /// <param name="principal">The principal containing all claims including the SID</param>
-        /// <param name="ct"></param>
+        /// <param name="principal">The principal containing all claims including the SID</param>-
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct);
+        public Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken cancellationToken);
 
         /// <summary>
         /// Handles ending an OIDC session based on the provided input.
         /// </summary>
         /// <param name="input">The end session put</param>
-        /// <param name="ct">The cancellationtoken</param>
+        /// <param name="cancellationToken">The cancellationtoken</param>
         /// <returns></returns>
-        public Task<EndSessionResult> EndSessionAsync(EndSessionInput input, CancellationToken ct);
+        public Task<EndSessionResult> EndSessionAsync(EndSessionInput input, CancellationToken cancellationToken);
 
         /// <summary>
         /// Handles upstream front-channel logout requests.
         /// </summary>
-        public Task<UpstreamFrontChannelLogoutResult> HandleUpstreamFrontChannelLogoutAsync(UpstreamFrontChannelLogoutInput upstreamFrontChannelLogoutInput, CancellationToken ct);
+        public Task<UpstreamFrontChannelLogoutResult> HandleUpstreamFrontChannelLogoutAsync(UpstreamFrontChannelLogoutInput upstreamFrontChannelLogoutInput, CancellationToken cancellationToken);
     }
 }

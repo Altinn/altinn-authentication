@@ -18,7 +18,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         private readonly TimeProvider _timeProvider = timeProvider;
 
         /// <inheritdoc/>
-        public async Task<OidcClient?> GetClientAsync(string clientId, CancellationToken ct = default)
+        public async Task<OidcClient?> GetClientAsync(string clientId, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(clientId))
             {
@@ -48,8 +48,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 await using var cmd = _datasource.CreateCommand(QUERY);
                 cmd.Parameters.Add(new NpgsqlParameter<string>("client_id", clientId));
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
-                if (!await reader.ReadAsync(ct))
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     return null;
                 }
@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task<OidcClient> InsertClientAsync(OidcClientCreate create, CancellationToken ct = default)
+        public async Task<OidcClient> InsertClientAsync(OidcClientCreate create, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(create);
 
@@ -193,8 +193,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     cmd.Parameters.AddWithValue("created_at", now);
                     cmd.Parameters.AddWithValue("updated_at", DBNull.Value); // null at insert
 
-                    await using var reader = await cmd.ExecuteReaderAsync(ct);
-                    if (!await reader.ReadAsync(ct))
+                    await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                    if (!await reader.ReadAsync(cancellationToken))
                         {
                             throw new DataException("INSERT client returned no row.");
                         }
