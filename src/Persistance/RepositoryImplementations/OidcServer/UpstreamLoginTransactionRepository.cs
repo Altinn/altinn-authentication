@@ -24,9 +24,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task<UpstreamLoginTransaction> InsertAsync(UpstreamLoginTransactionCreate create, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(create);
-            if (create.RequestId == Guid.Empty && create.UnregisteredClientRequestId == Guid.Empty)
-            {
-                throw new ArgumentException("RequestId or UnregisteredClientRequestId is required.", nameof(create));
+            bool hasDownstream = create.RequestId != Guid.Empty; 
+            bool hasUnregistered = create.UnregisteredClientRequestId != Guid.Empty; 
+            if (!(hasDownstream ^ hasUnregistered)) 
+            { 
+                throw new ArgumentException("Exactly one of RequestId or UnregisteredClientRequestId must be set.", nameof(create)); 
             }
 
             if (string.IsNullOrWhiteSpace(create.Provider))
@@ -403,7 +405,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             SET {UpstreamLoginTransactionTable.STATUS} = @status,
                 {UpstreamLoginTransactionTable.COMPLETED_AT} = @completed_at
             WHERE {UpstreamLoginTransactionTable.UPSTREAM_REQUEST_ID} = @id
-              AND {UpstreamLoginTransactionTable.STATUS} IN ('token_exchanged','error','cancelled');";
+              AND {UpstreamLoginTransactionTable.STATUS} IN ('token_exchanged','error');";
 
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("status", success ? "completed" : "cancelled");
