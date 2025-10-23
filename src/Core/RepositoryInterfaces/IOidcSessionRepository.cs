@@ -2,6 +2,9 @@
 
 namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
 {
+    /// <summary>
+    /// Defines methods for managing OIDC sessions.
+    /// </summary>
     public interface IOidcSessionRepository
     {
         /// <summary>Create a new session or refresh an existing matching one (by Provider+UpstreamSub), returning the current SID.</summary>
@@ -27,7 +30,15 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// Slide the expiry of the session to a new value, if and only if the new value is later than the current expiry.
         /// </summary>
         Task<bool> SlideExpiryToAsync(string sid, DateTimeOffset newExpiresAt, CancellationToken ct = default);
-        Task<string[]> GetSidsByUpstreamAsync(string issuer, string upstreamSid, CancellationToken ct);
-        Task<int> DeleteByUpstreamAsync(string issuer, string upstreamSid, CancellationToken ct);
+
+        /// <summary>
+        /// Get all SIDs associated with a given upstream session SID.
+        /// </summary>
+        Task<string[]> GetSidsByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken ct);
+
+        /// <summary>
+        /// Delete all sessions associated with a given upstream session SID.
+        /// </summary>
+        Task<int> DeleteByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken ct);
     }
 }

@@ -513,7 +513,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // 2) Find all local sessions tied to this upstream (issuer + upstream sid)
             // We fetch SIDs first (for revocation + cookie comparison), then delete.
-            string[] localSids = await _oidcSessionRepo.GetSidsByUpstreamAsync(provider.Issuer, input.UpstreamSid, ct);
+            string[] localSids = await _oidcSessionRepo.GetSidsByUpstreamSessionSidAsync(provider.Issuer, input.UpstreamSid, ct);
 
             if (localSids.Length == 0)
             {
@@ -522,7 +522,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 3) Delete sessions (idempotent)
-            int deleted = await _oidcSessionRepo.DeleteByUpstreamAsync(provider.Issuer, input.UpstreamSid, ct);
+            int deleted = await _oidcSessionRepo.DeleteByUpstreamSessionSidAsync(provider.Issuer, input.UpstreamSid, ct);
 
             // 4) Revoke refresh tokens / invalidate codes for those SIDs (if you have repos)
             foreach (var sid in localSids)

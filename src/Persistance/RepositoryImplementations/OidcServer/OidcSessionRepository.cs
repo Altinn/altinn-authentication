@@ -168,7 +168,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Get all SIDs for sessions matching the given upstream issuer and upstream session SID.
         /// </summary>
-        public async Task<string[]> GetSidsByUpstreamAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken ct = default)
+        public async Task<string[]> GetSidsByUpstreamSessionSidAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken ct = default)
         {
             const string SQL = @"
             SELECT sid
@@ -193,7 +193,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Delete all OIDC sessions matching the given upstream issuer and upstream session SID.
         /// </summary>
-        public async Task<int> DeleteByUpstreamAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken ct = default)
+        public async Task<int> DeleteByUpstreamSessionSidAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken ct = default)
         {
             const string SQL = @"
         DELETE FROM oidcserver.oidc_session
