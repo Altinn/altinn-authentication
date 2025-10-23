@@ -322,7 +322,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Handles refresh of session basded on claims principal
         /// -
         /// </summary>
-        public async Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct)
+        public async Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken cancellationToken)
         {
             Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
             if (sidClaim == null && _generalSettings.ForceOidc)
@@ -335,8 +335,8 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
             
-            await _oidcSessionRepo.SlideExpiryToAsync(sidClaim.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), ct);
-            var session = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, ct);
+            await _oidcSessionRepo.SlideExpiryToAsync(sidClaim.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
+            var session = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
             if (session is null && _generalSettings.ForceOidc)
             {
                 throw new InvalidOperationException("No valid session found for sid");
@@ -348,7 +348,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Ends an OIDC session based on the provided input.
         /// </summary>
-        public async Task<EndSessionResult> EndSessionAsync(EndSessionInput input, CancellationToken ct)
+        public async Task<EndSessionResult> EndSessionAsync(EndSessionInput input, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(input);
 
@@ -366,7 +366,7 @@ namespace Altinn.Platform.Authentication.Services
                     try
                     {
                         OidcProvider provider = ChooseProviderByIssuer(raw.Issuer);
-                        JwtSecurityToken validated = await _upstreamTokenValidator.ValidateTokenAsync(input.IdTokenHint, provider, null, ct);
+                        JwtSecurityToken validated = await _upstreamTokenValidator.ValidateTokenAsync(input.IdTokenHint, provider, null, cancellationToken);
                         hintClientId = validated.Audiences?.FirstOrDefault();
                         hintSid = validated.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
                     }
@@ -417,7 +417,7 @@ namespace Altinn.Platform.Authentication.Services
             Uri? redirect = null;
             if (input.PostLogoutRedirectUri is not null && !string.IsNullOrWhiteSpace(hintClientId))
             {
-                OidcClient? client = await _oidcServerClientRepository.GetClientAsync(hintClientId!, ct);
+                OidcClient? client = await _oidcServerClientRepository.GetClientAsync(hintClientId!, cancellationToken);
                 if (client?.RedirectUris?.Any() == true &&
                     client.RedirectUris.Contains(input.PostLogoutRedirectUri))
                 {
@@ -436,7 +436,7 @@ namespace Altinn.Platform.Authentication.Services
                 // else: ignore invalid redirect; return OP page
             }
 
-            OidcSession? oidcSession = await _oidcSessionRepo.GetBySidAsync(sid!, ct);
+            OidcSession? oidcSession = await _oidcSessionRepo.GetBySidAsync(sid!, cancellationToken);
             if (oidcSession != null)
             {
                 string issuer = oidcSession.UpstreamIssuer;
@@ -456,15 +456,15 @@ namespace Altinn.Platform.Authentication.Services
             if (!string.IsNullOrWhiteSpace(sid))
             {
                 // Delete session row
-                await _oidcSessionRepo.DeleteBySidAsync(sid!, ct);
+                await _oidcSessionRepo.DeleteBySidAsync(sid!, cancellationToken);
 
                 // Revoke all refresh tokens for this sid.
-                IReadOnlyList<Guid> families = await _refreshTokenRepo.GetFamiliesByOpSidAsync(sid!, ct);
+                IReadOnlyList<Guid> families = await _refreshTokenRepo.GetFamiliesByOpSidAsync(sid!, cancellationToken);
                 if (families?.Any() == true)
                 {
                     foreach (Guid family in families)
                     {
-                        await _refreshTokenRepo.RevokeFamilyAsync(family, "logout", ct);
+                        await _refreshTokenRepo.RevokeFamilyAsync(family, "logout", cancellationToken);
                     }
                 }
 
@@ -510,7 +510,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         public async Task<UpstreamFrontChannelLogoutResult> HandleUpstreamFrontChannelLogoutAsync(
     UpstreamFrontChannelLogoutInput input,
-    CancellationToken ct)
+    CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(input);
 
@@ -528,7 +528,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // 2) Find all local sessions tied to this upstream (issuer + upstream sid)
             // We fetch SIDs first (for revocation + cookie comparison), then delete.
-            string[] localSids = await _oidcSessionRepo.GetSidsByUpstreamSessionSidAsync(provider.Issuer, input.UpstreamSid, ct);
+            string[] localSids = await _oidcSessionRepo.GetSidsByUpstreamSessionSidAsync(provider.Issuer, input.UpstreamSid, cancellationToken);
 
             if (localSids.Length == 0)
             {
@@ -537,16 +537,16 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 3) Delete sessions (idempotent)
-            int deleted = await _oidcSessionRepo.DeleteByUpstreamSessionSidAsync(provider.Issuer, input.UpstreamSid, ct);
+            int deleted = await _oidcSessionRepo.DeleteByUpstreamSessionSidAsync(provider.Issuer, input.UpstreamSid, cancellationToken);
 
             // 4) Revoke refresh tokens / invalidate codes for those SIDs (if you have repos)
             foreach (var sid in localSids)
             {
-                IReadOnlyList<Guid> families = await _refreshTokenRepo.GetFamiliesByOpSidAsync(sid, ct);
+                IReadOnlyList<Guid> families = await _refreshTokenRepo.GetFamiliesByOpSidAsync(sid, cancellationToken);
                 
                 foreach (Guid familyGuid in families)
                 {
-                    await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontchannel_logout", ct);
+                    await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontchannel_logout", cancellationToken);
                 }
 
                 // await _authorizationCodeRepo.InvalidateBySidAsync(sid, _timeProvider.GetUtcNow(), ct);
@@ -579,17 +579,17 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Handles the authentication process based on the provided session input.
         /// </summary>
-        public async Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInput, CancellationToken ct)
+        public async Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInput, CancellationToken cancellationToken)
         {
             byte[] handleHash = HashHandle(FromBase64Url(sessionInput.SessionHandle));
 
             // Try to load session by handle
-            OidcSession? oidcSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(handleHash, ct);
+            OidcSession? oidcSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(handleHash, cancellationToken);
             if (oidcSession is not null
                   && oidcSession.ExpiresAt.HasValue
                   && oidcSession.ExpiresAt.Value > _timeProvider.GetUtcNow())
             { 
-                string token = await _tokenService.CreateCookieToken(oidcSession, ct);
+                string token = await _tokenService.CreateCookieToken(oidcSession, cancellationToken);
                 CookieInstruction cookieInstruction
                     = new()
                 {
@@ -601,7 +601,7 @@ namespace Altinn.Platform.Authentication.Services
                     SameSite = SameSiteMode.Lax
                 };
 
-                await _oidcSessionRepo.SlideExpiryToAsync(oidcSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), ct);
+                await _oidcSessionRepo.SlideExpiryToAsync(oidcSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
                 return new AuthenticateFromSessionResult
                 {
                     Kind = AuthenticateFromSessionResultKind.Success,
@@ -618,16 +618,16 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Handles the authentication process based on the provided Altinn2 ticket input.
         /// </summary>
-        public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput sessionInfo, CancellationToken ct)
+        public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput sessionInfo, CancellationToken cancellationToken)
         {
             UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(sessionInfo.EncryptedTicket);
             userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
             EnrichIdentityFromLegacyValues(userAuthenticationModel);
             AddLocalScopes(userAuthenticationModel);
-            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(sessionInfo, userAuthenticationModel, ct);
+            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(sessionInfo, userAuthenticationModel, cancellationToken);
             if (session is not null && session.ExpiresAt.HasValue && session.ExpiresAt.Value > _timeProvider.GetUtcNow())
             {
-                string token = await _tokenService.CreateCookieToken(session, ct);
+                string token = await _tokenService.CreateCookieToken(session, cancellationToken);
                 CookieInstruction cookieInstruction
                     = new()
                     {

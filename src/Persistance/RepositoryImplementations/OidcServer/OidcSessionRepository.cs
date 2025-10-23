@@ -21,7 +21,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Upsert an OIDC session based on the upstream subject identifier.
         /// </summary>
-        public async Task<OidcSession> UpsertByUpstreamSubAsync(OidcSessionCreate c, CancellationToken ct = default)
+        public async Task<OidcSession> UpsertByUpstreamSubAsync(OidcSessionCreate c, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ @"
                 WITH existing AS (
@@ -84,8 +84,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("user_agent_hash", (object?)c.UserAgentHash ?? DBNull.Value);
             cmd.Parameters.Add(JsonbParam("provider_claims", c.ProviderClaims));
 
-            await using var reader = await cmd.ExecuteReaderAsync(ct);
-            if (!await reader.ReadAsync(ct))
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (!await reader.ReadAsync(cancellationToken))
             {
                 throw new InvalidOperationException("Failed to upsert oidc_session.");
             }
@@ -96,14 +96,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Get an OIDC session by its SID.
         /// </summary>
-        public async Task<OidcSession?> GetBySidAsync(string sid, CancellationToken ct = default)
+        public async Task<OidcSession?> GetBySidAsync(string sid, CancellationToken cancellationToken = default)
         {
             const string SQL = "SELECT * FROM oidcserver.oidc_session WHERE sid=@sid LIMIT 1;";
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("sid", sid);
 
-            await using var r = await cmd.ExecuteReaderAsync(ct);
-            if (!await r.ReadAsync(ct))
+            await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (!await r.ReadAsync(cancellationToken))
             {
                 return null;
             }
@@ -115,14 +115,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// Returns a sessionID by its session handle.
         /// The session handle is exposed to clients in a cookie, but the hash is stored in the database.
         /// </summary>
-        public async Task<OidcSession?> GetBySessionHandleHashAsync(byte[] sessionHandleHash, CancellationToken ct = default)
+        public async Task<OidcSession?> GetBySessionHandleHashAsync(byte[] sessionHandleHash, CancellationToken cancellationToken = default)
         {
             const string SQL = "SELECT * FROM oidcserver.oidc_session WHERE session_handle_hash = @handle_hash LIMIT 1;";
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("handle_hash", sessionHandleHash);
 
-            await using var r = await cmd.ExecuteReaderAsync(ct);
-            if (!await r.ReadAsync(ct))
+            await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (!await r.ReadAsync(cancellationToken))
             {
                 return null;
             }
@@ -133,19 +133,19 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Delete an OIDC session by its SID.
         /// </summary>
-        public async Task<bool> DeleteBySidAsync(string sid, CancellationToken ct = default)
+        public async Task<bool> DeleteBySidAsync(string sid, CancellationToken cancellationToken = default)
         {
             const string SQL = "DELETE FROM oidcserver.oidc_session WHERE sid=@sid;";
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("sid", sid);
-            var n = await cmd.ExecuteNonQueryAsync(ct);
+            var n = await cmd.ExecuteNonQueryAsync(cancellationToken);
             return n > 0;
         }
 
         /// <summary>
         /// Slides the expiry of an OIDC session to a new value if the new value is later than the current expiry.
         /// </summary>
-        public async Task<bool> SlideExpiryToAsync(string sid, DateTimeOffset newExpiresAt, CancellationToken ct = default)
+        public async Task<bool> SlideExpiryToAsync(string sid, DateTimeOffset newExpiresAt, CancellationToken cancellationToken = default)
         {
             const string sql = @"
                 UPDATE oidcserver.oidc_session
@@ -161,14 +161,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("new_exp", NpgsqlTypes.NpgsqlDbType.TimestampTz, newExpiresAt);
             cmd.Parameters.AddWithValue("now", NpgsqlTypes.NpgsqlDbType.TimestampTz, now);
 
-            var rows = await cmd.ExecuteNonQueryAsync(ct);
+            var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
             return rows > 0;
         }
 
         /// <summary>
         /// Get all SIDs for sessions matching the given upstream issuer and upstream session SID.
         /// </summary>
-        public async Task<string[]> GetSidsByUpstreamSessionSidAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken ct = default)
+        public async Task<string[]> GetSidsByUpstreamSessionSidAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken cancellationToken = default)
         {
             const string SQL = @"
             SELECT sid
@@ -181,8 +181,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("usid", upstreamSessionSid);
 
             var list = new List<string>();
-            await using var r = await cmd.ExecuteReaderAsync(ct);
-            while (await r.ReadAsync(ct))
+            await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await r.ReadAsync(cancellationToken))
             {
                 list.Add(r.GetFieldValue<string>("sid"));
             }
@@ -193,7 +193,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Delete all OIDC sessions matching the given upstream issuer and upstream session SID.
         /// </summary>
-        public async Task<int> DeleteByUpstreamSessionSidAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken ct = default)
+        public async Task<int> DeleteByUpstreamSessionSidAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken cancellationToken = default)
         {
             const string SQL = @"
         DELETE FROM oidcserver.oidc_session
@@ -203,13 +203,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             await using var cmd = _ds.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("iss", upstreamIssuer);
             cmd.Parameters.AddWithValue("usid", upstreamSessionSid);
-            return await cmd.ExecuteNonQueryAsync(ct);
+            return await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <summary>
         /// Touch the last seen timestamp of an OIDC session to the current time.
         /// </summary>
-        public async Task TouchLastSeenAsync(string sid, CancellationToken ct = default)
+        public async Task TouchLastSeenAsync(string sid, CancellationToken cancellationToken = default)
         {
             const string sql = @"
             UPDATE oidcserver.oidc_session
@@ -220,7 +220,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             await using var cmd = _ds.CreateCommand(sql);
             cmd.Parameters.AddWithValue("sid", sid);
             cmd.Parameters.AddWithValue("now", NpgsqlTypes.NpgsqlDbType.TimestampTz, now);
-            await cmd.ExecuteNonQueryAsync(ct);
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         private static NpgsqlParameter JsonbParam(string name, Dictionary<string, List<string>>? dict)
@@ -231,24 +231,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             };
         }
 
-        private static Dictionary<string, List<string>>? ReadDictJsonb(NpgsqlDataReader r, string col)
-        {
-            if (r.IsDBNull(col))
-            {
-                return null;
-            }
-
-            var json = r.GetFieldValue<string>(col); // jsonb -> text
-            return JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json);
-        }
-
         private static OidcSession Map(NpgsqlDataReader r)
         {
             return new OidcSession
             {
                 Sid = r.GetFieldValue<string>("sid"),
                 SessionHandle = (byte[])r["session_handle_hash"],
-                SubjectId = r.IsDBNull("subject_id") ? null : r.GetFieldValue<string>("subject_id"),
+                SubjectId = r.GetFieldValue<string>("subject_id"),
                 ExternalId = r.IsDBNull("external_id") ? null : r.GetFieldValue<string>("external_id"),
                 SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? null : r.GetFieldValue<Guid?>("subject_party_uuid"),
                 SubjectPartyId = r.IsDBNull("subject_party_id") ? null : r.GetFieldValue<int?>("subject_party_id"),
