@@ -687,6 +687,43 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
+    /// <inheritdoc />
+    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        if (party <= 0)
+        {
+            return Problem.Reportee_Orgno_NotFound;
+        }
+
+        if (systemUserId == Guid.Empty)
+        {
+            return Problem.SystemUserNotFound;
+        }
+
+        string endpointUrl = $"internal/{party}/rights/delegation/offered?to={systemUserId}";
+
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<RightDelegation>>(_serializerOptions, cancellationToken) ?? [];
+            }
+
+            _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {party}. StatusCode: {response.StatusCode}");
+            return Problem.SystemUser_FailedToGetDelegatedRights;
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Exception");
+            throw;
+
+        }
+    }
+
     public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
