@@ -25,7 +25,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         [HttpPost("token")]
         [Consumes("application/x-www-form-urlencoded")]
-        public async Task<IActionResult> Token([FromForm] TokenRequestForm form, CancellationToken ct)
+        public async Task<IActionResult> Token([FromForm] TokenRequestForm form, CancellationToken cancellationToken)
         {
             // RFC 6749 §5.1: prevent caching
             Response.Headers.CacheControl = "no-store";
@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             ClientAuth = clientAuth
                         };
 
-                        TokenResult result = await _tokenService.ExchangeAuthorizationCodeAsync(req, ct);
+                        TokenResult result = await _tokenService.ExchangeAuthorizationCodeAsync(req, cancellationToken);
                         return ToHttpResult(result);
                     }
 
@@ -84,7 +84,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             ClientAuth = clientAuth
                         };
 
-                        TokenResult result = await _tokenService.RefreshAsync(req, ct);
+                        TokenResult result = await _tokenService.RefreshAsync(req, cancellationToken);
                         return ToHttpResult(result);
                     }
 

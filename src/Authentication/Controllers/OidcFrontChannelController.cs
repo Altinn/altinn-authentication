@@ -99,7 +99,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Handles the callback from the upstream OIDC provider.
         /// </summary>
         [HttpGet("upstream/callback")]
-        public async Task<IActionResult> UpstreamCallback([FromQuery] UpstreamCallbackDto q, CancellationToken ct = default)
+        public async Task<IActionResult> UpstreamCallback([FromQuery] UpstreamCallbackDto q, CancellationToken cancellationToken = default)
         {
             if (!ModelState.IsValid)
             {
@@ -126,7 +126,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             string? sessionHandle = Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out var sh) ? sh : null;
 
-            UpstreamCallbackResult result = await _oidcServerService.HandleUpstreamCallback(input, sessionHandle, ct);
+            UpstreamCallbackResult result = await _oidcServerService.HandleUpstreamCallback(input, sessionHandle, cancellationToken);
 
             // Set no-store for auth responses
             Response.Headers.CacheControl = "no-store";
@@ -169,7 +169,7 @@ namespace Altinn.Platform.Authentication.Controllers
         public async Task<IActionResult> UpstreamFrontChannelLogout(
             [FromQuery] string iss,
             [FromQuery] string sid,
-            CancellationToken ct = default)
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(iss) || string.IsNullOrWhiteSpace(sid))
             {
@@ -183,7 +183,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 User = HttpContext.User
             };
 
-            var result = await _oidcServerService.HandleUpstreamFrontChannelLogoutAsync(logoutInput  , ct);
+            var result = await _oidcServerService.HandleUpstreamFrontChannelLogoutAsync(logoutInput  , cancellationToken);
 
             // No-store
             Response.Headers[HeaderNames.CacheControl] = "no-store";
@@ -217,7 +217,7 @@ namespace Altinn.Platform.Authentication.Controllers
             [FromQuery] string? id_token_hint,
             [FromQuery] string? post_logout_redirect_uri,
             [FromQuery] string? state,
-            CancellationToken ct = default)
+            CancellationToken cancellationToken = default)
         {
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();
@@ -233,7 +233,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 UserAgentHash = userAgentHash
             };
 
-            EndSessionResult result = await _oidcServerService.EndSessionAsync(input, ct);
+            EndSessionResult result = await _oidcServerService.EndSessionAsync(input, cancellationToken);
 
             // Set no-store for auth responses
             Response.Headers.CacheControl = "no-store";
