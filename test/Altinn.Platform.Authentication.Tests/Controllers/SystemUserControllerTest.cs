@@ -2197,7 +2197,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(HttpStatusCode.InternalServerError, clientListResponse.StatusCode);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await clientListResponse.Content.ReadAsStringAsync(), _options);
-            Assert.Equal(Problem.AccessPackage_FailedToGetDelegatedRights.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.SystemUser_FailedToGetDelegatedRights.Detail, problemDetails?.Detail);
         }
 
         [Fact]

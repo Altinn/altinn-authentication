@@ -433,7 +433,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
         else if (systemUserId == new Guid("ec6831bc-379c-469a-8e41-d37d398772c8"))
         {
-            ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_FailedToGetDelegatedRights);
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToGetDelegatedRights);
             return Task.FromResult<Result<List<RightDelegation>>>(problemInstance);
         }
         else

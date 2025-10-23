@@ -713,7 +713,7 @@ public class AccessManagementClient : IAccessManagementClient
             }
 
             _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {party}. StatusCode: {response.StatusCode}");
-            return Problem.AccessPackage_FailedToGetDelegatedRights;
+            return Problem.SystemUser_FailedToGetDelegatedRights;
 
         }
         catch (Exception ex)

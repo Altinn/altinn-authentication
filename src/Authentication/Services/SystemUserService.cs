@@ -956,7 +956,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (rightsResult.IsProblem)
             {
-                return Problem.AccessPackage_FailedToGetDelegatedRights;
+                return Problem.SystemUser_FailedToGetDelegatedRights;
             }
 
             List<Right> rights = rightsResult.Value;

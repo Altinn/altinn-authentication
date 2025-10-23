@@ -381,6 +381,6 @@ public static class Problem
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
-    public static ProblemDescriptor AccessPackage_FailedToGetDelegatedRights { get; }
+    public static ProblemDescriptor SystemUser_FailedToGetDelegatedRights { get; }
         = _factory.Create(62, HttpStatusCode.InternalServerError, "Failed to get delegated rights");
 }
