@@ -101,6 +101,11 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("upstream/callback")]
         public async Task<IActionResult> UpstreamCallback([FromQuery] UpstreamCallbackDto q, CancellationToken ct = default)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             // Gather diagnostics
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();
@@ -114,7 +119,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 Error = q.Error,
                 ErrorDescription = q.ErrorDescription,
                 Iss = q.Iss,
-                ClientIp = ip!,
+                ClientIp = ip ?? System.Net.IPAddress.Loopback,
                 UserAgentHash = userAgentHash,
                 CorrelationId = corr
             };
