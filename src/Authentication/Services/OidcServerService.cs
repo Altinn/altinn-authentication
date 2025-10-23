@@ -903,7 +903,8 @@ namespace Altinn.Platform.Authentication.Services
 
         private Uri BuildUpstreamRedirectUri()
         {
-           return new Uri(_generalSettings.PlatformEndpoint + "authentication/api/v1/upstream/callback");
+            Uri baseUri = new(_generalSettings.PlatformEndpoint);
+            return new Uri(baseUri, "authentication/api/v1/upstream/callback");
         }
 
         private async Task<LoginTransaction> PersistLoginTransaction(AuthorizeRequest request, OidcClient client, CancellationToken cancellationToken)

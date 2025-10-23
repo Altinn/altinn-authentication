@@ -86,8 +86,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton<IProfile, ProfileFileMock>();
-            services.AddSingleton(_cookieDecryptionService.Object);
-            services.AddSingleton(_userProfileService.Object);
+            services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
+            services.AddSingleton<IUserProfileService>(_userProfileService.Object);
 
             services.PostConfigure<GeneralSettings>(o =>
             {
@@ -249,7 +249,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             HttpResponseMessage cookieRefreshResponse2 = await client.GetAsync(
                "/authentication/api/v1/refresh");
 
-            string refreshToken2 = await cookieRefreshResponse.Content.ReadAsStringAsync();
+            string refreshToken2 = await cookieRefreshResponse2.Content.ReadAsStringAsync();
             TokenAssertsHelper.AssertCookieAccessToken(refreshToken2, testScenario, _fakeTime.GetUtcNow());
 
             _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:36
