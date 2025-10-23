@@ -163,7 +163,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             string platformReturnUrl = $"{_generalSettings.PlatformEndpoint}authentication/api/v1/authentication?goto={goTo}";
 
-            if (dontChooseReportee)
+            if (dontChooseReportee) 
             {
                 platformReturnUrl += "&DontChooseReportee=true";
             }
