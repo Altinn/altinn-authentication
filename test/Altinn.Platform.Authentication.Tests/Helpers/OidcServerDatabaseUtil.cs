@@ -6,10 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Persistance.Constants.OidcServer;
-using Docker.DotNet.Models;
 using Npgsql;
 using NpgsqlTypes;
-using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Helpers
 {

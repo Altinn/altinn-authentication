@@ -236,7 +236,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             HttpResponseMessage cookieRefreshResponse2 = await client.GetAsync(
                "/authentication/api/v1/refresh");
 
-            string refreshToken2 = await cookieRefreshResponse.Content.ReadAsStringAsync();
+            string refreshToken2 = await cookieRefreshResponse2.Content.ReadAsStringAsync();
             TokenAssertsHelper.AssertCookieAccessToken(refreshToken2, testScenario, _fakeTime.GetUtcNow());
 
             _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:36

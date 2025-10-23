@@ -18,8 +18,6 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 throw new ArgumentOutOfRangeException(nameof(length), "PKCE code_verifier length must be 43–128.");
 
             Span<char> chars = length <= 128 ? stackalloc char[length] : new char[length];
-            Span<byte> buf = stackalloc byte[length];
-            RandomNumberGenerator.Fill(buf);
 
             for (int i = 0; i < length; i++)
                 chars[i] = Alphabet[RandomNumberGenerator.GetInt32(0, Alphabet.Length)];
@@ -35,12 +33,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             if (string.IsNullOrEmpty(codeVerifier))
                 throw new ArgumentException("code_verifier is required.", nameof(codeVerifier));
 
-            byte[] bytes = Encoding.ASCII.GetBytes(codeVerifier); // RFC 7636 uses ASCII subset
-            Span<byte> hash = stackalloc byte[32];
-            SHA256.HashData(bytes, hash);
-
-            string b64 = Convert.ToBase64String(hash);
-            return b64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+            return Hashing.Sha256Base64Url(codeVerifier);
         }
 
         public static bool VerifyS256(string storedChallenge, string incomingVerifier)

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing.Text;
 using System.IO;
 using Altinn.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Core.Helpers;
