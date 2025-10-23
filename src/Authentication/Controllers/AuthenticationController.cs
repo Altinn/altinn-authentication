@@ -156,9 +156,9 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             // Validate goTo url. It has to be a valid uri and on the same host or subdomain as this authentication service. Example skd.apps.altinn.no/skattemelding/ is allowed when altinn.no is the host domain
-            if (!Uri.TryCreate(goTo, UriKind.Absolute, out Uri validatedGoToUri) || !HostMatch.IsOnOrSubdomainOfAny(validatedGoToUri, [_generalSettings.HostName]))
+            if (!Uri.TryCreate(goTo, UriKind.Absolute, out var validatedGoToUri) || !IsSafeSameOrSubdomainHttps(validatedGoToUri, _generalSettings.HostName))
             {
-                return Redirect($"{_generalSettings.BaseUrl}");
+                return Redirect(_generalSettings.BaseUrl); // known-safe constant
             }
 
             string platformReturnUrl = $"{_generalSettings.PlatformEndpoint}authentication/api/v1/authentication?goto={goTo}";
@@ -223,7 +223,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         await CreateTokenCookie(userAuthentication);
 
-                        return Redirect(validatedGoToUri.OriginalString);
+                        return Redirect(validatedGoToUri.AbsoluteUri);
                     }
                 }
                 else if (_generalSettings.AuthorizationServerEnabled)
@@ -232,7 +232,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     // Verify if user is already authenticated. The just go directly to the target URL
                     if (User.Identity.IsAuthenticated)
                     {
-                        return Redirect(validatedGoToUri.OriginalString);
+                        return Redirect(validatedGoToUri.AbsoluteUri);
                     }
 
                     // Check to see if we have a valid Session cookie and recreate JWT Based on that
@@ -256,7 +256,7 @@ namespace Altinn.Platform.Authentication.Controllers
                                 });
                             }
 
-                            return Redirect(validatedGoToUri.OriginalString);
+                            return Redirect(validatedGoToUri.AbsoluteUri);
                             
                         }
                     }
@@ -289,8 +289,9 @@ namespace Altinn.Platform.Authentication.Controllers
                                     SameSite = c.SameSite
                                 });
                             }
-                           
-                            return Redirect(validatedGoToUri.OriginalString);
+
+                            // When you finally redirect:
+                            return Redirect(validatedGoToUri.AbsoluteUri); // not OriginalString
                         }
                     }
 
@@ -321,7 +322,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                     // Create Nonce. One is added to a cookie and another is sent as nonce parameter to OIDC provider
                     string nonce = CreateNonce(HttpContext);
-                    CreateGoToCookie(HttpContext, validatedGoToUri.OriginalString);
+                    CreateGoToCookie(HttpContext, validatedGoToUri.AbsoluteUri);
 
                     // Redirect to OIDC Provider
                     return Redirect(CreateAuthenticationRequest(provider, tokens.RequestToken, nonce));
@@ -332,7 +333,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 // Verify if user is already authenticated. The just go directly to the target URL
                 if (User.Identity.IsAuthenticated)
                 {
-                    return Redirect(validatedGoToUri.OriginalString);
+                    return Redirect(validatedGoToUri.AbsoluteUri);
                 }
 
                 // Check to see if we have a valid Session cookie and recreate JWT Based on that
@@ -356,7 +357,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             });
                         }
 
-                        return Redirect(validatedGoToUri.OriginalString);
+                        return Redirect(validatedGoToUri.AbsoluteUri);
                     }
                 }
 
@@ -394,7 +395,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         await CreateTokenCookie(userAuthentication);
                         
-                        return Redirect(validatedGoToUri.OriginalString);
+                        return Redirect(validatedGoToUri.AbsoluteUri);
                     }
                 }
             }
@@ -1316,6 +1317,44 @@ namespace Altinn.Platform.Authentication.Controllers
             return b64.Replace('+', '-')
                       .Replace('/', '_')
                       .TrimEnd('=');
+        }
+
+        private static bool IsSafeSameOrSubdomainHttps(Uri target, string baseHost)
+        {
+            if (target is null || !target.IsAbsoluteUri)
+            {
+                return false;
+            }
+
+            // 1) HTTPS only
+            if (!string.Equals(target.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            // 2) No embedded credentials
+            if (!string.IsNullOrEmpty(target.UserInfo))
+            {
+                return false;
+            }
+
+            // 3) Normalize hosts
+            static string Norm(string h) => h.Trim().TrimEnd('.').ToLowerInvariant();
+
+            string th = Norm(target.Host);
+            string bh = Norm(baseHost);
+            if (string.IsNullOrEmpty(th) || string.IsNullOrEmpty(bh))
+            {
+                return false;
+            }
+
+            // 4) Exact or dot-bounded subdomain
+            if (th == bh)
+            {
+                return true;
+            }
+
+            return th.Length > bh.Length && th.EndsWith("." + bh, StringComparison.Ordinal);
         }
     }
 }
