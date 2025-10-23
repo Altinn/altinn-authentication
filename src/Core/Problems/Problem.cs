@@ -340,7 +340,7 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AccessPackage_FailedToGetDelegatedPackages { get; }
-        = _factory.Create(55, HttpStatusCode.BadRequest, "Unable to get delegated access packages");
+        = _factory.Create(55, HttpStatusCode.InternalServerError, "Failed to get delegated access packages");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
@@ -377,4 +377,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor ChangeRequestStatusNotNewUseCorrellationId { get; }
         = _factory.Create(61, HttpStatusCode.Conflict, "The Status of the Request is not New. Please generate a new CorrellationId for a new Change Request");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToGetDelegatedRights { get; }
+        = _factory.Create(62, HttpStatusCode.InternalServerError, "Failed to get delegated rights");
 }

@@ -160,4 +160,13 @@ public interface IAccessManagementClient
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the list of all rights delegated to standard user
+    /// </summary>
+    /// <param name="systemUserId">The Guid Id for the Agent SystemUser</param>
+    /// <param name="party">The Guid Id for the party</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns></returns>
+    Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default);
 }
