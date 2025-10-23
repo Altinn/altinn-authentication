@@ -39,8 +39,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.Add(new NpgsqlParameter("request_id", NpgsqlDbType.Uuid) { Value = create.RequestId });
             cmd.Parameters.Add(new NpgsqlParameter("created_at", NpgsqlDbType.TimestampTz) { Value = createdAt });
             cmd.Parameters.Add(new NpgsqlParameter("expires_at", NpgsqlDbType.TimestampTz) { Value = create.ExpiresAt });
-            cmd.Parameters.Add(new NpgsqlParameter("issuer", NpgsqlDbType.Text) { Value = create.Issuer });
-            cmd.Parameters.Add(new NpgsqlParameter("goto_url", NpgsqlDbType.Text) { Value = create.GotoUrl });
+            cmd.Parameters.Add(new NpgsqlParameter("issuer", NpgsqlDbType.Text) { Value = (object?)create.Issuer ?? DBNull.Value }); 
+            cmd.Parameters.Add(new NpgsqlParameter("goto_url", NpgsqlDbType.Text) { Value = (object?)create.GotoUrl ?? DBNull.Value });
 
             // INET can be null
             cmd.Parameters.Add(new NpgsqlParameter("created_by_ip", NpgsqlDbType.Inet)
@@ -151,15 +151,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         private static UnregisteredClientRequest Map(NpgsqlDataReader rdr)
         {
             var requestId = rdr.GetGuid(0);
-            var status = FromDb(rdr.GetString(1));
+            var status = FromDb(rdr.GetString(rdr.GetOrdinal("status")));
 
             // created_at (timestamptz) → DateTimeOffset (UTC)
-            var createdAtDt = rdr.GetFieldValue<DateTime>(2);
-            var createdAt = DateTime.SpecifyKind(createdAtDt, DateTimeKind.Utc);
-            var createdAtOffset = new DateTimeOffset(createdAt);
-
-            var expiresAtDt = rdr.GetFieldValue<DateTime>(3);
-            var expiresAt = new DateTimeOffset(DateTime.SpecifyKind(expiresAtDt, DateTimeKind.Utc));
+            DateTimeOffset createdAtOffset = rdr.GetFieldValue<DateTimeOffset>(2);
+            DateTimeOffset expiresAt = rdr.GetFieldValue<DateTimeOffset>(3);
 
             DateTimeOffset? completedAt = null;
             if (!rdr.IsDBNull(4))
