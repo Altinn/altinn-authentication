@@ -1,4 +1,3 @@
-﻿
 -- Individual refresh token instances (rotated on every use)
 CREATE TABLE IF NOT EXISTS oidcserver.refresh_token (
   token_id           UUID PRIMARY KEY,                -- server-generated
