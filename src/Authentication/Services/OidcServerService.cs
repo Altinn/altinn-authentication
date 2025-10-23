@@ -1293,7 +1293,7 @@ namespace Altinn.Platform.Authentication.Services
             return ub.Uri;
         }
 
-        private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
+        private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
@@ -1369,23 +1369,22 @@ namespace Altinn.Platform.Authentication.Services
             return userAuthenticationModel;
         }
 
-        private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
+        private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)
         {
             string hashedIdentity = HashNonce(userAuthenticationModel.ExternalIdentity).Substring(5, 10);
             Regex rgx = new Regex("[^a-zA-Z0-9 -]");
             hashedIdentity = rgx.Replace(hashedIdentity, string.Empty);
 
-            return provider.UserNamePrefix + hashedIdentity.ToLower() + DateTime.Now.Millisecond;
+            return (provider?.UserNamePrefix ?? "altinn-")
+                    + hashedIdentity.ToLowerInvariant()
+                    + CryptoHelpers.RandomBase64Url(6);
         }
 
         private static string HashNonce(string nonce)
         {
-            using (SHA256 nonceHash = SHA256.Create())
-            {
-                byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(nonce);
-                byte[] byteArrayResult = nonceHash.ComputeHash(byteArrayResultOfRawData);
-                return Convert.ToBase64String(byteArrayResult);
-            }
+            byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(nonce);
+            byte[] byteArrayResult = SHA256.HashData(byteArrayResultOfRawData);
+            return Convert.ToBase64String(byteArrayResult);
         }
 
         private static byte[] DecodePepper(string value)
