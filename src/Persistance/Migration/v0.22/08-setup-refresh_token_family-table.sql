@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS oidcserver.refresh_token_family (
   revoked_at         TIMESTAMPTZ,
   revoked_reason     TEXT,
 
+CHECK ((revoked_at IS NULL AND revoked_reason IS NULL) OR (revoked_at IS NOT NULL AND revoked_reason IS NOT NULL))
+
   CONSTRAINT fk_family_session
     FOREIGN KEY (op_sid) REFERENCES oidcserver.oidc_session (sid) ON DELETE CASCADE
 );
