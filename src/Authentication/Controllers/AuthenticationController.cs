@@ -1326,12 +1326,6 @@ namespace Altinn.Platform.Authentication.Controllers
                 return false;
             }
 
-            // 1) HTTPS only
-            if (!string.Equals(target.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
             // 2) No embedded credentials
             if (!string.IsNullOrEmpty(target.UserInfo))
             {
