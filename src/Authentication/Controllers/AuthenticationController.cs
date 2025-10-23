@@ -220,7 +220,16 @@ namespace Altinn.Platform.Authentication.Controllers
                     if (userAuthentication != null && userAuthentication.IsAuthenticated)
                     {
                         await CreateTokenCookie(userAuthentication);
-                        return Redirect(validatedGoToUri.ToString());
+
+                        if (!validatedGoToUri.IsAbsoluteUri || IsValidRedirectUri(validatedGoToUri.Host))
+                        {
+                            return Redirect(validatedGoToUri.ToString());
+                        }
+                        else
+                        {
+                            // Unsafe redirect attempted; redirect to safe default
+                            return Redirect($"{_generalSettings.BaseUrl}");
+                        }
                     }
                 }
                 else if (_generalSettings.AuthorizationServerEnabled)
@@ -229,7 +238,15 @@ namespace Altinn.Platform.Authentication.Controllers
                     // Verify if user is already authenticated. The just go directly to the target URL
                     if (User.Identity.IsAuthenticated)
                     {
-                        return Redirect(validatedGoToUri.ToString());
+                        if (!validatedGoToUri.IsAbsoluteUri || IsValidRedirectUri(validatedGoToUri.Host))
+                        {
+                            return Redirect(validatedGoToUri.ToString());
+                        }
+                        else
+                        {
+                            // Unsafe redirect attempted; redirect to safe default
+                            return Redirect($"{_generalSettings.BaseUrl}");
+                        }
                     }
 
                     // Check to see if we have a valid Session cookie and recreate JWT Based on that
@@ -253,7 +270,15 @@ namespace Altinn.Platform.Authentication.Controllers
                                 });
                             }
 
-                            return Redirect(validatedGoToUri.ToString());
+                            if (!validatedGoToUri.IsAbsoluteUri || IsValidRedirectUri(validatedGoToUri.Host))
+                            {
+                                return Redirect(validatedGoToUri.ToString());
+                            }
+                            else
+                            {
+                                // Unsafe redirect attempted; redirect to safe default
+                                return Redirect($"{_generalSettings.BaseUrl}");
+                            }
                         }
                     }
 
@@ -286,7 +311,15 @@ namespace Altinn.Platform.Authentication.Controllers
                                 });
                             }
 
-                            return Redirect(validatedGoToUri.ToString());
+                            if (!validatedGoToUri.IsAbsoluteUri || IsValidRedirectUri(validatedGoToUri.Host))
+                            {
+                                return Redirect(validatedGoToUri.ToString());
+                            }
+                            else
+                            {
+                                // Unsafe redirect attempted; redirect to safe default
+                                return Redirect($"{_generalSettings.BaseUrl}");
+                            }
                         }
                     }
 
@@ -328,7 +361,15 @@ namespace Altinn.Platform.Authentication.Controllers
                 // Verify if user is already authenticated. The just go directly to the target URL
                 if (User.Identity.IsAuthenticated)
                 {
-                    return Redirect(validatedGoToUri.ToString());
+                    if (!validatedGoToUri.IsAbsoluteUri || IsValidRedirectUri(validatedGoToUri.Host))
+                    {
+                        return Redirect(validatedGoToUri.ToString());
+                    }
+                    else
+                    {
+                        // Unsafe redirect attempted; redirect to safe default
+                        return Redirect($"{_generalSettings.BaseUrl}");
+                    }
                 }
 
                 // Check to see if we have a valid Session cookie and recreate JWT Based on that
@@ -352,7 +393,15 @@ namespace Altinn.Platform.Authentication.Controllers
                             });
                         }
 
-                        return Redirect(validatedGoToUri.ToString());
+                        if (!validatedGoToUri.IsAbsoluteUri || IsValidRedirectUri(validatedGoToUri.Host))
+                        {
+                            return Redirect(validatedGoToUri.ToString());
+                        }
+                        else
+                        {
+                            // Unsafe redirect attempted; redirect to safe default
+                            return Redirect($"{_generalSettings.BaseUrl}");
+                        }
                     }
                 }
 
@@ -389,7 +438,15 @@ namespace Altinn.Platform.Authentication.Controllers
                     if (userAuthentication != null && userAuthentication.IsAuthenticated)
                     {
                         await CreateTokenCookie(userAuthentication);
-                        return Redirect(validatedGoToUri.ToString());
+                        if (!validatedGoToUri.IsAbsoluteUri || IsValidRedirectUri(validatedGoToUri.Host))
+                        {
+                            return Redirect(validatedGoToUri.ToString());
+                        }
+                        else
+                        {
+                            // Unsafe redirect attempted; redirect to safe default
+                            return Redirect($"{_generalSettings.BaseUrl}");
+                        }
                     }
                 }
             }
