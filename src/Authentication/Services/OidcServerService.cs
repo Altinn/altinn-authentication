@@ -509,35 +509,35 @@ namespace Altinn.Platform.Authentication.Services
         /// Handles upstream front-channel logout requests.
         /// </summary>
         public async Task<UpstreamFrontChannelLogoutResult> HandleUpstreamFrontChannelLogoutAsync(
-    UpstreamFrontChannelLogoutInput input,
+    UpstreamFrontChannelLogoutInput upstreamFrontChannelLogoutInput,
     CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(upstreamFrontChannelLogoutInput);
 
             // 1) Validate issuer against configured upstreams
             // Accept either exact Issuer URL or configured key, depending on what the IdP sends.
             var provider = _oidcProviderSettings.Values.FirstOrDefault(p =>
-                string.Equals(p.Issuer, input.Issuer, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(p.IssuerKey, input.Issuer, StringComparison.OrdinalIgnoreCase));
+                string.Equals(p.Issuer, upstreamFrontChannelLogoutInput.Issuer, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p.IssuerKey, upstreamFrontChannelLogoutInput.Issuer, StringComparison.OrdinalIgnoreCase));
 
             if (provider is null)
             {
-                _logger.LogWarning("Upstream front-channel logout ignored: unknown issuer {Issuer}", input.Issuer);
+                _logger.LogWarning("Upstream front-channel logout ignored: unknown issuer {Issuer}", upstreamFrontChannelLogoutInput.Issuer);
                 return new UpstreamFrontChannelLogoutResult { TerminatedSessions = 0 };
             }
 
             // 2) Find all local sessions tied to this upstream (issuer + upstream sid)
             // We fetch SIDs first (for revocation + cookie comparison), then delete.
-            string[] localSids = await _oidcSessionRepo.GetSidsByUpstreamSessionSidAsync(provider.Issuer, input.UpstreamSid, cancellationToken);
+            string[] localSids = await _oidcSessionRepo.GetSidsByUpstreamSessionSidAsync(provider.Issuer, upstreamFrontChannelLogoutInput.UpstreamSid, cancellationToken);
 
             if (localSids.Length == 0)
             {
-                _logger.LogInformation("Upstream front-channel logout: no local sessions for issuer={Issuer}, sid={Sid}", provider.Issuer, input.UpstreamSid);
+                _logger.LogInformation("Upstream front-channel logout: no local sessions for issuer={Issuer}, sid={Sid}", provider.Issuer, upstreamFrontChannelLogoutInput.UpstreamSid);
                 return new UpstreamFrontChannelLogoutResult { TerminatedSessions = 0 };
             }
 
             // 3) Delete sessions (idempotent)
-            int deleted = await _oidcSessionRepo.DeleteByUpstreamSessionSidAsync(provider.Issuer, input.UpstreamSid, cancellationToken);
+            int deleted = await _oidcSessionRepo.DeleteByUpstreamSessionSidAsync(provider.Issuer, upstreamFrontChannelLogoutInput.UpstreamSid, cancellationToken);
 
             // 4) Revoke refresh tokens / invalidate codes for those SIDs (if you have repos)
             foreach (var sid in localSids)
@@ -553,7 +553,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 5) If this very browser has a cookie principal matching any of these SIDs, clear cookie (best-effort)
-            string? principalSid = input.User?.Claims?.FirstOrDefault(c => c.Type == "sid")?.Value;
+            string? principalSid = upstreamFrontChannelLogoutInput.User?.Claims?.FirstOrDefault(c => c.Type == "sid")?.Value;
             List<CookieInstruction> cookies = [];
             if (!string.IsNullOrEmpty(principalSid) && localSids.Contains(principalSid, StringComparer.Ordinal))
             {
