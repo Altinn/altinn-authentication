@@ -1,6 +1,10 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Model;
@@ -25,10 +29,22 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Validate the token issued by an upstream OIDC provider.
         /// </summary>
-        public async Task<JwtSecurityToken> ValidateTokenAsync(string token, OidcProvider provider, string audience, CancellationToken ct = default)
+        public async Task<JwtSecurityToken> ValidateTokenAsync(string token, OidcProvider provider, string? nonce, CancellationToken ct = default)
         {
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new ArgumentException("Token must be provided.", nameof(token));
+            }
+            
             ICollection<SecurityKey> signingKeys = await _signingKeysRetriever.GetSigningKeys(provider.WellKnownConfigEndpoint);
-            return ValidateToken(token, signingKeys);
+            JwtSecurityToken jwtToken = ValidateToken(token, signingKeys);
+            if (nonce != null)
+            {
+                // Only relevant for ID tokens
+                ValidateNonce(jwtToken, nonce);
+            }
+
+            return jwtToken;
         }
 
         private JwtSecurityToken ValidateToken(string originalToken, ICollection<SecurityKey> signingKeys)
@@ -47,6 +63,50 @@ namespace Altinn.Platform.Authentication.Services
             _validator.ValidateToken(originalToken, validationParameters, out _);
             JwtSecurityToken token = _validator.ReadJwtToken(originalToken);
             return token;
+        }
+
+        private void ValidateNonce(JwtSecurityToken token, string expectedNonce)
+        {
+            string? actual = token.Claims.FirstOrDefault(c => c.Type == "nonce")?.Value;
+
+            if (string.IsNullOrEmpty(actual))
+            {
+                _logger.LogWarning("ID token missing 'nonce' claim.");
+                throw new SecurityTokenValidationException("ID token missing 'nonce' claim.");
+            }
+
+            // Compare constant-time to avoid timing leaks.
+            if (!ConstantTimeEquals(expectedNonce, actual) &&
+                !ConstantTimeEquals(Base64UrlSha256(expectedNonce), actual))
+            {
+                _logger.LogWarning("ID token nonce mismatch.");
+                throw new SecurityTokenValidationException("Invalid nonce.");
+            }
+        }
+
+        private static bool ConstantTimeEquals(string left, string right)
+        {
+            byte[] a = Encoding.UTF8.GetBytes(left);
+            byte[] b = Encoding.UTF8.GetBytes(right);
+
+            if (a.Length != b.Length)
+            {
+                return false;
+            }
+
+            return CryptographicOperations.FixedTimeEquals(a, b);
+        }
+
+        private static string Base64UrlSha256(string input)
+        {
+            using var sha = SHA256.Create();
+            byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
+
+            // Base64Url without padding
+            return Convert.ToBase64String(hash)
+                .TrimEnd('=')
+                .Replace('+', '-')
+                .Replace('/', '_');
         }
     }
 }

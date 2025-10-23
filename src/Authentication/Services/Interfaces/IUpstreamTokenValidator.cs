@@ -13,6 +13,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <summary>
         /// Validates an upstream token and returns a JwtSecurityToken if valid.
         /// </summary>
-        Task<JwtSecurityToken> ValidateTokenAsync(string token, OidcProvider provider, string audience, CancellationToken cancellationToken = default);
+        Task<JwtSecurityToken> ValidateTokenAsync(string token, OidcProvider provider, string? nonce, CancellationToken cancellationToken = default);
     }
 }
