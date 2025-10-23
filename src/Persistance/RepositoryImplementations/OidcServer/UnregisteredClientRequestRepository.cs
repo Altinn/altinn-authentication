@@ -7,7 +7,8 @@ using NpgsqlTypes;
 namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.OidcServer
 {
     /// <summary>
-    /// Provides methods for managing unregistered_client requests in the OIDC server database.
+    /// Provides methods for managing unregistered_client requests in the OIDC server database. Unregistered clients are typical Apps running in Altinn Apps and other Altinn Components like Altinn Access Management. When they are access by user not
+    /// authenticated, they will redirect the user to Altinn Authentication to be authenticated. This repository handles the requests for such unregistered clients.
     /// </summary>
     /// <remarks>This repository is responsible for creating, updating, retrieving, and deleting unregistered_client
     /// request records. It uses an <see cref="NpgsqlDataSource"/> for database access and a <see cref="TimeProvider"/>
@@ -68,9 +69,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         {
             const string sql = @"
             SELECT request_id, status, created_at, expires_at, completed_at,
-                    issuer, goto_url, upstream_request_id, created_by_ip, user_agent_hash, correlation_id, handled_by_callback
-                FROM oidcserver.unregistered_client_request
-                WHERE request_id = @request_id;";
+                   issuer, goto_url, upstream_request_id, created_by_ip, user_agent_hash, correlation_id, handled_by_callback
+              FROM oidcserver.unregistered_client_request
+             WHERE request_id = @request_id;";
 
             await using var conn = await _dataSource.OpenConnectionAsync(ct);
             await using var cmd = new NpgsqlCommand(sql, conn);
@@ -150,33 +151,41 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
         private static UnregisteredClientRequest Map(NpgsqlDataReader rdr)
         {
-            var requestId = rdr.GetGuid(0);
-            var status = FromDb(rdr.GetString(rdr.GetOrdinal("status")));
+            Guid requestId = rdr.GetGuid(rdr.GetOrdinal("request_id"));
+            UnregisteredClientRequestStatus status = FromDb(rdr.GetString(rdr.GetOrdinal("status")));
 
             // created_at (timestamptz) → DateTimeOffset (UTC)
-            DateTimeOffset createdAtOffset = rdr.GetFieldValue<DateTimeOffset>(2);
-            DateTimeOffset expiresAt = rdr.GetFieldValue<DateTimeOffset>(3);
+            DateTimeOffset createdAtOffset = rdr.GetFieldValue<DateTimeOffset>(rdr.GetOrdinal("created_at"));
+            DateTimeOffset expiresAt = rdr.GetFieldValue<DateTimeOffset>(rdr.GetOrdinal("expires_at"));
 
             DateTimeOffset? completedAt = null;
-            if (!rdr.IsDBNull(4))
+            if (!rdr.IsDBNull(rdr.GetOrdinal("completed_at")))
             {
-                var completedAtDt = rdr.GetFieldValue<DateTime>(4);
-                completedAt = new DateTimeOffset(DateTime.SpecifyKind(completedAtDt, DateTimeKind.Utc));
+                // Prefer DateTimeOffset directly if available; fall back to DateTime conversion
+                if (rdr.GetFieldType(rdr.GetOrdinal("completed_at")) == typeof(DateTimeOffset))
+                {
+                    completedAt = rdr.GetFieldValue<DateTimeOffset>(rdr.GetOrdinal("completed_at"));
+                }
+                else
+                {
+                    var completedAtDt = rdr.GetFieldValue<DateTime>(rdr.GetOrdinal("completed_at"));
+                    completedAt = new DateTimeOffset(DateTime.SpecifyKind(completedAtDt, DateTimeKind.Utc));
+                }
             }
 
-            var issuer = rdr.GetString(5);
-            var gotoUrl = rdr.GetString(6);
-            var upstreamRequestId = rdr.IsDBNull(7) ? (Guid?)null : rdr.GetGuid(7);
+            string issuer = rdr.GetString(rdr.GetOrdinal("issuer"));
+            string gotoUrl = rdr.GetString(rdr.GetOrdinal("goto_url"));
+            Guid? upstreamRequestId = rdr.IsDBNull(rdr.GetOrdinal("upstream_request_id")) ? (Guid?)null : rdr.GetGuid(rdr.GetOrdinal("upstream_request_id"));
 
             IPAddress? ip = null;
-            if (!rdr.IsDBNull(8))
+            if (!rdr.IsDBNull(rdr.GetOrdinal("user_agent_hash")))
             {
-                ip = rdr.GetFieldValue<IPAddress>(8);
+                ip = rdr.GetFieldValue<IPAddress>(rdr.GetOrdinal("created_by_ip"));
             }
 
-            var userAgentHash = rdr.IsDBNull(9) ? null : rdr.GetString(9);
-            var correlationId = rdr.IsDBNull(10) ? (Guid?)null : rdr.GetGuid(10);
-            var handledByCallback = rdr.IsDBNull(11) ? null : rdr.GetString(11);
+            string? userAgentHash = rdr.IsDBNull(rdr.GetOrdinal("user_agent_hash")) ? null : rdr.GetString(rdr.GetOrdinal("user_agent_hash"));
+            Guid? correlationId = rdr.IsDBNull(rdr.GetOrdinal("correlation_id")) ? (Guid?)null : rdr.GetGuid(rdr.GetOrdinal("correlation_id"));
+            string? handledByCallback = rdr.IsDBNull(rdr.GetOrdinal("handled_by_callback")) ? null : rdr.GetString(rdr.GetOrdinal("handled_by_callback"));
 
             return new UnregisteredClientRequest(
                 requestId,
