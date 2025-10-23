@@ -531,7 +531,7 @@ namespace Altinn.Platform.Authentication.Services
                 
                 foreach (Guid familyGuid in families)
                 {
-                    await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontlogou", ct);
+                    await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontchannel_logout", ct);
                 }
 
                 // await _authorizationCodeRepo.InvalidateBySidAsync(sid, _timeProvider.GetUtcNow(), ct);

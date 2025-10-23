@@ -1290,11 +1290,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         private void ConfigureSblTokenMockByScenario(OidcTestScenario scenario)
         {
-            UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel
+            string acrJoined = (scenario.Acr is { Count: > 0 }) ? string.Join(string.Empty, scenario.Acr) : string.Empty;
+            string amrJoined = (scenario.Amr is { Count: > 0 }) ? string.Join(string.Empty, scenario.Amr) : string.Empty;
+
+            UserAuthenticationModel userAuthenticationModel = new()
             {
                 IsAuthenticated = true,
-                AuthenticationLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(string.Join(string.Empty, scenario.Acr)),
-                AuthenticationMethod = AuthenticationHelper.GetAuthenticationMethod(string.Join(string.Empty, scenario.Amr)),
+                AuthenticationLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(acrJoined),
+                AuthenticationMethod = AuthenticationHelper.GetAuthenticationMethod(amrJoined),
                 PartyID = scenario.PartyId,
                 UserID = scenario.UserId,
                 Username = scenario.UserName
