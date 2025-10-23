@@ -17,10 +17,10 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Gets an existing non-revoked family for (clientId, subjectId, opSid), or creates a new one if none exists.
         /// </summary>
-        public async Task<Guid> GetOrCreateFamilyAsync(string clientId, string subjectId, string opSid, CancellationToken ct)
+        public async Task<Guid> GetOrCreateFamilyAsync(string clientId, string subjectId, string opSid, CancellationToken cancellationToken)
         {
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
-            await using var tx = await conn.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
+            await using var tx = await conn.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
             // Try find an existing, non-revoked family for (client, subject, opSid)
             const string selectSql = @"
@@ -39,10 +39,10 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 cmd.Parameters.AddWithValue("subject_id", NpgsqlDbType.Text, subjectId);
                 cmd.Parameters.AddWithValue("op_sid", NpgsqlDbType.Text, opSid);
 
-                var result = await cmd.ExecuteScalarAsync(ct);
+                var result = await cmd.ExecuteScalarAsync(cancellationToken);
                 if (result is Guid existingId)
                 {
-                    await tx.CommitAsync(ct);
+                    await tx.CommitAsync(cancellationToken);
                     return existingId;
                 }
             }
@@ -63,18 +63,18 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 cmd.Parameters.AddWithValue("subject_id", NpgsqlDbType.Text, subjectId);
                 cmd.Parameters.AddWithValue("op_sid", NpgsqlDbType.Text, opSid);
 
-                await cmd.ExecuteNonQueryAsync(ct);
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            await tx.CommitAsync(ct);
+            await tx.CommitAsync(cancellationToken);
             return familyId;
         }
 
         /// <inheritdoc/>
-        public async Task<IReadOnlyList<Guid>> GetFamiliesByOpSidAsync(string opSid, CancellationToken ct)
+        public async Task<IReadOnlyList<Guid>> GetFamiliesByOpSidAsync(string opSid, CancellationToken cancellationToken)
         {
             var ids = new List<Guid>();
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             const string sql = @"
             SELECT family_id
             FROM oidcserver.refresh_token_family
@@ -83,8 +83,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("op_sid", NpgsqlDbType.Text, opSid);
 
-            await using var reader = await cmd.ExecuteReaderAsync(ct);
-            while (await reader.ReadAsync(ct))
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
             {
                 ids.Add(reader.GetGuid(0));
             }
@@ -93,10 +93,10 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task RevokeFamilyAsync(Guid familyId, string reason, CancellationToken ct)
+        public async Task RevokeFamilyAsync(Guid familyId, string reason, CancellationToken cancellationToken)
         {
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
-            await using var tx = await conn.BeginTransactionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
+            await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
             // Mark family revoked
             const string upfamily = @"
@@ -108,7 +108,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             {
                 cmd.Parameters.AddWithValue("family_id", NpgsqlDbType.Uuid, familyId);
                 cmd.Parameters.AddWithValue("reason", NpgsqlDbType.Text, (object?)reason ?? DBNull.Value);
-                await cmd.ExecuteNonQueryAsync(ct);
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
 
             // Revoke all tokens in the family that are not already revoked/used
@@ -121,16 +121,16 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             {
                 cmd.Parameters.AddWithValue("family_id", NpgsqlDbType.Uuid, familyId);
                 cmd.Parameters.AddWithValue("reason", NpgsqlDbType.Text, (object?)reason ?? DBNull.Value);
-                await cmd.ExecuteNonQueryAsync(ct);
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            await tx.CommitAsync(ct);
+            await tx.CommitAsync(cancellationToken);
         }
 
         /// <inheritdoc/>
-        public async Task InsertAsync(RefreshTokenRow row, CancellationToken ct)
+        public async Task InsertAsync(RefreshTokenRow row, CancellationToken cancellationToken)
         {
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             const string sql = @"
                 INSERT INTO oidcserver.refresh_token (
                     token_id, family_id, status,
@@ -189,13 +189,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("ip_hash", NpgsqlDbType.Text, (object?)row.IpHash ?? DBNull.Value);
             cmd.Parameters.Add(JsonbParam("provider_claims", row.ProviderClaims));
 
-            await cmd.ExecuteNonQueryAsync(ct);
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <inheritdoc/>
-        public async Task<RefreshTokenRow?> GetByLookupKeyAsync(byte[] lookupKey, CancellationToken ct)
+        public async Task<RefreshTokenRow?> GetByLookupKeyAsync(byte[] lookupKey, CancellationToken cancellationToken)
         {
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             const string sql = @"
                 SELECT
                   token_id, family_id, status,
@@ -213,8 +213,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             await using NpgsqlCommand cmd = new(sql, conn);
             cmd.Parameters.AddWithValue("lookup_key", NpgsqlDbType.Bytea, lookupKey);
 
-            await using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync(ct);
-            if (!await reader.ReadAsync(ct))
+            await using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (!await reader.ReadAsync(cancellationToken))
             {
                 return null;
             }
@@ -223,9 +223,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task MarkUsedAsync(Guid tokenId, Guid rotatedToTokenId, CancellationToken ct)
+        public async Task MarkUsedAsync(Guid tokenId, Guid rotatedToTokenId, CancellationToken cancellationToken)
         {
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             const string sql = @"
                 UPDATE oidcserver.refresh_token
                 SET status = 'used',
@@ -237,13 +237,13 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             await using NpgsqlCommand cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("token_id", NpgsqlDbType.Uuid, tokenId);
             cmd.Parameters.AddWithValue("rotated_to", NpgsqlDbType.Uuid, rotatedToTokenId);
-            await cmd.ExecuteNonQueryAsync(ct);
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <inheritdoc/>
-        public async Task RevokeAsync(Guid tokenId, string reason, CancellationToken ct)
+        public async Task RevokeAsync(Guid tokenId, string reason, CancellationToken cancellationToken)
         {
-            await using var conn = await _dataSource.OpenConnectionAsync(ct);
+            await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
             const string sql = @"
                 UPDATE oidcserver.refresh_token
                 SET status = 'revoked',
@@ -254,7 +254,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("token_id", NpgsqlDbType.Uuid, tokenId);
             cmd.Parameters.AddWithValue("reason", NpgsqlDbType.Text, (object?)reason ?? DBNull.Value);
-            await cmd.ExecuteNonQueryAsync(ct);
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         // ---------------------------
