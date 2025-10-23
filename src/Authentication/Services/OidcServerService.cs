@@ -123,17 +123,20 @@ namespace Altinn.Platform.Authentication.Services
             }
             else if (!string.IsNullOrEmpty(sessionHandle))
             {
-                byte[] sessionHandleByte = Convert.FromBase64String(sessionHandle);
+                byte[] sessionHandleByte = FromBase64Url(sessionHandle);
                 existingSession = await _oidcSessionRepo.GetBySessionHandleAsync(sessionHandleByte, cancellationToken);
             }
 
             // Verify that found session 
-            if (existingSession != null && _timeProvider.GetUtcNow() < existingSession.ExpiresAt)
+            if (existingSession is not null
+                && existingSession.ExpiresAt.HasValue
+                && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value)
             {
                 // Check if existing session meets ACR requirements from request
                 if (!AuthenticationHelper.NeedAcrUpgrade(existingSession.Acr, request.AcrValues))
                 {
-                    // There is a valid session with high enough ACR. We just create a code an return straight away.
+                    // There is a valid session with high enough ACR. We just create a code an return straight away. Also slide session expiry.
+                    await _oidcSessionRepo.SlideExpiryToAsync(existingSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
                     string code = await CreateDownstreamAuthorizationCode(null, tx, existingSession, cancellationToken);
                     return AuthorizeResult.RedirectToDownstreamBasedOnReusedSession(
                         request.RedirectUri, // safe because validated
@@ -304,21 +307,27 @@ namespace Altinn.Platform.Authentication.Services
         /// Handles refresh of session basded on claims principal
         /// -
         /// </summary>
-        public Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct)
+        public async Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken ct)
         {
             Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
             if (sidClaim == null && _generalSettings.ForceOidc)
             {
                 throw new InvalidOperationException("No sid claim present in principal");
             }
-            else if (sidClaim == null)
-            {
-                // TODO: Need to consider this scenario. 
-                return Task.FromResult<OidcSession?>(null);
-            }
 
-            _oidcSessionRepo.SlideExpiryToAsync(sidClaim!.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), ct);
-            return _oidcSessionRepo.GetBySidAsync(sidClaim.Value, ct) ?? throw new InvalidOperationException("No valid session found for sid");
+            if (sidClaim == null)
+            {
+                return null;
+            }
+            
+            await _oidcSessionRepo.SlideExpiryToAsync(sidClaim.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), ct);
+            var session = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, ct);
+            if (session is null && _generalSettings.ForceOidc)
+            {
+                throw new InvalidOperationException("No valid session found for sid");
+            }
+            
+            return session;
         }
 
         /// <summary>
@@ -335,33 +344,73 @@ namespace Altinn.Platform.Authentication.Services
 
             if (!string.IsNullOrWhiteSpace(input.IdTokenHint))
             {
-                JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+                JwtSecurityTokenHandler handler = new();
                 if (handler.CanReadToken(input.IdTokenHint))
                 {
-                    JwtSecurityToken jwt = handler.ReadJwtToken(input.IdTokenHint);
-                    hintClientId = jwt.Audiences?.FirstOrDefault();
-                    hintSid = jwt.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
+                    JwtSecurityToken raw = handler.ReadJwtToken(input.IdTokenHint);
+                    try
+                    {
+                        OidcProvider provider = ChooseProviderByIssuer(raw.Issuer);
+                        JwtSecurityToken validated = await _upstreamTokenValidator.ValidateTokenAsync(input.IdTokenHint, provider, null, ct);
+                        hintClientId = validated.Audiences?.FirstOrDefault();
+                        hintSid = validated.Claims.FirstOrDefault(c => c.Type == "sid")?.Value;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Invalid id_token_hint presented to end_session endpoint.");
+                    }
                 }
-
-                // If you want signature/exp validation, wire in your existing OP token validator here.
             }
 
             string? sid = cookieSid ?? hintSid;
+
+            if (string.IsNullOrWhiteSpace(sid))
+            {
+                _logger.LogDebug("EndSession: no sid from cookie or id_token_hint; returning cookie delete only.");
+                return new EndSessionResult
+                {
+                    RedirectUri = new Uri(_generalSettings.SBLLogoutEndpoint), // Redirect to SBL logout as a safe default
+                    State = input.State,
+                    Cookies = new[]
+                    {
+                        new CookieInstruction
+                        {
+                            Name = _generalSettings.JwtCookieName,
+                            Value = string.Empty,
+                            HttpOnly = true,
+                            Secure = true,
+                            Path = "/",
+                            SameSite = SameSiteMode.Lax,
+                            Expires = DateTimeOffset.UnixEpoch
+                        },
+                        new CookieInstruction
+                        {
+                            Name = _generalSettings.AltinnSessionCookieName,
+                            Value = string.Empty,
+                            HttpOnly = true,
+                            Secure = true,
+                            Path = "/",
+                            SameSite = SameSiteMode.Lax,
+                            Expires = DateTimeOffset.UnixEpoch
+                        }
+                    }
+                };
+            }
 
             // 2) Validate post_logout_redirect_uri (if provided and if we know the client from the hint)
             // TODO: We need to discuss if we need to support this. What about apps running outside Altinn. 
             Uri? redirect = null;
             if (input.PostLogoutRedirectUri is not null && !string.IsNullOrWhiteSpace(hintClientId))
             {
-                var client = await _oidcServerClientRepository.GetClientAsync(hintClientId!, ct);
+                OidcClient? client = await _oidcServerClientRepository.GetClientAsync(hintClientId!, ct);
                 if (client?.RedirectUris?.Any() == true &&
                     client.RedirectUris.Contains(input.PostLogoutRedirectUri))
                 {
                     // Append state if any
-                    var ub = new UriBuilder(input.PostLogoutRedirectUri);
+                    UriBuilder ub = new UriBuilder(input.PostLogoutRedirectUri);
                     if (!string.IsNullOrWhiteSpace(input.State))
                     {
-                        var q = System.Web.HttpUtility.ParseQueryString(ub.Query);
+                        System.Collections.Specialized.NameValueCollection q = System.Web.HttpUtility.ParseQueryString(ub.Query);
                         q["state"] = input.State;
                         ub.Query = q.ToString()!;
                     }
@@ -409,7 +458,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 4) Instruct caller to delete the runtime cookie (attributes must match how it was set)
-            var deleteRuntime = new CookieInstruction
+            CookieInstruction deleteRuntime = new()
             {
                 Name = _generalSettings.JwtCookieName,
                 Value = string.Empty,
@@ -427,7 +476,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 RedirectUri = redirect,
                 State = input.State,
-                Cookies = new[] { deleteRuntime }
+                Cookies = [deleteRuntime]
             };
         }
 
