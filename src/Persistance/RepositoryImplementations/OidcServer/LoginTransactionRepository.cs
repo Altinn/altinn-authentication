@@ -22,7 +22,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         private readonly TimeProvider _time = timeProvider;
 
         /// <inheritdoc/>
-        public async Task<LoginTransaction> InsertAsync(LoginTransactionCreate create, CancellationToken ct = default)
+        public async Task<LoginTransaction> InsertAsync(LoginTransactionCreate create, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(create);
             if (string.IsNullOrWhiteSpace(create.ClientId))
@@ -182,8 +182,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 cmd.Parameters.AddWithValue("user_agent_hash", (object?)create.UserAgentHash ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("correlation_id", (object?)create.CorrelationId ?? DBNull.Value);
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
-                if (!await reader.ReadAsync(ct))
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     throw new DataException("INSERT login_transaction returned no row.");
                 }
@@ -198,7 +198,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task<LoginTransaction?> GetByRequestIdAsync(Guid requestId, CancellationToken ct = default)
+        public async Task<LoginTransaction?> GetByRequestIdAsync(Guid requestId, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ @"
                 SELECT
@@ -240,8 +240,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 await using var cmd = _ds.CreateCommand(SQL);
                 cmd.Parameters.AddWithValue("request_id", requestId);
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
-                if (!await reader.ReadAsync(ct))
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     return null;
                 }

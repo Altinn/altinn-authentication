@@ -14,7 +14,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// <param name="clientId">
         /// The unique client identifier as supplied by the RP (e.g., in <c>/authorize</c> or <c>/token</c>).
         /// </param>
-        /// <param name="ct">Cancellation token.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>
         /// The <see cref="OidcClient"/> if found (and enabled, if implementation filters on that), otherwise <c>null</c>.
         /// </returns>
@@ -26,7 +26,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// allowed scopes, PKCE policy, and client authentication method for <c>/token</c>.
         /// Implementations should ensure case handling matches storage semantics (usually case-sensitive).
         /// </remarks>
-        Task<OidcClient?> GetClientAsync(string clientId, CancellationToken ct = default);
+        Task<OidcClient?> GetClientAsync(string clientId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Inserts a new OIDC client configuration row and returns the stored object as read back from the database.
@@ -35,7 +35,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// The input model containing normalized values (absolute <c>redirect_uris</c>, lowercased/unique <c>allowed_scopes</c>,
         /// and a <b>hash</b> of the client secret if used—never plaintext).
         /// </param>
-        /// <param name="ct">Cancellation token.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>
         /// The persisted <see cref="OidcClient"/> as mapped from the <c>RETURNING</c> clause.
         /// </returns>
@@ -57,6 +57,6 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         ///   <item><description>Return the inserted row using <c>RETURNING</c> so the caller gets the canonical stored values.</description></item>
         /// </list>
         /// </remarks>
-        Task<OidcClient> InsertClientAsync(OidcClientCreate create, CancellationToken ct = default);
+        Task<OidcClient> InsertClientAsync(OidcClientCreate create, CancellationToken cancellationToken = default);
     }
 }

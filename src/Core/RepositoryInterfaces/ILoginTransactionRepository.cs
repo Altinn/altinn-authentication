@@ -11,11 +11,11 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// Inserts a new downstream login transaction and returns the stored row
         /// (including generated <c>request_id</c> and timestamps).
         /// </summary>
-        Task<LoginTransaction> InsertAsync(LoginTransactionCreate create, CancellationToken ct = default);
+        Task<LoginTransaction> InsertAsync(LoginTransactionCreate create, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a downstream login transaction by its <c>request_id</c>.
         /// </summary>
-        Task<LoginTransaction?> GetByRequestIdAsync(Guid requestId, CancellationToken ct = default);
+        Task<LoginTransaction?> GetByRequestIdAsync(Guid requestId, CancellationToken cancellationToken = default);
     }
 }

@@ -18,7 +18,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         private readonly TimeProvider _time = time;
 
         /// <inheritdoc/>
-        public async Task<bool> TryConsumeAsync(string code, string clientId, Uri redirectUri, DateTimeOffset usedAt, CancellationToken ct = default)
+        public async Task<bool> TryConsumeAsync(string code, string clientId, Uri redirectUri, DateTimeOffset usedAt, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ @"
             UPDATE oidcserver.authorization_code
@@ -36,7 +36,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("used_at", NpgsqlDbType.TimestampTz, usedAt);
             cmd.Parameters.AddWithValue("now", NpgsqlDbType.TimestampTz, _time.GetUtcNow());
 
-            var rows = await cmd.ExecuteNonQueryAsync(ct);
+            var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
             return rows == 1;
         }
 
@@ -45,7 +45,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// Returns the authorization code row if it exists, is unused, and unexpired at the current TimeProvider time.
         /// Caller performs consumption via <see cref="TryConsumeAsync"/>.
         /// </summary>
-        public async Task<AuthCodeRow?> GetAsync(string code, CancellationToken ct = default)
+        public async Task<AuthCodeRow?> GetAsync(string code, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(code))
             {
@@ -69,9 +69,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 cmd.Parameters.AddWithValue("code", NpgsqlDbType.Text, code);
                 cmd.Parameters.AddWithValue("now", NpgsqlDbType.TimestampTz, _time.GetUtcNow());
 
-                await using var reader = await cmd.ExecuteReaderAsync(ct);
+                await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
 
-                if (!await reader.ReadAsync(ct))
+                if (!await reader.ReadAsync(cancellationToken))
                 {
                     // Not found, already used, or expired → treat as invalid_grant
                     return null;
@@ -116,7 +116,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task InsertAsync(AuthorizationCodeCreate c, CancellationToken ct = default)
+        public async Task InsertAsync(AuthorizationCodeCreate c, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ @"
                 INSERT INTO oidcserver.authorization_code (
@@ -158,7 +158,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
             try
             {
-                _ = await cmd.ExecuteNonQueryAsync(ct);
+                _ = await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
             catch (Exception ex)
             {
