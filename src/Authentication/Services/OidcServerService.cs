@@ -222,6 +222,21 @@ namespace Altinn.Platform.Authentication.Services
 
             Debug.Assert(upstreamTx != null);
 
+            int updated = await _upstreamLoginTxRepo.SetCallbackSuccessAsync(
+                upstreamTx.UpstreamRequestId,
+                input.Code!,
+                _timeProvider.GetUtcNow(),
+                cancellationToken);
+            if (updated == 0)
+            {
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 409,
+                    LocalErrorMessage = "Upstream transaction no longer accepts callbacks."
+                };
+            }
+
             // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
