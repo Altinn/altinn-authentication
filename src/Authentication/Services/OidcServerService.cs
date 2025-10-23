@@ -1,4 +1,15 @@
 ﻿#nullable enable
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
@@ -10,24 +21,10 @@ using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Profile.Models;
 using AltinnCore.Authentication.Constants;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -842,7 +839,7 @@ namespace Altinn.Platform.Authentication.Services
                 TokenEndpoint = new Uri(provider.TokenEndpoint),
                 JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : new Uri(provider.WellKnownConfigEndpoint), // keep null unless you decide to pin
 
-                UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
+                UpstreamRedirectUri = BuildUpstreamRedirectUri(),
 
                 State = upstreamState,
                 Nonce = upstreamNonce,
@@ -885,7 +882,7 @@ namespace Altinn.Platform.Authentication.Services
                 TokenEndpoint = new Uri(provider.TokenEndpoint),
                 JwksUri = string.IsNullOrWhiteSpace(provider.WellKnownConfigEndpoint) ? null : new Uri(provider.WellKnownConfigEndpoint), // keep null unless you decide to pin
 
-                UpstreamRedirectUri = BuildUpstreamRedirectUri(provider, provider.IssuerKey),
+                UpstreamRedirectUri = BuildUpstreamRedirectUri(),
 
                 State = upstreamState,
                 Nonce = upstreamNonce,
@@ -902,6 +899,11 @@ namespace Altinn.Platform.Authentication.Services
 
             _ = await _upstreamLoginTxRepo.InsertAsync(upstreamCreate, cancellationToken);
             return (upstreamState, upstreamNonce, upstreamPkceChallenge);
+        }
+
+        private Uri BuildUpstreamRedirectUri()
+        {
+           return new Uri(_generalSettings.PlatformEndpoint + "authentication/api/v1/upstream/callback");
         }
 
         private async Task<LoginTransaction> PersistLoginTransaction(AuthorizeRequest request, OidcClient client, CancellationToken cancellationToken)
@@ -1220,7 +1222,7 @@ namespace Altinn.Platform.Authentication.Services
             return DefaultProviderKey;
         }
 
-        private static Uri BuildUpstreamAuthorizeUrl(
+        private Uri BuildUpstreamAuthorizeUrl(
                 OidcProvider p,
                 string upstreamState,
                 string upstreamNonce,
@@ -1231,7 +1233,7 @@ namespace Altinn.Platform.Authentication.Services
             var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
             q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
             q["client_id"] = p.ClientId;
-            q["redirect_uri"] = BuildUpstreamRedirectUri(p, issKeyForCallback).ToString();
+            q["redirect_uri"] = BuildUpstreamRedirectUri().ToString();
             q["scope"] = string.IsNullOrWhiteSpace(p.Scope) ? "openid" : p.Scope;
 
             q["state"] = upstreamState;
@@ -1263,7 +1265,7 @@ namespace Altinn.Platform.Authentication.Services
             return ub.Uri;
         }
 
-        private static Uri BuildUpstreamAuthorizeUrl(
+        private Uri BuildUpstreamAuthorizeUrl(
                OidcProvider p,
                string upstreamState,
                string upstreamNonce,
@@ -1274,7 +1276,7 @@ namespace Altinn.Platform.Authentication.Services
             var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
             q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
             q["client_id"] = p.ClientId;
-            q["redirect_uri"] = BuildUpstreamRedirectUri(p, issKeyForCallback).ToString();
+            q["redirect_uri"] = BuildUpstreamRedirectUri().ToString();
             q["scope"] = string.IsNullOrWhiteSpace(p.Scope) ? "openid" : p.Scope;
 
             q["state"] = upstreamState;
@@ -1289,23 +1291,6 @@ namespace Altinn.Platform.Authentication.Services
 
             var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };
             return ub.Uri;
-        }
-
-        private static Uri BuildUpstreamRedirectUri(OidcProvider p, string? issKey)
-        {
-            // Your fixed upstream callback base:
-            var baseCallback = new Uri("https://platform.altinn.no/authentication/api/v1/upstream/callback");
-
-            // If you want per-provider routing, append ?iss=key when configured
-            if (p.IncludeIssInRedirectUri && !string.IsNullOrWhiteSpace(issKey))
-            {
-                var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
-                q["iss"] = issKey;
-                var ub = new UriBuilder(baseCallback) { Query = q.ToString()! };
-                return ub.Uri;
-            }
-
-            return baseCallback;
         }
 
         private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
@@ -1415,8 +1400,14 @@ namespace Altinn.Platform.Authentication.Services
                 string normalized = value.Replace('-', '+').Replace('_', '/');
                 int pad = (4 - (normalized.Length % 4)) % 4;
                 normalized = normalized + new string('=', pad);
-                try { return Convert.FromBase64String(normalized); }
-                catch (Exception ex) { throw new ApplicationException("Invalid OidcRefreshTokenPepper; must be Base64/Base64Url.", ex); }
+                try 
+                { 
+                    return Convert.FromBase64String(normalized); 
+                }
+                catch (Exception ex) 
+                {
+                    throw new ApplicationException("Invalid OidcRefreshTokenPepper; must be Base64/Base64Url.", ex); 
+                }
             }
         }
     }

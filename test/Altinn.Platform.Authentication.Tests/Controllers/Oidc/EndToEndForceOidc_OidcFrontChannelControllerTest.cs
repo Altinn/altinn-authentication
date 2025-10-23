@@ -537,13 +537,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             HttpResponseMessage app2RedirectResponse = await client.GetAsync(
                "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
-            Assert.StartsWith("https://login.idporten.no/authorize?response_type=code&client_id=345345s&redirect_uri=https%3a%2f%2fplatform.altinn.no%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
+            Assert.StartsWith("https://login.idporten.no/authorize?response_type=code&client_id=345345s&redirect_uri=http%3a%2f%2flocalhost%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
 
             string location = app2RedirectResponse.Headers.Location!.ToString();
 
             string state = HttpUtility.ParseQueryString(new Uri(location).Query)["state"]!;
             string nonce = HttpUtility.ParseQueryString(new Uri(location).Query)["nonce"]!;
             string codeChallenge = HttpUtility.ParseQueryString(new Uri(location).Query)["code_challenge"]!;
+            string redirectUri = HttpUtility.ParseQueryString(new Uri(location).Query)["redirect_uri"]!;
+            Uri redirectUriParsed = new Uri(redirectUri!);
             Assert.NotNull(nonce);
             Assert.NotNull(state);
             Assert.NotNull(codeChallenge);
@@ -560,7 +562,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original app that was requested. 
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"{redirectUriParsed.AbsolutePath}?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
@@ -867,7 +869,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             HttpResponseMessage app2RedirectResponse = await client.GetAsync(
                "/authentication/api/v1/authentication?iss=uidp-anonym&goto=https%3A%2F%2Fudir.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
-            Assert.StartsWith("https://uidp.udir.no/connect/authorize?response_type=code&client_id=sdfdsfeasfyhyy&redirect_uri=https%3a%2f%2fplatform.altinn.no%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
+            Assert.StartsWith("https://uidp.udir.no/connect/authorize?response_type=code&client_id=sdfdsfeasfyhyy&redirect_uri=http%3a%2f%2flocalhost%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
 
             string location = app2RedirectResponse.Headers.Location!.ToString();
 
@@ -1001,13 +1003,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             HttpResponseMessage app2RedirectResponse = await client.GetAsync(
                "/authentication/api/v1/authentication?iss=uidp-anonym&goto=https%3A%2F%2Fudir.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
-            Assert.StartsWith("https://uidp.udir.no/connect/authorize?response_type=code&client_id=sdfdsfeasfyhyy&redirect_uri=https%3a%2f%2fplatform.altinn.no%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
+            Assert.StartsWith("https://uidp.udir.no/connect/authorize?response_type=code&client_id=sdfdsfeasfyhyy&redirect_uri=http%3a%2f%2flocalhost%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
 
             string location = app2RedirectResponse.Headers.Location!.ToString();
 
             string state = HttpUtility.ParseQueryString(new Uri(location).Query)["state"]!;
             string nonce = HttpUtility.ParseQueryString(new Uri(location).Query)["nonce"]!;
             string codeChallenge = HttpUtility.ParseQueryString(new Uri(location).Query)["code_challenge"]!;
+            string redirectUri = HttpUtility.ParseQueryString(new Uri(location).Query)["redirect_uri"]!;
+            Uri redirectUriParsed = new Uri(redirectUri!);
             Assert.NotNull(nonce);
             Assert.NotNull(state);
             Assert.NotNull(codeChallenge);
@@ -1025,7 +1029,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original app that was requested. 
-            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
+            string callbackUrl = $"{redirectUriParsed.AbsolutePath}?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
 
             HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
 
