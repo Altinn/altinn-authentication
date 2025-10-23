@@ -1,4 +1,4 @@
-﻿-- Family groups a rotating set of refresh tokens for one OP session + client
+﻿--- Family groups a rotating set of refresh tokens for one OP session + client
 CREATE TABLE IF NOT EXISTS oidcserver.refresh_token_family (
   family_id          UUID PRIMARY KEY,                -- server-generated
   client_id          TEXT NOT NULL,
