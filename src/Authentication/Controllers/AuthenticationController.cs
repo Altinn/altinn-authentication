@@ -155,6 +155,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 goTo = HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName];
             }
 
+            // Validate goTo url. It has to be a valid uri and on the same host or subdomain as this authentication service. Example skd.apps.altinn.no/skattemelding/ is allowed when altinn.no is the host domain
             if (!Uri.TryCreate(goTo, UriKind.Absolute, out Uri validatedGoToUri) || !HostMatch.IsOnOrSubdomainOfAny(validatedGoToUri, [_generalSettings.HostName]))
             {
                 return Redirect($"{_generalSettings.BaseUrl}");
@@ -222,8 +223,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         await CreateTokenCookie(userAuthentication);
 
-                        return Redirect(validatedGoToUri.ToString());
-                       
+                        return Redirect(validatedGoToUri.OriginalString);
                     }
                 }
                 else if (_generalSettings.AuthorizationServerEnabled)
@@ -232,7 +232,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     // Verify if user is already authenticated. The just go directly to the target URL
                     if (User.Identity.IsAuthenticated)
                     {
-                        return Redirect(validatedGoToUri.ToString());
+                        return Redirect(validatedGoToUri.OriginalString);
                     }
 
                     // Check to see if we have a valid Session cookie and recreate JWT Based on that
@@ -256,7 +256,7 @@ namespace Altinn.Platform.Authentication.Controllers
                                 });
                             }
 
-                            return Redirect(validatedGoToUri.ToString());
+                            return Redirect(validatedGoToUri.OriginalString);
                             
                         }
                     }
@@ -290,7 +290,7 @@ namespace Altinn.Platform.Authentication.Controllers
                                 });
                             }
                            
-                            return Redirect(validatedGoToUri.ToString());
+                            return Redirect(validatedGoToUri.OriginalString);
                         }
                     }
 
@@ -321,7 +321,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                     // Create Nonce. One is added to a cookie and another is sent as nonce parameter to OIDC provider
                     string nonce = CreateNonce(HttpContext);
-                    CreateGoToCookie(HttpContext, validatedGoToUri.ToString());
+                    CreateGoToCookie(HttpContext, validatedGoToUri.OriginalString);
 
                     // Redirect to OIDC Provider
                     return Redirect(CreateAuthenticationRequest(provider, tokens.RequestToken, nonce));
@@ -332,7 +332,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 // Verify if user is already authenticated. The just go directly to the target URL
                 if (User.Identity.IsAuthenticated)
                 {
-                    return Redirect(validatedGoToUri.ToString());
+                    return Redirect(validatedGoToUri.OriginalString);
                 }
 
                 // Check to see if we have a valid Session cookie and recreate JWT Based on that
@@ -356,7 +356,7 @@ namespace Altinn.Platform.Authentication.Controllers
                             });
                         }
 
-                        return Redirect(validatedGoToUri.ToString());
+                        return Redirect(validatedGoToUri.OriginalString);
                     }
                 }
 
@@ -394,7 +394,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         await CreateTokenCookie(userAuthentication);
                         
-                        return Redirect(validatedGoToUri.ToString());
+                        return Redirect(validatedGoToUri.OriginalString);
                     }
                 }
             }
