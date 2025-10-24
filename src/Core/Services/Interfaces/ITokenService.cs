@@ -7,12 +7,12 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// <summary>
         /// Exchanges an authorization code for tokens.
         /// </summary>
-        Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest request, CancellationToken ct);
+        Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest exchangeRequest, CancellationToken ct);
 
         /// <summary>
         /// Refreshes tokens using a refresh token.
         /// </summary>
-        Task<TokenResult> RefreshAsync(RefreshTokenRequest req, CancellationToken ct);
+        Task<TokenResult> RefreshAsync(RefreshTokenRequest refreshRequest, CancellationToken ct);
 
         /// <summary>
         /// Create a token suitable for use in a cookie from an OIDC session.

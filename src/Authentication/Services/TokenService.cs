@@ -36,10 +36,10 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IOidcSessionRepository _oidcSessionRepository = oidcSessionRepository;
 
         /// <inheritdoc/>
-        public async Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest request, CancellationToken ct)
+        public async Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest exchangeRequest, CancellationToken ct)
         {
             // 1) Basic checks
-            (TokenResult? validationErrorResult, OidcClient? client, AuthCodeRow? row) = await ValidateTokenRequest(request,ct);
+            (TokenResult? validationErrorResult, OidcClient? client, AuthCodeRow? row) = await ValidateTokenRequest(exchangeRequest,ct);
             if (validationErrorResult != null)
             {
                 return validationErrorResult;
@@ -87,12 +87,12 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<TokenResult> RefreshAsync(RefreshTokenRequest request, CancellationToken ct)
+        public async Task<TokenResult> RefreshAsync(RefreshTokenRequest refreshRequest, CancellationToken ct)
         {
             // 1) Basic checks
             DateTimeOffset now = time.GetUtcNow();
            
-            (TokenResult? value, OidcClient? client, byte[]? serverPepper, RefreshTokenRow? row, string[]? resultingScopes) = await ValidateRefreshRequest(request, now, ct);
+            (TokenResult? value, OidcClient? client, byte[]? serverPepper, RefreshTokenRow? row, string[]? resultingScopes) = await ValidateRefreshRequest(refreshRequest, now, ct);
             if (value != null)
             {
                 return value;
