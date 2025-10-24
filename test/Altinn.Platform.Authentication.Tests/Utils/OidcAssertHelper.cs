@@ -90,9 +90,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             // Assert that domain is set to localhost (test env) (will be altinn.no for production)
             Assert.Contains(parts, p => p.StartsWith("domain=localhost", StringComparison.OrdinalIgnoreCase));
 
-            // ❌ Must NOT set Expires or Domain (host-only, session cookie)
+            // ❌ Must NOT set Expires (session cookie)
             Assert.DoesNotContain(parts, p => p.StartsWith("Expires=", StringComparison.OrdinalIgnoreCase));
-
 
             // (Optional but recommended) also forbid Max-Age to ensure session-only
             // Assert.DoesNotContain(parts, p => p.StartsWith("Max-Age=", StringComparison.OrdinalIgnoreCase));

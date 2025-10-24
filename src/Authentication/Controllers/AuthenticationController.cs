@@ -258,7 +258,6 @@ namespace Altinn.Platform.Authentication.Controllers
                             }
 
                             return Redirect(validatedGoToUri.AbsoluteUri);
-                            
                         }
                     }
 
@@ -296,6 +295,7 @@ namespace Altinn.Platform.Authentication.Controllers
                         }
                     }
 
+                    // User was not autenticated so start a new authorization request for unregistered clints and redirect to upstream ID- Provider like ID-porten/FEIDE/UIDP
                     AuthorizeUnregisteredClientRequest authorizeUnregisteredClientRequest = new()
                     {
                         GoTo = goTo,
@@ -371,11 +371,32 @@ namespace Altinn.Platform.Authentication.Controllers
                 string encryptedTicket = Request.Cookies[cookieName];
                 if (_generalSettings.AuthorizationServerEnabled)
                 {
-                    AuthenticateFromAltinn2TicketInput ticketInput = new AuthenticateFromAltinn2TicketInput { EncryptedTicket = encryptedTicket };
+                    // Server enabled, but still rely on Altinn 2 for Authentication. Temporary solution during migration period.
+                    AuthenticateFromAltinn2TicketInput ticketInput = new() { EncryptedTicket = encryptedTicket };
                     AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
+
+                    if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success))
+                    {
+                        foreach (var c in ticketResult.Cookies)
+                        {
+                            Response.Cookies.Append(c.Name, c.Value, new CookieOptions
+                            {
+                                HttpOnly = c.HttpOnly,
+                                Secure = c.Secure,
+                                Path = c.Path ?? "/",
+                                Domain = c.Domain,
+                                Expires = c.Expires,
+                                SameSite = c.SameSite
+                            });
+                        }
+
+                        // When you finally redirect:
+                        return Redirect(validatedGoToUri.AbsoluteUri); // not OriginalString
+                    }
                 }
                 else
                 {
+                    // Legacy Mode. Decrypt the SBL cookie and create our own JWT cookie
                     try
                     {
                         userAuthentication = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
