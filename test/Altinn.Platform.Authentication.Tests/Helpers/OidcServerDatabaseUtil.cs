@@ -107,6 +107,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? null : r.GetFieldValue<Guid?>("subject_party_uuid"),
                 SubjectPartyId = r.IsDBNull("subject_party_id") ? null : r.GetFieldValue<int?>("subject_party_id"),
                 SubjectUserId = r.IsDBNull("subject_user_id") ? null : r.GetFieldValue<int?>("subject_user_id"),
+                SubjectUserName = r.IsDBNull("subject_user_name") ? null : r.GetFieldValue<string>("subject_user_name"),
                 Provider = r.GetFieldValue<string>("provider"),
                 UpstreamIssuer = r.GetFieldValue<string>("upstream_issuer"),
                 UpstreamSub = r.GetFieldValue<string>("upstream_sub"),
