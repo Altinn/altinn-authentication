@@ -130,7 +130,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
             string? raw = setCookies.FirstOrDefault(h =>
                 h.StartsWith("altinnsession=", StringComparison.OrdinalIgnoreCase));
-            Assert.False(string.IsNullOrEmpty(raw), "altinnsession cookie was not set.");
+            Assert.False(string.IsNullOrEmpty(value), "altinnsession cookie has empty value.");
 
             // Split into name/value + attributes
             var parts = raw!.Split(';').Select(p => p.Trim()).ToArray();
