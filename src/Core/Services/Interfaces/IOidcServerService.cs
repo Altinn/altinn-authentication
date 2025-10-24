@@ -34,12 +34,12 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// <summary>
         /// Based on session from cookie, verify session is valid and return result with a new valid Jwt token/AltinnRuntime cookie.
         /// </summary>
-        public Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInfo, CancellationToken cancellationToken);
+        public Task<AuthenticateFromSessionResult> HandleAuthenticateFromSessionResult(AuthenticateFromSessionInput sessionInput, CancellationToken cancellationToken);
 
         /// <summary>
         /// Based on Altinn 2 ticket, verify session is valid and return result with a new valid Jwt token/AltinnRuntime cookie.
         /// </summary>
-        public Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput sessionInfo, CancellationToken cancellationToken);
+        public Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput ticketInput, CancellationToken cancellationToken);
 
         /// <summary>
         /// Handles refresh of an OIDC session based on the provided principal.Used when the Altinn Studio runtimecookie

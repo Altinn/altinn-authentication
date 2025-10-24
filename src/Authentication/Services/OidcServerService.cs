@@ -621,13 +621,13 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Handles the authentication process based on the provided Altinn2 ticket input.
         /// </summary>
-        public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput sessionInfo, CancellationToken cancellationToken)
+        public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput ticketInput, CancellationToken cancellationToken)
         {
-            UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(sessionInfo.EncryptedTicket);
+            UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(ticketInput.EncryptedTicket);
             userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
             EnrichIdentityFromLegacyValues(userAuthenticationModel);
             AddLocalScopes(userAuthenticationModel);
-            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(sessionInfo, userAuthenticationModel, cancellationToken);
+            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
             if (session is not null && session.ExpiresAt.HasValue && session.ExpiresAt.Value > _timeProvider.GetUtcNow())
             {
                 string token = await _tokenService.CreateCookieToken(session, cancellationToken);
