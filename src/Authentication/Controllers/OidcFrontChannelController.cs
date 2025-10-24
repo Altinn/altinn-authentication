@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -41,7 +42,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();
-            string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
+            string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
             Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
             string? sessionHandle = Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out var sh) ? sh : null;
 
@@ -109,7 +110,7 @@ namespace Altinn.Platform.Authentication.Controllers
             // Gather diagnostics
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();
-            string? userAgentHash = string.IsNullOrEmpty(ua) ? null : ComputeSha256Base64Url(ua);
+            string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
             Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
 
             UpstreamCallbackInput input = new()
@@ -263,27 +264,6 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private static Uri? TryParseAbsoluteUri(string? s) =>
             Uri.TryCreate(s, UriKind.Absolute, out var u) ? u : null;
-
-        private static string ComputeSha256Base64Url(string input)
-        {
-            ArgumentNullException.ThrowIfNull(input);
-
-            byte[] bytes = Encoding.UTF8.GetBytes(input);
-            return ComputeSha256Base64Url(bytes);
-        }
-
-        private static string ComputeSha256Base64Url(ReadOnlySpan<byte> data)
-        {
-            // SHA256.HashData is allocation-free and fast
-            Span<byte> hash = stackalloc byte[32];
-            SHA256.HashData(data, hash);
-
-            // Convert to Base64URL: replace '+' -> '-', '/' -> '_', and trim '='
-            string b64 = Convert.ToBase64String(hash);
-            return b64.Replace('+', '-')
-                      .Replace('/', '_')
-                      .TrimEnd('=');
-        }
 
         private static string BuildOidcErrorRedirect(Uri redirectUri, string error, string? errorDescription, string? clientState)
         {
