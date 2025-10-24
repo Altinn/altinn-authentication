@@ -87,9 +87,12 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             value = kv.Length > 1 ? kv[1] : string.Empty;
             Assert.False(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie has empty value.");
 
+            // Assert that domain is set to localhost (test env) (will be altinn.no for production)
+            Assert.Contains(parts, p => p.StartsWith("domain=localhost", StringComparison.OrdinalIgnoreCase));
+
             // ❌ Must NOT set Expires or Domain (host-only, session cookie)
             Assert.DoesNotContain(parts, p => p.StartsWith("Expires=", StringComparison.OrdinalIgnoreCase));
-            Assert.DoesNotContain(parts, p => p.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase));
+
 
             // (Optional but recommended) also forbid Max-Age to ensure session-only
             // Assert.DoesNotContain(parts, p => p.StartsWith("Max-Age=", StringComparison.OrdinalIgnoreCase));
@@ -115,9 +118,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             value = kv.Length > 1 ? kv[1] : string.Empty;
             Assert.True(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie did not have a empty value.");
 
-            // ❌ Must NOT set Expires or Domain (host-only, session cookie)
+            // Assert that domain is set to localhost (test env) (will be altinn.no for production)
+            Assert.Contains(parts, p => p.StartsWith("Domain=localhost", StringComparison.OrdinalIgnoreCase));
+
+            // ❌ Must NOT set Expires
             Assert.Contains(parts, p => p.StartsWith("expires=Thu, 01 Jan 1970 00:00:00 GMT", StringComparison.OrdinalIgnoreCase));
-            Assert.DoesNotContain(parts, p => p.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase));
         }
 
         public static void AssertHasAltinnSessionCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario, DateTimeOffset now)

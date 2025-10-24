@@ -255,7 +255,8 @@ namespace Altinn.Platform.Authentication.Services
                 HttpOnly = true,
                 Secure = true,
                 Path = "/",
-                SameSite = SameSiteMode.Lax
+                SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
             };
 
             CookieInstruction altinnSessionCookie = new()
@@ -396,7 +397,8 @@ namespace Altinn.Platform.Authentication.Services
                             Secure = true,
                             Path = "/",
                             SameSite = SameSiteMode.Lax,
-                            Expires = DateTimeOffset.UnixEpoch
+                            Expires = DateTimeOffset.UnixEpoch,
+                            Domain = _generalSettings.HostName,
                         },
                         new CookieInstruction
                         {
@@ -406,7 +408,7 @@ namespace Altinn.Platform.Authentication.Services
                             Secure = true,
                             Path = "/",
                             SameSite = SameSiteMode.Lax,
-                            Expires = DateTimeOffset.UnixEpoch
+                            Expires = DateTimeOffset.UnixEpoch,
                         }
                     }
                 };
@@ -481,12 +483,11 @@ namespace Altinn.Platform.Authentication.Services
                 Secure = true,
                 Path = "/",
                 SameSite = SameSiteMode.Lax,
-
-                // Use UnixEpoch or MaxAge=0 consistently
-                Expires = DateTimeOffset.UnixEpoch
+                Expires = DateTimeOffset.UnixEpoch,
+                Domain = _generalSettings.HostName,
             };
 
-            CookieInstruction deleteSession = new CookieInstruction
+            CookieInstruction deleteSession = new()
             {
                 Name = _generalSettings.AltinnSessionCookieName,
                 Value = string.Empty,
@@ -494,7 +495,7 @@ namespace Altinn.Platform.Authentication.Services
                 Secure = true,
                 Path = "/",
                 SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UnixEpoch
+                Expires = DateTimeOffset.UnixEpoch,
             };
             
             return new EndSessionResult
@@ -565,7 +566,8 @@ namespace Altinn.Platform.Authentication.Services
                     Secure = true,
                     Path = "/",
                     SameSite = SameSiteMode.Lax,
-                    Expires = DateTimeOffset.UnixEpoch
+                    Expires = DateTimeOffset.UnixEpoch,
+                    Domain = _generalSettings.HostName,
                 });
             }
 
@@ -598,7 +600,8 @@ namespace Altinn.Platform.Authentication.Services
                     HttpOnly = true,
                     Secure = true,
                     Path = "/",
-                    SameSite = SameSiteMode.Lax
+                    SameSite = SameSiteMode.Lax,
+                    Domain = _generalSettings.HostName,
                 };
 
                 await _oidcSessionRepo.SlideExpiryToAsync(oidcSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
@@ -636,7 +639,8 @@ namespace Altinn.Platform.Authentication.Services
                         HttpOnly = true,
                         Secure = true,
                         Path = "/",
-                        SameSite = SameSiteMode.Lax
+                        SameSite = SameSiteMode.Lax,
+                        Domain = _generalSettings.HostName,
                     };
 
                 CookieInstruction altinnSessionCookie = new()

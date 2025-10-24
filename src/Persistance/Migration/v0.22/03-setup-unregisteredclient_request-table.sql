@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.unregistered_client_request (
   goto_url                 TEXT NOT NULL,                            -- normalized/validated (relative or https absolute)
 
   -- Link to the upstream OIDC transaction where state/nonce/pkce are stored
-  upstream_request_id      UUID UNIQUE,                              -- set after you create the upstream txn
+  upstream_request_id      UUID UNIQUE,                              -- set after you create the upstream txn TODO Remove
 
   -- Diagnostics / correlation (no PII)
   created_by_ip            INET,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.unregistered_client_request (
   correlation_id           UUID,
 
   -- Optional: which callback actually handled it (useful during sunset)
-  handled_by_callback      TEXT,                                     -- e.g. '/oidc/callback'
+  handled_by_callback      TEXT,                                     -- e.g. '/oidc/callback'  TODO Remove
 
   -- Constraints
   CONSTRAINT chk_unregistered_client_status

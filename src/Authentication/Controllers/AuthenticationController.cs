@@ -437,7 +437,8 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         HttpOnly = true,
                         Secure = true,
-                        SameSite = SameSiteMode.Lax
+                        SameSite = SameSiteMode.Lax,
+                        Domain = _generalSettings.HostName,
                     });
             }
 
