@@ -540,7 +540,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost";
+            string url = "/authentication/api/v1/authentication?goto=https%3A%2F%2Flocalhost";
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
             requestMessage.Headers.Add("Cookie", ".ASPXAUTH=asdasdasd");
 
@@ -604,21 +604,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange         
             HttpClient client = CreateClient();            
 
-            string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost&DontChooseReportee=true";
+            string url = "/authentication/api/v1/authentication?goto=https%3A%2F%2Flocalhost&DontChooseReportee=true";
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
 
             // Act
             HttpResponseMessage response = await client.SendAsync(requestMessage);
 
             // Assert
-            string expectedLocation = "http://localhost/ui/authentication?goTo=http%3a%2f%2flocalhost%2fauthentication%2fapi%2fv1%2fauthentication%3fgoto%3dhttp%3a%2f%2flocalhost%26DontChooseReportee%3dtrue";
+            string expectedLocation = "http://localhost/ui/authentication?goTo=http%3a%2f%2flocalhost%2fauthentication%2fapi%2fv1%2fauthentication%3fgoto%3dhttps%3a%2f%2flocalhost%26DontChooseReportee%3dtrue";
             Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
             Assert.Equal(expectedLocation, response.Headers.Location.ToString());
         }
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with no ISS given
         /// 3. OIDC is enabled and the default authentication mechanismen
         /// Expections: Authentication components redirects to default OIDC provider with all neded params
@@ -627,7 +627,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_NoTokenPortalParametersIncludedOIDCDefaultEnabled_RedirectsToOIDCProvider()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -655,7 +655,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with no ISS given
         /// 3. OIDC is enabled and the default authentication mechanismen
         /// Expections: Authentication components redirects to default OIDC provider with all neded params
@@ -664,7 +664,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_NoTokenPortalParametersIncludedOIDCDefaultEnabled_RedirectsToOIDCProvider2()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -693,7 +693,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -711,7 +711,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_FullProcess_RedirectsToOIDCAndBackWithValidToken()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -774,7 +774,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario (same as above but with existing scope claim)
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -792,7 +792,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_FullProcess_RedirectsToOIDCAndBackWithValidTokenExistingScopeclaim()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -857,7 +857,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -875,7 +875,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCExternalIDentity_FullProcess_RedirectsToOIDCAndBackWithValidToken()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
             UserProfile userProfileNotFound = null;
             UserProfile userProfile = new UserProfile { UserId = 234234, PartyId = 234234, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfileNotFound);
@@ -944,7 +944,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -962,7 +962,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCExternalIDentityRelogin_FullProcess_RedirectsToOIDCAndBackWithValidToken()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             UserProfile userProfile = new UserProfile { UserId = 234235, PartyId = 234235, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
@@ -1027,7 +1027,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -1041,7 +1041,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_InvalidNonce_BadRequest()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -1084,7 +1084,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -1098,7 +1098,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_InvalidState_BadRequest()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -1141,7 +1141,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with ISS given
         /// 3. OIDC is enabled and the default authentication mechanismen
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -1150,7 +1150,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCEnabledAndDefault_IdportenProviderRequested_RedirectsToOIDCProvider()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
@@ -1178,7 +1178,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with ISS given
         /// 3. OIDC is enabled and but not the default authentication mechanismen
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -1187,7 +1187,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCEnabled_IdportenProviderRequested_RedirectsToOIDCProvider()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
@@ -1215,7 +1215,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with ISS given
         /// 3. OIDC is disabled
         /// Expections: Authentication components redirects to SBL, iss ignored
@@ -1224,7 +1224,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCDisabled_IdportenProviderRequested_RedirectsToSBL()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             HttpClient client = CreateClient();
 
@@ -1242,7 +1242,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component 
         /// 3. OIDC is enabled
         /// Expections: Authentication components redirects to SBL since no ISS is given
@@ -1251,7 +1251,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCEnabled_IdportenProviderNotRequested_RedirectsToSBL()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
             
             HttpClient client = CreateClient();
 
@@ -1284,7 +1284,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost";
+            string url = "/authentication/api/v1/authentication?goto=https%3A%2F%2Flocalhost";
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
             requestMessage.Headers.Add("Cookie", ".ASPXAUTH=asdasdasd");
 
