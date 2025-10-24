@@ -127,7 +127,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
             string? raw = setCookies.FirstOrDefault(h =>
                 h.StartsWith("altinnsession=", StringComparison.OrdinalIgnoreCase));
-           
+            Assert.False(string.IsNullOrEmpty(raw), "altinnsession cookie was not set.");
             var (name, value, parts) = ParseSetCookieHeader(raw);
            
             // name=value
