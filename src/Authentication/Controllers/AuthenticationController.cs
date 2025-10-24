@@ -273,7 +273,14 @@ namespace Altinn.Platform.Authentication.Controllers
 
                     if (encryptedTicket != null)
                     {
-                        AuthenticateFromAltinn2TicketInput ticketInput = new() { EncryptedTicket = encryptedTicket, CreatedByIp = ip, UserAgentHash = userAgentHash, CorrelationId = corr };
+                        AuthenticateFromAltinn2TicketInput ticketInput = new() 
+                        { 
+                            EncryptedTicket = encryptedTicket, 
+                            CreatedByIp = ip ?? System.Net.IPAddress.Loopback,
+                            UserAgentHash = userAgentHash, 
+                            CorrelationId = corr 
+                        };
+                        
                         AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
                         if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success))
                         {

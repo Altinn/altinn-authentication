@@ -60,9 +60,8 @@ namespace Altinn.Platform.Authentication.Services
                 ClockSkew = TimeSpan.FromSeconds(10)
             };
 
-            _validator.ValidateToken(originalToken, validationParameters, out _);
-            JwtSecurityToken token = _validator.ReadJwtToken(originalToken);
-            return token;
+            _validator.ValidateToken(originalToken, validationParameters, out SecurityToken? validated);
+            return (JwtSecurityToken)validated;
         }
 
         private void ValidateNonce(JwtSecurityToken token, string expectedNonce)
