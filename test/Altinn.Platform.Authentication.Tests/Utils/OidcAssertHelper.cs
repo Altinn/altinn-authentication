@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -43,8 +44,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.False(string.IsNullOrWhiteSpace(finalQuery["code"]), "Downstream code must be present.");
             Assert.Equal(testScenario.GetDownstreamState(), finalQuery["state"]); // original downstream state echoed back
 
-            AssertHasAltinnStudioRuntimeCookie(callbackResp, out var runtimeCookieValue, testScenario, now);
-            AssertHasAltinnSessionCookie(callbackResp, out var sessionCookieValue, testScenario, now);
+            AssertHasAltinnStudioRuntimeCookie(callbackResp, testScenario, now);
+            AssertHasAltinnSessionCookie(callbackResp, testScenario, now);
         }
 
         public static void AssertLoginTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario, DateTimeOffset now)
@@ -70,7 +71,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(now, createdTx.CreatedAt);
         }
 
-        public static void AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario,   DateTimeOffset now)
+        public static void AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, OidcTestScenario testScenario,   DateTimeOffset now)
         {
             Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
 
@@ -78,10 +79,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 h.StartsWith("AltinnStudioRuntime=", StringComparison.OrdinalIgnoreCase));
             Assert.False(string.IsNullOrEmpty(raw), "AltinnStudioRuntime cookie was not set.");
 
-            // Split into name/value + attributes
-            var parts = raw!.Split(';').Select(p => p.Trim()).ToArray();
-
             // name=value
+            var (name, value, parts) = ParseSetCookieHeader(raw);
             var kv = parts[0].Split('=', 2);
             Assert.Equal("AltinnStudioRuntime", kv[0]);
             value = kv.Length > 1 ? kv[1] : string.Empty;
@@ -100,7 +99,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             TokenAssertsHelper.AssertCookieAccessToken(value, testScenario, now);
         }
 
-        public static void AssertDeleteAltinnStudioRuntimeCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario, DateTimeOffset now)
+        public static void AssertDeleteAltinnStudioRuntimeCookie(HttpResponseMessage resp, OidcTestScenario testScenario, DateTimeOffset now)
         {
             Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
 
@@ -109,12 +108,10 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.False(string.IsNullOrEmpty(raw), "AltinnStudioRuntime cookie was not set.");
 
             // Split into name/value + attributes
-            var parts = raw!.Split(';').Select(p => p.Trim()).ToArray();
+            var (name, value, parts) = ParseSetCookieHeader(raw);
 
             // name=value
-            var kv = parts[0].Split('=', 2);
-            Assert.Equal("AltinnStudioRuntime", kv[0]);
-            value = kv.Length > 1 ? kv[1] : string.Empty;
+            Assert.Equal("AltinnStudioRuntime", name);
             Assert.True(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie did not have a empty value.");
 
             // Assert that domain is set to localhost (test env) (will be altinn.no for production)
@@ -124,17 +121,15 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Contains(parts, p => p.StartsWith("expires=Thu, 01 Jan 1970 00:00:00 GMT", StringComparison.OrdinalIgnoreCase));
         }
 
-        public static void AssertHasAltinnSessionCookie(HttpResponseMessage resp, out string value, OidcTestScenario testScenario, DateTimeOffset now)
+        public static void AssertHasAltinnSessionCookie(HttpResponseMessage resp, OidcTestScenario testScenario, DateTimeOffset now)
         {
             Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
 
             string? raw = setCookies.FirstOrDefault(h =>
                 h.StartsWith("altinnsession=", StringComparison.OrdinalIgnoreCase));
-            Assert.False(string.IsNullOrEmpty(value), "altinnsession cookie has empty value.");
-
-            // Split into name/value + attributes
-            var parts = raw!.Split(';').Select(p => p.Trim()).ToArray();
-
+           
+            var (name, value, parts) = ParseSetCookieHeader(raw);
+           
             // name=value
             var kv = parts[0].Split('=', 2);
             Assert.Equal("altinnsession", kv[0]);
@@ -166,13 +161,22 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
         public static void AssertAuthorizedRedirect(HttpResponseMessage authorizedRedirectResponse, OidcTestScenario testScenario, DateTimeOffset dateTimeOffset)
         {
-            AssertHasAltinnStudioRuntimeCookie(authorizedRedirectResponse, out string runtimeValue, testScenario, dateTimeOffset);
-            AssertHasAltinnSessionCookie(authorizedRedirectResponse, out string value, testScenario, dateTimeOffset);
+            AssertHasAltinnStudioRuntimeCookie(authorizedRedirectResponse, testScenario, dateTimeOffset);
+            AssertHasAltinnSessionCookie(authorizedRedirectResponse, testScenario, dateTimeOffset);
         }
 
         internal static void AssertLogoutRedirect(HttpResponseMessage logoutResp, OidcTestScenario testScenario)
         {
-            AssertDeleteAltinnStudioRuntimeCookie(logoutResp, out string runtimeValue, testScenario, DateTimeOffset.UtcNow);
+            AssertDeleteAltinnStudioRuntimeCookie(logoutResp, testScenario, DateTimeOffset.UtcNow);
+        }
+
+        private static (string Name, string Value, string[] Attributes) ParseSetCookieHeader(string cookieHeader)
+        {
+            var parts = cookieHeader.Split(';').Select(p => p.Trim()).ToArray();
+            var kv = parts[0].Split('=', 2);
+            string name = kv[0];
+            string value = kv.Length > 1 ? kv[1] : string.Empty;
+            return (name, value, parts);
         }
     }
 }
