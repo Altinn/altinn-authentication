@@ -118,7 +118,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.True(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie did not have a empty value.");
 
             // Assert that domain is set to localhost (test env) (will be altinn.no for production)
-            Assert.Contains(parts, p => p.StartsWith("Domain=localhost", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(parts, p => p.StartsWith("domain=localhost", StringComparison.OrdinalIgnoreCase));
 
             // ❌ Must NOT set Expires
             Assert.Contains(parts, p => p.StartsWith("expires=Thu, 01 Jan 1970 00:00:00 GMT", StringComparison.OrdinalIgnoreCase));
@@ -142,8 +142,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.False(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie has empty value.");
 
             // ❌ Must NOT set Expires or Domain (host-only, session cookie)
-            Assert.DoesNotContain(parts, p => p.StartsWith("Expires=", StringComparison.OrdinalIgnoreCase));
-            Assert.DoesNotContain(parts, p => p.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(parts, p => p.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(parts, p => p.StartsWith("domain=", StringComparison.OrdinalIgnoreCase));
         }
 
         public static void AssertValidSession(OidcSession oidcSession, OidcTestScenario testScenario, DateTimeOffset now)
