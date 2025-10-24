@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -148,9 +149,8 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(void), StatusCodes.Status503ServiceUnavailable)]
         [HttpGet("authentication")]
-        public async Task<ActionResult> AuthenticateUser([FromQuery] string goTo, [FromQuery] bool dontChooseReportee, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery] bool dontChooseReportee, CancellationToken cancellationToken = default)
         {
-            string originalToken = null;
             if (string.IsNullOrEmpty(goTo) && HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName] != null)
             {
                 goTo = HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName];
@@ -172,14 +172,14 @@ namespace Altinn.Platform.Authentication.Controllers
             string encodedGoToUrl = HttpUtility.UrlEncode(platformReturnUrl);
             string sblRedirectUrl = $"{_generalSettings.SBLRedirectEndpoint}?goTo={encodedGoToUrl}";
 
-            string oidcissuer = Request.Query["iss"];
+            string? oidcissuer = Request.Query["iss"];
             UserAuthenticationModel userAuthentication;
             if (_generalSettings.EnableOidc && (!string.IsNullOrEmpty(oidcissuer) || _generalSettings.ForceOidc))
             {
                 OidcProvider provider = GetOidcProvider(oidcissuer);
 
-                string code = Request.Query["code"];
-                string state = Request.Query["state"];
+                string? code = Request.Query["code"];
+                string? state = Request.Query["state"];
 
                 if (!string.IsNullOrEmpty(code))
                 {
@@ -201,7 +201,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     }
 
                     OidcCodeResponse oidcCodeResponse = await _oidcProvider.GetTokens(code, provider, GetRedirectUri(provider), null, cancellationToken);
-                    originalToken = oidcCodeResponse.IdToken;
+                    string? originalToken = oidcCodeResponse.IdToken;
                     JwtSecurityToken jwtSecurityToken = await ValidateAndExtractOidcToken(oidcCodeResponse.IdToken, provider.WellKnownConfigEndpoint);
                     userAuthentication = AuthenticationHelper.GetUserFromToken(jwtSecurityToken, provider);
                     if (!ValidateNonce(HttpContext, userAuthentication.Nonce))
@@ -231,7 +231,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 {
                     // Flow for Authorization Server Active
                     // Verify if user is already authenticated. The just go directly to the target URL
-                    if (User.Identity.IsAuthenticated)
+                    if (User?.Identity != null && User.Identity.IsAuthenticated)
                     {
                         return Redirect(validatedGoToUri.AbsoluteUri);
                     }
@@ -239,7 +239,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     // Check to see if we have a valid Session cookie and recreate JWT Based on that
                     if (Request.Cookies[_generalSettings.AltinnSessionCookieName] != null)
                     {
-                        string sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
+                        string? sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
                         AuthenticateFromSessionInput sessionCookieInput = new AuthenticateFromSessionInput { SessionHandle = sessionCookie };
                         AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
                         if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
@@ -269,7 +269,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
 
                     string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
-                    string encryptedTicket = Request.Cookies[cookieName];
+                    string? encryptedTicket = Request.Cookies[cookieName];
 
                     if (encryptedTicket != null)
                     {
@@ -339,7 +339,7 @@ namespace Altinn.Platform.Authentication.Controllers
             else
             {
                 // Verify if user is already authenticated. The just go directly to the target URL
-                if (User.Identity.IsAuthenticated)
+                if (User?.Identity != null && User.Identity.IsAuthenticated)
                 {
                     return Redirect(validatedGoToUri.AbsoluteUri);
                 }
@@ -347,7 +347,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 // Check to see if we have a valid Session cookie and recreate JWT Based on that
                 if (Request.Cookies[_generalSettings.AltinnSessionCookieName] != null)
                 {
-                    string sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
+                    string? sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
                     AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookie };
                     AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
                     if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
@@ -375,8 +375,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
-                string encryptedTicket = Request.Cookies[cookieName];
-                if (_generalSettings.AuthorizationServerEnabled)
+                string? encryptedTicket = Request.Cookies[cookieName];
+                if (_generalSettings.AuthorizationServerEnabled && encryptedTicket != null)
                 {
                     // Server enabled, but still rely on Altinn 2 for Authentication. Temporary solution during migration period.
                     AuthenticateFromAltinn2TicketInput ticketInput = new() { EncryptedTicket = encryptedTicket };
@@ -450,7 +450,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             string serializedToken = await GenerateToken(principal);
 
-            OidcSession session = await _oidcServerService.HandleSessionRefresh(principal, cancellationToken);
+            OidcSession? session = await _oidcServerService.HandleSessionRefresh(principal, cancellationToken);
 
             _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext);
             _logger.LogInformation("End of refreshing token");
@@ -487,7 +487,7 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             string originalToken = string.Empty;
 
-            string authorization = Request.Headers["Authorization"];
+            string? authorization = Request.Headers["Authorization"];
 
             if (!string.IsNullOrEmpty(authorization))
             {
@@ -602,8 +602,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal originalPrincipal = GetClaimsPrincipalAndValidateMaskinportenToken(originalToken, validationParameters, alternativeSigningKeys);
                 _logger.LogInformation("Token is valid");
 
-                string issOriginal = originalPrincipal.Claims.Where(c => c.Type.Equals(IssClaimName)).Select(c => c.Value).FirstOrDefault();
-                string externalSessionId = originalPrincipal.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? issOriginal = originalPrincipal.Claims.Where(c => c.Type.Equals(IssClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? externalSessionId = originalPrincipal.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
                 if (IsValidIssuer(issOriginal, _generalSettings.MaskinportenWellKnownConfigEndpoint, _generalSettings.MaskinportenWellKnownAlternativeConfigEndpoint))
                 {
                     _logger.LogInformation("Invalid issuer {issOriginal}", issOriginal);
@@ -626,7 +626,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 string issuer = _generalSettings.AltinnOidcIssuerUrl;
 
-                string org = null;
+                string? org = null;
 
                 if (HasServiceOwnerScope(originalPrincipal))
                 {
@@ -646,7 +646,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 if (!string.IsNullOrEmpty(Request.Headers["X-Altinn-EnterpriseUser-Authentication"]))
                 {
-                    string enterpriseUserHeader = Request.Headers["X-Altinn-EnterpriseUser-Authentication"];
+                    string? enterpriseUserHeader = Request.Headers["X-Altinn-EnterpriseUser-Authentication"];
 
                     (UserAuthenticationResult authenticatedEnterpriseUser, ActionResult error) = await HandleEnterpriseUserLogin(enterpriseUserHeader, orgNumber);
 
@@ -676,8 +676,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 string[] claimTypesToRemove = { "aud", IssClaimName, "client_amr", "jti" };
                 foreach (string claimType in claimTypesToRemove)
                 {
-                    Claim audClaim = claims.Find(c => c.Type == claimType);
-                    claims.Remove(audClaim);
+                    Claim? audClaim = claims.Find(c => c.Type == claimType);
+                    if (audClaim != null)
+                    {
+                        claims.Remove(audClaim);
+                    }
                 }
 
                 claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
@@ -903,9 +906,9 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private static bool HasServiceOwnerScope(ClaimsPrincipal originalPrincipal)
         {
-            string scope = originalPrincipal.FindFirstValue("scope");
+            string? scope = originalPrincipal.FindFirstValue("scope");
 
-            if (scope.Contains("altinn:serviceowner"))
+            if (scope != null && scope.Contains("altinn:serviceowner"))
             {
                 return true;
             }
@@ -920,11 +923,11 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private bool HasPartnerScope(string scope)
         {
-            string[] scopes = scope?.Split(" ");
+            string[]? scopes = scope?.Split(" ");
 
             foreach (string partnerScope in _partnerScopes)
             {
-                if (scopes.Contains(partnerScope))
+                if (scopes?.Contains(partnerScope) == true)
                 {
                     return true;
                 }
