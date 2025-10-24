@@ -1732,7 +1732,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Get the altinn token
             string token = await response.Content.ReadAsStringAsync();
-            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token, new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token, testTime);
             string altinnSessionId = altinnTokenPrincipal.FindFirstValue("jti");
 
             url = "/authentication/api/v1/refresh";
@@ -1741,7 +1741,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             refreshClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             HttpResponseMessage refreshedTokenMessage = await refreshClient.GetAsync(url);
             string refreshedToken = await refreshedTokenMessage.Content.ReadAsStringAsync();
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, testTime);
 
             Assert.NotNull(principal);
             Assert.NotEqual(jti, principal.FindFirstValue("jti"));
