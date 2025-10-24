@@ -87,7 +87,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IFeatureManager _featureManager;
         private readonly IGuidService _guidService;
 
-        private readonly List<string> _partnerScopes;
+        private readonly List<string>? _partnerScopes;
 
         /// <summary>
         /// Initialises a new instance of the <see cref="AuthenticationController"/> class with the given dependencies.
@@ -702,7 +702,7 @@ namespace Altinn.Platform.Authentication.Controllers
             }
         }
 
-        private async Task<(UserAuthenticationResult AuthenticatedEnterpriseUser, ActionResult Error)> HandleEnterpriseUserLogin(string enterpriseUserHeader, string orgNumber)
+        private async Task<(UserAuthenticationResult? AuthenticatedEnterpriseUser, ActionResult? Error)> HandleEnterpriseUserLogin(string enterpriseUserHeader, string orgNumber)
         {
             EnterpriseUserCredentials credentials;
 
@@ -765,11 +765,11 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 JwtSecurityToken token = await ValidateAndExtractOidcToken(originalToken, _generalSettings.IdPortenWellKnownConfigEndpoint, _generalSettings.IdPortenAlternativeWellKnownConfigEndpoint);
 
-                string pid = token.Claims.Where(c => c.Type.Equals(PidClaimName)).Select(c => c.Value).FirstOrDefault();
-                string authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
-                string authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
-                string externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
-                string scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
+                string? pid = token.Claims.Where(c => c.Type.Equals(PidClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? authLevel = token.Claims.Where(c => c.Type.Equals(AuthLevelClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? authMethod = token.Claims.Where(c => c.Type.Equals(AuthMethodClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? externalSessionId = token.Claims.Where(c => c.Type.Equals(ExternalSessionIdClaimName)).Select(c => c.Value).FirstOrDefault();
+                string? scope = token.Claims.Where(c => c.Type.Equals(ScopeClaim)).Select(c => c.Value).FirstOrDefault();
                 
                 if (!HasAltinnScope(scope) && !HasPartnerScope(scope))
                 {
@@ -889,7 +889,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <returns>organisation number found in the ID property of the ISO 6523 record</returns>
         private static string GetOrganisationNumberFromConsumerClaim(ClaimsPrincipal originalPrincipal)
         {
-            string consumerJson = originalPrincipal.FindFirstValue("consumer");
+            string? consumerJson = originalPrincipal.FindFirstValue("consumer");
             JObject consumer = JObject.Parse(consumerJson);
 
             string consumerAuthority = consumer["authority"].ToString();
@@ -898,7 +898,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return null;
             }
 
-            string consumerId = consumer["ID"].ToString();
+            string? consumerId = consumer["ID"].ToString();
 
             string organisationNumber = consumerId.Split(":")[1];
             return organisationNumber;
