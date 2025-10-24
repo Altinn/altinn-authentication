@@ -220,7 +220,7 @@ namespace Altinn.Platform.Authentication.Controllers
                         userAuthentication.PartyUuid = profile.UserUuid;
                     }
 
-                    if (userAuthentication != null && userAuthentication.IsAuthenticated)
+                    if (userAuthentication.IsAuthenticated)
                     {
                         await CreateTokenCookie(userAuthentication);
 
