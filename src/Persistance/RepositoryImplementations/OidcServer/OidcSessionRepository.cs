@@ -21,7 +21,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Upsert an OIDC session based on the upstream subject identifier.
         /// </summary>
-        public async Task<OidcSession> UpsertByUpstreamSubAsync(OidcSessionCreate c, CancellationToken cancellationToken = default)
+        public async Task<OidcSession> UpsertByUpstreamSubAsync(OidcSessionCreate create, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ @"
                 WITH existing AS (
@@ -62,27 +62,27 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             ";
 
             await using var cmd = _ds.CreateCommand(SQL);
-            cmd.Parameters.AddWithValue("sid", c.Sid);
-            cmd.Parameters.AddWithValue("session_handle_hash", NpgsqlDbType.Bytea, c.SessionHandleHash);
-            cmd.Parameters.AddWithValue("subject_id", (object?)c.SubjectId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("external_id", (object?)c.ExternalId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("subject_party_uuid", (object?)c.SubjectPartyUuid ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("subject_party_id", (object?)c.SubjectPartyId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("subject_user_id", (object?)c.SubjectUserId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("subject_user_name", (object?)c.SubjectUserName ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("provider", c.Provider);
-            cmd.Parameters.AddWithValue("upstream_issuer", c.UpstreamIssuer);
-            cmd.Parameters.AddWithValue("upstream_sub", c.UpstreamSub);
-            cmd.Parameters.AddWithValue("acr", (object?)c.Acr ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("auth_time", (object?)c.AuthTime ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("amr", (object?)(c.Amr ?? EmptyAmr) ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("scopes", NpgsqlDbType.Array | NpgsqlDbType.Text, c.Scopes.ToArray());
-            cmd.Parameters.AddWithValue("now", (object?)c.Now ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("expires_at", (object?)c.ExpiresAt ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("upstream_session_sid", (object?)c.UpstreamSessionSid ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("created_by_ip", (object?)c.CreatedByIp ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("user_agent_hash", (object?)c.UserAgentHash ?? DBNull.Value);
-            cmd.Parameters.Add(JsonbParam("provider_claims", c.ProviderClaims));
+            cmd.Parameters.AddWithValue("sid", create.Sid);
+            cmd.Parameters.AddWithValue("session_handle_hash", NpgsqlDbType.Bytea, create.SessionHandleHash);
+            cmd.Parameters.AddWithValue("subject_id", (object?)create.SubjectId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("external_id", (object?)create.ExternalId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_party_uuid", (object?)create.SubjectPartyUuid ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_party_id", (object?)create.SubjectPartyId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_user_id", (object?)create.SubjectUserId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_user_name", (object?)create.SubjectUserName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("provider", create.Provider);
+            cmd.Parameters.AddWithValue("upstream_issuer", create.UpstreamIssuer);
+            cmd.Parameters.AddWithValue("upstream_sub", create.UpstreamSub);
+            cmd.Parameters.AddWithValue("acr", (object?)create.Acr ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("auth_time", (object?)create.AuthTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("amr", (object?)(create.Amr ?? EmptyAmr) ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("scopes", NpgsqlDbType.Array | NpgsqlDbType.Text, create.Scopes.ToArray());
+            cmd.Parameters.AddWithValue("now", (object?)create.Now ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("expires_at", (object?)create.ExpiresAt ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("upstream_session_sid", (object?)create.UpstreamSessionSid ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("created_by_ip", (object?)create.CreatedByIp ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("user_agent_hash", (object?)create.UserAgentHash ?? DBNull.Value);
+            cmd.Parameters.Add(JsonbParam("provider_claims", create.ProviderClaims));
 
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
             if (!await reader.ReadAsync(cancellationToken))
@@ -168,7 +168,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Get all SIDs for sessions matching the given upstream issuer and upstream session SID.
         /// </summary>
-        public async Task<string[]> GetSidsByUpstreamSessionSidAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken cancellationToken = default)
+        public async Task<string[]> GetSidsByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken cancellationToken)
         {
             const string SQL = @"
             SELECT sid
@@ -177,8 +177,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                AND upstream_session_sid = @usid;";
 
             await using var cmd = _ds.CreateCommand(SQL);
-            cmd.Parameters.AddWithValue("iss", upstreamIssuer);
-            cmd.Parameters.AddWithValue("usid", upstreamSessionSid);
+            cmd.Parameters.AddWithValue("iss", issuer);
+            cmd.Parameters.AddWithValue("usid", upstreamSid);
 
             var list = new List<string>();
             await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
@@ -193,7 +193,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Delete all OIDC sessions matching the given upstream issuer and upstream session SID.
         /// </summary>
-        public async Task<int> DeleteByUpstreamSessionSidAsync(string upstreamIssuer, string upstreamSessionSid, CancellationToken cancellationToken = default)
+        public async Task<int> DeleteByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken cancellationToken = default)
         {
             const string SQL = @"
         DELETE FROM oidcserver.oidc_session
@@ -201,8 +201,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             AND upstream_session_sid = @usid;";
 
             await using var cmd = _ds.CreateCommand(SQL);
-            cmd.Parameters.AddWithValue("iss", upstreamIssuer);
-            cmd.Parameters.AddWithValue("usid", upstreamSessionSid);
+            cmd.Parameters.AddWithValue("iss", issuer);
+            cmd.Parameters.AddWithValue("usid", upstreamSid);
             return await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
