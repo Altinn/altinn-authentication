@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -93,8 +94,6 @@ namespace Altinn.Platform.Authentication.Controllers
             }
         }
 
-        // --- helpers ---
-
         private IActionResult ToHttpResult(TokenResult result)
         {
             return result.Kind switch
@@ -127,10 +126,10 @@ namespace Altinn.Platform.Authentication.Controllers
             // client_secret_basic takes precedence if header present
             if (request.Headers.TryGetValue("Authorization", out var auth) && auth.Count > 0)
             {
-                var v = auth.ToString();
+                string v = auth.ToString();
                 if (v.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
                 {
-                    var b64 = v.Substring("Basic ".Length).Trim();
+                    string b64 = v.Substring("Basic ".Length).Trim();
                     string decoded;
                     try 
                     { 
@@ -141,7 +140,7 @@ namespace Altinn.Platform.Authentication.Controllers
                         decoded = string.Empty; 
                     }
 
-                    var idx = decoded.IndexOf(':');
+                    int idx = decoded.IndexOf(':');
                     if (idx > 0)
                     {
                         return TokenClientAuth.ClientSecretBasic(
