@@ -184,7 +184,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 User = HttpContext.User
             };
 
-            var result = await _oidcServerService.HandleUpstreamFrontChannelLogoutAsync(logoutInput  , cancellationToken);
+            UpstreamFrontChannelLogoutResult result = await _oidcServerService.HandleUpstreamFrontChannelLogoutAsync(logoutInput, cancellationToken);
 
             // No-store
             Response.Headers[HeaderNames.CacheControl] = "no-store";

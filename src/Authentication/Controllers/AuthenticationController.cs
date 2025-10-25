@@ -237,10 +237,9 @@ namespace Altinn.Platform.Authentication.Controllers
                     }
 
                     // Check to see if we have a valid Session cookie and recreate JWT Based on that
-                    if (Request.Cookies[_generalSettings.AltinnSessionCookieName] != null)
+                    if (Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out string? sessionCookieValue))
                     {
-                        string? sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
-                        AuthenticateFromSessionInput sessionCookieInput = new AuthenticateFromSessionInput { SessionHandle = sessionCookie };
+                        AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookieValue };
                         AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
                         if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
                         {

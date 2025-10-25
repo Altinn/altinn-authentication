@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// </summary>
         public required string EncryptedTicket { get; set; }
         public IPAddress CreatedByIp { get; set; }
-        public string UserAgentHash { get; set; }
+        public string? UserAgentHash { get; set; }
         public Guid CorrelationId { get; set; }
     }
 }
