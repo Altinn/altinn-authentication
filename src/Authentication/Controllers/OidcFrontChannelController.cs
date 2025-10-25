@@ -1,8 +1,7 @@
 ﻿#nullable enable
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
@@ -63,19 +62,8 @@ namespace Altinn.Platform.Authentication.Controllers
             // in OidcFrontChannelController
             AuthorizeResult result = await _oidcServerService.Authorize(req, claimsPrincipal, sessionHandle, cancellationToken);
 
-            foreach (var c in result.Cookies)
-            {
-                Response.Cookies.Append(c.Name, c.Value, new CookieOptions
-                {
-                    HttpOnly = c.HttpOnly,
-                    Secure = c.Secure,
-                    Path = c.Path ?? "/",
-                    Domain = c.Domain,
-                    Expires = c.Expires,
-                    SameSite = c.SameSite
-                });
-            }
-
+            SetCookies(result.Cookies);
+           
             Response.Headers.CacheControl = "no-store";
             Response.Headers.Pragma = "no-cache";
 
@@ -133,18 +121,7 @@ namespace Altinn.Platform.Authentication.Controllers
             Response.Headers.CacheControl = "no-store";
             Response.Headers.Pragma = "no-cache";
 
-            foreach (var c in result.Cookies)
-            {
-                Response.Cookies.Append(c.Name, c.Value, new CookieOptions
-                {
-                    HttpOnly = c.HttpOnly,
-                    Secure = c.Secure,
-                    Path = c.Path ?? "/",
-                    Domain = c.Domain,
-                    Expires = c.Expires,
-                    SameSite = c.SameSite
-                });
-            }
+            SetCookies(result.Cookies);
 
             return result.Kind switch
             {
@@ -191,23 +168,12 @@ namespace Altinn.Platform.Authentication.Controllers
             Response.Headers[HeaderNames.Pragma] = "no-cache";
 
             // Best-effort cookie ops (may be blocked by 3p cookie settings)
-            foreach (var c in result.Cookies)
-            {
-                Response.Cookies.Append(c.Name, c.Value ?? string.Empty, new CookieOptions
-                {
-                    HttpOnly = c.HttpOnly,
-                    Secure = c.Secure,
-                    Path = c.Path ?? "/",
-                    Domain = c.Domain,
-                    Expires = c.Expires,
-                    SameSite = c.SameSite
-                });
-            }
+            SetCookies(result.Cookies);
 
             // Keep body tiny so IdP iframes finish fast
             return Content("OK");
         }
-    
+
         /// <summary>
         /// OIDC end_session_endpoint – RP-initiated logout.
         /// Accepts id_token_hint, post_logout_redirect_uri, and state.
@@ -241,18 +207,7 @@ namespace Altinn.Platform.Authentication.Controllers
             Response.Headers.Pragma = "no-cache";
 
             // Apply cookie instructions produced by the service
-            foreach (var c in result.Cookies)
-            {
-                Response.Cookies.Append(c.Name, c.Value ?? string.Empty, new CookieOptions
-                {
-                    HttpOnly = c.HttpOnly,
-                    Secure = c.Secure,
-                    Path = c.Path ?? "/",
-                    Domain = c.Domain,
-                    Expires = c.Expires,
-                    SameSite = c.SameSite
-                });
-            }
+            SetCookies(result.Cookies);
 
             if (result.RedirectUri is not null)
             {
@@ -312,6 +267,22 @@ namespace Altinn.Platform.Authentication.Controllers
 
             ub.Query = q.ToString()!;
             return ub.Uri.ToString();
+        }
+
+        private void SetCookies(IReadOnlyList<CookieInstruction> Cookies)
+        {
+            foreach (CookieInstruction c in Cookies)
+            {
+                Response.Cookies.Append(c.Name, c.Value ?? string.Empty, new CookieOptions
+                {
+                    HttpOnly = c.HttpOnly,
+                    Secure = c.Secure,
+                    Path = c.Path ?? "/",
+                    Domain = c.Domain,
+                    Expires = c.Expires,
+                    SameSite = c.SameSite
+                });
+            }
         }
     }
 }

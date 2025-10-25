@@ -17,6 +17,6 @@
         public int? StatusCode { get; init; }
         public string? LocalErrorMessage { get; init; }
 
-        public IEnumerable<CookieInstruction> Cookies { get; init; } = Array.Empty<CookieInstruction>();
+        public IReadOnlyList<CookieInstruction> Cookies { get; init; } = Array.Empty<CookieInstruction>();
     }
 }
