@@ -94,7 +94,7 @@ namespace Altinn.Platform.Authentication.Controllers
             }
         }
 
-        private IActionResult ToHttpResult(TokenResult result)
+        private ObjectResult ToHttpResult(TokenResult result)
         {
             return result.Kind switch
             {
