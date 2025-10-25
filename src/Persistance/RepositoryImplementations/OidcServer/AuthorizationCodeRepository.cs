@@ -116,7 +116,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         }
 
         /// <inheritdoc/>
-        public async Task InsertAsync(AuthorizationCodeCreate c, CancellationToken cancellationToken = default)
+        public async Task InsertAsync(AuthorizationCodeCreate codeCreate, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ @"
                 INSERT INTO oidcserver.authorization_code (
@@ -133,28 +133,28 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 );";
 
             await using var cmd = _ds.CreateCommand(SQL);
-            cmd.Parameters.AddWithValue("code", NpgsqlDbType.Text, c.Code);
-            cmd.Parameters.AddWithValue("client_id", NpgsqlDbType.Text, c.ClientId);
-            cmd.Parameters.AddWithValue("subject_id", NpgsqlDbType.Text, c.SubjectId);
-            cmd.Parameters.AddWithValue("external_id", NpgsqlDbType.Text, (object?)c.ExternalId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("subject_party_uuid", NpgsqlDbType.Uuid, (object?)c.SubjectPartyUuid ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("subject_party_id", NpgsqlDbType.Integer, (object?)c.SubjectPartyId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("subject_user_id", NpgsqlDbType.Integer, (object?)c.SubjectUserId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("subject_user_name", NpgsqlDbType.Text, (object?)c.SubjectUserName ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("session_id", NpgsqlDbType.Text, c.SessionId);
-            cmd.Parameters.AddWithValue("redirect_uri", NpgsqlDbType.Text, c.RedirectUri.ToString());
-            cmd.Parameters.AddWithValue("scopes", NpgsqlDbType.Array | NpgsqlDbType.Text, c.Scopes.ToArray());
-            cmd.Parameters.AddWithValue("nonce", NpgsqlDbType.Text, (object?)c.Nonce ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("acr", NpgsqlDbType.Text, (object?)c.Acr ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("amr", NpgsqlDbType.Array | NpgsqlDbType.Text, (object?)c.Amr?.ToArray() ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("auth_time", NpgsqlDbType.TimestampTz, (object?)c.AuthTime ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("code_challenge", NpgsqlDbType.Text, c.CodeChallenge);
-            cmd.Parameters.AddWithValue("code_challenge_method", NpgsqlDbType.Text, c.CodeChallengeMethod);
-            cmd.Parameters.AddWithValue("issued_at", NpgsqlDbType.TimestampTz, c.IssuedAt);
-            cmd.Parameters.AddWithValue("expires_at", NpgsqlDbType.TimestampTz, c.ExpiresAt);
-            cmd.Parameters.AddWithValue("created_by_ip", NpgsqlDbType.Inet, (object?)c.CreatedByIp ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("correlation_id", NpgsqlDbType.Uuid, (object?)c.CorrelationId ?? DBNull.Value);
-            cmd.Parameters.Add(JsonbParam("provider_claims", c.ProviderClaims));
+            cmd.Parameters.AddWithValue("code", NpgsqlDbType.Text, codeCreate.Code);
+            cmd.Parameters.AddWithValue("client_id", NpgsqlDbType.Text, codeCreate.ClientId);
+            cmd.Parameters.AddWithValue("subject_id", NpgsqlDbType.Text, codeCreate.SubjectId);
+            cmd.Parameters.AddWithValue("external_id", NpgsqlDbType.Text, (object?)codeCreate.ExternalId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_party_uuid", NpgsqlDbType.Uuid, (object?)codeCreate.SubjectPartyUuid ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_party_id", NpgsqlDbType.Integer, (object?)codeCreate.SubjectPartyId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_user_id", NpgsqlDbType.Integer, (object?)codeCreate.SubjectUserId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("subject_user_name", NpgsqlDbType.Text, (object?)codeCreate.SubjectUserName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("session_id", NpgsqlDbType.Text, codeCreate.SessionId);
+            cmd.Parameters.AddWithValue("redirect_uri", NpgsqlDbType.Text, codeCreate.RedirectUri.ToString());
+            cmd.Parameters.AddWithValue("scopes", NpgsqlDbType.Array | NpgsqlDbType.Text, codeCreate.Scopes.ToArray());
+            cmd.Parameters.AddWithValue("nonce", NpgsqlDbType.Text, (object?)codeCreate.Nonce ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("acr", NpgsqlDbType.Text, (object?)codeCreate.Acr ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("amr", NpgsqlDbType.Array | NpgsqlDbType.Text, (object?)codeCreate.Amr?.ToArray() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("auth_time", NpgsqlDbType.TimestampTz, (object?)codeCreate.AuthTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("code_challenge", NpgsqlDbType.Text, codeCreate.CodeChallenge);
+            cmd.Parameters.AddWithValue("code_challenge_method", NpgsqlDbType.Text, codeCreate.CodeChallengeMethod);
+            cmd.Parameters.AddWithValue("issued_at", NpgsqlDbType.TimestampTz, codeCreate.IssuedAt);
+            cmd.Parameters.AddWithValue("expires_at", NpgsqlDbType.TimestampTz, codeCreate.ExpiresAt);
+            cmd.Parameters.AddWithValue("created_by_ip", NpgsqlDbType.Inet, (object?)codeCreate.CreatedByIp ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("correlation_id", NpgsqlDbType.Uuid, (object?)codeCreate.CorrelationId ?? DBNull.Value);
+            cmd.Parameters.Add(JsonbParam("provider_claims", codeCreate.ProviderClaims));
 
             try
             {
@@ -162,7 +162,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "AuthorizationCodeRepository.InsertAsync failed for client_id={ClientId}", c.ClientId);
+                _logger.LogError(ex, "AuthorizationCodeRepository.InsertAsync failed for client_id={ClientId}", codeCreate.ClientId);
                 throw;
             }
         }

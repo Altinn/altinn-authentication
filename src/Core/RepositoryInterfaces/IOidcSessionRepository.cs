@@ -34,11 +34,11 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// <summary>
         /// Get all SIDs associated with a given upstream session SID.
         /// </summary>
-        Task<string[]> GetSidsByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken cancellationToken);
+        Task<string[]> GetSidsByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete all sessions associated with a given upstream session SID.
         /// </summary>
-        Task<int> DeleteByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken cancellationToken);
+        Task<int> DeleteByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken cancellationToken = default);
     }
 }

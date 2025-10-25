@@ -168,7 +168,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// <summary>
         /// Get all SIDs for sessions matching the given upstream issuer and upstream session SID.
         /// </summary>
-        public async Task<string[]> GetSidsByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken cancellationToken)
+        public async Task<string[]> GetSidsByUpstreamSessionSidAsync(string issuer, string upstreamSid, CancellationToken cancellationToken = default)
         {
             const string SQL = @"
             SELECT sid

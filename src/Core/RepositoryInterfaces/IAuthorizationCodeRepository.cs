@@ -10,7 +10,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// <summary>
         /// Inserts a new authorization code record.
         /// </summary>
-        Task InsertAsync(AuthorizationCodeCreate create, CancellationToken cancellationToken = default);
+        Task InsertAsync(AuthorizationCodeCreate codeCreate, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets an authorization code record by code.
