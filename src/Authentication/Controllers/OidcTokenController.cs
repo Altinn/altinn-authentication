@@ -177,8 +177,8 @@ namespace Altinn.Platform.Authentication.Controllers
             return TokenClientAuth.Missing();
         }
 
-        private static IActionResult OAuthError(string code, string? desc)
-            => new BadRequestObjectResult(OAuthErrorBody(code, desc));
+        private static BadRequestObjectResult OAuthError(string code, string? desc)
+            => new(OAuthErrorBody(code, desc));
 
         private static object OAuthErrorBody(string code, string? desc) => new
         {
