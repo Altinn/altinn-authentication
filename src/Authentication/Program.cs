@@ -20,6 +20,8 @@ using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Authorization;
 using Altinn.Platform.Authentication.Core.Constants;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Core.Services.Validation;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
@@ -394,6 +396,12 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
     services.AddTransient<IAuthorizationHandler, AccessTokenHandler>();
     services.AddTransient<DelegationHelper, DelegationHelper>();
+    services.AddScoped<IOidcServerService, OidcServerService>();
+    services.AddSingleton<IAuthorizeRequestValidator, AuthorizeRequestValidator>();
+    services.AddSingleton<IAuthorizeClientPolicyValidator, AuthorizeClientPolicyValidator>();
+    services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
+    services.AddScoped<ITokenService, TokenService>();
+    services.AddSingleton<ITokenIssuer, TokenIssuerService>();
 
     if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     {

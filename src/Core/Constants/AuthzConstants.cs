@@ -97,6 +97,11 @@ namespace Altinn.Platform.Authentication.Core.Constants
         public const string SCOPE_INTERNAL_OR_PLATFORM_ACCESS = "altinn:authentication/systemuser.admin";
 
         /// <summary>
+        /// Issuer when session is created based on Altinn 2 Ticket
+        /// </summary>
+        public const string ISSUER_ALTINN_PORTAL = "SBL";
+
+        /// <summary>
         /// Policy tag for reading client delegation information
         /// </summary>
         public const string POLICY_CLIENTDELEGATION_READ = "ClientDelegationRead";

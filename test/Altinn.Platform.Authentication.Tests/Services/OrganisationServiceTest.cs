@@ -31,7 +31,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
         public OrganisationServiceTest()
         {
-            GeneralSettings generalSettings = new GeneralSettings { OrganisationRepositoryLocation = "https://mock.com/altinn-orgs.json" };
+            GeneralSettings generalSettings = new GeneralSettings { OrganisationRepositoryLocation = "https://mock.com/altinn-orgs.json", OidcRefreshTokenPepper = "YWRzZmFzZmRhc2ZzYWVmZWY=" };
             _generalSettingsMock = new Mock<IOptions<GeneralSettings>>();
             _generalSettingsMock.Setup(o => o.Value).Returns(generalSettings);
             _loggerMock = new Mock<ILogger<OrganisationsService>>();
@@ -80,7 +80,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             };
 
             _memoryCache.Set(cacheKey, organisationDictionary);
-            _generalSettingsMock.Setup(o => o.Value).Returns(new GeneralSettings { OrganisationRepositoryLocation = "https://mock.com/altinn-orgs.json" });
+            _generalSettingsMock.Setup(o => o.Value).Returns(new GeneralSettings { OrganisationRepositoryLocation = "https://mock.com/altinn-orgs.json", OidcRefreshTokenPepper = "YWRzZmFzZmRhc2ZzYWVmZWY=" });
 
             OrganisationsService orgService = new OrganisationsService(null, _memoryCache, _loggerMock.Object, _generalSettingsMock.Object);
 

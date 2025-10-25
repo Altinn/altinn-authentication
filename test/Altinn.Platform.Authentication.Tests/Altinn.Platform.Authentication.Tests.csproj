@@ -9,6 +9,7 @@
     <PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.0" />
     <PackageReference Include="Altinn.Platform.Storage.Interface" Version="4.0.14" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.10" />
+	  <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.10.0" />
     <PackageReference Include="Testcontainers" Version="4.8.1" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.8.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.10" />
@@ -57,6 +58,21 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\Delegation\CheckDelegationAccessPackageResponse_NotDelegable.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\OidcScenarios\arbeidsflate_level34.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\OidcScenarios\new_uidpuser.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\OidcScenarios\existing_uidpuser.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\OidcScenarios\selvidentifisert_altinn2.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\OidcScenarios\arbeidsflate_happyflow.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\Delegation\RightsForSystemUser.json">
@@ -292,6 +308,9 @@
     <None Update="Data\Delegation\AccessPackagesForSystemUser.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\UserProfile\UserProfiles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\Xacml\3.0\ResourceRegistry\altinn_access_mangement\policy.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -314,7 +333,6 @@
 
   <ItemGroup>
     <Folder Include="Data\Delegation\NewFolder\" />
-    <Folder Include="Data\UserProfile\" />
   </ItemGroup>
 
 </Project>

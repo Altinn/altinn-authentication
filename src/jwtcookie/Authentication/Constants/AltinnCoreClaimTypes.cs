@@ -64,5 +64,10 @@ namespace AltinnCore.Authentication.Constants
         /// The org number.
         /// </summary>
         public const string OrgNumber = "urn:altinn:orgNumber";
+
+        /// <summary>
+        /// The person identifier (ssn).
+        /// </summary>
+        public const string PersonIdentifier = "urn:altinn:person:identifier-no";
     }
 }

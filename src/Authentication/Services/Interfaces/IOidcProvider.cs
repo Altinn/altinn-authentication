@@ -1,3 +1,5 @@
+#nullable enable
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Model;
 
@@ -9,8 +11,9 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
     public interface IOidcProvider
     {
         /// <summary>
-        /// Get code response from OIDC Proviver. Respons will be different based on the type of original login request
+        /// Gets tokens from the OIDC provider. Response shape varies by scopes/client.
+        /// Contract: returns a non-null response on success; throws on transport/protocol/parse errors.
         /// </summary>
-        Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri);
+        Task<OidcCodeResponse> GetTokens(string authorizationCode, OidcProvider provider, string redirect_uri, string? codeVerifier, CancellationToken cancellationToken = default);
     }
 }
