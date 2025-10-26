@@ -1,5 +1,4 @@
 ﻿#nullable enable
-
 using Altinn.Platform.Authentication.Core.Helpers;
 
 namespace Altinn.Platform.Authentication.Helpers
@@ -19,7 +18,6 @@ namespace Altinn.Platform.Authentication.Helpers
                 return false;
             }
 
-            // TODO: Verify hashing algorithm from storedHash prefix if needed
             return Pbkdf2SecretVerifier.Verify(presentedSecret, storedHash);
         }
     }

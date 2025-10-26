@@ -194,7 +194,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
                 }
 
-                string amrClaim = AuthenticationHelper.GetAuthenticationMethod(string.Join(" ", oidcSession.Amr)).ToString();
+                string amrClaim = AuthenticationHelper.GetAuthenticationMethod(amr[0]).ToString();
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
             }
            
