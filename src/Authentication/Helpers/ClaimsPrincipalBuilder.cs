@@ -81,7 +81,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             int securityLevelValue = (int)securityLevel;
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, securityLevelValue.ToString(), ClaimValueTypes.Integer64));
 
-            if (oidcBindingContext.Amr != null && oidcBindingContext.Amr.Count() != 0)
+            if (oidcBindingContext.Amr != null && oidcBindingContext.Amr.Length > 0)
             {
                 var amr = oidcBindingContext.Amr
                 .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -110,7 +110,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim("auth_time", authTimeEpoch.ToString(), ClaimValueTypes.Integer64));
             }
 
-            if (!isIDToken && oidcBindingContext.Scopes != null && oidcBindingContext.Scopes.Any())
+            if (!isIDToken && oidcBindingContext.Scopes != null && oidcBindingContext.Scopes.Length > 0)
             {
                 claims.Add(new Claim("scope", string.Join(" ", oidcBindingContext.Scopes)));
             }
@@ -180,7 +180,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             int securityLevelValue = (int)securityLevel;
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, securityLevelValue.ToString(), ClaimValueTypes.Integer64));
 
-            if (oidcSession.Amr != null && oidcSession.Amr.Count() != 0)
+            if (oidcSession.Amr != null && oidcSession.Amr.Length > 0)
             {
                 var amr = oidcSession.Amr
                 .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -204,7 +204,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim("auth_time", authTimeEpoch.ToString(), ClaimValueTypes.Integer64));
             }
 
-            if (!isIDToken && oidcSession != null && oidcSession.Scopes.Any())
+            if (!isIDToken && oidcSession != null && oidcSession.Scopes.Length > 0)
             {
                 claims.Add(new Claim("scope", string.Join(" ", oidcSession.Scopes)));
             }
