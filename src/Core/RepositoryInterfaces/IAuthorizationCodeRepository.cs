@@ -18,7 +18,7 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         Task<AuthCodeRow?> GetAsync(string code, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Consumes (deletes) an authorization code if it exists and matches the given client ID and redirect URI.
+        /// Consumes (marks as used) an authorization code if it exists, matches the given client ID and redirect URI, and is unexpired.
         /// </summary>
         Task<bool> TryConsumeAsync(string code, string clientId, Uri redirectUri, DateTimeOffset usedAt, CancellationToken cancellationToken = default);
 

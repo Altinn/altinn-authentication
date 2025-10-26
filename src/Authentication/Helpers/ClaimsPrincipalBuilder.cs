@@ -122,7 +122,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         }
 
         /// <summary>
-        /// Create a ClaimsPrincipal based on an OidcSession for AltinnStudio runetime cookie
+        /// Create a ClaimsPrincipal based on an OidcSession for AltinnStudio runtime cookie
         /// </summary>
         public static ClaimsPrincipal GetClaimsPrincipal(OidcSession oidcSession, string iss, bool isIDToken = false, bool isAuthCookie = false)
         {
