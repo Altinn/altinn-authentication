@@ -39,7 +39,7 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<TokenResult> ExchangeAuthorizationCodeAsync(TokenRequest exchangeRequest, CancellationToken ct)
         {
             // 1) Basic checks
-            (TokenResult? validationErrorResult, OidcClient? client, AuthCodeRow? row) = await ValidateTokenRequest(exchangeRequest,ct);
+            (TokenResult? validationErrorResult, OidcClient? client, AuthCodeRow? row) = await ValidateTokenRequest(exchangeRequest, ct);
             if (validationErrorResult != null)
             {
                 return validationErrorResult;
