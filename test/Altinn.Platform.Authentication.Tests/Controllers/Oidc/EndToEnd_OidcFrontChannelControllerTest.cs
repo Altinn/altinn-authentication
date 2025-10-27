@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -13,7 +14,9 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
+using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Helpers;
@@ -27,6 +30,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
+using Moq;
 using Npgsql;
 using Xunit;
 
@@ -39,6 +43,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         protected IOidcServerClientRepository Repository => Services.GetRequiredService<IOidcServerClientRepository>();
+
+        private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
+        private readonly Mock<IUserProfileService> _userProfileService = new();
 
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
@@ -77,6 +84,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton<IProfile, ProfileFileMock>();
+            services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
+            services.AddSingleton<IUserProfileService>(_userProfileService.Object);
+
             services.PostConfigure<GeneralSettings>(o =>
             {
                 o.ForceOidc = false;   // “true” group
@@ -483,6 +493,108 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal("OK", frontChannelContent);
         }
 
+        /// <summary>
+        /// End-to-end scenario verifying authentication, session persistence, and logout 
+        /// when the flow originates from an existing Altinn 2 (.ASPXAUTH) login.
+        /// 
+        /// The test covers:
+        /// 1. Initial access to an Altinn App where the user is already authenticated via Altinn 2.
+        ///    - Validates that the .ASPXAUTH cookie is accepted and converted into a valid Altinn OIDC session.
+        ///    - Confirms redirect back to the application without invoking any upstream identity provider.
+        /// 2. Repeated session refreshes through the /refresh endpoint, ensuring that the Altinn session 
+        ///    remains active during extended usage.
+        /// 3. Access to Arbeidsflate (RP) while a valid Altinn Runtime session exists, verifying 
+        ///    that reauthentication is bypassed and the user is directly authorized.
+        /// 4. Token issuance via /token endpoint and validation of session linkage and claims integrity.
+        /// 5. Logout flow — verifying that logout triggers the correct redirect to the local Altinn 2 
+        ///    logout endpoint and that the Altinn session is fully invalidated in the database.
+        /// 
+        /// Expected results:
+        /// - Altinn 2 authentication cookie is successfully upgraded into an Altinn OIDC session.
+        /// - Session refresh and reuse work seamlessly across applications.
+        /// - Tokens are correctly bound to the authenticated Altinn session.
+        /// - Logout removes all session data and redirects to Altinn 2 logout as expected.
+        /// </summary>
+        [Fact]
+        public async Task TC4_Auth_A2_App_Aa_Logout_End_To_End_OK()
+        {
+            // Create HttpClient with default headers for IP, UA, correlation. 
+            using HttpClient client = CreateClientWithHeaders(new()
+            {
+                [".AspxAuth"] = "DummyAuthToken12345"
+            });
+
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+            ConfigureSblTokenMockByScenario(testScenario);
+
+            // Insert a client that matches the authorize request
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            // === Phase 1: User redirects an app in Altinn Apps and is not authenticated. The app redirects to the standard authentication endpoint with goto URL
+            // It already has a .ASPXauth that is valid and can be used to create a session in Authentication
+            HttpResponseMessage app2RedirectResponse = await client.GetAsync(
+               "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+            Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
+            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", app2RedirectResponse.Headers.Location!.ToString());
+
+            OidcAssertHelper.AssertAuthorizedRedirect(app2RedirectResponse, testScenario, _fakeTime.GetUtcNow());
+
+            // === Phase 3: Uses the app for an extensive periode. The app triggers refreshes to keep the session alive =====
+            for (int i = 0; i < 9; i++)
+            {
+                _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:41 08:46 08:51 08:56 08:59 09:06 09:11 09:16 09:21
+
+                // Second keep alive from App
+                HttpResponseMessage cookieRefreshResponseFromSecondApp2 = await client.GetAsync(
+                   "/authentication/api/v1/refresh");
+                string refreshToken2FromSecondApp = await cookieRefreshResponseFromSecondApp2.Content.ReadAsStringAsync();
+                TokenAssertsHelper.AssertCookieAccessToken(refreshToken2FromSecondApp, testScenario, _fakeTime.GetUtcNow());
+            }
+
+            // ==== Phase 4: Goes to Arbeidsflate  =====
+            // The user does not have a valid session in Arbeidsflate. So user is redirected to the standard authorize endpoint with new state, nonce and pkce values.
+            string authorizationRequestUrl2 = testScenario.GetAuthorizationRequestUrl();
+
+            // This would be the URL Arbeidsflate redirects the user to. Now the user have a active Altinn Runtime cookie so the response will be a direct
+            // redirect back to Arbeidsflate with code and state (no intermediate login at IdP).
+            HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
+
+            string code = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
+
+            // Gets the new code from the callback response and redeems at /token endpoint
+            Dictionary<string, string> tokenForm = OidcServerTestUtils.BuildTokenRequestForm(testScenario, code);
+
+            using var tokenResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(tokenForm));
+
+            Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
+            string json = await tokenResp.Content.ReadAsStringAsync();
+            TokenResponseDto? tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
+
+            // Asserts on token response structure
+            string sidFromCodeResponse = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
+
+            // ===== Phase 5: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
+
+            // Verify that session is active before logout
+            OidcSession? beforeLoggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
+            OidcAssertHelper.AssertValidSession(beforeLoggedOutSession, testScenario, _fakeTime.GetUtcNow());
+            Debug.Assert(beforeLoggedOutSession != null);
+
+            using var logoutResp = await client.GetAsync(
+                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+            string content = await logoutResp.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
+            Assert.StartsWith("http://localhost/ui/authentication/logout", logoutResp.Headers.Location!.ToString());
+            OidcAssertHelper.AssertLogoutRedirect(logoutResp, testScenario);
+
+            OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
+            Assert.Null(loggedOutSession);
+        }
+
         private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
         {
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
@@ -539,6 +651,46 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
             client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
             client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
+            return client;
+        }
+
+        private void ConfigureSblTokenMockByScenario(OidcTestScenario scenario)
+        {
+            string acrJoined = (scenario.Acr is { Count: > 0 }) ? string.Join(string.Empty, scenario.Acr) : string.Empty;
+            string amrJoined = (scenario.Amr is { Count: > 0 }) ? string.Join(string.Empty, scenario.Amr) : string.Empty;
+
+            UserAuthenticationModel userAuthenticationModel = new()
+            {
+                IsAuthenticated = true,
+                AuthenticationLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(acrJoined),
+                AuthenticationMethod = AuthenticationHelper.GetAuthenticationMethod(amrJoined),
+                PartyID = scenario.PartyId,
+                UserID = scenario.UserId,
+                Username = scenario.UserName
+            };
+
+            _cookieDecryptionService.Setup(s => s.DecryptTicket(It.IsAny<string>())).ReturnsAsync(userAuthenticationModel);
+        }
+
+        private HttpClient CreateClientWithHeaders(Dictionary<string, string>? cookies = null)
+        {
+            var client = CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(30000);
+
+            // Headers used by the controller to capture IP/UA/correlation
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("AltinnTestClient/1.0");
+            client.DefaultRequestHeaders.Add("X-Correlation-ID", Guid.NewGuid().ToString());
+            client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.42"); // Test IP
+
+            if (cookies is not null && cookies.Count > 0)
+            {
+                // Build a single Cookie header: "name=value; name2=value2"
+                var pairs = cookies.Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value)}");
+                var headerValue = string.Join("; ", pairs);
+                client.DefaultRequestHeaders.Remove("Cookie"); // in case called twice
+                client.DefaultRequestHeaders.Add("Cookie", headerValue);
+            }
+
             return client;
         }
     }
