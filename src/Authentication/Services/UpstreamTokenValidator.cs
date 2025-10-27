@@ -84,7 +84,7 @@ namespace Altinn.Platform.Authentication.Services
             return (JwtSecurityToken)validated;
         }
 
-        private static string TrimEndSlash(string s) => s.EndsWith("/") ? s[..^1] : s;
+        private static string TrimEndSlash(string s) => s.EndsWith('/') ? s[..^1] : s;
 
         private void ValidateNonce(JwtSecurityToken token, string expectedNonce)
         {
