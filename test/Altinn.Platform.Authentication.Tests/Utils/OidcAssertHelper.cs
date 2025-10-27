@@ -117,7 +117,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             // Assert that domain is set to localhost (test env) (will be altinn.no for production)
             Assert.Contains(parts, p => p.StartsWith("domain=localhost", StringComparison.OrdinalIgnoreCase));
 
-            // ❌ Must NOT set Expires
+            // ✓ Must set Expires to epoch (cookie deletion)
             Assert.Contains(parts, p => p.StartsWith("expires=Thu, 01 Jan 1970 00:00:00 GMT", StringComparison.OrdinalIgnoreCase));
         }
 
