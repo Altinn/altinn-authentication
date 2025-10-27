@@ -120,8 +120,7 @@ namespace Altinn.Platform.Authentication.Services
 
         private static string Base64UrlSha256(string input)
         {
-            using var sha = SHA256.Create();
-            byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
+            byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
 
             // Base64Url without padding
             return Convert.ToBase64String(hash)
