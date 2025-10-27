@@ -81,9 +81,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
             // name=value
             var (name, value, parts) = ParseSetCookieHeader(raw);
-            var kv = parts[0].Split('=', 2);
-            Assert.Equal("AltinnStudioRuntime", kv[0]);
-            value = kv.Length > 1 ? kv[1] : string.Empty;
+            Assert.Equal("AltinnStudioRuntime", name);
             Assert.False(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie has empty value.");
 
             // Assert that domain is set to localhost (test env) (will be altinn.no for production)

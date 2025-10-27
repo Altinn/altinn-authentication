@@ -74,9 +74,9 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess
             Assert.True(inserted.RedirectUris.First().IsAbsoluteUri);
 
             // Assert: scopes normalized (lowercased/distinct handled in repo)
-            Assert.Subset(
-                inserted.AllowedScopes.ToHashSet(),
-                create.AllowedScopes.Select(s => s.ToLowerInvariant()).ToHashSet());
+            Assert.Equal(
+            create.AllowedScopes.Select(s => s.ToLowerInvariant()).OrderBy(s => s),
+            inserted.AllowedScopes.OrderBy(s => s));
 
             // Assert: fetched equals the inserted (key fields)
             Assert.NotNull(fetched);
