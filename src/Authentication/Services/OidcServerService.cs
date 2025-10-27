@@ -103,8 +103,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // ========= 3) Handle PAR / JAR if present =========
-            // TODO: if request.RequestUri != null -> load par_request, verify TTL and client_id match, override parameters
-            // TODO: if request.RequestObject != null -> validate JWS/JWE, extract claims/params (optional phase)
             // NOTE Currently no need to support PAR/JAR for our downstream clients since Arbeidsflate does not support it
 
             // ========= 4) Persist login_transaction(downstream) =========
@@ -127,14 +125,12 @@ namespace Altinn.Platform.Authentication.Services
                 existingSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(sessionHandleByte, cancellationToken);
             }
 
-            // Verify that found session 
+            // Verify that found session and Check if existing session meets ACR requirements from request
             if (existingSession is not null
                 && existingSession.ExpiresAt.HasValue
-                && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value)
+                && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value
+                && !AuthenticationHelper.NeedAcrUpgrade(existingSession.Acr, request.AcrValues))
             {
-                // Check if existing session meets ACR requirements from request
-                if (!AuthenticationHelper.NeedAcrUpgrade(existingSession.Acr, request.AcrValues))
-                {
                     // There is a valid session with high enough ACR. We just create a code an return straight away. Also slide session expiry.
                     await _oidcSessionRepo.SlideExpiryToAsync(existingSession.Sid, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
                     string code = await CreateDownstreamAuthorizationCode(null, tx, existingSession, cancellationToken);
@@ -142,11 +138,7 @@ namespace Altinn.Platform.Authentication.Services
                         request.RedirectUri, // safe because validated
                         code,
                         request.State!);
-                }
             }
-
-            // TODO: try locate valid oidc_session for (client_id, subject) meeting acr/max_age
-            // TODO: if reusable and no prompt=login: proceed to issue downstream authorization_code (future extension)
 
             // ========= 6) Choose upstream and derive upstream params =========
             (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
