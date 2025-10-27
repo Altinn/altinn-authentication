@@ -1079,7 +1079,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 HttpResponseMessage responseMessage = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
                 List<AccessPackage> list = JsonSerializer.Deserialize<List<AccessPackage>>(await responseMessage.Content.ReadAsStringAsync(), _options);
                 Assert.Equal("urn:altinn:accesspackage:skatt-naering", list[0].Urn);
-                Assert.Single(list);
+                Assert.True(list.Count == 3);
             }
         }
 
