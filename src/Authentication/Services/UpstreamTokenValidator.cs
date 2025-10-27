@@ -37,7 +37,7 @@ namespace Altinn.Platform.Authentication.Services
             }
             
             ICollection<SecurityKey> signingKeys = await _signingKeysRetriever.GetSigningKeys(provider.WellKnownConfigEndpoint);
-            JwtSecurityToken jwtToken = ValidateToken(token, signingKeys);
+            JwtSecurityToken jwtToken = ValidateToken(token, provider.Issuer, signingKeys);
             if (nonce != null)
             {
                 // Only relevant for ID tokens
@@ -47,14 +47,34 @@ namespace Altinn.Platform.Authentication.Services
             return jwtToken;
         }
 
-        private JwtSecurityToken ValidateToken(string originalToken, ICollection<SecurityKey> signingKeys)
+        private JwtSecurityToken ValidateToken(string originalToken, string expectedIssuer, ICollection<SecurityKey> signingKeys)
         {
             TokenValidationParameters validationParameters = new()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKeys = signingKeys,
-                ValidateIssuer = false,
+                ValidateIssuer = true,
                 ValidateAudience = false,
+                IssuerValidator = (tokenIssuer, securityToken, parameters) =>
+                {
+                    // Exact match is the spec requirement (OIDC Core).
+                    if (string.Equals(tokenIssuer, expectedIssuer, StringComparison.Ordinal))
+                    {
+                        return tokenIssuer;
+                    }
+
+                    // Pragmatic allowance: treat trailing slash difference as equivalent.
+                    // Useful when some upstreams include / omit trailing slash inconsistently.
+                    if (TrimEndSlash(tokenIssuer).Equals(TrimEndSlash(expectedIssuer), StringComparison.Ordinal))
+                    {
+                        // Keep a breadcrumb that we normalized.
+                        _logger.LogDebug("Issuer matched after trimming trailing slash: '{Actual}' ~ '{Expected}'", tokenIssuer, expectedIssuer);
+                        return tokenIssuer;
+                    }
+
+                    _logger.LogWarning("Issuer mismatch. Expected '{Expected}', got '{Actual}'", expectedIssuer, tokenIssuer);
+                    throw new SecurityTokenInvalidIssuerException($"Invalid issuer. Expected '{expectedIssuer}', got '{tokenIssuer}'.");
+                },
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromSeconds(10)
@@ -63,6 +83,8 @@ namespace Altinn.Platform.Authentication.Services
             _validator.ValidateToken(originalToken, validationParameters, out SecurityToken? validated);
             return (JwtSecurityToken)validated;
         }
+
+        private static string TrimEndSlash(string s) => s.EndsWith("/") ? s[..^1] : s;
 
         private void ValidateNonce(JwtSecurityToken token, string expectedNonce)
         {
