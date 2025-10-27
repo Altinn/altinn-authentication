@@ -17,7 +17,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             if (length < 43 || length > 128)
                 throw new ArgumentOutOfRangeException(nameof(length), "PKCE code_verifier length must be 43–128.");
 
-            Span<char> chars = length <= 128 ? stackalloc char[length] : new char[length];
+            Span<char> chars = stackalloc char[length];
 
             for (int i = 0; i < length; i++)
                 chars[i] = Alphabet[RandomNumberGenerator.GetInt32(0, Alphabet.Length)];

@@ -32,7 +32,7 @@ namespace Altinn.Platform.Authentication.Services
     /// <summary>
     /// Service that implements the OIDC <c>/authorize</c> front-channel flow for Altinn Authentication as an OP.
     /// </summary>
-    public class OidcServerService(ILogger<OidcServerService> logger, 
+    public partial class OidcServerService(ILogger<OidcServerService> logger, 
         IOidcServerClientRepository oidcServerClientRepository, 
         ILoginTransactionRepository loginTransactionRepository,
         IUpstreamLoginTransactionRepository upstreamLoginTransactionRepository,
@@ -1361,7 +1361,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel?.ExternalIdentity, nameof(userAuthenticationModel));
             string hashedIdentity = HashIDentity(userAuthenticationModel.ExternalIdentity).Substring(5, 10);
-            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            Regex rgx = UserNameRegex();
             hashedIdentity = rgx.Replace(hashedIdentity, string.Empty);
 
             return (provider?.UserNamePrefix ?? "altinn-")
@@ -1401,5 +1401,8 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
         }
+
+        [GeneratedRegex("[^a-zA-Z0-9 -]")]
+        private static partial Regex UserNameRegex();
     }
 }
