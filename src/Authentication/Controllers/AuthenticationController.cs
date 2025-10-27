@@ -344,9 +344,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 // Check to see if we have a valid Session cookie and recreate JWT Based on that
-                if (Request.Cookies[_generalSettings.AltinnSessionCookieName] != null)
+                if (Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out string? sessionCookie))
                 {
-                    string? sessionCookie = Request.Cookies[_generalSettings.AltinnSessionCookieName];
                     AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookie };
                     AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
                     if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
@@ -413,7 +412,7 @@ namespace Altinn.Platform.Authentication.Controllers
                         return StatusCode(StatusCodes.Status503ServiceUnavailable);
                     }
 
-                    if (userAuthentication.UserID != 0 && userAuthentication.PartyUuid == null)
+                    if (userAuthentication.UserID.HasValue && userAuthentication.UserID.Value != 0 && userAuthentication.PartyUuid == null)
                     {
                         UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
                         userAuthentication.PartyUuid = profile.UserUuid;
