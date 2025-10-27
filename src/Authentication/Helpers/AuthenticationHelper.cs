@@ -155,12 +155,10 @@ namespace Altinn.Platform.Authentication.Helpers
                 }
             }
 
-            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
+            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined
+                && System.Enum.TryParse<AuthenticationMethod>(provider.DefaultAuthenticationMethod, ignoreCase: true, out var defaultMethod))
             {
-                if (System.Enum.TryParse<AuthenticationMethod>(provider.DefaultAuthenticationMethod, ignoreCase: true, out var defaultMethod))
-                {
-                    userAuthenticationModel.AuthenticationMethod = defaultMethod;
-                }
+                userAuthenticationModel.AuthenticationMethod = defaultMethod;
             }
 
             if (accessToken != null)
