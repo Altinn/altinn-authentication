@@ -6,7 +6,7 @@
     {
       "package": {
         "id": "0195efb8-7c80-7e82-9b4f-7d63e773bbca",
-        "urn": "urn:altinn:accesspackage:skattnaering",
+        "urn": "urn:altinn:accesspackage:skatt-naering",
         "areaId": "e4ae823f-41db-46ed-873f-8a5d1378fff8"
       },
       "result": true,

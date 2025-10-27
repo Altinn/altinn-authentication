@@ -383,4 +383,17 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemUser_FailedToGetDelegatedRights { get; }
         = _factory.Create(62, HttpStatusCode.InternalServerError, "Failed to get delegated rights");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_NotFound { get; }
+        = _factory.Create(63, HttpStatusCode.BadRequest, "One or more accesspackage is not found in the system.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_NotDelegable { get; }
+        = _factory.Create(64, HttpStatusCode.BadRequest, "One or more accesspackage is not delegable. You cannot create requests for own organisation with packages intended for client");
+
 }

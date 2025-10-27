@@ -221,8 +221,9 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="accessPackages">the AccessPackages chosen for the Request</param>
     /// <param name="systemInfo">The Vendor's Registered System</param>
+    /// <param name="isAgentRequest">true for agent requests</param>
     /// <returns>Result or Problem</returns>
-    Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo);
+    Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo, bool isAgentRequest);
 
     /// <summary>
     /// Gets access packages to a system user.

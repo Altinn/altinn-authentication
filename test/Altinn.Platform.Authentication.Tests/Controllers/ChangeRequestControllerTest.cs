@@ -291,7 +291,7 @@ public class ChangeRequestControllerTest(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -466,7 +466,7 @@ public class ChangeRequestControllerTest(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -797,7 +797,7 @@ public class ChangeRequestControllerTest(
             RequiredAccessPackages = [
                 new()
                 {
-                    Urn = "urn:altinn:accesspackage:skattnaering"
+                    Urn = "urn:altinn:accesspackage:skatt-naering"
                 }
             ]
         };
@@ -950,7 +950,7 @@ public class ChangeRequestControllerTest(
             RequiredAccessPackages = [
                 new()
                 {
-                    Urn = "urn:altinn:accesspackage:skattnaering"
+                    Urn = "urn:altinn:accesspackage:skatt-naering"
                 }
             ]
         };

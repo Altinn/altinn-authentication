@@ -457,7 +457,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (accessPackages is not null && accessPackages.Count > 0)
             {
-                Result<bool> validatedRequestedPackages = ValidateAccessPackages(accessPackages, regSystem);
+                Result<bool> validatedRequestedPackages = ValidateAccessPackages(accessPackages, regSystem, systemUserType == SystemUserType.Agent);
                 if (validatedRequestedPackages.IsProblem)
                 {
                     return validatedRequestedPackages.Problem;
@@ -667,41 +667,69 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo)
+        public Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo, bool isAgentRequest)
         {
             if (systemInfo == null || systemInfo.AccessPackages == null)
             {
-                return Problem.Rights_NotFound_Or_NotDelegable;
+                return Problem.AccessPackage_NotFound;
             }
 
             if (systemInfo.AccessPackages.Count == 0)
             {
-                return Problem.Rights_NotFound_Or_NotDelegable;
+                return Problem.AccessPackage_NotFound;
             }
 
             if (accessPackages.Count > systemInfo.AccessPackages.Count)
             {
-                return Problem.Rights_NotFound_Or_NotDelegable;
+                return Problem.AccessPackage_NotFound;
             }
 
-            bool[] validate = new bool[accessPackages.Count];
+            List<string> notFoundPackages = [];
+            List<string> notDelegablePackages = [];
             foreach (AccessPackage accessPackage in accessPackages)
             {
-                foreach (AccessPackage systemPackage in systemInfo.AccessPackages)
+                bool found = systemInfo.AccessPackages.Any(systemPackage => accessPackage.Urn == systemPackage.Urn);
+                
+                if (found)
                 {
-                    if (accessPackage.Urn == systemPackage.Urn)
+                    Package package = _accessManagementClient.GetAccessPackage(accessPackage.Urn!).Result;
+                    if (isAgentRequest)
                     {
-                        validate[accessPackages.IndexOf(accessPackage)] = true;
+                        if (!package.IsDelegable)
+                        {
+                            notDelegablePackages.Add(accessPackage.Urn!);
+                        }
+                    }
+                    else
+                    {
+                        if (!package.IsAssignable)
+                        {
+                            notDelegablePackages.Add(accessPackage.Urn!);
+                        }
                     }
                 }
+                else
+                {
+                    notFoundPackages.Add(accessPackage.Urn!);
+                }                    
+            }
+            
+            if (notFoundPackages.Count > 0)
+            {
+                var problemExtensionData = ProblemExtensionData.Create(new[]
+                {
+                    new KeyValuePair<string, string>($"NotFound Packages : ", string.Join(", ", notFoundPackages))
+                });          
+                return Problem.AccessPackage_NotFound.Create(problemExtensionData);
             }
 
-            foreach (bool package in validate)
+            if (notDelegablePackages.Count > 0)
             {
-                if (!package)
+                var problemExtensionData = ProblemExtensionData.Create(new[]
                 {
-                    return Problem.Rights_NotFound_Or_NotDelegable;
-                }
+                    new KeyValuePair<string, string>($"NotDelegablePackages", string.Join(", ", notDelegablePackages))
+                });          
+                return Problem.AccessPackage_NotDelegable.Create(problemExtensionData);
             }
 
             return true;

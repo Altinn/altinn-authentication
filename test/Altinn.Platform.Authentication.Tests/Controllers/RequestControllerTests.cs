@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Altinn.AccessManagement.Tests.Mocks;
+﻿using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Core.Problems;
 using Altinn.Authentication.Tests.Mocks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -43,6 +35,16 @@ using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Xunit;
 using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
@@ -269,6 +271,45 @@ public class RequestControllerTests(
     }
 
     [Fact]
+    public async Task Request_Create_BadRequest_NotDelegable()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:regnskapsforer-lonn"
+        };
+
+        // Arrange
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.AccessPackage_NotDelegable.Detail, problemDetails.Detail);
+        Assert.True(problemDetails.Extensions.Count == 2);
+        Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
+    }
+
+    [Fact]
     public async Task Request_Create_Succeed_SubResource()
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterSubRights.json";
@@ -330,7 +371,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -369,7 +410,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -416,7 +457,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -451,7 +492,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -506,6 +547,45 @@ public class RequestControllerTests(
     }
 
     [Fact]
+    public async Task AgentRequest_Create_Failed_NotDelegable()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:konkursbo-tilgangsstyrer"
+        };
+
+        // Arrange
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.AccessPackage_NotDelegable.Detail, problemDetails.Detail);
+        Assert.True(problemDetails.Extensions.Count == 2);
+        Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
+    }
+
+    [Fact]
     public async Task AgentRequest_CreateApprove_Failed_WrongSystemId()
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
@@ -518,7 +598,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -649,7 +729,7 @@ public class RequestControllerTests(
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new AccessPackage();
-        accessPackage.Urn = "urn:altinn:accesspackage:skattnaering";
+        accessPackage.Urn = "urn:altinn:accesspackage:skatt-naering";
 
         // Arrange
         CreateAgentRequestSystemUser req = new()
@@ -812,7 +892,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -983,7 +1063,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -1039,7 +1119,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -1093,7 +1173,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -1143,7 +1223,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -1915,7 +1995,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         string systemId = "991825827_the_matrix";
@@ -2202,7 +2282,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2251,7 +2331,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2415,7 +2495,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2922,7 +3002,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2972,7 +3052,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -3152,7 +3232,7 @@ public class RequestControllerTests(
     {
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         CreateAgentRequestSystemUser req = new()
