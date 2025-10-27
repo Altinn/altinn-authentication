@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
     {
         public static readonly string AltinnCoreClaimTypesOrg = "urn:altinn:org";
 
-        public static string GetToken(int userId, List<Claim> claims, int authenticationLevel = 2, bool addPortalScope = false, DateTimeOffset? now = null)
+        public static string GetToken(int userId, List<Claim>? claims, int authenticationLevel = 2, bool addPortalScope = false, DateTimeOffset? now = null)
         {
             now ??= DateTimeOffset.UtcNow;
 
@@ -22,7 +22,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             return token;
         }
 
-        public static ClaimsPrincipal GetUserPrincipal(int userId, List<Claim> extClaims, int authenticationLevel = 2, bool addPortalScope = false)
+        public static ClaimsPrincipal GetUserPrincipal(int userId, List<Claim>? extClaims, int authenticationLevel = 2, bool addPortalScope = false)
         {
             List<Claim> claims = [];
             string issuer = "www.altinn.no";
