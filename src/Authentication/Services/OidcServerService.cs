@@ -1285,43 +1285,43 @@ namespace Altinn.Platform.Authentication.Services
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
-            if (userAuthenticationModel != null && userAuthenticationModel.UserID != null && userAuthenticationModel.PartyID != null && userAuthenticationModel.PartyUuid != null)
+            if (userAuthenticationModel.UserID != null && userAuthenticationModel.PartyID != null && userAuthenticationModel.PartyUuid != null)
             {
                 return userAuthenticationModel;
             }
 
-            UserProfile profile;
+            UserProfile userProfile;
 
             if (!string.IsNullOrEmpty(userAuthenticationModel!.SSN))
             {
-                profile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = userAuthenticationModel.SSN });
-                userAuthenticationModel.PartyUuid = profile.UserUuid;
-                if (profile.PartyId != 0)
+                userProfile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = userAuthenticationModel.SSN });
+                userAuthenticationModel.PartyUuid = userProfile.UserUuid;
+                if (userProfile.PartyId != 0)
                 {
-                    userAuthenticationModel.PartyID = profile.PartyId;
+                    userAuthenticationModel.PartyID = userProfile.PartyId;
                 }
 
-                if (profile.UserId != 0)
+                if (userProfile.UserId != 0)
                 {
-                    userAuthenticationModel.UserID = profile.UserId;
+                    userAuthenticationModel.UserID = userProfile.UserId;
                 }
 
-                if (profile.Party.PartyUuid != null)
+                if (userProfile.Party.PartyUuid != null)
                 {
-                    userAuthenticationModel.PartyUuid = profile.Party.PartyUuid;
+                    userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
                 }
             }
             else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
             {
                 string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
-                profile = await _userProfileService.GetUser(issExternalIdentity);
+                userProfile = await _userProfileService.GetUser(issExternalIdentity);
 
-                if (profile != null)
+                if (userProfile != null)
                 {
-                    userAuthenticationModel.UserID = profile.UserId;
-                    userAuthenticationModel.PartyID = profile.PartyId;
-                    userAuthenticationModel.PartyUuid = profile.Party.PartyUuid;
-                    userAuthenticationModel.Username = profile.UserName;
+                    userAuthenticationModel.UserID = userProfile.UserId;
+                    userAuthenticationModel.PartyID = userProfile.PartyId;
+                    userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
+                    userAuthenticationModel.Username = userProfile.UserName;
                     userAuthenticationModel.Amr = ["SelfIdentified"];
                     userAuthenticationModel.Acr = "Selfidentified";
                     return userAuthenticationModel;
@@ -1343,13 +1343,13 @@ namespace Altinn.Platform.Authentication.Services
             }
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {
-                profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthenticationModel.UserID.Value });
-                userAuthenticationModel.PartyUuid = profile.UserUuid;
-                if (profile.PartyId != 0)
+                userProfile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthenticationModel.UserID.Value });
+                userAuthenticationModel.PartyUuid = userProfile.UserUuid;
+                if (userProfile.PartyId != 0)
                 {
-                    userAuthenticationModel.PartyID = profile.PartyId;
-                    userAuthenticationModel.PartyUuid = profile.Party.PartyUuid;
-                    userAuthenticationModel.SSN = profile.Party.SSN;
+                    userAuthenticationModel.PartyID = userProfile.PartyId;
+                    userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
+                    userAuthenticationModel.SSN = userProfile.Party.SSN;
                     return userAuthenticationModel;
                 }
             }
