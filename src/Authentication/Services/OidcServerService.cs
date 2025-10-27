@@ -412,11 +412,11 @@ namespace Altinn.Platform.Authentication.Services
             if (input.PostLogoutRedirectUri is not null && !string.IsNullOrWhiteSpace(hintClientId))
             {
                 OidcClient? client = await _oidcServerClientRepository.GetClientAsync(hintClientId!, cancellationToken);
-                if (client?.RedirectUris?.Any() == true &&
+                if (client?.RedirectUris?.Count > 0 &&
                     client.RedirectUris.Contains(input.PostLogoutRedirectUri))
                 {
                     // Append state if any
-                    UriBuilder ub = new UriBuilder(input.PostLogoutRedirectUri);
+                    UriBuilder ub = new(input.PostLogoutRedirectUri);
                     if (!string.IsNullOrWhiteSpace(input.State))
                     {
                         System.Collections.Specialized.NameValueCollection q = System.Web.HttpUtility.ParseQueryString(ub.Query);

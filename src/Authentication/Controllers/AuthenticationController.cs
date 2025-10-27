@@ -886,7 +886,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Assumes that the consumer claim follows the ISO 6523. {"Identifier": {"Authority": "iso6523-actorid-upis","ID": "9908:910075918"}}
         /// </summary>
         /// <returns>organisation number found in the ID property of the ISO 6523 record</returns>
-        private static string GetOrganisationNumberFromConsumerClaim(ClaimsPrincipal originalPrincipal)
+        private static string? GetOrganisationNumberFromConsumerClaim(ClaimsPrincipal originalPrincipal)
         {
             string? consumerJson = originalPrincipal.FindFirstValue("consumer");
             JObject consumer = JObject.Parse(consumerJson);
@@ -897,7 +897,19 @@ namespace Altinn.Platform.Authentication.Controllers
                 return null;
             }
 
-            string? consumerId = consumer["ID"].ToString();
+            if (consumer == null)
+            {
+                return null;
+            }
+
+            JToken? consumerValue = consumer["ID"];
+
+            if (consumerValue == null)
+            {
+                return null;
+            }
+
+            string? consumerId = consumerValue.ToString();
 
             string organisationNumber = consumerId.Split(":")[1];
             return organisationNumber;
