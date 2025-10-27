@@ -182,8 +182,15 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 return null;
             }
 
-            var json = r.GetFieldValue<string>(col); // jsonb -> text
-            return JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json);
+            try
+            {
+                var json = r.GetFieldValue<string>(col); // jsonb -> text
+                return JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException("Corrupted provider_claims JSONB", ex);
+            }
         }
     }
 }
