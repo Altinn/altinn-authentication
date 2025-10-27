@@ -122,7 +122,7 @@ namespace Altinn.Platform.Authentication.Services
             }
             else if (!string.IsNullOrEmpty(sessionHandle))
             {
-                byte[] sessionHandleByte = FromBase64Url(sessionHandle);
+                byte[] sessionHandleByte = HashHandle(FromBase64Url(sessionHandle));
                 existingSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(sessionHandleByte, cancellationToken);
             }
 
