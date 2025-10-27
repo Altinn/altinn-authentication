@@ -129,12 +129,10 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 h.StartsWith("altinnsession=", StringComparison.OrdinalIgnoreCase));
             Assert.False(string.IsNullOrEmpty(raw), "altinnsession cookie was not set.");
             var (name, value, parts) = ParseSetCookieHeader(raw);
-           
+
             // name=value
-            var kv = parts[0].Split('=', 2);
-            Assert.Equal("altinnsession", kv[0]);
-            value = kv.Length > 1 ? kv[1] : string.Empty;
-            Assert.False(string.IsNullOrEmpty(value), "AltinnStudioRuntime cookie has empty value.");
+            Assert.Equal("altinnsession", name);
+            Assert.False(string.IsNullOrEmpty(value), "altinnsession cookie has empty value.");
 
             // ❌ Must NOT set Expires or Domain (host-only, session cookie)
             Assert.DoesNotContain(parts, p => p.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
