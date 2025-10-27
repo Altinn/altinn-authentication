@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -733,13 +734,6 @@ namespace Altinn.Platform.Authentication.Services
             // ===== 3) If upstream returned an error, map it back to client immediately =====
             if (!string.IsNullOrWhiteSpace(input.Error))
             {
-                // Mark upstream as failed (optional, but recommended)
-                //await _upstreamLoginTxRepo.MarkErrorAsync(
-                //    upstreamTx.UpstreamRequestId,
-                //    error: input.Error!,
-                //    errorDescription: input.ErrorDescription,
-                //    ct: ct);
-
                 return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
                 {
                     Kind = UpstreamCallbackResultKind.ErrorRedirectToClient,
@@ -1092,8 +1086,6 @@ namespace Altinn.Platform.Authentication.Services
             return AuthorizeResult.LocalError(400, e.Error, e.Description);
         }
 
-        private static readonly Regex ProviderKeyRegex = new(@"^[a-z0-9._-]+$", RegexOptions.Compiled);
-
         private static string ToBase64Url(byte[] bytes) =>
             WebEncoders.Base64UrlEncode(bytes);
 
@@ -1129,7 +1121,7 @@ namespace Altinn.Platform.Authentication.Services
             _logger.LogError(
                 "No default OIDC provider configured. Known providers: {Keys}",
                 string.Join(",", _oidcProviderSettings.Keys));
-            throw new ApplicationException("server_error No default OIDC provider configured.");
+            throw new ConfigurationErrorsException("server_error No default OIDC provider configured.");
         }
 
         private OidcProvider ChooseProvider(AuthorizeUnregisteredClientRequest req)
@@ -1167,7 +1159,7 @@ namespace Altinn.Platform.Authentication.Services
             _logger.LogError(
                 "No default OIDC provider configured. Known providers: {Keys}",
                 string.Join(",", _oidcProviderSettings.Keys));
-            throw new ApplicationException("server_error No default OIDC provider configured.");
+            throw new ConfigurationErrorsException("server_error No default OIDC provider configured.");
         }
 
         private OidcProvider ChooseProviderByKey(string? key)
