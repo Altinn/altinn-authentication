@@ -419,8 +419,6 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            // See if we need to have this stored in KeyVault or we can just set it on pod deployment
-
             byte[] serverPepper;
             try
             {
@@ -431,11 +429,6 @@ namespace Altinn.Platform.Authentication.Services
                 _logger.LogError(ex, "Refresh token pepper is not configured or invalid.");
                 return null; // fail closed: issue no refresh token, still return access/id token
             }
-
-            //if (client.RequireOfflineAccessScope && !codeRow.Scopes.Contains("offline_access"))
-            //{ // Do we really want to do this?
-            //    return null;
-            //}
 
             // Generate opaque token
             string refreshToken = CryptoHelpers.RandomBase64Url(48);
