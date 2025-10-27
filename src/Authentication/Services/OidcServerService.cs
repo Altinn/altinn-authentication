@@ -183,8 +183,7 @@ namespace Altinn.Platform.Authentication.Services
             upstreamState,
             upstreamNonce,
             upstreamPkceChallenge,
-            request,
-            provider.IssuerKey);
+            request);
 
             // ========= 9) Return redirect upstream =========
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, unregisteredClientRequestCreate.RequestId);
@@ -1260,8 +1259,7 @@ namespace Altinn.Platform.Authentication.Services
                string upstreamState,
                string upstreamNonce,
                string upstreamCodeChallenge,
-               AuthorizeUnregisteredClientRequest incoming,
-               string? issKeyForCallback)
+               AuthorizeUnregisteredClientRequest incoming)
         {
             var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
             q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
