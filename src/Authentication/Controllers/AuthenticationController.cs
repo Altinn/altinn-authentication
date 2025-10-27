@@ -888,19 +888,26 @@ namespace Altinn.Platform.Authentication.Controllers
         private static string? GetOrganisationNumberFromConsumerClaim(ClaimsPrincipal originalPrincipal)
         {
             string? consumerJson = originalPrincipal.FindFirstValue("consumer");
-            JObject consumer = JObject.Parse(consumerJson);
+            
+            if (consumerJson == null)
+            {
+                return null;
+            }
 
-            string consumerAuthority = consumer["authority"].ToString();
+            JObject consumer = JObject.Parse(consumerJson);
+            JToken? consumerAuthorityToken = consumer["authority"];
+            
+            if (consumerAuthorityToken == null)
+            {
+                return null;
+            }   
+
+            string consumerAuthority = consumerAuthorityToken.ToString();
             if (!"iso6523-actorid-upis".Equals(consumerAuthority))
             {
                 return null;
             }
-
-            if (consumer == null)
-            {
-                return null;
-            }
-
+           
             JToken? consumerValue = consumer["ID"];
 
             if (consumerValue == null)
