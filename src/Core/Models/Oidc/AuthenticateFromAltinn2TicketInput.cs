@@ -12,8 +12,20 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// The Altinn2 token based on .net properitary encryption standard. Will be validated against Altinn2.
         /// </summary>
         public required string EncryptedTicket { get; set; }
-        public IPAddress CreatedByIp { get; set; }
+
+        /// <summary>
+        /// The IP address of the client creating the authentication request.
+        /// </summary>
+        public required IPAddress CreatedByIp { get; set; }
+
+        /// <summary>
+        /// The hash of the user agent of the client creating the authentication request.
+        /// </summary>
         public string? UserAgentHash { get; set; }
+
+        /// <summary>
+        /// Correlation id for tracking the request.
+        /// </summary>
         public Guid CorrelationId { get; set; }
     }
 }

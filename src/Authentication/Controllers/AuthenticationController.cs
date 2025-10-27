@@ -151,6 +151,8 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("authentication")]
         public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery] bool dontChooseReportee, CancellationToken cancellationToken = default)
         {
+            System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+
             if (string.IsNullOrEmpty(goTo) && HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName] != null)
             {
                 goTo = HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName];
@@ -262,7 +264,6 @@ namespace Altinn.Platform.Authentication.Controllers
 
                     Response.Headers.CacheControl = "no-store";
                     Response.Headers.Pragma = "no-cache";
-                    System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
                     string ua = Request.Headers.UserAgent.ToString();
                     string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
                     Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
@@ -377,7 +378,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 if (_generalSettings.AuthorizationServerEnabled && encryptedTicket != null)
                 {
                     // Server enabled, but still rely on Altinn 2 for Authentication. Temporary solution during migration period.
-                    AuthenticateFromAltinn2TicketInput ticketInput = new() { EncryptedTicket = encryptedTicket };
+                    AuthenticateFromAltinn2TicketInput ticketInput = new() { EncryptedTicket = encryptedTicket, CreatedByIp = ip ?? System.Net.IPAddress.Loopback };
                     AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
 
                     if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success))
