@@ -581,7 +581,7 @@ public class ChangeRequestSystemUserService(
 
         if (validateSet.RequiredAccessPackages is not null && validateSet.RequiredAccessPackages.Count > 0)
         {
-            Result<bool> valPackages = systemUserService.ValidateAccessPackages(validateSet.RequiredAccessPackages, systemInfo, isAgentRequest: false);
+            Result<bool> valPackages = await systemUserService.ValidateAccessPackages(validateSet.RequiredAccessPackages, systemInfo, isAgentRequest: false);
             if (valPackages.IsProblem)
             {
                 return valPackages.Problem;

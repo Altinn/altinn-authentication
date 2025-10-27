@@ -122,14 +122,11 @@ public class RequestSystemUserService(
 
         if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
         {
-            Result<bool> valPackages = systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo, isAgentRequest: false);
+            Result<bool> valPackages = await systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo, isAgentRequest: false);
             if (valPackages.IsProblem)
             {
                 return valPackages.Problem;
-            }
-
-            // Verify that the requested access packages are delegable
-            
+            }                        
         }
 
         // Set an empty ExternalRef to be equal to the PartyOrgNo
@@ -211,7 +208,7 @@ public class RequestSystemUserService(
             return Problem.SystemUser_MissingAccessPackage;
         }
 
-        Result<bool> valPackages = systemUserService.ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo, isAgentRequest: true);
+        Result<bool> valPackages = await systemUserService.ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo, isAgentRequest: true);
         if (valPackages.IsProblem)
         {
             return valPackages.Problem;

@@ -457,7 +457,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (accessPackages is not null && accessPackages.Count > 0)
             {
-                Result<bool> validatedRequestedPackages = ValidateAccessPackages(accessPackages, regSystem, systemUserType == SystemUserType.Agent);
+                Result<bool> validatedRequestedPackages = await ValidateAccessPackages(accessPackages, regSystem, systemUserType == SystemUserType.Agent);
                 if (validatedRequestedPackages.IsProblem)
                 {
                     return validatedRequestedPackages.Problem;
@@ -667,7 +667,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public Result<bool> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo, bool isAgentRequest)
+        public async Task<Result<bool>> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo, bool isAgentRequest)
         {
             if (systemInfo == null || systemInfo.AccessPackages == null)
             {
@@ -692,7 +692,7 @@ namespace Altinn.Platform.Authentication.Services
                 
                 if (found)
                 {
-                    Package package = _accessManagementClient.GetAccessPackage(accessPackage.Urn!).Result;
+                    Package package = await _accessManagementClient.GetAccessPackage(accessPackage.Urn!);
                     if (isAgentRequest)
                     {
                         if (!package.IsDelegable)
@@ -718,7 +718,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 var problemExtensionData = ProblemExtensionData.Create(new[]
                 {
-                    new KeyValuePair<string, string>($"NotFound Packages : ", string.Join(", ", notFoundPackages))
+                    new KeyValuePair<string, string>($"NotFoundPackages", string.Join(", ", notFoundPackages))
                 });          
                 return Problem.AccessPackage_NotFound.Create(problemExtensionData);
             }
