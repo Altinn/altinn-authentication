@@ -1397,7 +1397,7 @@ namespace Altinn.Platform.Authentication.Services
                 }
                 catch (Exception ex) 
                 {
-                    throw new ApplicationException("Invalid OidcRefreshTokenPepper; must be Base64/Base64Url.", ex); 
+                    throw new ConfigurationErrorsException("Invalid OidcRefreshTokenPepper; must be Base64/Base64Url.", ex); 
                 }
             }
         }
