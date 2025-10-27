@@ -4,22 +4,16 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
-using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Persistence.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
-using NpgsqlTypes;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess
 {
-    public class OidcServerClientRepositoryTests : DbTestBase
+    public class OidcServerClientRepositoryTests(DbFixture dbFixture) : DbTestBase(dbFixture)
     {
-        public OidcServerClientRepositoryTests(DbFixture dbFixture) : base(dbFixture)
-        {
-        }
-
         protected IOidcServerClientRepository Repository => Services.GetRequiredService<IOidcServerClientRepository>();
 
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
@@ -32,7 +26,6 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess
         }
 
         // ---------- Helpers ----------
-
         private async Task DeleteClientAsync(string clientId)
         {
             const string SQL = @"DELETE FROM oidcserver.client WHERE client_id = @client_id;";
@@ -58,7 +51,6 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess
             };
 
         // ---------- Tests ----------
-
         [Fact]
         public async Task InsertClient_Then_GetClient_Roundtrip_Succeeds()
         {
@@ -119,21 +111,6 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess
             await Assert.ThrowsAsync<ArgumentException>(() => Repository.GetClientAsync(badId));
         }
 
-        //[Fact]
-        //public async Task InsertClient_Throws_On_NonAbsoluteRedirectUri()
-        //{
-        //    // Arrange
-        //    var create = NewClientCreate();
-        //    create = create with
-        //    {
-        //        RedirectUris = new[] { new Uri("/relative-cb", UriKind.Relative) } // invalid
-        //    };
-
-        //    // Act + Assert
-        //    await Assert.ThrowsAsync<ArgumentException>(() => Repository.InsertClientAsync(create));
-        //}
-
-        // Enable this if client.client_id is UNIQUE/PK in your schema
         [Fact]
         public async Task InsertClient_DuplicateClientId_Throws_UniqueViolation()
         {
