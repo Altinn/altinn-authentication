@@ -54,7 +54,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     return null;
                 }
 
-                return MapToOidcClient(reader);
+                return await MapToOidcClient(reader, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -200,7 +200,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                         }
 
                         // Reuse your existing mapper that reads by column name constants
-                    return MapToOidcClient(reader);
+                    return await MapToOidcClient(reader, cancellationToken);
                 }
                 catch (PostgresException pex) when (pex.SqlState == PostgresErrorCodes.UniqueViolation)
                 {
@@ -219,23 +219,23 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             where TEnum : struct
             => Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
 
-        private static OidcClient MapToOidcClient(NpgsqlDataReader reader)
+        private static async Task<OidcClient> MapToOidcClient(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
         {
             // Required
-            string clientId = reader.GetFieldValue<string>(ClientTable.CLIENT_ID);
-            string clientName = reader.GetFieldValue<string>(ClientTable.CLIENT_NAME);
+            string clientId = await reader.GetFieldValueAsync<string>(ClientTable.CLIENT_ID, cancellationToken);
+            string clientName = await reader.GetFieldValueAsync<string>(ClientTable.CLIENT_NAME, cancellationToken);
 
             // Enums with fallback
             ClientType clientType = ParseEnum(
-                reader.GetFieldValue<string>(ClientTable.CLIENT_TYPE),
+                await reader.GetFieldValueAsync<string>(ClientTable.CLIENT_TYPE, cancellationToken),
                 ClientType.Confidential);
 
             TokenEndpointAuthMethod authMethod = ParseEnum(
-                reader.GetFieldValue<string>(ClientTable.TOKEN_ENDPOINT_AUTH_METHOD),
+                await reader.GetFieldValueAsync<string>(ClientTable.TOKEN_ENDPOINT_AUTH_METHOD, cancellationToken),
                 TokenEndpointAuthMethod.ClientSecretBasic);
 
             // redirect_uris: read as TEXT[] then validate -> Uri[]
-            string[] redirectUrisText = reader.GetFieldValue<string[]>(ClientTable.REDIRECT_URIS);
+            string[] redirectUrisText = await reader.GetFieldValueAsync<string[]>(ClientTable.REDIRECT_URIS, cancellationToken);
             Uri[] redirectUris = redirectUrisText
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(s =>
@@ -250,32 +250,32 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 .ToArray();
 
             // allowed_scopes: TEXT[]
-            string[] allowedScopes = reader.GetFieldValue<string[]>(ClientTable.ALLOWED_SCOPES)
+            string[] allowedScopes = (await reader.GetFieldValueAsync<string[]>(ClientTable.ALLOWED_SCOPES, cancellationToken))
                                            .Where(s => !string.IsNullOrWhiteSpace(s))
                                            .Select(s => s.Trim().ToLowerInvariant())
                                            .Distinct()
                                            .ToArray();
 
             // Optional secrets/keys (nullable)
-            string? clientSecretHash = reader.IsDBNull(ClientTable.CLIENT_SECRET_HASH) ? null : reader.GetFieldValue<string>(ClientTable.CLIENT_SECRET_HASH);
-            DateTimeOffset? clientSecretExp = reader.IsDBNull(ClientTable.CLIENT_SECRET_EXPIRES_AT) ? null : reader.GetFieldValue<DateTimeOffset>(ClientTable.CLIENT_SECRET_EXPIRES_AT);
-            DateTimeOffset? secretRotationAt = reader.IsDBNull(ClientTable.SECRET_ROTATION_AT) ? null : reader.GetFieldValue<DateTimeOffset>(ClientTable.SECRET_ROTATION_AT);
+            string? clientSecretHash = reader.IsDBNull(ClientTable.CLIENT_SECRET_HASH) ? null : await reader.GetFieldValueAsync<string>(ClientTable.CLIENT_SECRET_HASH, cancellationToken);
+            DateTimeOffset? clientSecretExp = reader.IsDBNull(ClientTable.CLIENT_SECRET_EXPIRES_AT) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.CLIENT_SECRET_EXPIRES_AT, cancellationToken);
+            DateTimeOffset? secretRotationAt = reader.IsDBNull(ClientTable.SECRET_ROTATION_AT) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.SECRET_ROTATION_AT, cancellationToken);
 
             Uri? jwksUri = null;
             if (!reader.IsDBNull(ClientTable.JWKS_URI))
             {
-                var s = reader.GetFieldValue<string>(ClientTable.JWKS_URI);
+                var s = await reader.GetFieldValueAsync<string>(ClientTable.JWKS_URI, cancellationToken);
                 if (!Uri.TryCreate(s, UriKind.Absolute, out jwksUri))
                 {
                     throw new ArgumentException($"client.jwks_uri is not an absolute URI: '{s}'.");
                 }
             }
 
-            string? jwksJson = reader.IsDBNull(ClientTable.JWKS) ? null : reader.GetFieldValue<string>(ClientTable.JWKS);
+            string? jwksJson = reader.IsDBNull(ClientTable.JWKS) ? null : await reader.GetFieldValueAsync<string>(ClientTable.JWKS, cancellationToken);
 
             // Timestamps
-            DateTimeOffset createdAt = reader.GetFieldValue<DateTimeOffset>(ClientTable.CREATED_AT);
-            DateTimeOffset? updatedAt = reader.IsDBNull(ClientTable.UPDATED_AT) ? null : reader.GetFieldValue<DateTimeOffset>(ClientTable.UPDATED_AT);
+            DateTimeOffset createdAt = await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.CREATED_AT, cancellationToken);
+            DateTimeOffset? updatedAt = reader.IsDBNull(ClientTable.UPDATED_AT) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.UPDATED_AT, cancellationToken);
 
             return new OidcClient(
                 clientId: clientId,
