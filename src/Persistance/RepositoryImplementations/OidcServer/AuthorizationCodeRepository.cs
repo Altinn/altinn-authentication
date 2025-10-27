@@ -90,19 +90,19 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     ExpiresAt = await reader.GetFieldValueAsync<DateTimeOffset>("expires_at", cancellationToken),
 
                     SubjectId = await reader.GetFieldValueAsync<string>("subject_id", cancellationToken),
-                    ExternalId = reader.IsDBNull("external_id") ? null : await reader.GetFieldValueAsync<string>("external_id", cancellationToken),
-                    SubjectPartyUuid = reader.IsDBNull("subject_party_uuid") ? (Guid?)null : await reader.GetFieldValueAsync<Guid>("subject_party_uuid", cancellationToken),
-                    SubjectPartyId = reader.IsDBNull("subject_party_id") ? (int?)null : await reader.GetFieldValueAsync<int>("subject_party_id", cancellationToken),
-                    SubjectUserId = reader.IsDBNull("subject_user_id") ? (int?)null : await reader.GetFieldValueAsync<int>("subject_user_id", cancellationToken),
-                    SubjectUserName = reader.IsDBNull("subject_user_name") ? null : await reader.GetFieldValueAsync<string>("subject_user_name", cancellationToken),
+                    ExternalId = await reader.IsDBNullAsync("external_id", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>("external_id", cancellationToken),
+                    SubjectPartyUuid = await reader.IsDBNullAsync("subject_party_uuid", cancellationToken: cancellationToken) ? (Guid?)null : await reader.GetFieldValueAsync<Guid>("subject_party_uuid", cancellationToken),
+                    SubjectPartyId = await reader.IsDBNullAsync("subject_party_id", cancellationToken: cancellationToken) ? (int?)null : await reader.GetFieldValueAsync<int>("subject_party_id", cancellationToken),
+                    SubjectUserId = await reader.IsDBNullAsync("subject_user_id", cancellationToken: cancellationToken) ? (int?)null : await reader.GetFieldValueAsync<int>("subject_user_id", cancellationToken),
+                    SubjectUserName = await reader.IsDBNullAsync("subject_user_name", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>("subject_user_name", cancellationToken),
 
                     SessionId = await reader.GetFieldValueAsync<string>("session_id", cancellationToken),
 
                     Scopes = await reader.GetFieldValueAsync<string[]>("scopes", cancellationToken),
-                    Nonce = reader.IsDBNull("nonce") ? null : await reader.GetFieldValueAsync<string>("nonce", cancellationToken),
-                    Acr = reader.IsDBNull("acr") ? null : await reader.GetFieldValueAsync<string>("acr", cancellationToken),
-                    Amr = reader.IsDBNull("amr") ? null : await reader.GetFieldValueAsync<string[]>("amr", cancellationToken),
-                    AuthTime = reader.IsDBNull("auth_time") ? (DateTimeOffset?)null : await reader.GetFieldValueAsync<DateTimeOffset>("auth_time", cancellationToken),
+                    Nonce = await reader.IsDBNullAsync("nonce", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>("nonce", cancellationToken),
+                    Acr = await reader.IsDBNullAsync("acr", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>("acr", cancellationToken),
+                    Amr = await reader.IsDBNullAsync("amr", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string[]>("amr", cancellationToken),
+                    AuthTime = await reader.IsDBNullAsync("auth_time", cancellationToken: cancellationToken) ? (DateTimeOffset?)null : await reader.GetFieldValueAsync<DateTimeOffset>("auth_time", cancellationToken),
                     ProviderClaims = ReadDictJsonb(reader, "provider_claims")
                 };
 
