@@ -141,7 +141,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.DoesNotContain(parts, p => p.StartsWith("domain=", StringComparison.OrdinalIgnoreCase));
         }
 
-        public static void AssertValidSession(OidcSession oidcSession, OidcTestScenario testScenario, DateTimeOffset now)
+        public static void AssertValidSession(OidcSession? oidcSession, OidcTestScenario testScenario, DateTimeOffset now)
         {
             Assert.NotNull(oidcSession);
             Assert.False(string.IsNullOrEmpty(oidcSession.Sid));
