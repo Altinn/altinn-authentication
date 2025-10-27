@@ -461,9 +461,6 @@ namespace Altinn.Platform.Authentication.Services
                         await _refreshTokenRepo.RevokeFamilyAsync(family, "logout", cancellationToken);
                     }
                 }
-
-                // OPTIONAL: purge any unredeemed authorization codes for this sid
-                // await _authorizationCodeRepo.InvalidateBySidAsync(sid!, _timeProvider.GetUtcNow(), ct);
             }
 
             // 4) Instruct caller to delete the runtime cookie (attributes must match how it was set)
@@ -541,8 +538,6 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontchannel_logout", cancellationToken);
                 }
-
-                // await _authorizationCodeRepo.InvalidateBySidAsync(sid, _timeProvider.GetUtcNow(), ct);
             }
 
             // 5) If this very browser has a cookie principal matching any of these SIDs, clear cookie (best-effort)
@@ -677,7 +672,7 @@ namespace Altinn.Platform.Authentication.Services
             }
         }
 
-        private void EnrichIdentityFromLegacyValues(UserAuthenticationModel model)
+        private static void EnrichIdentityFromLegacyValues(UserAuthenticationModel model)
         {
             model.Iss = AuthzConstants.ISSUER_ALTINN_PORTAL;
             model.Amr = [AuthenticationHelper.GetAmrFromAuthenticationMethod(model.AuthenticationMethod)];
@@ -713,7 +708,7 @@ namespace Altinn.Platform.Authentication.Services
         /// </summary>
         private async Task<(UpstreamCallbackResult? CallbackResultdownstreamValidation, LoginTransaction? LoginTx)> ValidateDownstreamCallbackState(UpstreamCallbackInput input, UpstreamLoginTransaction upstreamTx, CancellationToken cancellationToken)
         {
-            LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx!.RequestId.Value, cancellationToken);
+            LoginTransaction? loginTx = await _loginTxRepo.GetByRequestIdAsync(upstreamTx.RequestId!.Value, cancellationToken);
             if (loginTx is null)
             {
                 return (CallbackResultdownstreamValidation: new UpstreamCallbackResult
