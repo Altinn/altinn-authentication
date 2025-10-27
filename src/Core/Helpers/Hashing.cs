@@ -11,10 +11,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
         /// </summary>
         public static string Sha256Base64Url(string input)
         {
-            if (input is null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             return Sha256Base64Url(Encoding.UTF8.GetBytes(input));
         }
