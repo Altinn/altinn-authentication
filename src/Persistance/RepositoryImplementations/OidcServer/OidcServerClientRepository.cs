@@ -257,12 +257,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                                            .ToArray();
 
             // Optional secrets/keys (nullable)
-            string? clientSecretHash = reader.IsDBNull(ClientTable.CLIENT_SECRET_HASH) ? null : await reader.GetFieldValueAsync<string>(ClientTable.CLIENT_SECRET_HASH, cancellationToken);
-            DateTimeOffset? clientSecretExp = reader.IsDBNull(ClientTable.CLIENT_SECRET_EXPIRES_AT) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.CLIENT_SECRET_EXPIRES_AT, cancellationToken);
-            DateTimeOffset? secretRotationAt = reader.IsDBNull(ClientTable.SECRET_ROTATION_AT) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.SECRET_ROTATION_AT, cancellationToken);
+            string? clientSecretHash = await reader.IsDBNullAsync(ClientTable.CLIENT_SECRET_HASH, cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>(ClientTable.CLIENT_SECRET_HASH, cancellationToken);
+            DateTimeOffset? clientSecretExp = await reader.IsDBNullAsync(ClientTable.CLIENT_SECRET_EXPIRES_AT, cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.CLIENT_SECRET_EXPIRES_AT, cancellationToken);
+            DateTimeOffset? secretRotationAt = await reader.IsDBNullAsync(ClientTable.SECRET_ROTATION_AT, cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.SECRET_ROTATION_AT, cancellationToken);
 
             Uri? jwksUri = null;
-            if (!reader.IsDBNull(ClientTable.JWKS_URI))
+            if (!await reader.IsDBNullAsync(ClientTable.JWKS_URI, cancellationToken: cancellationToken))
             {
                 var s = await reader.GetFieldValueAsync<string>(ClientTable.JWKS_URI, cancellationToken);
                 if (!Uri.TryCreate(s, UriKind.Absolute, out jwksUri))
@@ -271,11 +271,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 }
             }
 
-            string? jwksJson = reader.IsDBNull(ClientTable.JWKS) ? null : await reader.GetFieldValueAsync<string>(ClientTable.JWKS, cancellationToken);
+            string? jwksJson = await reader.IsDBNullAsync(ClientTable.JWKS, cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>(ClientTable.JWKS, cancellationToken);
 
             // Timestamps
             DateTimeOffset createdAt = await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.CREATED_AT, cancellationToken);
-            DateTimeOffset? updatedAt = reader.IsDBNull(ClientTable.UPDATED_AT) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.UPDATED_AT, cancellationToken);
+            DateTimeOffset? updatedAt = await reader.IsDBNullAsync(ClientTable.UPDATED_AT, cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.UPDATED_AT, cancellationToken);
 
             return new OidcClient(
                 clientId: clientId,
