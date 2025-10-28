@@ -32,16 +32,26 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
                throw new ArgumentException($"redirect_uri must be an absolute URI. Received: {dto.RedirectUri}", nameof(dto));
             }
 
+            if (string.IsNullOrWhiteSpace(dto.ClientId))
+            {
+                throw new ArgumentException("client_id is required.", nameof(dto));
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.CodeChallenge))
+            {
+                throw new ArgumentException("code_challenge is required.", nameof(dto));
+            }
+
 
             return new AuthorizeRequest
             {
                 ResponseType = dto.ResponseType ?? "code",
-                ClientId = dto.ClientId,
+                ClientId = dto.ClientId!,
                 RedirectUri = uri,
                 Scopes = SplitSpace(dto.Scope),
                 State = dto.State,
                 Nonce = dto.Nonce,
-                CodeChallenge = dto.CodeChallenge,
+                CodeChallenge = dto.CodeChallenge!,
                 CodeChallengeMethod = dto.CodeChallengeMethod ?? "S256",
                 AcrValues = SplitSpace(dto.AcrValues),
                 Prompts = SplitSpace(dto.Prompt),
