@@ -729,7 +729,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     new KeyValuePair<string, string>($"NotDelegablePackages", string.Join(", ", notDelegablePackages))
                 });          
-                return Problem.AccessPackage_NotDelegable.Create(problemExtensionData);
+                return isAgentRequest ? Problem.AccessPackage_NotDelegable_Agent.Create(problemExtensionData) : Problem.AccessPackage_NotDelegable_Standard.Create(problemExtensionData);
             }
 
             return true;

@@ -304,7 +304,7 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
         ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
-        Assert.Equal(Problem.AccessPackage_NotDelegable.Detail, problemDetails.Detail);
+        Assert.Equal(Problem.AccessPackage_NotDelegable_Standard.Detail, problemDetails.Detail);
         Assert.True(problemDetails.Extensions.Count == 2);
         Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
     }
@@ -580,7 +580,7 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
         ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
-        Assert.Equal(Problem.AccessPackage_NotDelegable.Detail, problemDetails.Detail);
+        Assert.Equal(Problem.AccessPackage_NotDelegable_Agent.Detail, problemDetails.Detail);
         Assert.True(problemDetails.Extensions.Count == 2);
         Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
     }
