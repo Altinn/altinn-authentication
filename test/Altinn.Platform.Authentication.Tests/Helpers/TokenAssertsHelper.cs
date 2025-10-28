@@ -54,7 +54,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.NotNull(accessTokenPrincipal.Identity);
             Assert.NotEmpty(accessTokenPrincipal.Claims);
             Assert.True(accessTokenPrincipal.Identity.IsAuthenticated);
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && c.Value.Equals("http://localhost/authentication/api/v1/openid"));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
             if (!testScenario.Acr.Contains("level0"))
             {
@@ -87,7 +87,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.NotNull(idTokenPrincipal.Identity);
             Assert.NotEmpty(idTokenPrincipal.Claims);
             Assert.True(idTokenPrincipal.Identity.IsAuthenticated);
-            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "iss" && c.Value.Equals("http://localhost/authentication/api/v1/openid"));
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && !string.IsNullOrEmpty(c.Value));
             string method = idTokenPrincipal.Claims.First(c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod).Value;
@@ -117,7 +117,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.NotEmpty(accessTokenPrincipal.Claims);
             Assert.True(accessTokenPrincipal.Identity.IsAuthenticated);
 
-            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && c.Value.Equals("http://localhost/authentication/api/v1/openid"));
 
             // The 'sub' claim is not included in the cookie token for privacy reasons. TODO verify if this is still the case
             // Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));

@@ -145,7 +145,7 @@ namespace Altinn.Platform.Authentication.Services
             DateTimeOffset tokenExpiration = now.AddMinutes(_generalSettings.JwtValidityMinutes);
             await _oidcSessionRepository.SlideExpiryToAsync(row.OpSid, tokenExpiration, ct);
 
-            ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, isIDToken: false);
+            ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false);
 
             // Preferred: use issuer overloads that take the pieces directly (clean)
             string accessToken = await tokenIssuer.CreateAccessTokenAsync(
@@ -156,7 +156,7 @@ namespace Altinn.Platform.Authentication.Services
             string? idToken = null;
             if (resultingScopes.Contains("openid"))
             {
-                ClaimsPrincipal idtokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, isIDToken: true);
+                ClaimsPrincipal idtokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: true);
                 idToken = await tokenIssuer.CreateIdTokenAsync(
                     idtokenPrincipal,
                     client,
@@ -177,7 +177,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public Task<string> CreateCookieToken(OidcSession oidcSession, CancellationToken ct)
         {
-           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.PlatformEndpoint, isIDToken: false, isAuthCookie: true);
+           ClaimsPrincipal principal = ClaimsPrincipalBuilder.GetClaimsPrincipal(oidcSession, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false, isAuthCookie: true);
            return tokenIssuer.CreateAccessTokenAsync(principal, time.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),  cancellationToken: ct);
         }
 

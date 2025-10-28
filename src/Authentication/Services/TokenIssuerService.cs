@@ -54,6 +54,7 @@ namespace Altinn.Platform.Authentication.Services
             SecurityTokenDescriptor tokenDescriptor = new()
             {
                 IssuedAt = _timeProvider.GetUtcNow().UtcDateTime,
+                Issuer = _generalSettings.AltinnOidcIssuerUrl,
                 NotBefore = _timeProvider.GetUtcNow().UtcDateTime,
                 Subject = new ClaimsIdentity(principal.Claims, (principal.Identity as ClaimsIdentity)?.AuthenticationType),
                 Audience = audience,
