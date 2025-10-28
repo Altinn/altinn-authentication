@@ -1357,9 +1357,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // Insert a client that matches the authorize request
             OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
-
-            // "AltinnLogoutInfo=amSafeRedirectUrl%3DAAEAABqMH6oghdPbHSLxY9KyclfoAc%2BNv9YWsTtcJ5DunicaXGtTPnXLvhZbOsWBxfrggTQBHKqET9nXwxyIZOXe7AtA5LJ2m5lZTwTnh9xwt3XK1AsU3cct2v4UWgcv0MQwmnfqPejePkSB0ZntTquSUeBH%2BnXiHHQVqnnhbNgr0k%2BwOk04Bvrysjfs5iez1oHoeaTi21eVa4M6Rf8JZet3nCB%2F8SvNE3s%2FGRxvZt1eka2pyTNC8Vh8YrH9mVK%2B%2BHPsd7%2F6oZ847s0MDdJs1haEXoQhjry3xS%2BUvrIXnYTzbJbGO5ALAj%2BRoTgWmWEKRKO9Xe3I7N34On5LrnOX%2BDWqVXQQAAAAQRFmHREBcLENfNwC5Y451mmb2hyhLS4p5cw2w2DXuikW22NKviEWLgdjWTPELIcknaEOojIO%2B6jXVcD%2F18GwV51c1AJBWi5Gioi0mtTi0eZZdUVX%2B1U%2FM0xelyRz6V8vvT%2BudOFcHLyRrD7XQlEHVfjbxbMpC7G%2BWa3t1FrIwdEl%2F4f%2Fb8RteQNxCtLuoBd0ILxcfVDoYNMkN%2Fbb3rJBKA%3D%3D"
-
+           
             // === Phase 1: User request to open a Consent request. Consent page send user to authentication for login. Sends with additional 
             HttpResponseMessage app2RedirectResponse = await client.GetAsync("/authentication/api/v1/authentication?goto=https%3a%2f%2flocalhost%2faccessmanagement%2fui%2fconsent%2frequest%3fid%3d9383f24f-756e-4531-a341-652cff24e4f5%26DONTCHOOSEREPORTEE%3dtrue");
             Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
@@ -1420,6 +1418,17 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
             Assert.Equal("OK", frontChannelContent);
+
+            // Simulate that Altin Consent has set the AltinnLogoutInfo cookie with details how to handle 
+            const string cookieValue = "amSafeRedirectUrl%3DAAEAABqMH6oghdPbHSLxY9KyclfoAc%2BNv9YWsTtcJ5DunicaXGtTPnXLvhZbOsWBxfrggTQBHKqET9nXwxyIZOXe7AtA5LJ2m5lZTwTnh9xwt3XK1AsU3cct2v4UWgcv0MQwmnfqPejePkSB0ZntTquSUeBH%2BnXiHHQVqnnhbNgr0k%2BwOk04Bvrysjfs5iez1oHoeaTi21eVa4M6Rf8JZet3nCB%2F8SvNE3s%2FGRxvZt1eka2pyTNC8Vh8YrH9mVK%2B%2BHPsd7%2F6oZ847s0MDdJs1haEXoQhjry3xS%2BUvrIXnYTzbJbGO5ALAj%2BRoTgWmWEKRKO9Xe3I7N34On5LrnOX%2BDWqVXQQAAAAQRFmHREBcLENfNwC5Y451mmb2hyhLS4p5cw2w2DXuikW22NKviEWLgdjWTPELIcknaEOojIO%2B6jXVcD%2F18GwV51c1AJBWi5Gioi0mtTi0eZZdUVX%2B1U%2FM0xelyRz6V8vvT%2BudOFcHLyRrD7XQlEHVfjbxbMpC7G%2BWa3t1FrIwdEl%2F4f%2Fb8RteQNxCtLuoBd0ILxcfVDoYNMkN%2Fbb3rJBKA%3D%3D";
+
+            var req = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout/handleloggedout/");
+            req.Headers.Add("Cookie", $"AltinnLogoutInfo={cookieValue}");
+
+            using var afterLogoute = await client.SendAsync(req);
+            string handleloggedoutContent = await afterLogoute.Content.ReadAsStringAsync();
+
+            Assert.Equal("https://am.ui.localhost/accessmanagement/api/v1/logoutredirect", afterLogoute.Headers.Location!.ToString());
         }
 
         private static string GetConfigPath()
