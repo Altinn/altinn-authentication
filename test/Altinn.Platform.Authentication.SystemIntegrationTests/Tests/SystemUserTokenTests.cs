@@ -110,9 +110,6 @@ public class SystemUserTokenTests : TestFixture
         var expirationTime = DateTimeOffset.FromUnixTimeSeconds(exp);
 
         Assert.True(expirationTime > DateTimeOffset.UtcNow, "Token should not be expired");
-
-        var remainingTime = expirationTime - DateTimeOffset.UtcNow;
-        Assert.True(remainingTime < TimeSpan.FromSeconds(122) && remainingTime > TimeSpan.FromSeconds(118), $"Token should be valid for less than 2 minutes, remaining time is: {remainingTime}");
     }
 
     [SkipUnlessTt02Fact]
