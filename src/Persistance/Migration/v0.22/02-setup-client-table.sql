@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS oidcserver.client (
   jwks                        JSONB,
   created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at                  TIMESTAMPTZ,
+  frontchannel_logout_uri     TEXT,
+  backchannel_logout_uri      TEXT,
   CONSTRAINT chk_client_type
     CHECK (client_type IN ('Confidential','Public','Mtls','PrivateKeyJwtOnly')),
   CONSTRAINT chk_token_endpoint_auth_method
