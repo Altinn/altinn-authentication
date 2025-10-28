@@ -13,8 +13,14 @@ namespace Altinn.Platform.Authentication.Core.Services.Validation
                 return Err("unauthorized_client", "Unknown client.");
             }
 
-            // Exact redirect_uri match
-            if (!client.RedirectUris.Contains(request.RedirectUri))
+            // Strict redirect_uri validation: absolute, no fragment, exact string match
+            if (!request.RedirectUri.IsAbsoluteUri || !string.IsNullOrEmpty(request.RedirectUri.Fragment))
+            {
+                return Err("invalid_request", "redirect_uri must be absolute and must not contain a fragment.");
+            }
+            var redirectAllowed = client.RedirectUris.Any(
+            u => string.Equals(u.ToString(), request.RedirectUri.ToString(), StringComparison.Ordinal));
+            if (!redirectAllowed)
             {
                 return Err("invalid_request", "redirect_uri not registered for this client.");
             }
