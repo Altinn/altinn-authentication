@@ -11,7 +11,6 @@ using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Microsoft.Net.Http.Headers;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
@@ -63,9 +62,8 @@ namespace Altinn.Platform.Authentication.Controllers
             AuthorizeResult result = await _oidcServerService.Authorize(req, claimsPrincipal, sessionHandle, cancellationToken);
 
             SetCookies(result.Cookies);
-           
-            Response.Headers.CacheControl = "no-store";
-            Response.Headers.Pragma = "no-cache";
+
+            SetCacheHeaders();
 
             return result.Kind switch
             {
@@ -117,9 +115,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             UpstreamCallbackResult result = await _oidcServerService.HandleUpstreamCallback(input, sessionHandle, cancellationToken);
 
-            // Set no-store for auth responses
-            Response.Headers.CacheControl = "no-store";
-            Response.Headers.Pragma = "no-cache";
+            SetCacheHeaders();
 
             SetCookies(result.Cookies);
 
@@ -163,9 +159,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             UpstreamFrontChannelLogoutResult result = await _oidcServerService.HandleUpstreamFrontChannelLogoutAsync(logoutInput, cancellationToken);
 
-            // No-store
-            Response.Headers[HeaderNames.CacheControl] = "no-store";
-            Response.Headers[HeaderNames.Pragma] = "no-cache";
+            SetCacheHeaders();
 
             // Best-effort cookie ops (may be blocked by 3p cookie settings)
             SetCookies(result.Cookies);
@@ -179,7 +173,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// Accepts id_token_hint, post_logout_redirect_uri, and state.
         /// Delegates to the service; controller only appends cookies and returns redirect/page.
         /// </summary>
-        [HttpGet("logout2")]
+        [HttpGet("end_session")]
         public async Task<IActionResult> EndSession(
             [FromQuery] string? id_token_hint,
             [FromQuery] string? post_logout_redirect_uri,
@@ -190,7 +184,7 @@ namespace Altinn.Platform.Authentication.Controllers
             string ua = Request.Headers.UserAgent.ToString();
             string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : ua; // hash if you want, not required here
 
-            var input = new EndSessionInput
+            EndSessionInput input = new EndSessionInput
             {
                 IdTokenHint = id_token_hint,
                 PostLogoutRedirectUri = TryParseAbsoluteUri(post_logout_redirect_uri),
@@ -202,9 +196,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             EndSessionResult result = await _oidcServerService.EndSessionAsync(input, cancellationToken);
 
-            // Set no-store for auth responses
-            Response.Headers.CacheControl = "no-store";
-            Response.Headers.Pragma = "no-cache";
+            SetCacheHeaders();
 
             // Apply cookie instructions produced by the service
             SetCookies(result.Cookies);
@@ -267,6 +259,12 @@ namespace Altinn.Platform.Authentication.Controllers
 
             ub.Query = q.ToString()!;
             return ub.Uri.ToString();
+        }
+
+        private void SetCacheHeaders()
+        {
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
         }
 
         private void SetCookies(IReadOnlyList<CookieInstruction> Cookies)

@@ -335,7 +335,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Debug.Assert(beforeLoggedOutSession != null);
 
             using var logoutResp = await client.GetAsync(
-                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+                "/authentication/api/v1/end_session?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
         
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
@@ -478,7 +478,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Debug.Assert(beforeLoggedOutSession != null);
 
             using var logoutResp = await client.GetAsync(
-                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+                "/authentication/api/v1/end_session?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
@@ -510,7 +510,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         ///    short-circuits: Altinn immediately returns a new authorization code without re-authenticating upstream.
         ///    The test redeems that code at <c>/authentication/api/v1/token</c> and validates the token response,
         ///    extracting the current <c>sid</c>.
-        /// 5) The user logs out from Arbeidsflate via <c>/authentication/api/v1/logout2</c>. The test verifies:
+        /// 5) The user logs out from Arbeidsflate via <c>/authentication/api/v1/end_session</c>. The test verifies:
         ///    (a) browser is redirected to the upstream IdP’s logout endpoint,
         ///    (b) the Altinn OIDC session is removed from the database,
         ///    (c) a simulated upstream front-channel logout call to
@@ -613,7 +613,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Debug.Assert(beforeLoggedOutSession != null);
 
             using var logoutResp = await client.GetAsync(
-                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+                "/authentication/api/v1/end_session?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
@@ -722,7 +722,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Debug.Assert(beforeLoggedOutSession != null);
 
             using var logoutResp = await client.GetAsync(
-                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+                "/authentication/api/v1/end_session?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
@@ -824,7 +824,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Debug.Assert(beforeLoggedOutSession != null);
 
             using var logoutResp = await client.GetAsync(
-                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+                "/authentication/api/v1/end_session?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
@@ -958,7 +958,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Debug.Assert(beforeLoggedOutSession != null);
 
             using var logoutResp = await client.GetAsync(
-                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+                "/authentication/api/v1/end_session?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
@@ -1080,7 +1080,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Debug.Assert(beforeLoggedOutSession != null);
 
             using var logoutResp = await client.GetAsync(
-                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+                "/authentication/api/v1/end_session?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
@@ -1243,7 +1243,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // Verify that session is active before logout
             using var logoutResp = await client.GetAsync(
-                "/authentication/api/v1/logout2?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+                "/authentication/api/v1/end_session?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
