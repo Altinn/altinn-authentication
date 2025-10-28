@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Altinn.Platform.Authentication.Core.Models.Oidc
+﻿namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
     public class AuthenticateFromSessionInput
     {
-        public string SessionHandle { get; set; }
+        /// <summary>
+        /// The session handle used to identify the user's session.
+        /// </summary>
+        public required string SessionHandle { get; init; }
     }
 }
