@@ -388,18 +388,18 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AccessPackage_NotFound { get; }
-        = _factory.Create(63, HttpStatusCode.BadRequest, "One or more accesspackage is not found in the referenced system in the system register.");
+        = _factory.Create(63, HttpStatusCode.BadRequest, "One or more accesspackage is not found in the referenced system in the System Register.");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AccessPackage_NotDelegable_Standard { get; }
-        = _factory.Create(64, HttpStatusCode.BadRequest, "One or more access packages cannot be delegated. Either the access packages are intended for clients or the access packages are not possible to be delegated further.");
+        = _factory.Create(64, HttpStatusCode.BadRequest, "One or more access packages cannot be delegated. Either they are intended for clients or they cannot be delegated further.");
 
     /// <summary>
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor AccessPackage_NotDelegable_Agent { get; }
-        = _factory.Create(64, HttpStatusCode.BadRequest, "One or more access packages cannot be delegated because the access packages are not intended for client relationships");
+        = _factory.Create(65, HttpStatusCode.BadRequest, "One or more access packages cannot be delegated because they are not intended for client relationships");
 
 }
