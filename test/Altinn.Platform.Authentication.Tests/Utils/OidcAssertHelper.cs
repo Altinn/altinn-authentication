@@ -162,8 +162,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.NotNull(oidcSession);
             Assert.False(string.IsNullOrEmpty(oidcSession.Sid));
 
-            Assert.Equal(testScenario.Amr?.OrderBy(s => s), oidcSession.Amr?.OrderBy(s => s));
-    
+            Assert.Equal(testScenario.Amr?.OrderBy(s => s).ToList(), oidcSession.Amr?.OrderBy(s => s).ToList());
+
             foreach (string scope in testScenario.Scopes)
             { 
                 Assert.Contains(scope, oidcSession.Scopes);
