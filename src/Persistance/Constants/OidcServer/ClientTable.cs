@@ -36,7 +36,7 @@
         public const string CLIENT_SECRET_HASH = "client_secret_hash";
 
         /// <summary>
-        /// Cokumn name for client secret expiration time
+        /// Column name for client secret expiration time
         /// </summary>
         public const string CLIENT_SECRET_EXPIRES_AT = "client_secret_expires_at";
 
