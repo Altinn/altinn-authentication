@@ -58,7 +58,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             }
             else if (oidcBindingContext.ExternalId != null)
             {
-                claims.Add(new Claim("orgsub", oidcBindingContext.ExternalId, string.Empty));
+                claims.Add(new Claim("orgsub", oidcBindingContext.ExternalId));
             }
 
             if (oidcBindingContext.Acr != null)
