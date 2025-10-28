@@ -62,8 +62,8 @@ namespace Altinn.Platform.Authentication.Services
             // 2) Issue tokens (ID + Access) + refresh token
             DateTimeOffset exchangeTime = time.GetUtcNow();
             DateTimeOffset tokenExpiration = exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes);
-            ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, true);
-            ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.PlatformEndpoint, false);
+            ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, true);
+            ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, false);
 
             // Now atomically consume
             if (!await _authorizationCodeRepository.TryConsumeAsync(row.Code, row.ClientId, row.RedirectUri, time.GetUtcNow(), ct))
