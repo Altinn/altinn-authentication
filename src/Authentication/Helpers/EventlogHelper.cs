@@ -26,7 +26,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="jwtToken">authenticated token</param>
         /// <param name="eventType">authentication event type</param>
-        /// <param name="ipAddress">the IP address</param>
+        /// <param name="ipadress">the IP address</param>
         /// <param name="currentDateTime">the timestamp of the event</param>
         /// <param name="externalSessionId">the external session id</param>
         /// <param name="isAuthenticated">true when the request is authenticated</param>
