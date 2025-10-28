@@ -9,7 +9,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
     public class AuthenticateFromAltinn2TicketInput
     {
         /// <summary>
-        /// The Altinn2 token based on .net properitary encryption standard. Will be validated against Altinn2.
+        /// The Altinn2 token based on .NET proprietary encryption standard. Will be validated against Altinn2.
         /// </summary>
         public required string EncryptedTicket { get; set; }
 

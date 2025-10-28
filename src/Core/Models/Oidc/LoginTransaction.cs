@@ -31,7 +31,6 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public string? RequestObjectJwt { get; init; }
         public string? AuthorizationDetailsJson { get; init; }
 
-        public string? OriginalRequestUrl { get; init; }
         public IPAddress? CreatedByIp { get; init; }
         public string? UserAgentHash { get; init; }
         public Guid? CorrelationId { get; init; }

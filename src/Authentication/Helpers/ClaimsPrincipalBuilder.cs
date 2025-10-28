@@ -14,12 +14,12 @@ using AltinnCore.Authentication.Constants;
 namespace Altinn.Platform.Authentication.Core.Helpers
 {
     /// <summary>
-    /// Helper that creates a <see cref="ClaimsPrincipal"/> from an <see cref="AuthCodeRow"/>.
+    /// Helper that creates <see cref="ClaimsPrincipal"/>
     /// </summary>
     public static class ClaimsPrincipalBuilder
     {
         /// <summary>
-        /// Baed on OidcBindingContextBase, creates a ClaimsPrincipal with relevant claims.
+        /// Based on OidcBindingContextBase, creates a ClaimsPrincipal with relevant claims.
         /// </summary>
         public static ClaimsPrincipal GetClaimsPrincipal(OidcBindingContextBase oidcBindingContext, string iss, bool isIDToken = false)
         {

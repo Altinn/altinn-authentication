@@ -120,7 +120,11 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals("auth_time"))
                 {
-                    userAuthenticationModel.AuthTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(claim.Value));
+                    if (long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var s))
+                    {
+                        userAuthenticationModel.AuthTime = DateTimeOffset.FromUnixTimeSeconds(s);
+                    }
+
                     continue;
                 }
 
