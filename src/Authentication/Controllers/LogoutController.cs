@@ -94,10 +94,10 @@ namespace Altinn.Platform.Authentication.Controllers
             }
             else
             {
-                JwtSecurityToken jwt = null;
-                string orgIss = null;
-                string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
-                if (_validator.CanReadToken(tokenCookie))
+                JwtSecurityToken? jwt = null;
+                string? orgIss = null;
+                string? tokenCookie = Request.Cookies.TryGetValue(_generalSettings.JwtCookieName, out var tc) ? tc : null;
+                if (!string.IsNullOrEmpty(tokenCookie) && _validator.CanReadToken(tokenCookie))
                 {
                     jwt = _validator.ReadJwtToken(tokenCookie);
                     orgIss = jwt.Claims.Where(c => c.Type.Equals(OriginalIssClaimName)).Select(c => c.Value).FirstOrDefault();
