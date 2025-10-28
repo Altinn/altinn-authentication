@@ -49,7 +49,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         }
 
         /// <summary>
-        /// Assert callbakc 
+        /// Assert callback
         /// </summary>
         public static string AssertCallbackResponseUnregistratedClient(HttpResponseMessage callbackResp, OidcTestScenario testScenario, DateTimeOffset now)
         {
