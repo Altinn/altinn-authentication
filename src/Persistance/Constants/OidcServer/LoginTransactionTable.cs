@@ -1,7 +1,7 @@
 ﻿namespace Altinn.Platform.Authentication.Persistance.Constants.OidcServer
 {
     /// <summary>
-    /// Constans for the login_transaction table and its columns.
+    /// Constants for the login_transaction table and its columns.
     /// </summary>
     public static class LoginTransactionTable
     {
