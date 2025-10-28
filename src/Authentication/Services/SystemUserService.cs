@@ -692,7 +692,9 @@ namespace Altinn.Platform.Authentication.Services
                 
                 if (found)
                 {
-                    Package package = await _accessManagementClient.GetAccessPackage(accessPackage.Urn!);
+                    // get the urn value from the access package f.eks get regnskapsforer-med-signeringsrettighet from urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet
+                    string urnValue = accessPackage.Urn!.Split(":")[3];
+                    Package package = await _accessManagementClient.GetAccessPackage(urnValue);
                     if (isAgentRequest)
                     {
                         if (!package.IsDelegable)
