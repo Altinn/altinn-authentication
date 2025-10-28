@@ -25,7 +25,7 @@ namespace Altinn.Platform.Authentication.Controllers
     /// Controller responsible for loging out
     /// </summary>
     /// <remarks>
-    /// Defay
+    /// Defines endpoints for logging out users.
     /// </remarks>
     [Route("authentication/api/v1")]
     [ApiController]
