@@ -182,7 +182,7 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
             string ua = Request.Headers.UserAgent.ToString();
-            string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : ua; // hash if you want, not required here
+            string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : Hashing.Sha256Base64Url(ua);
 
             EndSessionInput input = new EndSessionInput
             {

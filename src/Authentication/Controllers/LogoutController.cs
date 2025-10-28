@@ -1,12 +1,7 @@
 #nullable enable
-using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
@@ -18,6 +13,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
@@ -66,7 +67,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
                 string ua = Request.Headers.UserAgent.ToString();
-                string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : ua; // hash if you want, not required here
+                string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : Hashing.Sha256Base64Url(ua);
 
                 EndSessionInput input = new()
                 {
