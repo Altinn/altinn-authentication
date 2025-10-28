@@ -170,7 +170,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("subject_party_id", NpgsqlDbType.Integer, (object?)row.SubjectPartyId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("subject_user_id", NpgsqlDbType.Integer, (object?)row.SubjectUserId ?? DBNull.Value);
 
-            cmd.Parameters.AddWithValue("op_sid", NpgsqlDbType.Text, row.OpSid);
+            cmd.Parameters.AddWithValue("op_sid", NpgsqlDbType.Text, row.SessionId);
 
             cmd.Parameters.AddWithValue("scopes", NpgsqlDbType.Array | NpgsqlDbType.Text, row.Scopes);
             cmd.Parameters.AddWithValue("acr", NpgsqlDbType.Text, (object?)row.Acr ?? DBNull.Value);
@@ -285,7 +285,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 SubjectPartyUuid = r.IsDBNull("subject_party_uuid") ? (Guid?)null : r.GetFieldValue<Guid>("subject_party_uuid"),
                 SubjectPartyId = r.IsDBNull("subject_party_id") ? (int?)null : r.GetFieldValue<int>("subject_party_id"),
                 SubjectUserId = r.IsDBNull("subject_user_id") ? (int?)null : r.GetFieldValue<int>("subject_user_id"),
-                OpSid = r.GetString(r.GetOrdinal("op_sid")),
                 Scopes = scopes,
                 Acr = r.IsDBNull(r.GetOrdinal("acr")) ? null : r.GetString(r.GetOrdinal("acr")),
                 Amr = amr,

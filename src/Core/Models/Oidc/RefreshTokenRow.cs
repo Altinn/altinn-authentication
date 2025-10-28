@@ -24,8 +24,6 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public byte[] Salt { get; init; } = Array.Empty<byte>();
         public int Iterations { get; init; }
 
-        public string OpSid { get; init; } = string.Empty; // FK → oidc_session.sid
-
         // Diagnostics / metadata
         public string? UserAgentHash { get; init; }
         public string? IpHash { get; init; }

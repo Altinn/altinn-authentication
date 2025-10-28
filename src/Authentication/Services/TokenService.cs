@@ -124,7 +124,6 @@ namespace Altinn.Platform.Authentication.Services
                 SubjectPartyId = row.SubjectPartyId,
                 SubjectPartyUuid = row.SubjectPartyUuid,
                 SubjectUserId = row.SubjectUserId,
-                OpSid = row.OpSid,
 
                 Scopes = resultingScopes,
                 Acr = row.Acr,
@@ -143,7 +142,7 @@ namespace Altinn.Platform.Authentication.Services
             
             // 8) Mint new access token (+ optional ID token)
             DateTimeOffset tokenExpiration = now.AddMinutes(_generalSettings.JwtValidityMinutes);
-            await _oidcSessionRepository.SlideExpiryToAsync(row.OpSid, tokenExpiration, ct);
+            await _oidcSessionRepository.SlideExpiryToAsync(row.SessionId, tokenExpiration, ct);
 
             ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false);
 
@@ -248,7 +247,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // Optional but recommended: ensure OP session not ended/expired
-            var session = await _oidcSessionRepository.GetBySidAsync(row.OpSid, ct);
+            var session = await _oidcSessionRepository.GetBySidAsync(row.SessionId, ct);
             if (session is null)
             {
                 await _refreshTokenRepository.RevokeFamilyAsync(row.FamilyId, "session-missing", ct);
@@ -461,7 +460,6 @@ namespace Altinn.Platform.Authentication.Services
                     SubjectPartyId = codeRow.SubjectPartyId,
                     SubjectPartyUuid = codeRow.SubjectPartyUuid,
                     SubjectUserId = codeRow.SubjectUserId,
-                    OpSid = session.Sid,
 
                     Scopes = codeRow.Scopes.ToArray(),
                     Acr = session.Acr,
