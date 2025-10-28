@@ -1178,7 +1178,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             // Arrange
@@ -1297,7 +1297,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage2 = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             // Arrange
@@ -1353,7 +1353,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 new ClientRoleAccessPackages()
                 {
                     Role = "REGN",
-                    Packages = ["urn:altinn:accesspackage:skattnaering"]
+                    Packages = ["urn:altinn:accesspackage:skatt-naering"]
                 },
                                 new ClientRoleAccessPackages()
                 {
@@ -1387,7 +1387,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
 
             };
 
@@ -1454,7 +1454,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
 
             };
 
@@ -1563,7 +1563,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             // Arrange
@@ -1635,7 +1635,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             // Arrange
@@ -1768,7 +1768,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             // Arrange
@@ -1836,7 +1836,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             // Arrange
@@ -1906,7 +1906,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             // Arrange
@@ -1974,7 +1974,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             // Arrange
@@ -2081,7 +2081,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             HttpClient client2 = CreateClient();
@@ -2104,7 +2104,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             AccessPackage accessPackage = new()
             {
-                Urn = "urn:altinn:accesspackage:skattnaering"
+                Urn = "urn:altinn:accesspackage:skatt-naering"
             };
 
             HttpClient client2 = CreateClient();
