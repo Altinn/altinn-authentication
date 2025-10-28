@@ -46,6 +46,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
             AssertHasAltinnStudioRuntimeCookie(callbackResp, testScenario, now);
             AssertHasAltinnSessionCookie(callbackResp, testScenario, now);
+            AssertHasAltinnPartyIdCookie(callbackResp);
+            AssertHasAltinnPartyUuidCookie(callbackResp);
         }
 
         /// <summary>
@@ -155,6 +157,48 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             // ❌ Must NOT set Expires or Domain (host-only, session cookie)
             Assert.DoesNotContain(parts, p => p.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
             Assert.DoesNotContain(parts, p => p.StartsWith("domain=", StringComparison.OrdinalIgnoreCase));
+        }
+
+        public static void AssertHasAltinnPartyIdCookie(HttpResponseMessage resp)
+        {
+            Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
+
+            string? raw = setCookies.FirstOrDefault(h =>
+                h.StartsWith("altinnpartyid=", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrEmpty(raw), "AltinnPartyId cookie was not set.");
+            var (name, value, parts) = ParseSetCookieHeader(raw);
+
+            // name=value
+            Assert.Equal("AltinnPartyId", name);
+            Assert.False(string.IsNullOrEmpty(value), "AltinnPartyId cookie has empty value.");
+
+            // Assert that domain is set to localhost (test env) (will be altinn.no for production)
+            Assert.Contains(parts, p => p.StartsWith("domain=localhost", StringComparison.OrdinalIgnoreCase));
+
+            // ❌ Must NOT set Expires 
+            Assert.DoesNotContain(parts, p => p.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
+            Assert.True(int.TryParse(value, out int partyId), "AltinnPartyId cookie value is not a valid integer.");
+        }
+
+        public static void AssertHasAltinnPartyUuidCookie(HttpResponseMessage resp)
+        {
+            Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
+
+            string? raw = setCookies.FirstOrDefault(h =>
+                h.StartsWith("AltinnPartyUuid=", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrEmpty(raw), "AltinnPartyUuid cookie was not set.");
+            var (name, value, parts) = ParseSetCookieHeader(raw);
+
+            // name=value
+            Assert.Equal("AltinnPartyUuid", name);
+            Assert.False(string.IsNullOrEmpty(value), "AltinnPartyUuid cookie has empty value.");
+
+            // Assert that domain is set to localhost (test env) (will be altinn.no for production)
+            Assert.Contains(parts, p => p.StartsWith("domain=localhost", StringComparison.OrdinalIgnoreCase));
+
+            // ❌ Must NOT set Expires 
+            Assert.DoesNotContain(parts, p => p.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
+            Assert.True(Guid.TryParse(value, out Guid partyUuid), "AltinnPartyUuid cookie value is not a valid integer.");
         }
 
         public static void AssertValidSession(OidcSession? oidcSession, OidcTestScenario testScenario, DateTimeOffset now)

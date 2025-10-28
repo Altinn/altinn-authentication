@@ -28,6 +28,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public string AltinnPartyCookieName { get; set; }
 
         /// <summary>
+        /// Name of the partyuuid cookie where selected party uuid is stored
+        /// </summary>
+        public string AltinnPartyUuidCookieName { get; set; } = "AltinnPartyUuid";
+
+        /// <summary>
         /// Gets or sets the AltinnLogoutInfo cookie name
         /// </summary>
         public string AltinnLogoutInfoCookieName { get; set; }

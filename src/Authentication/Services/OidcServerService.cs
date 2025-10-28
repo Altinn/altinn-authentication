@@ -244,6 +244,28 @@ namespace Altinn.Platform.Authentication.Services
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
 
             string cookieToken = await _tokenService.CreateCookieToken(session, cancellationToken);
+            
+            CookieInstruction altinnPartyCookie = new()
+            {
+                Name = _generalSettings.AltinnPartyCookieName,
+                Value = userIdenity.PartyID.HasValue ? userIdenity.PartyID.Value.ToString() : string.Empty,
+                HttpOnly = false,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
+            };
+
+            CookieInstruction altinnPartyUuidCookie = new()
+            {
+                Name = _generalSettings.AltinnPartyUuidCookieName,
+                Value = userIdenity.PartyUuid.HasValue ? userIdenity.PartyUuid.Value.ToString() : string.Empty,
+                HttpOnly = false,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
+            };
 
             CookieInstruction altinnStudioRuntime = new()
             {
@@ -290,7 +312,7 @@ namespace Altinn.Platform.Authentication.Services
                     ClientRedirectUri = loginTx!.RedirectUri,
                     DownstreamCode = authCode,
                     ClientState = loginTx.State,
-                    Cookies = [altinnStudioRuntime, altinnSessionCookie]
+                    Cookies = [altinnStudioRuntime, altinnSessionCookie, altinnPartyCookie, altinnPartyUuidCookie]
                 };
             }
             else if (upstreamTx.UnregisteredClientRequestId != null)
@@ -303,7 +325,7 @@ namespace Altinn.Platform.Authentication.Services
                     ClientRedirectUri = new Uri(unregisteredClientRequest.GotoUrl),
                     DownstreamCode = null,
                     ClientState = null,
-                    Cookies = [altinnStudioRuntime, altinnSessionCookie]
+                    Cookies = [altinnStudioRuntime, altinnSessionCookie, altinnPartyCookie, altinnPartyUuidCookie]
                 };
             }
             
