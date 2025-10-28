@@ -28,7 +28,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="featureManager">the feature manager handler</param>
         /// <param name="jwtToken">the authenticated user information in token</param>
         /// <param name="eventType">type of authentication event</param>
-        /// <param name="ipadress">the http context</param>
+        /// <param name="ipadress">the ip adress</param>
         /// <param name="externalSessionId">the session id from the external token</param>
         /// <returns></returns>
         public Task CreateAuthenticationEventAsync(IFeatureManager featureManager, string jwtToken, AuthenticationEventType eventType, IPAddress ipadress, string? externalSessionId = null);
