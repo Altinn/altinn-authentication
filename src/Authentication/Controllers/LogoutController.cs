@@ -106,7 +106,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 OidcProvider provider = GetOidcProvider(orgIss);
                 if (provider == null)
                 {
-                    _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext);
+                    _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
                     return Redirect(_generalSettings.SBLLogoutEndpoint);
                 }
 
@@ -114,7 +114,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
                 Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
 
-                _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext);
+                _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
                 return Redirect(provider.LogoutEndpoint);
             }
         }
@@ -177,7 +177,7 @@ namespace Altinn.Platform.Authentication.Controllers
             Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
             Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
             string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
-            _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext);
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
             return Ok();
         }
 

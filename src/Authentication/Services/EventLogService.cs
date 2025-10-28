@@ -61,18 +61,18 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="featureManager">handler for feature manager service</param>
         /// <param name="jwtToken">the token cookie with user information</param>
         /// <param name="eventType">authentication event type</param>
-        /// <param name="context">the http context</param>
+        /// <param name="ipAdress">The ip adress of the caller</param>
         /// <param name="externalSessionId">the external session id</param>
         public async Task CreateAuthenticationEventAsync(
             IFeatureManager featureManager, 
             string jwtToken, 
             AuthenticationEventType eventType, 
-            HttpContext context,
+            System.Net.IPAddress ipAdress,
             string? externalSessionId = null) 
         {
             if (await featureManager.IsEnabledAsync(FeatureFlags.AuditLog))
             {
-                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, context, _timeProvider.GetUtcNow(), externalSessionId);
+                AuthenticationEvent authenticationEvent = EventlogHelper.MapAuthenticationEvent(jwtToken, eventType, ipAdress, _timeProvider.GetUtcNow(), externalSessionId);
                 if (authenticationEvent != null)
                 {
                     _queueClient.EnqueueAuthenticationEvent(JsonSerializer.Serialize(authenticationEvent));

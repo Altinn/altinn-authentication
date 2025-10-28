@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 using Altinn.Common.AccessToken.Services;
+using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
@@ -46,6 +47,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IUserProfileService> _userProfileService = new();
+        private readonly Mock<IEventsQueueClient> _eventQueue = new();
 
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
@@ -77,6 +79,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 .AddJsonFile(configPath)
                 .Build();
 
+            _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
             services.Configure<GeneralSettings>(generalSettingSection);
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
@@ -86,6 +89,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IProfile, ProfileFileMock>();
             services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
+            services.AddSingleton(_eventQueue.Object);
 
             services.PostConfigure<GeneralSettings>(o =>
             {
@@ -155,6 +159,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // Create HttpClient with default headers for IP, UA, correlation. 
             using HttpClient client = CreateClientWithHeaders();
             OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+            _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
 
             // Insert a client that matches the authorize request
             OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
@@ -348,6 +353,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
             Assert.Equal("OK", frontChannelContent);
+
+            Assert.Equal(12, _eventQueue.Invocations.Count());
         }
 
         /// <summary>

@@ -17,6 +17,7 @@ using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
+using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -26,6 +27,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -50,7 +52,9 @@ namespace Altinn.Platform.Authentication.Services
         ITokenService tokenService,
         IRefreshTokenRepository refreshTokenRepository,
         IUnregisteredClientRepository unregisteredClientRequestRepository,
-        ISblCookieDecryptionService sblCookieDecryptionService) : IOidcServerService
+        ISblCookieDecryptionService sblCookieDecryptionService,
+        IEventLog eventLog,
+        IFeatureManager featureManager) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -72,6 +76,8 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IUnregisteredClientRepository _unregisteredClientRequestRepository = unregisteredClientRequestRepository;
         private readonly ISblCookieDecryptionService _cookieDecryptionService = sblCookieDecryptionService;
         private static readonly string DefaultProviderKey = "idporten";
+        private readonly IEventLog _eventLog = eventLog;
+        private readonly IFeatureManager _featureManager = featureManager;
 
         /// <summary>
         /// Handles an incoming OIDC <c>/authorize</c> request from a Downstream client in the Altinn Platform.
@@ -260,6 +266,8 @@ namespace Altinn.Platform.Authentication.Services
                 SameSite = SameSiteMode.Lax,
             };
 
+            await _eventLog.CreateAuthenticationEventAsync(_featureManager, cookieToken, AuthenticationEventType.Authenticate, input.ClientIp);
+
             UpstreamCallbackResult? upstreamCallbackResult = null;
 
             // TODO How to handle first time login with epost bruker from ID porten if we gonna ask them to connect to existing self identified user.
@@ -317,10 +325,12 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken cancellationToken)
         {
             Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
-            if (sidClaim == null && _generalSettings.ForceOidc)
-            {
-                throw new InvalidOperationException("No sid claim present in principal");
-            }
+
+            // Disable code that forces presence of sid claim. Enable when all users have new token
+            //if (sidClaim == null && _generalSettings.ForceOidc)
+            //{
+            //    throw new InvalidOperationException("No sid claim present in principal");
+            //}
 
             if (sidClaim == null)
             {

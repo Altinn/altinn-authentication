@@ -451,7 +451,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             OidcSession? session = await _oidcServerService.HandleSessionRefresh(principal, cancellationToken);
 
-            _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext);
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.Refresh, HttpContext.Connection.RemoteIpAddress);
             _logger.LogInformation("End of refreshing token");
 
             // For test we return cookie also as a cookie
@@ -691,7 +691,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal);
-                await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
+                await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext.Connection.RemoteIpAddress, externalSessionId);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
@@ -836,7 +836,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
                 string serializedToken = await GenerateToken(principal, token.ValidTo);
-                await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext, externalSessionId);
+                await _eventLog.CreateAuthenticationEventAsync(_featureManager, serializedToken, AuthenticationEventType.TokenExchange, HttpContext.Connection.RemoteIpAddress, externalSessionId);
                 return Ok(serializedToken);
             }
             catch (Exception ex)
