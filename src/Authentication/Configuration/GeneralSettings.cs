@@ -140,6 +140,28 @@ namespace Altinn.Platform.Authentication.Configuration
         }
 
         /// <summary>
+        /// Gets the authorize endpoint for Altinn OIDC
+        /// </summary>
+        public string AltinnOidcAuthorizeEndpoint
+        {
+            get
+            {
+                return PlatformEndpoint + "authentication/api/v1/authorize/";
+            }
+        }
+
+        /// <summary>
+        /// Gets the token endpoint for Altinn OIDC
+        /// </summary>
+        public string AltinnOidcTokenEndpoint
+        {
+            get
+            {
+                return PlatformEndpoint + "authentication/api/v1/token/";
+            }
+        }
+
+        /// <summary>
         /// Get or sets the value indicating if OIDC authentication is enabled
         /// </summary>
         public bool EnableOidc { get; set; }
