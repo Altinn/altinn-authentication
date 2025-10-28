@@ -48,6 +48,24 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             AssertHasAltinnSessionCookie(callbackResp, testScenario, now);
         }
 
+        /// <summary>
+        /// Assert callbakc 
+        /// </summary>
+        public static string AssertCallbackResponseUnregistratedClient(HttpResponseMessage callbackResp, OidcTestScenario testScenario, DateTimeOffset now)
+        {
+            Assert.Equal(HttpStatusCode.Found, callbackResp.StatusCode);
+            Assert.NotNull(callbackResp.Headers.Location);
+            var finalLocation = callbackResp.Headers.Location!;
+            Assert.Equal("https", finalLocation.Scheme);
+
+            System.Collections.Specialized.NameValueCollection finalQuery = System.Web.HttpUtility.ParseQueryString(finalLocation.Query);
+
+            string sid = AssertHasAltinnStudioRuntimeCookie(callbackResp, testScenario, now);
+            AssertHasAltinnSessionCookie(callbackResp, testScenario, now);
+
+            return sid;
+        }
+
         public static void AssertLoginTransaction(LoginTransaction loginTransaction, OidcTestScenario scenario, DateTimeOffset now)
         {
             Assert.NotNull(loginTransaction);
@@ -71,7 +89,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal(now, createdTx.CreatedAt);
         }
 
-        public static void AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, OidcTestScenario testScenario,   DateTimeOffset now)
+        public static string AssertHasAltinnStudioRuntimeCookie(HttpResponseMessage resp, OidcTestScenario testScenario,   DateTimeOffset now)
         {
             Assert.True(resp.Headers.TryGetValues("Set-Cookie", out var setCookies), "Response missing Set-Cookie headers.");
 
@@ -94,7 +112,9 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             // Assert.DoesNotContain(parts, p => p.StartsWith("Max-Age=", StringComparison.OrdinalIgnoreCase));
 
             // Assert token from cookie is valid and contains the expected claims
-            TokenAssertsHelper.AssertCookieAccessToken(value, testScenario, now);
+            string sid = TokenAssertsHelper.AssertCookieAccessToken(value, testScenario, now);
+
+            return sid;
         }
 
         public static void AssertDeleteAltinnStudioRuntimeCookie(HttpResponseMessage resp, OidcTestScenario testScenario, DateTimeOffset now)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -107,7 +108,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             return sid;
         }
 
-        public static void AssertCookieAccessToken(string cookieToken, OidcTestScenario testScenario, DateTimeOffset now)
+        public static string AssertCookieAccessToken(string cookieToken, OidcTestScenario testScenario, DateTimeOffset now)
         {
             ClaimsPrincipal accessTokenPrincipal = JwtTokenMock.ValidateToken(cookieToken, now);
 
@@ -122,7 +123,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             // Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
             Assert.DoesNotContain(accessTokenPrincipal.Claims, c => c.Type == "pid");
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
-
+            string sid = accessTokenPrincipal.Claims.First(c => c.Type == "sid").Value;
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyUUID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.UserId && !string.IsNullOrEmpty(c.Value));
@@ -138,6 +139,8 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                     Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == kvp.Key && !string.IsNullOrEmpty(c.Value));
                 }
             }
+
+            return sid;
         }
 
         private static bool IsBase64Url(string s) =>

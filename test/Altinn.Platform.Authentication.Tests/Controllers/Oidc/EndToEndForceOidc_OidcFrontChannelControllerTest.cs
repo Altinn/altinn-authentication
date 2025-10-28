@@ -1261,6 +1261,92 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal("OK", frontChannelContent);
         }
 
+        [Fact]
+        public async Task TC9_Auth_App_Logout_End_To_End_OK()
+        {
+            // Create HttpClient with default headers for IP, UA, correlation. 
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+
+            // Insert a client that matches the authorize request
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            // === Phase 1: User redirects an app in Altinn Apps and is not authenticated. The app redirects to the standard authentication endpoint with goto URL
+            HttpResponseMessage app2RedirectResponse = await client.GetAsync(
+               "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+            Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
+            Assert.StartsWith("https://login.idporten.no/authorize?response_type=code&client_id=345345s&redirect_uri=http%3a%2f%2flocalhost%2fauthentication%2fapi", app2RedirectResponse.Headers.Location!.ToString());
+
+            string location = app2RedirectResponse.Headers.Location!.ToString();
+
+            string state = HttpUtility.ParseQueryString(new Uri(location).Query)["state"]!;
+            string nonce = HttpUtility.ParseQueryString(new Uri(location).Query)["nonce"]!;
+            string codeChallenge = HttpUtility.ParseQueryString(new Uri(location).Query)["code_challenge"]!;
+            string redirectUri = HttpUtility.ParseQueryString(new Uri(location).Query)["redirect_uri"]!;
+            Uri redirectUriParsed = new Uri(redirectUri!);
+            Assert.NotNull(nonce);
+            Assert.NotNull(state);
+            Assert.NotNull(codeChallenge);
+
+            // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
+            (string? upstreamState, UpstreamLoginTransaction? createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, app2RedirectResponse, _fakeTime.GetUtcNow());
+            Debug.Assert(createdUpstreamLogingTransaction != null);
+
+            // Assume it takes 1 minute for the user to authenticate at the upstream provider
+            _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
+
+            // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
+            ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+
+            // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
+            // Our proxy service (below) will fabricate a downstream code and redirect to the original app that was requested. 
+            string callbackUrl = $"{redirectUriParsed.AbsolutePath}?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
+
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            Assert.Equal(HttpStatusCode.Redirect, callbackResp.StatusCode);
+            Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", callbackResp.Headers.Location!.ToString());
+            string sid = OidcAssertHelper.AssertCallbackResponseUnregistratedClient(callbackResp, testScenario, _fakeTime.GetUtcNow());
+
+            // === Phase 3: Uses the app for an extensive periode. The app triggers refreshes to keep the session alive =====
+            for (int i = 0; i < 9; i++)
+            {
+                _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:41 08:46 08:51 08:56 08:59 09:06 09:11 09:16 09:21
+
+                // Second keep alive from App
+                HttpResponseMessage cookieRefreshResponseFromSecondApp2 = await client.GetAsync(
+                   "/authentication/api/v1/refresh");
+                string refreshToken2FromSecondApp = await cookieRefreshResponseFromSecondApp2.Content.ReadAsStringAsync();
+                TokenAssertsHelper.AssertCookieAccessToken(refreshToken2FromSecondApp, testScenario, _fakeTime.GetUtcNow());
+            }
+
+            // ===== Phase 4: User is done for the day. Press Logout in App. This should trigger the old logout endpoint configured in app. =====
+
+            // Verify that session is active before logout
+            OidcSession? beforeLoggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            OidcAssertHelper.AssertValidSession(beforeLoggedOutSession, testScenario, _fakeTime.GetUtcNow());
+            Debug.Assert(beforeLoggedOutSession != null);
+
+            using var logoutResp = await client.GetAsync(
+                "/authentication/api/v1/logout/");
+            string content = await logoutResp.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
+            Assert.StartsWith("https://login.idporten.no/logout", logoutResp.Headers.Location!.ToString());
+
+            OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
+            Assert.Null(loggedOutSession);
+
+            // Simulate that ID-provider call the front channel logout endpoint
+            using var frontChannelLogoutResp = await client.GetAsync(
+                $"/authentication/api/v1/upstream/frontchannel-logout?iss={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamIssuer)}&sid={HttpUtility.UrlEncode(beforeLoggedOutSession.UpstreamSessionSid!)}");
+
+            string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
+            Assert.Equal("OK", frontChannelContent);
+        }
+
         private static string GetConfigPath()
         {
             string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
