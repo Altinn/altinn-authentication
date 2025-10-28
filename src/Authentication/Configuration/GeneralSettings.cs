@@ -135,7 +135,7 @@ namespace Altinn.Platform.Authentication.Configuration
         {
             get
             {
-                return PlatformEndpoint + "authentication/api/v1/openid";
+                return $"{PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/openid";
             }
         }
 
@@ -146,7 +146,7 @@ namespace Altinn.Platform.Authentication.Configuration
         {
             get
             {
-                return PlatformEndpoint + "authentication/api/v1/authorize";
+                return $"{PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/authorize";
             }
         }
 
@@ -157,7 +157,7 @@ namespace Altinn.Platform.Authentication.Configuration
         {
             get
             {
-                return PlatformEndpoint + "authentication/api/v1/token";
+                return $"{PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/token";
             }
         }
 
