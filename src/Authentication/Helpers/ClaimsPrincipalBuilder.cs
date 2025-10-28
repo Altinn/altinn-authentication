@@ -93,10 +93,9 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 {
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
+                    string amrClaim = AuthenticationHelper.GetAuthenticationMethod(amr[0]).ToString();
+                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
                 }
-
-                string amrClaim = AuthenticationHelper.GetAuthenticationMethod(string.Join(" ", oidcBindingContext.Amr)).ToString();
-                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
             }
 
             if (oidcBindingContext.Nonce != null && isIDToken)
@@ -192,10 +191,9 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 {
                     string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
+                    string amrClaim = AuthenticationHelper.GetAuthenticationMethod(amr[0]).ToString();
+                    claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
                 }
-
-                string amrClaim = AuthenticationHelper.GetAuthenticationMethod(amr[0]).ToString();
-                claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, amrClaim));
             }
            
             if (oidcSession.AuthTime != null)
