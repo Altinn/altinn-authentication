@@ -198,7 +198,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
             // ❌ Must NOT set Expires 
             Assert.DoesNotContain(parts, p => p.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
-            Assert.True(Guid.TryParse(value, out Guid partyUuid), "AltinnPartyUuid cookie value is not a valid integer.");
+            Assert.True(Guid.TryParse(value, out Guid partyUuid), "AltinnPartyUuid cookie value is not a valid GUID.");
         }
 
         public static void AssertValidSession(OidcSession? oidcSession, OidcTestScenario testScenario, DateTimeOffset now)

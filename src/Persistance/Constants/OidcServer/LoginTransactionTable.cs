@@ -36,7 +36,7 @@
         public const string COMPLETED_AT = "completed_at";
 
         /// <summary>
-        /// Column name for the subject (user) identifier once the transaction is completed.
+        /// Column name for the OAuth/OIDC client identifier.
         /// </summary>
         public const string CLIENT_ID = "client_id";
 
