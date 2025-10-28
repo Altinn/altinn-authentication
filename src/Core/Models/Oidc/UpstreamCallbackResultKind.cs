@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Altinn.Platform.Authentication.Core.Models.Oidc
+﻿namespace Altinn.Platform.Authentication.Core.Models.Oidc
 {
+    /// <summary>
+    /// indicates the kind of result from processing an upstream OIDC callback.
+    /// </summary>
     public enum UpstreamCallbackResultKind
     {
         RedirectToClient,          // success: code+state to downstream client
