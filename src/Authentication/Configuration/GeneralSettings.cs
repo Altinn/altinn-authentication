@@ -28,6 +28,11 @@ namespace Altinn.Platform.Authentication.Configuration
         public string AltinnPartyCookieName { get; set; }
 
         /// <summary>
+        /// Name of the partyuuid cookie where selected party uuid is stored
+        /// </summary>
+        public string AltinnPartyUuidCookieName { get; set; } = "AltinnPartyUuid";
+
+        /// <summary>
         /// Gets or sets the AltinnLogoutInfo cookie name
         /// </summary>
         public string AltinnLogoutInfoCookieName { get; set; }
@@ -66,6 +71,11 @@ namespace Altinn.Platform.Authentication.Configuration
         /// Gets or sets the number of minutes the JSON Web Token and the cookie is valid.
         /// </summary>
         public int JwtValidityMinutes { get; set; }
+
+        /// <summary>
+        /// Max session time in minutes
+        /// </summary>
+        public int MaxSessionTimeInMinutes { get; set; }
 
         /// <summary>
         /// Gets or sets the hostname
@@ -119,13 +129,40 @@ namespace Altinn.Platform.Authentication.Configuration
         public int JwtSigningCertificateRolloverDelayHours { get; set; }
 
         /// <summary>
+        /// Server secret for hashing the OIDC refresh token
+        /// </summary>
+        public required string OidcRefreshTokenPepper { get; set; }
+
+        /// <summary>
         /// Gets the Altinn Open ID Connect (OIDC) Issuer URL.
         /// </summary>
         public string AltinnOidcIssuerUrl
         {
             get
             {
-                return PlatformEndpoint + "authentication/api/v1/openid/";
+                return $"{PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/openid/";
+            }
+        }
+
+        /// <summary>
+        /// Gets the authorize endpoint for Altinn OIDC
+        /// </summary>
+        public string AltinnOidcAuthorizeEndpoint
+        {
+            get
+            {
+                return $"{PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/authorize/";
+            }
+        }
+
+        /// <summary>
+        /// Gets the token endpoint for Altinn OIDC
+        /// </summary>
+        public string AltinnOidcTokenEndpoint
+        {
+            get
+            {
+                return $"{PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/token/";
             }
         }
 
@@ -145,6 +182,16 @@ namespace Altinn.Platform.Authentication.Configuration
         public bool ForceOidc { get; set; }
 
         /// <summary>
+        /// Scopes set when there is no client id (Altinn Apps) or source is Altinn 2
+        /// </summary>
+        public string DefaultPortalScopes { get; set; } = "openid digdir:dialogporten.noconsent altinn:portal/enduser";
+
+        /// <summary>
+        /// Enables the authorization server
+        /// </summary>
+        public bool AuthorizationServerEnabled { get; set; }
+
+        /// <summary>
         /// Name of Oidc Nonce cookie
         /// </summary>
         public string OidcNonceCookieName { get; set; } = "oidcnonce";
@@ -158,5 +205,10 @@ namespace Altinn.Platform.Authentication.Configuration
         /// Scopes for partner authentication with exchange. 
         /// </summary>
         public string PartnerScopes { get; set; }
+
+        /// <summary>
+        /// Defines the Altinn session cookie name
+        /// </summary>
+        public string AltinnSessionCookieName { get; set; } = "altinnsession";
     }
 }

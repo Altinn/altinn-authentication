@@ -148,7 +148,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "REVI");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
         hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skattnaering", "REGN");
+        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skatt-naering", "REGN");
 
         hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);        
         return found;   

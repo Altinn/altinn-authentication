@@ -27,12 +27,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
-
 using Moq;
 using Newtonsoft.Json;
-
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
@@ -51,6 +50,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private IConfiguration _configuration;
+        private readonly DateTimeOffset testTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
 
         protected override void ConfigureServices(IServiceCollection services)
         {
@@ -144,7 +144,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
 
             Assert.NotNull(principal);
 
@@ -458,7 +458,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
 
             Assert.NotNull(principal);
 
@@ -506,7 +506,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
 
             Assert.NotNull(principal);
 
@@ -540,7 +540,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost";
+            string url = "/authentication/api/v1/authentication?goto=https%3A%2F%2Flocalhost";
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
             requestMessage.Headers.Add("Cookie", ".ASPXAUTH=asdasdasd");
 
@@ -583,7 +583,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             }
 
             Assert.NotNull(token);
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
             Assert.NotNull(principal);
 
             Assert.True(principal.Claims.ToList().Exists(c => c.Type == "urn:altinn:party:uuid"));
@@ -604,21 +604,21 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange         
             HttpClient client = CreateClient();            
 
-            string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost&DontChooseReportee=true";
+            string url = "/authentication/api/v1/authentication?goto=https%3A%2F%2Flocalhost&DontChooseReportee=true";
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
 
             // Act
             HttpResponseMessage response = await client.SendAsync(requestMessage);
 
             // Assert
-            string expectedLocation = "http://localhost/ui/authentication?goTo=http%3a%2f%2flocalhost%2fauthentication%2fapi%2fv1%2fauthentication%3fgoto%3dhttp%3a%2f%2flocalhost%26DontChooseReportee%3dtrue";
+            string expectedLocation = "http://localhost/ui/authentication?goTo=http%3a%2f%2flocalhost%2fauthentication%2fapi%2fv1%2fauthentication%3fgoto%3dhttps%3a%2f%2flocalhost%26DontChooseReportee%3dtrue";
             Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
             Assert.Equal(expectedLocation, response.Headers.Location.ToString());
         }
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with no ISS given
         /// 3. OIDC is enabled and the default authentication mechanismen
         /// Expections: Authentication components redirects to default OIDC provider with all neded params
@@ -627,7 +627,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_NoTokenPortalParametersIncludedOIDCDefaultEnabled_RedirectsToOIDCProvider()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -655,7 +655,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with no ISS given
         /// 3. OIDC is enabled and the default authentication mechanismen
         /// Expections: Authentication components redirects to default OIDC provider with all neded params
@@ -664,7 +664,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_NoTokenPortalParametersIncludedOIDCDefaultEnabled_RedirectsToOIDCProvider2()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -682,7 +682,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("idporten.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -693,7 +693,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -711,7 +711,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_FullProcess_RedirectsToOIDCAndBackWithValidToken()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -763,7 +763,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
             Assert.NotNull(claimPrincipal);
 
             // Validate that default Altinn Portal scope is added to the token
@@ -774,7 +774,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario (same as above but with existing scope claim)
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -792,7 +792,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_FullProcess_RedirectsToOIDCAndBackWithValidTokenExistingScopeclaim()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -846,7 +846,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
             Assert.NotNull(claimPrincipal);
 
             // Validate that default Altinn Portal scope is added to the token
@@ -857,7 +857,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -875,7 +875,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCExternalIDentity_FullProcess_RedirectsToOIDCAndBackWithValidToken()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
             UserProfile userProfileNotFound = null;
             UserProfile userProfile = new UserProfile { UserId = 234234, PartyId = 234234, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfileNotFound);
@@ -934,7 +934,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
             Assert.NotNull(claimPrincipal);
             Assert.NotNull(claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")));
             Assert.Equal("234234",  claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")).Value);
@@ -944,7 +944,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -962,7 +962,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCExternalIDentityRelogin_FullProcess_RedirectsToOIDCAndBackWithValidToken()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             UserProfile userProfile = new UserProfile { UserId = 234235, PartyId = 234235, UserName = "steph" };
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
@@ -1018,16 +1018,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
             Assert.NotNull(claimPrincipal);
             Assert.NotNull(claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")));
             Assert.Equal("234235", claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")).Value);
-            Assert.Equal("2346t44663423s", claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("sub")).Value);
+            Assert.Equal("2346t44663423s", claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("provider:sub")).Value);
         }
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -1041,7 +1041,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_InvalidNonce_BadRequest()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -1084,7 +1084,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test veryf the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component
         /// 3. OIDC is enabled and is the default authentication component
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -1098,7 +1098,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDC_InvalidState_BadRequest()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
@@ -1141,7 +1141,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with ISS given
         /// 3. OIDC is enabled and the default authentication mechanismen
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -1150,7 +1150,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCEnabledAndDefault_IdportenProviderRequested_RedirectsToOIDCProvider()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
@@ -1167,7 +1167,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("idporten.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -1178,7 +1178,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with ISS given
         /// 3. OIDC is enabled and but not the default authentication mechanismen
         /// 4. First expections: Authentication components redirects to correct OIDC provider
@@ -1187,7 +1187,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCEnabled_IdportenProviderRequested_RedirectsToOIDCProvider()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
@@ -1204,7 +1204,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert that user is redirected to correct Oidc provider and a XSRF Cookie was set
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToOidcProviderUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
-            Assert.Equal("idporten.azurewebsites.net/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
+            Assert.Equal("login.idporten.no/authorize", redirectToOidcProviderUri.Host + redirectToOidcProviderUri.AbsolutePath);
 
             // Verify that XSRF token cookie set is set. 
             ValidateXSRFTokenPresent(redirectToOidcProviderResponse);
@@ -1215,7 +1215,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component with ISS given
         /// 3. OIDC is disabled
         /// Expections: Authentication components redirects to SBL, iss ignored
@@ -1224,7 +1224,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCDisabled_IdportenProviderRequested_RedirectsToSBL()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
 
             HttpClient client = CreateClient();
 
@@ -1242,7 +1242,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// This test verify the following Scenario
-        /// 1. User tries to access app (http://ttd.apps.localhost/ttd/testapp)
+        /// 1. User tries to access app (https://ttd.apps.localhost/ttd/testapp)
         /// 2. User is redirected from app to authentication component 
         /// 3. OIDC is enabled
         /// Expections: Authentication components redirects to SBL since no ISS is given
@@ -1251,7 +1251,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateUserWithOIDCEnabled_IdportenProviderNotRequested_RedirectsToSBL()
         {
             // Arrange         
-            string gotoUrl = "http://ttd.apps.localhost/ttd/testapp";
+            string gotoUrl = "https://ttd.apps.localhost/ttd/testapp";
             
             HttpClient client = CreateClient();
 
@@ -1284,7 +1284,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string url = "/authentication/api/v1/authentication?goto=http%3A%2F%2Flocalhost";
+            string url = "/authentication/api/v1/authentication?goto=https%3A%2F%2Flocalhost";
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
             requestMessage.Headers.Add("Cookie", ".ASPXAUTH=asdasdasd");
 
@@ -1412,7 +1412,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
             SecurityToken securityToken = JwtTokenMock.GetSecurityToken(token);
             SecurityToken securityTokenExternal = JwtTokenMock.GetSecurityToken(externalToken);
 
@@ -1464,7 +1464,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
             SecurityToken securityToken = JwtTokenMock.GetSecurityToken(token);
             SecurityToken securityTokenExternal = JwtTokenMock.GetSecurityToken(externalToken);
 
@@ -1667,7 +1667,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
 
             Assert.NotNull(principal);
 
@@ -1732,7 +1732,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Get the altinn token
             string token = await response.Content.ReadAsStringAsync();
-            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token);
+            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token, testTime);
             string altinnSessionId = altinnTokenPrincipal.FindFirstValue("jti");
 
             url = "/authentication/api/v1/refresh";
@@ -1741,7 +1741,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             refreshClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             HttpResponseMessage refreshedTokenMessage = await refreshClient.GetAsync(url);
             string refreshedToken = await refreshedTokenMessage.Content.ReadAsStringAsync();
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, testTime);
 
             Assert.NotNull(principal);
             Assert.NotEqual(jti, principal.FindFirstValue("jti"));
@@ -1897,7 +1897,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string externalSessionId = null)
         {
             AuthenticationEvent authenticationEvent = new AuthenticationEvent();
-            authenticationEvent.Created = new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero);
+            authenticationEvent.Created = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
             authenticationEvent.AuthenticationMethod = authMethod;
             authenticationEvent.AuthenticationLevel = authLevel;
             authenticationEvent.OrgNumber = orgNumber;
@@ -1912,7 +1912,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupDateTimeMock()
         {
-            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
 
         private void SetupGuidMock()

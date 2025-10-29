@@ -10,7 +10,9 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Core.Problems;
 using Altinn.Authentication.Tests.Mocks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -32,7 +34,6 @@ using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
-using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -62,6 +63,7 @@ public class RequestControllerTests(
     private readonly Mock<TimeProvider> timeProviderMock = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
+    private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
     private int _paginationSize;
 
     protected override void ConfigureServices(IServiceCollection services)
@@ -269,6 +271,45 @@ public class RequestControllerTests(
     }
 
     [Fact]
+    public async Task Request_Create_BadRequest_NotDelegable()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:regnskapsforer-lonn"
+        };
+
+        // Arrange
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.AccessPackage_NotDelegable_Standard.Detail, problemDetails.Detail);
+        Assert.True(problemDetails.Extensions.Count == 2);
+        Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
+    }
+
+    [Fact]
     public async Task Request_Create_Succeed_SubResource()
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterSubRights.json";
@@ -330,7 +371,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -369,7 +410,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -416,7 +457,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -451,7 +492,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -506,6 +547,45 @@ public class RequestControllerTests(
     }
 
     [Fact]
+    public async Task AgentRequest_Create_Failed_NotDelegable()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:konkursbo-tilgangsstyrer"
+        };
+
+        // Arrange
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
+        ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal(Problem.AccessPackage_NotDelegable_Agent.Detail, problemDetails.Detail);
+        Assert.True(problemDetails.Extensions.Count == 2);
+        Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
+    }
+
+    [Fact]
     public async Task AgentRequest_CreateApprove_Failed_WrongSystemId()
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
@@ -518,7 +598,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -649,7 +729,7 @@ public class RequestControllerTests(
         string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
 
         AccessPackage accessPackage = new AccessPackage();
-        accessPackage.Urn = "urn:altinn:accesspackage:skattnaering";
+        accessPackage.Urn = "urn:altinn:accesspackage:skatt-naering";
 
         // Arrange
         CreateAgentRequestSystemUser req = new()
@@ -812,7 +892,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -890,7 +970,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -953,7 +1033,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -983,7 +1063,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -1009,7 +1089,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -1039,7 +1119,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -1065,7 +1145,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -1093,7 +1173,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -1119,7 +1199,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
         Guid wrongGuid = Guid.NewGuid();
@@ -1143,7 +1223,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -1169,7 +1249,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
         
         // Wrong PartyId!
         int partyId = 9999;
@@ -1227,7 +1307,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1285,7 +1365,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1351,7 +1431,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1416,7 +1496,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -1472,7 +1552,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1536,7 +1616,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1592,7 +1672,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1662,7 +1742,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1781,7 +1861,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1849,7 +1929,7 @@ public class RequestControllerTests(
                 
         // Approve the SystemUser
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
         string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
@@ -1860,7 +1940,7 @@ public class RequestControllerTests(
         // Vendor tries to get hold of the actual SystemUser created
         HttpClient client3 = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
-        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
         client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token3);
         string getSystemUserVendorEndpoint = $"/authentication/api/v1/systemuser/vendor/bysystem/{systemId}";
         HttpRequestMessage getListOfSystemUsersMsg = new(HttpMethod.Get, getSystemUserVendorEndpoint);
@@ -1895,7 +1975,7 @@ public class RequestControllerTests(
         Assert.Equal(req.ExternalRef, res2.ExternalRef);
 
         // Approve the SystemUser        
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
         string approveEndpoint2 = $"/authentication/api/v1/systemuser/request/{partyId}/{res2.Id}/approve";
         HttpRequestMessage approveRequestMessage2 = new(HttpMethod.Post, approveEndpoint2);
         HttpResponseMessage approveResponseMessage2 = await client2.SendAsync(approveRequestMessage2, HttpCompletionOption.ResponseHeadersRead);
@@ -1915,7 +1995,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         string systemId = "991825827_the_matrix";
@@ -1943,7 +2023,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1955,7 +2035,7 @@ public class RequestControllerTests(
         // Vendor tries to get hold of the actual SystemUser created
         HttpClient client3 = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
-        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
         client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token3);
         string getSystemUserVendorEndpoint = $"/authentication/api/v1/systemuser/vendor/bysystem/{systemId}";
         HttpRequestMessage getListOfSystemUsersMsg = new(HttpMethod.Get, getSystemUserVendorEndpoint);
@@ -1975,7 +2055,7 @@ public class RequestControllerTests(
         Guid facilitatorId = new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17"); // The faciliator Id is only used on the AM side, so the test mock does not care
 
         HttpClient deleteClient = CreateClient();
-        deleteClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        deleteClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
         HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?facilitatorId={facilitatorId}");
         HttpResponseMessage response3 = await deleteClient.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
         Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
@@ -1994,7 +2074,7 @@ public class RequestControllerTests(
         Assert.Equal(req.ExternalRef, res2.ExternalRef);
 
         // Approve the SystemUser        
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
         string approveEndpoint2 = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res2.Id}/approve";
         HttpRequestMessage approveRequestMessage2 = new(HttpMethod.Post, approveEndpoint2);
         HttpResponseMessage approveResponseMessage2 = await client2.SendAsync(approveRequestMessage2, HttpCompletionOption.ResponseHeadersRead);
@@ -2047,7 +2127,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500004;
 
@@ -2105,7 +2185,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500005;
 
@@ -2171,7 +2251,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2202,7 +2282,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2228,7 +2308,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2251,7 +2331,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2277,7 +2357,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -2333,7 +2413,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2415,7 +2495,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2774,7 +2854,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2830,7 +2910,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
         Guid wrongId = Guid.NewGuid();
         int partyId = 500000;
 
@@ -2888,7 +2968,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500009;
 
@@ -2922,7 +3002,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2949,7 +3029,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2972,7 +3052,7 @@ public class RequestControllerTests(
 
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         // Arrange
@@ -2999,7 +3079,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -3086,7 +3166,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -3152,7 +3232,7 @@ public class RequestControllerTests(
     {
         AccessPackage accessPackage = new()
         {
-            Urn = "urn:altinn:accesspackage:skattnaering"
+            Urn = "urn:altinn:accesspackage:skatt-naering"
         };
 
         CreateAgentRequestSystemUser req = new()
@@ -3177,7 +3257,7 @@ public class RequestControllerTests(
 
     private void SetupDateTimeMock()
     {
-        timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+        timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
     }
 
     private void SetupGuidMock()
@@ -3202,7 +3282,7 @@ public class RequestControllerTests(
     private static string AddTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
@@ -3210,7 +3290,7 @@ public class RequestControllerTests(
     private static string AddSystemUserRequestWriteTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
@@ -3218,7 +3298,7 @@ public class RequestControllerTests(
     private static string AddSystemUserRequesReadTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
@@ -3227,7 +3307,7 @@ public class RequestControllerTests(
     {
         HttpClient client = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         JsonSerializerOptions options = new JsonSerializerOptions()
         {

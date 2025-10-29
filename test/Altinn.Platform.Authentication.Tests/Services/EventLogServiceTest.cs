@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -85,8 +86,10 @@ namespace Altinn.Platform.Authentication.Tests.Services
             var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
+            IPAddress address = IPAddress.Parse("255.1.3.12");
+
             // Act
-            service.CreateAuthenticationEventAsync(featureManageMock.Object, externalToken, AuthenticationEventType.Authenticate, context.Object);
+            service.CreateAuthenticationEventAsync(featureManageMock.Object, externalToken, AuthenticationEventType.Authenticate, address);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Once);
         }
@@ -131,8 +134,10 @@ namespace Altinn.Platform.Authentication.Tests.Services
             var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
+            IPAddress ipadress = IPAddress.Parse("244.233.12.2");
+
             // Act
-            service.CreateAuthenticationEventAsync(featureManageMock.Object, token, AuthenticationEventType.Authenticate, context.Object);
+            service.CreateAuthenticationEventAsync(featureManageMock.Object, token, AuthenticationEventType.Authenticate, ipadress);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Never);
         }

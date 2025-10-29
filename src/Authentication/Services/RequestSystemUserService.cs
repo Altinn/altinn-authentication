@@ -17,6 +17,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Helpers;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
 using Microsoft.AspNetCore.Http;
@@ -30,6 +31,7 @@ public class RequestSystemUserService(
     IHttpContextAccessor httpContextAccessor,
     ISystemRegisterService systemRegisterService,
     IPartiesClient partiesClient,
+    IAccessManagementClient _accessManagemetClient,
     IPDP pdp,
     ISystemRegisterRepository systemRegisterRepository,
     IRequestRepository requestRepository,
@@ -120,11 +122,11 @@ public class RequestSystemUserService(
 
         if (createRequest.AccessPackages is not null && createRequest.AccessPackages.Count > 0)
         {
-            Result<bool> valPackages = systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo);
+            Result<bool> valPackages = await systemUserService.ValidateAccessPackages(createRequest.AccessPackages, systemInfo, isAgentRequest: false);
             if (valPackages.IsProblem)
             {
                 return valPackages.Problem;
-            }
+            }                        
         }
 
         // Set an empty ExternalRef to be equal to the PartyOrgNo
@@ -206,7 +208,7 @@ public class RequestSystemUserService(
             return Problem.SystemUser_MissingAccessPackage;
         }
 
-        Result<bool> valPackages = systemUserService.ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo);
+        Result<bool> valPackages = await systemUserService.ValidateAccessPackages(createAgentRequest.AccessPackages, systemInfo, isAgentRequest: true);
         if (valPackages.IsProblem)
         {
             return valPackages.Problem;
