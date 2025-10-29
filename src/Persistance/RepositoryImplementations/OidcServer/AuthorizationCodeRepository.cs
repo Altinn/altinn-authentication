@@ -110,7 +110,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "AuthorizationCodeRepository.GetAsync failed for code {Code}", code);
+                _logger.LogError(ex, "AuthorizationCodeRepository.GetAsync failed for code_sha256={CodeHash}", Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(code))));
                 throw;
             }
         }
