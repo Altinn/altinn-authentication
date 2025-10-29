@@ -386,8 +386,9 @@ namespace Altinn.Platform.Authentication.Services
                     }
 
                     // Not supported yet
-                    _logger.LogWarning("private_key_jwt authentication attempted but not yet supported for client {ClientId}", 
-                        auth.ClientId == null ? null : auth.ClientId.Replace("\r", "").Replace("\n", ""));
+                    _logger.LogWarning(
+                        "private_key_jwt authentication attempted but not yet supported for client {ClientId}", 
+                        auth.ClientId == null ? null : auth.ClientId.Replace("\r", string.Empty).Replace("\n", string.Empty));
                     return (null, TokenResult.InvalidClient("private_key_jwt authentication not supported"));
 
                 case TokenClientAuthType.None:
