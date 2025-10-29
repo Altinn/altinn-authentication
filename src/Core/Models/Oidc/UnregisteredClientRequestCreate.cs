@@ -35,7 +35,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// <summary>
         /// The user agent hash of the creator of the unregistered client request.
         /// </summary>
-        public string? UserAgentHash { get; set; }
+        public string? UserAgentHash { get; init; }
 
         /// <summary>
         /// Correlation ID to trace the request. Used for logging and tracking purposes.
