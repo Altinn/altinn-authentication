@@ -24,6 +24,7 @@ namespace AltinnCore.Authentication.JwtCookie
     public class JwtCookieHandler : AuthenticationHandler<JwtCookieOptions>
     {
         private readonly IOptionsMonitor<OidcProviderSettings> _oidcProviderSettings;
+        private readonly TimeProvider _timeProvider;
 
         /// <summary>
         /// The default constructor
@@ -32,14 +33,17 @@ namespace AltinnCore.Authentication.JwtCookie
         /// <param name="oidcProviderSettings">The settings related to oidc providers</param>
         /// <param name="logger">The logger</param>
         /// <param name="encoder">The Url encoder</param>
+        /// <param name="timeProvider">The timeprovider</param>
         public JwtCookieHandler(
             IOptionsMonitor<JwtCookieOptions> options,
             IOptionsMonitor<OidcProviderSettings> oidcProviderSettings,
             ILoggerFactory logger,
-            UrlEncoder encoder)
+            UrlEncoder encoder,
+            TimeProvider timeProvider)
             : base(options, logger, encoder)
         {
             _oidcProviderSettings = oidcProviderSettings;
+            _timeProvider = timeProvider;
         }
 
         /// <summary>
@@ -126,6 +130,22 @@ namespace AltinnCore.Authentication.JwtCookie
                                 ClockSkew = TimeSpan.FromSeconds(10)
                             };
 
+                            validationParameters.LifetimeValidator = (nbf, exp, _, tvp) =>
+                            {
+                                var now = _timeProvider.GetUtcNow(); // DateTimeOffset
+                                if (nbf.HasValue && nbf.Value > now + tvp.ClockSkew)
+                                {
+                                    return false;
+                                }
+
+                                if (exp.HasValue && exp.Value < now - tvp.ClockSkew)
+                                {
+                                    return false;
+                                }
+
+                                return true;
+                            };
+
                             OpenIdConnectConfiguration configuration = await GetOidcConfiguration(provider.Value.WellKnownConfigEndpoint);
                             if (configuration != null)
                             {
@@ -144,6 +164,22 @@ namespace AltinnCore.Authentication.JwtCookie
                     // Use standard configured OIDC config for JTWCookie provider from startup.
                     validationParameters = Options.TokenValidationParameters.Clone();
                     validationParameters.ClockSkew = TimeSpan.FromSeconds(10);
+                    validationParameters.LifetimeValidator = (nbf, exp, _, tvp) =>
+                    {
+                        var now = _timeProvider.GetUtcNow(); // DateTimeOffset
+                        if (nbf.HasValue && nbf.Value > now + tvp.ClockSkew)
+                        {
+                            return false;
+                        }
+
+                        if (exp.HasValue && exp.Value < now - tvp.ClockSkew)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    };
+
                     OpenIdConnectConfiguration configuration = await Options.ConfigurationManager.GetConfigurationAsync(Context.RequestAborted);
 
                     if (configuration != null)

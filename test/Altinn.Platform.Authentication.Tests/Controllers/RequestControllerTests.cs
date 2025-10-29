@@ -34,7 +34,6 @@ using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
-using App.IntegrationTests.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -64,6 +63,7 @@ public class RequestControllerTests(
     private readonly Mock<TimeProvider> timeProviderMock = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
+    private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
     private int _paginationSize;
 
     protected override void ConfigureServices(IServiceCollection services)
@@ -970,7 +970,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -1033,7 +1033,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -1089,7 +1089,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -1145,7 +1145,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -1199,7 +1199,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
         Guid wrongGuid = Guid.NewGuid();
@@ -1249,7 +1249,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
         
         // Wrong PartyId!
         int partyId = 9999;
@@ -1307,7 +1307,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1365,7 +1365,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1431,7 +1431,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1496,7 +1496,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -1552,7 +1552,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1616,7 +1616,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1672,7 +1672,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1742,7 +1742,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1861,7 +1861,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1929,7 +1929,7 @@ public class RequestControllerTests(
                 
         // Approve the SystemUser
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
         string approveEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/approve";
@@ -1940,7 +1940,7 @@ public class RequestControllerTests(
         // Vendor tries to get hold of the actual SystemUser created
         HttpClient client3 = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
-        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
         client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token3);
         string getSystemUserVendorEndpoint = $"/authentication/api/v1/systemuser/vendor/bysystem/{systemId}";
         HttpRequestMessage getListOfSystemUsersMsg = new(HttpMethod.Get, getSystemUserVendorEndpoint);
@@ -1975,7 +1975,7 @@ public class RequestControllerTests(
         Assert.Equal(req.ExternalRef, res2.ExternalRef);
 
         // Approve the SystemUser        
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
         string approveEndpoint2 = $"/authentication/api/v1/systemuser/request/{partyId}/{res2.Id}/approve";
         HttpRequestMessage approveRequestMessage2 = new(HttpMethod.Post, approveEndpoint2);
         HttpResponseMessage approveResponseMessage2 = await client2.SendAsync(approveRequestMessage2, HttpCompletionOption.ResponseHeadersRead);
@@ -2023,7 +2023,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2035,7 +2035,7 @@ public class RequestControllerTests(
         // Vendor tries to get hold of the actual SystemUser created
         HttpClient client3 = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
-        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+        string token3 = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
         client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token3);
         string getSystemUserVendorEndpoint = $"/authentication/api/v1/systemuser/vendor/bysystem/{systemId}";
         HttpRequestMessage getListOfSystemUsersMsg = new(HttpMethod.Get, getSystemUserVendorEndpoint);
@@ -2055,7 +2055,7 @@ public class RequestControllerTests(
         Guid facilitatorId = new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17"); // The faciliator Id is only used on the AM side, so the test mock does not care
 
         HttpClient deleteClient = CreateClient();
-        deleteClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        deleteClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
         HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?facilitatorId={facilitatorId}");
         HttpResponseMessage response3 = await deleteClient.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
         Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
@@ -2074,7 +2074,7 @@ public class RequestControllerTests(
         Assert.Equal(req.ExternalRef, res2.ExternalRef);
 
         // Approve the SystemUser        
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
         string approveEndpoint2 = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res2.Id}/approve";
         HttpRequestMessage approveRequestMessage2 = new(HttpMethod.Post, approveEndpoint2);
         HttpResponseMessage approveResponseMessage2 = await client2.SendAsync(approveRequestMessage2, HttpCompletionOption.ResponseHeadersRead);
@@ -2127,7 +2127,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500004;
 
@@ -2185,7 +2185,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500005;
 
@@ -2251,7 +2251,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2308,7 +2308,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2357,7 +2357,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
         int partyId = 500000;
 
@@ -2413,7 +2413,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2854,7 +2854,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -2910,7 +2910,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
         Guid wrongId = Guid.NewGuid();
         int partyId = 500000;
 
@@ -2968,7 +2968,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500009;
 
@@ -3029,7 +3029,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -3079,7 +3079,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -3166,7 +3166,7 @@ public class RequestControllerTests(
 
         //// Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
 
         int partyId = 500000;
 
@@ -3257,7 +3257,7 @@ public class RequestControllerTests(
 
     private void SetupDateTimeMock()
     {
-        timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+        timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
     }
 
     private void SetupGuidMock()
@@ -3282,7 +3282,7 @@ public class RequestControllerTests(
     private static string AddTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
@@ -3290,7 +3290,7 @@ public class RequestControllerTests(
     private static string AddSystemUserRequestWriteTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
@@ -3298,7 +3298,7 @@ public class RequestControllerTests(
     private static string AddSystemUserRequesReadTestTokenToClient(HttpClient client)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
@@ -3307,7 +3307,7 @@ public class RequestControllerTests(
     {
         HttpClient client = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, TestTime);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         JsonSerializerOptions options = new JsonSerializerOptions()
         {

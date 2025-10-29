@@ -33,6 +33,7 @@ using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
+using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
 using Azure;
@@ -49,6 +50,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     public class SystemUserClientDelegationControllerTest(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
+        private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
         private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
         private readonly Mock<ISystemUserRepository> _systemUserRepository = new();
@@ -103,6 +105,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             SetupGuidMock();
             SetupSystemUserRepositoryMock();
             SetupSystemUserRepositoryMock_AllSystemUsers();
+            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
         }
 
         private static string GetConfigPath()
@@ -197,7 +200,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
@@ -214,7 +217,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
@@ -239,7 +242,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=9a5ef699-84c4-4ac8-a16b-1ee9e32b8cc9");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
@@ -258,7 +261,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
@@ -277,7 +280,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=d54a721a-b231-4e28-9245-782697ed2bbb");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
@@ -298,7 +301,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=fd9d93c7-1dd7-45bc-9772-6ba977b3cd36");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue(
                                                         "Bearer", 
-                                                        PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+                                                        PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
@@ -315,7 +318,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
         }
@@ -327,7 +330,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
@@ -344,7 +347,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
@@ -361,7 +364,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=fd9d93c7-1dd7-45bc-9772-6ba977b3cd36");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
@@ -377,7 +380,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
@@ -402,7 +405,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=9a5ef699-84c4-4ac8-a16b-1ee9e32b8cc9");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
@@ -421,7 +424,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
@@ -440,7 +443,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=d54a721a-b231-4e28-9245-782697ed2bbb");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
@@ -459,7 +462,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
@@ -479,7 +482,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             ClientDelegationResponse clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
@@ -496,7 +499,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
 
             HttpResponseMessage removeClientResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
@@ -537,7 +540,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             };
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             clientListRequest.Content = new StringContent(
                                     JsonSerializer.Serialize(agentDelegation, _options),
                                     Encoding.UTF8,
@@ -576,7 +579,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             };
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             clientListRequest.Content = new StringContent(
                         JsonSerializer.Serialize(agentDelegation, _options),
                         Encoding.UTF8,
@@ -602,7 +605,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = new("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
@@ -616,7 +619,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid clientId = new("f1c7ca59-5bf9-4036-bdb8-15062d992eaa");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent=88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
@@ -636,7 +639,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = new Guid("65055192-f4a9-4b47-bc24-46c4b97081c1");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
@@ -656,7 +659,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read, altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read, altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
@@ -676,7 +679,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = new("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             ClientDelegationResponse clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
@@ -693,7 +696,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage removeClientResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
@@ -720,7 +723,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = new Guid("d54a721a-b231-4e28-9245-782697ed2bbb");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage removeClientResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
@@ -742,7 +745,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = new Guid("9a5ef699-84c4-4ac8-a16b-1ee9e32b8cc9");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage removeClientResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
@@ -764,7 +767,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid systemUserId = new("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(2234, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
@@ -778,7 +781,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Guid clientId = new("f1c7ca59-5bf9-4036-bdb8-15062d992eaa");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent=88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144&client={clientId}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
@@ -795,7 +798,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             string orgnummer = "123456789";
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents?party={orgnummer}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage systemUsersResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
             List<SystemUser> result = JsonSerializer.Deserialize<List<SystemUser>>(await systemUsersResponse.Content.ReadAsStringAsync(), _options);
 
@@ -811,7 +814,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             string orgnummer = "123447789";
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents?party={orgnummer}");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage systemUsersResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);          
 
             Assert.Equal(HttpStatusCode.NotFound, systemUsersResponse.StatusCode);
