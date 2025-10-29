@@ -7,8 +7,8 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
     /// </summary>
     public interface IOidcSessionRepository
     {
-        /// <summary>Create a new session or refresh an existing matching one (by Provider+UpstreamSub), returning the current SID.</summary>
-        Task<OidcSession> UpsertByUpstreamSubAsync(OidcSessionCreate create, CancellationToken cancellationToken = default);
+        /// <summary>Create a new session</summary>
+        Task<OidcSession> CreateSession(OidcSessionCreate create, CancellationToken cancellationToken = default);
 
         /// <summary>Load by SID (for logout / introspection).</summary>
         Task<OidcSession?> GetBySidAsync(string sid, CancellationToken cancellationToken = default);

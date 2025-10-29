@@ -19,31 +19,11 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         private readonly TimeProvider _timeProvider = timeProvider;
 
         /// <summary>
-        /// Upsert an OIDC session based on the upstream subject identifier.
+        /// Create OIDC session.
         /// </summary>
-        public async Task<OidcSession> UpsertByUpstreamSubAsync(OidcSessionCreate create, CancellationToken cancellationToken = default)
+        public async Task<OidcSession> CreateSession(OidcSessionCreate create, CancellationToken cancellationToken = default)
         {
             const string SQL = /*strpsql*/ @"
-                WITH existing AS (
-                    SELECT sid
-                    FROM oidcserver.oidc_session
-                    WHERE provider = @provider AND upstream_sub = @upstream_sub
-                    LIMIT 1
-                ),
-                upd AS (
-                    UPDATE oidcserver.oidc_session s
-                    SET acr                  = @acr,
-                        auth_time            = @auth_time,
-                        amr                  = @amr,
-                        updated_at           = @now,
-                        last_seen_at         = @now,
-                        expires_at           = @expires_at,
-                        upstream_session_sid = COALESCE(@upstream_session_sid, s.upstream_session_sid),
-                        provider_claims        = COALESCE(@provider_claims, s.provider_claims)
-                    FROM existing e
-                    WHERE s.sid = e.sid
-                    RETURNING s.*
-                )
                 INSERT INTO oidcserver.oidc_session (
                     sid, session_handle_hash, upstream_issuer, upstream_sub, subject_id, external_id,
                     subject_party_uuid, subject_party_id, subject_user_id, subject_user_name,
@@ -57,7 +37,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                     @provider, @acr, @auth_time, @amr, @scopes,
                     @now, @now, @now, @expires_at,
                     @upstream_session_sid, @created_by_ip, @user_agent_hash, @provider_claims
-                WHERE NOT EXISTS (SELECT 1 FROM existing)
                 RETURNING *;
             ";
 

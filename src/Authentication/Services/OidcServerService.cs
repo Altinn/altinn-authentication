@@ -1022,7 +1022,7 @@ namespace Altinn.Platform.Authentication.Services
                 externalId = userIdenity.ExternalIdentity;
             }
 
-            OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
+            OidcSession session = await _oidcSessionRepo.CreateSession(
                     new OidcSessionCreate
                     {
                         Sid = CryptoHelpers.RandomBase64Url(32),
@@ -1077,7 +1077,7 @@ namespace Altinn.Platform.Authentication.Services
                 externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
             }
 
-            OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
+            OidcSession session = await _oidcSessionRepo.CreateSession(
                 new OidcSessionCreate
                 {
                     Sid = CryptoHelpers.RandomBase64Url(32),
