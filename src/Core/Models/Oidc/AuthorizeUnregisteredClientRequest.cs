@@ -8,7 +8,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
     public sealed class AuthorizeUnregisteredClientRequest
     {
         /// <summary>
-        /// Defines the GoTo parameter sendt in the authorize request.
+        /// Defines the GoTo parameter sent in the authorize request.
         /// </summary>
         public string? GoTo { get; init; }
 
