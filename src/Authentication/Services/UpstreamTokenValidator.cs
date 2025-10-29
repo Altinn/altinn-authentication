@@ -97,8 +97,7 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // Compare constant-time to avoid timing leaks.
-            if (!ConstantTimeEquals(expectedNonce, actual) &&
-                !ConstantTimeEquals(Base64UrlSha256(expectedNonce), actual))
+            if (!ConstantTimeEquals(expectedNonce, actual))
             {
                 _logger.LogWarning("ID token nonce mismatch.");
                 throw new SecurityTokenValidationException("Invalid nonce.");
@@ -116,17 +115,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return CryptographicOperations.FixedTimeEquals(a, b);
-        }
-
-        private static string Base64UrlSha256(string input)
-        {
-            byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-
-            // Base64Url without padding
-            return Convert.ToBase64String(hash)
-                .TrimEnd('=')
-                .Replace('+', '-')
-                .Replace('/', '_');
         }
     }
 }
