@@ -227,7 +227,7 @@ namespace Altinn.Platform.Authentication.Helpers
                     return Enum.AuthenticationMethod.EIDAS;
                 case "maskinporten":
                     return Enum.AuthenticationMethod.MaskinPorten;
-                case "testid":
+                case "TestID":
                     return AuthenticationMethod.IdportenTestId;
                 case "SelfIdentified":
                     return AuthenticationMethod.SelfIdentified;
@@ -257,7 +257,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 AuthenticationMethod.BankIDMobil => "BankID Mobil",
                 AuthenticationMethod.EIDAS => "eIDAS",
                 AuthenticationMethod.MaskinPorten => "maskinporten",
-                AuthenticationMethod.IdportenTestId => "testid",
+                AuthenticationMethod.IdportenTestId => "TestID",
                 AuthenticationMethod.AltinnPIN => "AltinnPIN",
                 AuthenticationMethod.SelfIdentified => "SelfIdentified",
                 AuthenticationMethod.MinIDApp => "Minid-APP",
