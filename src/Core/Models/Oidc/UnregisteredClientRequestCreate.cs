@@ -28,7 +28,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         public required string GotoUrl {  get; init; }
 
         /// <summary>
-        /// Defines the IP adress of the creator of the unregistered client request.
+        /// Defines the IP address of the creator of the unregistered client request.
         /// </summary>
         public IPAddress? CreatedByIp { get; init; }
 
