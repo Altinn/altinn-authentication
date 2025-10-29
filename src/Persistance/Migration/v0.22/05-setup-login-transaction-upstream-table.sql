@@ -1,4 +1,4 @@
-﻿-- Ensure schema exists
+﻿ -- Ensure schema exists
 CREATE SCHEMA IF NOT EXISTS oidcserver;
 
 -- Upstream login transaction (Altinn → IdP)
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS oidcserver.login_transaction_upstream (
     REFERENCES oidcserver.unregistered_client_request (request_id)
     ON DELETE CASCADE,
 
-  -- Enforce "exactly one of request_id or unregistered_client__request_id is set"
+ -- Enforce "exactly one of request_id or unregistered_client_request_id is set"
   CONSTRAINT chk_up_downstream_xor
     CHECK (num_nonnulls(request_id, unregistered_client_request_id) = 1),
 

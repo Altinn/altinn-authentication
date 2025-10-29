@@ -25,7 +25,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// <summary>
         /// Defines the GoTo url where the user should be redirected after the request is processed.
         /// </summary>
-        public string? GotoUrl {  get; init; }
+        public required string GotoUrl {  get; init; }
 
         /// <summary>
         /// Defines the IP adress of the creator of the unregistered client request.
