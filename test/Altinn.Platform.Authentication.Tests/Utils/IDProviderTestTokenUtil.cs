@@ -26,7 +26,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 RefreshTokenExpiresIn = 600,
                 Scope = string.Join(' ', scope),
                 IdToken = GetIdPortenIDToken(sub, pid, locale, nonce, sid, client_id, acr, amr, auth_time),
-                AccessToken = GetIdPortenAccessToken(sub, "unspecificed", acr, client_id, "virksomhetssertifikat", digDirOrgNo, scope, pid, auth_time)
+                AccessToken = GetIdPortenAccessToken(sub, "unspecified", acr, client_id, "virksomhetssertifikat", digDirOrgNo, scope, pid, auth_time)
             };
             return response;
         }

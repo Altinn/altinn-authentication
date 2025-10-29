@@ -15,8 +15,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
     {
         public Task<UserProfile> GetUserProfile(UserProfileLookup profileLookup)
         {
-            UserProfile userProfile = new UserProfile();
-            List<UserProfile> profileList = new List<UserProfile>();
+            UserProfile userProfile = new();
+            List<UserProfile> profileList = [];
             string profilesPath = GetUserProfilePath();
             if (File.Exists(profilesPath))
             {
@@ -41,9 +41,12 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 userProfile = profileList.Find(p => p.UserId == profileLookup.UserId);
                 if (userProfile == null)
                 {
-                    userProfile.Party = new Party() { PartyId = profileLookup.UserId };
-                    userProfile.UserId = profileLookup.UserId;
-                    userProfile.UserUuid = Guid.NewGuid();
+                    userProfile = new UserProfile
+                    {
+                        Party = new Party() { PartyId = profileLookup.UserId },
+                        UserId = profileLookup.UserId,
+                        UserUuid = Guid.NewGuid()
+                    };
                 }
 
                 return Task.FromResult(userProfile);
