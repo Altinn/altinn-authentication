@@ -38,6 +38,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             _fakeTime = new(DateTimeOffset.Parse("2025-03-01T08:00:00Z")); // any stable baseline for tests
 
             services.AddSingleton<IOidcProvider, Mocks.OidcProviderAdvancedMock>();
+            services.AddSingleton<TimeProvider>(_fakeTime);
 
             string configPath = GetConfigPath();
 

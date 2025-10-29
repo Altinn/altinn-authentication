@@ -10,12 +10,12 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
         /// <summary>
         /// The unique identifier for the request.
         /// </summary>
-        public Guid RequestId { get; init; }
+        public required Guid RequestId { get; init; }
 
         /// <summary>
         /// When the request expires.
         /// </summary>
-        public DateTimeOffset ExpiresAt { get; init; }
+        public required DateTimeOffset ExpiresAt { get; init; }
 
         /// <summary>
         /// The optional issuer of the unregistered client.
