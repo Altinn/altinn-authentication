@@ -21,7 +21,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             if (File.Exists(profilesPath))
             {
                 string content = File.ReadAllText(profilesPath);
-                profileList = JsonSerializer.Deserialize<List<UserProfile>>(content);
+                profileList = JsonSerializer.Deserialize<List<UserProfile>>(content) ?? new List<UserProfile>();
             }
 
             if (profileLookup.Ssn != null)
