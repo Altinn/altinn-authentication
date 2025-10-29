@@ -52,9 +52,9 @@ namespace Altinn.Platform.Authentication.Tests.Utils
                 .Distinct()
                 .ToArray();
 
-                if (amr.Length > 0)
+                if (amrr.Length > 0)
                 {
-                    string amrJson = JsonSerializer.Serialize(amr); // e.g. ["TestID","pwd"]
+                    string amrJson = JsonSerializer.Serialize(amrr); // e.g. ["TestID","pwd"]
                     claims.Add(new Claim("amr", amrJson, JsonClaimValueTypes.JsonArray));
                 }
             }
