@@ -24,8 +24,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task<UpstreamLoginTransaction> InsertAsync(UpstreamLoginTransactionCreate create, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(create);
-            bool hasDownstream = create.RequestId != Guid.Empty; 
-            bool hasUnregistered = create.UnregisteredClientRequestId != Guid.Empty; 
+            bool hasDownstream = create.RequestId != null; 
+            bool hasUnregistered = create.UnregisteredClientRequestId != null; 
 
             // Exactly one of hasDownstream or hasUnregistered must be true (not both, not neither)
             if (hasDownstream == hasUnregistered) 
@@ -514,7 +514,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             };
         }
 
-        private static object DbNullIfEmpty(Guid value)
-    => value == Guid.Empty ? DBNull.Value : value;
+        private static object DbNullIfEmpty(Guid? value)
+    => value == null ? DBNull.Value : value.Value;
     }
 }

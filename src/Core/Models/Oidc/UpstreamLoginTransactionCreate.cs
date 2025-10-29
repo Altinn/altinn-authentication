@@ -5,10 +5,10 @@ namespace Altinn.Platform.Authentication.Core.Models.Oidc
     public sealed class UpstreamLoginTransactionCreate
     {
         // FK to downstream request
-        public Guid RequestId { get; init; }
+        public Guid? RequestId { get; init; }
 
         /// FK to client less request
-        public Guid UnregisteredClientRequestId { get; init; }
+        public Guid? UnregisteredClientRequestId { get; init; }
 
         // lifecycle
         public required DateTimeOffset ExpiresAt { get; init; }   // e.g., now + 10 min
