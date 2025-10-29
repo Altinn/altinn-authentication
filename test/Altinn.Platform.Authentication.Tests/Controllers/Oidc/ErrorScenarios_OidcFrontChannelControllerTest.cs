@@ -95,10 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            var loc = resp.Headers.Location!;
-            Assert.Contains("error=invalid_scope", loc.Query);
-            Assert.Contains("state=s123", loc.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -122,8 +119,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";  // challenge missing
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -148,9 +144,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=plain"; // not allowed
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
-        }
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);        }
 
         [Fact]
         public async Task Authorize_PromptNoneWithLogin_InvalidRequest()
@@ -175,8 +169,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -202,8 +195,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -229,8 +221,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -256,8 +247,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -283,8 +273,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -309,8 +298,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=unsupported_response_type", resp.Headers.Location!.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -337,9 +325,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             var resp = await client.GetAsync(url);
             
-            // You may choose to 400 locally (safer) or still 302 back to the provided redirect_uri if you validated it as absolute.
-            // Here we assert 400 local error since the redirect_uri is not one of the registered URIs.
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         [Fact]
@@ -365,8 +351,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=S256";
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.Found, resp.StatusCode);
-            Assert.Contains("error=invalid_request", resp.Headers.Location!.Query);
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         }
 
         private static string GetConfigPath()

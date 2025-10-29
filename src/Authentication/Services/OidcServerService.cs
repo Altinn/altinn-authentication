@@ -1108,11 +1108,6 @@ namespace Altinn.Platform.Authentication.Services
         private static AuthorizeResult Fail(AuthorizeRequest req, AuthorizeValidationError e, OidcClient? oidcClient)
         {
             // If we can safely redirect back, do an OIDC error redirect; else local error.
-            if (oidcClient != null && req.RedirectUri is not null && req.RedirectUri.IsAbsoluteUri)
-            {
-                return AuthorizeResult.ErrorRedirect(req.RedirectUri, e.Error, e.Description, req.State);
-            }
-
             return AuthorizeResult.LocalError(400, e.Error, e.Description);
         }
 
