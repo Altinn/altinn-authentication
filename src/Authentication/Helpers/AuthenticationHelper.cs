@@ -683,15 +683,14 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <summary>
         /// Verifies if an ACR upgrade is needed based on the current and requested ACR values.
         /// </summary>
-        internal static bool NeedAcrUpgrade(string? currentAcr, string[] reqeuestedAcr)
+        internal static bool NeedAcrUpgrade(string? currentAcr, string[] requestedAcr)
         {
-           string requestAcr = string.Join(string.Empty, reqeuestedAcr);
            if (string.IsNullOrEmpty(currentAcr))
            {
                return false;
            }
-
-           if (requestAcr.Equals(IdPortenAcrHigh) && (string.IsNullOrEmpty(currentAcr) || !currentAcr.Equals(IdPortenAcrHigh)))
+           
+           if (requestedAcr.Contains(IdPortenAcrHigh, StringComparer.OrdinalIgnoreCase) && !currentAcr.Equals(IdPortenAcrHigh, StringComparison.OrdinalIgnoreCase))
            {
                 return true;
            }
