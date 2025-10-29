@@ -385,8 +385,9 @@ namespace Altinn.Platform.Authentication.Services
                         return (null, TokenResult.InvalidClient("Unknown client_id"));
                     }
 
-                    // validate JWT here...
-                    break;
+                    // Not supported yet
+                    _logger.LogWarning("private_key_jwt authentication attempted but not yet supported for client {ClientId}", auth.ClientId);
+                    return (null, TokenResult.InvalidClient("private_key_jwt authentication not supported"));
 
                 case TokenClientAuthType.None:
                     client = await clientRepo.GetClientAsync(auth.ClientId!, ct);
