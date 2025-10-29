@@ -144,7 +144,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 "&code_challenge_method=plain"; // not allowed
 
             var resp = await client.GetAsync(url);
-            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);        }
+            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);        
+        }
 
         [Fact]
         public async Task Authorize_PromptNoneWithLogin_InvalidRequest()
