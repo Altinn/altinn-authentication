@@ -209,8 +209,8 @@ public interface IRequestSystemUser
     /// <param name="orgno">The organisation number</param>
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
-    /// <returns>bool</returns>
-    Task<Result<bool>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken);
+    /// <returns>List of RequestSystemResponse</returns>
+    Task<Result<List<RequestSystemResponse>>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Gets a list of all the pending Agent Requests for the given organisation number
@@ -218,6 +218,6 @@ public interface IRequestSystemUser
     /// <param name="orgno">The organisation number</param>
     /// <param name="userId">The logged in user</param>
     /// <param name="cancellationToken">The Cancellationtoken</param>
-    /// <returns>bool</returns>
-    Task<Result<bool>> GetPendingAgentRequests(string orgno, int userId, CancellationToken cancellationToken);
+    /// <returns>List of AgentRequestSystemResponse</returns>
+    Task<Result<List<AgentRequestSystemResponse>>> GetPendingAgentRequests(string orgno, int userId, CancellationToken cancellationToken);
 }

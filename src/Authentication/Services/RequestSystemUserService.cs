@@ -985,26 +985,40 @@ public class RequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return await requestRepository.SetRequestEscalated(requestId,userId, cancellationToken);
     }
 
     /// <inheritdoc/>
-    public Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return await requestRepository.SetRequestEscalated(requestId, userId, cancellationToken);
     }
 
     /// <inheritdoc/>
-    public Task<Result<bool>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<RequestSystemResponse>>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        List<RequestSystemResponse> theList = [];
+        Result<List<RequestSystemResponse>> result = await requestRepository.GetAllPendingStandardRequests(orgno,cancellationToken);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        return theList;
     }
 
     /// <inheritdoc/>
-    public Task<Result<bool>> GetPendingAgentRequests(string orgno, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentRequestSystemResponse>>> GetPendingAgentRequests(string orgno, int userId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        List<AgentRequestSystemResponse> theList = [];
+        Result<List<AgentRequestSystemResponse>> result = await requestRepository.GetAllPendingAgentRequests(orgno, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        return theList;
     }
 }
