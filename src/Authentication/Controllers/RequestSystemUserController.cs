@@ -466,7 +466,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
-    [HttpPost("{party}/{requestId}/approve/escalate")]
+    [HttpPost("{party}/{requestId}/escalate")]
     public async Task<ActionResult<RequestSystemResponse>> EscalateApprovalSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
@@ -521,7 +521,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
-    [HttpPost("agent/{party}/{requestId}/approve/escalate")]
+    [HttpPost("agent/{party}/{requestId}/escalate")]
     public async Task<ActionResult<AgentRequestSystemResponse>> EscalateApprovalAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
@@ -652,6 +652,60 @@ public class RequestSystemUserController : ControllerBase
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.RejectSystemUser(party, requestId, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Get an unpaginated list of the Pending Standard Requests
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="orgno">the party org no, in string format</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpGet("{party}/{orgno}/pending")]
+    public async Task<ActionResult<List<RequestSystemResponse>>> GetPendingStandardRequests(int party, string orgno, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.GetPendingStandardRequests(orgno, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Get an unpaginated list of the Pending Standard Requests
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="orgno">the party org no, in string format</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpGet("agent/{party}/{orgno}/pending")]
+    public async Task<ActionResult<List<RequestSystemResponse>>> GetPendingAgentRequests(int party, string orgno, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.GetPendingAgentRequests(orgno, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

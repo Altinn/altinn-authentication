@@ -945,7 +945,7 @@ public class RequestSystemUserService(
             };       
     }
 
-    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType,CancellationToken cancellationToken)
+    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
     {
         Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
         if (party is null)
@@ -992,6 +992,18 @@ public class RequestSystemUserService(
 
     /// <inheritdoc/>
     public Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/>
+    public Task<Result<bool>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/>
+    public Task<Result<bool>> GetPendingAgentRequests(string orgno, int userId, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
