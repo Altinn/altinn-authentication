@@ -457,7 +457,8 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Approves the systemuser requet and creates a system user
+    /// Escalates the Approval of the systemuser request, since the logged in user lack the AccessManager Role
+    /// The request is forwarded to the Portal where it will be visible for users with the AccessManager Role
     /// </summary>
     /// <param name="party">the partyId</param>
     /// <param name="requestId">The UUID of the request to be approved</param>
@@ -511,7 +512,8 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Approves the systemuser request of type agent and creates a system user of type agent
+    /// Escalates the Approval of the Agent Systemuser request, since the logged in user lack the AccessManager Role
+    /// The request is forwarded to the Portal where it will be visible for users with the AccessManager Role
     /// </summary>
     /// <param name="party">the partyId</param>
     /// <param name="requestId">The UUID of the request to be approved</param>

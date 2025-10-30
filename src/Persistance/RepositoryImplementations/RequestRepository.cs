@@ -165,6 +165,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created
             FROM business_application.request r
             WHERE r.external_ref = @external_ref
@@ -208,6 +209,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created
             FROM business_application.request r
             WHERE r.external_ref = @external_ref
@@ -251,6 +253,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created 
             FROM business_application.request r
             WHERE r.id = @request_id
@@ -290,6 +293,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created 
             FROM business_application.request r
             WHERE r.id = @request_id
@@ -382,10 +386,16 @@ public class RequestRepository : IRequestRepository
     private static ValueTask<RequestSystemResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
+        bool escalated = false;
 
         if (!reader.IsDBNull("redirect_urls"))
         {
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
+        }
+
+        if (!reader.IsDBNull("escalated"))
+        {
+            escalated = reader.GetFieldValue<bool>("escalated");
         }
 
         string integrationTitle = reader.IsDBNull("integration_title")
@@ -402,6 +412,7 @@ public class RequestRepository : IRequestRepository
             Rights = reader.IsDBNull("rights") ? [] : reader.GetFieldValue<List<Right>>("rights"),
             AccessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
+            Escalated = escalated,
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
         };
@@ -417,10 +428,16 @@ public class RequestRepository : IRequestRepository
     private static ValueTask<AgentRequestSystemResponse> ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
+        bool escalated = false;
 
         if (!reader.IsDBNull("redirect_urls"))
         {
             redirect_url = reader.GetFieldValue<string?>("redirect_urls");
+        }
+
+        if (!reader.IsDBNull("escalated"))
+        {
+            escalated = reader.GetFieldValue<bool>("escalated");
         }
 
         string integrationTitle = reader.IsDBNull("integration_title")
@@ -437,6 +454,7 @@ public class RequestRepository : IRequestRepository
             AccessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
+            Escalated = escalated,
             RedirectUrl = redirect_url
         };
 
@@ -462,6 +480,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created
             FROM business_application.request r
             WHERE r.system_id = @system_id
@@ -499,6 +518,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created
             FROM business_application.request r
             WHERE r.system_id = @system_id
@@ -656,6 +676,7 @@ public class RequestRepository : IRequestRepository
                 accesspackages,
                 request_status,
                 redirect_urls,
+                escalated,
                 created 
             FROM business_application.request_archive r
             WHERE r.id = @request_id
