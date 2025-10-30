@@ -354,6 +354,38 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
+    public async Task<bool> SetRequestEscalated(Guid requestId, int userId, CancellationToken cancellationToken = default)
+    {
+        string changed_by = "userId:" + userId.ToString();
+
+        const string QUERY = /*strpsql*/"""
+            UPDATE business_application.request
+            SET escalated = true,
+                last_changed = CURRENT_TIMESTAMP,
+                changed_by = @changed_by
+            WHERE business_application.request.id = @requestId
+            """;
+        await using NpgsqlConnection conn = await _dataSource.OpenConnectionAsync(cancellationToken);
+
+        try
+        {
+            await using NpgsqlCommand command = new NpgsqlCommand(QUERY, conn);
+
+            command.Parameters.AddWithValue("requestId", requestId);
+            command.Parameters.AddWithValue("changed_by", changed_by);
+
+            bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // ApproveAndCreateSystemUser // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
     public async Task<bool> RejectSystemUser(Guid requestId, int userId, CancellationToken cancellationToken = default)
     {
         string changed_by = "userId:" + userId.ToString();
@@ -506,6 +538,46 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
+    public async Task<List<RequestSystemResponse>> GetAllPendingStandardRequests(string party_org_no, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                integration_title,
+                external_ref,
+                system_id,
+                party_org_no,
+                rights,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                escalated,
+                created
+            FROM business_application.request r
+            WHERE r.party_org_no = @party_org_no
+                and r.escalated = true
+                and r.is_deleted = false
+                and systemuser_type = @systemuser_type;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("party_org_no", party_org_no);            
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToRequest)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllRequestsBySystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
     public async Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
@@ -539,6 +611,45 @@ public class RequestRepository : IRequestRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // RequestRepository // GetAllAgentRequestsBySystem // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>  
+    public async Task<List<AgentRequestSystemResponse>> GetAllPendingAgentRequests(string party_org_no, CancellationToken cancellationToken)
+    {
+        const string QUERY = /*strpsql*/@"
+            SELECT 
+                id,
+                integration_title,
+                external_ref,
+                system_id,
+                party_org_no,
+                accesspackages,
+                request_status,
+                redirect_urls,
+                escalated,
+                created
+            FROM business_application.request r
+            WHERE r.party_org_no = @party_org_no
+                and r.escalated = true
+                and r.is_deleted = false
+                and systemuser_type = @systemuser_type;";
+
+        try
+        {
+            await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
+
+            command.Parameters.AddWithValue("party_org_no", party_org_no);
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
+
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllRequestsBySystem // Exception");
             throw;
         }
     }

@@ -121,5 +121,15 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             throw new NotImplementedException();
         }
+
+        public Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
