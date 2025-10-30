@@ -474,6 +474,15 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     OidcProvider provider = ChooseProviderByIssuer(issuer);
                     redirect = new Uri(provider.LogoutEndpoint!);
+
+                    // Build logout URL with query parameters
+                    UriBuilder logoutUriBuilder = new(provider.LogoutEndpoint!);
+                    var queryParams = System.Web.HttpUtility.ParseQueryString(logoutUriBuilder.Query);
+                    queryParams["client_id"] = provider.ClientId;
+                    queryParams["post_logout_redirect_uri"] = $"{_generalSettings.PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/logout/handleloggedout"; 
+                    logoutUriBuilder.Query = queryParams.ToString()!;
+                    redirect = logoutUriBuilder.Uri;
+
                 }
             }
 
@@ -1022,7 +1031,7 @@ namespace Altinn.Platform.Authentication.Services
                 externalId = userIdenity.ExternalIdentity;
             }
 
-            OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
+            OidcSession session = await _oidcSessionRepo.CreateSession(
                     new OidcSessionCreate
                     {
                         Sid = CryptoHelpers.RandomBase64Url(32),
@@ -1077,7 +1086,7 @@ namespace Altinn.Platform.Authentication.Services
                 externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
             }
 
-            OidcSession session = await _oidcSessionRepo.UpsertByUpstreamSubAsync(
+            OidcSession session = await _oidcSessionRepo.CreateSession(
                 new OidcSessionCreate
                 {
                     Sid = CryptoHelpers.RandomBase64Url(32),

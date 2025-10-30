@@ -339,7 +339,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string content = await logoutResp.Content.ReadAsStringAsync();
         
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
-            Assert.StartsWith("https://login.idporten.no/logout", logoutResp.Headers.Location!.ToString());
+            Assert.StartsWith("https://login.idporten.no/logout?client_id=345345s&post_logout_redirect_uri=http%3a%2f%2flocalhost%2fauthentication%2fapi%2fv1%2flogout%2fhandleloggedout", logoutResp.Headers.Location!.ToString());
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             Assert.Null(loggedOutSession);
@@ -482,7 +482,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
-            Assert.StartsWith("https://login.idporten.no/logout", logoutResp.Headers.Location!.ToString());
+            Assert.StartsWith("https://login.idporten.no/logout?client_id=345345s&post_logout_redirect_uri=http%3a%2f%2flocalhost%2fauthentication%2fapi%2fv1%2flogout%2fhandleloggedout", logoutResp.Headers.Location!.ToString());
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             Assert.Null(loggedOutSession);
@@ -617,7 +617,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
-            Assert.StartsWith("https://login.idporten.no/logout", logoutResp.Headers.Location!.ToString());
+            Assert.StartsWith("https://login.idporten.no/logout?client_id=345345s&post_logout_redirect_uri=http%3a%2f%2flocalhost%2fauthentication%2fapi%2fv1%2flogout%2fhandleloggedout", logoutResp.Headers.Location!.ToString());
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
             Assert.Null(loggedOutSession);
