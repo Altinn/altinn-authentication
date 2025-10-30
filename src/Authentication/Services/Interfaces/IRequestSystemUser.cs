@@ -182,4 +182,6 @@ public interface IRequestSystemUser
     /// <param name="requestId">The id for the request</param>    
     /// <returns>RequestSystemResponseInternal</returns>
     Task<Result<RequestSystemResponseInternal>> CheckUserAuthorizationAndGetAgentRequest(Guid requestId);
+    Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken);
 }
