@@ -323,17 +323,9 @@ public class PlatformAuthenticationClient
     /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
     public async Task<string?> GetMaskinportenTokenForVendor()
     {
-        if (_cachedToken != null && DateTime.UtcNow < _tokenExpiry)
-        {
-            return _cachedToken;
-        }
-
         var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
-        _cachedToken = token;
-        _tokenExpiry = DateTime.UtcNow.AddMinutes(2); // Valid for 2 minutes
-
-        return _cachedToken;
+        return token;
     }
 
     public async Task<string> GetSystemUserToken(string? externalRef = "", string scopes = "")
