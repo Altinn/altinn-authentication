@@ -288,7 +288,27 @@ public class SystemUserController : ControllerBase
 
         if (toBeFound is not null)
         {
-            return Ok(toBeFound);
+            SystemUser returnModel = new() 
+            {
+                Id = toBeFound.Id, 
+                SystemId = toBeFound.SystemId,
+                ReporteeOrgNo = toBeFound.ReporteeOrgNo,
+                SupplierOrgNo = toBeFound.SupplierOrgNo,
+                ExternalRef = toBeFound.ExternalRef,     
+                UserType = toBeFound.UserType,
+                IntegrationTitle = toBeFound.IntegrationTitle,
+                Created = toBeFound.Created,
+
+                // We override these fields with blank values; since they are not needed in an external model
+                AccessPackages = [],                
+                SupplierName = string.Empty,
+                PartyId = string.Empty,
+                PartyUuId = string.Empty,
+                ProductName = string.Empty 
+            }
+        ;
+
+            return Ok(returnModel);
         }
 
         return NotFound();
