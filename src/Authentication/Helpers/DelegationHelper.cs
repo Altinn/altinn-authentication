@@ -150,22 +150,21 @@ public class DelegationHelper(
     /// <returns>resource format in old format for app</returns>
     public static List<AttributePair> ConvertOldAppResourceFormatToNewAppResourceFormat(List<AttributePair> resource)
     {
-        var processedResource = new List<AttributePair>();
         if (resource.Count == 2)
         {
             var orgAttribute = resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.OrgAttribute);
             var appAttribute = resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.AppAttribute);
             if (orgAttribute != null && appAttribute != null)
             {
-                processedResource.Add(new AttributePair { Id = AttributeIdentifier.ResourceRegistryAttribute, Value = $"app_{orgAttribute.Value}_{appAttribute.Value}" });
+                return new List<AttributePair>
+                {
+                    new AttributePair { Id = AttributeIdentifier.ResourceRegistryAttribute, Value = $"app_{orgAttribute.Value}_{appAttribute.Value}" }
+                };
             }
         }
-        else
-        {
-            processedResource.AddRange(resource);
-        }
 
-        return processedResource;
+        // Not old app format, preserve as-is
+        return resource.ToList();
     }
 
     /// <summary>
