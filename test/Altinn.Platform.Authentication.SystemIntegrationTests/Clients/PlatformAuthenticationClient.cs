@@ -237,9 +237,9 @@ public class PlatformAuthenticationClient
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
             $"?env={EnvironmentHelper.Testenvironment}" +
             $"&scopes=altinn:portal/enduser " + scopes +
-            $"&userid={user?.UserId}" +
-            $"&partyid={user?.AltinnPartyId}" +
-            $"&partyuuid={user?.AltinnPartyUuid}" +
+            $"&userid={user.UserId}" +
+            $"&partyid={user.AltinnPartyId}" +
+            $"&partyuuid={user.AltinnPartyUuid}" +
             "&authLvl=3&ttl=10000";
 
         var token = await GetAltinnToken(url);
