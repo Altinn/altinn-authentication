@@ -231,7 +231,7 @@ public class PlatformAuthenticationClient
     /// <param name="user">User read from test config (testusers.at.json)</param>
     /// <param name="scopes">space separated list of scopes</param>
     /// <returns>The Altinn test token as a string</returns>
-    public async Task<string?> GetPersonalAltinnToken(Testuser? user, string scopes = "")
+    public async Task<string?> GetPersonalAltinnToken(Testuser user, string scopes = "")
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
