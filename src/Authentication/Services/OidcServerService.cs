@@ -654,7 +654,16 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput ticketInput, CancellationToken cancellationToken)
         {
             UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(ticketInput.EncryptedTicket);
+            if (userAuthenticationModel == null || userAuthenticationModel.UserID == null || userAuthenticationModel.UserID.Value == 0)
+            {
+                return new AuthenticateFromAltinn2TicketResult()
+                {
+                    Kind = AuthenticateFromAltinn2TicketResultKind.NoValidSession
+                };
+            }
+
             userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
+
             EnrichIdentityFromLegacyValues(userAuthenticationModel);
             AddLocalScopes(userAuthenticationModel);
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
