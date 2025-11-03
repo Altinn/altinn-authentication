@@ -20,7 +20,7 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        VendorTokenMaskinporten = Platform.GetMaskinportenTokenForVendor().Result;
+        VendorTokenMaskinporten = await Platform.GetMaskinportenTokenForVendor();
         //Creates System in System Register with these access packages
         string[] accessPackages =
         [
@@ -38,7 +38,9 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
 
     public async Task DisposeAsync()
     {
+        VendorTokenMaskinporten = await Platform.GetMaskinportenTokenForVendor();
         await Platform.Common.DeleteSystem(SystemId, VendorTokenMaskinporten);
+        Facilitator.AltinnToken = await Platform.GetPersonalAltinnToken(Facilitator, "altinn:portal/enduser");
         await Platform.SystemUserClient.DeleteAgentSystemUser(SystemUserId, Facilitator);
     }
 
