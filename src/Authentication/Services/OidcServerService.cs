@@ -286,6 +286,7 @@ namespace Altinn.Platform.Authentication.Services
                 Secure = true,
                 Path = "/",
                 SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
             };
 
             await _eventLog.CreateAuthenticationEventAsync(_featureManager, cookieToken, AuthenticationEventType.Authenticate, input.ClientIp);
@@ -432,6 +433,7 @@ namespace Altinn.Platform.Authentication.Services
                             Path = "/",
                             SameSite = SameSiteMode.Lax,
                             Expires = DateTimeOffset.UnixEpoch,
+                            Domain = _generalSettings.HostName,
                         }
                     }
                 };
@@ -525,6 +527,7 @@ namespace Altinn.Platform.Authentication.Services
                 Path = "/",
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UnixEpoch,
+                Domain = _generalSettings.HostName,
             };
             
             return new EndSessionResult
@@ -678,6 +681,7 @@ namespace Altinn.Platform.Authentication.Services
                     Secure = true,
                     Path = "/",
                     SameSite = SameSiteMode.Lax,
+                    Domain = _generalSettings.HostName,
                 };
 
                 return new AuthenticateFromAltinn2TicketResult
