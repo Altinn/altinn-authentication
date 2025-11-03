@@ -2159,7 +2159,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             StandardSystemUserDelegations standardSystemUserDelegations = JsonSerializer.Deserialize<StandardSystemUserDelegations>(await clientListResponse.Content.ReadAsStringAsync(), _options);
             Assert.NotNull(standardSystemUserDelegations);
             Assert.True(standardSystemUserDelegations.AccessPackages.Count == 1);
-            Assert.True(standardSystemUserDelegations.Rights.Count == 2);
+            Assert.True(standardSystemUserDelegations.Rights.Count == 3);
+            Assert.True(standardSystemUserDelegations.Rights.Any(r => r.Resource != null && r.Resource.Any(a => a.Value == "app_ttd_endring-av-navn-v2")));
         }
 
         [Fact]

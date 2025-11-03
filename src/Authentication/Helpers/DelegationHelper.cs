@@ -145,6 +145,28 @@ public class DelegationHelper(
     }
 
     /// <summary>
+    /// Converts the new resource format to old format for app
+    /// </summary>
+    /// <returns>resource format in old format for app</returns>
+    public static List<AttributePair> ConvertOldAppResourceFormatToNewAppResourceFormat(List<AttributePair> resource)
+    {
+        var processedResource = new List<AttributePair>();
+        int resourceCount = resource.Count;
+        if (resource.Count == 2)
+        {
+            var orgAttribute = resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.OrgAttribute);
+            var appAttribute = resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.AppAttribute);
+            if (orgAttribute != null && appAttribute != null)
+            {
+                processedResource.Add(new AttributePair { Id = AttributeIdentifier.ResourceRegistryAttribute, Value = $"app_{orgAttribute.Value}_{appAttribute.Value}" });
+                return processedResource;
+            }
+        }
+
+        return processedResource;
+    }
+
+    /// <summary>
     /// Maps the DetailExternal list to a ProblemInstance
     /// </summary>
     /// <param name="errors">the error received from access management</param>
