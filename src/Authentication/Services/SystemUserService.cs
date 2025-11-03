@@ -1027,15 +1027,16 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             List<RightDelegation> rightDelegations = rightsDelegationResult.Value;
-            
-            // Map RightDelegation to Right model
+
+            // Map RightDelegation to Right model and convert resource format
             var rights = rightDelegations.Select(rd => new Right
             {
-                Resource = rd.Resource.Select(attr => new AttributePair
-                {
-                    Id = attr.Id,
-                    Value = attr.Value
-                }).ToList(),
+                Resource = DelegationHelper.ConvertOldAppResourceFormatToNewAppResourceFormat(
+                    rd.Resource.Select(attr => new AttributePair
+                    {
+                        Id = attr.Id,
+                        Value = attr.Value
+                    }).ToList())
             }).ToList();
 
             return rights;
