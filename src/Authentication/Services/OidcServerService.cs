@@ -286,6 +286,7 @@ namespace Altinn.Platform.Authentication.Services
                 Secure = true,
                 Path = "/",
                 SameSite = SameSiteMode.Lax,
+                Domain = _generalSettings.HostName,
             };
 
             await _eventLog.CreateAuthenticationEventAsync(_featureManager, cookieToken, AuthenticationEventType.Authenticate, input.ClientIp);
@@ -432,6 +433,7 @@ namespace Altinn.Platform.Authentication.Services
                             Path = "/",
                             SameSite = SameSiteMode.Lax,
                             Expires = DateTimeOffset.UnixEpoch,
+                            Domain = _generalSettings.HostName,
                         }
                     }
                 };
@@ -525,6 +527,7 @@ namespace Altinn.Platform.Authentication.Services
                 Path = "/",
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UnixEpoch,
+                Domain = _generalSettings.HostName,
             };
             
             return new EndSessionResult
@@ -651,7 +654,16 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput ticketInput, CancellationToken cancellationToken)
         {
             UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(ticketInput.EncryptedTicket);
+            if (userAuthenticationModel == null || userAuthenticationModel.UserID == null || userAuthenticationModel.UserID.Value == 0)
+            {
+                return new AuthenticateFromAltinn2TicketResult()
+                {
+                    Kind = AuthenticateFromAltinn2TicketResultKind.NoValidSession
+                };
+            }
+
             userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
+
             EnrichIdentityFromLegacyValues(userAuthenticationModel);
             AddLocalScopes(userAuthenticationModel);
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
@@ -678,6 +690,7 @@ namespace Altinn.Platform.Authentication.Services
                     Secure = true,
                     Path = "/",
                     SameSite = SameSiteMode.Lax,
+                    Domain = _generalSettings.HostName,
                 };
 
                 return new AuthenticateFromAltinn2TicketResult
@@ -1105,10 +1118,10 @@ namespace Altinn.Platform.Authentication.Services
                     Amr = userIdenity.Amr,
                     Scopes = scopes,
                     ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
-                    UpstreamSessionSid = userIdenity.Sid,
+                    UpstreamSessionSid = userIdenity.SessionId,
                     Now = _timeProvider.GetUtcNow(),
                     CreatedByIp = authInput.CreatedByIp,
-                    UserAgentHash = authInput.UserAgentHash
+                    UserAgentHash = authInput.UserAgentHash,
                 },
                 cancellationToken);
             return (session, sessionHandle);

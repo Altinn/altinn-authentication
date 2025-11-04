@@ -156,6 +156,17 @@ namespace Altinn.Platform.Authentication.Configuration
         }
 
         /// <summary>
+        /// End session endpoint for Altinn OIDC
+        /// </summary>
+        public string AltinnOidcEndSessionEndpoint
+        {
+            get
+            {
+                return $"{PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/openid/logout/";
+            }
+        }
+
+        /// <summary>
         /// Gets the token endpoint for Altinn OIDC
         /// </summary>
         public string AltinnOidcTokenEndpoint

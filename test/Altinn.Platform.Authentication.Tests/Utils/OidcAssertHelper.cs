@@ -154,9 +154,11 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             Assert.Equal("altinnsession", name);
             Assert.False(string.IsNullOrEmpty(value), "altinnsession cookie has empty value.");
 
+            // Assert that domain is set to localhost (test env) (will be altinn.no for production) Will be changed when Altinn 2 is shut off
+            Assert.Contains(parts, p => p.StartsWith("domain=localhost", StringComparison.OrdinalIgnoreCase));
+
             // ❌ Must NOT set Expires or Domain (host-only, session cookie)
             Assert.DoesNotContain(parts, p => p.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
-            Assert.DoesNotContain(parts, p => p.StartsWith("domain=", StringComparison.OrdinalIgnoreCase));
         }
 
         public static void AssertHasAltinnPartyIdCookie(HttpResponseMessage resp)

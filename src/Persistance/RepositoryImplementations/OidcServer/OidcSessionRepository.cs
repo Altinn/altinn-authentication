@@ -23,6 +23,16 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         /// </summary>
         public async Task<OidcSession> CreateSession(OidcSessionCreate create, CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(create.Sid))
+            { 
+                throw new ArgumentException("Sid is required", nameof(create.Sid));
+            }
+
+            if (create.SubjectPartyUuid == null || create.SubjectPartyUuid.Value == Guid.Empty)
+            {
+                throw new ArgumentException("SubjectPartyUuid is required", nameof(create.SubjectPartyUuid));
+            }
+
             const string SQL = /*strpsql*/ @"
                 INSERT INTO oidcserver.oidc_session (
                     sid, session_handle_hash, upstream_issuer, upstream_sub, subject_id, external_id,

@@ -231,7 +231,7 @@ public class PlatformAuthenticationClient
     /// <param name="user">User read from test config (testusers.at.json)</param>
     /// <param name="scopes">space separated list of scopes</param>
     /// <returns>The Altinn test token as a string</returns>
-    public async Task<string?> GetPersonalAltinnToken(Testuser? user, string scopes = "")
+    public async Task<string?> GetPersonalAltinnToken(Testuser user, string scopes = "")
     {
         var url =
             $"https://altinn-testtools-token-generator.azurewebsites.net/api/GetPersonalToken" +
@@ -323,17 +323,9 @@ public class PlatformAuthenticationClient
     /// <returns>IMPORTANT - Returns a bearer token with this org / vendor: "312605031"</returns>
     public async Task<string?> GetMaskinportenTokenForVendor()
     {
-        if (_cachedToken != null && DateTime.UtcNow < _tokenExpiry)
-        {
-            return _cachedToken;
-        }
-
         var token = await MaskinPortenTokenGenerator.GetMaskinportenBearerToken();
         Assert.True(null != token, "Unable to retrieve maskinporten token");
-        _cachedToken = token;
-        _tokenExpiry = DateTime.UtcNow.AddMinutes(2); // Valid for 2 minutes
-
-        return _cachedToken;
+        return token;
     }
 
     public async Task<string> GetSystemUserToken(string? externalRef = "", string scopes = "")
