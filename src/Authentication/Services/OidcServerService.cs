@@ -1373,12 +1373,6 @@ namespace Altinn.Platform.Authentication.Services
                     userAuthenticationModel.Username = userProfile.UserName;
                     userAuthenticationModel.Amr = ["SelfIdentified"];
                     userAuthenticationModel.Acr = "Selfidentified";
-
-                    if (!userAuthenticationModel.PartyUuid.HasValue)
-                    {
-                        throw new ArgumentException("UserProfile returned from UserProfileService has no PartyUuid " + userProfile.UserId);
-                    }
-
                     return userAuthenticationModel;
                 }
 

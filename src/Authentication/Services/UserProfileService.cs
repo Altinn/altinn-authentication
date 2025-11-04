@@ -1,8 +1,6 @@
 using System;
-using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -41,22 +39,14 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<UserProfile> GetUser(string ssnOrExternalIdentity)
         {
             UserProfile user = null;
-            DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(UserProfile));
-
+       
             Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/");
             StringContent requestBody = new StringContent(JsonSerializer.Serialize(ssnOrExternalIdentity), Encoding.UTF8, "application/json");
 
             HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                // Stream stream = await response.Content.ReadAsStreamAsync();
-                // user = serializer.ReadObject(stream) as UserProfile;
                 user = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
-
-                if (!user.UserUuid.HasValue)
-                {
-                    throw new Exception($"UserProfileService.GetUser returned a user without a UserUuid for ssnOrExternalIdentity {ssnOrExternalIdentity}");
-                }
             }
             else
             {
@@ -74,7 +64,6 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<UserProfile> CreateUser(UserProfile user)
         {
             UserProfile createdProfile = null;
-            DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(UserProfile));
 
             Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/create/");
             StringContent requestBody = new StringContent(JsonSerializer.Serialize(user), Encoding.UTF8, "application/json");
