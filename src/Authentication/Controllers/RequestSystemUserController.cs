@@ -678,7 +678,7 @@ public class RequestSystemUserController : ControllerBase
     public async Task<ActionResult<List<RequestSystemResponse>>> GetPendingStandardRequests(int party, string orgno, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _requestSystemUser.GetPendingStandardRequests(orgno, userId, cancellationToken);
+        Result<List<RequestSystemResponse>> response = await _requestSystemUser.GetPendingStandardRequests(orgno, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -702,10 +702,10 @@ public class RequestSystemUserController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpGet("agent/{party}/{orgno}/pending")]
-    public async Task<ActionResult<List<RequestSystemResponse>>> GetPendingAgentRequests(int party, string orgno, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<List<AgentRequestSystemResponse>>> GetPendingAgentRequests(int party, string orgno, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _requestSystemUser.GetPendingAgentRequests(orgno, userId, cancellationToken);
+        Result<List<AgentRequestSystemResponse>> response = await _requestSystemUser.GetPendingAgentRequests(orgno, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
