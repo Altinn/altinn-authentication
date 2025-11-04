@@ -9,7 +9,7 @@ namespace Altinn.Platform.Authentication.Core.Services.Validation
     public sealed class AuthorizeRequestValidator : IAuthorizeRequestValidator
     {
         private static readonly HashSet<string> AllowedAcrValues = new(
-            new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high", "level0" },
+            new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high", "level0", "level1", "level2" },
             StringComparer.Ordinal);
 
         private static readonly HashSet<string> AllowedUiLocales = new(
