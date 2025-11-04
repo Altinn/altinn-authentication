@@ -1369,7 +1369,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     userAuthenticationModel.UserID = userProfile.UserId;
                     userAuthenticationModel.PartyID = userProfile.PartyId;
-                    userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
+                    userAuthenticationModel.PartyUuid = userProfile.UserUuid;
                     userAuthenticationModel.Username = userProfile.UserName;
                     userAuthenticationModel.Amr = ["SelfIdentified"];
                     userAuthenticationModel.Acr = "Selfidentified";
@@ -1386,7 +1386,7 @@ namespace Altinn.Platform.Authentication.Services
                 UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
                 userAuthenticationModel.UserID = userCreated.UserId;
                 userAuthenticationModel.PartyID = userCreated.PartyId;
-                userAuthenticationModel.PartyUuid = userCreated.Party.PartyUuid;
+                userAuthenticationModel.PartyUuid = userCreated.UserUuid;
                 userAuthenticationModel.Amr = ["SelfIdentified"];
                 userAuthenticationModel.Acr = "Selfidentified";
             }
