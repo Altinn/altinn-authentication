@@ -82,8 +82,7 @@ namespace Altinn.Platform.Authentication.Services
             HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                Stream stream = await response.Content.ReadAsStreamAsync();
-                createdProfile = serializer.ReadObject(stream) as UserProfile;
+                createdProfile = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
             }
             else
             {
