@@ -557,6 +557,7 @@ public class RequestRepository : IRequestRepository
             WHERE r.party_org_no = @party_org_no
                 and r.escalated = true
                 and r.is_deleted = false
+                and r.request_status = @request_status
                 and systemuser_type = @systemuser_type;";
 
         try
@@ -565,6 +566,7 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("party_org_no", party_org_no);            
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
+            command.Parameters.Add<RequestStatus>("request_status").TypedValue = RequestStatus.New;
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToRequest)
@@ -634,6 +636,7 @@ public class RequestRepository : IRequestRepository
             WHERE r.party_org_no = @party_org_no
                 and r.escalated = true
                 and r.is_deleted = false
+                and r.request_status = @request_status
                 and systemuser_type = @systemuser_type;";
 
         try
@@ -642,6 +645,7 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("party_org_no", party_org_no);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
+            command.Parameters.Add<RequestStatus>("request_status").TypedValue = RequestStatus.New;
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToAgentRequest)
