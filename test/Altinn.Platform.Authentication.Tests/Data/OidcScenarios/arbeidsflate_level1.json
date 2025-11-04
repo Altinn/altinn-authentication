@@ -1,5 +1,5 @@
 {
-  "ScenarioId": "Arbeidsflate_Level34",
+  "ScenarioId": "Arbeidsflate_Level1",
   "Title": "Arbeidsflate - Happy flow",
   "Description": "Test the happy flow for arbeidsflate. Bruker logger på med Bankid på mobil hos ID-porten",
   "Ssn": "01039012345",
