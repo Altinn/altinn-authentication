@@ -1,5 +1,4 @@
 import http from 'k6/http';
-import encoding from 'k6/encoding';
 import { 
     expect, 
     uuidv4, 
@@ -168,15 +167,13 @@ export function delegateAmSystemUser(customer, organization, systemUserId, resou
     });
 }
 
-export function getSystemOwnerTokenAndClientId(systemOwner, iteration) {
+export function getSystemOwnerToken(systemOwner) {
     const tokenOptions = {
         scopes: "altinn:authentication/systemregister.write altinn:authentication/systemuser.request.write altinn:authentication/systemuser.request.read altinn:authorization/authorize",
         orgno: systemOwner
     }
-    const token = getEnterpriseToken(tokenOptions, iteration, environment);
-    const parts = token.split('.');
-    const jwt = JSON.parse(encoding.b64decode(parts[1].toString(), "rawstd", 's'))
-    return [token, jwt.client_id];   
+    const token = getEnterpriseToken(tokenOptions, environment);
+    return token;
 }
 
 function getApproveSystemUserToken(userId) {

@@ -7,10 +7,13 @@ export const abort_on_fail = __ENV.abort_on_fail === 'true' || false; // Default
 
 
 const testBaseUrl = "https://platform.at22.altinn.cloud/authentication/";
+const stagingBaseUrl = "https://platform.tt02.altinn.no/authentication/";
 const yt01BaseUrl = "https://platform.yt01.altinn.cloud/authentication/";
 const testRegisterBaseUrl = "https://platform.at22.altinn.cloud/register/";
+const stagingRegisterBaseUrl = "https://platform.tt02.altinn.no/register/";
 const yt01RegisterBaseUrl = "https://platform.yt01.altinn.cloud/register/";
 const testAmBaseUrl = "https://platform.at22.altinn.cloud/accessmanagement/";
+const stagingAmBaseUrl = "https://platform.tt02.altinn.no/accessmanagement/";
 const yt01AmBaseUrl = "https://platform.yt01.altinn.cloud/accessmanagement/";
 
 const systemRegister = "api/v1/systemregister/vendor";
@@ -27,40 +30,49 @@ export const urls = {
     v1: {
         registerSystem: {
             at22: testBaseUrl + systemRegister,
+            tt02: stagingBaseUrl + systemRegister,
             yt01: yt01BaseUrl + systemRegister
         },
 
         requestSystemUser: {
             at22: testBaseUrl + systemUserRequest,
+            tt02: stagingBaseUrl + systemUserRequest,
             yt01: yt01BaseUrl + systemUserRequest
         },
 
         approveSystemUser: {
             at22: testBaseUrl + systemUserApprove,
+            tt02: stagingBaseUrl + systemUserApprove,
             yt01: yt01BaseUrl + systemUserApprove
         },
         systemUrl: {
             at22: testBaseUrl + systemUrl,
+            tt02: stagingBaseUrl + systemUrl,
             yt01: yt01BaseUrl + systemUrl
         },
         systemUsersUrl: {
             at22: testBaseUrl + systemUsersUrl,
+            tt02: stagingBaseUrl + systemUsersUrl,
             yt01: yt01BaseUrl + systemUsersUrl
         },
         systemUserByExternalIdUrl: {
             at22: testBaseUrl + systemUserByExternalIdUrl,
+            tt02: stagingBaseUrl + systemUserByExternalIdUrl,
             yt01: yt01BaseUrl + systemUserByExternalIdUrl
         },
         getCustomerList: {
             at22: testRegisterBaseUrl + customerList,
+            tt02: stagingRegisterBaseUrl + customerList,
             yt01: yt01RegisterBaseUrl + customerList
         },
         delegationUrl: {
             at22: testBaseUrl + delegationUrl,
+            tt02: stagingBaseUrl + delegationUrl,
             yt01: yt01BaseUrl + delegationUrl
         },
         amDelegationUrl: {
             at22: testAmBaseUrl + amDelegationUrl,
+            tt02: stagingAmBaseUrl + amDelegationUrl,
             yt01: yt01AmBaseUrl + amDelegationUrl
         }
     }

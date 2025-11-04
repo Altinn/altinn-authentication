@@ -39,9 +39,12 @@ const systemUsers = new SharedArray('systemUsers', function () {
   return readCsv(systemUsersFilename);
 });
 
+// Export the systemUsers variable for use in other modules
+// This is the org number for digdir
 export const systemOwner =  environment == "yt01" ? "713431400" : "991825827"; 
 
-export const resources = [ 
+// some "random" resources from yt01 to use in the tests
+const yt01_resources = [ 
   "ttd-dialogporten-performance-test-01", 
   "ttd-dialogporten-performance-test-02", 
   "ttd-dialogporten-performance-test-03", 
@@ -53,6 +56,25 @@ export const resources = [
   "ttd-dialogporten-performance-test-09", 
   "ttd-dialogporten-performance-test-10"
 ];
+
+// One "random" resource from at22 to use in the tests
+const at22_resources = [
+  "jks-test-resource",
+]
+
+// Only support yt01 and at22 for now. If more environments are added,
+// they should be added here with their own resources.
+export const resources = (function() {
+  switch (environment) {
+    case "yt01":
+      return yt01_resources;
+    case "at22":
+      return at22_resources;
+    default:
+      return yt01_resources; // Default to yt01 resources if environment is not recognized
+  }
+}) ();
+
 
 export const regnskapsforerUrns = [
   'urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet',
@@ -67,7 +89,7 @@ export const forretningsforerUrns = ['urn:altinn:accesspackage:forretningsforer-
 
 function systemUsersPart(totalVus, vuId) {
   const systemUsersLength = systemUsers.length;
-  if (totalVus == 1) {
+  if (totalVus == 1 || systemUsersLength < totalVus) {
       return systemUsers.slice(0, systemUsersLength);
   }
   let systemUsersPerVu = Math.floor(systemUsersLength / totalVus);

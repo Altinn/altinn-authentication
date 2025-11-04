@@ -5,6 +5,7 @@ import { environment } from './config.js';
 const endUsersFilename = `../testdata/data-${environment}-end-users.csv`;
 const siUsersFilename = `../testdata/data-${environment}-si-users.csv`;
 const organizationsFilename = `../testdata/data-${environment}-organizations.csv`;
+const orgsWithCustomersFilename = `../testdata/data-${environment}-all-customers.csv`;
 
 function readCsv(filename) {
     try {
@@ -28,3 +29,8 @@ export const siUsers = new SharedArray('siUsers', function () {
 export const organizations = new SharedArray('organizations', function () {
     return readCsv(organizationsFilename);
 });
+
+export const orgsWithCustomers = new SharedArray('orgsWithCustomers', function () {
+  return readCsv(orgsWithCustomersFilename);
+});
+

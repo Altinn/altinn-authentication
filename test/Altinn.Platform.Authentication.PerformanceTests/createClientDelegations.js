@@ -15,7 +15,7 @@ import {
     createSystemUser, 
     approveSystemUser, 
     getParams, 
-    getSystemOwnerTokenAndClientId, 
+    getSystemOwnerToken, 
     delegateAmSystemUser as delegateSystemUser,
     createSystemOwnerLabel, 
     createSystemUserLabel, 
@@ -23,7 +23,8 @@ import {
     postDelegationLabel,
     buildOptions
 } from './commonSystemUser.js';
-export { splitSystemUsers as setup } from './common/readTestdata.js';
+import  { splitSystemUsers } from './common/readTestdata.js';
+
 
 const subscription_key = __ENV.subscription_key;
 const environment = __ENV.API_ENVIRONMENT;
@@ -31,23 +32,22 @@ const environment = __ENV.API_ENVIRONMENT;
 const getCustormerListLabel = "Get customer list";
 const getSystemUsersLabel = "Get system users";
 const labels = [createSystemOwnerLabel, createSystemUserLabel, approveSystemUserLabel, getCustormerListLabel, getSystemUsersLabel, postDelegationLabel];
-
 export let options = buildOptions(labels);
 
+export function setup() {
+    const token = getSystemOwnerToken(systemOwner);
+    const parts = splitSystemUsers();
+    return { parts: parts, token: token };
+} 
+
 export default function(data) {
-    let mySystemUsers = data[exec.vu.idInTest - 1];
-    if (mySystemUsers.length == 0) {
-        //console.log("No more system users to create");
-        exec.test.abort("No more system users to create");
-    }
+    const token = data.token;
+    let mySystemUsers = data.parts[exec.vu.idInTest - 1];
     const organization = randomItem(mySystemUsers);
     const systemId = `${systemOwner}_${uuidv4()}`;
 
-    // get token to create system, systemuser and read systemid.
-    // clientId used to create system
-    const [token, clientId] = getSystemOwnerTokenAndClientId(systemOwner, __ITER);
     const resources = getPackages(organization.orgType);
-
+    const clientId = uuidv4();
     // create system and system user
     const systemResponse = createSystem(systemOwner, systemId, resources, token, clientId, "accessPackage");
 
@@ -66,6 +66,8 @@ export default function(data) {
     let systemUserId = getSystemUserId(systemId, token);
     if (!systemUserId || !customerList) {
         console.log("No customer list or system user id");
+        console.log("System user id: " + systemUserId);
+        console.log("Customer list: " + JSON.stringify(customerList));
         return;
     }
     let noOfDelegations = 0;
@@ -73,7 +75,7 @@ export default function(data) {
     for (let customer of customerList.data) {
         let _ = delegateSystemUser(customer, organization, systemUserId, resources);
         noOfDelegations++;
-        if (noOfDelegations >=1) {
+        if (noOfDelegations >= 10) {
             break;
         }
     }
@@ -85,7 +87,7 @@ function getCustomerList(systemOwner, orgUuid, orgType) {
         scopes: "altinn:register/partylookup.admin",
         orgno: systemOwner
     }
-    const token = getEnterpriseToken(tokenOptions, 0, environment);
+    const token = getEnterpriseToken(tokenOptions, environment);
     const params = getParams(getCustormerListLabel);
     params.headers.Authorization = "Bearer " + token;
     params.headers['Ocp-Apim-Subscription-Key'] = subscription_key;

@@ -9,7 +9,7 @@ This directory holds the performance tests for authentication systemuser (system
 
 ## Tests
 ### Create and confirm systemuser
-File: `createAndConfirmSystemUsers.js`
+File: 
 1. Create system
 2. Create systemuser on system
 3. Confirm systemuser
@@ -29,6 +29,24 @@ File: `createClientDelegations.js`
 File: `partiesQuery.js`
 1. Create randomized request body
 2. Call get parties with request body
+
+## Test data
+File: `testdata/data-<env>-all-customers.csv` 
+
+Testdatafile used by `createAndConfirmSystemUsers.js` and `createClientDelegations.js` 
+
+| Attibute | Description | In use |
+|----------| ------------| -------|
+| orgNo    | organisation number as in BR |
+| partyId | The organisations party id |
+| ssn | DAGL for the organisation |
+| userId  | the user id of the ssn |
+| userPartyId | the party id of the ssn |
+| orgUuid | the uuid for the organisation |
+| orgType | the type of customers the organisation has |
+
+
+
 
 ## Run test
 ### From cli
