@@ -193,6 +193,10 @@ namespace Altinn.Platform.Authentication.Helpers
                 case "level0":
                 case "idporten-loa-low":
                     return SecurityLevel.SelfIdentifed;
+                case "level1":
+                    return SecurityLevel.NotSensitive;
+                case "level2":
+                    return SecurityLevel.QuiteSensitive;
                 case "level3":
                 case "idporten-loa-substantial":
                     return SecurityLevel.Sensitive;
@@ -231,6 +235,8 @@ namespace Altinn.Platform.Authentication.Helpers
                     return AuthenticationMethod.IdportenTestId;
                 case "SelfIdentified":
                     return AuthenticationMethod.SelfIdentified;
+                case "StaticPassword":
+                    return AuthenticationMethod.StaticPassword;
                 case "Minid-APP":
                     return AuthenticationMethod.MinIDApp;
             }
@@ -261,6 +267,8 @@ namespace Altinn.Platform.Authentication.Helpers
                 AuthenticationMethod.AltinnPIN => "AltinnPIN",
                 AuthenticationMethod.SelfIdentified => "SelfIdentified",
                 AuthenticationMethod.MinIDApp => "Minid-APP",
+                AuthenticationMethod.StaticPassword => "StaticPassword",
+                AuthenticationMethod.SMSPIN => "SMSPIN",
                 _ => string.Empty
             };
         }
@@ -278,6 +286,8 @@ namespace Altinn.Platform.Authentication.Helpers
                 SecurityLevel.SelfIdentifed => "idporten-loa-low",
                 SecurityLevel.Sensitive => "idporten-loa-substantial",
                 SecurityLevel.VerySensitive => "idporten-loa-high",
+                SecurityLevel.NotSensitive => "level1",
+                SecurityLevel.QuiteSensitive => "level2",
                 _ => "idporten-loa-low" // Fallback for levels without direct ID-porten mapping
             };
         }

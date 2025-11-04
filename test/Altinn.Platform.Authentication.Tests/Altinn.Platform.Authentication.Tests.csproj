@@ -60,6 +60,9 @@
     <None Update="Data\Delegation\CheckDelegationAccessPackageResponse_NotDelegable.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\OidcScenarios\arbeidsflate_level1.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\OidcScenarios\arbeidsflate_level34.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
