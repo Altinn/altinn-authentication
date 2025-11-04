@@ -641,7 +641,7 @@ public class RequestRepository : IRequestRepository
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("party_org_no", party_org_no);
-            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
+            command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToAgentRequest)

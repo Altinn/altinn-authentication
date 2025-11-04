@@ -1165,6 +1165,139 @@ public class RequestControllerTests(
     }
 
     [Fact]
+    public async Task Get_PendingRequests()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        //// Party Set Request Escalated
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+
+        string escalateEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.Id}/escalate";
+
+        HttpRequestMessage escalateReqMessage = new(HttpMethod.Post, escalateEndpoint);
+        HttpResponseMessage escalateResponse = await client2.SendAsync(escalateReqMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, escalateResponse.StatusCode);
+
+        bool? requestGet = JsonSerializer.Deserialize<bool>(await escalateResponse.Content.ReadAsStringAsync());
+        Assert.True(requestGet);
+
+        // BFF Get list of Pending Requests
+        string getPendingEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.PartyOrgNo}/pending";
+        HttpRequestMessage getPendingReqMessage = new(HttpMethod.Get, getPendingEndpoint);
+        HttpResponseMessage getPendingResponse = await client2.SendAsync(getPendingReqMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, escalateResponse.StatusCode);
+        List<RequestSystemResponse>? requests = await getPendingResponse.Content.ReadFromJsonAsync<List<RequestSystemResponse>>();
+        Assert.NotNull(requests);
+        Assert.True(requests[0].Escalated);
+    }
+
+    [Fact]
+    public async Task Get_PendingAgentRequests()
+    {
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skatt-naering"
+        };
+
+        // Arrange
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        //// Party Set Request Escalated
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+
+        string escalateEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/escalate";
+
+        HttpRequestMessage escalateReqMessage = new(HttpMethod.Post, escalateEndpoint);
+        HttpResponseMessage escalateResponse = await client2.SendAsync(escalateReqMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, escalateResponse.StatusCode);
+
+        bool? requestGet = JsonSerializer.Deserialize<bool>(await escalateResponse.Content.ReadAsStringAsync());
+        Assert.True(requestGet);
+
+        // BFF Get list of Pending Requests
+        string getPendingEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.PartyOrgNo}/pending";
+        HttpRequestMessage getPendingReqMessage = new(HttpMethod.Get, getPendingEndpoint);
+        HttpResponseMessage getPendingResponse = await client2.SendAsync(getPendingReqMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, escalateResponse.StatusCode);
+        List<AgentRequestSystemResponse>? requests = await getPendingResponse.Content.ReadFromJsonAsync<List<AgentRequestSystemResponse>>();
+        Assert.NotNull(requests);
+        Assert.Single(requests);
+        Assert.True(requests[0].Escalated);
+    }
+
+    [Fact]
     public async Task Get_AgentRequest_Only_By_RequestId()
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
