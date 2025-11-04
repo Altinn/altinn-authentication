@@ -1228,7 +1228,7 @@ public class RequestControllerTests(
         string getPendingEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{res.PartyOrgNo}/pending";
         HttpRequestMessage getPendingReqMessage = new(HttpMethod.Get, getPendingEndpoint);
         HttpResponseMessage getPendingResponse = await client2.SendAsync(getPendingReqMessage, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.OK, escalateResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, getPendingResponse.StatusCode);
         List<RequestSystemResponse>? requests = await getPendingResponse.Content.ReadFromJsonAsync<List<RequestSystemResponse>>();
         Assert.NotNull(requests);
         Assert.True(requests[0].Escalated);
@@ -1290,7 +1290,7 @@ public class RequestControllerTests(
         string getPendingEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.PartyOrgNo}/pending";
         HttpRequestMessage getPendingReqMessage = new(HttpMethod.Get, getPendingEndpoint);
         HttpResponseMessage getPendingResponse = await client2.SendAsync(getPendingReqMessage, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.OK, escalateResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, getPendingResponse.StatusCode);
         List<AgentRequestSystemResponse>? requests = await getPendingResponse.Content.ReadFromJsonAsync<List<AgentRequestSystemResponse>>();
         Assert.NotNull(requests);
         Assert.Single(requests);

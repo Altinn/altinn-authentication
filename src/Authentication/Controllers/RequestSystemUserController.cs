@@ -693,7 +693,7 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Get an unpaginated list of the Pending Standard Requests
+    /// Get an unpaginated list of the Pending Agent Requests
     /// </summary>
     /// <param name="party">the partyId</param>
     /// <param name="orgno">the party org no, in string format</param>

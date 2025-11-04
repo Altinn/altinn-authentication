@@ -653,7 +653,7 @@ public class RequestRepository : IRequestRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // GetAllRequestsBySystem // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // GetAllPendingAgentRequests // Exception");
             throw;
         }
     }
