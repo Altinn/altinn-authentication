@@ -50,6 +50,7 @@ namespace Altinn.Platform.Authentication.Controllers
             string baseUrl = _generalSettings.AltinnOidcIssuerUrl;
             string tokenUrl = _generalSettings.AltinnOidcTokenEndpoint;
             string authorizeUrl = _generalSettings.AltinnOidcAuthorizeEndpoint;
+            string endSessionUrl = _generalSettings.AltinnOidcEndSessionEndpoint;
 
             DiscoveryDocument discoveryDocument = new DiscoveryDocument
             {
@@ -72,7 +73,9 @@ namespace Altinn.Platform.Authentication.Controllers
                 SubjectTypesSupported = new[] { "pairwise" },
 
                 // REQUIRED
-                IdTokenSigningAlgValuesSupported = new[] { "RS256" }
+                IdTokenSigningAlgValuesSupported = new[] { "RS256" },
+
+                EndSessionEndpoint = new Uri(endSessionUrl).ToString(),
             };
 
             return discoveryDocument;
