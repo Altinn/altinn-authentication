@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Text.Json;
@@ -17,6 +18,8 @@ namespace Altinn.Platform.Authentication.Services
     /// <inheritdoc/>
     public class UserProfileService : IUserProfileService
     {
+        private static readonly JsonSerializerOptions _options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
         private readonly GeneralSettings _settings;
         private readonly HttpClient _client;
         private readonly ILogger _logger;
@@ -46,8 +49,14 @@ namespace Altinn.Platform.Authentication.Services
             HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                Stream stream = await response.Content.ReadAsStreamAsync();
-                user = serializer.ReadObject(stream) as UserProfile;
+                // Stream stream = await response.Content.ReadAsStreamAsync();
+                // user = serializer.ReadObject(stream) as UserProfile;
+                user = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
+
+                if (!user.UserUuid.HasValue)
+                {
+                    throw new Exception($"UserProfileService.GetUser returned a user without a UserUuid for ssnOrExternalIdentity {ssnOrExternalIdentity}");
+                }
             }
             else
             {
