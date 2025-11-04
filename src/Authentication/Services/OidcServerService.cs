@@ -1118,10 +1118,10 @@ namespace Altinn.Platform.Authentication.Services
                     Amr = userIdenity.Amr,
                     Scopes = scopes,
                     ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
-                    UpstreamSessionSid = userIdenity.Sid,
+                    UpstreamSessionSid = userIdenity.SessionId,
                     Now = _timeProvider.GetUtcNow(),
                     CreatedByIp = authInput.CreatedByIp,
-                    UserAgentHash = authInput.UserAgentHash
+                    UserAgentHash = authInput.UserAgentHash,
                 },
                 cancellationToken);
             return (session, sessionHandle);
