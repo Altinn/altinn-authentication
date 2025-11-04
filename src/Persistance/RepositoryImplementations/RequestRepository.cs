@@ -344,7 +344,7 @@ public class RequestRepository : IRequestRepository
 
             bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
                         
-            return true;
+            return isUpdated;
         }
         catch (Exception ex)
         {            
@@ -376,11 +376,11 @@ public class RequestRepository : IRequestRepository
 
             bool isUpdated = await command.ExecuteNonQueryAsync(cancellationToken) > 0;
 
-            return true;
+            return isUpdated;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // RequestRepository // ApproveAndCreateSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // RequestRepository // SetRequestEscalated // Exception");
             throw;
         }
     }
