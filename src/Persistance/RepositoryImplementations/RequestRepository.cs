@@ -566,7 +566,7 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("party_org_no", party_org_no);            
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
-            command.Parameters.Add<RequestStatus>("request_status").TypedValue = RequestStatus.New;
+            command.Parameters.AddWithValue("request_status", RequestStatus.New.ToString());
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToRequest)
@@ -645,7 +645,7 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("party_org_no", party_org_no);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
-            command.Parameters.Add<RequestStatus>("request_status").TypedValue = RequestStatus.New;
+            command.Parameters.AddWithValue("request_status", RequestStatus.New.ToString());
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .SelectAwait(ConvertFromReaderToAgentRequest)
