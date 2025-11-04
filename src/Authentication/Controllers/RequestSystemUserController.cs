@@ -23,6 +23,7 @@ using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -39,6 +40,7 @@ public class RequestSystemUserController : ControllerBase
     private readonly IRequestSystemUser _requestSystemUser;
     private readonly GeneralSettings _generalSettings;
     private readonly ISystemUserService _systemUserService;
+    private readonly ILogger<RequestSystemUserController> _logger;
 
     /// <summary>
     /// Constructor
@@ -46,11 +48,13 @@ public class RequestSystemUserController : ControllerBase
     public RequestSystemUserController(
         IRequestSystemUser requestSystemUser,
         IOptions<GeneralSettings> generalSettings,
-        ISystemUserService systemUserService)
+        ISystemUserService systemUserService,
+        ILogger<RequestSystemUserController> logger)
     {
         _requestSystemUser = requestSystemUser;
         _generalSettings = generalSettings.Value;
         _systemUserService = systemUserService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -130,6 +134,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
+        _logger.LogInformation("Received integration name: {IntegrationTitle}", createRequest.IntegrationTitle);
         response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
         
         if (response.IsSuccess)
@@ -183,6 +188,7 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
+        _logger.LogInformation("Received integration name: {IntegrationTitle}", createAgentRequest.IntegrationTitle);
         response = await _requestSystemUser.CreateAgentRequest(createAgentRequest, vendorOrgNo);
 
         if (response.IsSuccess)
