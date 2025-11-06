@@ -78,7 +78,7 @@ namespace Altinn.Platform.Authentication.Configuration
         public int OidcTokenValidityMinutes { get; set; } = 10;
 
         /// <summary>
-        /// The number of minutes the Access token is valid
+        /// The number of minutes the refresh token is valid
         /// </summary>
         public int OidcRefreshTokenValidityMinutes { get; set; } = 30;
 
