@@ -29,6 +29,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+  	<PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.1" />
 	  <Folder Include="Migration\v0.11\" />
 	</ItemGroup>
 

@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.0" />
+    <PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.1" />
     <PackageReference Include="Altinn.Platform.Storage.Interface" Version="4.0.14" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.10" />
 	  <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.10.0" />
