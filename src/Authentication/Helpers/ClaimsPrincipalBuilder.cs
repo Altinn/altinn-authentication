@@ -1,9 +1,4 @@
-﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Enum;
-using Altinn.Platform.Authentication.Helpers;
-using AltinnCore.Authentication.Constants;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -11,6 +6,11 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Enum;
+using Altinn.Platform.Authentication.Helpers;
+using AltinnCore.Authentication.Constants;
 
 namespace Altinn.Platform.Authentication.Core.Helpers
 {
