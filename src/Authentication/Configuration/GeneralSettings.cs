@@ -73,6 +73,16 @@ namespace Altinn.Platform.Authentication.Configuration
         public int JwtValidityMinutes { get; set; }
 
         /// <summary>
+        /// The number of minutes the ID token is valid
+        /// </summary>
+        public int OidcTokenValidityMinutes { get; set; } = 10;
+
+        /// <summary>
+        /// The number of minutes the Access token is valid
+        /// </summary>
+        public int OidcRefreshTokenValidityMinutes { get; set; } = 30;
+
+        /// <summary>
         /// Max session time in minutes
         /// </summary>
         public int MaxSessionTimeInMinutes { get; set; }
