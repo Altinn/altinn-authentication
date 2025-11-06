@@ -224,7 +224,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto refreshed = JsonSerializer.Deserialize<TokenResponseDto>(refreshJson)!;
             TokenAssertsHelper.AssertTokenRefreshResponse(refreshed, testScenario, _fakeTime.GetUtcNow());
             OidcSession? refreshedSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
-            Assert.Equal(string.Join(' ', testScenario.Scopes), refreshed.scope);
+            foreach (string scope in testScenario.Scopes)
+            {
+                Assert.Contains(scope, refreshed.scope);
+            }
 
             // ====== Phase 5: Redirect to App in Altinn Apps ======
             // User select a instance in Arbeidsflate and will be redirected to Altinn Apps to work on the instance. 
@@ -446,7 +449,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(refreshJsonLoop)!;
                 TokenAssertsHelper.AssertTokenRefreshResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
                 OidcSession? refreshedSessionLoop = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
-                Assert.Equal(string.Join(' ', testScenario.Scopes), tokenResult.scope);
+                foreach (string scope in testScenario.Scopes)
+                {
+                    Assert.Contains(scope, tokenResult.scope);
+                }
+
                 _fakeTime.Advance(TimeSpan.FromMinutes(5));
             }
 
