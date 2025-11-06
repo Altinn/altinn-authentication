@@ -162,7 +162,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserName, oidcSession.SubjectUserName, string.Empty));
             }
 
-            if (isAuthCookie && oidcSession.Provider != null && !oidcSession.Provider.Equals("altinn2"))  
+            if (isAuthCookie && oidcSession.Provider != null && !oidcSession.Provider.Equals("altinn2", StringComparison.OrdinalIgnoreCase)))  
             {
                 claims.Add(new Claim(OriginalIssClaimName, oidcSession.Provider));
             }
