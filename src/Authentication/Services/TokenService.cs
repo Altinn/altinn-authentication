@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Services
 
             // 2) Issue tokens (ID + Access) + refresh token
             DateTimeOffset exchangeTime = time.GetUtcNow();
-            DateTimeOffset tokenExpiration = exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes);
+            DateTimeOffset tokenExpiration = exchangeTime.AddMinutes(_generalSettings.OidcTokenValidityMinutes);
             ClaimsPrincipal idTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, true);
             ClaimsPrincipal accessTokenPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, false);
 
@@ -83,7 +83,7 @@ namespace Altinn.Platform.Authentication.Services
             // 3) Update OP session (slide expiry, touch last seen)
             await _oidcSessionRepository.SlideExpiryToAsync(oidcSession!.Sid, exchangeTime.AddMinutes(_generalSettings.JwtValidityMinutes), ct);
             
-            return TokenResult.Success(accessToken, idToken, _generalSettings.JwtValidityMinutes * 60, string.Join(" ", row.Scopes), refreshToken, _generalSettings.JwtValidityMinutes * 60);
+            return TokenResult.Success(accessToken, idToken, _generalSettings.OidcTokenValidityMinutes * 60, string.Join(" ", row.Scopes), refreshToken, _generalSettings.OidcRefreshTokenValidityMinutes * 60);
         }
 
         /// <inheritdoc/>
@@ -139,10 +139,11 @@ namespace Altinn.Platform.Authentication.Services
 
             await _refreshTokenRepository.InsertAsync(newRow, ct);
             await _refreshTokenRepository.MarkUsedAsync(row.TokenId, newRow.TokenId, ct);
-            
+
             // 8) Mint new access token (+ optional ID token)
-            DateTimeOffset tokenExpiration = now.AddMinutes(_generalSettings.JwtValidityMinutes);
-            await _oidcSessionRepository.SlideExpiryToAsync(row.SessionId, tokenExpiration, ct);
+            DateTimeOffset sessionExpiration = now.AddMinutes(_generalSettings.JwtValidityMinutes);
+            await _oidcSessionRepository.SlideExpiryToAsync(row.SessionId, sessionExpiration, ct);
+            DateTimeOffset tokenExpiration = now.AddMinutes(_generalSettings.OidcTokenValidityMinutes);
 
             ClaimsPrincipal accessPrincipal = ClaimsPrincipalBuilder.GetClaimsPrincipal(row, _generalSettings.AltinnOidcIssuerUrl, isIDToken: false);
 
@@ -167,10 +168,10 @@ namespace Altinn.Platform.Authentication.Services
             return TokenResult.Success(
                 accessToken: accessToken,
                 idToken: idToken,
-                expiresIn: _generalSettings.JwtValidityMinutes * 60,
+                expiresIn: _generalSettings.OidcTokenValidityMinutes * 60,
                 scope: string.Join(' ', resultingScopes),
                 refreshToken: newRefreshToken,
-                _generalSettings.JwtValidityMinutes * 60);
+                _generalSettings.OidcRefreshTokenValidityMinutes * 60);
         }
 
         /// <inheritdoc/>

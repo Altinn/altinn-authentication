@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.NotNull(tokenResponseDto.access_token);
             Assert.Equal("Bearer", tokenResponseDto.token_type);
             Assert.True(tokenResponseDto.expires_in > 0);
-            Assert.True(tokenResponseDto.expires_in == 1800);
+            Assert.True(tokenResponseDto.expires_in == 600);
             Assert.NotNull(tokenResponseDto.id_token); // since openid scope was requested
             Assert.NotNull(tokenResponseDto.refresh_token);
             Assert.True(IsBase64Url(tokenResponseDto.refresh_token!), "refresh_token must be base64url");

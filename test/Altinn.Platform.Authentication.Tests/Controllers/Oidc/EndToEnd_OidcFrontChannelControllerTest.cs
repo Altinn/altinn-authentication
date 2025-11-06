@@ -457,7 +457,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal(HttpStatusCode.Redirect, appRedirectResponse.StatusCode);
             Assert.StartsWith("https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba", appRedirectResponse.Headers.Location!.ToString());
 
-            _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 08:26
+            _fakeTime.Advance(TimeSpan.FromMinutes(5)); // 09:46
 
             // ===== Phase 6: Try to reuse old but still active refresh_token =====
             // User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
