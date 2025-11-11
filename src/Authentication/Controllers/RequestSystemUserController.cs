@@ -134,7 +134,6 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
-        _logger.LogInformation("Received integration name: {IntegrationTitle}", createRequest.IntegrationTitle);
         response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
         
         if (response.IsSuccess)
@@ -188,7 +187,6 @@ public class RequestSystemUserController : ControllerBase
         }
 
         // This is a new Request
-        _logger.LogInformation("Received integration name: {IntegrationTitle}", createAgentRequest.IntegrationTitle);
         response = await _requestSystemUser.CreateAgentRequest(createAgentRequest, vendorOrgNo);
 
         if (response.IsSuccess)
