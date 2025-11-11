@@ -291,8 +291,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             string? frontchannelLogoutUriStr = await reader.IsDBNullAsync("frontchannel_logout_uri", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>("frontchannel_logout_uri", cancellationToken);
             string? backchannelLogoutUriStr = await reader.IsDBNullAsync("backchannel_logout_uri", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>("backchannel_logout_uri", cancellationToken);
 
-            Uri? frontChannelLogoutUri = new Uri(frontchannelLogoutUriStr ?? string.Empty, UriKind.RelativeOrAbsolute);
-            Uri? backChannelLogoutUri = new Uri(backchannelLogoutUriStr ?? string.Empty, UriKind.RelativeOrAbsolute);
+            Uri? frontChannelLogoutUri = !string.IsNullOrEmpty(frontchannelLogoutUriStr) ? new Uri(frontchannelLogoutUriStr, UriKind.RelativeOrAbsolute) : null;
+            Uri? backChannelLogoutUri = !string.IsNullOrEmpty(backchannelLogoutUriStr) ? new Uri(backchannelLogoutUriStr, UriKind.RelativeOrAbsolute) : null;
 
             return new OidcClient(
                 clientId: clientId,
