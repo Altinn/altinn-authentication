@@ -1,11 +1,11 @@
-﻿using Altinn.Platform.Authentication.Core.Clients.Interfaces;
-using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Altinn.Platform.Authentication.Core.Clients.Interfaces;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Microsoft.Extensions.Logging;
 
 namespace Altinn.Platform.Authentication.Clients
 {
