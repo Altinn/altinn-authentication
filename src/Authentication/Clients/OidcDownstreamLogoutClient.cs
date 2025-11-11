@@ -24,9 +24,9 @@ namespace Altinn.Platform.Authentication.Clients
         /// </summary>
         public async Task<bool> TryLogout(OidcClient oidcClient, string sessionId, string iss, CancellationToken cancellationToken)
         {
-            if (oidcClient.FrontchannelLogoutUri == null)
+            if (oidcClient.FrontchannelLogoutUri == null || !oidcClient.FrontchannelLogoutUri.IsAbsoluteUri)
             {
-                _logger.LogDebug("No front channel logout URI configured for client {ClientId}", oidcClient.ClientId);
+                _logger.LogDebug("No front channel absolute logout URI configured for client {ClientId}", oidcClient.ClientId);
                 return true; // Not an error if not configured
             }
 
@@ -59,7 +59,7 @@ namespace Altinn.Platform.Authentication.Clients
                     return true;
                 }
                 else
-                {
+                {                                               
                     _logger.LogWarning("Front channel logout failed for client {ClientId} with status {StatusCode}", oidcClient.ClientId, response.StatusCode);
                     response.Dispose(cancellationToken);
                     return false;
