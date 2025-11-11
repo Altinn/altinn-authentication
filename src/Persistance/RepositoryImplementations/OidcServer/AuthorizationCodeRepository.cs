@@ -167,6 +167,34 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             }
         }
 
+        /// <inheritdoc/>
+        public async Task<List<string>> GetClientsPartOfSession(string sessionId, CancellationToken cancellationToken = default)
+        {
+            const string SQL = /*strpsql*/ @"
+                SELECT DISTINCT client_id
+                  FROM oidcserver.authorization_code
+                 WHERE session_id = @session_id;";
+            try
+            {
+                await using NpgsqlCommand cmd = _ds.CreateCommand(SQL);
+                cmd.Parameters.AddWithValue("session_id", NpgsqlDbType.Text, sessionId);
+
+                await using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync(cancellationToken);
+                var clients = new List<string>();
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    clients.Add(reader.GetString(0));
+                }
+
+                return clients;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AuthorizationCodeRepository.GetClientsPartOfSession failed for session_id={SessionId}", sessionId);
+                throw;
+            }
+        }
+
         private static NpgsqlParameter JsonbParam(string name, Dictionary<string, List<string>>? dict)
         {
             return new NpgsqlParameter(name, NpgsqlDbType.Jsonb)

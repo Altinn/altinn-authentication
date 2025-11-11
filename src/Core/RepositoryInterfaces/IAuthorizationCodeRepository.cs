@@ -22,5 +22,10 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// </summary>
         Task<bool> TryConsumeAsync(string code, string clientId, Uri redirectUri, DateTimeOffset usedAt, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Returns a list of client IDs that are part of the specified session. Would be used to notify clients in a session about logout.
+        /// </summary>
+        Task<List<string>> GetClientsPartOfSession(string sessionId, CancellationToken cancellationToken = default);
+
     }
 }

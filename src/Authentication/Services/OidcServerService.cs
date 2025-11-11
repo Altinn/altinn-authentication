@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
@@ -54,7 +55,8 @@ namespace Altinn.Platform.Authentication.Services
         IUnregisteredClientRepository unregisteredClientRequestRepository,
         ISblCookieDecryptionService sblCookieDecryptionService,
         IEventLog eventLog,
-        IFeatureManager featureManager) : IOidcServerService
+        IFeatureManager featureManager, 
+        IOidcDownstreamLogout oidcDownstreamLogout) : IOidcServerService
     {
         private readonly ILogger<OidcServerService> _logger = logger;
         private readonly IOidcServerClientRepository _oidcServerClientRepository = oidcServerClientRepository;
@@ -78,6 +80,7 @@ namespace Altinn.Platform.Authentication.Services
         private static readonly string DefaultProviderKey = "idporten";
         private readonly IEventLog _eventLog = eventLog;
         private readonly IFeatureManager _featureManager = featureManager;
+        private readonly IOidcDownstreamLogout _oidcDownstreamLogout = oidcDownstreamLogout;
 
         /// <summary>
         /// Handles an incoming OIDC <c>/authorize</c> request from a Downstream client in the Altinn Platform.
@@ -484,7 +487,6 @@ namespace Altinn.Platform.Authentication.Services
                     queryParams["post_logout_redirect_uri"] = $"{_generalSettings.PlatformEndpoint.TrimEnd('/')}/authentication/api/v1/logout/handleloggedout"; 
                     logoutUriBuilder.Query = queryParams.ToString()!;
                     redirect = logoutUriBuilder.Uri;
-
                 }
             }
 
@@ -501,6 +503,20 @@ namespace Altinn.Platform.Authentication.Services
                     foreach (Guid family in families)
                     {
                         await _refreshTokenRepo.RevokeFamilyAsync(family, "logout", cancellationToken);
+                    }
+                }
+
+                List<string> clientsPartOfSession = await _authorizationCodeRepo.GetClientsPartOfSession(sid!, cancellationToken);
+
+                if (clientsPartOfSession?.Any() == true)
+                {
+                    foreach (string clientId in clientsPartOfSession)
+                    {
+                        OidcClient? client = await _oidcServerClientRepository.GetClientAsync(clientId, cancellationToken);
+                        if (client != null && client.FrontchannelLogoutUri != null)
+                        {
+                            await _oidcDownstreamLogout.TryLogout(client, sid, _generalSettings.AltinnOidcIssuerUrl, cancellationToken);
+                        }
                     }
                 }
             }

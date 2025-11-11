@@ -31,7 +31,9 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
                 ClientSecretExpiresAt = null,
                 SecretRotationAt = null,
                 JwksUri = null,
-                JwksJson = null
+                JwksJson = null,
+                FrontchannelLogoutUri = "https://af.at.altinn.cloud/api/frontchannel-logout",
+                BackchannelLogoutUri = null
             };
 
         public static Dictionary<string, string> BuildTokenRequestForm(OidcTestScenario testScenario, string code)

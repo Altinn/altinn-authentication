@@ -19,6 +19,7 @@ using Altinn.Platform.Authentication.Clients;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Authorization;
+using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Core.Services.Validation;
@@ -373,6 +374,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
     services.AddHttpClient<IResourceRegistryClient, ResourceRegistryClient>();
     services.AddHttpClient<IPartiesClient, PartiesClient>();
     services.AddHttpClient<IProfile, ProfileService>();
+    services.AddHttpClient<IOidcDownstreamLogout, OidcDownstreamLogoutClient>();
     services.AddSingleton<IAccessTokenGenerator, AccessTokenGenerator>();
     services.AddTransient<ISigningCredentialsResolver, SigningCredentialsResolver>();
     services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
