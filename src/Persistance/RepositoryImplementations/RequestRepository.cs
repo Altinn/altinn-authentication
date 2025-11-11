@@ -555,7 +555,6 @@ public class RequestRepository : IRequestRepository
                 created
             FROM business_application.request r
             WHERE r.party_org_no = @party_org_no
-                and r.escalated = true
                 and r.is_deleted = false
                 and r.request_status = @request_status
                 and systemuser_type = @systemuser_type;";
