@@ -10,7 +10,7 @@ using System.Web;
 namespace Altinn.Platform.Authentication.Clients
 {
     /// <summary>
-    /// CLient that tries to logout the 
+    /// Client that tries to logout the 
     /// </summary>
     public class OidcDownstreamLogoutClient(HttpClient httpClient, ILogger<OidcDownstreamLogoutClient> logger) : IOidcDownstreamLogout
     {
