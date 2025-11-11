@@ -57,8 +57,14 @@
         /// </summary>
         public string? JwksJson { get; init; } // JSON (string) stored into jsonb
 
+        /// <summary>
+        /// The URI to which the user's browser is redirected for front-channel logout notifications.
+        /// </summary>
         public string? FrontchannelLogoutUri { get; init; }
 
+        /// <summary>
+        /// The URI to which back-channel logout requests are sent for the client.
+        /// </summary>
         public string? BackchannelLogoutUri { get; init; }
 
     }
