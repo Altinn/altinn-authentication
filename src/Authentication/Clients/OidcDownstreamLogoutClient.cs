@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Clients
 
         /// <summary>
         /// Tries to do a front channel logout against the downstream client. 
-        /// This is not a standard way to log out a downstream OIDC client, but since Altinn Authenticaiton 
+        /// This is not a standard way to log out a downstream OIDC client, but since Altinn Authentication 
         /// does work as a client itself we cant just put an ifram inside the iframe to log out our downstream clients.
         /// </summary>
         public async Task<bool> TryLogout(OidcClient oidcClient, string sessionId, string iss, CancellationToken cancellationToken)
