@@ -56,5 +56,10 @@
         /// The JSON Web Key Set document that contains the client's public keys.
         /// </summary>
         public string? JwksJson { get; init; } // JSON (string) stored into jsonb
+
+        public string? FrontchannelLogoutUri { get; init; }
+
+        public string? BackchannelLogoutUri { get; init; }
+
     }
 }

@@ -38,7 +38,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                         jwks,
                         allowed_scopes,
                         created_at,
-                        updated_at
+                        updated_at,
+                        frontchannel_logout_uri,
+                        backchannel_logout_uri
                     FROM oidcserver.client
                     WHERE client_id = @client_id
                     LIMIT 1;";
@@ -124,7 +126,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 jwks,
                 allowed_scopes,
                 created_at,
-                updated_at
+                updated_at,
+                frontchannel_logout_uri,
+                backchannel_logout_uri
             )
             VALUES (
                 @client_id,
@@ -139,7 +143,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 @jwks,
                 @allowed_scopes,
                 @created_at,
-                @updated_at
+                @updated_at,
+                @frontchannel_logout_uri,
+                @backchannel_logout_uri
             )
             RETURNING
                 client_id,
@@ -154,7 +160,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 jwks,
                 allowed_scopes,
                 created_at,
-                updated_at;";
+                updated_at,
+                frontchannel_logout_uri,
+                backchannel_logout_uri;";
 
             try
                 {
@@ -182,6 +190,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
 
                     // JWKS
                     cmd.Parameters.AddWithValue("jwks_uri", (object?)create.JwksUri?.ToString() ?? DBNull.Value);
+
+                    cmd.Parameters.AddWithValue("frontchannel_logout_uri", (object?)create.FrontchannelLogoutUri ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("backchannel_logout_uri", (object?)create.BackchannelLogoutUri ?? DBNull.Value);
 
                     var pjwks = new NpgsqlParameter("jwks", NpgsqlDbType.Jsonb)
                     {
@@ -277,6 +288,12 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             DateTimeOffset createdAt = await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.CREATED_AT, cancellationToken);
             DateTimeOffset? updatedAt = await reader.IsDBNullAsync(ClientTable.UPDATED_AT, cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<DateTimeOffset>(ClientTable.UPDATED_AT, cancellationToken);
 
+            string? frontchannelLogoutUriStr = await reader.IsDBNullAsync("frontchannel_logout_uri", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>("frontchannel_logout_uri", cancellationToken);
+            string? backchannelLogoutUriStr = await reader.IsDBNullAsync("backchannel_logout_uri", cancellationToken: cancellationToken) ? null : await reader.GetFieldValueAsync<string>("backchannel_logout_uri", cancellationToken);
+
+            Uri? frontChannelLogoutUri = new Uri(frontchannelLogoutUriStr ?? string.Empty, UriKind.RelativeOrAbsolute);
+            Uri? backChannelLogoutUri = new Uri(backchannelLogoutUriStr ?? string.Empty, UriKind.RelativeOrAbsolute);
+
             return new OidcClient(
                 clientId: clientId,
                 clientName: clientName,
@@ -299,8 +316,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 jwksUri: jwksUri,
                 jwksJson: jwksJson,
                 postLogoutRedirectUris: null,
-                backchannelLogoutUri: null,
-                frontchannelLogoutUri: null,
+                backchannelLogoutUri: backChannelLogoutUri,
+                frontchannelLogoutUri: frontChannelLogoutUri,
                 allowTestIdp: false,
                 requireParForTestIdp: true,
                 createdAt: createdAt,

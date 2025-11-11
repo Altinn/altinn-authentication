@@ -1,17 +1,7 @@
 ﻿#nullable enable
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Web;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Helpers;
@@ -33,6 +23,17 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
 using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Web;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
@@ -50,6 +51,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IUserProfileService> _userProfileService = new();
+        private readonly Mock<IOidcDownstreamLogout> _downstreamLogoutClient = new();
 
         private FakeTimeProvider _fakeTime = null!;
 
@@ -80,6 +82,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 .AddJsonFile(configPath)
                 .Build();
 
+            _downstreamLogoutClient.Setup(q => q.TryLogout(It.IsAny<OidcClient>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<System.Threading.CancellationToken>()))
+    .ReturnsAsync(true);
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
             services.Configure<GeneralSettings>(generalSettingSection);
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
@@ -89,6 +93,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IProfile, ProfileFileMock>();
             services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
+            services.AddSingleton<IOidcDownstreamLogout>(_downstreamLogoutClient.Object);
 
             services.PostConfigure<GeneralSettings>(o =>
             {
@@ -355,6 +360,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
             Assert.Equal("OK", frontChannelContent);
+
+            _downstreamLogoutClient.Verify(
+            q => q.TryLogout(
+            It.IsAny<OidcClient>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<System.Threading.CancellationToken>()),
+            Times.Once);
         }
 
         /// <summary>
@@ -502,6 +515,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
             Assert.Equal("OK", frontChannelContent);
+
+            _downstreamLogoutClient.Verify(
+                q => q.TryLogout(
+                It.IsAny<OidcClient>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<System.Threading.CancellationToken>()), 
+                Times.Once);
         }
 
         /// <summary>
@@ -637,6 +658,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
             Assert.Equal("OK", frontChannelContent);
+
+            _downstreamLogoutClient.Verify(
+            q => q.TryLogout(
+            It.IsAny<OidcClient>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<System.Threading.CancellationToken>()),
+            Times.Once);
         }
 
         /// <summary>

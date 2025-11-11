@@ -1,10 +1,11 @@
-﻿using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Web;
-using Altinn.Platform.Authentication.Core.Clients.Interfaces;
+﻿using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web;
 
 namespace Altinn.Platform.Authentication.Clients
 {
@@ -21,7 +22,7 @@ namespace Altinn.Platform.Authentication.Clients
         /// This is not a standard way to log out a downstream OIDC client, but since Altinn Authenticaiton 
         /// does work as a client itself we cant just put an ifram inside the iframe to log out our downstream clients.
         /// </summary>
-        public async Task<bool> TryLogout(OidcClient oidcClient, string sessionId, string iss)
+        public async Task<bool> TryLogout(OidcClient oidcClient, string sessionId, string iss, CancellationToken cancellationToken)
         {
             if (oidcClient.FrontchannelLogoutUri == null)
             {
@@ -31,8 +32,8 @@ namespace Altinn.Platform.Authentication.Clients
 
             try
             {
-                var uriBuilder = new UriBuilder(oidcClient.FrontchannelLogoutUri);
-                var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+                UriBuilder uriBuilder = new UriBuilder(oidcClient.FrontchannelLogoutUri);
+                System.Collections.Specialized.NameValueCollection query = HttpUtility.ParseQueryString(uriBuilder.Query);
                 
                 if (!string.IsNullOrEmpty(sessionId))
                 {
@@ -45,11 +46,11 @@ namespace Altinn.Platform.Authentication.Clients
                 }
                 
                 uriBuilder.Query = query.ToString();
-                var logoutUri = uriBuilder.Uri;
+                Uri logoutUri = uriBuilder.Uri;
 
                 _logger.LogDebug("Calling front channel logout for client {ClientId} at {LogoutUri}", oidcClient.ClientId, logoutUri);
 
-                var response = await _httpClient.GetAsync(logoutUri);
+                HttpResponseMessage response = await _httpClient.GetAsync(logoutUri);
                 
                 if (response.IsSuccessStatusCode)
                 {
