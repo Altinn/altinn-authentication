@@ -121,5 +121,25 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         {
             throw new NotImplementedException();
         }
+
+        public Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<Result<List<RequestSystemResponse>>> IRequestSystemUser.GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<Result<List<AgentRequestSystemResponse>>> IRequestSystemUser.GetPendingAgentRequests(string orgno, int userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -945,7 +945,7 @@ public class RequestSystemUserService(
             };       
     }
 
-    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType,CancellationToken cancellationToken)
+    private async Task<Result<bool>> ValidatePartyRequest(int partyId, Guid requestId, SystemUserType userType, CancellationToken cancellationToken)
     {
         Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
         if (party is null)
@@ -982,5 +982,43 @@ public class RequestSystemUserService(
         }
 
         return true;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+    {
+        return await requestRepository.SetRequestEscalated(requestId,userId, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
+    {
+        return await requestRepository.SetRequestEscalated(requestId, userId, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<List<RequestSystemResponse>>> GetPendingStandardRequests(string orgno, int userId, CancellationToken cancellationToken)
+    {
+        List<RequestSystemResponse> theList = [];
+        Result<List<RequestSystemResponse>> result = await requestRepository.GetAllPendingStandardRequests(orgno,cancellationToken);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        return theList;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<List<AgentRequestSystemResponse>>> GetPendingAgentRequests(string orgno, int userId, CancellationToken cancellationToken)
+    {
+        List<AgentRequestSystemResponse> theList = [];
+        Result<List<AgentRequestSystemResponse>> result = await requestRepository.GetAllPendingAgentRequests(orgno, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        return theList;
     }
 }
