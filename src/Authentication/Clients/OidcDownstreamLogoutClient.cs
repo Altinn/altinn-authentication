@@ -55,13 +55,13 @@ namespace Altinn.Platform.Authentication.Clients
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.LogDebug("Front channel logout succeeded for client {ClientId}", oidcClient.ClientId);
-                    response.Dispose();
+                    response.Dispose(cancellationToken);
                     return true;
                 }
                 else
                 {
                     _logger.LogWarning("Front channel logout failed for client {ClientId} with status {StatusCode}", oidcClient.ClientId, response.StatusCode);
-                    response.Dispose();
+                    response.Dispose(cancellationToken);
                     return false;
                 }
             }
