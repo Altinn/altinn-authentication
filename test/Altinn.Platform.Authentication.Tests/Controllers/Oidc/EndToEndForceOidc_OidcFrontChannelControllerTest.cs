@@ -771,7 +771,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
-        /// Scenario where user is loged in in Altinn 2 and navigates to Arbeidsflate directly
+        /// Scenario where user is logged in in Altinn 2 and navigates to Arbeidsflate directly
         /// </summary>
         /// <returns></returns>
         [Fact]
