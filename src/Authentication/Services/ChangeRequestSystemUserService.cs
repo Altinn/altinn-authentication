@@ -55,7 +55,7 @@ public class ChangeRequestSystemUserService(
     private int _paginationSize = _paginationOption.Value.Size;
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUser systemUser, Guid correllationId)
+    public async Task<Result<ChangeRequestResponse>> CreateChangeRequest(ChangeRequestSystemUser createRequest, OrganisationNumber vendorOrgNo, SystemUserInternalDTO systemUser, Guid correllationId)
     {
         // For now we don't support ChangeRequests for an Agent SystemUser
         if (systemUser.UserType == Core.Enums.SystemUserType.Agent)
@@ -357,7 +357,7 @@ public class ChangeRequestSystemUserService(
 
         OrganisationNumber vendor = OrganisationNumber.CreateFromStringOrgNo(regSystem.SystemVendorOrgNumber);
 
-        SystemUser? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
+        SystemUserInternalDTO? toBeChanged = await systemUserService.GetSingleSystemUserById(systemUserChangeRequest.SystemUserId);
         if (toBeChanged is null)
         {
             return Problem.SystemUserNotFound;
@@ -592,7 +592,7 @@ public class ChangeRequestSystemUserService(
     }
 
     /// <inheritdoc/>
-    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, SystemUser systemUser, OrganisationNumber vendorOrgNo)
+    public async Task<Result<ChangeRequestResponse>> VerifySetOfRights(ChangeRequestResponse verifyRequest, SystemUserInternalDTO systemUser, OrganisationNumber vendorOrgNo)
     {
         Result<RegisteredSystemResponse> valSet = await ValidateChangeRequest(verifyRequest, vendorOrgNo, createNew: false);
         if (valSet.IsProblem)
@@ -654,7 +654,7 @@ public class ChangeRequestSystemUserService(
     /// <param name="required">Whether all should be required, or all are unwanted</param>
     /// <param name="cancellationToken">cancellationToken </param>
     /// <returns>List of difference, an empty list means all are as required</returns>
-    private async Task<Result<List<AccessPackage>>> VerifyAccessPackages(List<AccessPackage> accessPackages, Guid partyUuid, SystemUser systemUser, bool required, CancellationToken cancellationToken = default)
+    private async Task<Result<List<AccessPackage>>> VerifyAccessPackages(List<AccessPackage> accessPackages, Guid partyUuid, SystemUserInternalDTO systemUser, bool required, CancellationToken cancellationToken = default)
     {
         // The result is stored here, we are looking for the difference between what is required and what is current
         List<AccessPackage> diff = [];
@@ -688,7 +688,7 @@ public class ChangeRequestSystemUserService(
     /// does not identify which were missing if the result is not PERMIT
     /// </summary>
     /// <returns>true or false</returns>
-    private async Task<Result<List<Right>>> VerifySingleRightsWithPDP(List<Right> rights, SystemUser systemUser, bool required)
+    private async Task<Result<List<Right>>> VerifySingleRightsWithPDP(List<Right> rights, SystemUserInternalDTO systemUser, bool required)
     {        
         List<PolicyRightsDTO> requiredPolicyRights = [];
 
@@ -810,7 +810,7 @@ public class ChangeRequestSystemUserService(
         return noPermit;
     }
 
-    private async Task<Result<XacmlJsonResponse>> MultipleDecisionRequestToPDP(List<PolicyRightsDTO> rights, SystemUser systemUser)
+    private async Task<Result<XacmlJsonResponse>> MultipleDecisionRequestToPDP(List<PolicyRightsDTO> rights, SystemUserInternalDTO systemUser)
     {
         XacmlJsonCategory xacmlUser = new()
         {

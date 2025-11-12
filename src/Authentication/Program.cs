@@ -311,6 +311,11 @@ void ConfigureServices(IServiceCollection services, IConfiguration config)
             }
         });
 
+    // Replace this line:
+    // services.AddAutoMapper(typeof(Program));
+
+    // With this line:
+    services.AddAutoMapper(cfg => { }, typeof(Program));    
     services.AddControllers().AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.WriteIndented = true;

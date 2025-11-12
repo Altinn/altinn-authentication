@@ -52,7 +52,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("clients/available")]
         public async Task<ActionResult<ClientInfoPaginated<ClientInfo>>> GetAvailableClientsForDelegation([FromQuery] Guid agent)
         {
-            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
+            SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
@@ -112,7 +112,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("clients")]
         public async Task<ActionResult<ClientInfoPaginated<ClientInfo>>> GetClientsDelegatedToSystemUser([FromQuery] Guid agent)
         {
-            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
+            SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
@@ -172,7 +172,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpPost("clients")]
         public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
-            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
+            SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
             ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
             ValidationErrorBuilder clientErrors = ValidateClient(client);
             ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
@@ -260,7 +260,7 @@ namespace Altinn.Platform.Authentication.Controllers
         public async Task<ActionResult<List<DelegationResponse>>> RemoveClientFromSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
             Guid delegationId = Guid.Empty;
-            SystemUser systemUser = await SystemUserService.GetSingleSystemUserById(agent);
+            SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
             ValidationErrorBuilder clientErrors = ValidateClient(client);
@@ -337,11 +337,11 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <remarks>This method requires the caller to be authenticated and authorized with the <see
         /// cref="AuthzConstants.POLICY_CLIENTDELEGATION_READ"/> policy. The party ID is determined based on the
         /// caller's authentication context.</remarks>
-        /// <returns>A list of <see cref="SystemUser"/> objects representing the agent system users for the party. Returns an
+        /// <returns>A list of <see cref="SystemUserInternalDTO"/> objects representing the agent system users for the party. Returns an
         /// empty list if no agent system users are found.</returns>
         [HttpGet("agents")]
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
-        public async Task<ActionResult<List<SystemUser>>> GetAllAgentSystemUsersForParty([FromQuery] string party)
+        public async Task<ActionResult<List<SystemUserInternalDTO>>> GetAllAgentSystemUsersForParty([FromQuery] string party)
         {    
             Party partyInfo = await PartiesClient.GetPartyByOrgNo(party);
             if (partyInfo is null)
@@ -417,7 +417,7 @@ namespace Altinn.Platform.Authentication.Controllers
             return ClientInfoPaginated.Create(clients, null, systemUser);
         }
 
-        private async Task<ClientInfoPaginated<ClientInfo>> MapDelegationResponseToSystemUserInfo(List<DelegationResponse> delegationResponses, Guid systemUserId, SystemUser systemUser)
+        private async Task<ClientInfoPaginated<ClientInfo>> MapDelegationResponseToSystemUserInfo(List<DelegationResponse> delegationResponses, Guid systemUserId, SystemUserInternalDTO systemUser)
         {
             SystemUserInfo systemUserInfo = new SystemUserInfo
             {
@@ -440,7 +440,7 @@ namespace Altinn.Platform.Authentication.Controllers
             return ClientInfoPaginated.Create(clients, null, systemUserInfo);
         }
 
-        private static ValidationErrorBuilder ValidateSystemUser(SystemUser systemUser, Guid systemUserId)
+        private static ValidationErrorBuilder ValidateSystemUser(SystemUserInternalDTO systemUser, Guid systemUserId)
         {
             ValidationErrorBuilder errors = default;
 

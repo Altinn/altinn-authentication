@@ -92,7 +92,7 @@ public class ChangeRequestSystemUserController(
             return BadRequest("Missing or invalid QueryParameter: correlation-id. Generate a unique UUID (RFC 4122) for this Change Request, and add as a Query Parameter.");
         }
 
-        SystemUser? systemUser = null;
+        SystemUserInternalDTO? systemUser = null;
         Result<ChangeRequestResponse> response;
 
         // Only the Vendor of the Registered System the SystemUser is based on have the authority to ask for a Change Request

@@ -22,6 +22,7 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
@@ -45,13 +46,15 @@ namespace Altinn.Platform.Authentication.Services
         IAccessManagementClient accessManagementClient,
         DelegationHelper delegationHelper,
         IPartiesClient partiesClient,
-        IOptions<PaginationOptions> paginationOption) : ISystemUserService
+        IOptions<PaginationOptions> paginationOption,
+        IMapper mapper) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
         private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
         private readonly ISystemRegisterService systemRegisterService = systemRegisterService;
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
         private readonly IPartiesClient _partiesClient = partiesClient;
+        private readonly IMapper _mapper = mapper;
 
         /// <summary>
         /// Used to limit the number of items returned in a paginated list
@@ -68,7 +71,7 @@ namespace Altinn.Platform.Authentication.Services
         /// The unique Id for the systemuser is handled by the db.
         /// </summary>
         /// <returns>The SystemUser created</returns>    
-        public async Task<Result<SystemUser>> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
+        public async Task<Result<SystemUserInternalDTO>> CreateSystemUser(string partyId, SystemUserRequestDto request, int userId)
         {
             RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
             if (regSystem is null)
@@ -90,13 +93,13 @@ namespace Altinn.Platform.Authentication.Services
                 ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
             };
 
-            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            SystemUserInternalDTO? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
             if (existing is not null)
             {
                 return Problem.SystemUser_AlreadyExists;
             }
 
-            SystemUser newSystemUser = new()
+            SystemUserInternalDTO newSystemUser = new()
             {
                 ReporteeOrgNo = party.OrgNumber,
                 SystemInternalId = regSystem.InternalId,
@@ -111,7 +114,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToCreate;
             }
 
-            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+            SystemUserInternalDTO? inserted = await _repository.GetSystemUserById((Guid)insertedId);
             if (inserted is null)
             {
                 return Problem.SystemUser_FailedToCreate;
@@ -124,7 +127,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Returns the list of SystemUsers this PartyID has registered.
         /// </summary>
         /// <returns>list of SystemUsers</returns>
-        public async Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId)
+        public async Task<List<SystemUserInternalDTO>> GetListOfSystemUsersForParty(int partyId)
         {
             if (partyId < 1)
             {
@@ -135,7 +138,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<List<SystemUser>> GetListOfAgentSystemUsersForParty(int partyId)
+        public async Task<List<SystemUserInternalDTO>> GetListOfAgentSystemUsersForParty(int partyId)
         {
             if (partyId < 1)
             {
@@ -149,9 +152,9 @@ namespace Altinn.Platform.Authentication.Services
         /// Return a single SystemUser by PartyId and SystemUserId
         /// </summary>
         /// <returns>SystemUser</returns>
-        public async Task<SystemUser?> GetSingleSystemUserById(Guid systemUserId)
+        public async Task<SystemUserInternalDTO?> GetSingleSystemUserById(Guid systemUserId)
         {
-            SystemUser? search = await _repository.GetSystemUserById(systemUserId);
+            SystemUserInternalDTO? search = await _repository.GetSystemUserById(systemUserId);
 
             return search;
         }
@@ -176,7 +179,7 @@ namespace Altinn.Platform.Authentication.Services
 
             Guid partyUuid = party.PartyUuid.Value;
 
-            SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
+            SystemUserInternalDTO? systemUser = await _repository.GetSystemUserById(systemUserId);
             if (systemUser is null)
             {
                 return Problem.SystemUserNotFound;
@@ -248,7 +251,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>Number of rows affected</returns>
         public async Task<int> UpdateSystemUserById(SystemUserUpdateDto request)
         {
-            SystemUser? search = await _repository.GetSystemUserById(Guid.Parse(request.Id));
+            SystemUserInternalDTO? search = await _repository.GetSystemUserById(Guid.Parse(request.Id));
             if (search == null)
             {
                 return 0;
@@ -263,7 +266,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<SystemUser?> CheckIfPartyHasIntegration(
+        public async Task<SystemUserInternalDTO?> CheckIfPartyHasIntegration(
             string clientId,
             string systemProviderOrgNo,
             string systemUserOwnerOrgNo,
@@ -279,7 +282,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<Page<SystemUser, long>>> GetAllSystemUsersByVendorSystem(
+        public async Task<Result<Page<SystemUserInternalDTO, long>>> GetAllSystemUsersByVendorSystem(
             OrganisationNumber vendorOrgNo,
             string systemId,
             Page<long>.Request continueRequest,
@@ -303,14 +306,14 @@ namespace Altinn.Platform.Authentication.Services
                 continueFrom = continueRequest.ContinuationToken;
             }
 
-            List<SystemUser>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, continueFrom, _paginationSize, cancellationToken);
+            List<SystemUserInternalDTO>? theList = await _repository.GetAllSystemUsersByVendorSystem(systemId, continueFrom, _paginationSize, cancellationToken);
             theList ??= [];
 
             return Page.Create(theList, _paginationSize, static theList => theList.SequenceNo);
         }
 
         /// <inheritdoc/>
-        public async Task<Result<SystemUser>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<SystemUserInternalDTO>> CreateAndDelegateSystemUser(string partyId, SystemUserRequestDto request, int userId, CancellationToken cancellationToken)
         {
             DelegationCheckResult? delegationCheckFinalResult = null;
             AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult = null;
@@ -342,7 +345,7 @@ namespace Altinn.Platform.Authentication.Services
                 ExternalRef = party.OrgNumber // This is the fallback if no ExternalRef is provided, and in L1 this is the same as the OrgNo
             };
 
-            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            SystemUserInternalDTO? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
             if (existing is not null)
             {
                 return Problem.SystemUser_AlreadyExists;
@@ -378,7 +381,7 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
-            SystemUser newSystemUser = new()
+            SystemUserInternalDTO newSystemUser = new()
             {
                 ReporteeOrgNo = party.OrgNumber,
                 SystemInternalId = regSystem.InternalId,
@@ -390,7 +393,7 @@ namespace Altinn.Platform.Authentication.Services
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
         }
 
-        private async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(
+        private async Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(
             SystemUserType systemUserType, 
             string systemId, 
             string partyId, 
@@ -440,7 +443,7 @@ namespace Altinn.Platform.Authentication.Services
                 ExternalRef = string.IsNullOrEmpty(externalRef) ? party.OrgNumber : externalRef
             };
 
-            SystemUser? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
+            SystemUserInternalDTO? existing = await _repository.GetSystemUserByExternalRequestId(externalRequestId);
             if (existing is not null)
             {
                 return Problem.SystemUser_AlreadyExists;
@@ -500,7 +503,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemNameNotFound;
             }
 
-            SystemUser newSystemUser = new()
+            SystemUserInternalDTO newSystemUser = new()
             {
                 Id = requestId.ToString()!,
                 ReporteeOrgNo = party.OrgNumber,
@@ -522,8 +525,8 @@ namespace Altinn.Platform.Authentication.Services
             
         }
 
-        private async Task<Result<SystemUser>> InsertNewSystemUser(
-            SystemUser newSystemUser, 
+        private async Task<Result<SystemUserInternalDTO>> InsertNewSystemUser(
+            SystemUserInternalDTO newSystemUser, 
             int userId, 
             RegisteredSystemResponse regSystem, 
             DelegationCheckResult? delegationCheckFinalResult, 
@@ -538,7 +541,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToCreate;
             }
 
-            SystemUser? inserted = await _repository.GetSystemUserById((Guid)insertedId);
+            SystemUserInternalDTO? inserted = await _repository.GetSystemUserById((Guid)insertedId);
             if (inserted is null)
             {
                 return Problem.SystemUser_FailedToCreate;
@@ -567,7 +570,7 @@ namespace Altinn.Platform.Authentication.Services
             return inserted;
         }
 
-        private static bool IsStandardSystemUserDelegateAccessPackage(SystemUser newSystemUser, AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult)
+        private static bool IsStandardSystemUserDelegateAccessPackage(SystemUserInternalDTO newSystemUser, AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult)
         {
             if (newSystemUser.UserType == SystemUserType.Standard && accessPackageDelegationCheckResult is not null && accessPackageDelegationCheckResult.CanDelegate && accessPackageDelegationCheckResult.AccessPackages is not null && accessPackageDelegationCheckResult.AccessPackages.Count > 0)
             {
@@ -577,7 +580,7 @@ namespace Altinn.Platform.Authentication.Services
             return false;
         }
 
-        private static bool IsStandardSystemUserDelegatgeSingleRights(SystemUser newSystemUser, RegisteredSystemResponse regSystem, DelegationCheckResult? delegationCheckFinalResult)
+        private static bool IsStandardSystemUserDelegatgeSingleRights(SystemUserInternalDTO newSystemUser, RegisteredSystemResponse regSystem, DelegationCheckResult? delegationCheckFinalResult)
         {
             if (newSystemUser.UserType == SystemUserType.Standard && regSystem.Rights is not null && regSystem.Rights.Count > 0 && delegationCheckFinalResult is not null && delegationCheckFinalResult.CanDelegate)
             {
@@ -588,7 +591,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(
+        public async Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(
             AgentRequestSystemResponse request, 
             string partyId, 
             int userId, 
@@ -608,7 +611,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(
+        public async Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(
             RequestSystemResponse request, 
             string partyId, 
             int userId, 
@@ -789,7 +792,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
+        public async Task<SystemUserInternalDTO?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId, CancellationToken cancellationToken)
         {
             return await _repository.GetSystemUserByExternalRequestId(externalRequestId);
         }
@@ -809,7 +812,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, IFeatureManager featureManager, CancellationToken cancellationToken)
+        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
             bool mockCustomerApi = await featureManager.IsEnabledAsync(FeatureFlags.MockCustomerApi);
             Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, mockCustomerApi, cancellationToken);
@@ -869,7 +872,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default)
         {
-            SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
+            SystemUserInternalDTO? systemUser = await _repository.GetSystemUserById(systemUserId);
             if (systemUser is null)
             {
                 return Problem.SystemUserNotFound;
@@ -904,7 +907,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUser systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken)
+        public async Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUserInternalDTO systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken)
         {
             // Push system user to Access Management
             Result<bool> partyCreated = await _accessManagementClient.PushSystemUserToAM(partyUuId, systemUser, cancellationToken);
@@ -963,7 +966,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int partyId, Guid systemUserId, CancellationToken cancellationToken)
         {
-            SystemUser? systemUser = await _repository.GetSystemUserById(systemUserId);
+            SystemUserInternalDTO? systemUser = await _repository.GetSystemUserById(systemUserId);
             if (systemUser is null)
             {
                 return Problem.SystemUserNotFound;

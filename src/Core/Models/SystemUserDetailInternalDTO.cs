@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.Models
     /// The BFF will provide a tailored DTO to the Frontend.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public class SystemUser
+    public class SystemUserDetailInternalDTO
     {
         /// <summary>
         /// GUID created by the "real" Authentication Component
@@ -105,21 +105,19 @@ namespace Altinn.Platform.Authentication.Core.Models
         public string ExternalRef { get; set; } = string.Empty;
 
         /// <summary>
-        /// The array of access packages versus System Provider's Resources needed to use this Registered System
-        /// </summary>
-        [JsonPropertyName("accessPackages")]
-        public List<AccessPackage> AccessPackages { get; set; } = [];
-
-        /// <summary>
         /// The system user type
         /// </summary>
         [JsonPropertyName("userType")]
         public SystemUserType UserType { get; set; }
 
         /// <summary>
-        /// Used internally when paginating
+        /// Gets or sets the collection of access packages associated with the user.
         /// </summary>
-        [JsonIgnore]
-        public long SequenceNo { get; set; } = 0;
+        public List<AccessPackage>? AccessPackages { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of rights associated with the user.
+        /// </summary>
+        public List<Right>? Rights { get; set; }
     }
 }

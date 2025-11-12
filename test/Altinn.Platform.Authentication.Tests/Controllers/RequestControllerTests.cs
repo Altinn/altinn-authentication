@@ -1379,7 +1379,7 @@ public class RequestControllerTests(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
         Assert.NotNull(systemuser);
         Assert.Equal(systemuser.IntegrationTitle, req.IntegrationTitle);
     }
@@ -1445,7 +1445,7 @@ public class RequestControllerTests(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
         Assert.NotNull(systemuser);
         Assert.Equal("The Matrix", systemuser.IntegrationTitle);
     }
@@ -1946,10 +1946,10 @@ public class RequestControllerTests(
         HttpRequestMessage getListOfSystemUsersMsg = new(HttpMethod.Get, getSystemUserVendorEndpoint);
         HttpResponseMessage getListOfSystemUsersMsgResponse = await client3.SendAsync(getListOfSystemUsersMsg);
         Assert.Equal(HttpStatusCode.OK, getListOfSystemUsersMsgResponse.StatusCode);
-        Paginated<SystemUser>? page = await getListOfSystemUsersMsgResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>(_options);
+        Paginated<SystemUserExternalDTO>? page = await getListOfSystemUsersMsgResponse.Content.ReadFromJsonAsync<Paginated<SystemUserExternalDTO>>(_options);
         Assert.NotNull(page);
-        IEnumerable<SystemUser> list = page.Items;
-        SystemUser? sys = list.FirstOrDefault();
+        IEnumerable<SystemUserExternalDTO> list = page.Items;
+        SystemUserExternalDTO? sys = list.FirstOrDefault();
         Assert.NotNull(sys);
         string systemUserId = sys.Id;
         Assert.Equal(req.ExternalRef, sys.ExternalRef);
@@ -2041,10 +2041,10 @@ public class RequestControllerTests(
         HttpRequestMessage getListOfSystemUsersMsg = new(HttpMethod.Get, getSystemUserVendorEndpoint);
         HttpResponseMessage getListOfSystemUsersMsgResponse = await client3.SendAsync(getListOfSystemUsersMsg);
         Assert.Equal(HttpStatusCode.OK, getListOfSystemUsersMsgResponse.StatusCode);
-        Paginated<SystemUser>? page = await getListOfSystemUsersMsgResponse.Content.ReadFromJsonAsync<Paginated<SystemUser>>(_options);
+        Paginated<SystemUserExternalDTO>? page = await getListOfSystemUsersMsgResponse.Content.ReadFromJsonAsync<Paginated<SystemUserExternalDTO>>(_options);
         Assert.NotNull(page);
-        IEnumerable<SystemUser> list = page.Items;
-        SystemUser? sys = list.FirstOrDefault();
+        IEnumerable<SystemUserExternalDTO> list = page.Items;
+        SystemUserExternalDTO? sys = list.FirstOrDefault();
         Assert.NotNull(sys);
         string systemUserId = sys.Id;
         Assert.Equal(req.ExternalRef, sys.ExternalRef);
