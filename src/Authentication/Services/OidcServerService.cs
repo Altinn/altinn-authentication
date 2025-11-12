@@ -140,7 +140,7 @@ namespace Altinn.Platform.Authentication.Services
             {
                 // Try to extract session from Altinn 2 ticket
                 UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
-                if (userAuthenticationModel?.UserID?.Value is > 0)
+                if (userAuthenticationModel?.UserID.HasValue == true && userAuthenticationModel.UserID.Value > 0)
                 {
                     userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
 
