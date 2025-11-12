@@ -43,8 +43,16 @@ namespace Altinn.Platform.Authentication.Controllers
             string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
             Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
             string? sessionHandle = Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out var sh) ? sh : null;
-            string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
-            string? encryptedTicket = Request.Cookies[cookieName];
+            string? encryptedTicket = null;
+            if (!string.IsNullOrEmpty(_generalSettings.SblAuthCookieEnvSpecificName) &&
+                Request.Cookies.TryGetValue(_generalSettings.SblAuthCookieEnvSpecificName, out string? envCookieValue))
+            {
+                encryptedTicket = envCookieValue;
+            }
+            else if (Request.Cookies.TryGetValue(_generalSettings.SblAuthCookieName, out string? defaultCookieValue))
+            {
+                encryptedTicket = defaultCookieValue;
+            }
 
             AuthorizeRequest req;
             try
