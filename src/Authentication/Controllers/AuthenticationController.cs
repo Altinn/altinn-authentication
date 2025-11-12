@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
@@ -30,6 +31,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -235,7 +237,24 @@ namespace Altinn.Platform.Authentication.Controllers
                     // Verify if user is already authenticated. The just go directly to the target URL
                     if (User?.Identity != null && User.Identity.IsAuthenticated)
                     {
-                        return Redirect(validatedGoToUri.AbsoluteUri);
+                        try
+                        {
+                            await _oidcServerService.HandleSessionRefresh(User, cancellationToken);
+                            return Redirect(validatedGoToUri.AbsoluteUri);
+                        }
+                        catch
+                        {
+                            // Sessions was not able to be refreshed. Deletes the cookies and continues to re-authenticate
+                            Response.Cookies.Append(_generalSettings.JwtCookieName, string.Empty, new CookieOptions
+                            {
+                                HttpOnly = true,
+                                Secure = true,
+                                Path = "/",
+                                Domain = _generalSettings.HostName,
+                                Expires = DateTimeOffset.UnixEpoch,
+                                SameSite = SameSiteMode.Lax
+                            });
+                        }
                     }
 
                     // Check to see if we have a valid Session cookie and recreate JWT Based on that
