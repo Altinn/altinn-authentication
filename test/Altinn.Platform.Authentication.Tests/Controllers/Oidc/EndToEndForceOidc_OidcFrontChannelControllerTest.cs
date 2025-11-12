@@ -771,11 +771,75 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         /// <summary>
+        /// Scenario where user is logged in in Altinn 2 and navigates to Arbeidsflate directly
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TC4B_Auth_A2_Aa_Logout_End_To_End_OK()
+        {
+            // Create HttpClient with default headers for IP, UA, correlation. 
+            using HttpClient client = CreateClientWithHeaders(new()
+            {
+                [".AspxAuth"] = "DummyAuthToken12345"
+            });
+
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+            ConfigureSblTokenMockByScenario(testScenario);
+
+            // Insert a client that matches the authorize request
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            // === Phase 1: User redirects to Arbeidsflate and is not authenticated. ======
+            // It already has a .ASPXauth that is valid and can be used to create a session in Authentication
+            // The user does not have a valid session in Arbeidsflate. So user is redirected to the standard authorize endpoint with new state, nonce and pkce values.
+            string authorizationRequestUrl2 = testScenario.GetAuthorizationRequestUrl();
+
+            // This would be the URL Arbeidsflate redirects the user to. Now the user have a active Altinn2 ticket and should get a direct back with code and state (no intermediate login at IdP).
+            HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
+            OidcAssertHelper.AssertAuthorizedRedirect(authorizationRequestResponse2, testScenario, _fakeTime.GetUtcNow());
+
+            string code = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
+
+            // Gets the new code from the callback response and redeems at /token endpoint
+            Dictionary<string, string> tokenForm = OidcServerTestUtils.BuildTokenRequestForm(testScenario, code);
+
+            using var tokenResp = await client.PostAsync(
+                "/authentication/api/v1/token",
+                new FormUrlEncodedContent(tokenForm));
+
+            Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
+            string json = await tokenResp.Content.ReadAsStringAsync();
+            TokenResponseDto? tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
+
+            // Asserts on token response structure
+            string sidFromCodeResponse = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
+
+            // ===== Phase 5: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
+
+            // Verify that session is active before logout
+            OidcSession? beforeLoggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
+            OidcAssertHelper.AssertValidSession(beforeLoggedOutSession, testScenario, _fakeTime.GetUtcNow());
+            Debug.Assert(beforeLoggedOutSession != null);
+
+            using var logoutResp = await client.GetAsync(
+                "/authentication/api/v1/openid/logout?post_logout_redirect_uri=https%3A%2F%2Farbeidsflate.apps.localhost%2Floggetut&state=987654321");
+            string content = await logoutResp.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
+            Assert.StartsWith("http://localhost/ui/authentication/logout", logoutResp.Headers.Location!.ToString());
+            OidcAssertHelper.AssertLogoutRedirect(logoutResp, testScenario);
+
+            OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
+            Assert.Null(loggedOutSession);
+        }
+
+        /// <summary>
         /// Same scenario as above with a Level 1 Arbeidsflate scenario.
         /// Needed for bruksmønster
         /// </summary>
         [Fact]
-        public async Task TC4B_Auth_A2_L1_App_Aa_Logout_End_To_End_OK()
+        public async Task TC4C_Auth_A2_L1_App_Aa_Logout_End_To_End_OK()
         {
             // Create HttpClient with default headers for IP, UA, correlation. 
             using HttpClient client = CreateClientWithHeaders(new()
