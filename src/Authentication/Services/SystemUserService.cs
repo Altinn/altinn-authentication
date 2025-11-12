@@ -812,10 +812,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, IFeatureManager featureManager, CancellationToken cancellationToken)
+        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
         {
-            bool mockCustomerApi = await featureManager.IsEnabledAsync(FeatureFlags.MockCustomerApi);
-            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, mockCustomerApi, cancellationToken);
+            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
             if (result.IsSuccess)
             {
                 List<DelegationResponse> theList = [];
@@ -941,26 +940,13 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            if (await featureManager.IsEnabledAsync(FeatureFlags.MockCustomerApi))
+            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
+            if (res.IsSuccess)
             {
-                var res = await _partiesClient.GetPartyCustomers(facilitator, packages.FirstOrDefault()!, cancellationToken);
-                if (res.IsSuccess)
-                {
-                    return ConvertPartyCustomerToClient(res.Value);
-                }
-
-                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+                return ConvertConnectionDTOToClient(res.Value);
             }
-            else
-            {
-                var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
-                if (res.IsSuccess)
-                {
-                    return ConvertConnectionDTOToClient(res.Value);
-                }
 
-                return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
-            }
+            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
         }
 
         /// <inheritdoc/>

@@ -536,7 +536,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, bool mockCustomerApi, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         const string AGENT = "agent";
 
@@ -561,14 +561,9 @@ public class AccessManagementClient : IAccessManagementClient
         foreach (var pac in systemUser.AccessPackages)
         {
             string? role;
-            if (mockCustomerApi)
-            {
-                role = GetRoleFromAccessPackage(pac.Urn!);
-            }
-            else
-            {
-                role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
-            }
+
+            role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
+            
 
             if (role is null)
             {

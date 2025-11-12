@@ -130,10 +130,9 @@ public interface ISystemUserService
     /// <param name="systemUser">SystemUser</param>
     /// <param name="request">AgentDelegationInputDto</param>
     /// <param name="userId">the user id of the logged in user</param>
-    /// <param name="featureManager">FeatureManager</param>
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
-    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, IFeatureManager featureManager, CancellationToken cancellationToken);
+    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,

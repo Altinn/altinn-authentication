@@ -235,7 +235,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             var userId = AuthenticationHelper.GetUserId(HttpContext);
 
-            Result<List<DelegationResponse>> delegationResult = await SystemUserService.DelegateToAgentSystemUser(systemUser, agentDelegationInput, userId, FeatureManager, cancellationToken);
+            Result<List<DelegationResponse>> delegationResult = await SystemUserService.DelegateToAgentSystemUser(systemUser, agentDelegationInput, userId, cancellationToken);
             if (delegationResult.IsProblem)
             {
                 return delegationResult.Problem.ToActionResult();
