@@ -88,7 +88,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
         /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
         /// </summary>
-        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, string? altinn2Token, CancellationToken cancellationToken)
+        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, string? encryptedTicket, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
             // 1) Client lookup
@@ -118,6 +118,8 @@ namespace Altinn.Platform.Authentication.Services
             // ========= 4) Persist login_transaction(downstream) =========
             LoginTransaction tx = await PersistLoginTransaction(request, client, cancellationToken);
 
+            List<CookieInstruction>? cookieInstructions = null;
+
             // ========= 5) Existing IdP session reuse =========
             // Is request contains a valid AltinnStudioRuntime cookie there will be a autenticated principal on the request
             OidcSession? existingSession = null;
@@ -134,20 +136,59 @@ namespace Altinn.Platform.Authentication.Services
                 byte[] sessionHandleByte = HashHandle(FromBase64Url(sessionHandle));
                 existingSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(sessionHandleByte, cancellationToken);
             }
-            else if (!string.IsNullOrEmpty(altinn2Token))
+            else if (!string.IsNullOrEmpty(encryptedTicket))
             {
                 // Try to extract session from Altinn 2 ticket
-                UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(altinn2Token);
-                if (userAuthenticationModel != null && userAuthenticationModel.UserID != null && userAuthenticationModel.UserID.Value > 0))
+                UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
+                if (userAuthenticationModel != null && userAuthenticationModel.UserID != null && userAuthenticationModel.UserID.Value > 0)
                 {
                     userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
 
+                    AuthenticateFromAltinn2TicketInput ticketInput = new AuthenticateFromAltinn2TicketInput
+                    {
+                        EncryptedTicket = encryptedTicket,
+                        CreatedByIp = request.ClientIp!,
+                        UserAgentHash = request.UserAgentHash,
+                        CorrelationId = request.CorrelationId!.Value
+                    };
+
                     EnrichIdentityFromLegacyValues(userAuthenticationModel);
                     AddLocalScopes(userAuthenticationModel);
-                    (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
+                    (OidcSession session, string newSessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
 
+                    existingSession = session;
+
+                    // Since session was created by Altinn 2 ticket we need to create cookies for the response before returning to the OIDC client
+                    if (session is not null && session.ExpiresAt.HasValue && session.ExpiresAt.Value > _timeProvider.GetUtcNow())
+                    {
+                        string token = await _tokenService.CreateCookieToken(session, cancellationToken);
+                        CookieInstruction cookieInstruction
+                            = new()
+                            {
+                                Name = _generalSettings.JwtCookieName,
+                                Value = token,
+                                HttpOnly = true,
+                                Secure = true,
+                                Path = "/",
+                                SameSite = SameSiteMode.Lax,
+                                Domain = _generalSettings.HostName,
+                            };
+
+                        CookieInstruction altinnSessionCookie = new()
+                        {
+                            Name = _generalSettings.AltinnSessionCookieName,
+                            Value = newSessionHandle,
+                            HttpOnly = true,
+                            Secure = true,
+                            Path = "/",
+                            SameSite = SameSiteMode.Lax,
+                            Domain = _generalSettings.HostName,
+                        };
+
+                        cookieInstructions = new List<CookieInstruction> { cookieInstruction, altinnSessionCookie };
                     }
                 }
+            }
 
             // Verify that found session and Check if existing session meets ACR requirements from request
             if (existingSession is not null
@@ -161,7 +202,8 @@ namespace Altinn.Platform.Authentication.Services
                 return AuthorizeResult.RedirectToDownstreamBasedOnReusedSession(
                     request.RedirectUri, // safe because validated
                     code,
-                    request.State!);
+                    request.State!, 
+                    cookieInstructions);
             }
 
             // ========= 6) Choose upstream and derive upstream params =========

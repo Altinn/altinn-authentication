@@ -13,7 +13,7 @@ namespace Altinn.Platform.Authentication.Core.Services.Interfaces
         /// calling this method.</remarks>
         /// <param name="request">The authorization request containing the necessary details to perform the authorization.  This parameter
         /// cannot be <see langword="null"/>.</param>
-        public Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, string? altinn2Token, CancellationToken cancellationToken);
+        public Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, string? encryptedTicket, CancellationToken cancellationToken);
 
         /// <summary>
         /// This is used for unregistered_client flows where no client_id is sent in the authorize request and the result will only be a JWT token inside a cookie.

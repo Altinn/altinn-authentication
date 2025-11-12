@@ -795,8 +795,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // The user does not have a valid session in Arbeidsflate. So user is redirected to the standard authorize endpoint with new state, nonce and pkce values.
             string authorizationRequestUrl2 = testScenario.GetAuthorizationRequestUrl();
 
-            // This would be the URL Arbeidsflate redirects the user to. Now the user have a active Altinn Runtime cookie so the response will be a direct
-            // redirect back to Arbeidsflate with code and state (no intermediate login at IdP).
+            // This would be the URL Arbeidsflate redirects the user to. Now the user have a active Altinn2 ticket and should get a direct back with code and state (no intermediate login at IdP).
             HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
 
             string code = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
