@@ -797,6 +797,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // This would be the URL Arbeidsflate redirects the user to. Now the user have a active Altinn2 ticket and should get a direct back with code and state (no intermediate login at IdP).
             HttpResponseMessage authorizationRequestResponse2 = await client.GetAsync(authorizationRequestUrl2);
+            OidcAssertHelper.AssertAuthorizedRedirect(authorizationRequestResponse2, testScenario, _fakeTime.GetUtcNow());
 
             string code = HttpUtility.ParseQueryString(authorizationRequestResponse2.Headers.Location!.Query)["code"]!;
 
@@ -838,7 +839,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         /// Needed for bruksmønster
         /// </summary>
         [Fact]
-        public async Task TC4B_Auth_A2_L1_App_Aa_Logout_End_To_End_OK()
+        public async Task TC4C_Auth_A2_L1_App_Aa_Logout_End_To_End_OK()
         {
             // Create HttpClient with default headers for IP, UA, correlation. 
             using HttpClient client = CreateClientWithHeaders(new()
