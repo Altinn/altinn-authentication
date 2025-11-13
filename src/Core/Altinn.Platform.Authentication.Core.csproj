@@ -22,6 +22,7 @@
 	</ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.1" />
     <PackageReference Include="Azure.Identity" Version="1.17.0" />
     <Folder Include="Configuration\" />
     <Folder Include="Errors\" />
