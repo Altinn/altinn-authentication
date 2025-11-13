@@ -8,7 +8,7 @@ namespace Altinn.Platform.Authentication.Core.Models
 {
 #nullable enable
     /// <summary>
-    /// This model will be exchanged between this Authentication component, the PostGress db and the BFF for the Frontend.
+    /// This model will be exchanged between this Authentication component, the PostgreSQL db and the BFF for the Frontend.
     /// The BFF will provide a tailored DTO to the Frontend.
     /// </summary>
     [ExcludeFromCodeCoverage]
@@ -50,7 +50,7 @@ namespace Altinn.Platform.Authentication.Core.Models
 
         /// <summary>
         /// The PartyID identifies the end-user Organisation, and is fetched from the login Context and
-        /// user party serivces
+        /// user party services
         /// </summary>
         [JsonPropertyName("partyId")]
         public string PartyId { get; set; } = string.Empty;

@@ -22,7 +22,6 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Register.Models;
-using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
@@ -46,15 +45,13 @@ namespace Altinn.Platform.Authentication.Services
         IAccessManagementClient accessManagementClient,
         DelegationHelper delegationHelper,
         IPartiesClient partiesClient,
-        IOptions<PaginationOptions> paginationOption,
-        IMapper mapper) : ISystemUserService
+        IOptions<PaginationOptions> paginationOption) : ISystemUserService
     {
         private readonly ISystemUserRepository _repository = systemUserRepository;
         private readonly ISystemRegisterRepository _registerRepository = systemRegisterRepository;
         private readonly ISystemRegisterService systemRegisterService = systemRegisterService;
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
         private readonly IPartiesClient _partiesClient = partiesClient;
-        private readonly IMapper _mapper = mapper;
 
         /// <summary>
         /// Used to limit the number of items returned in a paginated list

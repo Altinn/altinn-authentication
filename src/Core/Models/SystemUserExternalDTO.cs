@@ -42,33 +42,13 @@ namespace Altinn.Platform.Authentication.Core.Models
         public string ProductName { get; set; } = string.Empty;
 
         /// <summary>
-        /// The underlying identifier for the System for persistance in the db.        
-        /// </summary>
-        [JsonPropertyName("systemInternalId")]
-        public Guid? SystemInternalId { get; set; }
-
-        /// <summary>
-        /// The PartyID identifies the end-user Organisation, and is fetched from the login Context and
-        /// user party serivces
-        /// </summary>
-        [JsonPropertyName("partyId")]
-        public string PartyId { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The PartyUuId identifies the end-user Organisation, and is fetched from the login Context and
-        /// user party services
-        /// </summary>
-        [JsonPropertyName("partyUuId")]
-        public string PartyUuId { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The Organisation Number for the end-user as it is stored in ER Registry        
+        /// The Organisation Number of the owner of the system user       
         /// </summary>
         [JsonPropertyName("reporteeOrgNo")]
         public string ReporteeOrgNo { get; set; } = string.Empty;
 
         /// <summary>
-        /// Nice to have for debugging and logging.
+        /// The date and time the SystemUser was created
         /// </summary>
         [JsonPropertyName("created")]
         public System.DateTime Created { get; set; } = DateTime.UtcNow;
