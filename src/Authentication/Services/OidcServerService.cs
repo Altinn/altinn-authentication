@@ -562,19 +562,8 @@ namespace Altinn.Platform.Authentication.Services
                     }
                 }
 
-                List<string> clientsPartOfSession = await _authorizationCodeRepo.GetClientsPartOfSession(sid!, cancellationToken);
-
-                if (clientsPartOfSession?.Any() == true)
-                {
-                    foreach (string clientId in clientsPartOfSession)
-                    {
-                        OidcClient? client = await _oidcServerClientRepository.GetClientAsync(clientId, cancellationToken);
-                        if (client != null && client.FrontchannelLogoutUri != null)
-                        {
-                            await _oidcDownstreamLogout.TryLogout(client, sid, _generalSettings.AltinnOidcIssuerUrl, cancellationToken);
-                        }
-                    }
-                }
+                // Notify downstream clients of logout
+                await NotifyDownstreamClientsOfLogout(sid!, cancellationToken);
             }
 
             // 4) Instruct caller to delete the runtime cookie (attributes must match how it was set)
@@ -654,19 +643,7 @@ namespace Altinn.Platform.Authentication.Services
                     await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontchannel_logout", cancellationToken);
                 }
 
-                // Trying to find downstream clients part of the session to notify them about logout
-                List<string> clients = await _authorizationCodeRepo.GetClientsPartOfSession(sid);
-                if (clients != null && clients.Count > 0)
-                {
-                    foreach (string clientID in clients)
-                    {
-                        OidcClient? client = await _oidcServerClientRepository.GetClientAsync(clientID, cancellationToken);
-                        if (client != null && client.FrontchannelLogoutUri != null)
-                        {
-                            await _oidcDownstreamLogout.TryLogout(client, sid, _generalSettings.AltinnOidcIssuerUrl, cancellationToken);
-                        }
-                    }
-                }
+                await NotifyDownstreamClientsOfLogout(sid, cancellationToken);
             }
 
             // 5) If this very browser has a cookie principal matching any of these SIDs, clear cookie (best-effort)
@@ -1345,6 +1322,23 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return DefaultProviderKey;
+        }
+
+        private async Task NotifyDownstreamClientsOfLogout(string sid, CancellationToken cancellationToken)
+        {
+            List<string> clientsPartOfSession = await _authorizationCodeRepo.GetClientsPartOfSession(sid, cancellationToken);
+
+            if (clientsPartOfSession?.Any() == true)
+            {
+                foreach (string clientId in clientsPartOfSession)
+                {
+                    OidcClient? client = await _oidcServerClientRepository.GetClientAsync(clientId, cancellationToken);
+                    if (client?.FrontchannelLogoutUri != null)
+                    {
+                        await _oidcDownstreamLogout.TryLogout(client, sid, _generalSettings.AltinnOidcIssuerUrl, cancellationToken);
+                    }
+                }
+            }
         }
 
         private Uri BuildUpstreamAuthorizeUrl(
