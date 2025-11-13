@@ -573,7 +573,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             Assert.Null(loggedOutSession);
 
-
             _downstreamLogoutClient.Verify(
             q => q.TryLogout(
             It.IsAny<OidcClient>(),
@@ -582,7 +581,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             It.IsAny<System.Threading.CancellationToken>()),
             Times.Once);
         }
-
 
         /// <summary>
         /// Validates the full end-to-end happy path of the OIDC front-channel flow across Altinn components.
