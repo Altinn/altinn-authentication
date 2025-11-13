@@ -528,7 +528,7 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        Result<SystemUser> systemUser = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
+        Result<SystemUserInternalDTO> systemUser = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
         if (systemUser.IsProblem)
         {
             return systemUser.Problem;
@@ -575,13 +575,13 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        Result<SystemUser> toBeInserted = MapAgentSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
+        Result<SystemUserInternalDTO> toBeInserted = MapAgentSystemUserRequestToSystemUser(systemUserRequest, regSystem, partyId);
         if (toBeInserted.IsProblem)
         {
             return toBeInserted.Problem;
         }
 
-        Result<SystemUser> res = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
+        Result<SystemUserInternalDTO> res = await systemUserService.CreateSystemUserFromApprovedVendorRequest(systemUserRequest, partyId.ToString(), userId, cancellationToken);
         if (res.IsProblem)
         {
             return res.Problem;
@@ -642,9 +642,9 @@ public class RequestSystemUserService(
         return await requestRepository.RejectSystemUser(requestId, userId, cancellationToken);
     }
 
-    private static Result<SystemUser> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystemResponse regSystem, int partyId)
+    private static Result<SystemUserInternalDTO> MapSystemUserRequestToSystemUser(RequestSystemResponse systemUserRequest, RegisteredSystemResponse regSystem, int partyId)
     {
-        SystemUser? toBeInserted = null;
+        SystemUserInternalDTO? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
         if (systemName is null) 
         {
@@ -653,7 +653,7 @@ public class RequestSystemUserService(
 
         if (systemUserRequest != null)
         {
-            toBeInserted = new SystemUser
+            toBeInserted = new SystemUserInternalDTO
             {
                 SystemId = systemUserRequest.SystemId,
                 IntegrationTitle = systemUserRequest.IntegrationTitle ?? systemName,
@@ -668,9 +668,9 @@ public class RequestSystemUserService(
         return toBeInserted!;
     }
 
-    private static Result<SystemUser> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystemResponse regSystem, int partyId)
+    private static Result<SystemUserInternalDTO> MapAgentSystemUserRequestToSystemUser(AgentRequestSystemResponse agentSystemUserRequest, RegisteredSystemResponse regSystem, int partyId)
     {
-        SystemUser? toBeInserted = null;
+        SystemUserInternalDTO? toBeInserted = null;
         regSystem.Name.TryGetValue("nb", out string? systemName);
         if (systemName is null)
         {
@@ -679,7 +679,7 @@ public class RequestSystemUserService(
 
         if (agentSystemUserRequest != null)
         {
-            toBeInserted = new SystemUser
+            toBeInserted = new SystemUserInternalDTO
             {
                 Id = agentSystemUserRequest.Id.ToString(),
                 SystemId = agentSystemUserRequest.SystemId,

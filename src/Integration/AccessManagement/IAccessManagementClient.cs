@@ -37,7 +37,7 @@ public interface IAccessManagementClient
     /// <param name="token">The authorization header bearer token</param>
     /// <param name="rights">The Rights to be delegated to the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser to receive the rights</param>
-    Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> rights);
+    Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<RightResponses> rights);
 
     /// <summary>
     /// Revokes the Delegated the rights to the systemuser
@@ -46,7 +46,7 @@ public interface IAccessManagementClient
     /// <param name="token">The authorization header bearer token</param>
     /// <param name="rights">The Rights to be revoked for the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser that misses the rights</param>
-    Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights);
+    Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights);
 
     /// <summary>
     /// Delegate a customer to the Agent SystemUser
@@ -54,10 +54,9 @@ public interface IAccessManagementClient
     /// <param name="systemUser">The Agent SystemUser</param>
     /// <param name="request">Post Body from BFF containing customerId</param>
     /// <param name="userId">Logged in user</param>
-    /// <param name="mockCustomerApi">Mock flag for Customer API</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, bool mockCustomerApi, CancellationToken cancellationToken);
+    Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list of all delegationIds 
@@ -111,7 +110,7 @@ public interface IAccessManagementClient
     /// <param name="systemUser">the system user id</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>true if the system user is pushed successfully to access management</returns>
-    Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken);
+    Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUserInternalDTO systemUser, CancellationToken cancellationToken);
 
     /// <summary>
     /// Adds a System User as a Right Holder for the Party

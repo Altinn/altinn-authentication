@@ -62,7 +62,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllActiveSystemUsersForParty(int partyId)
+    public async Task<List<SystemUserInternalDTO>> GetAllActiveSystemUsersForParty(int partyId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -104,7 +104,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>> GetAllActiveAgentSystemUsersForParty(int partyId)
+    public async Task<List<SystemUserInternalDTO>> GetAllActiveAgentSystemUsersForParty(int partyId)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -146,7 +146,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> GetSystemUserById(Guid id)
+    public async Task<SystemUserInternalDTO?> GetSystemUserById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -186,7 +186,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
+    public async Task<SystemUserInternalDTO?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId)
     {
         const string QUERY = /*strpsql*/"""
             SELECT 
@@ -231,7 +231,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<Guid?> InsertSystemUser(SystemUser toBeInserted, int userId)
+    public async Task<Guid?> InsertSystemUser(SystemUserInternalDTO toBeInserted, int userId)
     {
         if (string.IsNullOrEmpty(toBeInserted.Id) || !Guid.TryParse(toBeInserted.Id, out _))    
         {
@@ -322,7 +322,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<SystemUser?> CheckIfPartyHasIntegration(
+    public async Task<SystemUserInternalDTO?> CheckIfPartyHasIntegration(
         string clientId, 
         string systemProviderOrgNo, 
         string systemUserOwnerOrgNo,
@@ -384,7 +384,7 @@ public class SystemUserRepository : ISystemUserRepository
         return new ValueTask<Guid>(reader.GetFieldValue<Guid>(0));
     }
 
-    private static ValueTask<SystemUser> ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
+    private static ValueTask<SystemUserInternalDTO> ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
     {
         string? external_ref = reader.GetFieldValue<string>("external_ref");
         string orgno = reader.GetFieldValue<string>("reportee_org_no");
@@ -392,7 +392,7 @@ public class SystemUserRepository : ISystemUserRepository
         List<AccessPackage> accessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages");
         SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Standard : reader.GetFieldValue<SystemUserType>("systemuser_type");
 
-        return new ValueTask<SystemUser>(new SystemUser
+        return new ValueTask<SystemUserInternalDTO>(new SystemUserInternalDTO
         {
             Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
@@ -410,7 +410,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<List<SystemUser>?> GetAllSystemUsersByVendorSystem(string systemId, long sequenceFrom, int pageSize, CancellationToken cancellationToken)
+    public async Task<List<SystemUserInternalDTO>?> GetAllSystemUsersByVendorSystem(string systemId, long sequenceFrom, int pageSize, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -455,7 +455,7 @@ public class SystemUserRepository : ISystemUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<bool> ChangeSystemUser(SystemUser toBeChanged, int userId)
+    public async Task<bool> ChangeSystemUser(SystemUserInternalDTO toBeChanged, int userId)
     {
         const string QUERY = /*strpsql*/@"
                 UPDATE business_application.system_user_profile

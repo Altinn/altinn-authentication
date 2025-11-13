@@ -79,7 +79,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
     }
 
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, bool mockCustomerApi, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -154,7 +154,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return found;   
     }
 
-    public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> rights)
+    public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<RightResponses> rights)
     {
         if (partyId == "500005")
         {
@@ -204,7 +204,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         throw new NotImplementedException();
     }
 
-    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
+    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)
     {
         return await Task.FromResult(true);
     }
@@ -360,7 +360,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public async Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken)
+    public async Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUserInternalDTO systemUser, CancellationToken cancellationToken)
     {
         return true;
     }
@@ -424,7 +424,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
+    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
     {
         string dataFileName = string.Empty;
         if (systemUserId == new Guid("ec6831bc-379c-469a-8e41-d37d398772c9"))
@@ -434,7 +434,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         else if (systemUserId == new Guid("ec6831bc-379c-469a-8e41-d37d398772c8"))
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToGetDelegatedRights);
-            return Task.FromResult<Result<List<RightDelegation>>>(problemInstance);
+            return new Result<List<RightDelegation>>(problemInstance);
         }
         else
         {
@@ -443,6 +443,6 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         string content = File.ReadAllText(dataFileName);
         List<RightDelegation> delegatedRights = JsonSerializer.Deserialize<List<RightDelegation>>(content, _serializerOptions)!;
-        return Task.FromResult<Result<List<RightDelegation>>>(delegatedRights);
+        return new Result<List<RightDelegation>>(delegatedRights);
     }
 }

@@ -8,12 +8,10 @@ namespace Altinn.Platform.Authentication.Core.Models
 {
 #nullable enable
     /// <summary>
-    /// The model of the System User response given in the CRUD API in SystemUserController.cs
-    /// This model will be exchanged between this Authentication component, the PostGress db and the BFF for the Frontend.
-    /// The BFF will provide a tailored DTO to the Frontend.
+    /// This model will be exposed to the external api consumers.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public class SystemUser
+    public class SystemUserExternalDTO
     {
         /// <summary>
         /// GUID created by the "real" Authentication Component
@@ -44,33 +42,13 @@ namespace Altinn.Platform.Authentication.Core.Models
         public string ProductName { get; set; } = string.Empty;
 
         /// <summary>
-        /// The underlying identifier for the System for persistance in the db.        
-        /// </summary>
-        [JsonPropertyName("systemInternalId")]
-        public Guid? SystemInternalId { get; set; }
-
-        /// <summary>
-        /// The PartyID identifies the end-user Organisation, and is fetched from the login Context and
-        /// user party serivces
-        /// </summary>
-        [JsonPropertyName("partyId")]
-        public string PartyId { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The PartyUuId identifies the end-user Organisation, and is fetched from the login Context and
-        /// user party services
-        /// </summary>
-        [JsonPropertyName("partyUuId")]
-        public string PartyUuId { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The Organisation Number for the end-user as it is stored in ER Registry        
+        /// The Organisation Number of the owner of the system user       
         /// </summary>
         [JsonPropertyName("reporteeOrgNo")]
         public string ReporteeOrgNo { get; set; } = string.Empty;
 
         /// <summary>
-        /// Nice to have for debugging and logging.
+        /// The date and time the SystemUser was created
         /// </summary>
         [JsonPropertyName("created")]
         public System.DateTime Created { get; set; } = DateTime.UtcNow;
@@ -105,21 +83,9 @@ namespace Altinn.Platform.Authentication.Core.Models
         public string ExternalRef { get; set; } = string.Empty;
 
         /// <summary>
-        /// The array of access packages versus System Provider's Resources needed to use this Registered System
-        /// </summary>
-        [JsonPropertyName("accessPackages")]
-        public List<AccessPackage> AccessPackages { get; set; } = [];
-
-        /// <summary>
         /// The system user type
         /// </summary>
         [JsonPropertyName("userType")]
         public SystemUserType UserType { get; set; }
-
-        /// <summary>
-        /// Used internally when paginating
-        /// </summary>
-        [JsonIgnore]
-        public long SequenceNo { get; set; } = 0;
     }
 }

@@ -212,7 +212,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUser systemUser, CancellationToken cancellationToken)
+    public async Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUserInternalDTO systemUser, CancellationToken cancellationToken)
     {
         try
         {
@@ -277,7 +277,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUser systemUser, List<RightResponses> responseData)
+    public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<RightResponses> responseData)
     {
         foreach (RightResponses rightResponse in responseData)
         {
@@ -357,7 +357,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
+    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)
     {
         if (!await RevokeRightsToSystemUser(partyId, systemUser, rights))
         {
@@ -439,7 +439,7 @@ public class AccessManagementClient : IAccessManagementClient
         } while (endpointUrl is not null);
     }
 
-    private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(string partyId, SystemUser systemUser, RightResponses rightResponses)
+    private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, RightResponses rightResponses)
     {
         List<Right> rights = [];
 
@@ -498,7 +498,7 @@ public class AccessManagementClient : IAccessManagementClient
 
     }
 
-    private async Task<bool> RevokeRightsToSystemUser(string partyId, SystemUser systemUser, List<Right> rights)
+    private async Task<bool> RevokeRightsToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)
     {
         DelegationRequest revokeDelegatedRights = new()
         {
@@ -536,7 +536,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, bool mockCustomerApi, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         const string AGENT = "agent";
 
@@ -561,14 +561,9 @@ public class AccessManagementClient : IAccessManagementClient
         foreach (var pac in systemUser.AccessPackages)
         {
             string? role;
-            if (mockCustomerApi)
-            {
-                role = GetRoleFromAccessPackage(pac.Urn!);
-            }
-            else
-            {
-                role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
-            }
+
+            role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
+            
 
             if (role is null)
             {

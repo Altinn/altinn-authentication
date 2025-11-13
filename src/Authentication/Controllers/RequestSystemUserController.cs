@@ -119,7 +119,7 @@ public class RequestSystemUserController : ControllerBase
             SystemId = createRequest.SystemId,
         };
         
-        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        SystemUserInternalDTO? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId, cancellationToken);
         if (existing is not null)
         {
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
@@ -172,7 +172,7 @@ public class RequestSystemUserController : ControllerBase
             SystemId = createAgentRequest.SystemId,
         };
 
-        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        SystemUserInternalDTO? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId, cancellationToken);
         if (existing is not null)
         {
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();

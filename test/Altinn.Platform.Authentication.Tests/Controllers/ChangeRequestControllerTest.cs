@@ -205,9 +205,11 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
+        Assert.True(systemuser.Rights?.Count > 0);
+        Assert.True(systemuser.AccessPackages?.Count > 0);
 
         xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
@@ -332,7 +334,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -415,7 +417,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getSystemUserResponseMessage = await client4.SendAsync(getSystemUserRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getSystemUserResponseMessage.StatusCode);
         Assert.NotNull(getSystemUserResponseMessage.Content);
-        SystemUser? systemUser = await getSystemUserResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemUser = await getSystemUserResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
         Assert.NotNull(systemUser);
         Assert.Equal(systemUserIdFromChangeRequest, Guid.Parse(systemUser.Id));
     }
@@ -609,7 +611,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -748,7 +750,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -901,7 +903,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -1046,12 +1048,13 @@ public class ChangeRequestControllerTest(
 
         string getEndpoint = $"/authentication/api/v1/systemuser/vendor/byquery?system-id={req.SystemId}&orgno={req.PartyOrgNo}&external-ref={req.ExternalRef}";
         HttpRequestMessage getRequestMessage = new(HttpMethod.Get, getEndpoint);
-        HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
-        Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
-
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage);
+        ////string errorContent = await getResponseMessage.Content.ReadAsStringAsync();
+        //Console.WriteLine(errorContent);
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
+        Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
         xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
@@ -1125,7 +1128,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getSystemUserResponseMessage = await client4.SendAsync(getSystemUserRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getSystemUserResponseMessage.StatusCode);
         Assert.NotNull(getSystemUserResponseMessage.Content);
-        SystemUser? systemUser = await getSystemUserResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailInternalDTO? systemUser = await getSystemUserResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailInternalDTO>();
         Assert.NotNull(systemUser);
         Assert.Equal(systemUserIdFromChangeRequest, Guid.Parse(systemUser.Id));
     }
@@ -1213,7 +1216,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -1351,7 +1354,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -1708,7 +1711,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -1849,7 +1852,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -1989,7 +1992,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -2128,7 +2131,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 
@@ -2329,7 +2332,7 @@ public class ChangeRequestControllerTest(
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, getResponseMessage.StatusCode);
 
-        SystemUser? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUser>();
+        SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
 

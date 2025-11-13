@@ -691,6 +691,30 @@ namespace Altinn.Platform.Authentication.Helpers
         }
 
         /// <summary>
+        /// Maps a <see cref="SystemUserInternalDTO"/> to a <see cref="SystemUserDetailExternalDTO"/>.
+        /// </summary>
+        /// <param name="internalDto">The internal DTO containing system user data to be mapped. Cannot be null.</param>
+        /// <returns>A <see cref="SystemUserDetailExternalDTO"/> populated with data from the specified <paramref name="internalDto"/>.</returns>
+        public static SystemUserDetailExternalDTO MapSystemUserInternalToDetailDTO(SystemUserInternalDTO internalDto)
+        {
+            return new SystemUserDetailExternalDTO
+            {
+                Id = internalDto.Id,
+                IntegrationTitle = internalDto.IntegrationTitle,
+                SystemId = internalDto.SystemId,
+                ProductName = internalDto.ProductName,
+                ReporteeOrgNo = internalDto.ReporteeOrgNo,
+                Created = internalDto.Created,
+                IsDeleted = internalDto.IsDeleted,
+                AccessPackages = internalDto.AccessPackages,
+                ExternalRef = internalDto.ExternalRef,
+                SupplierName = internalDto.SupplierName,
+                SupplierOrgNo = internalDto.SupplierOrgNo,
+                UserType = internalDto.UserType
+            };
+        }
+
+        /// <summary>
         /// Verifies if an ACR upgrade is needed based on the current and requested ACR values.
         /// </summary>
         internal static bool NeedAcrUpgrade(string? currentAcr, string[] requestedAcr)

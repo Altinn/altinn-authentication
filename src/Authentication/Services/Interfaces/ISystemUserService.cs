@@ -25,14 +25,14 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="partyId">The User id for the Legal Entity (Organisation or Person) the Caller represent.</param> 
     /// <returns></returns>
-    Task<List<SystemUser>> GetListOfSystemUsersForParty(int partyId);
+    Task<List<SystemUserInternalDTO>> GetListOfSystemUsersForParty(int partyId);
 
     /// <summary>
     /// Return a single SystemUser by PartyId and SystemUserId
     /// </summary>
     /// <param name="systemUserId">The db id for the SystemUser to be retrieved</param>
     /// <returns></returns>
-    Task<SystemUser?> GetSingleSystemUserById(Guid systemUserId);
+    Task<SystemUserInternalDTO?> GetSingleSystemUserById(Guid systemUserId);
 
     /// <summary>
     /// Set the Delete flag on the identified SystemUser
@@ -53,7 +53,7 @@ public interface ISystemUserService
     /// <param name="request">The DTO describing the Product the Caller wants to create.</param>
     /// <param name="userId">The userid for the loged in Reporter User.</param>
     /// <returns></returns> 
-    Task<Result<SystemUser>> CreateSystemUser(string party, SystemUserRequestDto request, int userId);
+    Task<Result<SystemUserInternalDTO>> CreateSystemUser(string party, SystemUserRequestDto request, int userId);
 
     /// <summary>
     /// Replaces the values for the existing system user with those from the update 
@@ -74,7 +74,7 @@ public interface ISystemUserService
     /// <param name="externalRef">The External Reference is provided by the Vendor, and is used to identify their Customer in the Vendor's system.</param>
     /// <param name="cancellationToken">Cancellationtoken</param>/// 
     /// <returns>The SystemUserIntegration model API DTO</returns>
-    Task<SystemUser?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken);
+    Task<SystemUserInternalDTO?> CheckIfPartyHasIntegration(string clientId, string systemProviderOrgNo, string systemUserOwnerOrgNo, string externalRef, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a list of SystemUsers the Vendor has for a given system they own.
@@ -84,7 +84,7 @@ public interface ISystemUserService
     /// <param name="continueRequest">The Guid denoting from where to continue with Pagination</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
-    Task<Result<Page<SystemUser, long>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<long>.Request continueRequest, CancellationToken cancellationToken);
+    Task<Result<Page<SystemUserInternalDTO, long>>> GetAllSystemUsersByVendorSystem(OrganisationNumber vendorOrgNo, string systemId, Page<long>.Request continueRequest, CancellationToken cancellationToken);
 
     /// <summary>
     /// Called from the Authn.UI BFF to create a new SystemUser and delegate it to the given Reportee Party,
@@ -95,14 +95,14 @@ public interface ISystemUserService
     /// <param name="userId">the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>The CreateSystemUserResponse response model, with either a new SystemUser model inside, or a list of errors.</returns>
-    Task<Result<SystemUser>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<SystemUserInternalDTO>> CreateAndDelegateSystemUser(string party, SystemUserRequestDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Fetches a SystemUser by the ExternalRequestId    /// 
     /// </summary>
     /// <param name="externalRequestId">External Ref + Orgno + Systemid should uniquely define a SystemUser</param>
     /// <returns>A SystemUser, if one is active.</returns>
-    Task<SystemUser?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId);
+    Task<SystemUserInternalDTO?> GetSystemUserByExternalRequestId(ExternalRequestId externalRequestId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list of all SystemUsers    
@@ -121,7 +121,7 @@ public interface ISystemUserService
     /// </summary>
     /// <param name="party">The User id for the Facilitator for the Agent SystemUser currently logged in at the FrontEnd.</param> 
     /// <returns>List of Agent SystemUsers</returns>
-    Task<List<SystemUser>?> GetListOfAgentSystemUsersForParty(int party);
+    Task<List<SystemUserInternalDTO>?> GetListOfAgentSystemUsersForParty(int party);
 
     /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
@@ -130,10 +130,9 @@ public interface ISystemUserService
     /// <param name="systemUser">SystemUser</param>
     /// <param name="request">AgentDelegationInputDto</param>
     /// <param name="userId">the user id of the logged in user</param>
-    /// <param name="featureManager">FeatureManager</param>
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
-    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUser systemUser, AgentDelegationInputDto request, int userId, IFeatureManager featureManager, CancellationToken cancellationToken);
+    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
@@ -183,7 +182,7 @@ public interface ISystemUserService
     /// <param name="accessPackages">the list of accesspackages to be delegated</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>true if the delegations are successful</returns>
-    Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUser systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken);
+    Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUserInternalDTO systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken);
 
     /// <summary>
     /// Called from the RequestSystemUserService to create a Vendor Requested
@@ -194,7 +193,7 @@ public interface ISystemUserService
     /// <param name="userId">the user id of the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
-    Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(RequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken);
+    Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(RequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Called from the RequestSystemUserService to create a Vendor Requested
@@ -205,7 +204,7 @@ public interface ISystemUserService
     /// <param name="userId">the user id of the logged in user</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
-    Task<Result<SystemUser>> CreateSystemUserFromApprovedVendorRequest(AgentRequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken);
+    Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(AgentRequestSystemResponse request, string partyId, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Validate that the Rights is both a subset of the Default Rights registered on the System, and at least one Right is selected.

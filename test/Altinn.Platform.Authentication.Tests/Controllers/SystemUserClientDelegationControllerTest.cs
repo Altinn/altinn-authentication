@@ -137,7 +137,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 {
                     if (id == new Guid("d54a721a-b231-4e28-9245-782697ed2bbb"))
                     {
-                        return new SystemUser
+                        return new SystemUserInternalDTO
                         {
                             Id = id.ToString(),
                             ReporteeOrgNo = systemUserData[id],
@@ -150,7 +150,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     }
                     else
                     {
-                        return new SystemUser
+                        return new SystemUserInternalDTO
                         {
                             Id = id.ToString(),
                             ReporteeOrgNo = systemUserData[id],
@@ -166,9 +166,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupSystemUserRepositoryMock_AllSystemUsers()
         {
-            var systemUsers = new List<SystemUser>
+            var systemUsers = new List<SystemUserInternalDTO>
             {
-            new SystemUser
+            new SystemUserInternalDTO
             {
                 Id = Guid.NewGuid().ToString(),
                 ReporteeOrgNo = "123456789",
@@ -177,7 +177,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                     new AccessPackage { Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet" }
                 }
             },
-            new SystemUser
+            new SystemUserInternalDTO
             {
                 Id = Guid.NewGuid().ToString(),
                 ReporteeOrgNo = "987654321",
@@ -800,7 +800,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents?party={orgnummer}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage systemUsersResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            List<SystemUser> result = JsonSerializer.Deserialize<List<SystemUser>>(await systemUsersResponse.Content.ReadAsStringAsync(), _options);
+            List<SystemUserInternalDTO> result = JsonSerializer.Deserialize<List<SystemUserInternalDTO>>(await systemUsersResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, systemUsersResponse.StatusCode);
             Assert.True(result is not null);
