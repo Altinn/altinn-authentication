@@ -653,6 +653,20 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     await _refreshTokenRepo.RevokeFamilyAsync(familyGuid, "frontchannel_logout", cancellationToken);
                 }
+
+                // Trying to find downstream clients part of the session to notify them about logout
+                List<string> clients = await _authorizationCodeRepo.GetClientsPartOfSession(sid);
+                if (clients != null && clients.Count > 0)
+                {
+                    foreach (string clientID in clients)
+                    {
+                        OidcClient? client = await _oidcServerClientRepository.GetClientAsync(clientID, cancellationToken);
+                        if (client != null && client.FrontchannelLogoutUri != null)
+                        {
+                            await _oidcDownstreamLogout.TryLogout(client, sid, _generalSettings.AltinnOidcIssuerUrl, cancellationToken);
+                        }
+                    }
+                }
             }
 
             // 5) If this very browser has a cookie principal matching any of these SIDs, clear cookie (best-effort)
