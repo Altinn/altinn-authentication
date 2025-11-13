@@ -8,9 +8,7 @@ namespace Altinn.Platform.Authentication.Core.Models
 {
 #nullable enable
     /// <summary>
-    /// The model of the System User response given in the CRUD API in SystemUserController.cs
-    /// This model will be exchanged between this Authentication component, the PostGress db and the BFF for the Frontend.
-    /// The BFF will provide a tailored DTO to the Frontend.
+    /// Detailed information about a System User exposed to external clients
     /// </summary>
     [ExcludeFromCodeCoverage]
     public class SystemUserDetailExternalDTO

@@ -138,7 +138,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<List<SystemUserInternalDTO>> GetListOfAgentSystemUsersForParty(int partyId)
+        public async Task<List<SystemUserInternalDTO>?> GetListOfAgentSystemUsersForParty(int partyId)
         {
             if (partyId < 1)
             {

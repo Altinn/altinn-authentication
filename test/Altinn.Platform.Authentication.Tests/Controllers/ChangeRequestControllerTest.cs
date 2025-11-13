@@ -208,8 +208,8 @@ public class ChangeRequestControllerTest(
         SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
-        Assert.True(systemuser.Rights.Count > 0);
-        Assert.True(systemuser.AccessPackages.Count > 0);
+        Assert.True(systemuser.Rights?.Count > 0);
+        Assert.True(systemuser.AccessPackages?.Count > 0);
 
         xacmlJsonResults = GetDecisionResultListNotAllPermit();
 
