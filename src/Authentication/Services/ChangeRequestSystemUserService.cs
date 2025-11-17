@@ -980,7 +980,7 @@ public class ChangeRequestSystemUserService(
                 SystemUserId = req.SystemUserId
             };
         }
-
-        return Problem.RequestNotFound;        
+        
+        return Problem.Request_UserIsNotAccessManager;              
     }
 }

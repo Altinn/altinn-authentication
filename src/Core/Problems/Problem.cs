@@ -383,4 +383,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor SystemUser_FailedToGetDelegatedRights { get; }
         = _factory.Create(62, HttpStatusCode.InternalServerError, "Failed to get delegated rights");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Request_UserIsNotAccessManager { get; }
+        = _factory.Create(63, HttpStatusCode.Forbidden, "The request requires logged in user to have accessmanager write.");
 }

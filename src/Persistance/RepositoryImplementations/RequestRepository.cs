@@ -20,7 +20,7 @@ public class RequestRepository : IRequestRepository
     private readonly NpgsqlDataSource _dataSource;
     private readonly ISystemUserRepository _systemUserRepository;
     private readonly ILogger _logger;
-    private const int REQUEST_TIMEOUT_DAYS = 10;
+    private const int REQUEST_TIMEOUT_DAYS = 180;
 
     /// <summary>
     /// Constructor
@@ -408,7 +408,7 @@ public class RequestRepository : IRequestRepository
 
         if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;
         }
 
         return new ValueTask<RequestSystemResponse>(response);
@@ -442,7 +442,7 @@ public class RequestRepository : IRequestRepository
 
         if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;
         }
 
         return new ValueTask<AgentRequestSystemResponse>(response);
