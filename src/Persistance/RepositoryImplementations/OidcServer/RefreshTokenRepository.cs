@@ -20,7 +20,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task<Guid> GetOrCreateFamilyAsync(string clientId, string subjectId, string opSid, CancellationToken cancellationToken)
         {
             await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
-            await using var tx = await conn.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            await using var tx = await conn.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
 
             // Try find an existing, non-revoked family for (client, subject, opSid)
             const string selectSql = @"
