@@ -112,4 +112,9 @@ public class ChangeRequestResponse()
     /// </summary>
     [JsonIgnore]
     public DateTime Created { get; set; }
+
+    /// <summary>
+    /// After 180 days, a Request is considered timed out, and will be archived.
+    /// </summary>
+    public bool TimedOut { get; set; }
 }

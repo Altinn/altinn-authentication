@@ -19,8 +19,8 @@ public class ChangeRequestRepository(
     ILogger<ChangeRequestRepository> logger) : IChangeRequestRepository
 {
     private readonly ILogger _logger = logger;
-    private const int REQUEST_TIMEOUT_DAYS = 10;
-    private const int ARCHIVE_TIMEOUT_DAYS = 60;
+    private const int REQUEST_TIMEOUT_DAYS = 180;
+    private const int ARCHIVE_TIMEOUT_DAYS = 180;
 
     /// <inheritdoc/>
     public async Task<Result<bool>> CreateChangeRequest(ChangeRequestResponse createRequest)
@@ -397,7 +397,7 @@ public class ChangeRequestRepository(
 
         if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;
         }
 
         return new ValueTask<ChangeRequestResponse>(response);
