@@ -451,7 +451,7 @@ public class RequestRepository : IRequestRepository
 
         if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;
         }
 
         return new ValueTask<RequestSystemResponse>(response);
@@ -492,7 +492,7 @@ public class RequestRepository : IRequestRepository
 
         if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;
         }
 
         return new ValueTask<AgentRequestSystemResponse>(response);

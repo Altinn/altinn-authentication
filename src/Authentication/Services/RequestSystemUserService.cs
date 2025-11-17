@@ -910,7 +910,7 @@ public class RequestSystemUserService(
             return party;
         }
 
-        return Problem.RequestNotFound;
+        return Problem.Request_UserIsNotAccessManager;
     }
 
     /// <inheritdoc/>

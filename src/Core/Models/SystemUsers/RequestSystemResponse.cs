@@ -98,4 +98,11 @@ public class RequestSystemResponse()
     /// </summary>
     [JsonIgnore]
     public DateTime Created { get; set; }
+
+    /// <summary>
+    /// After 180 days, a Request is considered timed out, and will be archived.
+    /// The Vendor should verify the Request before the time out period; 
+    /// and use the SystemUser Id for further calls after approval.
+    /// </summary>
+    public bool TimedOut { get; set; }
 }

@@ -402,4 +402,9 @@ public static class Problem
     public static ProblemDescriptor AccessPackage_NotDelegable_Agent { get; }
         = _factory.Create(65, HttpStatusCode.BadRequest, "One or more access packages cannot be delegated because they are not intended for client relationships");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Request_UserIsNotAccessManager { get; }
+        = _factory.Create(66, HttpStatusCode.Forbidden, "The request requires logged in user to have accessmanager write.");
 }
