@@ -20,8 +20,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
         public async Task<Guid> GetOrCreateFamilyAsync(string clientId, string subjectId, string opSid, CancellationToken cancellationToken)
         {
             await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
-            await using var tx = await conn.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-
+       
             // Try find an existing, non-revoked family for (client, subject, opSid)
             const string selectSql = @"
             SELECT family_id
@@ -30,10 +29,9 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
               AND subject_id = @subject_id
               AND op_sid    = @op_sid
               AND revoked_at IS NULL
-            LIMIT 1
-            FOR UPDATE";    
+            LIMIT 1";    
 
-            await using (var cmd = new NpgsqlCommand(selectSql, conn, tx))
+            await using (var cmd = new NpgsqlCommand(selectSql, conn))
             {
                 cmd.Parameters.AddWithValue("client_id", NpgsqlDbType.Text, clientId);
                 cmd.Parameters.AddWithValue("subject_id", NpgsqlDbType.Text, subjectId);
@@ -42,7 +40,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 var result = await cmd.ExecuteScalarAsync(cancellationToken);
                 if (result is Guid existingId)
                 {
-                    await tx.CommitAsync(cancellationToken);
                     return existingId;
                 }
             }
@@ -56,7 +53,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                   @family_id, @client_id, @subject_id, @op_sid, NOW()
                 )";
 
-            await using (var cmd = new NpgsqlCommand(insertSql, conn, tx))
+            await using (var cmd = new NpgsqlCommand(insertSql, conn))
             {
                 cmd.Parameters.AddWithValue("family_id", NpgsqlDbType.Uuid, familyId);
                 cmd.Parameters.AddWithValue("client_id", NpgsqlDbType.Text, clientId);
@@ -66,7 +63,6 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            await tx.CommitAsync(cancellationToken);
             return familyId;
         }
 
