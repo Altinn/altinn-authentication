@@ -51,7 +51,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                   family_id, client_id, subject_id, op_sid, created_at
                 ) VALUES (
                   @family_id, @client_id, @subject_id, @op_sid, NOW()
-                ) ";
+                )";
 
             await using (var cmd = new NpgsqlCommand(insertSql, conn))
             {
