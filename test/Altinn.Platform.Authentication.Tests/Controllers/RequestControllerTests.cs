@@ -775,6 +775,7 @@ public class RequestControllerTests(
     [Fact]
     public async Task Get_Agent_Old_Request_ByGuid_Ok()
     {
+        DateTimeOffset prev = timeProvider.GetUtcNow();
         timeProvider.AdjustTime(DateTime.UtcNow);
         DateTimeOffset now = timeProvider.GetUtcNow();
 
@@ -827,11 +828,13 @@ public class RequestControllerTests(
         Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
         Assert.True(res2.TimedOut);
+        timeProvider.AdjustTime(prev.UtcDateTime);
     }
 
     [Fact]
     public async Task Get_Old_Request_ByGuid_Ok()
     {
+        DateTimeOffset prev = timeProvider.GetUtcNow();
         timeProvider.AdjustTime(DateTime.UtcNow);
         DateTimeOffset now = timeProvider.GetUtcNow();
 
@@ -890,6 +893,7 @@ public class RequestControllerTests(
         Assert.True(res2 is not null);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
         Assert.Equal(testId, res2.Id);
+        timeProvider.AdjustTime(prev.UtcDateTime);
     }
 
     [Fact]
@@ -3652,16 +3656,18 @@ public class RequestControllerTests(
         return res;
     }
 
-    private static string AddTestTokenToClient(HttpClient client)
+    private static string AddTestTokenToClient(HttpClient client, DateTimeOffset? now = default)
     {
+        now ??= TestTime;
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, now);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
 
     private static string AddSystemUserRequestWriteTestTokenToClient(HttpClient client, DateTimeOffset? now = default)
     {
+        now ??= TestTime;
         string[] prefixes = ["altinn", "digdir"];
         string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes, now);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
@@ -3679,6 +3685,7 @@ public class RequestControllerTests(
 
     private async Task<HttpResponseMessage> CreateSystemRegister(string dataFileName, DateTimeOffset? now = default)
     {
+        now ??= TestTime;
         HttpClient client = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
         string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, now);
