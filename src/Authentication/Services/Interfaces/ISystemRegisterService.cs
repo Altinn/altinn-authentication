@@ -125,12 +125,12 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Checks if the resourceids are found in resource register and if the resource is delegable
+        /// Checks if the resourceids are found in resource register
         /// </summary>
         /// <param name="rights">the list of resource ids</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>false when one of the resource idnot found</returns>
-        Task<bool> DoesResourceIdExistsAndDelegable(List<Right> rights, CancellationToken cancellationToken);
+        Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if the acesspackages are found in altinn

@@ -129,7 +129,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<bool> DoesResourceIdExistsAndDelegable(List<Right> rights, CancellationToken cancellationToken)
+        public async Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken)
         {
             ServiceResource? resource = null;
             foreach (Right right in rights)
@@ -137,7 +137,7 @@ namespace Altinn.Platform.Authentication.Services
                 foreach (AttributePair resourceId in right.Resource)
                 {
                     resource = await _resourceRegistryClient.GetResource(resourceId.Value);
-                    if (resource == null || resource?.ResourceType == ResourceType.MaskinportenSchema || resource.ResourceType == ResourceType.Altinn2Service)
+                    if (resource == null)
                     {
                         return false;
                     }
@@ -168,7 +168,7 @@ namespace Altinn.Platform.Authentication.Services
                 foreach (AttributePair resourceId in right.Resource)
                 {
                     string pattern = @"^urn:altinn:resource$";
-                    if (!Regex.IsMatch(resourceId.Id, pattern))
+                    if (!Regex.IsMatch(resourceId.Id, pattern, RegexOptions.None, TimeSpan.FromSeconds(2)))
                     {
                         invalidFormatResourceIds.Add(resourceId.Value);
                     }

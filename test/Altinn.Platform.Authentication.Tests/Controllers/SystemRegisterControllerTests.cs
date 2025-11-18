@@ -259,7 +259,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
-            Assert.True(problemDetails.Errors.Count == 2);
+            Assert.Equal(2, problemDetails.Errors.Count);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_NotDelegable.ErrorCode);            
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
             Assert.Equal("One or more resources specified in rights is of resource type which is not delegable.", error.Detail);

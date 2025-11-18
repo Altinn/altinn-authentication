@@ -116,8 +116,8 @@ public static class ValidationErrors
         = _factory.Create(16, "The client query parameter is missing or invalid");
 
     /// <summary>
-    /// Gets a validation error descriptor if the resource isof resource type not delegable
+    /// Gets a validation error descriptor if the resource is of resource type not delegable
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_ResourceId_NotDelegable { get; }
-        = _factory.Create(3, "One or more resources specified in rights is of resource type which is not delegable.");
+        = _factory.Create(17, "One or more resources specified in rights is of resource type which is not delegable.");
 }
