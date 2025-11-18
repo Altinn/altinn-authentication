@@ -22,14 +22,31 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
        
             // Try find an existing, non-revoked family for (client, subject, opSid)
-            const string selectSql = @"
-            SELECT family_id
-            FROM oidcserver.refresh_token_family
-            WHERE client_id = @client_id
-              AND subject_id = @subject_id
-              AND op_sid    = @op_sid
-              AND revoked_at IS NULL
-            LIMIT 1";    
+            const string selectSql =
+                /*strpsql*/"""
+
+                WITH inserted AS (
+                    INSERT INTO oidcserver.refresh_token_family (
+                      family_id, client_id, subject_id, op_sid, created_at
+                    ) VALUES (
+                      gen_random_uuid(), @client_id, @subject_id, @op_sid, NOW()
+                    ) 
+                    ON CONFLICT ON CONSTRAINT client_subject_op DO NOTHING 
+                    returning family_id
+                )
+
+                SELECT family_id
+                FROM oidcserver.refresh_token_family
+                WHERE client_id = @client_id
+                    AND subject_id = @subject_id
+                    AND op_sid    = @op_sid
+                    AND revoked_at IS NULL
+
+                UNION
+
+                SELECT family_id
+                FROM inserted
+                """;    
 
             await using (var cmd = new NpgsqlCommand(selectSql, conn))
             {
@@ -44,26 +61,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 }
             }
 
-            // Create a new family
-            Guid familyId = Guid.NewGuid();
-            const string insertSql = @"
-                INSERT INTO oidcserver.refresh_token_family (
-                  family_id, client_id, subject_id, op_sid, created_at
-                ) VALUES (
-                  @family_id, @client_id, @subject_id, @op_sid, NOW()
-                )";
-
-            await using (var cmd = new NpgsqlCommand(insertSql, conn))
-            {
-                cmd.Parameters.AddWithValue("family_id", NpgsqlDbType.Uuid, familyId);
-                cmd.Parameters.AddWithValue("client_id", NpgsqlDbType.Text, clientId);
-                cmd.Parameters.AddWithValue("subject_id", NpgsqlDbType.Text, subjectId);
-                cmd.Parameters.AddWithValue("op_sid", NpgsqlDbType.Text, opSid);
-
-                await cmd.ExecuteNonQueryAsync(cancellationToken);
-            }
-
-            return familyId;
+            throw new DataException("Failed to get or create refresh token family.");
         }
 
         /// <inheritdoc/>
