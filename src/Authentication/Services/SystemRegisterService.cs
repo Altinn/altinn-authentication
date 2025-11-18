@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
@@ -26,6 +27,14 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ISystemChangeLogRepository _systemChangeLogRepository;
         private readonly IResourceRegistryClient _resourceRegistryClient;
         private readonly IAccessManagementClient _accessManagementClient;
+        private static readonly HashSet<ResourceType> WhitelistedResourceTypes = new()
+        {
+            ResourceType.AltinnApp,
+            ResourceType.Default,
+            ResourceType.CorrespondenceService,
+            ResourceType.BrokerService,
+            ResourceType.GenericAccessResource,           
+        };
 
         /// <summary>
         /// The constructor
@@ -120,7 +129,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken)
+        public async Task<bool> DoesResourceIdExistsAndDelegable(List<Right> rights, CancellationToken cancellationToken)
         {
             ServiceResource? resource = null;
             foreach (Right right in rights)
@@ -128,7 +137,7 @@ namespace Altinn.Platform.Authentication.Services
                 foreach (AttributePair resourceId in right.Resource)
                 {
                     resource = await _resourceRegistryClient.GetResource(resourceId.Value);
-                    if (resource == null)
+                    if (resource == null || resource?.ResourceType == ResourceType.MaskinportenSchema || resource.ResourceType == ResourceType.Altinn2Service)
                     {
                         return false;
                     }
@@ -136,6 +145,49 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Identifies rights that are either not found or not delegable.
+        /// </summary>
+        /// <remarks>This method checks each right against a resource registry to determine if it is
+        /// valid. Rights associated with resources of type <see cref="ResourceType.MaskinportenSchema"/> or  <see
+        /// cref="ResourceType.Altinn2Service"/> are considered not delegable.</remarks>
+        /// <param name="rights">A list of rights to be validated.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A tuple containing two lists: <see cref="List{T}"/> of rights that are not found and  <see cref="List{T}"/>
+        /// of rights that are not delegable.</returns>
+        public async Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)> GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken)
+        {
+            ServiceResource? resource = null;
+            var invalidFormatResourceIds = new List<string>();
+            var notFoundResourceIds = new List<string>();
+            var notDelegableResourceIds = new List<string>();
+            foreach (Right right in rights)
+            {
+                foreach (AttributePair resourceId in right.Resource)
+                {
+                    string pattern = @"^urn:altinn:resource$";
+                    if (!Regex.IsMatch(resourceId.Id, pattern))
+                    {
+                        invalidFormatResourceIds.Add(resourceId.Value);
+                    }
+                    else
+                    {
+                        resource = await _resourceRegistryClient.GetResource(resourceId.Value);
+                        if (resource == null)
+                        {
+                            notFoundResourceIds.Add(resourceId.Value);
+                        }
+                        else if (!WhitelistedResourceTypes.Contains(resource.ResourceType))
+                        {
+                            notDelegableResourceIds.Add(resourceId.Value);
+                        }
+                    }
+                }
+            }
+            
+            return (invalidFormatResourceIds, notFoundResourceIds, notDelegableResourceIds);
         }
 
         /// <inheritdoc/>

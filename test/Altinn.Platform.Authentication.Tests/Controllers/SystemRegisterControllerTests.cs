@@ -246,7 +246,31 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_DoesNotExist.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
-            Assert.Equal("One or all the resources in rights is not found in altinn's resource register", error.Detail);
+            Assert.Equal("One or more resources specified in rights were not found in Altinn's resource register.", error.Detail);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_InvalidResourceType_BadRequest()
+        {
+            // Arrange
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterInvalidResourceType.json";
+            HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+            AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.True(problemDetails.Errors.Count == 2);
+            AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_NotDelegable.ErrorCode);            
+            Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal("One or more resources specified in rights is of resource type which is not delegable.", error.Detail);
+            string notDelegableExtensionValue = error.Extensions["ResourceIds Not Delegable : "].ToString();
+            Assert.Equal("ttd-am-k6", notDelegableExtensionValue);
+
+            AltinnValidationError invalidFormatError = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_InvalidFormat.ErrorCode);
+            Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal("One or more resource id is in wrong format. The valid format is urn:altinn:resource", invalidFormatError.Detail);
+            string invalidFormatErrorExtensionValue = invalidFormatError.Extensions["Invalid Resource Id Details : "].ToString();
+            Assert.Equal("ttd-am-invalidresformat", invalidFormatErrorExtensionValue);
         }
 
         [Fact]
@@ -671,7 +695,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.Single(problemDetails.Errors);
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_DoesNotExist.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
-                Assert.Equal("One or all the resources in rights is not found in altinn's resource register", error.Detail);
+                Assert.Equal("One or more resources specified in rights were not found in Altinn's resource register.", error.Detail);
             }
         }
 
@@ -1289,7 +1313,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.Equal(2, problemDetails.Errors.Count);
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_DoesNotExist.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
-                Assert.Equal("One or all the resources in rights is not found in altinn's resource register", error.Detail);
+                Assert.Equal("One or more resources specified in rights were not found in Altinn's resource register.", error.Detail);
 
                 AltinnValidationError error01 = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_Duplicates.ErrorCode);
                 Assert.Equal("/registersystemrequest/accesspackages", error01.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));

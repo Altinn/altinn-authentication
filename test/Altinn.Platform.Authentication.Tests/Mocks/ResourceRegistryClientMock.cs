@@ -49,6 +49,13 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
 
+            if (resourceId == "ttd-am-k6")
+            {
+                dataFileName = "Data/ResourceRegistry/ttd-am-k6.json";
+                string content = File.ReadAllText(dataFileName);
+                return (ServiceResource)JsonSerializer.Deserialize(content, typeof(ServiceResource), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+
             return null;
         }
 

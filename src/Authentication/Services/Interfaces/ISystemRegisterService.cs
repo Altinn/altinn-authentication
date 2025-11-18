@@ -125,12 +125,12 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<List<MaskinPortenClientInfo>> GetMaskinportenClients(List<string> clientId, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Checks if the resourceids are found in resource register
+        /// Checks if the resourceids are found in resource register and if the resource is delegable
         /// </summary>
         /// <param name="rights">the list of resource ids</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>false when one of the resource idnot found</returns>
-        Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken);
+        Task<bool> DoesResourceIdExistsAndDelegable(List<Right> rights, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if the acesspackages are found in altinn
@@ -156,5 +156,14 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns></returns>
         Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets the list of invalid access packages.
+        /// </summary>
+        /// <param name="rights">rights to be validated</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register</returns>
+        Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)>
+            GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken);
     }
 }
