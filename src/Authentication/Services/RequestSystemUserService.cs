@@ -383,7 +383,8 @@ public class RequestSystemUserService(
             Rights = res.Rights,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            TimedOut = res.TimedOut
         };
     }
 
@@ -416,7 +417,8 @@ public class RequestSystemUserService(
             PartyOrgNo = res.PartyOrgNo,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            TimedOut = res.TimedOut
         };
     }
 

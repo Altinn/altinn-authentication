@@ -40,6 +40,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
@@ -60,7 +61,7 @@ public class RequestControllerTests(
     private readonly Mock<IUserProfileService> _userProfileService = new();
     private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
-    private readonly Mock<TimeProvider> timeProviderMock = new();
+    private readonly FakeTimeProvider timeProvider = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
     private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
@@ -104,7 +105,11 @@ public class RequestControllerTests(
         services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
         services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
         services.AddSingleton(_eventQueue.Object);
-        services.AddSingleton(timeProviderMock.Object);
+        services.AddSingleton<FakeTimeProvider>(timeProvider);
+        services.AddSingleton<TimeProvider>(timeProvider);
+        timeProvider.AdjustTime(TestTime.UtcDateTime);
+
+        // services.AddSingleton(timeProviderMock.Object);
         services.AddSingleton(guidService.Object);
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
         services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
@@ -116,7 +121,8 @@ public class RequestControllerTests(
         services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
         services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
         services.AddSingleton<IRequestRepository, RequestRepository>();
-        SetupDateTimeMock();
+
+        // SetupDateTimeMock();
         SetupGuidMock();
     }
 
@@ -763,6 +769,126 @@ public class RequestControllerTests(
         AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
         Assert.True(res2 is not null);
+        Assert.Equal(testId, res2.Id);
+    }
+
+    [Fact]
+    public async Task Get_Agent_Old_Request_ByGuid_Ok()
+    {
+        timeProvider.AdjustTime(DateTime.UtcNow);
+        DateTimeOffset now = timeProvider.GetUtcNow();
+
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName, now);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client, now);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+        AccessPackage accessPackage = new AccessPackage();
+        accessPackage.Urn = "urn:altinn:accesspackage:skatt-naering";
+
+        // Arrange
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        timeProvider.Advance(TimeSpan.FromDays(181));
+        now = timeProvider.GetUtcNow();
+
+        // Get by Guid
+        HttpClient client2 = CreateClient();
+        AddSystemUserRequesReadTestTokenToClient(client2, now);
+        Guid testId = res.Id;
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
+
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
+        string debug = "pause_here";
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
+        Assert.True(res2 is not null);
+        Assert.Equal(testId, res2.Id);
+        Assert.True(res2.TimedOut);
+    }
+
+    [Fact]
+    public async Task Get_Old_Request_ByGuid_Ok()
+    {
+        timeProvider.AdjustTime(DateTime.UtcNow);
+        DateTimeOffset now = timeProvider.GetUtcNow();
+
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName, now);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client, now);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        timeProvider.Advance(TimeSpan.FromDays(181));
+        now = timeProvider.GetUtcNow();
+
+        // Get by Guid
+        HttpClient client2 = CreateClient();
+        AddSystemUserRequesReadTestTokenToClient(client2, now);
+        Guid testId = res.Id;
+        string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/{testId}";
+
+        HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
+        Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
+        RequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.True(res2 is not null);
+        Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
         Assert.Equal(testId, res2.Id);
     }
 
@@ -3502,10 +3628,10 @@ public class RequestControllerTests(
         Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
 
-    private void SetupDateTimeMock()
-    {
-        timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
-    }
+    //private void SetupDateTimeMock()
+    //{
+    //    timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
+    //}
 
     private void SetupGuidMock()
     {
@@ -3534,27 +3660,28 @@ public class RequestControllerTests(
         return token;
     }
 
-    private static string AddSystemUserRequestWriteTestTokenToClient(HttpClient client)
+    private static string AddSystemUserRequestWriteTestTokenToClient(HttpClient client, DateTimeOffset? now = default)
     {
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes, TestTime);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.write", prefixes, now);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
 
-    private static string AddSystemUserRequesReadTestTokenToClient(HttpClient client)
+    private static string AddSystemUserRequesReadTestTokenToClient(HttpClient client, DateTimeOffset? now = default)
     {
+        now ??= TestTime;
         string[] prefixes = ["altinn", "digdir"];
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes, TestTime);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemuser.request.read", prefixes, now);
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return token;
     }
 
-    private async Task<HttpResponseMessage> CreateSystemRegister(string dataFileName)
+    private async Task<HttpResponseMessage> CreateSystemRegister(string dataFileName, DateTimeOffset? now = default)
     {
         HttpClient client = CreateClient();
         string[] prefixes = { "altinn", "digdir" };
-        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, TestTime);
+        string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, now);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         JsonSerializerOptions options = new JsonSerializerOptions()
         {

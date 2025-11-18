@@ -21,6 +21,7 @@ public class RequestRepository : IRequestRepository
     private readonly ISystemUserRepository _systemUserRepository;
     private readonly ILogger _logger;
     private const int REQUEST_TIMEOUT_DAYS = 180;
+    private readonly TimeProvider _timeProvider;
 
     /// <summary>
     /// Constructor
@@ -28,11 +29,13 @@ public class RequestRepository : IRequestRepository
     public RequestRepository(
         NpgsqlDataSource npgsqlDataSource,
         ISystemUserRepository systemUserRepository,
-        ILogger<RequestRepository> logger)
+        ILogger<RequestRepository> logger,
+        TimeProvider timeProvider)
     {
         _dataSource = npgsqlDataSource;
         _systemUserRepository = systemUserRepository;   
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     /// <inheritdoc/>
@@ -415,7 +418,7 @@ public class RequestRepository : IRequestRepository
         }
     }
 
-    private static ValueTask<RequestSystemResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
+    private ValueTask<RequestSystemResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
         bool escalated = false;
@@ -448,8 +451,10 @@ public class RequestRepository : IRequestRepository
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
         };
+        
+        var now = _timeProvider.GetUtcNow().DateTime;
 
-        if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
+        if (response.Created < _timeProvider.GetUtcNow().UtcDateTime.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
             response.TimedOut = true;
         }
@@ -457,7 +462,7 @@ public class RequestRepository : IRequestRepository
         return new ValueTask<RequestSystemResponse>(response);
     }
 
-    private static ValueTask<AgentRequestSystemResponse> ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
+    private ValueTask<AgentRequestSystemResponse> ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
         bool escalated = false;
@@ -490,9 +495,11 @@ public class RequestRepository : IRequestRepository
             RedirectUrl = redirect_url
         };
 
-        if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
+        var now = _timeProvider.GetUtcNow().DateTime;
+
+        if (response.Created < _timeProvider.GetUtcNow().UtcDateTime.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.TimedOut = true;
+            response.TimedOut = true;   
         }
 
         return new ValueTask<AgentRequestSystemResponse>(response);
@@ -823,4 +830,5 @@ public class RequestRepository : IRequestRepository
 
         return new ValueTask<bool>(true);
     }
+    
 }
