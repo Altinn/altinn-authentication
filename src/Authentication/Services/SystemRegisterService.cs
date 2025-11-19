@@ -30,6 +30,7 @@ namespace Altinn.Platform.Authentication.Services
         private static readonly HashSet<ResourceType> WhitelistedResourceTypes = new()
         {
             ResourceType.AltinnApp,
+            ResourceType.Systemresource,
             ResourceType.Default,
             ResourceType.CorrespondenceService,
             ResourceType.BrokerService,
