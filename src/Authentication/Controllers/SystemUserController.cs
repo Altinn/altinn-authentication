@@ -245,7 +245,7 @@ public class SystemUserController : ControllerBase
     /// <returns>The SystemUser model</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpGet("vendor/byquery", Name = "vendor/byquery")]
-    public async Task<ActionResult<SystemUserDetailExternalDTO>> GetSingleSystemUserForVendor(
+    public async Task<ActionResult<SystemUserExternalDTO>> GetSingleSystemUserForVendor(
         [FromQuery(Name = "system-id")] string systemId,
         [FromQuery(Name = "external-ref")] string? externalRef,
         [FromQuery(Name = "orgno")] string orgno,
@@ -268,9 +268,8 @@ public class SystemUserController : ControllerBase
 
         if (toBeFound is not null)
         {
-            SystemUserDetailInternalDTO systemUserDetailDTO = await PopulateSystemUserDetail(int.Parse(toBeFound.PartyId), new Guid(toBeFound.Id), toBeFound, cancellationToken);
-            SystemUserDetailExternalDTO systemUserDetailExternalDTO = _mapper.Map<SystemUserDetailExternalDTO>(systemUserDetailDTO);
-            return Ok(systemUserDetailExternalDTO);            
+            SystemUserExternalDTO systemUserExternalDTO = _mapper.Map<SystemUserExternalDTO>(toBeFound);
+            return Ok(systemUserExternalDTO);            
         }
 
         return NotFound();
