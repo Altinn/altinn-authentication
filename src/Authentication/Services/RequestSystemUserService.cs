@@ -147,7 +147,8 @@ public class RequestSystemUserService(
             Rights = createRequest.Rights ?? [],
             AccessPackages = createRequest.AccessPackages ?? [],
             Status = RequestStatus.New.ToString(),
-            RedirectUrl = createRequest.RedirectUrl
+            RedirectUrl = createRequest.RedirectUrl,
+            TimedOut = false
         };
 
         Result<bool> res = await requestRepository.CreateRequest(created);
@@ -232,7 +233,8 @@ public class RequestSystemUserService(
             AccessPackages = createAgentRequest.AccessPackages,
             Status = RequestStatus.New.ToString(),
             RedirectUrl = createAgentRequest.RedirectUrl,
-            UserType = Core.Enums.SystemUserType.Agent
+            UserType = Core.Enums.SystemUserType.Agent,
+            TimedOut = false
         };
 
         Result<bool> res = await requestRepository.CreateAgentRequest(created);
@@ -354,7 +356,8 @@ public class RequestSystemUserService(
             Rights = res.Rights,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            TimedOut = res.TimedOut
         };
     }
 
@@ -383,7 +386,8 @@ public class RequestSystemUserService(
             Rights = res.Rights,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            TimedOut = res.TimedOut
         };
     }
 
@@ -416,7 +420,8 @@ public class RequestSystemUserService(
             PartyOrgNo = res.PartyOrgNo,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
-            RedirectUrl = res.RedirectUrl
+            RedirectUrl = res.RedirectUrl,
+            TimedOut = res.TimedOut
         };
     }
 
@@ -910,7 +915,7 @@ public class RequestSystemUserService(
             return party;
         }
 
-        return Problem.RequestNotFound;
+        return Problem.Request_UserIsNotAccessManager;
     }
 
     /// <inheritdoc/>
