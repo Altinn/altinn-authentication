@@ -112,7 +112,7 @@ namespace Altinn.Platform.Authentication.Helpers
                     continue;
                 }
 
-                if (claim.Type.Equals("jti"))
+                if (claim.Type.Equals("sid"))
                 {
                     userAuthenticationModel.ExternalSessionId = claim.Value;
                     continue;

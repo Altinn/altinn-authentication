@@ -60,7 +60,8 @@ namespace Altinn.Platform.Authentication.Controllers
         private const string PidClaimName = "pid";
         private const string AuthLevelClaimName = "acr";
         private const string AuthMethodClaimName = "amr";
-        private const string ExternalSessionIdClaimName = "jti";
+        private const string ExternalSessionIdClaimName = "sid";
+        private const string InternalSessionIdClaimName = "sid";
         private const string IssClaimName = "iss";
         private const string OriginalIssClaimName = "originaliss";
         private const string IdportenLevel0 = "idporten-loa-low";
@@ -691,7 +692,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authenticatemethod, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, "3", ClaimValueTypes.Integer32, issuer));
 
-                string[] claimTypesToRemove = { "aud", IssClaimName, "client_amr", "jti" };
+                string[] claimTypesToRemove = { "aud", IssClaimName, "client_amr", "sid" };
                 foreach (string claimType in claimTypesToRemove)
                 {
                     Claim? audClaim = claims.Find(c => c.Type == claimType);
@@ -702,7 +703,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim("jti", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim("sid", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
 
                 ClaimsIdentity identity = new ClaimsIdentity(OrganisationIdentity);
 
@@ -840,7 +841,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue, ClaimValueTypes.Integer32, issuer));
                 claims.AddRange(token.Claims);
 
-                string[] claimTypesToRemove = { "aud", IssClaimName, "at_hash", "jti", "sub" };
+                string[] claimTypesToRemove = { "aud", IssClaimName, "at_hash", "sid", "sub" };
                 foreach (string claimType in claimTypesToRemove)
                 {
                     Claim claim = claims.Find(c => c.Type == claimType);
@@ -848,7 +849,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 claims.Add(new Claim(IssClaimName, issuer, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim("jti", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim("sid", _guidService.NewGuid(), ClaimValueTypes.String, issuer));
 
                 ClaimsIdentity identity = new ClaimsIdentity(EndUserSystemIdentity);
                 identity.AddClaims(claims);
@@ -1283,7 +1284,7 @@ namespace Altinn.Platform.Authentication.Controllers
             List<Claim> claims = new List<Claim>();
             string issuer = _generalSettings.AltinnOidcIssuerUrl;
             string sessionId = _guidService.NewGuid();
-            userAuthentication.SessionId = sessionId;
+            userAuthentication.Sid = sessionId;
             claims.Add(new Claim(ClaimTypes.NameIdentifier, userAuthentication.UserID.ToString(), ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userAuthentication.UserID.ToString(), ClaimValueTypes.String, issuer));
 
@@ -1305,7 +1306,7 @@ namespace Altinn.Platform.Authentication.Controllers
             claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userAuthentication.PartyID.ToString(), ClaimValueTypes.Integer32, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, userAuthentication.AuthenticationMethod.ToString(), ClaimValueTypes.String, issuer));
             claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, ((int)userAuthentication.AuthenticationLevel).ToString(), ClaimValueTypes.Integer32, issuer));
-            claims.Add(new Claim("jti", sessionId, ClaimValueTypes.String, issuer));
+            claims.Add(new Claim(InternalSessionIdClaimName, userAuthentication.Sid, ClaimValueTypes.String, issuer));
 
             if (userAuthentication.ProviderClaims != null && userAuthentication.ProviderClaims.Count > 0)
             {
