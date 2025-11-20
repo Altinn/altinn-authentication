@@ -458,19 +458,12 @@ public class SystemRegisterController : ControllerBase
     private async Task<ValidationErrorBuilder> ValidateRights(List<Right> rights, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
-        if (!AuthenticationHelper.IsResourceIdFormatValid(rights))
-        {
-            errors.Add(ValidationErrors.SystemRegister_ResourceId_InvalidFormat, [
-                ErrorPathConstant.RESOURCERIGHTS
-            ]);
-        }
 
-        if (!await _systemRegisterService.DoesResourceIdExists(rights, cancellationToken))
-        {
-            errors.Add(ValidationErrors.SystemRegister_ResourceId_DoesNotExist, [
-                ErrorPathConstant.RESOURCERIGHTS
-            ]);
-        }
+        var (invalidFormatResourceIds, notFoundResourceIds, notDelegableResourceIds) = await _systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
+
+        errors = AddErrorIfAny(errors, invalidFormatResourceIds, ValidationErrors.SystemRegister_ResourceId_InvalidFormat, "Invalid Resource Id Details : ");
+        errors = AddErrorIfAny(errors, notFoundResourceIds, ValidationErrors.SystemRegister_ResourceId_DoesNotExist, "ResourceIds Not Found : ");
+        errors = AddErrorIfAny(errors, notDelegableResourceIds, ValidationErrors.SystemRegister_ResourceId_NotDelegable, "ResourceIds Not Delegable : ");
 
         if (AuthenticationHelper.HasDuplicateRights(rights))
         {
@@ -632,5 +625,23 @@ public class SystemRegisterController : ControllerBase
         }
 
         return systemChangeLog;
+    }
+
+    private static ValidationErrorBuilder AddErrorIfAny(
+        ValidationErrorBuilder errors,
+        List<string> items,
+        ValidationErrorDescriptor errorType,
+        string errorLabel)
+    {
+        if (items.Count > 0)
+        {
+            var problemExtensionData = ProblemExtensionData.Create(new[]
+            {
+                new KeyValuePair<string, string>(errorLabel, string.Join(" | ", items))
+            });
+            errors.Add(errorType, ErrorPathConstant.RESOURCERIGHTS, problemExtensionData);
+        }
+
+        return errors;
     }
 }

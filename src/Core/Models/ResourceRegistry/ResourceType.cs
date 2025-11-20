@@ -15,6 +15,7 @@ namespace Altinn.Platform.Authentication.Core.Models.ResourceRegistry
         AltinnApp = 1 << 3,
         GenericAccessResource = 1 << 4,
         BrokerService = 1 << 5,
-        CorrespondenceService = 1 << 6
+        CorrespondenceService = 1 << 6,
+        Consent = 1 << 7
     }
 }

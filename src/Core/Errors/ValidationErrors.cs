@@ -31,10 +31,10 @@ public static class ValidationErrors
         = _factory.Create(2, "The system id already exists");
 
     /// <summary>
-    /// Gets a validation error descriptor for non existing resource(rights) id
+    /// Gets a validation error descriptor for non existing resource(rights) id or if the resource is not delegable (maskinportenschema, altinn2service)
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_ResourceId_DoesNotExist { get; }
-        = _factory.Create(3, "One or all the resources in rights is not found in altinn's resource register");
+        = _factory.Create(3, "One or more resources specified in rights were not found in Altinn's resource register.");
 
     /// <summary>
     /// Gets a validation error descriptor for existing system id
@@ -114,4 +114,10 @@ public static class ValidationErrors
     /// </summary>
     public static ValidationErrorDescriptor SystemUser_Missing_ClientParameter { get; }
         = _factory.Create(16, "The client query parameter is missing or invalid");
+
+    /// <summary>
+    /// Gets a validation error descriptor if the resource is of resource type not delegable
+    /// </summary>
+    public static ValidationErrorDescriptor SystemRegister_ResourceId_NotDelegable { get; }
+        = _factory.Create(17, "One or more resources specified in rights is of resource type which is not delegable.");
 }

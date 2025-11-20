@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
@@ -26,6 +27,15 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ISystemChangeLogRepository _systemChangeLogRepository;
         private readonly IResourceRegistryClient _resourceRegistryClient;
         private readonly IAccessManagementClient _accessManagementClient;
+        private static readonly HashSet<ResourceType> WhitelistedResourceTypes = new()
+        {
+            ResourceType.AltinnApp,
+            ResourceType.Systemresource,
+            ResourceType.Default,
+            ResourceType.CorrespondenceService,
+            ResourceType.BrokerService,
+            ResourceType.GenericAccessResource,           
+        };
 
         /// <summary>
         /// The constructor
@@ -136,6 +146,40 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)> GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken)
+        {
+            ServiceResource? resource = null;
+            var invalidFormatResourceIds = new List<string>();
+            var notFoundResourceIds = new List<string>();
+            var notDelegableResourceIds = new List<string>();
+            foreach (Right right in rights)
+            {
+                foreach (AttributePair resourceId in right.Resource)
+                {
+                    string pattern = @"^urn:altinn:resource$";
+                    if (!Regex.IsMatch(resourceId.Id, pattern, RegexOptions.None, TimeSpan.FromSeconds(2)))
+                    {
+                        invalidFormatResourceIds.Add(resourceId.Value);
+                    }
+                    else
+                    {
+                        resource = await _resourceRegistryClient.GetResource(resourceId.Value);
+                        if (resource == null)
+                        {
+                            notFoundResourceIds.Add(resourceId.Value);
+                        }
+                        else if (!WhitelistedResourceTypes.Contains(resource.ResourceType))
+                        {
+                            notDelegableResourceIds.Add(resourceId.Value);
+                        }
+                    }
+                }
+            }
+            
+            return (invalidFormatResourceIds, notFoundResourceIds, notDelegableResourceIds);
         }
 
         /// <inheritdoc/>
