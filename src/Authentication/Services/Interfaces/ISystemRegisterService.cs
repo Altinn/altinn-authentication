@@ -158,11 +158,16 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Gets the list of invalid access packages.
+        /// Identifies resource IDs in the given rights that have invalid format, are not found, or are not delegable.
         /// </summary>
-        /// <param name="rights">rights to be validated</param>
-        /// <param name="cancellationToken">the cancellation token</param>
-        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register</returns>
+        /// <remarks>
+        /// Each resource attribute is checked for correct ID format, then looked up in the resource registry.
+        /// Resources whose <see cref="ServiceResource.ResourceType"/> is not in <see cref="WhitelistedResourceTypes"/>
+        /// are treated as not delegable.</remarks>
+        /// <param name="rights">A list of rights to be validated.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A tuple containing three lists: <see cref="List{T}"/> of rights that are not in valid format, <see cref="List{T}"/> of rights that are not found and  <see cref="List{T}"/>
+        /// of rights that are not delegable.</returns>
         Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)>
             GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken);
     }
