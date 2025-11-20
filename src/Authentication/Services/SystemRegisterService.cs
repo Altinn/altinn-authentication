@@ -148,16 +148,7 @@ namespace Altinn.Platform.Authentication.Services
             return true;
         }
 
-        /// <summary>
-        /// Identifies rights that are either not found or not delegable.
-        /// </summary>
-        /// <remarks>This method checks each right against a resource registry to determine if it is
-        /// valid. Rights associated with resources of type <see cref="ResourceType.MaskinportenSchema"/> or  <see
-        /// cref="ResourceType.Altinn2Service"/> are considered not delegable.</remarks>
-        /// <param name="rights">A list of rights to be validated.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A tuple containing two lists: <see cref="List{T}"/> of rights that are not found and  <see cref="List{T}"/>
-        /// of rights that are not delegable.</returns>
+        /// <inheritdoc/>
         public async Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)> GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken)
         {
             ServiceResource? resource = null;
