@@ -29,6 +29,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+  	<PackageReference Include="Altinn.Common.PEP" Version="4.2.2" />
 	  <Folder Include="Migration\v0.11\" />
 	</ItemGroup>
 
