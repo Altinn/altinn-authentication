@@ -1,7 +1,6 @@
 ﻿using Altinn.Authorization.ProblemDetails;
-using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
-using Altinn.Platform.Register.Models;
+using Altinn.Register.Contracts.V1;
 
 namespace Altinn.Authentication.Core.Clients.Interfaces;
 

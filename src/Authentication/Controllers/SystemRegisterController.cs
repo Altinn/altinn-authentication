@@ -4,7 +4,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Constants;
 using Altinn.Platform.Authentication.Core.Constants;
@@ -15,14 +14,10 @@ using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Helpers;
-using Altinn.Platform.Authentication.Model;
-using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Register.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Altinn.Authentication.Controllers;
 

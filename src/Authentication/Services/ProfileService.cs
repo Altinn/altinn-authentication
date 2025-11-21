@@ -5,14 +5,11 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Authentication.Integration.Configuration;
-using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Profile.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Npgsql.Internal;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace Altinn.Platform.Authentication.Services
 {

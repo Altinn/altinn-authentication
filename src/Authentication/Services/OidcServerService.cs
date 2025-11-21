@@ -16,13 +16,13 @@ using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Profile.Models;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
@@ -303,11 +303,21 @@ namespace Altinn.Platform.Authentication.Services
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
 
             string cookieToken = await _tokenService.CreateCookieToken(session, cancellationToken);
-            
+
+            int partyId = userIdenity.PartyID.HasValue ? userIdenity.PartyID.Value : 0;
+            Guid partyUuid = userIdenity.PartyUuid.HasValue ? userIdenity.PartyUuid.Value : Guid.Empty;
+
+            if (userIdenity.PreSelectedPartyId.HasValue && userIdenity.PreSelectedPartyId.Value != partyId 
+                && userIdenity.PreselectedPartyUuid.HasValue && userIdenity.PreselectedPartyUuid.Value != partyUuid)
+            {
+                partyId = userIdenity.PreSelectedPartyId.Value;
+                partyUuid = userIdenity.PreselectedPartyUuid.Value;
+            }
+
             CookieInstruction altinnPartyCookie = new()
             {
                 Name = _generalSettings.AltinnPartyCookieName,
-                Value = userIdenity.PartyID.HasValue ? userIdenity.PartyID.Value.ToString() : string.Empty,
+                Value = partyId.ToString(),
                 HttpOnly = false,
                 Secure = true,
                 Path = "/",
@@ -318,7 +328,7 @@ namespace Altinn.Platform.Authentication.Services
             CookieInstruction altinnPartyUuidCookie = new()
             {
                 Name = _generalSettings.AltinnPartyUuidCookieName,
-                Value = userIdenity.PartyUuid.HasValue ? userIdenity.PartyUuid.Value.ToString() : string.Empty,
+                Value = partyUuid.ToString(),
                 HttpOnly = false,
                 Secure = true,
                 Path = "/",
@@ -1439,6 +1449,17 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
                 }
+
+                if (userProfile.ProfileSettingPreference != null && userProfile.ProfileSettingPreference.PreselectedPartyUuid.HasValue)
+                {
+                    userAuthenticationModel.PreselectedPartyUuid = userProfile.ProfileSettingPreference.PreselectedPartyUuid.Value;
+                }
+
+                if (userProfile.ProfileSettingPreference != null && userProfile.ProfileSettingPreference.PreSelectedPartyId > 0)
+                {
+                    userAuthenticationModel.PreSelectedPartyId = userProfile.ProfileSettingPreference.PreSelectedPartyId;
+                }
+
             }
             else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
             {
@@ -1460,7 +1481,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     ExternalIdentity = issExternalIdentity,
                     UserName = CreateUserName(userAuthenticationModel, provider),
-                    UserType = Profile.Enums.UserType.SelfIdentified
+                    UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
                 };
 
                 UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);

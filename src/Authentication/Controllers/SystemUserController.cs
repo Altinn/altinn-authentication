@@ -17,7 +17,7 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Register.Models;
+using Altinn.Register.Contracts.V1;
 using AltinnCore.Authentication.Utils;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;

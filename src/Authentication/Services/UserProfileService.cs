@@ -6,8 +6,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Profile.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
