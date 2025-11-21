@@ -266,7 +266,7 @@ public class SystemUserController : ControllerBase
 
         SystemUserInternalDTO? toBeFound = await _systemUserService.GetSystemUserByExternalRequestId(extid, cancellationToken);
 
-        if (toBeFound is not null)
+        if (toBeFound is not null && OrganisationNumber.CreateFromStringOrgNo(toBeFound.SupplierOrgNo) == vendorOrgNo)
         {
             SystemUserExternalDTO systemUserExternalDTO = _mapper.Map<SystemUserExternalDTO>(toBeFound);
             return Ok(systemUserExternalDTO);            

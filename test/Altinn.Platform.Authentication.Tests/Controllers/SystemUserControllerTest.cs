@@ -876,6 +876,38 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemUser_Vendors_Byquery_ReturnsOk()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+
+            int partyId = 500000;
+            string partyOrgno = "910493353"; 
+
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix",
+            };
+
+            await CreateSystemUser(client, externalRef: 1, newSystemUser.SystemId);
+
+            string vendorEndpoint = $"/authentication/api/v1/systemuser/vendor/byquery?system-id={newSystemUser.SystemId}&orgno={partyOrgno}&external-ref=1";
+
+            HttpRequestMessage vendorMessage = new(HttpMethod.Get, vendorEndpoint);
+            HttpResponseMessage vendorResponse = await client.SendAsync(vendorMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, vendorResponse.StatusCode);
+
+            SystemUserExternalDTO? result = await vendorResponse.Content.ReadFromJsonAsync<SystemUserExternalDTO>();
+            Assert.NotNull(result);            
+        }
+
+        [Fact]
         public async Task SystemUser_CreateAndDelegate_ReturnsOk()
         {
             // Create System used for test
