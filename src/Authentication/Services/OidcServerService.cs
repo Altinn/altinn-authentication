@@ -1449,6 +1449,17 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     userAuthenticationModel.PartyUuid = userProfile.Party.PartyUuid;
                 }
+
+                if (userProfile.ProfileSettingPreference != null && userProfile.ProfileSettingPreference.PreselectedPartyUuid.HasValue)
+                {
+                    userAuthenticationModel.PreselectedPartyUuid = userProfile.ProfileSettingPreference.PreselectedPartyUuid.Value;
+                }
+
+                if (userProfile.ProfileSettingPreference != null && userProfile.ProfileSettingPreference.PreSelectedPartyId > 0)
+                {
+                    userAuthenticationModel.PreSelectedPartyId = userProfile.ProfileSettingPreference.PreSelectedPartyId;
+                }
+
             }
             else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
             {
