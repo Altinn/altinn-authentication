@@ -1,5 +1,4 @@
-﻿using Authorization.Platform.Authorization.Models;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
 

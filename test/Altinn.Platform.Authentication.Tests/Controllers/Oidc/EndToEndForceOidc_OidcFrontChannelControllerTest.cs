@@ -14,6 +14,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -24,8 +25,7 @@ using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.Models;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
-using Altinn.Platform.Profile.Models;
-using Altinn.Platform.Register.Models;
+using Altinn.Register.Contracts.V1;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -2046,7 +2046,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                             UserId = 123456,
                             PartyId = 123456,
                            
-                            Party = new Register.Models.Party()
+                            Party = new Party()
                             {
                                 PartyUuid = partyGuid
                             },

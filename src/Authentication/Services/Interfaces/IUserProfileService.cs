@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
-
-using Altinn.Platform.Profile.Models;
+using Altinn.Platform.Authentication.Core.Models.Profile;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces
 {

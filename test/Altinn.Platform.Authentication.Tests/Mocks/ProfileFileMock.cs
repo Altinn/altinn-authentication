@@ -4,10 +4,10 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Authentication.Tests.Mocks;
+using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Profile.Models;
-using Altinn.Platform.Register.Models;
+using Altinn.Register.Contracts.V1;
 
 namespace Altinn.Platform.Authentication.Tests.Mocks
 {

@@ -2,7 +2,6 @@
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Configuration;
 using Altinn.Common.AccessTokenClient.Services;
-using Altinn.Platform.Register.Models;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -11,11 +10,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 using System.Text;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Register.Contracts.V1;
 
 namespace Altinn.Authentication.Integration.Clients;
 
