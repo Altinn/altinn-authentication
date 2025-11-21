@@ -303,11 +303,21 @@ namespace Altinn.Platform.Authentication.Services
             (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSession(upstreamTx, userIdenity, cancellationToken);
 
             string cookieToken = await _tokenService.CreateCookieToken(session, cancellationToken);
-            
+
+            int partyId = userIdenity.PartyID.HasValue ? userIdenity.PartyID.Value : 0;
+            Guid partyUuid = userIdenity.PartyUuid.HasValue ? userIdenity.PartyUuid.Value : Guid.Empty;
+
+            if (userIdenity.PreSelectedPartyId.HasValue && userIdenity.PreSelectedPartyId.Value != partyId 
+                && userIdenity.PreselectedPartyUuid.HasValue && userIdenity.PreselectedPartyUuid.Value != partyUuid)
+            {
+                partyId = userIdenity.PreSelectedPartyId.Value;
+                partyUuid = userIdenity.PreselectedPartyUuid.Value;
+            }
+
             CookieInstruction altinnPartyCookie = new()
             {
                 Name = _generalSettings.AltinnPartyCookieName,
-                Value = userIdenity.PartyID.HasValue ? userIdenity.PartyID.Value.ToString() : string.Empty,
+                Value = partyId.ToString(),
                 HttpOnly = false,
                 Secure = true,
                 Path = "/",
@@ -318,7 +328,7 @@ namespace Altinn.Platform.Authentication.Services
             CookieInstruction altinnPartyUuidCookie = new()
             {
                 Name = _generalSettings.AltinnPartyUuidCookieName,
-                Value = userIdenity.PartyUuid.HasValue ? userIdenity.PartyUuid.Value.ToString() : string.Empty,
+                Value = partyUuid.ToString(),
                 HttpOnly = false,
                 Secure = true,
                 Path = "/",

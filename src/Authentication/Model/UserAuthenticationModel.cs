@@ -125,5 +125,15 @@ namespace Altinn.Platform.Authentication.Model
         /// Gets or sets the subject associated with the token.
         /// </summary>
         public string? TokenSubject { get; set; }
+
+        /// <summary>
+        /// Preselected party UUID
+        /// </summary>
+        public Guid? PreselectedPartyUuid { get; set; }
+
+        /// <summary>
+        /// Preselected party Id
+        /// </summary>
+        public int? PreSelectedPartyId { get; set; }
     }
 }
