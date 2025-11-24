@@ -805,7 +805,7 @@ namespace Altinn.Platform.Authentication.Services
                 sub: userIdenity.TokenSubject!,
                 acr: userIdenity.Acr,
                 authTime: userIdenity.AuthTime,
-                idTokenJti: userIdenity.ExternalSessionId,
+                idTokenJti: userIdenity.Jti,
                 upstreamSid: userIdenity.Sid,
                 cancellationToken: cancellationToken);
         }
@@ -1126,7 +1126,7 @@ namespace Altinn.Platform.Authentication.Services
                         Amr = userIdenity.Amr,
                         Scopes = scopes,
                         ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
-                        UpstreamSessionSid = userIdenity.ExternalSessionId,
+                        UpstreamSessionSid = userIdenity.Sid,
                         Now = _timeProvider.GetUtcNow(),
                         CreatedByIp = upstreamTx.CreatedByIp,
                         UserAgentHash = upstreamTx.UserAgentHash,

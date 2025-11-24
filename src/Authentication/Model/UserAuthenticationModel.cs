@@ -112,6 +112,11 @@ namespace Altinn.Platform.Authentication.Model
         public string? Sid { get; set; }
 
         /// <summary>
+        /// Gets or sets the JWT ID (jti from token)
+        /// </summary>
+        public string? Jti { get; set; }
+
+        /// <summary>
         /// Gets or sets the authentication time.
         /// </summary>
         public DateTimeOffset? AuthTime { get; set; }
