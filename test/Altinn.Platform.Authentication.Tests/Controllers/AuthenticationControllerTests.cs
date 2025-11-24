@@ -341,7 +341,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             claims.Add(new Claim("client_orgno", orgNr));
             claims.Add(new Claim("scope", "altinn:instances.write altinn:instances.read"));
             claims.Add(new Claim("iss", "https://ver2.maskinporten.no/"));
-            claims.Add(new Claim("jti", "fe155387-c5f2-42e9-943a-811789db663a"));
+            claims.Add(new Claim("sid", "fe155387-c5f2-42e9-943a-811789db663a"));
 
             ClaimsIdentity identity = new ClaimsIdentity(OrganisationIdentity);
             identity.AddClaims(claims);
@@ -1705,12 +1705,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string pid = "19108000239";
             string amr = "Minid-PIN";
             string acr = "idporten-loa-high";
-            string jti = "BHqitIevJmeX_IrOzmS1XOvAQAWlrTK2OioLnx43Kqw";
+            string sid = "BHqitIevJmeX_IrOzmS1XOvAQAWlrTK2OioLnx43Kqw";
 
             claims.Add(new Claim("pid", pid));
             claims.Add(new Claim("amr", amr));
             claims.Add(new Claim("acr", acr));
-            claims.Add(new Claim("jti", jti));
+            claims.Add(new Claim("sid", sid));
             claims.Add(new Claim("scope", "oidc altinn:instances.read"));
 
             ClaimsIdentity identity = new ClaimsIdentity();
@@ -1732,7 +1732,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Get the altinn token
             string token = await response.Content.ReadAsStringAsync();
             ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token, testTime);
-            string altinnSessionId = altinnTokenPrincipal.FindFirstValue("jti");
+            string altinnSessionId = altinnTokenPrincipal.FindFirstValue("sid");
 
             url = "/authentication/api/v1/refresh";
 
@@ -1743,8 +1743,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, testTime);
 
             Assert.NotNull(principal);
-            Assert.NotEqual(jti, principal.FindFirstValue("jti"));
-            Assert.Equal(altinnSessionId, principal.FindFirstValue("jti"));
+            Assert.NotEqual(sid, principal.FindFirstValue("sid"));
+            Assert.Equal(altinnSessionId, principal.FindFirstValue("sid"));
             Assert.True(principal.HasClaim(c => c.Type == "amr"));
         }
 

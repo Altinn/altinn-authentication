@@ -78,7 +78,7 @@ namespace Altinn.Platform.Authentication.Helpers
                             case "acr":
                                 authenticationEvent.AuthenticationLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(claim.Value);
                                 break;
-                            case "jti":
+                            case "sid":
                                 authenticationEvent.SessionId = claim.Value;
                                 break;
                         }
@@ -122,7 +122,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 authenticationEvent.EventType = eventType;
                 authenticationEvent.IpAddress = GetClientIpAddress(context);
                 authenticationEvent.IsAuthenticated = authenticatedUser.IsAuthenticated;
-                authenticationEvent.SessionId = authenticatedUser.SessionId;
+                authenticationEvent.SessionId = authenticatedUser.Sid;
                 authenticationEvent.ExternalSessionId = authenticatedUser.ExternalSessionId;
             }
 

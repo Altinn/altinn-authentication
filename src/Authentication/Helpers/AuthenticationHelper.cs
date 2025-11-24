@@ -112,9 +112,16 @@ namespace Altinn.Platform.Authentication.Helpers
                     continue;
                 }
 
+                if (claim.Type.Equals("sid"))
+                {
+                    userAuthenticationModel.Sid = claim.Value;
+                    userAuthenticationModel.ExternalSessionId = claim.Value;
+                    continue;
+                }
+
                 if (claim.Type.Equals("jti"))
                 {
-                    userAuthenticationModel.ExternalSessionId = claim.Value;
+                    userAuthenticationModel.Jti = claim.Value;
                     continue;
                 }
 
@@ -125,12 +132,6 @@ namespace Altinn.Platform.Authentication.Helpers
                         userAuthenticationModel.AuthTime = DateTimeOffset.FromUnixTimeSeconds(s);
                     }
 
-                    continue;
-                }
-
-                if (claim.Type.Equals("sid"))
-                {
-                    userAuthenticationModel.Sid = claim.Value;
                     continue;
                 }
 

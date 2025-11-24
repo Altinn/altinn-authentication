@@ -815,7 +815,7 @@ namespace Altinn.Platform.Authentication.Services
                 sub: userIdenity.TokenSubject!,
                 acr: userIdenity.Acr,
                 authTime: userIdenity.AuthTime,
-                idTokenJti: userIdenity.ExternalSessionId,
+                idTokenJti: userIdenity.Jti,
                 upstreamSid: userIdenity.Sid,
                 cancellationToken: cancellationToken);
         }

@@ -82,7 +82,7 @@ namespace Altinn.Platform.Authentication.Model
         public string? SessionId { get; internal set; }
 
         /// <summary>
-        /// The external session identity (jti)
+        /// The external session identity (sid)
         /// </summary>
         public string ExternalSessionId { get; internal set; }
 
@@ -110,6 +110,11 @@ namespace Altinn.Platform.Authentication.Model
         /// Gets or sets the security identifier (SID) associated with the entity.
         /// </summary>
         public string? Sid { get; set; }
+
+        /// <summary>
+        /// Gets or sets the JWT ID (jti from token)
+        /// </summary>
+        public string? Jti { get; set; }
 
         /// <summary>
         /// Gets or sets the authentication time.
