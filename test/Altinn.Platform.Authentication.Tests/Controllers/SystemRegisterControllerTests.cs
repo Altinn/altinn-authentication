@@ -884,7 +884,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string systemId = "991825827_the_matrix";
             HttpRequestMessage request = new(HttpMethod.Get, $"/authentication/api/v1/systemregister/vendor/{systemId}");
             HttpResponseMessage getResponse = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.NoContent, getResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
         }
 
         [Fact]
