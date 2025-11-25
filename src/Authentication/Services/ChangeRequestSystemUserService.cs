@@ -84,15 +84,6 @@ public class ChangeRequestSystemUserService(
             return regSystem.Problem;
         }        
 
-        if (createRequest.RedirectUrl is not null && createRequest.RedirectUrl != string.Empty)
-        {
-            var valRedirect = ValidateRedirectUrl(createRequest.RedirectUrl, regSystem.Value);
-            if (valRedirect.IsProblem)
-            {
-                return valRedirect.Problem;
-            }
-        }   
-
         Result<bool> res = await changeRequestRepository.CreateChangeRequest(created);
         if (res.IsProblem)
         {
@@ -100,28 +91,6 @@ public class ChangeRequestSystemUserService(
         }
 
         return created;
-    }
-
-    /// <summary>
-    /// Validate that the RedirectUrl chosen is the same as one of the RedirectUrl's listed for the Registered System
-    /// </summary>
-    /// <param name="redirectURL">the RedirectUrl chosen</param>
-    /// <param name="systemInfo">The system info</param>
-    /// <returns>Result or Problem</returns>
-    private static Result<bool> ValidateRedirectUrl(string redirectURL, RegisteredSystemResponse systemInfo)
-    {
-        List<Uri> redirectUrlsInSystem = systemInfo.AllowedRedirectUrls;
-        Uri chosenUri = new(redirectURL);
-
-        foreach (var uri in redirectUrlsInSystem)
-        {
-            if (uri.AbsoluteUri == chosenUri.AbsoluteUri)
-            {
-                return true;
-            }
-        }
-
-        return Problem.RedirectUriNotFound;
     }
 
     /// <summary>
