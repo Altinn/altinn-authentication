@@ -418,6 +418,7 @@ namespace Altinn.Platform.Authentication.Services
         {
             Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
             Claim? scopeClaim = principal.Claims.FirstOrDefault(c => c.Type == "scope");
+            
             // Disable code that forces presence of sid claim. Enable when all users have new token
             //if (sidClaim == null && _generalSettings.ForceOidc)
             //{
