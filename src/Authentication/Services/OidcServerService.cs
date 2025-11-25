@@ -417,7 +417,7 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<OidcSession?> HandleSessionRefresh(ClaimsPrincipal principal, CancellationToken cancellationToken)
         {
             Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
-
+            Claim? scopeClaim = principal.Claims.FirstOrDefault(c => c.Type == "scope");
             // Disable code that forces presence of sid claim. Enable when all users have new token
             //if (sidClaim == null && _generalSettings.ForceOidc)
             //{
@@ -428,7 +428,17 @@ namespace Altinn.Platform.Authentication.Services
             {
                 return null;
             }
-            
+
+            if (scopeClaim != null)
+            {
+                var scopes = scopeClaim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (!scopes.Contains("altinn:portal/enduser"))
+                {
+                    // Do not refresh session if altinn:portal/enduser is not requested. End user system scenario with exchanged idporten token
+                    return null;
+                }
+            }
+
             await _oidcSessionRepo.SlideExpiryToAsync(sidClaim.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
             var session = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
             if (session is null && _generalSettings.ForceOidc)
