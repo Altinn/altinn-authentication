@@ -142,6 +142,11 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, oidcSession.SubjectPartyUuid.ToString()!));
             }
 
+            if (isAuthCookie)
+            {
+                claims.Add(new Claim("jti", oidcSession.Sid));
+            }
+
             if (oidcSession.SubjectPartyId != null)
             {
                 claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, oidcSession.SubjectPartyId.ToString()!, ClaimValueTypes.Integer64));
