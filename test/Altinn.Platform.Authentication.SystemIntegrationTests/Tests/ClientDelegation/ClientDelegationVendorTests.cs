@@ -114,7 +114,7 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         // Assert: verify decision = NotApplicable (false permission)
         string? decisionAfterDelete = null;
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 3; i++)
         {
             decisionAfterDelete = await _fixture.PerformDecision(systemUser.Id, client.ClientOrganizationNumber);
             if (decisionAfterDelete == "NotApplicable")
