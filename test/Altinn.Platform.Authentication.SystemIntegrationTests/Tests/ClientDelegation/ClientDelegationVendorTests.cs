@@ -13,7 +13,7 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
     {
         _fixture = fixture;
     }
-    
+
     /// <summary>
     /// Tester Klientdelegerings-API-et i Altinn Authentication for sluttbruker-api - "Fasilitator" kan identifisere seg med
     /// idportentoken og leverandørene kan lage integrasjoner som lar delegere til Systembruker i egne Sluttbrukersystemer
@@ -24,7 +24,6 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
     /// 
     /// API-Dokumentasjon: https://docs.altinn.studio/nb/api/authentication/systemuserapi/clientdelegation/
     /// </summary>
-
     [Theory]
     [InlineData("ansvarlig-revisor", "Permit", "facilitator-regn-og-revisor")]
     [InlineData("regnskapsforer-lonn", "NotApplicable", "facilitator-regn-og-revisor")]
@@ -47,9 +46,9 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
 
         var systemUser = await _fixture.Platform.Common.GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, _fixture.Facilitator, externalRef);
         Assert.True(systemUser is not null);
-        
+
         _fixture.SystemUserId = systemUser.Id;
-        
+
         // Get available customers
         var customers = await _fixture.Platform.SystemUserClient.GetAvailableClientsForVendor(_fixture.Facilitator, systemUser.Id);
         Assert.True(customers.Data is not null);
@@ -82,22 +81,22 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         _fixture.Facilitator = await _fixture.Platform.GetTestUserAndTokenForCategory(testCategory);
 
         // Create and approve a system user
-        await _fixture.SetupAndApproveSystemUser(_fixture.Facilitator , accessPackage, externalRef);
+        await _fixture.SetupAndApproveSystemUser(_fixture.Facilitator, accessPackage, externalRef);
 
         var systemUser = await _fixture.Platform.Common
-            .GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, _fixture.Facilitator , externalRef);
-        
+            .GetSystemUserOnSystemIdForAgenOnOrg(_fixture.SystemId, _fixture.Facilitator, externalRef);
+
         Assert.NotNull(systemUser);
 
         // Get available clients (limit to 1 for simplicity)
-        var available = await _fixture.Platform.SystemUserClient.GetAvailableClientsForVendor(_fixture.Facilitator , systemUser.Id);
+        var available = await _fixture.Platform.SystemUserClient.GetAvailableClientsForVendor(_fixture.Facilitator, systemUser.Id);
         Assert.NotNull(available.Data);
-        
+
         //Pick just one client
         var client = available.Data.First();
 
         // Delegate one client
-        await _fixture.Platform.SystemUserClient.DelegateAllClientsFromVendorToSystemUser(_fixture.Facilitator , systemUser.Id, [client]);
+        await _fixture.Platform.SystemUserClient.DelegateAllClientsFromVendorToSystemUser(_fixture.Facilitator, systemUser.Id, [client]);
 
         // Verify decision = Permit
         var decisionBeforeDelete = await _fixture.PerformDecision(systemUser.Id, client.ClientOrganizationNumber);
@@ -105,24 +104,15 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
 
         // Get delegated clients
         var delegated = await _fixture.Platform.SystemUserClient
-            .GetDelegatedClientsFromVendorSystemUser(_fixture.Facilitator , systemUser.Id);
+            .GetDelegatedClientsFromVendorSystemUser(_fixture.Facilitator, systemUser.Id);
         Assert.NotNull(delegated.Data);
 
         // Act: delete all delegated clients
-        await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(_fixture.Facilitator , systemUser.Id, delegated.Data);
+        await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(_fixture.Facilitator, systemUser.Id, delegated.Data);
 
         // Assert: verify decision = NotApplicable (false permission)
-        string? decisionAfterDelete = null;
-
-        for (int i = 0; i < 3; i++)
-        {
-            decisionAfterDelete = await _fixture.PerformDecision(systemUser.Id, client.ClientOrganizationNumber);
-            if (decisionAfterDelete == "NotApplicable")
-                break;
-
-            await Task.Delay(2000);
-        }
-
+        string? decisionAfterDelete = await _fixture.PerformDecision(systemUser.Id, client.ClientOrganizationNumber);
+        
         Assert.Equal("NotApplicable", decisionAfterDelete);
     }
 }
