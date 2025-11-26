@@ -72,14 +72,15 @@ public class ClientDelegationFixture : TestFixture, IAsyncLifetime
 
     public async Task SetupAndApproveSystemUser(Testuser facilitator, string accessPackage, string externalRef)
     {
+        VendorTokenMaskinporten = await Platform.GetMaskinportenTokenForVendor();
+
         var clientRequestBody = (await Helper.ReadFile("Resources/Testdata/ClientDelegation/CreateRequest.json"))
             .Replace("{systemId}", SystemId)
             .Replace("{externalRef}", externalRef)
             .Replace("{accessPackage}", accessPackage)
             .Replace("{facilitatorPartyOrgNo}", facilitator.Org);
 
-        var userResponse = await Platform.PostAsync(Endpoints.PostAgentClientRequest.Url(),
-            clientRequestBody, VendorTokenMaskinporten);
+        var userResponse = await Platform.PostAsync(Endpoints.PostAgentClientRequest.Url(), clientRequestBody, VendorTokenMaskinporten);
 
         var userResponseContent = await userResponse.Content.ReadAsStringAsync();
         Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
