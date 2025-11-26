@@ -112,7 +112,17 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(_fixture.Facilitator , systemUser.Id, delegated.Data);
 
         // Assert: verify decision = NotApplicable (false permission)
-        var decisionAfterDelete = await _fixture.PerformDecision(systemUser.Id, client.ClientOrganizationNumber);
+        string? decisionAfterDelete = null;
+
+        for (int i = 0; i < 5; i++)
+        {
+            decisionAfterDelete = await _fixture.PerformDecision(systemUser.Id, client.ClientOrganizationNumber);
+            if (decisionAfterDelete == "NotApplicable")
+                break;
+
+            await Task.Delay(2000);
+        }
+
         Assert.Equal("NotApplicable", decisionAfterDelete);
     }
 }
