@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Clients;
 using Altinn.Authorization.ServiceDefaults;
@@ -13,7 +11,6 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Common.AccessTokenClient.Services;
 using Altinn.Common.PEP.Authorization;
 using Altinn.Common.PEP.Clients;
-using Altinn.Common.PEP.Configuration;
 using Altinn.Common.PEP.Implementation;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients;
@@ -36,16 +33,8 @@ using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.ServiceDefaults;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Telemetry;
 using AltinnCore.Authentication.JwtCookie;
-using ArchiverService;
-using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
-using Azure.Security.KeyVault.Secrets;
-using Microsoft.ApplicationInsights.AspNetCore.Extensions;
-using Microsoft.ApplicationInsights.Channel;
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -58,13 +47,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
-using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Npgsql;
-using Yuniql.AspNetCore;
-using Yuniql.Extensibility;
-using Yuniql.PostgreSql;
 
 namespace Altinn.Platform.Authentication;
 
@@ -73,14 +57,6 @@ namespace Altinn.Platform.Authentication;
 /// </summary>
 internal static class AuthenticationHost
 {
-    private static readonly string ApplicationInsightsKeySecretName = "ApplicationInsights--InstrumentationKey";
-    private static readonly string PostgresConfigKeySecretNameAdmin = "PostgreSQLSettings--AuthenticationDbAdminConnectionString";
-    private static readonly string PostgresConfigKeySecretNameUser = "PostgreSQLSettings--AuthenticationDbUserConnectionString";
-
-    private static string applicationInsightsConnectionString = string.Empty;
-    private static string postgresAdminConnectionString = string.Empty;
-    private static string postgresUserConnectionString = string.Empty;
-
     /// <summary>
     /// Creates the Authentication app from config
     /// </summary>
@@ -105,20 +81,6 @@ internal static class AuthenticationHost
             }
         }
 
-        ConfigureLogging(builder.Logging);
-
-        ConfigureServices(builder, builder.Services, builder.Configuration);
-
-        builder.Services.AddScoped<TrimStringsActionFilter>();
-        builder.Services.AddPersistanceLayer();
-
-        ConfigureLogging(builder.Logging);
-
-        return builder.Build();
-    }
-
-    private static void ConfigureServices(WebApplicationBuilder builder, IServiceCollection services, IConfiguration config)
-    {
         services.Configure<AltinnClusterInfo>(builder.Configuration.GetSection("Altinn:ClusterInfo"));
         services.AddSingleton<IConfigureOptions<AltinnClusterInfo>, ConfigureAltinnClusterInfo>();
         services.AddOptions<ForwardedHeadersOptions>()
@@ -231,19 +193,6 @@ internal static class AuthenticationHost
         services.AddScoped<ITokenService, TokenService>();
         services.AddSingleton<ITokenIssuer, TokenIssuerService>();
 
-        if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
-        {
-            services.AddSingleton(typeof(ITelemetryChannel), new ServerTelemetryChannel() { StorageFolder = "/tmp/logtelemetry" });
-            services.AddApplicationInsightsTelemetry(new ApplicationInsightsServiceOptions
-            {
-                ConnectionString = applicationInsightsConnectionString
-            });
-
-            services.AddApplicationInsightsTelemetryProcessor<HealthTelemetryFilter>();
-            services.AddApplicationInsightsTelemetryProcessor<IdentityTelemetryFilter>();
-            services.AddSingleton<ITelemetryInitializer, CustomTelemetryInitializer>();
-        }
-
         services.AddAntiforgery(options =>
         {
             // asp .net core expects two types of tokens: One that is attached to the request as header, and the other one as cookie.
@@ -297,6 +246,11 @@ internal static class AuthenticationHost
                 policy.RequireScopeAnyOf(AuthzConstants.SCOPE_PORTAL));
 
         services.AddFeatureManagement();
+
+        builder.Services.AddScoped<TrimStringsActionFilter>();
+        builder.Services.AddPersistanceLayer();
+
+        return builder.Build();
     }
 
     private static string GetXmlCommentsPathForControllers()
@@ -306,85 +260,5 @@ internal static class AuthenticationHost
         string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 
         return xmlPath;
-    }
-
-    private static void ConfigureLogging(ILoggingBuilder logging)
-    {
-        // The default ASP.NET Core project templates call CreateDefaultBuilder, which adds the following logging providers:
-        // Console, Debug, EventSource
-        // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-3.1
-
-        // Clear log providers
-        logging.ClearProviders();
-
-        // Setup up application insight if ApplicationInsightsConnectionString is available
-        if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
-        {
-            // Add application insights https://docs.microsoft.com/en-us/azure/azure-monitor/app/ilogger
-            logging.AddApplicationInsights(
-             configureTelemetryConfiguration: (config) => config.ConnectionString = applicationInsightsConnectionString,
-             configureApplicationInsightsLoggerOptions: (options) => { });
-
-            // Optional: Apply filters to control what logs are sent to Application Insights.
-            // The following configures LogLevel Information or above to be sent to
-            // Application Insights for all categories.
-            logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>(string.Empty, LogLevel.Warning);
-
-            // Adding the filter below to ensure logs of all severity from Program.cs
-            // is sent to ApplicationInsights.
-            logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>(typeof(Program).FullName, LogLevel.Trace);
-        }
-        else
-        {
-            // If not application insight is available log to console
-            logging.AddFilter("Microsoft", LogLevel.Warning);
-            logging.AddFilter("System", LogLevel.Warning);
-            logging.AddConsole();
-        }
-    }
-
-    /// <summary>
-    /// Adds the postgres db
-    /// </summary>
-    /// <param name="app">the Authentication app</param>
-    /// <param name="builder">the builder</param>
-    internal static void ConfigurePostgreSql(this WebApplication app, WebApplicationBuilder builder)
-    {
-        if (builder.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
-        {
-            ConsoleTraceService traceService = new() { IsDebugEnabled = true };
-
-            string workspacePath = Path.Combine(Environment.CurrentDirectory, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
-            if (builder.Environment.IsDevelopment())
-            {
-                string connectionString = string.Format(
-                builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminConnectionString"));
-                workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, builder.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
-                postgresAdminConnectionString = connectionString;
-            }
-
-            var connectionStringBuilder = new NpgsqlConnectionStringBuilder(postgresAdminConnectionString);
-            var userConStringBuilder = new NpgsqlConnectionStringBuilder(postgresUserConnectionString);
-
-            var user = connectionStringBuilder.Username;
-            var appUser = userConStringBuilder.Username;
-
-            app.UseYuniql(
-                new PostgreSqlDataService(traceService),
-                new PostgreSqlBulkImportService(traceService),
-                traceService,
-                new Yuniql.AspNetCore.Configuration
-                {
-                    Environment = "prod",
-                    Workspace = workspacePath,
-                    ConnectionString = postgresAdminConnectionString,
-                    IsAutoCreateDatabase = false,
-                    IsDebug = true,
-                    Tokens = [
-                        KeyValuePair.Create("YUNIQL-USER", user),
-                    KeyValuePair.Create("APP-USER", user)
-                        ]
-                });
-        }
     }
 }
