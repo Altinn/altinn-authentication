@@ -81,20 +81,6 @@ internal static class AuthenticationHost
             }
         }
 
-        services.Configure<AltinnClusterInfo>(builder.Configuration.GetSection("Altinn:ClusterInfo"));
-        services.AddSingleton<IConfigureOptions<AltinnClusterInfo>, ConfigureAltinnClusterInfo>();
-        services.AddOptions<ForwardedHeadersOptions>()
-            .Configure((ForwardedHeadersOptions options, IOptionsMonitor<AltinnClusterInfo> clusterInfoOptions) =>
-            {
-                options.ForwardedHeaders = ForwardedHeaders.All;
-
-                var clusterInfo = clusterInfoOptions.CurrentValue;
-                if (clusterInfo.ClusterNetwork is { } clusterNetwork)
-                {
-                    options.KnownNetworks.Add(new IPNetwork(clusterNetwork.BaseAddress, clusterNetwork.PrefixLength));
-                }
-            });
-
         services.AddAutoMapper(cfg => { }, typeof(Program));
         services.AddControllers().AddJsonOptions(options =>
         {
