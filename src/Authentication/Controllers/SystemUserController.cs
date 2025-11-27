@@ -252,7 +252,7 @@ public class SystemUserController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
-        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty()) 
         {
             return Unauthorized();
         }
