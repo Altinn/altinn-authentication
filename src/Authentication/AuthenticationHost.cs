@@ -373,7 +373,7 @@ internal static class AuthenticationHost
                 new PostgreSqlDataService(traceService),
                 new PostgreSqlBulkImportService(traceService),
                 traceService,
-                new Configuration
+                new Yuniql.AspNetCore.Configuration
                 {
                     Environment = "prod",
                     Workspace = workspacePath,
