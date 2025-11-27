@@ -127,7 +127,7 @@ internal static class AuthenticationHost
         services.Configure<Altinn.Common.Authentication.Configuration.OidcProviderSettings>(config.GetSection("OidcProviders"));
 
         // Configure OIDC providers used by authentication
-        services.ConfigureOidcProviders(config.GetSection("OidcProviders"));
+        services.ConfigureOidcProviders("OidcProviders");
 
         services.ConfigureDataProtection(builder.Environment.IsDevelopment(), config.GetSection("AzureStorageConfiguration").Get<AzureStorageConfiguration>());
         services.AddAuthentication(JwtCookieDefaults.AuthenticationScheme)

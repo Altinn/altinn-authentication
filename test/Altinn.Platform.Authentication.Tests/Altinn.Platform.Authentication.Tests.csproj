@@ -51,7 +51,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="appsettings.json" />
     <None Remove="appsettings.test.json" />
     <None Remove="selfSignedTestCertificate.pfx" />
     <None Remove="selfSignedTestCertificatePublic.cer" />
@@ -124,11 +123,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
     <Content Include="appsettings.test.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
