@@ -15,17 +15,23 @@ namespace Altinn.Platform.Authentication.Extensions
         /// Configure the OIDC providers
         /// </summary>
         public static IServiceCollection ConfigureOidcProviders(
-        this IServiceCollection services, IConfigurationSection section)
+            this IServiceCollection services,
+            string sectionName)
         {
-            IEnumerable<IConfigurationSection> providerSections = section.GetChildren();
+            services.AddOptions<OidcProviderSettings>()
+                .Configure((OidcProviderSettings settings, IConfiguration configuration) =>
+                {
+                    var section = configuration.GetSection(sectionName);
+                    IEnumerable<IConfigurationSection> providerSections = section.GetChildren();
 
-            foreach (IConfigurationSection providerSection in providerSections)
-            {
-                OidcProvider prov = new OidcProvider();
-                providerSection.Bind(prov);
-                prov.IssuerKey = providerSection.Key;
-                services.Configure<OidcProviderSettings>(x => x.Add(prov.IssuerKey, prov));
-            }
+                    foreach (IConfigurationSection providerSection in providerSections)
+                    {
+                        OidcProvider prov = new OidcProvider();
+                        providerSection.Bind(prov);
+                        prov.IssuerKey = providerSection.Key;
+                        settings.Add(prov.IssuerKey, prov);
+                    }
+                });
 
             return services;
         }

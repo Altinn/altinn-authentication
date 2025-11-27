@@ -2,7 +2,9 @@
 
 using System;
 using System.Threading.Tasks;
+using Altinn.Common.AccessToken.Services;
 using Altinn.Common.Authentication.Configuration;
+using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
@@ -47,9 +49,10 @@ public class WebApplicationFixture
         {
             builder.ConfigureAppConfiguration(config =>
             {
-                config.AddConfiguration(new ConfigurationBuilder()
-                        .AddJsonFile("appsettings.test.json")
-                        .Build());
+                var testConfig = new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.test.json")
+                    .Build();
+                config.AddConfiguration(testConfig);
             });
 
             builder.ConfigureTestServices(services =>
@@ -60,8 +63,10 @@ public class WebApplicationFixture
                 
                 // services.AddSingleton<IPostConfigureOptions<OidcProviderSettings>, OidcProviderPostConfigureSettingsStub>();
                 services.AddSingleton<TimeProvider>(timeProvider);
-                
+
                 // services.AddSingleton<AdvanceableTimeProvider>(timeProvider);
+
+                services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             });
 
             base.ConfigureWebHost(builder);
