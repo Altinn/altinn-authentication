@@ -135,7 +135,12 @@ public class SystemRegisterController : ControllerBase
     {
         RegisteredSystemResponse registeredSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
 
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registeredSystem?.Vendor.ID), User))
+        if (registeredSystem is null)
+        {
+            return NotFound();
+        }
+
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registeredSystem.Vendor.ID), User))
         {
             return Forbid();
         }
