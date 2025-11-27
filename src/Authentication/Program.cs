@@ -73,7 +73,7 @@ if (app.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
             IsDebug = true,
             Tokens = [
                 KeyValuePair.Create("YUNIQL-USER", user),
-                KeyValuePair.Create("APP-USER", user)
+                KeyValuePair.Create("APP-USER", appUser),
             ]
         });
 }
