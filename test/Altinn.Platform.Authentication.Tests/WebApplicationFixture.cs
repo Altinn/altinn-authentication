@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests;
@@ -65,7 +66,7 @@ public class WebApplicationFixture
 
             builder.ConfigureTestServices(services =>
             {
-                var timeProvider = new AdvanceableTimeProvider();
+                var timeProvider = new FakeTimeProvider();
 
                 // services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
                 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,7 @@ public abstract class DbTestBase
 
     protected virtual void ConfigureHost(IHostApplicationBuilder builder)
     {
+        builder.AddPersistanceLayer();
         ConfigureServices(builder.Services);
     }
 
