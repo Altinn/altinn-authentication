@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests;
@@ -34,7 +35,7 @@ public abstract class WebApplicationTests
 
     protected IServiceProvider Services => _scope!.ServiceProvider;
 
-    protected TimeProvider TimeProvider => Services.GetRequiredService<TimeProvider>();
+    protected FakeTimeProvider TimeProvider => Services.GetRequiredService<FakeTimeProvider>();
 
     protected HttpClient CreateClient()
         => _webApp!.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true, BaseAddress = new Uri("https://localhost"), });
@@ -47,6 +48,11 @@ public abstract class WebApplicationTests
     protected virtual void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<IProfile, ProfileMock>();
+    }
+
+    protected virtual ValueTask InitializeAsync()
+    {
+        return ValueTask.CompletedTask;
     }
 
     async Task IAsyncLifetime.DisposeAsync()
@@ -104,5 +110,6 @@ public abstract class WebApplicationTests
 
         _services = _webApp.Services;
         _scope = _services.CreateAsyncScope();
+        await InitializeAsync();
     }
 }

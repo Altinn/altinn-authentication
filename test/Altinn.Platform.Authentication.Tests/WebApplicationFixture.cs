@@ -69,8 +69,9 @@ public class WebApplicationFixture
                 var timeProvider = new FakeTimeProvider();
 
                 // services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
-                
+
                 // services.AddSingleton<IPostConfigureOptions<OidcProviderSettings>, OidcProviderPostConfigureSettingsStub>();
+                services.AddSingleton(timeProvider);
                 services.AddSingleton<TimeProvider>(timeProvider);
 
                 // services.AddSingleton<AdvanceableTimeProvider>(timeProvider);
