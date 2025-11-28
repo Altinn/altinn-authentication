@@ -2224,33 +2224,34 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task GetListOfDelegationsForStandardSystemUser_ReturnsProblem_accesspackage()
         {
-            // Arrange            
-            var systemUserId = new Guid("ec6831bc-379c-469a-8e41-d37d398772c9");
-            var partyId = 500000;
-            var partyUuid = new Guid("7a851ad6-3255-4c9b-a727-0b449797eb09");
-
-            var systemUser = new SystemUserInternalDTO
-            {
-                Id = systemUserId.ToString(),
-                SystemId = "991825827_right_ap_01",
-                PartyId = partyId.ToString()
-            };
-
-            var party = new Party
-            {
-                PartyUuid = partyUuid,
-                OrgNumber = "312615398"
-            };
-
-            var systemUserRepoMock = new Mock<ISystemUserRepository>();
-            systemUserRepoMock.Setup(r => r.GetSystemUserById(systemUserId)).ReturnsAsync(systemUser);
-
-            var partiesClientMock = new Mock<IPartiesClient>();
-            partiesClientMock.Setup(p => p.GetPartyAsync(partyId, It.IsAny<CancellationToken>())).ReturnsAsync(party);
+            // Create System used for test            
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterAP.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
             HttpClient client = CreateClient();
-            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{systemUserId}/delegations");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: timeProviderMock.GetUtcNow()));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+
+            // Must use the 510000 party to trigger the mock response in AcceManagementClientMock -> GetSingleRightDelegationsForStandardUser
+            int partyId = 500007;
+
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_the_matrix"
+            };
+
+            HttpRequestMessage createSystemUserRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            {
+                Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
+            };
+
+            HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
+
+            var result = await createSystemUserResponse.Content.ReadFromJsonAsync<SystemUserInternalDTO>();
+            Assert.Equal(HttpStatusCode.OK, createSystemUserResponse.StatusCode);
+            Assert.NotNull(result);
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{result.Id}/delegations");
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             // Assert

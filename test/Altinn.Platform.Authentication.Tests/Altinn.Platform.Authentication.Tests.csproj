@@ -87,6 +87,9 @@
     <None Update="Data\ResourceRegistry\ttd-am-k6.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\Roles\user_1337\party_500007\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\Roles\user_1337\party_500006\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -103,6 +106,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemChangeLog\ChangeLogCreate.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterAP.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Data\SystemRegister\Json\SystemRegisterInvalidResourceType.json">

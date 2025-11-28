@@ -122,6 +122,36 @@
   {
     "PartyTypeName": 2,
     "SSN": "null",
+    "OrgNumber": "910493356",
+    "Person": null,
+    "Organization": {
+      "OrgNumber": "910493356",
+      "Name": "TEST ORG SYSTEM USER DELETE AS",
+      "UnitType": "AS",
+      "TelephoneNumber": null,
+      "MobileNumber": null,
+      "FaxNumber": null,
+      "EMailAddress": "test@test.test",
+      "InternetAddress": null,
+      "MailingAddress": null,
+      "MailingPostalCode": null,
+      "MailingPostalCity": null,
+      "BusinessAddress": null,
+      "BusinessPostalCode": null,
+      "BusinessPostalCity": null
+    },
+    "PartyId": 500007,
+    "PartyUuid": "c8987f17-a1b5-49f3-8ec5-7b58e2e33f43",
+    "UnitType": "AS",
+    "Name": "TEST ORG AS",
+    "IsDeleted": false,
+    "OnlyHierarchyElementWithNoAccess": false,
+    "ChildParties": [
+    ]
+  },
+  {
+    "PartyTypeName": 2,
+    "SSN": "null",
     "OrgNumber": "987654321",
     "Person": null,
     "Organization": {
@@ -144,36 +174,6 @@
     "PartyUuid": "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8",
     "UnitType": "AS",
     "Name": "TEST AS",
-    "IsDeleted": false,
-    "OnlyHierarchyElementWithNoAccess": false,
-    "ChildParties": [
-    ]
-  },
-  {
-    "PartyTypeName": 2,
-    "SSN": "null",
-    "OrgNumber": "910493353",
-    "Person": null,
-    "Organization": {
-      "OrgNumber": "910493353",
-      "Name": "LEPSØY OG TONSTAD",
-      "UnitType": "AS",
-      "TelephoneNumber": null,
-      "MobileNumber": null,
-      "FaxNumber": null,
-      "EMailAddress": "test@test.test",
-      "InternetAddress": null,
-      "MailingAddress": null,
-      "MailingPostalCode": null,
-      "MailingPostalCity": null,
-      "BusinessAddress": null,
-      "BusinessPostalCode": null,
-      "BusinessPostalCity": null
-    },
-    "PartyId": 510000,
-    "PartyUuid": "00000000-0000-0000-0005-000000000000",
-    "UnitType": "AS",
-    "Name": "LEPSØY OG TONSTAD",
     "IsDeleted": false,
     "OnlyHierarchyElementWithNoAccess": false,
     "ChildParties": [
