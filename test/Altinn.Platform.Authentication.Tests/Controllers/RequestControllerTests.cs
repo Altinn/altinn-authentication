@@ -3645,7 +3645,7 @@ public class RequestControllerTests(
     private static string GetConfigPath()
     {
         string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder!, $"../../../appsettings.json");
+        return Path.Combine(unitTestFolder!, $"../../../appsettings.test.json");
     }
 
     private async Task<HttpResponseMessage> CreateSystemRegister(HttpClient client, string token)

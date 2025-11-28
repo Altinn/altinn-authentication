@@ -73,7 +73,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
             HttpClient client = CreateClient();
 
-            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2));
+            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             // Act
@@ -113,7 +113,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2));
+            string token = JwtTokenMock.GenerateToken(GetTestPrincipal(), TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             // Act

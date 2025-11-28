@@ -286,9 +286,9 @@ namespace Altinn.AccessManagement.Tests.Mocks
 
             foreach (XacmlJsonCategory sub in subjects)
             {
-                if (sub.Attribute.Any() && sub.Attribute.First().AttributeId == AltinnCoreClaimTypes.UserId)
+                if (sub.Attribute.FirstOrDefault(a => a.AttributeId == AltinnCoreClaimTypes.UserId) is { } userIdAttribute)
                 {
-                    subjectUserId = Convert.ToInt32(sub.Attribute.First().Value);
+                    subjectUserId = Convert.ToInt32(userIdAttribute.Value);
                 }
             }
 

@@ -7,6 +7,7 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Persistance.Extensions;
 using Altinn.Platform.Persistence.Tests;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Npgsql;
 using Xunit;
 
@@ -20,9 +21,9 @@ public class SystemRegisterRepositoryDbTests(DbFixture dbFixture)
 
     protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
-    protected override void ConfigureServices(IServiceCollection services)
+    protected override void ConfigureHost(IHostApplicationBuilder builder)
     {
-        services.AddPersistanceLayer();
-        base.ConfigureServices(services);
+        builder.AddPersistanceLayer();
+        base.ConfigureHost(builder);
     }
 }

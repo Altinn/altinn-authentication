@@ -1,14 +1,14 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Altinn.Authorization.ServiceDefaults.Npgsql.Yuniql;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
-using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations.OidcServer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Npgsql;
 
 namespace Altinn.Platform.Authentication.Persistance.Extensions;
@@ -22,11 +22,18 @@ public static class PersistanceDependencyInjection
     /// <summary>
     /// Used in the parent project to insert the Repositories and Postgres DB into the Dependency Injection Service Collection
     /// </summary>
-    /// <param name="services">Parent project's Service Collection</param>
+    /// <param name="builder">Host application builder</param>
     /// <returns></returns>
-    public static IServiceCollection AddPersistanceLayer(this IServiceCollection services)
+    public static IHostApplicationBuilder AddPersistanceLayer(this IHostApplicationBuilder builder)
     {
-        AddPostgreSqlDatabase(services);
+        var services = builder.Services;
+        if (services.Contains(Marker.Descriptor))
+        {
+            return builder;
+        }
+
+        services.Add(Marker.Descriptor);
+        AddPostgreSqlDatabase(builder);
         AddSystemUserRepository(services);        
         AddSystemRegisterRepository(services);
         AddRequestRepository(services);
@@ -39,7 +46,7 @@ public static class PersistanceDependencyInjection
         AddAuthorizationCodeRepository(services);
         AddRefreshTokenRepository(services);
         AddUnregisteredClientRequestRepository(services);
-        return services;
+        return builder;
     }
 
     private static void AddRequestRepository(this IServiceCollection services)
@@ -55,30 +62,22 @@ public static class PersistanceDependencyInjection
     /// <summary>
     /// Helper method for DI
     /// </summary>
-    /// <param name="services">IServiceCollection for parent DI</param>
-    private static void AddPostgreSqlDatabase(this IServiceCollection services) 
+    /// <param name="builder">Host application builder</param>
+    private static void AddPostgreSqlDatabase(this IHostApplicationBuilder builder)
     {
-        services.AddOptions<PostgreSQLSettings>()
-                 .Validate(s => !string.IsNullOrEmpty(s.AuthenticationDbUserConnectionString), "Missing Connection string");
+        var fs = new ManifestEmbeddedFileProvider(typeof(PersistanceDependencyInjection).Assembly, "Migration");
 
-        services.TryAddSingleton((IServiceProvider sp) =>
-        {
-            var settings = sp.GetRequiredService<IOptions<PostgreSQLSettings>>().Value;
-            var connectionString = settings.AuthenticationDbUserConnectionString + ";Include Error Detail = true";
-            
-            // var connectionString = string.Format(
-            //    settings.AuthenticationDbUserConnectionString,
-            //    settings.AuthenticationDbPassword);
+        builder.AddAltinnPostgresDataSource()
+            .EnableDynamicJson()
+            .MapEnum<SystemUserType>("business_application.systemuser_type")
+            .MapEnum<SystemChangeType>("business_application.systemchange_type")
+            .AddYuniqlMigrations(typeof(PersistanceDependencyInjection), cfg =>
+            {
+                cfg.WorkspaceFileProvider = fs;
+                cfg.Workspace = "/";
+            });
 
-            var builder = new NpgsqlDataSourceBuilder(connectionString);
-            builder.EnableDynamicJson();
-            builder.MapEnum<SystemUserType>("business_application.systemuser_type");
-            builder.MapEnum<SystemChangeType>("business_application.systemchange_type");
-            builder.UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>());
-            return builder.Build();            
-        });
-
-        services.TryAddTransient((IServiceProvider sp) => sp.GetRequiredService<NpgsqlDataSource>().CreateConnection());
+        builder.Services.TryAddTransient((IServiceProvider sp) => sp.GetRequiredService<NpgsqlDataSource>().CreateConnection());
     }
 
     /// <summary>
@@ -169,5 +168,10 @@ public static class PersistanceDependencyInjection
     private static void AddSystemChangeLogRepository(this IServiceCollection services)
     {
         services.TryAddTransient<ISystemChangeLogRepository, SystemChangeLogRepository>();
+    }
+
+    private sealed record Marker
+    {
+        public static ServiceDescriptor Descriptor { get; } = ServiceDescriptor.Singleton<Marker, Marker>();
     }
 }

@@ -20,7 +20,6 @@ namespace Altinn.Platform.Authentication.Tests.RepositoryDataAccess
 
         protected override void ConfigureServices(IServiceCollection services)
         {
-            services.AddPersistanceLayer();              // your extension
             services.TryAddSingleton(TimeProvider.System);
             base.ConfigureServices(services);
         }

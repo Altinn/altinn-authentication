@@ -45,11 +45,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
-        private readonly Mock<TimeProvider> timeProviderMock = new();
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private IConfiguration _configuration;
-        private readonly DateTimeOffset testTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
+
+        protected override void ConfigureHost(IWebHostBuilder builder)
+        {
+            builder.UseSetting("feature_management:feature_flags:0:id", "AuditLog");
+            builder.UseSetting("feature_management:feature_flags:0:enabled", "true");
+            base.ConfigureHost(builder);
+        }
 
         protected override void ConfigureServices(IServiceCollection services)
         {
@@ -90,13 +95,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
             services.AddSingleton(_eventQueue.Object);            
-            services.AddSingleton(timeProviderMock.Object);
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
-            SetupDateTimeMock();
             SetupGuidMock();
             _configuration = configuration;
+        }
+
+        protected override ValueTask InitializeAsync()
+        {
+            // Validation of tokens depend on current time. Remove this when https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/issues/2572 has been resolved.
+            TimeProvider.SetUtcNow(DateTimeOffset.UtcNow);
+            return base.InitializeAsync();
         }
 
         /// <summary>
@@ -126,7 +136,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.MaskinPorten, SecurityLevel.Sensitive, 974760223, AuthenticationEventType.TokenExchange);
@@ -143,7 +153,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
 
             Assert.NotNull(principal);
 
@@ -177,7 +187,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -218,7 +228,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -261,7 +271,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -303,7 +313,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -347,7 +357,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.VirksomhetsBruker, SecurityLevel.Sensitive, 974760223, AuthenticationEventType.TokenExchange, 1234, true, "fe155387-c5f2-42e9-943a-811789db663a");
@@ -394,7 +404,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
             Mock<IGuidService> guidService = new Mock<IGuidService>();
@@ -443,7 +453,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -457,7 +467,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
 
             Assert.NotNull(principal);
 
@@ -491,7 +501,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -505,7 +515,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
 
             Assert.NotNull(principal);
 
@@ -582,7 +592,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             }
 
             Assert.NotNull(token);
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
             Assert.NotNull(principal);
 
             Assert.True(principal.Claims.ToList().Exists(c => c.Type == "urn:altinn:party:uuid"));
@@ -762,7 +772,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, TimeProvider.GetUtcNow());
             Assert.NotNull(claimPrincipal);
 
             // Validate that default Altinn Portal scope is added to the token
@@ -845,7 +855,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, TimeProvider.GetUtcNow());
             Assert.NotNull(claimPrincipal);
 
             // Validate that default Altinn Portal scope is added to the token
@@ -933,7 +943,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, TimeProvider.GetUtcNow());
             Assert.NotNull(claimPrincipal);
             Assert.NotNull(claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")));
             Assert.Equal("234234",  claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")).Value);
@@ -1017,7 +1027,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotEmpty(cookieHeaders);
             string platformToken = GetTokenFromSetCookieHeader(cookieHeaders);
             Assert.NotNull(platformToken);
-            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, testTime);
+            ClaimsPrincipal claimPrincipal = JwtTokenMock.ValidateToken(platformToken, TimeProvider.GetUtcNow());
             Assert.NotNull(claimPrincipal);
             Assert.NotNull(claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")));
             Assert.Equal("234235", claimPrincipal.Claims.FirstOrDefault(r => r.Type.Equals("urn:altinn:userid")).Value);
@@ -1348,7 +1358,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ClaimsIdentity identity = new ClaimsIdentity(OrganisationIdentity);
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
-            string token = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string token = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -1401,7 +1411,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             string url = "/authentication/api/v1/exchange/id-porten";
 
@@ -1411,7 +1421,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
             SecurityToken securityToken = JwtTokenMock.GetSecurityToken(token);
             SecurityToken securityTokenExternal = JwtTokenMock.GetSecurityToken(externalToken);
 
@@ -1453,7 +1463,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             string url = "/authentication/api/v1/exchange/id-porten";
 
@@ -1463,7 +1473,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
             SecurityToken securityToken = JwtTokenMock.GetSecurityToken(token);
             SecurityToken securityTokenExternal = JwtTokenMock.GetSecurityToken(externalToken);
 
@@ -1502,7 +1512,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             string url = "/authentication/api/v1/exchange/id-porten";
 
@@ -1540,7 +1550,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             string url = "/authentication/api/v1/exchange/id-porten";
 
@@ -1571,7 +1581,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -1605,7 +1615,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).Throws(new Exception());
 
             string url = "/authentication/api/v1/exchange/id-porten";
@@ -1640,7 +1650,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateEncryptedAndSignedToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateEncryptedAndSignedToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             ClaimsPrincipal claimsPrincipal = JwtTokenMock.ValidateEncryptedAndSignedToken(externalToken);
             Assert.Equal(externalPrincipal.Identity.Name, claimsPrincipal.Identity.Name);
         }
@@ -1652,7 +1662,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task AuthenticateStudioToken_ValidToken_ReturnsNewToken()
         {
             // Arrange
-            string accessToken = JwtTokenMock.GenerateAccessToken("studio", "studio.designer", TimeSpan.FromMinutes(2));
+            string accessToken = JwtTokenMock.GenerateAccessToken("studio", "studio.designer", TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             HttpClient client = CreateClient();
 
@@ -1666,7 +1676,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string token = await response.Content.ReadAsStringAsync();
 
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, testTime);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
 
             Assert.NotNull(principal);
 
@@ -1722,7 +1732,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             HttpClient client = CreateClient();
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
             string url = "/authentication/api/v1/exchange/id-porten";
 
@@ -1731,7 +1741,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Get the altinn token
             string token = await response.Content.ReadAsStringAsync();
-            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token, testTime);
+            ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
             string altinnSessionId = altinnTokenPrincipal.FindFirstValue("sid");
 
             url = "/authentication/api/v1/refresh";
@@ -1740,7 +1750,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             refreshClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             HttpResponseMessage refreshedTokenMessage = await refreshClient.GetAsync(url);
             string refreshedToken = await refreshedTokenMessage.Content.ReadAsStringAsync();
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, testTime);
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, TimeProvider.GetUtcNow());
 
             Assert.NotNull(principal);
             Assert.NotEqual(sid, principal.FindFirstValue("sid"));
@@ -1751,7 +1761,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-            return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+            return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
         private static string GetAuthenticationUrlWithToken(string redirectUri, string state, string code, string iss)
@@ -1774,7 +1784,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             return redirectUri;
         }
 
-        private static string CreateOidcCode(string userId, string partyId, string nonce, List<Claim> issClaims = null)
+        private string CreateOidcCode(string userId, string partyId, string nonce, List<Claim> issClaims = null)
         {
             List<Claim> claims = new List<Claim>();
 
@@ -1796,7 +1806,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2));
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
 
             return externalToken;
         }
@@ -1893,10 +1903,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(HasCookieValue(setCookieHeaders, "authngoto", gotoUrl));
         }
 
-        private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string externalSessionId = null)
+        private AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string externalSessionId = null)
         {
             AuthenticationEvent authenticationEvent = new AuthenticationEvent();
-            authenticationEvent.Created = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
+            authenticationEvent.Created = TimeProvider.GetUtcNow();
             authenticationEvent.AuthenticationMethod = authMethod;
             authenticationEvent.AuthenticationLevel = authLevel;
             authenticationEvent.OrgNumber = orgNumber;
@@ -1907,11 +1917,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             authenticationEvent.ExternalSessionId = externalSessionId;
 
             return authenticationEvent;
-        }
-
-        private void SetupDateTimeMock()
-        {
-            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
 
         private void SetupGuidMock()

@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Debug'">
@@ -18,8 +19,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="4.4.0" />
+	  <PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql.Yuniql" Version="4.4.0" />
 	  <PackageReference Include="Altinn.Register.Contracts" Version="1.4.1" />
+	  <PackageReference Include="Azure.Identity" Version="1.17.1" />
 	  <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.11" />
+	  <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="9.0.11" />
 	  <PackageReference Include="Npgsql" Version="9.0.4" />
 	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
 	  <PackageReference Include="System.Linq.Async" Version="6.0.3" />
@@ -27,11 +32,6 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Core\Altinn.Platform.Authentication.Core.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-  	<PackageReference Include="Azure.Identity" Version="1.17.1" />
-	  <Folder Include="Migration\v0.11\" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -42,5 +42,9 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<NoWarn>$(NoWarn);1591</NoWarn>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Migration/**/*.sql" />
+	</ItemGroup>
 
 </Project>

@@ -403,13 +403,13 @@ public class AccessManagementClientMock: IAccessManagementClient
         if (partyUuId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))
         {
             dataFileName = "Data/Delegation/AccessPackagesForSystemUser.json";
-        }
-        else if (partyUuId == new Guid("7a851ad6-3255-4c9b-a727-0b449797eb09"))
+        }        
+        else if (partyUuId == new Guid("c8987f17-a1b5-49f3-8ec5-7b58e2e33f43"))
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);
             yield return new Result<PackagePermission>(problemInstance);
             yield break;
-        }
+        }       
         else
         {
             dataFileName = "Data/Delegation/AccessPackagesForSystemUser.json";
@@ -431,7 +431,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             dataFileName = "Data/Delegation/RightsForSystemUser.json";
         }
-        else if (systemUserId == new Guid("ec6831bc-379c-469a-8e41-d37d398772c8"))
+        else if (party == 500006)
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToGetDelegatedRights);
             return new Result<List<RightDelegation>>(problemInstance);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         public static void AssertAuthenticationEvent(Mock<IEventsQueueClient> eventQueue, AuthenticationEvent expectedAuthenticationEvent, Times numberOfTimes)
         {
             string serializedAuthenticationEvent = JsonConvert.SerializeObject(expectedAuthenticationEvent);
-            eventQueue.Verify(e => e.EnqueueAuthenticationEvent(It.Is<string>(q => q == serializedAuthenticationEvent)), numberOfTimes);
+            eventQueue.Verify(e => e.EnqueueAuthenticationEvent(It.Is(serializedAuthenticationEvent, StringComparer.Ordinal)), numberOfTimes);
         }
 
         public static void AssertRegisteredSystem(RegisteredSystemResponse expected, RegisteredSystemResponse actual)
