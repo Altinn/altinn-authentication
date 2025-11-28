@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -76,11 +78,27 @@ public abstract class WebApplicationTests
     async Task IAsyncLifetime.InitializeAsync()
     {
         _db = await _dbFixture.CreateDbAsync();
-        _webApp = _webApplicationFixture.CreateServer(services =>
+        _webApp = _webApplicationFixture.CreateServer(builder =>
         {
-            _db.ConfigureServices(services);
-            ConfigureServices(services);
+            var settings = new ConfigurationBuilder();
+
+            settings.AddInMemoryCollection([
+                new("Altinn:Npgsql:authentication:Enable", "true"),
+                new("Altinn:Npgsql:authentication:Migrate:Enabled", "true"),
+
+                new("Altinn:Npgsql:authentication:ConnectionString", _db.ConnectionString),
+                new("Altinn:Npgsql:authentication:Migrate:ConnectionString", _db.ConnectionString),
+            ]);
+
+            builder.UseConfiguration(settings.Build());
+            builder.ConfigureServices(services =>
+            {
+                ConfigureServices(services);
+            });
         });
+
+        // Force the server to start - runs migrations etc
+        _webApp.CreateClient();
 
         _services = _webApp.Services;
         _scope = _services.CreateAsyncScope();
