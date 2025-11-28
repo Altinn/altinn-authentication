@@ -50,7 +50,8 @@ public class WebApplicationFixture
             builder.ConfigureAppConfiguration(config =>
             {
                 var testConfig = new ConfigurationBuilder()
-                    .AddJsonFile("appsettings.test.json")
+                    .AddJsonFile("appsettings.test.json", optional: true, reloadOnChange: true)
+                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                     .Build();
                 config.AddConfiguration(testConfig);
             });

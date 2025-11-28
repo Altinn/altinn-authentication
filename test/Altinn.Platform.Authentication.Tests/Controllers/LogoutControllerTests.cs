@@ -455,7 +455,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-            return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+            return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
         private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true)

@@ -2384,7 +2384,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static string GetConfigPath()
         {
             string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(SystemUserControllerTest).Assembly.Location).LocalPath);
-            return Path.Combine(unitTestFolder!, $"../../../appsettings.json");
+            return Path.Combine(unitTestFolder!, $"../../../appsettings.test.json");
         }
 
         private void SetupDateTimeMock()

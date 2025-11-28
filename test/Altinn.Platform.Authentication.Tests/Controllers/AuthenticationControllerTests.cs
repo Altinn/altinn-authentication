@@ -1751,7 +1751,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-            return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+            return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
         private static string GetAuthenticationUrlWithToken(string redirectUri, string state, string code, string iss)
