@@ -2142,23 +2142,23 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         [Fact]
         public async Task GetListOfDelegationsForStandardSystemUser_ReturnsOk_WithMockedDependencies()
         {
-            // Arrange            
-            //var systemUserId = new Guid("ec6831bc-379c-469a-8e41-d37d398772c9");
-            //var partyId = 500000;
-            //var partyUuid = new Guid("2c8481d9-725f-4b21-b037-1de20b03466f");
+            // Arrange
+            var systemUserId = new Guid("ec6831bc-379c-469a-8e41-d37d398772c9");
+            var partyId = 500000;
+            var partyUuid = new Guid("2c8481d9-725f-4b21-b037-1de20b03466f");
 
-            //var systemUser = new SystemUserInternalDTO
-            //{
-            //    Id = systemUserId.ToString(),
-            //    SystemId = "991825827_right_ap_01",
-            //    PartyId = partyId.ToString()
-            //};
+            var systemUser = new SystemUserInternalDTO
+            {
+                Id = systemUserId.ToString(),
+                SystemId = "991825827_right_ap_01",
+                PartyId = partyId.ToString()
+            };
 
-            //var party = new Party
-            //{
-            //    PartyUuid = partyUuid,
-            //    OrgNumber = "312615398"
-            //};
+            var party = new Party
+            {
+                PartyUuid = partyUuid,
+                OrgNumber = "312615398"
+            };
 
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
