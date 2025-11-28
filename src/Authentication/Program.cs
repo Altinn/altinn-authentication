@@ -1,16 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Altinn.Platform.Authentication;
-using Altinn.Platform.Authentication.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Logging;
-using Npgsql;
-using Yuniql.AspNetCore;
-using Yuniql.PostgreSql;
 
 WebApplication app = AuthenticationHost.Create(args);
 
@@ -41,42 +33,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
-
-if (app.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection"))
-{
-    ConsoleTraceService traceService = new() { IsDebugEnabled = true };
-
-    var connectionString = app.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminConnectionString");
-    string workspacePath = Path.Combine(Environment.CurrentDirectory, app.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
-
-    if (app.Environment.IsDevelopment())
-    {
-        workspacePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).FullName, app.Configuration.GetValue<string>("PostgreSQLSettings:WorkspacePath"));
-    }
-
-    var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
-    var userConStringBuilder = new NpgsqlConnectionStringBuilder(connectionString);
-
-    var user = connectionStringBuilder.Username;
-    var appUser = userConStringBuilder.Username;
-
-    app.UseYuniql(
-        new PostgreSqlDataService(traceService),
-        new PostgreSqlBulkImportService(traceService),
-        traceService,
-        new Configuration
-        {
-            Environment = "prod",
-            Workspace = workspacePath,
-            ConnectionString = connectionString,
-            IsAutoCreateDatabase = false,
-            IsDebug = true,
-            Tokens = [
-                KeyValuePair.Create("YUNIQL-USER", user),
-                KeyValuePair.Create("APP-USER", appUser),
-            ]
-        });
-}
 
 await app.RunAsync();
 

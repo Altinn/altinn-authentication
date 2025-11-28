@@ -32,13 +32,20 @@ public class WebApplicationFixture
         await _factory.DisposeAsync();
     }
 
-    public WebApplicationFactory<Program> CreateServer(Action<IServiceCollection>? configureServices = null)
+    public WebApplicationFactory<Program> CreateServer(
+        Action<IWebHostBuilder>? configureBuilder = null,
+        Action<IServiceCollection>? configureServices = null)
     {
         return _factory.WithWebHostBuilder(builder =>
         {
+            if (configureBuilder is not null)
+            {
+                configureBuilder(builder);
+            }
+
             if (configureServices is not null)
             {
-                builder.ConfigureTestServices(configureServices);
+                builder.ConfigureServices(configureServices);
             }
         });
     }

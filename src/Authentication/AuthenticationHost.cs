@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -28,9 +29,7 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
-using Altinn.Platform.Authentication.Persistance.Configuration;
 using Altinn.Platform.Authentication.Persistance.Extensions;
-using Altinn.Platform.Authentication.ServiceDefaults;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.JwtCookie;
@@ -39,13 +38,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -67,7 +64,9 @@ internal static class AuthenticationHost
         var builder = AltinnHost.CreateWebApplicationBuilder("authentication", args, opts => opts.ConfigureEnabledServices(services => services.DisableApplicationInsights()));
         var services = builder.Services;
         var config = builder.Configuration;
-        var describer = services.GetAltinnServiceDescriptor();
+        var descriptor = services.GetAltinnServiceDescriptor();
+        
+        MapPostgreSqlConfiguration(builder, descriptor);
 
         if (!builder.Environment.IsDevelopment())
         {
@@ -97,7 +96,6 @@ internal static class AuthenticationHost
         services.Configure<Altinn.Authentication.Integration.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
         services.Configure<AccessManagementSettings>(config.GetSection("AccessManagementSettings"));
         services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
-        services.Configure<PostgreSQLSettings>(config.GetSection("PostgreSQLSettings"));
         services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
         services.Configure<QueueStorageSettings>(config.GetSection("QueueStorageSettings"));
         services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
@@ -226,9 +224,9 @@ internal static class AuthenticationHost
                 policy.RequireScopeAnyOf(AuthzConstants.SCOPE_PORTAL));
 
         services.AddFeatureManagement();
+        services.AddScoped<TrimStringsActionFilter>();
 
-        builder.Services.AddScoped<TrimStringsActionFilter>();
-        builder.Services.AddPersistanceLayer();
+        builder.AddPersistanceLayer();
 
         return builder.Build();
     }
@@ -240,5 +238,33 @@ internal static class AuthenticationHost
         string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 
         return xmlPath;
+    }
+
+    // Note: eventually we can rename the configuration values and remove this mapping
+    private static void MapPostgreSqlConfiguration(IHostApplicationBuilder builder, AltinnServiceDescriptor serviceDescriptor)
+    {
+        var runMigrations = builder.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection");
+        var adminConnectionStringFmt = builder.Configuration.GetValue<string>("PostgreSQLSettings:AdminConnectionString");
+        var adminConnectionStringPwd = builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthorizationDbAdminPwd", defaultValue: string.Empty);
+        var connectionStringFmt = builder.Configuration.GetValue<string>("PostgreSQLSettings:ConnectionString");
+        var connectionStringPwd = builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthorizationDbPwd", defaultValue: string.Empty);
+
+        if (adminConnectionStringFmt is not null && connectionStringFmt is not null)
+        {
+            var adminConnectionString = string.Format(adminConnectionStringFmt, adminConnectionStringPwd);
+            var connectionString = string.Format(connectionStringFmt, connectionStringPwd);
+
+            var existing = builder.Configuration.GetValue<string>($"ConnectionStrings:{serviceDescriptor.Name}_db");
+            if (!string.IsNullOrEmpty(existing))
+            {
+                return;
+            }
+
+            builder.Configuration.AddInMemoryCollection([
+                KeyValuePair.Create($"ConnectionStrings:{serviceDescriptor.Name}_db", connectionString),
+                KeyValuePair.Create($"ConnectionStrings:{serviceDescriptor.Name}_db_migrate", adminConnectionString),
+                KeyValuePair.Create($"Altinn:Npgsql:{serviceDescriptor.Name}:Migrate:Enabled", runMigrations ? "true" : "false"),
+            ]);
+        }
     }
 }

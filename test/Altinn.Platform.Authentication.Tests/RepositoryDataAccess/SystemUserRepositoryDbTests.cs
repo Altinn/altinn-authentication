@@ -24,12 +24,6 @@ public class SystemUserRepositoryDbTests(DbFixture dbFixture, WebApplicationFixt
 
     protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
-    protected override void ConfigureServices(IServiceCollection services)
-    {
-        services.AddPersistanceLayer();
-        base.ConfigureServices(services);
-    }
-
     ///*****************************comment for testing*********************************/
     ///// <summary>
     ///// Inserts a new SystemUser, using the same input expected from GUI or API

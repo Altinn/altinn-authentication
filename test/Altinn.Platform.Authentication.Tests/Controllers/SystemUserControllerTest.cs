@@ -2288,7 +2288,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
             
             // Use the factory to override services for this test
-            var factory = webApplicationFixture.CreateServer(services =>
+            var factory = webApplicationFixture.CreateServer(configureServices: services =>
             {
                 services.Configure<GeneralSettings>(generalSettingSection);
                 services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
