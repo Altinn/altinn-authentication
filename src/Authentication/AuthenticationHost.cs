@@ -81,24 +81,6 @@ internal static class AuthenticationHost
             }
         }
 
-        services.Configure<AltinnClusterInfo>(builder.Configuration.GetSection("Altinn:ClusterInfo"));
-        services.AddSingleton<IConfigureOptions<AltinnClusterInfo>, ConfigureAltinnClusterInfo>();
-        services.AddOptions<ForwardedHeadersOptions>()
-            .Configure((ForwardedHeadersOptions options, IOptionsMonitor<AltinnClusterInfo> clusterInfoOptions) =>
-            {
-                options.ForwardedHeaders = ForwardedHeaders.All;
-
-                var clusterInfo = clusterInfoOptions.CurrentValue;
-                if (clusterInfo.ClusterNetwork is { } clusterNetwork)
-                {
-                    options.KnownNetworks.Add(new IPNetwork(clusterNetwork.BaseAddress, clusterNetwork.PrefixLength));
-                }
-            });
-
-        // Replace this line:
-        // services.AddAutoMapper(typeof(Program));
-
-        // With this line:
         services.AddAutoMapper(cfg => { }, typeof(Program));
         services.AddControllers().AddJsonOptions(options =>
         {
@@ -109,7 +91,6 @@ internal static class AuthenticationHost
         services.AddMvc().AddControllersAsServices();
         services.AddHealthChecks().AddCheck<HealthCheck>("authentication_health_check");
 
-        services.AddSingleton(config);
         services.Configure<GeneralSettings>(config.GetSection("GeneralSettings"));
         services.Configure<PaginationOptions>(config.GetSection("PaginationOptions"));
         services.Configure<Altinn.Common.PEP.Configuration.PlatformSettings>(config.GetSection("PlatformSettings"));
@@ -152,7 +133,6 @@ internal static class AuthenticationHost
                  }
              });
 
-        services.AddSingleton(config);
         services.AddHttpClient<ISblCookieDecryptionService, SblCookieDecryptionService>();
         services.AddHttpClient<IUserProfileService, UserProfileService>();
         services.AddHttpClient<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationService>();
