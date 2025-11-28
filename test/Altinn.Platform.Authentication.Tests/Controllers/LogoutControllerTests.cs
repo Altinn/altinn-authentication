@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.FeatureManagement;
 using Moq;
 using Xunit;
@@ -42,7 +43,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IOrganisationsService> _organisationsService = new();
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
-        private readonly Mock<TimeProvider> _timeProviderMock = new();
+        private readonly FakeTimeProvider _timeProviderMock = new();
         private readonly Mock<IFeatureManager> _featureManager = new();
 
         protected override void ConfigureServices(IServiceCollection services)
@@ -85,7 +86,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserServiceMock>();
             services.AddSingleton(_featureManager.Object);
             services.AddSingleton(_eventQueue.Object);
-            services.AddSingleton(_timeProviderMock.Object);
+            services.AddSingleton((TimeProvider)_timeProviderMock);
             services.AddSingleton(_organisationsService.Object);            
             _configuration = configuration;
         }
@@ -474,7 +475,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupDateTimeMock()
         {
-            _timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            _timeProviderMock.SetUtcNow(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
     }
 }
