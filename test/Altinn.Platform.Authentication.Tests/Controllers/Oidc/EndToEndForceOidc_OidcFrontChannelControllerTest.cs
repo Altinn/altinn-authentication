@@ -1922,7 +1922,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         {
             string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
             Debug.Assert(unitTestFolder != null, nameof(unitTestFolder) + " != null");
-            return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+            return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
         private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
