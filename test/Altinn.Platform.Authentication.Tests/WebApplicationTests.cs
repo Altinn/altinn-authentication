@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
+using Azure.Messaging.EventGrid.SystemEvents;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -47,7 +48,10 @@ public abstract class WebApplicationTests
 
     protected virtual void ConfigureServices(IServiceCollection services)
     {
-        services.AddSingleton<IProfile, ProfileMock>();
+    }
+
+    protected virtual void ConfigureHost(IWebHostBuilder builder) 
+    {
     }
 
     protected virtual ValueTask InitializeAsync()
@@ -99,8 +103,11 @@ public abstract class WebApplicationTests
             ]);
 
             builder.UseConfiguration(settings.Build());
+            ConfigureHost(builder);
+
             builder.ConfigureServices(services =>
             {
+                services.AddSingleton<IProfile, ProfileMock>();
                 ConfigureServices(services);
             });
         });

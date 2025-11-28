@@ -49,6 +49,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private IConfiguration _configuration;
 
+        protected override void ConfigureHost(IWebHostBuilder builder)
+        {
+            builder.UseSetting("feature_management:feature_flags:0:id", "AuditLog");
+            builder.UseSetting("feature_management:feature_flags:0:enabled", "true");
+            base.ConfigureHost(builder);
+        }
+
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
