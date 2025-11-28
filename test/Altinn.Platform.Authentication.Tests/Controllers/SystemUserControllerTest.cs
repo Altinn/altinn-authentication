@@ -74,13 +74,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string configPath = GetConfigPath();
 
-            WebHostBuilder builder = new();
-
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                conf.AddJsonFile(configPath);
-            });
-
             var configuration = new ConfigurationBuilder()
               .AddJsonFile(configPath)
               .Build();
