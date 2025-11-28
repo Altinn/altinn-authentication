@@ -2143,32 +2143,29 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task GetListOfDelegationsForStandardSystemUser_ReturnsOk_WithMockedDependencies()
         {
             // Arrange            
-            var systemUserId = new Guid("ec6831bc-379c-469a-8e41-d37d398772c9");
-            var partyId = 500000;
-            var partyUuid = new Guid("2c8481d9-725f-4b21-b037-1de20b03466f");
+            //var systemUserId = new Guid("ec6831bc-379c-469a-8e41-d37d398772c9");
+            //var partyId = 500000;
+            //var partyUuid = new Guid("2c8481d9-725f-4b21-b037-1de20b03466f");
 
-            var systemUser = new SystemUserInternalDTO
-            {
-                Id = systemUserId.ToString(),
-                SystemId = "991825827_right_ap_01",
-                PartyId = partyId.ToString()
-            };
+            //var systemUser = new SystemUserInternalDTO
+            //{
+            //    Id = systemUserId.ToString(),
+            //    SystemId = "991825827_right_ap_01",
+            //    PartyId = partyId.ToString()
+            //};
 
-            var party = new Party
-            {
-                PartyUuid = partyUuid,
-                OrgNumber = "312615398"
-            };
+            //var party = new Party
+            //{
+            //    PartyUuid = partyUuid,
+            //    OrgNumber = "312615398"
+            //};
 
-            var systemUserRepoMock = new Mock<ISystemUserRepository>();
-            systemUserRepoMock.Setup(r => r.GetSystemUserById(systemUserId)).ReturnsAsync(systemUser);
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            await CreateSystemUser(client, 123, "991825827_right_ap_01");
 
-            var partiesClientMock = new Mock<IPartiesClient>();
-            partiesClientMock.Setup(p => p.GetPartyAsync(partyId, It.IsAny<CancellationToken>())).ReturnsAsync(party);
-
-            HttpClient client = GetTestClientForDelegations(systemUserRepoMock.Object, partiesClientMock.Object);
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{systemUserId}/delegations");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             // Assert
@@ -2207,9 +2204,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var partiesClientMock = new Mock<IPartiesClient>();
             partiesClientMock.Setup(p => p.GetPartyAsync(partyId, It.IsAny<CancellationToken>())).ReturnsAsync(party);
 
-            HttpClient client = GetTestClientForDelegations(systemUserRepoMock.Object, partiesClientMock.Object);
+            HttpClient client = CreateClient();
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{systemUserId}/delegations");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: timeProviderMock.GetUtcNow()));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             // Assert
@@ -2245,64 +2242,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var partiesClientMock = new Mock<IPartiesClient>();
             partiesClientMock.Setup(p => p.GetPartyAsync(partyId, It.IsAny<CancellationToken>())).ReturnsAsync(party);
 
-            HttpClient client = GetTestClientForDelegations(systemUserRepoMock.Object, partiesClientMock.Object);
+            HttpClient client = CreateClient();
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{systemUserId}/delegations");
-            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3));
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: timeProviderMock.GetUtcNow()));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             // Assert
             Assert.Equal(HttpStatusCode.InternalServerError, clientListResponse.StatusCode);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await clientListResponse.Content.ReadAsStringAsync(), _options);
             Assert.Equal(Problem.AccessPackage_FailedToGetDelegatedPackages.Detail, problemDetails?.Detail);
-        }
-
-        private HttpClient GetTestClientForDelegations(ISystemUserRepository systemUserRepoMock = null, IPartiesClient partiesClientMock = null)
-        {
-            bool enableOidc = false;
-            bool forceOidc = false;
-            string defaultOidc = "altinn";
-
-            string configPath = GetConfigPath();
-
-            WebHostBuilder builder = new();
-
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                conf.AddJsonFile(configPath);
-            });
-
-            var configuration = new ConfigurationBuilder()
-              .AddJsonFile(configPath)
-              .Build();
-
-            configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-            configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
-            configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
-
-            IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
-            
-            // Use the factory to override services for this test
-            var factory = webApplicationFixture.CreateServer(configureServices: services =>
-            {
-                services.Configure<GeneralSettings>(generalSettingSection);
-                services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
-                services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
-                services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
-                services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
-                services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-                services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
-                services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
-
-                services.AddSingleton<ISystemUserRepository>(systemUserRepoMock);
-                services.AddSingleton<IPartiesClient>(partiesClientMock);
-                services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
-                services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-                services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-                services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
-            });
-
-            var client = factory.CreateClient();
-            return client;
         }
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)

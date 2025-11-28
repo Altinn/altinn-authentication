@@ -161,8 +161,8 @@ internal static class AuthenticationHost
         services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         services.AddSingleton<IPDP, PDPAppSI>();
         services.AddSingleton<IAuthorizationHandler, ScopeAccessHandler>();
-        services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
         services.AddTransient<IAuthorizationHandler, AccessTokenHandler>();
+        services.AddTransient<IAuthorizationHandler, ResourceAccessHandler>();
         services.AddTransient<DelegationHelper, DelegationHelper>();
         services.AddScoped<IOidcServerService, OidcServerService>();
         services.AddSingleton<IAuthorizeRequestValidator, AuthorizeRequestValidator>();
