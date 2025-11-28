@@ -34,6 +34,8 @@ public abstract class WebApplicationTests
 
     protected IServiceProvider Services => _scope!.ServiceProvider;
 
+    protected TimeProvider TimeProvider => Services.GetRequiredService<TimeProvider>();
+
     protected HttpClient CreateClient()
         => _webApp!.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true, BaseAddress = new Uri("https://localhost"), });
 
