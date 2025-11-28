@@ -27,6 +27,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using Moq;
@@ -45,7 +46,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
-        private readonly Mock<TimeProvider> timeProviderMock = new();
+        private readonly FakeTimeProvider timeProviderMock = new();
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private IConfiguration _configuration;
@@ -90,7 +91,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
             services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
             services.AddSingleton(_eventQueue.Object);            
-            services.AddSingleton(timeProviderMock.Object);
+            services.AddSingleton((TimeProvider)timeProviderMock);
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
@@ -1911,7 +1912,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupDateTimeMock()
         {
-            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            timeProviderMock.SetUtcNow(new DateTimeOffset(2025, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
 
         private void SetupGuidMock()
