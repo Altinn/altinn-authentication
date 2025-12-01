@@ -41,7 +41,7 @@ public interface ISystemRegisterRepository
     /// </summary>
     /// <param name="id">The human readable string Id</param>
     /// <returns>The Registered System</returns>
-    Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id);
+    Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The registered systems may be renamed,

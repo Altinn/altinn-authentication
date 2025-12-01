@@ -574,7 +574,7 @@ public class RequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId);
+        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserRequest.SystemId, cancellationToken);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
@@ -752,7 +752,7 @@ public class RequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId, cancellationToken);
         if (system is null)
         {
             return Problem.SystemIdNotFound;
@@ -777,7 +777,7 @@ public class RequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId, cancellationToken);
         if (system is null)
         {
             return Problem.SystemIdNotFound;

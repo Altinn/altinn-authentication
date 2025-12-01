@@ -318,7 +318,7 @@ public class ChangeRequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserChangeRequest.SystemId);
+        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserChangeRequest.SystemId, cancellationToken);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
@@ -462,7 +462,7 @@ public class ChangeRequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId, cancellationToken);
         if (system is null)
         {
             return Problem.SystemIdNotFound;
