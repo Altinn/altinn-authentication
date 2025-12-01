@@ -683,16 +683,6 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AccessPackage_NotFound;
             }
 
-            //if (systemInfo.AccessPackages.Count == 0)
-            //{
-            //    return Problem.AccessPackage_NotFound;
-            //}
-
-            //if (accessPackages.Count > systemInfo.AccessPackages.Count)
-            //{
-            //    return Problem.AccessPackage_NotFound;
-            //}
-
             List<string> notFoundPackages = [];
             List<string> notDelegablePackages = [];
             foreach (AccessPackage accessPackage in accessPackages)

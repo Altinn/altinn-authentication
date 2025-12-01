@@ -101,7 +101,7 @@ public class RequestSystemUserController : ControllerBase
     {
         string platform = _generalSettings.PlatformEndpoint;
         OrganisationNumber? vendorOrgNo = RetrieveOrgNoFromToken();
-        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty()) 
+        if (vendorOrgNo is null || vendorOrgNo == OrganisationNumber.Empty())
         {
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.Vendor_Orgno_NotFound).ToActionResult();
         }
@@ -112,7 +112,7 @@ public class RequestSystemUserController : ControllerBase
             OrgNo = createRequest.PartyOrgNo,
             SystemId = createRequest.SystemId,
         };
-        
+
         SystemUserInternalDTO? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId, cancellationToken);
         if (existing is not null)
         {
@@ -129,15 +129,15 @@ public class RequestSystemUserController : ControllerBase
 
         // This is a new Request
         response = await _requestSystemUser.CreateRequest(createRequest, vendorOrgNo);
-        
-        if (response.IsSuccess)
+
+        if (!response.IsSuccess)
         {
-            string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
-            return Created(fullCreatedUri, response.Value);
+            return response.Problem.ToActionResult();
         }
 
-        return response.Problem.ToActionResult();
+        string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
+        response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+        return Created(fullCreatedUri, response.Value);
     }
 
     /// <summary>
