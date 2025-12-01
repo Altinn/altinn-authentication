@@ -244,10 +244,10 @@ internal static class AuthenticationHost
     private static void MapPostgreSqlConfiguration(IHostApplicationBuilder builder, AltinnServiceDescriptor serviceDescriptor)
     {
         var runMigrations = builder.Configuration.GetValue<bool>("PostgreSQLSettings:EnableDBConnection");
-        var adminConnectionStringFmt = builder.Configuration.GetValue<string>("PostgreSQLSettings:AdminConnectionString");
-        var adminConnectionStringPwd = builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthorizationDbAdminPwd", defaultValue: string.Empty);
-        var connectionStringFmt = builder.Configuration.GetValue<string>("PostgreSQLSettings:ConnectionString");
-        var connectionStringPwd = builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthorizationDbPwd", defaultValue: string.Empty);
+        var adminConnectionStringFmt = builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbAdminConnectionString");
+        var adminConnectionStringPwd = builder.Configuration.GetValue<string>("PostgreSQLSettings:authenticationDbAdminPwd", defaultValue: string.Empty);
+        var connectionStringFmt = builder.Configuration.GetValue<string>("PostgreSQLSettings:AuthenticationDbUserConnectionString");
+        var connectionStringPwd = builder.Configuration.GetValue<string>("PostgreSQLSettings:authenticationDbPwd", defaultValue: string.Empty);
 
         if (adminConnectionStringFmt is not null && connectionStringFmt is not null)
         {
