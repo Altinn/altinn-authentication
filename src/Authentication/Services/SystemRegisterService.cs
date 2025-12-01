@@ -96,7 +96,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<RegisteredSystemResponse?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.GetRegisteredSystemById(systemId);
+            return _systemRegisterRepository.GetRegisteredSystemById(systemId, cancellation);
         }
 
         /// <inheritdoc/>

@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Threading;
 using System.Transactions;
+using Altinn.Authorization.ServiceDefaults.Npgsql;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
@@ -61,11 +62,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
         try
         {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using var conn = await _datasource.OpenConnectionAsync(cancellationToken);
+            await using NpgsqlCommand command = conn.CreateCommand(QUERY);
 
+            await command.PrepareAsync(cancellationToken);
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToSystemRegister)
-                .ToListAsync();
+                .Select(ConvertFromReaderToSystemRegister)
+                .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -97,13 +100,15 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
 
         try
         {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using var conn = await _datasource.OpenConnectionAsync(cancellationToken);
+            await using NpgsqlCommand command = conn.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_VENDOR_ORGNUMBER, vendorOrgNumber);
 
+            await command.PrepareAsync(cancellationToken);
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToSystemRegister)
-                .ToListAsync();
+                .Select(ConvertFromReaderToSystemRegister)
+                .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -236,7 +241,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id)
+    public async Task<RegisteredSystemResponse?> GetRegisteredSystemById(string id, CancellationToken cancellationToken = default)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -253,18 +258,20 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
                 allowedredirecturls,
                 accesspackages
             FROM business_application.system_register sr
-            WHERE sr.system_id = @system_id;
+            WHERE sr.system_id = @system_id
         ";
 
         try
         {
-            await using NpgsqlCommand command = _datasource.CreateCommand(QUERY);
+            await using var conn = await _datasource.OpenConnectionAsync(cancellationToken);
+            await using NpgsqlCommand command = conn.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, id);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemRegister)
-                .FirstOrDefaultAsync();
+            await command.PrepareAsync(cancellationToken);
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(ConvertFromReaderToSystemRegister)
+                .FirstOrDefaultAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -486,7 +493,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         }
     }
 
-    private static ValueTask<RegisteredSystemResponse> ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
+    private static RegisteredSystemResponse ConvertFromReaderToSystemRegister(NpgsqlDataReader reader)
     {
         string[] stringGuids = reader.GetFieldValue<string[]>(SystemRegisterFieldConstants.SYSTEM_CLIENTID);
         List<Right>? rights = reader.IsDBNull(SystemRegisterFieldConstants.SYSTEM_RIGHTS) ? null : reader.GetFieldValue<List<Right>>(SystemRegisterFieldConstants.SYSTEM_RIGHTS);
@@ -515,7 +522,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             allowedRedirectUrls = reader.GetFieldValue<List<string>>(SystemRegisterFieldConstants.SYSTEM_ALLOWED_REDIRECTURLS).ConvertAll<Uri>(delegate(string u) { return new Uri(u); });
         }
 
-        return new ValueTask<RegisteredSystemResponse>(new RegisteredSystemResponse
+        return new RegisteredSystemResponse
         {
             InternalId = reader.GetFieldValue<Guid>(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID),
             Id = reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_ID),
@@ -528,7 +535,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             IsVisible = reader.GetFieldValue<bool>(SystemRegisterFieldConstants.SYSTEM_IS_VISIBLE),
             AllowedRedirectUrls = allowedRedirectUrls,
             AccessPackages = accessPackages
-        });
+        };
     }
 
     private static ValueTask<MaskinPortenClientInfo> ConvertFromReaderToMaskinPortenClientInfo(NpgsqlDataReader reader)
@@ -568,7 +575,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
     {
         try
         {
-            RegisteredSystemResponse? systemInfo = await GetRegisteredSystemById(systemId);
+            RegisteredSystemResponse? systemInfo = await GetRegisteredSystemById(systemId, cancellationToken);
             List<MaskinPortenClientInfo> existingClients = await GetExistingClientIdsForSystem(systemInfo!.InternalId);
             List<string> existingClientIds = existingClients.Select(c => c.ClientId).ToList();
 

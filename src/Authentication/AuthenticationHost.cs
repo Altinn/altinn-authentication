@@ -22,6 +22,7 @@ using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Core.Services.Validation;
+using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Extensions;
 using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Health;
@@ -46,6 +47,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
 namespace Altinn.Platform.Authentication;
 
@@ -170,6 +173,10 @@ internal static class AuthenticationHost
         services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddSingleton<ITokenIssuer, TokenIssuerService>();
+        services.TryAddSingleton<AuthenticationTelemetry>();
+
+        services.ConfigureOpenTelemetryMeterProvider(m => m.AddMeter(AuthenticationTelemetry.Name));
+        services.ConfigureOpenTelemetryTracerProvider(m => m.AddSource(AuthenticationTelemetry.Name));
 
         services.AddAntiforgery(options =>
         {

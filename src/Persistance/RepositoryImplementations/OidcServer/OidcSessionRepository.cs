@@ -1,7 +1,9 @@
 ﻿using System.Data;
 using System.Text.Json;
+using Altinn.Authorization.ServiceDefaults.Npgsql;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Core.Telemetry;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
@@ -11,7 +13,7 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
     /// <summary>
     /// Repository implementation for OIDC session management.
     /// </summary>
-    public sealed class OidcSessionRepository(NpgsqlDataSource ds, ILogger<OidcSessionRepository> logger, TimeProvider timeProvider) : IOidcSessionRepository
+    public sealed class OidcSessionRepository(NpgsqlDataSource ds, ILogger<OidcSessionRepository> logger, TimeProvider timeProvider, AuthenticationTelemetry telemetry) : IOidcSessionRepository
     {
         private readonly NpgsqlDataSource _ds = ds;
         private readonly ILogger<OidcSessionRepository> _logger = logger;
@@ -50,7 +52,8 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 RETURNING *;
             ";
 
-            await using var cmd = _ds.CreateCommand(SQL);
+            await using var conn = await _ds.OpenConnectionAsync(cancellationToken);
+            await using var cmd = conn.CreateCommand(SQL);
             cmd.Parameters.AddWithValue("sid", create.Sid);
             cmd.Parameters.AddWithValue("session_handle_hash", NpgsqlDbType.Bytea, create.SessionHandleHash);
             cmd.Parameters.AddWithValue("subject_id", (object?)create.SubjectId ?? DBNull.Value);
@@ -73,12 +76,14 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
             cmd.Parameters.AddWithValue("user_agent_hash", (object?)create.UserAgentHash ?? DBNull.Value);
             cmd.Parameters.Add(JsonbParam("provider_claims", create.ProviderClaims));
 
+            await cmd.PrepareAsync(cancellationToken);
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
             if (!await reader.ReadAsync(cancellationToken))
             {
                 throw new InvalidOperationException("Failed to upsert oidc_session.");
             }
 
+            telemetry.SessionCreated();
             return Map(reader);
         }
 
