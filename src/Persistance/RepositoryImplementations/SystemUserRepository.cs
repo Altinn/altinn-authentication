@@ -363,9 +363,9 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("systemVendorOrgno", systemProviderOrgNo);
             command.Parameters.AddWithValue("external_ref", externalRef);
 
-            return await command.ExecuteEnumerableAsync()
+            return await command.ExecuteEnumerableAsync(cancellationToken)
                 .Select(ConvertFromReaderToSystemUser)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
         }
         catch (Exception ex)
         {

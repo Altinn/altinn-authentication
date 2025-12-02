@@ -163,9 +163,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = (toBeInserted.Rights == null) ? DBNull.Value : toBeInserted.Rights });
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
 
-            Guid internalId = await command.ExecuteEnumerableAsync()
+            Guid internalId = await command.ExecuteEnumerableAsync(cancellationToken)
                 .Select(NpgSqlExtensions.ConvertFromReaderToGuid)
-                .SingleOrDefaultAsync();
+                .SingleOrDefaultAsync(cancellationToken);
 
             foreach (string id in toBeInserted.ClientId)
             {
