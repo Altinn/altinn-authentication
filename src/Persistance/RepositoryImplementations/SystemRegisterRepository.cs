@@ -163,9 +163,9 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_RIGHTS, NpgsqlDbType.Jsonb) { Value = (toBeInserted.Rights == null) ? DBNull.Value : toBeInserted.Rights });
             command.Parameters.Add(new(SystemRegisterFieldConstants.SYSTEM_ACCESSPACKAGES, NpgsqlDbType.Jsonb) { Value = (toBeInserted.AccessPackages == null) ? DBNull.Value : toBeInserted.AccessPackages });
 
-            Guid internalId = await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
-                .SingleOrDefaultAsync();
+            Guid internalId = await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(NpgSqlExtensions.ConvertFromReaderToGuid)
+                .SingleOrDefaultAsync(cancellationToken);
 
             foreach (string id in toBeInserted.ClientId)
             {
@@ -538,13 +538,13 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
         };
     }
 
-    private static ValueTask<MaskinPortenClientInfo> ConvertFromReaderToMaskinPortenClientInfo(NpgsqlDataReader reader)
+    private static MaskinPortenClientInfo ConvertFromReaderToMaskinPortenClientInfo(NpgsqlDataReader reader)
     {
-        return new ValueTask<MaskinPortenClientInfo>(new MaskinPortenClientInfo
+        return new MaskinPortenClientInfo
         {
             ClientId = reader.GetFieldValue<string>(SystemRegisterFieldConstants.SYSTEM_CLIENTID),
             SystemInternalId = reader.GetFieldValue<Guid>(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID)
-        });
+        };
     }
 
     private async Task<bool> CreateClient(string clientId, Guid systemInteralId, NpgsqlConnection conn, NpgsqlTransaction transaction,  CancellationToken cancellationToken)
@@ -615,7 +615,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             guidCommand.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_ID, id);
 
             return await guidCommand.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToGuid)
+                .Select(NpgSqlExtensions.ConvertFromReaderToGuid)
                 .SingleOrDefaultAsync();
         }
         catch (Exception ex)
@@ -658,7 +658,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_CLIENTID, id.ToArray());
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToMaskinPortenClientInfo)
+                .Select(ConvertFromReaderToMaskinPortenClientInfo)
                 .ToListAsync();
         }
         catch (Exception ex)
@@ -685,7 +685,7 @@ internal class SystemRegisterRepository : ISystemRegisterRepository
             command.Parameters.AddWithValue(SystemRegisterFieldConstants.SYSTEM_INTERNAL_ID, systemInternalId);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToMaskinPortenClientInfo)
+                .Select(ConvertFromReaderToMaskinPortenClientInfo)
                 .ToListAsync();
         }
         catch (Exception ex)

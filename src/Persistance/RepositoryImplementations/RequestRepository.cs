@@ -188,7 +188,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
@@ -231,7 +231,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .Select(ConvertFromReaderToAgentRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
@@ -272,7 +272,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -312,7 +312,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .Select(ConvertFromReaderToAgentRequest)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -418,7 +418,7 @@ public class RequestRepository : IRequestRepository
         }
     }
 
-    private ValueTask<RequestSystemResponse> ConvertFromReaderToRequest(NpgsqlDataReader reader)
+    private RequestSystemResponse ConvertFromReaderToRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
         bool escalated = false;
@@ -459,10 +459,10 @@ public class RequestRepository : IRequestRepository
             response.TimedOut = true;
         }
 
-        return new ValueTask<RequestSystemResponse>(response);
+        return response;
     }
 
-    private ValueTask<AgentRequestSystemResponse> ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
+    private AgentRequestSystemResponse ConvertFromReaderToAgentRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
         bool escalated = false;
@@ -502,7 +502,7 @@ public class RequestRepository : IRequestRepository
             response.TimedOut = true;   
         }
 
-        return new ValueTask<AgentRequestSystemResponse>(response);
+        return response;
     }
 
     /// <inheritdoc/>  
@@ -534,7 +534,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -575,7 +575,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("request_status", RequestStatus.New.ToString());
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -613,7 +613,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .Select(ConvertFromReaderToAgentRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -654,7 +654,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("request_status", RequestStatus.New.ToString());
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToAgentRequest)
+                .Select(ConvertFromReaderToAgentRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -811,7 +811,7 @@ public class RequestRepository : IRequestRepository
             command.Parameters.AddWithValue("request_id", internalId);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToRequest)
+                .Select(ConvertFromReaderToRequest)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
