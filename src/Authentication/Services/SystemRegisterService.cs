@@ -157,6 +157,12 @@ namespace Altinn.Platform.Authentication.Services
             var notDelegableResourceIds = new List<string>();
             foreach (Right right in rights)
             {
+                // For now we only support single resource per right, no sub-resources
+                if (right.Resource.Count > 1)
+                {
+                    invalidFormatResourceIds.Add(right.Resource[1].Value);
+                }
+
                 foreach (AttributePair resourceId in right.Resource)
                 {
                     string pattern = @"^urn:altinn:resource$";
