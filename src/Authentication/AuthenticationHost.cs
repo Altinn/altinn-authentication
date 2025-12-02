@@ -31,6 +31,7 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Integration.ResourceRegister;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Persistance.Extensions;
+using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.JwtCookie;
@@ -175,8 +176,12 @@ internal static class AuthenticationHost
         services.AddSingleton<ITokenIssuer, TokenIssuerService>();
         services.TryAddSingleton<AuthenticationTelemetry>();
 
-        services.ConfigureOpenTelemetryMeterProvider(m => m.AddMeter(AuthenticationTelemetry.Name));
         services.ConfigureOpenTelemetryTracerProvider(m => m.AddSource(AuthenticationTelemetry.Name));
+        services.AddOpenTelemetry()
+            .AddAssemblyMetrics<Program>() // Authentication
+            .AddAssemblyMetrics<AuthenticationTelemetry>() // Authentication.Core
+            .AddAssemblyMetrics<SystemUserRepository>() // Authentication.Persistance
+            .AddAssemblyMetrics<PartiesClient>(); // Authentication.Integration
 
         services.AddAntiforgery(options =>
         {
