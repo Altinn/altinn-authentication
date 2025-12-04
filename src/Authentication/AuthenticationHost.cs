@@ -65,24 +65,12 @@ internal static class AuthenticationHost
     /// <returns></returns>
     internal static WebApplication Create(string[] args)
     {
-        var builder = AltinnHost.CreateWebApplicationBuilder("authentication", args, opts => opts.ConfigureEnabledServices(services => services.DisableApplicationInsights()));
+        var builder = AltinnHost.CreateWebApplicationBuilder("authentication", args);
         var services = builder.Services;
         var config = builder.Configuration;
         var descriptor = services.GetAltinnServiceDescriptor();
         
         MapPostgreSqlConfiguration(builder, descriptor);
-
-        if (!builder.Environment.IsDevelopment())
-        {
-            if (builder.Configuration.GetValue<string>("ApplicationInsights:InstrumentationKey") is var key && !string.IsNullOrEmpty(key))
-            {
-                builder.Services.AddOpenTelemetry()
-                    .UseAzureMonitor(m =>
-                    {
-                        m.ConnectionString = string.Format("InstrumentationKey={0}", key);
-                    });
-            }
-        }
 
         services.AddAutoMapper(cfg => { }, typeof(Program));
         services.AddControllers().AddJsonOptions(options =>
