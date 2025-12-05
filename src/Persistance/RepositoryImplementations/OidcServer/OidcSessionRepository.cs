@@ -255,22 +255,17 @@ public sealed class OidcSessionRepository(NpgsqlDataSource ds, ILogger<OidcSessi
         };
     }
 
-    private sealed class Metrics : IMetrics<Metrics>
+    private sealed class Metrics(Meter meter)
+        : IMetrics<Metrics>
     {
         public static Metrics Create(Meter meter) => new(meter);
 
-        private readonly Counter<int> _sessionsCreated;
-
-        public Metrics(Meter meter)
-        {
-            _sessionsCreated = meter.CreateCounter<int>(
+        private readonly Counter<int> _sessionsCreated 
+            = meter.CreateCounter<int>(
                     name: "altinn.authentication.oidc.sessions_created",
                     description: "Number of OIDC sessions created");
-        }
 
         public void SessionCreated()
-        {
-            _sessionsCreated.Add(1);
-        }
+            => _sessionsCreated.Add(1);
     }
 }
