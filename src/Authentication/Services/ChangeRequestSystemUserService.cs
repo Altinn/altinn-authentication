@@ -390,7 +390,7 @@ public class ChangeRequestSystemUserService(
 
                 if (delegationResult.IsProblem)
                 {
-                    return new Result<bool>(delegationResult.Problem!);
+                    return delegationResult.Problem;
                 }
             }
         }
