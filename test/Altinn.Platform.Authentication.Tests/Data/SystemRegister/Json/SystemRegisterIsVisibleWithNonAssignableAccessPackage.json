@@ -1,28 +1,25 @@
 {
-  "id": "991825827_the_matrix",
+  "id": "991825827_test_visible_nonassignable",
   "vendor": {
     "authority": "iso6523-actorid-upis",
     "ID": "0192:991825827"
   },
   "name": {
-    "nb": "The Matrix",
-    "en": "The Matrix",
-    "nn": "The Matrix"
+    "nb": "Test System Visible NonAssignable",
+    "en": "Test System Visible NonAssignable",
+    "nn": "Test System Visible NonAssignable"
   },
   "description": {
-    "nb": "Test system",
-    "en": "Test system",
-    "nn": "Test system"
+    "nb": "Test system for IsVisible with non-assignable access package",
+    "en": "Test system for IsVisible with non-assignable access package",
+    "nn": "Test system for IsVisible with non-assignable access package"
   },
   "accessPackages": [
     {
-      "urn": "urn:altinn:accesspackage:skatt-naering"
-    },
-    {
-      "urn": "urn:altinn:accesspackage:konkursbo-tilgangsstyrer"
-    },
-    {
       "urn": "urn:altinn:accesspackage:jordbruk"
+    },
+    {
+      "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
     }
   ],
   "rights": [
@@ -46,3 +43,4 @@
   ],
   "isVisible": true
 }
+

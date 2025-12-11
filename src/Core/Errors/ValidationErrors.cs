@@ -125,5 +125,5 @@ public static class ValidationErrors
     /// Gets a validation error descriptor when IsVisible is true but access package has IsAssignable false
     /// </summary>
     public static ValidationErrorDescriptor SystemRegister_IsVisible_With_NonAssignable_AccessPackage { get; }
-        = _factory.Create(18, "These access packages cannot be created from User-controlled flow");
+        = _factory.Create(18, "Access packages meant for system user for client relations can't be used in combination with the flag isVisible: true");
 }
