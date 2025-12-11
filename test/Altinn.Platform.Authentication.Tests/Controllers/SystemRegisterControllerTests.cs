@@ -155,6 +155,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
             HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
             HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
+            var resp = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         }
 

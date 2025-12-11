@@ -232,7 +232,7 @@ namespace Altinn.Platform.Authentication.Tests
 
         private static SigningCredentials GetSigningCredentials()
         {
-            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile("selfSignedTestCertificate.pfx", "qwer1234", X509KeyStorageFlags.EphemeralKeySet);
+            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile("selfSignedTestCertificate.pfx", "qwer1234");
             return new X509SigningCredentials(cert, SecurityAlgorithms.RsaSha256);
         }
 

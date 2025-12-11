@@ -28,7 +28,7 @@ namespace Altinn.Platform.Authentication.Tests.Fakes
         /// <inheritdoc />
         public async Task<List<X509Certificate2>> GetCertificates()
         {
-            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile(_certificateSettings.CertificatePath, _certificateSettings.CertificatePwd, X509KeyStorageFlags.EphemeralKeySet);
+            X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile(_certificateSettings.CertificatePath, _certificateSettings.CertificatePwd);
 
             List<X509Certificate2> certificates = [cert];
 

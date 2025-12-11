@@ -145,8 +145,8 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="accessPackages">access packages to be validated</param>
         /// <param name="cancellationToken">the cancellation token</param>
-        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register</returns>
-        Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns)>
+        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register, and packages with IsAssignable false</returns>
+        Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns, List<string> NonAssignableUrns)>
             GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
 
         /// <summary>
