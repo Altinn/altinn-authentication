@@ -22,7 +22,7 @@
       "urn": "urn:altinn:accesspackage:konkursbo-tilgangsstyrer"
     },
     {
-      "urn": "urn:altinn:accesspackage:jordbruk"
+      "urn": "urn:altinn:accesspackage:regnskapsforer-lonn"
     }
   ],
   "rights": [
@@ -44,5 +44,5 @@
     "https://nrk.no",
     "https://altinn.no"
   ],
-  "isVisible": true
+  "isVisible": false
 }

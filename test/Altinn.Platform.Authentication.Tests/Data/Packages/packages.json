@@ -211,17 +211,6 @@
     "resources": null
   },
   {
-    "id": "0195efb8-7c80-7e9c-95c1-48937e23960a",
-    "name": "Jordbruk",
-    "urn": "urn:altinn:accesspackage:konkursbo-tilgangsstyrer",
-    "description": "Gir bruker mulighet til å administrere konkursbo",
-    "isDelegable": false,
-    "isAssignable": true,
-    "isResourcePolicyAvailable": false,
-    "area": null,
-    "resources": null
-  },
-  {
     "id": "c5bbbc3f-605a-4dcb-a587-32124d7bb76d",
     "name": "Jordbruk",
     "urn": "urn:altinn:accesspackage:jordbruk",
