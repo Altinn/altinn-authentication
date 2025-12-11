@@ -209,5 +209,16 @@
     "isResourcePolicyAvailable": false,
     "area": null,
     "resources": null
+  },
+  {
+    "id": "c5bbbc3f-605a-4dcb-a587-32124d7bb76d",
+    "name": "Jordbruk",
+    "urn": "urn:altinn:accesspackage:jordbruk",
+    "description": "Denne tilgangspakken gir tilgang til tjenester knyttet til jordbruk. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
+    "isDelegable": true,
+    "isAssignable": true,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
   }
 ]

@@ -126,6 +126,9 @@
     <None Update="Data\SystemRegister\Json\SystemRegisterClientIdsExist.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\SystemRegister\Json\SystemRegisterIsVisibleWithNonAssignableAccessPackage.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
