@@ -421,11 +421,10 @@ namespace Altinn.Platform.Authentication.Controllers
             List<ClientInfo> clients = new List<ClientInfo>();
             foreach (var delegationResponse in delegationResponses)
             {
-                Party party = await PartiesClient.GetPartyByUuId(delegationResponse.CustomerId ?? Guid.Empty);
                 clients.Add(new ClientInfo
                 {
                     ClientId = delegationResponse.CustomerId ?? Guid.Empty,
-                    ClientOrganizationNumber = party?.Organization?.OrgNumber,
+                    ClientOrganizationNumber = delegationResponse.CustomerOrganizationNumber,
                     ClientOrganizationName = delegationResponse?.CustomerName,
                 });
             }

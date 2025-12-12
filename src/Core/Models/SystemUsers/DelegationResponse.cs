@@ -23,4 +23,7 @@ public class DelegationResponse
 
     [JsonPropertyName("customerName")]
     public string? CustomerName { get; set; }
+
+    [JsonPropertyName("customerOrganizationNumber")]
+    public string? CustomerOrganizationNumber { get; set; }
 }
