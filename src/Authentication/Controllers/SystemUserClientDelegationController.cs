@@ -417,17 +417,15 @@ namespace Altinn.Platform.Authentication.Controllers
                 SystemUserId = systemUserId,
                 SystemUserOwnerOrg = systemUser.ReporteeOrgNo,
             };
-
-            List<ClientInfo> clients = new List<ClientInfo>();
-            foreach (var delegationResponse in delegationResponses)
-            {
-                clients.Add(new ClientInfo
+           
+            var clients = delegationResponses
+                .Where(r => r.CustomerId is not null)
+                .Select(r => new ClientInfo
                 {
-                    ClientId = delegationResponse.CustomerId ?? Guid.Empty,
-                    ClientOrganizationNumber = delegationResponse.CustomerOrganizationNumber,
-                    ClientOrganizationName = delegationResponse?.CustomerName,
+                    ClientId = r.CustomerId!.Value,
+                    ClientOrganizationNumber = r.CustomerOrganizationNumber,
+                    ClientOrganizationName = r?.CustomerName,
                 });
-            }
 
             return ClientInfoPaginated.Create(clients, null, systemUserInfo);
         }
