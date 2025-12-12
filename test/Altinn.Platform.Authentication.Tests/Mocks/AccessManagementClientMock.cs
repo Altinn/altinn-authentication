@@ -213,7 +213,7 @@ public class AccessManagementClientMock: IAccessManagementClient
     {
         List<ConnectionDto> delegations = [];
 
-        if ( systemUserId == new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"))
+        if (systemUserId == new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"))
         {
             return delegations;
         }
@@ -230,6 +230,8 @@ public class AccessManagementClientMock: IAccessManagementClient
             From = new EntityParty()
             {
                 Id = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"),
+                RefId = "313872076",
+                Name = "Testkunde AS"
             },
             To = new EntityParty()
             {

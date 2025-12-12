@@ -356,6 +356,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
             Assert.True(result is not null);
             Assert.True(result.Items.Count() > 0);
+            Assert.Contains(result.Items, c => c.ClientId == new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"));
+            Assert.Contains(result.Items, c => c.ClientOrganizationNumber == "313872076");
+            Assert.Contains(result.Items, c => c.ClientOrganizationName == "Testkunde AS");
             Assert.True(result.Links.Next is null);
         }
 
