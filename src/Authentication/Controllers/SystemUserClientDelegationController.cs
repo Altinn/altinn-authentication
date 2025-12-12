@@ -423,8 +423,8 @@ namespace Altinn.Platform.Authentication.Controllers
                 .Select(r => new ClientInfo
                 {
                     ClientId = r.CustomerId!.Value,
-                    ClientOrganizationNumber = r.CustomerOrganizationNumber,
-                    ClientOrganizationName = r?.CustomerName,
+                    ClientOrganizationNumber = r!.CustomerOrganizationNumber,
+                    ClientOrganizationName = r!.CustomerName,
                 });
 
             return ClientInfoPaginated.Create(clients, null, systemUserInfo);
