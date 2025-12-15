@@ -265,7 +265,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
