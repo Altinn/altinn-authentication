@@ -59,17 +59,17 @@ public class RequestSystemUserController : ControllerBase
     /// <summary>
     /// First part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL1 = "https://am.ui.";
+    public const string CONFIRMURL_PREFIX = "https://am.ui.";
 
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL2 = "/accessmanagement/ui/systemuser/request?id=";
+    public const string CONFIRMURL_STANDARD_REQUEST = "/accessmanagement/ui/systemuser/request?id=";
 
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Agent Request
     /// </summary>
-    public const string CONFIRMURL3 = "/accessmanagement/ui/systemuser/agentrequest?id=";
+    public const string CONFIRMURL_AGENTREQUEST = "/accessmanagement/ui/systemuser/agentrequest?id=";
 
     /// <summary>
     /// Query parameter to not choose a reportee when the end user is redirected to the Authn.UI to approve the Request.
@@ -94,7 +94,7 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="createRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]    
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor")]
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<RequestSystemResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
@@ -123,7 +123,7 @@ public class RequestSystemUserController : ControllerBase
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -133,7 +133,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -176,7 +176,7 @@ public class RequestSystemUserController : ControllerBase
         Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -186,7 +186,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -234,7 +234,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -265,7 +265,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -308,7 +308,7 @@ public class RequestSystemUserController : ControllerBase
         
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -349,7 +349,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
