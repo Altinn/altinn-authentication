@@ -44,6 +44,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+  	<PackageReference Include="Altinn.Authorization.ServiceDefaults" Version="5.1.4" />
 		<EmbeddedResource Include="Migration/**/*.sql" />
 	</ItemGroup>
 
