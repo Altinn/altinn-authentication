@@ -341,7 +341,6 @@ public class SystemRegisterTests
         // Update with new accessPackages
         List<AccessPackageDto> requestBodyPut =
         [
-            new() { Urn = "urn:altinn:accesspackage:post-og-telekommunikasjon" },
             new() { Urn = "urn:altinn:accesspackage:dokumentbasert-tilsyn" },
             new() { Urn = "urn:altinn:accesspackage:infrastruktur" },
             new() { Urn = "urn:altinn:accesspackage:patent-varemerke-design" },
