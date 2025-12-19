@@ -110,7 +110,6 @@ public class ChangeRequestResponse()
     /// The date and time the Request was created,
     /// used to determine if the Request is still valid.
     /// </summary>
-    [JsonIgnore]
     public DateTime Created { get; set; }
 
     /// <summary>
