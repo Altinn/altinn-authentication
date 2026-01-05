@@ -2131,7 +2131,7 @@ public class RequestControllerTests(
                 {
                     Id = "urn:altinn:resource",
                     Value = "ske-krav-og-betalinger"
-                },
+                },                
                 new AttributePair()
                 {
                     Id = "urn:altinn:resource",
