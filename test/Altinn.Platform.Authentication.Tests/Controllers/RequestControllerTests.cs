@@ -285,55 +285,6 @@ public class RequestControllerTests(
     }
 
     [Fact]
-    public async Task Request_Create_Succeed_SubResource()
-    {
-        string dataFileName = "Data/SystemRegister/Json/SystemRegisterSubRights.json";
-        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
-
-        HttpClient client = CreateClient();
-        string token = AddSystemUserRequestWriteTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
-
-        Right right = new()
-        {
-            Resource =
-            [
-                new AttributePair()
-                {
-                    Id = "urn:altinn:resource",
-                    Value = "ske-krav-og-betalinger"
-                },
-                new AttributePair()
-                {
-                    Id = "urn:altinn:resource",
-                    Value = "ske-krav-og-betalinger-2"
-                }
-            ]
-        };
-
-        // Arrange
-        CreateRequestSystemUser req = new()
-        {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
-            Rights = [right]
-        };
-
-        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
-        {
-            Content = JsonContent.Create(req)
-        };
-        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
-
-        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
-        Assert.NotNull(res);
-        Assert.Equal(req.ExternalRef, res.ExternalRef);
-    }
-
-    [Fact]
     public async Task AgentRequest_Create_Succeed()
     {
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
@@ -2161,6 +2112,52 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);       
     }
 
+    [Fact]
+    public async Task Create_Request_WithSubResource_ReturnBadRequest()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                },
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger-2"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);        
+    }
+        
     [Fact]
     public async Task Create_Request_Reuse_SameInfo_from_Existing_SystemUser_Return_Error()
     {
