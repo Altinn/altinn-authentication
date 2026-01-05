@@ -17,6 +17,7 @@ using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
@@ -237,43 +238,11 @@ public class RequestControllerTests(
         string dataFileName = "Data/SystemRegister/Json/SystemRegisterSubRights.json";
         HttpResponseMessage response = await CreateSystemRegister(dataFileName);
 
-        HttpClient client = CreateClient();
-        string token = AddSystemUserRequestWriteTestTokenToClient(client);
-        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
-
-        Right right = new()
-        {
-            Resource =
-            [
-                new AttributePair()
-                {
-                    Id = "urn:altinn:resource",
-                    Value = "ske-krav-og-betalinger"
-                },
-                new AttributePair()
-                {
-                    Id = "urn:altinn:resource",
-                    Value = "finnesikke"
-                }
-            ]
-        };
-
-        // Arrange
-        CreateRequestSystemUser req = new()
-        {
-            ExternalRef = "external",
-            SystemId = "991825827_the_matrix",
-            PartyOrgNo = "910493353",
-            Rights = [right]
-        };
-
-        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
-        {
-            Content = JsonContent.Create(req)
-        };
-        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-        Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);                
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        ProblemDetails? problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        var raw = problem?.Extensions?["validationErrors"];
+        string json = raw?.ToString() ?? string.Empty;
+        Assert.Contains(ValidationErrors.SystemRegister_ResourceId_InvalidFormat.Detail.ToString(), json);
     }
 
     [Fact]
@@ -3703,5 +3672,5 @@ public class RequestControllerTests(
         request.Content = content;
         HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         return response;
-    }
+    }    
 }
