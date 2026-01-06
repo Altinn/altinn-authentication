@@ -14,22 +14,11 @@
     "en": "Test system",
     "nn": "Test system"
   },
+  "rights": [
+  ],
   "accessPackages": [
     {
-      "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
-    },
-    {
       "urn": "urn:altinn:accesspackage:skatt-naering"
-    }
-  ],
-  "rights": [
-    {
-      "resource": [
-        {
-          "id": "urn:altinn:resource",
-          "value": "ske-krav-og-betalinger"
-        }
-      ]
     }
   ],
   "softDeleted": false,
@@ -41,5 +30,5 @@
     "https://nrk.no",
     "https://altinn.no"
   ],
-  "isVisible": false
+  "isVisible": true
 }

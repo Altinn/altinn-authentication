@@ -27,6 +27,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ISystemChangeLogRepository _systemChangeLogRepository;
         private readonly IResourceRegistryClient _resourceRegistryClient;
         private readonly IAccessManagementClient _accessManagementClient;
+
         private static readonly HashSet<ResourceType> WhitelistedResourceTypes = new()
         {
             ResourceType.AltinnApp,
@@ -34,7 +35,7 @@ namespace Altinn.Platform.Authentication.Services
             ResourceType.Default,
             ResourceType.CorrespondenceService,
             ResourceType.BrokerService,
-            ResourceType.GenericAccessResource,           
+            ResourceType.GenericAccessResource,
         };
 
         /// <summary>
@@ -96,7 +97,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns></returns>
         public Task<RegisteredSystemResponse?> GetRegisteredSystemInfo(string systemId, CancellationToken cancellation = default)
         {
-            return _systemRegisterRepository.GetRegisteredSystemById(systemId);
+            return _systemRegisterRepository.GetRegisteredSystemById(systemId, cancellation);
         }
 
         /// <inheritdoc/>
@@ -142,7 +143,7 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         return false;
                     }
-                }                
+                }
             }
 
             return true;
@@ -178,7 +179,7 @@ namespace Altinn.Platform.Authentication.Services
                     }
                 }
             }
-            
+
             return (invalidFormatResourceIds, notFoundResourceIds, notDelegableResourceIds);
         }
 
@@ -201,12 +202,13 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns)>
+        public async Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns, List<string> NonAssignableUrns)>
             GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
         {
             var invalidFormatUrns = new List<string>();
             var notFoundUrns = new List<string>();
             var notDelegableUrns = new List<string>();
+            var nonAssignableUrns = new List<string>();
 
             if (accessPackages != null && accessPackages.Count > 0)
             {
@@ -234,14 +236,22 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         notFoundUrns.Add(urn);
                     }
-                    else if (!package.IsDelegable && !package.IsAssignable)
+                    else
                     {
-                        notDelegableUrns.Add(urn);
+                        if (!package.IsDelegable && !package.IsAssignable)
+                        {
+                            notDelegableUrns.Add(urn);
+                        }
+
+                        if (!package.IsAssignable)
+                        {
+                            nonAssignableUrns.Add(urn);
+                        }
                     }
                 }
             }
 
-            return (invalidFormatUrns, notFoundUrns, notDelegableUrns);
+            return (invalidFormatUrns, notFoundUrns, notDelegableUrns, nonAssignableUrns);
         }
 
         /// <inheritdoc/>

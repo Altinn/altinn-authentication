@@ -17,6 +17,7 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
@@ -285,7 +286,7 @@ namespace Altinn.Platform.Authentication.Services
             Page<long>.Request continueRequest,
             CancellationToken cancellationToken)
         {
-            RegisteredSystemResponse? system = await _registerRepository.GetRegisteredSystemById(systemId);
+            RegisteredSystemResponse? system = await _registerRepository.GetRegisteredSystemById(systemId, cancellationToken);
             if (system is null)
             {
                 return Problem.SystemIdNotFound;
@@ -315,7 +316,7 @@ namespace Altinn.Platform.Authentication.Services
             DelegationCheckResult? delegationCheckFinalResult = null;
             AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult = null;
 
-            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId);
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(request.SystemId, cancellationToken);
             if (regSystem is null)
             {
                 return Problem.SystemIdNotFound;
@@ -413,7 +414,7 @@ namespace Altinn.Platform.Authentication.Services
                 requestId = Guid.NewGuid();
             }
 
-            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemId);
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemId, cancellationToken);
             if (regSystem is null)
             {
                 return Problem.SystemIdNotFound;
@@ -669,20 +670,28 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<bool>> ValidateAccessPackages(List<AccessPackage> accessPackages, RegisteredSystemResponse systemInfo, bool isAgentRequest)
         {
-            if (systemInfo == null || systemInfo.AccessPackages == null)
+            using var activity = AuthenticationTelemetry.StartActivity(
+                name: nameof(ValidateAccessPackages),
+                tags: [
+                    new("system.id", systemInfo?.Id),
+                    new("system.internal_id", systemInfo?.InternalId),
+                ]);
+
+            if (systemInfo is not { AccessPackages.Count: { } systemInfoAccessPackagesCount } || systemInfoAccessPackagesCount < accessPackages.Count)
             {
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, Problem.AccessPackage_NotFound.Detail);
                 return Problem.AccessPackage_NotFound;
             }
 
-            if (systemInfo.AccessPackages.Count == 0)
-            {
-                return Problem.AccessPackage_NotFound;
-            }
+            //if (systemInfo.AccessPackages.Count == 0)
+            //{
+            //    return Problem.AccessPackage_NotFound;
+            //}
 
-            if (accessPackages.Count > systemInfo.AccessPackages.Count)
-            {
-                return Problem.AccessPackage_NotFound;
-            }
+            //if (accessPackages.Count > systemInfo.AccessPackages.Count)
+            //{
+            //    return Problem.AccessPackage_NotFound;
+            //}
 
             List<string> notFoundPackages = [];
             List<string> notDelegablePackages = [];
@@ -1040,7 +1049,8 @@ namespace Altinn.Platform.Authentication.Services
                     DelegationId = item.Id,
                     CustomerId = item.From.Id,
                     AssignmentId = item.Delegation.ToId,
-                    CustomerName = item.From.Name
+                    CustomerName = item.From.Name,
+                    CustomerOrganizationNumber = item.From.RefId
                 };
 
                 result.Add(newDel);

@@ -52,7 +52,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_user_profile_id", id);
 
             await command.ExecuteEnumerableAsync()
-                .SelectAwait(NpgSqlExtensions.ConvertFromReaderToBoolean)   
+                .Select(NpgSqlExtensions.ConvertFromReaderToBoolean)   
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -94,7 +94,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
-            return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
+            return await list.Select(ConvertFromReaderToSystemUser).ToListAsync();
         }
         catch (Exception ex)
         {
@@ -136,7 +136,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
 
             IAsyncEnumerable<NpgsqlDataReader> list = command.ExecuteEnumerableAsync();
-            return await list.SelectAwait(ConvertFromReaderToSystemUser).ToListAsync();
+            return await list.Select(ConvertFromReaderToSystemUser).ToListAsync();
         }
         catch (Exception ex)
         {
@@ -175,7 +175,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("system_user_profile_id", id);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemUser)
+                .Select(ConvertFromReaderToSystemUser)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -220,7 +220,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("reportee_org_no", externalRequestId.OrgNo);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemUser)
+                .Select(ConvertFromReaderToSystemUser)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -283,7 +283,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = toBeInserted.UserType;
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToGuid)
+                .Select(ConvertFromReaderToGuid)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -310,7 +310,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("integration_title", integrationTitle);
 
             return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToInt)
+                .Select(ConvertFromReaderToInt)
                 .FirstOrDefaultAsync();
         }
         catch (Exception ex)
@@ -363,9 +363,9 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("systemVendorOrgno", systemProviderOrgNo);
             command.Parameters.AddWithValue("external_ref", externalRef);
 
-            return await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToSystemUser)
-                .FirstOrDefaultAsync();
+            return await command.ExecuteEnumerableAsync(cancellationToken)
+                .Select(ConvertFromReaderToSystemUser)
+                .FirstOrDefaultAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -374,17 +374,17 @@ public class SystemUserRepository : ISystemUserRepository
         }
     }    
 
-    private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader)
+    private ValueTask<int> ConvertFromReaderToInt(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
     {
-        return new ValueTask<int>(reader.GetFieldValue<int>(0));
+        return new ValueTask<int>(reader.GetFieldValueAsync<int>(0, cancellationToken));
     }
 
-    private ValueTask<Guid> ConvertFromReaderToGuid(NpgsqlDataReader reader)
+    private ValueTask<Guid> ConvertFromReaderToGuid(NpgsqlDataReader reader, CancellationToken cancellationToken = default)
     {
-        return new ValueTask<Guid>(reader.GetFieldValue<Guid>(0));
+        return new ValueTask<Guid>(reader.GetFieldValueAsync<Guid>(0, cancellationToken));
     }
 
-    private static ValueTask<SystemUserInternalDTO> ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
+    private static SystemUserInternalDTO ConvertFromReaderToSystemUser(NpgsqlDataReader reader)
     {
         string? external_ref = reader.GetFieldValue<string>("external_ref");
         string orgno = reader.GetFieldValue<string>("reportee_org_no");
@@ -392,7 +392,7 @@ public class SystemUserRepository : ISystemUserRepository
         List<AccessPackage> accessPackages = reader.IsDBNull("accesspackages") ? [] : reader.GetFieldValue<List<AccessPackage>>("accesspackages");
         SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Standard : reader.GetFieldValue<SystemUserType>("systemuser_type");
 
-        return new ValueTask<SystemUserInternalDTO>(new SystemUserInternalDTO
+        return new SystemUserInternalDTO
         {
             Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
             SystemInternalId = reader.GetFieldValue<Guid>("system_internal_id"),
@@ -406,7 +406,7 @@ public class SystemUserRepository : ISystemUserRepository
             UserType = systemUserType,
             AccessPackages = accessPackages,
             SequenceNo = reader.GetFieldValue<long>("sequence_no")
-        });
+        };
     }
 
     /// <inheritdoc />
@@ -444,7 +444,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("limit", pageSize + 1);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToSystemUser)
+                .Select(ConvertFromReaderToSystemUser)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -542,7 +542,7 @@ public class SystemUserRepository : ISystemUserRepository
             command.Parameters.AddWithValue("limit", limit);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToSystemUserRegisterDTO)
+                .Select(ConvertFromReaderToSystemUserRegisterDTO)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -552,11 +552,11 @@ public class SystemUserRepository : ISystemUserRepository
         }
     }
 
-    private static ValueTask<SystemUserRegisterDTO> ConvertFromReaderToSystemUserRegisterDTO(NpgsqlDataReader reader)
+    private static SystemUserRegisterDTO ConvertFromReaderToSystemUserRegisterDTO(NpgsqlDataReader reader)
     {
         SystemUserType systemUserType = reader.IsDBNull("systemuser_type") ? SystemUserType.Standard : reader.GetFieldValue<SystemUserType>("systemuser_type");
 
-        return new ValueTask<SystemUserRegisterDTO>(new SystemUserRegisterDTO
+        return new SystemUserRegisterDTO
         {
             Id = reader.GetFieldValue<Guid>("system_user_profile_id").ToString(),
             IntegrationTitle = reader.GetFieldValue<string>("integration_title"),
@@ -567,6 +567,6 @@ public class SystemUserRepository : ISystemUserRepository
             SystemUserType = systemUserType,
             PartyOrgNo = reader.GetFieldValue<string>("reportee_org_no"),
             PartyId = reader.GetFieldValue<string>("reportee_party_id"),
-        });
+        };
     }
 }

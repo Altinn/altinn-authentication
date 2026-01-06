@@ -194,7 +194,7 @@ public class SystemRegisterController : ControllerBase
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
 
         ValidationErrorBuilder validateErrorRights = await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken);
-        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, cancellationToken);
+        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, proposedUpdateToSystem.IsVisible, cancellationToken);
         ValidationErrorBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages);
         ValidationErrorBuilder mergedErrors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
 
@@ -288,7 +288,7 @@ public class SystemRegisterController : ControllerBase
 
             ValidationErrorBuilder validationErrorRegisteredSystem = await ValidateRegisteredSystem(registerNewSystem, cancellationToken);
             ValidationErrorBuilder validationErrorRights = await ValidateRights(registerNewSystem.Rights, cancellationToken);
-            ValidationErrorBuilder validationErrorAccessPackages = await ValidateAccessPackages(registerNewSystem.AccessPackages, cancellationToken);
+            ValidationErrorBuilder validationErrorAccessPackages = await ValidateAccessPackages(registerNewSystem.AccessPackages, registerNewSystem.IsVisible, cancellationToken);
 
             errors = MergeValidationErrors(validationErrorRegisteredSystem, validationErrorRights, validationErrorAccessPackages);
 
@@ -301,7 +301,7 @@ public class SystemRegisterController : ControllerBase
             {
                 return errorResult;
             }
-            
+
             var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, PopulateSystemChangeLog(User, SystemChangeType.Create, null, registerNewSystem), cancellationToken);
             if (registeredSystemGuid is null)
             {
@@ -379,7 +379,7 @@ public class SystemRegisterController : ControllerBase
             return BadRequest("Cannot update a system marked as deleted.");
         }
 
-        ValidationErrorBuilder errors = await ValidateAccessPackages(accessPackages, cancellationToken);
+        ValidationErrorBuilder errors = await ValidateAccessPackages(accessPackages, registerSystemResponse.IsVisible, cancellationToken);
 
         if (errors.TryToActionResult(out var errorResult))
         {
@@ -453,7 +453,7 @@ public class SystemRegisterController : ControllerBase
     }
 
     private static List<string> CombineClientIds(IEnumerable<string> current, IEnumerable<string> updated) =>
-    current.Union(updated, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        current.Union(updated, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
     private async Task<ValidationErrorBuilder> ValidateRights(List<Right> rights, CancellationToken cancellationToken)
     {
@@ -475,11 +475,11 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private async Task<ValidationErrorBuilder> ValidateAccessPackages(List<AccessPackage> accessPackages, CancellationToken cancellationToken)
+    private async Task<ValidationErrorBuilder> ValidateAccessPackages(List<AccessPackage> accessPackages, bool isVisible, CancellationToken cancellationToken)
     {
         ValidationErrorBuilder errors = default;
 
-        var (invalidFormatUrns, notFoundUrns, notDelegableUrns) = await _systemRegisterService.GetInvalidAccessPackageUrnsDetailed(accessPackages, cancellationToken);
+        var (invalidFormatUrns, notFoundUrns, notDelegableUrns, nonAssignableUrns) = await _systemRegisterService.GetInvalidAccessPackageUrnsDetailed(accessPackages, cancellationToken);
         if (invalidFormatUrns.Count > 0 || notFoundUrns.Count > 0 || notDelegableUrns.Count > 0)
         {
             var allInvalidUrns = new List<string>();
@@ -509,6 +509,13 @@ public class SystemRegisterController : ControllerBase
         if (AuthenticationHelper.HasDuplicateAccessPackage(accessPackages))
         {
             errors.Add(ValidationErrors.SystemRegister_AccessPackage_Duplicates, [
+                ErrorPathConstant.ACCESSPACKAGES
+            ]);
+        }
+
+        if (isVisible && nonAssignableUrns.Count > 0)
+        {
+            errors.Add(ValidationErrors.SystemRegister_IsVisible_With_NonAssignable_AccessPackage, [
                 ErrorPathConstant.ACCESSPACKAGES
             ]);
         }
@@ -616,7 +623,7 @@ public class SystemRegisterController : ControllerBase
             ChangedByOrgNumber = orgNumber,
             ChangeType = changeType,
             ChangedData = changedData,
-            ClientId = organisation?.Claims.Where(c => c.Type.Equals("client_id")).Select(c => c.Value).FirstOrDefault(),            
+            ClientId = organisation?.Claims.Where(c => c.Type.Equals("client_id")).Select(c => c.Value).FirstOrDefault(),
         };
 
         if (internalId.HasValue)

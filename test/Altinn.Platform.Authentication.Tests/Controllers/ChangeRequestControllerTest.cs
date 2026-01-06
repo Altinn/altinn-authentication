@@ -36,6 +36,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -58,7 +59,7 @@ public class ChangeRequestControllerTest(
     private readonly Mock<IUserProfileService> _userProfileService = new();
     private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
-    private readonly Mock<TimeProvider> timeProviderMock = new();
+    private readonly FakeTimeProvider timeProviderMock = new();
     private readonly Mock<IGuidService> guidService = new();
     private readonly Mock<IEventsQueueClient> _eventQueue = new();
     private readonly Mock<IPDP> _pdpMock = new();
@@ -102,7 +103,7 @@ public class ChangeRequestControllerTest(
         services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
         services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
         services.AddSingleton(_eventQueue.Object);
-        services.AddSingleton(timeProviderMock.Object);
+        services.AddSingleton((TimeProvider)timeProviderMock);
         services.AddSingleton(guidService.Object);
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
         services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
@@ -2599,12 +2600,12 @@ public class ChangeRequestControllerTest(
     private static string GetConfigPath()
     {
         string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder!, $"../../../appsettings.json");
+        return Path.Combine(unitTestFolder!, $"../../../appsettings.test.json");
     }
 
     private void SetupDateTimeMock()
     {
-        timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
+        timeProviderMock.SetUtcNow(TestTime);
     }
 
     private void SetupGuidMock()

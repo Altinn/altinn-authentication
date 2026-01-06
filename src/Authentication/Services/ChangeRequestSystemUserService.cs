@@ -318,7 +318,7 @@ public class ChangeRequestSystemUserService(
             return Problem.RequestStatusNotNew;
         }
 
-        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserChangeRequest.SystemId);
+        RegisteredSystemResponse? regSystem = await systemRegisterRepository.GetRegisteredSystemById(systemUserChangeRequest.SystemId, cancellationToken);
         if (regSystem is null)
         {
             return Problem.SystemIdNotFound;
@@ -382,14 +382,15 @@ public class ChangeRequestSystemUserService(
 
             if (checkAccessPackages.Value.CanDelegate && checkAccessPackages.Value.AccessPackages?.Count > 0)
             {
-                foreach (AccessPackage accessPackage in checkAccessPackages.Value.AccessPackages)
-                {
-                    Result<bool> delegationResult = await accessManagementClient.DelegateSingleAccessPackageToSystemUser(partyUuid, Guid.Parse(toBeChanged.Id), accessPackage.Urn!, cancellationToken);
+                var delegationResult = await systemUserService.DelegateAccessPackagesToSystemUser(
+                        partyUuid,
+                        toBeChanged,
+                        checkAccessPackages.Value.AccessPackages,
+                        cancellationToken);                                                      
 
-                    if (delegationResult.IsProblem)
-                    {
-                        return new Result<bool>(delegationResult.Problem!);
-                    }
+                if (delegationResult.IsProblem)
+                {
+                    return delegationResult.Problem;
                 }
             }
         }
@@ -462,7 +463,7 @@ public class ChangeRequestSystemUserService(
         Page<Guid>.Request continueRequest,
         CancellationToken cancellationToken)
     {
-        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId);
+        RegisteredSystemResponse? system = await systemRegisterRepository.GetRegisteredSystemById(systemId, cancellationToken);
         if (system is null)
         {
             return Problem.SystemIdNotFound;

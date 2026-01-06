@@ -1167,7 +1167,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 ValidateAudience = false,
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(10)
+                ClockSkew = TimeSpan.FromSeconds(10),
             };
 
             _validator.ValidateToken(originalToken, validationParameters, out _);

@@ -205,7 +205,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("system_id", systemId);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -247,7 +247,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
@@ -287,7 +287,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("request_id", id);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
                         
             return dbres;
@@ -328,7 +328,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("system_user_id", systemUserId);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
                         
             return dbres;
@@ -370,7 +370,7 @@ public class ChangeRequestRepository(
         }
     }
 
-    private static ValueTask<ChangeRequestResponse> ConvertFromReaderToChangeRequest(NpgsqlDataReader reader)
+    private static ChangeRequestResponse ConvertFromReaderToChangeRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
 
@@ -400,6 +400,6 @@ public class ChangeRequestRepository(
             response.TimedOut = true;
         }
 
-        return new ValueTask<ChangeRequestResponse>(response);
+        return response;
     }
 }
