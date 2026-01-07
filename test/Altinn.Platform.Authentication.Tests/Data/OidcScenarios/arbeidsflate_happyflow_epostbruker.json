@@ -1,0 +1,24 @@
+{
+  "ScenarioId": "Arbeidsflate_HappyFlow_EpostBruker",
+  "Title": "Arbeidsflate - Happy flow",
+  "Description": "Test the happy flow for arbeidsflate. Bruker logger på med Bankid på mobil hos ID-porten",
+  "Ssn": null,
+  "Email": "sophie@verdensvakreste.no",
+  "UserId": null,
+  "PartyId": null,
+  "UserName": "sophie",
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "Scopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}

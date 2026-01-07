@@ -1918,13 +1918,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.StartsWith("https://login.idporten.no", appRedirectResponse.Headers.Location!.ToString());
         }
 
-
         [Fact]
         public async Task TC12_Auth_IdPortenEmail_Aa_App_Af_App_Af_Logout_End_To_End_OK()
         {
             // Create HttpClient with default headers for IP, UA, correlation. 
             using HttpClient client = CreateClientWithHeaders();
-            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow_EpostBruker");
 
             // Insert a client that matches the authorize request
             OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
@@ -2181,7 +2180,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         {
             Guid upstreamSID = Guid.NewGuid();
             OidcCodeResponse oidcCodeResponse = IDProviderTestTokenUtil.GetIdPortenTokenResponse(
-                testScenario.Ssn, 
+                testScenario.Ssn,
+                testScenario.Email,
                 createdUpstreamLogingTransaction.Nonce, 
                 upstreamSID.ToString(),
                 testScenario.Acr.ToArray(), 

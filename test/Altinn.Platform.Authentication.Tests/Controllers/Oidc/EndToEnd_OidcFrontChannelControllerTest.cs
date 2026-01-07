@@ -641,6 +641,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Guid upstreamSID = Guid.NewGuid();
             OidcCodeResponse oidcCodeResponse = IDProviderTestTokenUtil.GetIdPortenTokenResponse(
                 testScenario.Ssn, 
+                testScenario.Email,
                 createdUpstreamLogingTransaction.Nonce, 
                 upstreamSID.ToString(), 
                 createdUpstreamLogingTransaction.AcrValues, 
