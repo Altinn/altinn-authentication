@@ -6,6 +6,7 @@
   "Email": "sophie@verdensvakreste.no",
   "UserId": null,
   "PartyId": null,
+  "Acr": [ "selfregistered-email" ],
   "UserName": "sophie",
   "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
   "Scopes": [

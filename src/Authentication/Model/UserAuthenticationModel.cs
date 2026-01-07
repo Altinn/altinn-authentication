@@ -140,5 +140,6 @@ namespace Altinn.Platform.Authentication.Model
         /// Preselected party Id
         /// </summary>
         public int? PreSelectedPartyId { get; set; }
+        public string Email { get; internal set; }
     }
 }

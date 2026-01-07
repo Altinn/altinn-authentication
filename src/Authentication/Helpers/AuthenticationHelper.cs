@@ -90,6 +90,12 @@ namespace Altinn.Platform.Authentication.Helpers
                 }
 
                 // ID-porten specific claims
+                if (claim.Type.Equals("email"))
+                {
+                    userAuthenticationModel.Email = claim.Value;
+                    continue;
+                }
+
                 if (claim.Type.Equals("pid"))
                 {
                     userAuthenticationModel.SSN = claim.Value;
