@@ -1919,7 +1919,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         }
 
         [Fact]
-        public async Task TC12_Auth_IdPortenEmail_Aa_App_Af_App_Af_Logout_End_To_End_OK()
+        public async Task TC12_Auth_IdPortenEmail_NewUser_Aa_App_Af_App_Af_Logout_End_To_End_OK()
         {
             // Create HttpClient with default headers for IP, UA, correlation. 
             using HttpClient client = CreateClientWithHeaders();
@@ -1945,6 +1945,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // Configure the mock to return a successful token response for this exact callback. We need to know the exact code_challenge, client_id, redirect_uri, code_verifier to match.
             ConfigureMockProviderTokenResponse(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+            await ConfigureProfileMock(testScenario);
 
             // === Phase 2: simulate provider redirecting back to Altinn with code + upstream state ===
             // Our proxy service (below) will fabricate a downstream code and redirect to the original client redirect_uri.
@@ -2243,7 +2244,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private async Task ConfigureProfileMock(OidcTestScenario oidcTestScenario)
         {
             ProfileFileMock profileMock = new ProfileFileMock();
-            if (!string.IsNullOrEmpty(oidcTestScenario.ExternalIdentity) && oidcTestScenario.UserId == null)
+            if ((!string.IsNullOrEmpty(oidcTestScenario.ExternalIdentity) || !string.IsNullOrEmpty(oidcTestScenario.Email)) && oidcTestScenario.UserId == null)
             {
                 UserProfile? profile = null;
                 _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(profile);

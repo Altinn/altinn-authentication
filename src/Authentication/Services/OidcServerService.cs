@@ -1502,6 +1502,38 @@ namespace Altinn.Platform.Authentication.Services
                 userAuthenticationModel.Amr = ["SelfIdentified"];
                 userAuthenticationModel.Acr = "Selfidentified";
             }
+            else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
+            {
+                // TODO. Usikker om vi trenger å prefixe med iss nå
+                string issExternalIdentity = userAuthenticationModel.Iss + ":" + AltinnCoreClaimTypes.IdPorteEmailPrefix + userAuthenticationModel.Email;
+                userProfile = await _userProfileService.GetUser(issExternalIdentity);
+
+                if (userProfile != null)
+                {
+                    userAuthenticationModel.UserID = userProfile.UserId;
+                    userAuthenticationModel.PartyID = userProfile.PartyId;
+                    userAuthenticationModel.PartyUuid = userProfile.UserUuid;
+                    userAuthenticationModel.Username = userProfile.UserName;
+                    userAuthenticationModel.Amr = ["SelfIdentified"];
+                    userAuthenticationModel.Acr = "Selfidentified";
+                    return userAuthenticationModel;
+                }
+
+                // Todo: Verifiser prefix på brukernavn
+                UserProfile userToCreate = new()
+                {
+                    ExternalIdentity = issExternalIdentity,
+                    UserName = "idporten:" + userAuthenticationModel.Email,
+                    UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
+                };
+
+                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
+                userAuthenticationModel.UserID = userCreated.UserId;
+                userAuthenticationModel.PartyID = userCreated.PartyId;
+                userAuthenticationModel.PartyUuid = userCreated.UserUuid;
+                userAuthenticationModel.Amr = ["SelfIdentified"];
+                userAuthenticationModel.Acr = "Selfidentified";
+            }
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {
                 userProfile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthenticationModel.UserID.Value });

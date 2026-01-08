@@ -69,5 +69,10 @@ namespace AltinnCore.Authentication.Constants
         /// The person identifier (ssn).
         /// </summary>
         public const string PersonIdentifier = "urn:altinn:person:identifier-no";
+
+        /// <summary>
+        /// Defines the prefix for email claim from ID-Porten when stored as external identity.
+        /// </summary>
+        public const string IdPorteEmailPrefix = "urn:idporten:email:";
     }
 }

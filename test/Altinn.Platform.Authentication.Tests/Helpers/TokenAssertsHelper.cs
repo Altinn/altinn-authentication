@@ -56,7 +56,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.True(accessTokenPrincipal.Identity.IsAuthenticated);
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && c.Value.Equals("http://localhost/authentication/api/v1/openid/"));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
-            if (!testScenario.Acr.Contains("level0"))
+            if (!testScenario.Acr.Contains("level0") && !testScenario.Acr.Contains("selfregistered-email"))
             {
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && c.Value.Equals(testScenario.Ssn));
             }
