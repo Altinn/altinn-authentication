@@ -155,6 +155,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
             HttpClient client = GetAuthenticatedClient(Admin, ValidOrg);
             HttpResponseMessage response = await SystemRegisterTestHelper.CreateSystemRegister(client, dataFileName);
+            var resp = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -1445,6 +1446,31 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_NotValid.ErrorCode);
             Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
             Assert.Equal("One or all the accesspackage(s) is not found in altinn's access packages or is not delegable", error.Detail);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Create_IsVisibleWithNonAssignableAccessPackage_BadRequest()
+        {
+            HttpClient client = CreateClient();
+            string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", now: TestTime);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterIsVisibleWithNonAssignableAccessPackage.json";
+
+            Stream dataStream = File.OpenRead(dataFileName);
+            StreamContent content = new StreamContent(dataStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            HttpRequestMessage request = new(HttpMethod.Post, $"/authentication/api/v1/systemregister/vendor/");
+            request.Content = content;
+            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+
+            AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            Assert.NotNull(problemDetails);
+            AltinnValidationError error = problemDetails.Errors.FirstOrDefault(e => e.ErrorCode == ValidationErrors.SystemRegister_IsVisible_With_NonAssignable_AccessPackage.ErrorCode);
+            Assert.NotNull(error);
+            Assert.Equal("/registersystemrequest/accesspackages", error.Paths.First(p => p.Equals("/registersystemrequest/accesspackages")));
+            Assert.Equal("Access packages meant for system user for client relations can't be used in combination with the flag isVisible: true", error.Detail);
         }
 
         [Fact]

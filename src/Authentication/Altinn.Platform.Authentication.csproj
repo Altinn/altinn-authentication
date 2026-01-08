@@ -11,8 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="Altinn.Authorization.ServiceDefaults" Version="5.0.0" />
-	<PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="5.0.0" />
+	<PackageReference Include="Altinn.Authorization.ServiceDefaults" Version="5.1.4" />
+	<PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="5.1.4" />
     <PackageReference Include="Altinn.Common.AccessToken" Version="5.1.0" />
     <PackageReference Include="Altinn.Common.PEP" Version="4.2.2" />
     <PackageReference Include="Altinn.Register.Contracts" Version="1.4.1" />
@@ -28,8 +28,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Antiforgery" Version="2.3.0" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.6.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.AzureKeyVault" Version="3.1.24" />
-    <PackageReference Include="Microsoft.FeatureManagement" Version="4.3.0" />
-    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="4.3.0" />
+    <PackageReference Include="Microsoft.FeatureManagement" Version="4.4.0" />
+    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="4.4.0" />
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.15.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.6" />

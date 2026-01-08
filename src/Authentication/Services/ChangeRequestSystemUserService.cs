@@ -382,14 +382,15 @@ public class ChangeRequestSystemUserService(
 
             if (checkAccessPackages.Value.CanDelegate && checkAccessPackages.Value.AccessPackages?.Count > 0)
             {
-                foreach (AccessPackage accessPackage in checkAccessPackages.Value.AccessPackages)
-                {
-                    Result<bool> delegationResult = await accessManagementClient.DelegateSingleAccessPackageToSystemUser(partyUuid, Guid.Parse(toBeChanged.Id), accessPackage.Urn!, cancellationToken);
+                var delegationResult = await systemUserService.DelegateAccessPackagesToSystemUser(
+                        partyUuid,
+                        toBeChanged,
+                        checkAccessPackages.Value.AccessPackages,
+                        cancellationToken);                                                      
 
-                    if (delegationResult.IsProblem)
-                    {
-                        return new Result<bool>(delegationResult.Problem!);
-                    }
+                if (delegationResult.IsProblem)
+                {
+                    return delegationResult.Problem;
                 }
             }
         }
