@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Diagnostics;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Annotations;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -215,10 +215,13 @@ public static partial class Opaque
         : ISchemaFilter
     {
         /// <inheritdoc/>
-        public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+        public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
         {
-            schema.ExternalDocs = null;
-            schema.Type = "string";
+            if (schema is OpenApiSchema openApiSchema)
+            {
+                openApiSchema.ExternalDocs = null;
+                openApiSchema.Type = JsonSchemaType.String;
+            }
         }
     }
 

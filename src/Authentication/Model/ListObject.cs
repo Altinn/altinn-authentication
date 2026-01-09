@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Annotations;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -30,14 +30,12 @@ public abstract record ListObject
     protected class SchemaFilter : ISchemaFilter
     {
         /// <inheritdoc/>
-        public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+        public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
         {
             foreach (var prop in schema.Properties)
             {
                 schema.Required.Add(prop.Key);
             }
-
-            schema.Properties["data"].Nullable = false;
         }
     }
 }
