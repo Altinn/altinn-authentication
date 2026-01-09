@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Annotations;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -86,7 +86,7 @@ public record ItemStreamStats(
     private sealed class SchemaFilter : ISchemaFilter
     {
         /// <inheritdoc/>
-        public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+        public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
         {
             schema.Required.Add("pageStart");
             schema.Required.Add("pageEnd");
