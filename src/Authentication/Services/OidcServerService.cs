@@ -1505,7 +1505,7 @@ namespace Altinn.Platform.Authentication.Services
             else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
             {
                 // TODO. Usikker om vi trenger å prefixe med iss nå
-                string issExternalIdentity = userAuthenticationModel.Iss + ":" + AltinnCoreClaimTypes.IdPorteEmailPrefix + userAuthenticationModel.Email;
+                string issExternalIdentity = AltinnCoreClaimTypes.IdPorteEmailPrefix + userAuthenticationModel.Email;
                 userProfile = await _userProfileService.GetUser(issExternalIdentity);
 
                 if (userProfile != null)
@@ -1514,8 +1514,6 @@ namespace Altinn.Platform.Authentication.Services
                     userAuthenticationModel.PartyID = userProfile.PartyId;
                     userAuthenticationModel.PartyUuid = userProfile.UserUuid;
                     userAuthenticationModel.Username = userProfile.UserName;
-                    userAuthenticationModel.Amr = ["SelfIdentified"];
-                    userAuthenticationModel.Acr = "Selfidentified";
                     return userAuthenticationModel;
                 }
 
@@ -1531,8 +1529,6 @@ namespace Altinn.Platform.Authentication.Services
                 userAuthenticationModel.UserID = userCreated.UserId;
                 userAuthenticationModel.PartyID = userCreated.PartyId;
                 userAuthenticationModel.PartyUuid = userCreated.UserUuid;
-                userAuthenticationModel.Amr = ["SelfIdentified"];
-                userAuthenticationModel.Acr = "Selfidentified";
             }
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {

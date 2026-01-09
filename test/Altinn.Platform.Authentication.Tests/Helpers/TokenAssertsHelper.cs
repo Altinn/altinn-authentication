@@ -91,7 +91,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && !string.IsNullOrEmpty(c.Value));
             string method = idTokenPrincipal.Claims.First(c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod).Value;
-            if (!method.Equals(AuthenticationMethod.SelfIdentified.ToString()))
+            if (!method.Equals(AuthenticationMethod.SelfIdentified.ToString()) && !method.Equals(AuthenticationMethod.IdportenEpost.ToString()))
             {
                 Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "pid" && !string.IsNullOrEmpty(c.Value));
             }

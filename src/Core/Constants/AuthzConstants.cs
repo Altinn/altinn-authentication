@@ -120,5 +120,15 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// Scope for writing client delegation information
         /// </summary>
         public const string SCOPE_CLIENTDELEGATION_WRITE = "altinn:clientdelegations.write";
+
+        /// <summary>
+        /// Represents the AMR claim for ID-Porten self registered email authentication
+        /// </summary>
+        public const string CLAIM_AMR_IDPORTEN_EMAIL = "Selfregistered-email";
+
+        /// <summary>
+        /// Represents the ACR claim for ID-Porten self registered email authentication 
+        /// </summary>
+        public const string CLAIM_ACR_IDPORTEN_EMAIL = "selfregistered-email";
     }
 }

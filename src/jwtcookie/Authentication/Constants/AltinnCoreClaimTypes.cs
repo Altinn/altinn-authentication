@@ -73,6 +73,6 @@ namespace AltinnCore.Authentication.Constants
         /// <summary>
         /// Defines the prefix for email claim from ID-Porten when stored as external identity.
         /// </summary>
-        public const string IdPorteEmailPrefix = "urn:idporten:email:";
+        public const string IdPorteEmailPrefix = "urn:altinn:person:idporten-email:";
     }
 }
