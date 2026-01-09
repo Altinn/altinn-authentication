@@ -1123,6 +1123,10 @@ namespace Altinn.Platform.Authentication.Services
             {
                 externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
             }
+            else if (!string.IsNullOrEmpty(userIdenity.Email))
+            {
+                externalId = $"{AltinnCoreClaimTypes.IdPortenEmailPrefix}:{userIdenity.Email}";
+            }
             else if (!string.IsNullOrEmpty(userIdenity.ExternalIdentity))
             {
                 externalId = userIdenity.ExternalIdentity;
@@ -1505,7 +1509,7 @@ namespace Altinn.Platform.Authentication.Services
             else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
             {
                 // TODO. Usikker om vi trenger å prefixe med iss nå
-                string issExternalIdentity = AltinnCoreClaimTypes.IdPorteEmailPrefix + userAuthenticationModel.Email;
+                string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + userAuthenticationModel.Email;
                 userProfile = await _userProfileService.GetUser(issExternalIdentity);
 
                 if (userProfile != null)

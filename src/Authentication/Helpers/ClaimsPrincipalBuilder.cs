@@ -59,11 +59,18 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             {
                 claims.Add(new Claim("pid", oidcBindingContext.ExternalId.Replace($"{AltinnCoreClaimTypes.PersonIdentifier}:", string.Empty)));
             }
-            else if (oidcBindingContext.ExternalId != null)
+            else if (oidcBindingContext.ExternalId != null && !oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.IdPortenEmailPrefix))
             {
                 claims.Add(new Claim("orgsub", oidcBindingContext.ExternalId));
             }
 
+            if (oidcBindingContext.ExternalId != null && oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.IdPortenEmailPrefix))
+            {
+                string email = oidcBindingContext.ExternalId.Replace($"{AltinnCoreClaimTypes.IdPortenEmailPrefix}:", string.Empty);
+                claims.Add(new Claim(AltinnCoreClaimTypes.Email, email));
+                claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifer, oidcBindingContext.ExternalId));
+            }
+         
             if (oidcBindingContext.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcBindingContext.Acr));

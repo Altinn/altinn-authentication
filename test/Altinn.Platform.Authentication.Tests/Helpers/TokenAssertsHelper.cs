@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Tests.Models;
@@ -59,6 +60,15 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             if (!testScenario.Acr.Contains("level0") && !testScenario.Acr.Contains("selfregistered-email"))
             {
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && c.Value.Equals(testScenario.Ssn));
+            }
+
+            if (testScenario.Acr.Contains("selfregistered-email"))
+            {
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && c.Value.Equals(AuthenticationMethod.IdportenEpost.ToString()));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.Email && c.Value.Equals(testScenario.Email));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.ExternalIdentifer && c.Value.Equals(AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + testScenario.Email));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "acr" && c.Value.Equals(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "amr" && c.Value.Equals(AuthzConstants.CLAIM_AMR_IDPORTEN_EMAIL));
             }
 
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
