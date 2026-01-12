@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Annotations;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -43,8 +44,9 @@ public record Paginated<T>(
 public record PaginatedLinks(
     string? Next)
 {
+    [ExcludeFromCodeCoverage]
     private sealed class SchemaFilter : ISchemaFilter
-    {
+    {        
         public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
         {
             if (schema is OpenApiSchema openApiSchema)
@@ -54,7 +56,7 @@ public record PaginatedLinks(
                 {
                     nextOpenApiSchema.Format = "uri-reference";
                     nextOpenApiSchema.Example = "/foo/bar/bat?page=2";
-                    nextOpenApiSchema.Type = JsonSchemaType.Null;
+                    nextOpenApiSchema.Type |= JsonSchemaType.Null;
                 }
             }
         }

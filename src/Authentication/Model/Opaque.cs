@@ -211,6 +211,7 @@ public static partial class Opaque
     /// <summary>
     /// Schema filter for opaque types
     /// </summary>
+    [ExcludeFromCodeCoverage]
     internal class OpaqueSchemaFilter
         : ISchemaFilter
     {
