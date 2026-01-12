@@ -16,7 +16,7 @@
     <PackageReference Include="Altinn.Common.AccessToken" Version="5.1.0" />
     <PackageReference Include="Altinn.Common.PEP" Version="4.2.2" />
     <PackageReference Include="Altinn.Register.Contracts" Version="1.4.1" />
-    <PackageReference Include="AutoMapper" Version="16.0.0" />
+    <PackageReference Include="AutoMapper" Version="15.1.0" />
     <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.1" />
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
