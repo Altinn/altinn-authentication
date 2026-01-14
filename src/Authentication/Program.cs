@@ -1,4 +1,5 @@
 using Altinn.Platform.Authentication;
+using Altinn.Platform.Authentication.Middlewares;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
@@ -31,6 +32,7 @@ app.UseSwaggerUI(c =>
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<RawJsonInspectionMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
