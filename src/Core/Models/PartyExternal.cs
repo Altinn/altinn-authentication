@@ -1,5 +1,4 @@
-﻿using Altinn.Platform.Register.Enums;
-using Altinn.Platform.Register.Models;
+﻿using Altinn.Register.Contracts.V1;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Altinn.Platform.Authentication.Core.Models;

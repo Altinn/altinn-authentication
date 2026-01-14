@@ -282,4 +282,129 @@ public static class Problem
     public static ProblemDescriptor AgentSystemUser_FailedToGetClients { get; }
         = _factory.Create(45, HttpStatusCode.BadRequest, "Failed to get clients");
 
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToGetAccessPackages { get; }
+        = _factory.Create(46, HttpStatusCode.BadRequest, "Failed to get list of accesspackages delegated");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToAddAsRightHolder { get; }
+        = _factory.Create(47, HttpStatusCode.BadRequest, "Unable to add system user as right holder to the organisation");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToPushSystemUser { get; }
+        = _factory.Create(48, HttpStatusCode.BadRequest, "Unable to push system user information to access management");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Party_PartyUuid_NotFound { get; }
+        = _factory.Create(49, HttpStatusCode.BadRequest, "The party is missing its uuid.");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_DelegationCheckFailed { get; }
+        = _factory.Create(50, HttpStatusCode.BadRequest, "The delegation check failed for access packages");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_DelegationFailed { get; }
+        = _factory.Create(51, HttpStatusCode.BadRequest, "The delegation of access package to the system user failed");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_ValidationFailed { get; }
+        = _factory.Create(52, HttpStatusCode.BadRequest, "One or more access packages are invalid");
+
+    /// <summary>
+    /// gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_Delegation_MissingRequiredAccess { get; }
+        = _factory.Create(53, HttpStatusCode.BadRequest, "The user does not have enough access to delegate the requested access packages");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToRemoveRightHolder { get; }
+        = _factory.Create(54, HttpStatusCode.BadRequest, "Unable to remove system user as right holder from the organisation");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_FailedToGetDelegatedPackages { get; }
+        = _factory.Create(55, HttpStatusCode.InternalServerError, "Failed to get delegated access packages");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToDelete { get; }
+        = _factory.Create(56, HttpStatusCode.BadRequest, "Failed to delete system user");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToDeleteAccessPackage { get; }
+        = _factory.Create(57, HttpStatusCode.BadRequest, "Failed to delete access package delegation for system user");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_MissingAccessPackage { get; }
+        = _factory.Create(58, HttpStatusCode.BadRequest, "No AccessPackages found, an Agent SystemUser must have at least one");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_MissingRightsOrAccessPackages { get; }
+        = _factory.Create(59, HttpStatusCode.BadRequest, "No AccessPackages or Single Rights found, a SystemUser must have at least one");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor RequestCouldNotBeUpdated { get; }
+        = _factory.Create(60, HttpStatusCode.NotFound, "An error occured when Updating the Request.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor ChangeRequestStatusNotNewUseCorrellationId { get; }
+        = _factory.Create(61, HttpStatusCode.Conflict, "The Status of the Request is not New. Please generate a new CorrellationId for a new Change Request");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToGetDelegatedRights { get; }
+        = _factory.Create(62, HttpStatusCode.InternalServerError, "Failed to get delegated rights");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_NotFound { get; }
+        = _factory.Create(63, HttpStatusCode.BadRequest, "One or more accesspackage is not found in the referenced system in the System Register.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_NotDelegable_Standard { get; }
+        = _factory.Create(64, HttpStatusCode.BadRequest, "One or more access packages cannot be delegated. Either they are intended for clients or they cannot be delegated further.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor AccessPackage_NotDelegable_Agent { get; }
+        = _factory.Create(65, HttpStatusCode.BadRequest, "One or more access packages cannot be delegated because they are not intended for client relationships");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor Request_UserIsNotAccessManager { get; }
+        = _factory.Create(66, HttpStatusCode.Forbidden, "The request requires logged in user to have accessmanager write.");
 }

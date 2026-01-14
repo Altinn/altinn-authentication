@@ -1,0 +1,70 @@
+{
+  "links": {
+    "next": null
+  },
+  "data": [
+    {
+      "package": {
+        "id": "4c859601-9b2b-4662-af39-846f4117ad7a",
+        "urn": "urn:altinn:accesspackage:skattegrunnlag",
+        "areaId": "7d32591d-34b7-4afc-8afa-013722f8c05d"
+      },
+      "permissions": [
+        {
+          "from": {
+            "id": "acc0d0d5-8bd9-4e33-b435-a09f8753a184",
+            "name": "TRIST PESSIMISTISK TIGER AS",
+            "type": "Organisasjon",
+            "variant": "AS",
+            "keyValues": {
+              "PartyId": "51278367",
+              "OrganizationIdentifier": "213603892"
+            },
+            "parent": null,
+            "children": [
+              {
+                "id": "622799c6-c6e3-4464-a701-b8b0114643db",
+                "name": "TRIST PESSIMISTISK TIGER AS",
+                "type": "Organisasjon",
+                "variant": "BEDR",
+                "keyValues": {
+                  "PartyId": "51761764",
+                  "OrganizationIdentifier": "315197252"
+                },
+                "parent": {
+                  "id": "acc0d0d5-8bd9-4e33-b435-a09f8753a184",
+                  "name": "TRIST PESSIMISTISK TIGER AS",
+                  "type": "Organisasjon",
+                  "variant": "AS",
+                  "keyValues": {
+                    "PartyId": "51278367",
+                    "OrganizationIdentifier": "213603892"
+                  },
+                  "parent": null,
+                  "children": null
+                },
+                "children": null
+              }
+            ]
+          },
+          "to": {
+            "id": "121461c1-aa5f-47ee-9875-e85085ea0f15",
+            "name": "Delegate rights and ap test",
+            "type": "Systembruker",
+            "variant": "StandardSystem",
+            "keyValues": null,
+            "parent": null,
+            "children": null
+          },
+          "via": null,
+          "role": {
+            "id": "42cae370-2dc1-4fdc-9c67-c2f4b0f0f829",
+            "code": "rettighetshaver",
+            "children": null
+          },
+          "viaRole": null
+        }
+      ]
+    }
+  ]
+}

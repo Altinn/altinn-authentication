@@ -22,6 +22,12 @@ public class AgentRequestSystemResponse()
     public Guid Id { get; set; }
 
     /// <summary>
+    /// An optional name used only in display on UI. If not set by the request it will default to the System-Name. 
+    /// </summary>
+    [JsonPropertyName("integrationTitle")]
+    public string? IntegrationTitle { get; set; }
+
+    /// <summary>
     /// Either just the Orgno for the customer, or a TenantId or other form of disambiguation Id the Vendor needs.
     /// Is one of the three parts of the External Request Id.
     /// A blank ExternalRef will be overwritten as a copy of the Cutomer's OrgNo
@@ -76,10 +82,15 @@ public class AgentRequestSystemResponse()
     public string? ConfirmUrl { get; set; }
 
     /// <summary>
+    /// Tracks if the original user creating the Request have escalated the Approval of this Request
+    /// to somebody else in the organisation with AccessManager (Package:Tilgangsstyring)
+    /// </summary>
+    public bool Escalated { get; set; }
+
+    /// <summary>
     /// The date and time the Request was created,
     /// used to determine if the Request is still valid.
     /// </summary>
-    [JsonIgnore]
     public DateTime Created { get; set; }
 
     /// <summary>
@@ -87,4 +98,11 @@ public class AgentRequestSystemResponse()
     /// </summary>
     [JsonIgnore]
     public SystemUserType UserType { get; set; }
+
+    /// <summary>
+    /// After 180 days, a Request is considered timed out, and will be archived.
+    /// The Vendor should verify the Request before the time out period; 
+    /// and use the SystemUser Id for further calls after approval.
+    /// </summary>
+    public bool TimedOut { get; set; }
 }

@@ -43,12 +43,6 @@ public class TestState
         return this;
     }
 
-    public TestState WithAccessPackage(string? accessPackageId)
-    {
-        AccessPackage = accessPackageId;
-        return this;
-    }
-
     public TestState WithClientId(string clientId)
     {
         ClientId = clientId;
@@ -93,7 +87,7 @@ public class TestState
 
     public TestState WithName(string name)
     {
-        Name = name;
+        Name = name.Replace(" ", "");
         return this;
     }
 

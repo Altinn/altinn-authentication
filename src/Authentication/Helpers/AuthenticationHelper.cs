@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using System.Security.Policy;
 using System.Text.RegularExpressions;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
@@ -26,20 +26,25 @@ namespace Altinn.Platform.Authentication.Helpers
     /// </summary>
     public static class AuthenticationHelper
     {
+        private const string IdPortenAcrHigh = "idporten-loa-high";
+
         /// <summary>
         /// Get user information from the token
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
         /// <param name="provider">authentication provider</param>
+        /// <param name="accessToken">the access token</param>
         /// <returns>user information</returns>
-        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider)
+        public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider, JwtSecurityToken? accessToken = null)
         {
             UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel()
             {
                 IsAuthenticated = true,
                 ProviderClaims = new Dictionary<string, List<string>>(),
                 Iss = provider.IssuerKey,
-                AuthenticationMethod = AuthenticationMethod.NotDefined
+                AuthenticationMethod = AuthenticationMethod.NotDefined,
+                TokenIssuer = jwtSecurityToken.Issuer,
+                TokenSubject = jwtSecurityToken.Subject
             };
 
             foreach (Claim claim in jwtSecurityToken.Claims)
@@ -66,13 +71,21 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticateMethod))
                 {
-                    userAuthenticationModel.AuthenticationMethod = (Enum.AuthenticationMethod)System.Enum.Parse(typeof(Enum.AuthenticationMethod), claim.Value);
+                    if (System.Enum.TryParse<AuthenticationMethod>(claim.Value, ignoreCase: true, out var method))
+                    {
+                        userAuthenticationModel.AuthenticationMethod = method;
+                    }
+
                     continue;
                 }
 
                 if (claim.Type.Equals(AltinnCoreClaimTypes.AuthenticationLevel))
                 {
-                    userAuthenticationModel.AuthenticationLevel = (Enum.SecurityLevel)System.Enum.Parse(typeof(Enum.SecurityLevel), claim.Value);
+                    if (System.Enum.TryParse<SecurityLevel>(claim.Value, ignoreCase: true, out var level))
+                    {
+                        userAuthenticationModel.AuthenticationLevel = level;
+                    }
+
                     continue;
                 }
 
@@ -85,19 +98,40 @@ namespace Altinn.Platform.Authentication.Helpers
 
                 if (claim.Type.Equals("amr"))
                 {
-                    userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(claim.Value);
+                    List<string> list = userAuthenticationModel.Amr?.ToList() ?? [];
+                    list.Add(claim.Value);
+                    userAuthenticationModel.Amr = [.. list];
+                    userAuthenticationModel.AuthenticationMethod = GetAuthenticationMethod(list.First());
                     continue;
                 }
 
                 if (claim.Type.Equals("acr"))
                 {
+                    userAuthenticationModel.Acr = claim.Value;
                     userAuthenticationModel.AuthenticationLevel = GetAuthenticationLevelForIdPorten(claim.Value);
+                    continue;
+                }
+
+                if (claim.Type.Equals("sid"))
+                {
+                    userAuthenticationModel.Sid = claim.Value;
+                    userAuthenticationModel.ExternalSessionId = claim.Value;
                     continue;
                 }
 
                 if (claim.Type.Equals("jti"))
                 {
-                    userAuthenticationModel.ExternalSessionId = claim.Value;
+                    userAuthenticationModel.Jti = claim.Value;
+                    continue;
+                }
+
+                if (claim.Type.Equals("auth_time"))
+                {
+                    if (long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var s))
+                    {
+                        userAuthenticationModel.AuthTime = DateTimeOffset.FromUnixTimeSeconds(s);
+                    }
+
                     continue;
                 }
 
@@ -109,23 +143,45 @@ namespace Altinn.Platform.Authentication.Helpers
                 // General claims handling
                 if (provider.ProviderClaims != null && provider.ProviderClaims.Contains(claim.Type))
                 {
-                    if (!userAuthenticationModel.ProviderClaims.ContainsKey(claim.Type))
+                    // Needs to special handle sub claim Since we are using it already. Prefixes it.
+                    string claimTypeName = claim.Type.ToString(); 
+                    if (claimTypeName.Equals("sub"))
                     {
-                        userAuthenticationModel.ProviderClaims.Add(claim.Type, new List<string>());
+                        claimTypeName = "provider:sub";
                     }
 
-                    userAuthenticationModel.ProviderClaims[claim.Type].Add(claim.Value);
+                    if (!userAuthenticationModel.ProviderClaims.TryGetValue(claimTypeName, out List<string>? value))
+                    {
+                        value = [];
+                        userAuthenticationModel.ProviderClaims.Add(claimTypeName, value);
+                    }
+
+                    value.Add(claim.Value);
                 }
             }
 
-            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined)
+            if (userAuthenticationModel.AuthenticationMethod == AuthenticationMethod.NotDefined
+                && System.Enum.TryParse<AuthenticationMethod>(provider.DefaultAuthenticationMethod, ignoreCase: true, out var defaultMethod))
             {
-                userAuthenticationModel.AuthenticationMethod = (AuthenticationMethod)System.Enum.Parse(typeof(AuthenticationMethod), provider.DefaultAuthenticationMethod);
+                userAuthenticationModel.AuthenticationMethod = defaultMethod;
             }
 
+            if (accessToken != null)
+            {
+                foreach (Claim claim in accessToken.Claims)
+                {
+                    // Scopes are only returned as part of the access token
+                    if (claim.Type.Equals("scope"))
+                    {
+                        userAuthenticationModel.Scope = claim.Value;
+                        continue;
+                    }
+                }
+            }
+             
             return userAuthenticationModel;
         }
-       
+
         /// <summary>
         /// Converts IDporten acr claim Authentication Context Class Reference - The security level of assurance for the
         /// authentication. Possible values are Level3 (i.e. MinID was used) or Level4 (other eIDs).
@@ -133,16 +189,23 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         public static SecurityLevel GetAuthenticationLevelForIdPorten(string acr)
         {
-            switch (acr)
+            switch (acr.ToLower(CultureInfo.InvariantCulture))
             {
-                case "Level0":
-                    return Enum.SecurityLevel.NotSensitive;
-                case "Level3":
-                    return Enum.SecurityLevel.Sensitive;
-                case "Level4":
-                    return Enum.SecurityLevel.VerySensitive;
-                default: 
-                    return Enum.SecurityLevel.NotSensitive;
+                case "level0":
+                case "idporten-loa-low":
+                    return SecurityLevel.SelfIdentifed;
+                case "level1":
+                    return SecurityLevel.NotSensitive;
+                case "level2":
+                    return SecurityLevel.QuiteSensitive;
+                case "level3":
+                case "idporten-loa-substantial":
+                    return SecurityLevel.Sensitive;
+                case "level4":
+                case "idporten-loa-high":
+                    return SecurityLevel.VerySensitive;
+                default:
+                    return SecurityLevel.SelfIdentifed;
             }
         }
 
@@ -169,11 +232,65 @@ namespace Altinn.Platform.Authentication.Helpers
                     return Enum.AuthenticationMethod.EIDAS;
                 case "maskinporten":
                     return Enum.AuthenticationMethod.MaskinPorten;
-                case "testid":
+                case "TestID":
                     return AuthenticationMethod.IdportenTestId;
+                case "SelfIdentified":
+                    return AuthenticationMethod.SelfIdentified;
+                case "StaticPassword":
+                    return AuthenticationMethod.StaticPassword;
+                case "Minid-APP":
+                    return AuthenticationMethod.MinIDApp;
             }
 
             return Enum.AuthenticationMethod.NotDefined;
+        }
+
+        /// <summary>
+        /// Maps the specified <see cref="AuthenticationMethod"/> to its corresponding Authentication Method Reference
+        /// (AMR) value.
+        /// </summary>
+        /// <param name="method">The authentication method to map.</param>
+        /// <returns>A string representing the AMR value for the specified authentication method.  Returns an empty string if the
+        /// authentication method is not recognized.</returns>
+        public static string GetAmrFromAuthenticationMethod(AuthenticationMethod method)
+        {
+            return method switch
+            {
+                AuthenticationMethod.MinIDPin => "Minid-PIN",
+                AuthenticationMethod.MinIDOTC => "Minid-OTC",
+                AuthenticationMethod.Commfides => "Commfides",
+                AuthenticationMethod.BuyPass => "Buypass",
+                AuthenticationMethod.BankID => "BankID",
+                AuthenticationMethod.BankIDMobil => "BankID Mobil",
+                AuthenticationMethod.EIDAS => "eIDAS",
+                AuthenticationMethod.MaskinPorten => "maskinporten",
+                AuthenticationMethod.IdportenTestId => "TestID",
+                AuthenticationMethod.AltinnPIN => "AltinnPIN",
+                AuthenticationMethod.SelfIdentified => "SelfIdentified",
+                AuthenticationMethod.MinIDApp => "Minid-APP",
+                AuthenticationMethod.StaticPassword => "StaticPassword",
+                AuthenticationMethod.SMSPIN => "SMSPIN",
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Inverse of GetAuthenticationLevelForIdPorten.
+        /// Maps a SecurityLevel to a canonical ID-porten acr value.
+        /// </summary>
+        /// <param name="level">The Altinn security level.</param>
+        /// <returns>Canonical acr string representing the given level.</returns>
+        public static string GetAcrForAuthenticationLevel(SecurityLevel level)
+        {
+            return level switch
+            {
+                SecurityLevel.SelfIdentifed => "idporten-loa-low",
+                SecurityLevel.Sensitive => "idporten-loa-substantial",
+                SecurityLevel.VerySensitive => "idporten-loa-high",
+                SecurityLevel.NotSensitive => "level1",
+                SecurityLevel.QuiteSensitive => "level2",
+                _ => "idporten-loa-low" // Fallback for levels without direct ID-porten mapping
+            };
         }
 
         /// <summary>
@@ -317,10 +434,10 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <param name="redirectUrls">the redirect url for a system</param>
         /// <returns>true if the url matches the expression</returns>
         public static bool IsValidRedirectUrl(List<Uri> redirectUrls)
-        {            
+        {
             foreach (Uri redirectUri in redirectUrls)
             {
-                if (!IsValidAbsoluteUriWithHttps(redirectUri)) 
+                if (!IsValidAbsoluteUriWithHttps(redirectUri))
                 {
                     return false;
                 }
@@ -339,10 +456,10 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="registeredSystem">the RegisteredSystem object to convert to RegisteredSystemDTO</param>
         /// <returns>RegisteredSystemDTO of RegisteredSystem</returns>
-        public static RegisteredSystemDTO MapRegisteredSystemToRegisteredSystemDTO(RegisteredSystemResponse registeredSystem) 
+        public static RegisteredSystemDTO MapRegisteredSystemToRegisteredSystemDTO(RegisteredSystemResponse registeredSystem)
         {
-            return new RegisteredSystemDTO 
-            { 
+            return new RegisteredSystemDTO
+            {
                 Description = registeredSystem.Description,
                 Name = registeredSystem.Name,
                 Rights = registeredSystem.Rights,
@@ -354,7 +471,12 @@ namespace Altinn.Platform.Authentication.Helpers
             };
         }
 
-        private static string GetOrganizationNumberFromClaim(string claim)
+        /// <summary>
+        /// Gets the organization number from the consumer claim
+        /// </summary>
+        /// <param name="claim">the user claim</param>
+        /// <returns>organization number</returns>
+        public static string GetOrganizationNumberFromClaim(string claim)
         {
             ConsumerClaim? consumerClaim;
             try
@@ -366,7 +488,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 throw new ArgumentException("Invalid consumer claim: invalid JSON");
             }
 
-            if (consumerClaim is null) 
+            if (consumerClaim is null)
             {
                 throw new ArgumentException("Invalid consumer claim: null");
             }
@@ -396,6 +518,38 @@ namespace Altinn.Platform.Authentication.Helpers
             if (claim != null && int.TryParse(claim.Value, out int userId))
             {
                 return userId;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Gets the users id
+        /// </summary>
+        /// <param name="context">the http context</param>
+        /// <returns>the logged in users id</returns>
+        public static Guid GetPartyUuId(HttpContext context)
+        {
+            var claim = context.User?.Claims.FirstOrDefault(c => c.Type.Equals(AltinnCoreClaimTypes.PartyUUID));
+            if (claim != null && Guid.TryParse(claim.Value, out Guid partyUuId))
+            {
+                return partyUuId;
+            }
+
+            return Guid.Empty;
+        }
+
+        /// <summary>
+        /// Gets the users id
+        /// </summary>
+        /// <param name="context">the http context</param>
+        /// <returns>the logged in users id</returns>
+        public static int GetPartyId(HttpContext context)
+        {
+            var claim = context.User?.Claims.FirstOrDefault(c => c.Type.Equals(AltinnCoreClaimTypes.PartyID));
+            if (claim != null && int.TryParse(claim.Value, out int partyId))
+            {
+                return partyId;
             }
 
             return 0;
@@ -503,6 +657,80 @@ namespace Altinn.Platform.Authentication.Helpers
             }
 
             return Problem.RedirectUriNotFound;
+        }
+
+        /// <summary>
+        /// check if the system id contains space
+        /// </summary>
+        /// <param name="systemId">the id of the system</param>
+        /// <returns>true id the systemid contains space</returns>
+        public static bool HasSpaceInId(string systemId)
+        {
+            return systemId.Contains(' ');
+        }
+
+        /// <summary>
+        /// Converts a list of <see cref="AccessPackage"/> objects into a list of their URNs.
+        /// </summary>
+        /// <param name="accessPackages">The list of <see cref="AccessPackage"/> objects to process. Cannot be null.</param>
+        /// <returns>A list of strings containing the URNs of the provided <see cref="AccessPackage"/> objects.  Returns an empty
+        /// list if <paramref name="accessPackages"/> is empty.</returns>
+        public static List<string> GetPackagesArrayFromAccessPackages(List<AccessPackage> accessPackages)
+        {
+            List<string> packages = new List<string>();
+            if (accessPackages == null || accessPackages.Count == 0)
+            {
+                return packages;
+            }
+
+            foreach (AccessPackage accessPackage in accessPackages)
+            {
+                packages.Add(accessPackage.Urn!.Split(':')[3]);
+            }
+
+            return packages;
+        }
+
+        /// <summary>
+        /// Maps a <see cref="SystemUserInternalDTO"/> to a <see cref="SystemUserDetailExternalDTO"/>.
+        /// </summary>
+        /// <param name="internalDto">The internal DTO containing system user data to be mapped. Cannot be null.</param>
+        /// <returns>A <see cref="SystemUserDetailExternalDTO"/> populated with data from the specified <paramref name="internalDto"/>.</returns>
+        public static SystemUserDetailExternalDTO MapSystemUserInternalToDetailDTO(SystemUserInternalDTO internalDto)
+        {
+            return new SystemUserDetailExternalDTO
+            {
+                Id = internalDto.Id,
+                IntegrationTitle = internalDto.IntegrationTitle,
+                SystemId = internalDto.SystemId,
+                ProductName = internalDto.ProductName,
+                ReporteeOrgNo = internalDto.ReporteeOrgNo,
+                Created = internalDto.Created,
+                IsDeleted = internalDto.IsDeleted,
+                AccessPackages = internalDto.AccessPackages,
+                ExternalRef = internalDto.ExternalRef,
+                SupplierName = internalDto.SupplierName,
+                SupplierOrgNo = internalDto.SupplierOrgNo,
+                UserType = internalDto.UserType
+            };
+        }
+
+        /// <summary>
+        /// Verifies if an ACR upgrade is needed based on the current and requested ACR values.
+        /// </summary>
+        internal static bool NeedAcrUpgrade(string? currentAcr, string[] requestedAcr)
+        {
+           if (string.IsNullOrEmpty(currentAcr))
+           {
+               return false;
+           }
+           
+           if (requestedAcr.Contains(IdPortenAcrHigh, StringComparer.OrdinalIgnoreCase) && !currentAcr.Equals(IdPortenAcrHigh, StringComparison.OrdinalIgnoreCase))
+           {
+                return true;
+           }
+
+           return false;
         }
     }
 }

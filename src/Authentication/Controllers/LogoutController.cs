@@ -1,15 +1,16 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Helpers;
+using Altinn.Platform.Authentication.Core.Models.Oidc;
+using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
-using Altinn.Platform.Authentication.Extensions;
-using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -24,73 +25,99 @@ namespace Altinn.Platform.Authentication.Controllers
     /// <summary>
     /// Controller responsible for loging out
     /// </summary>
+    /// <remarks>
+    /// Defines endpoints for logging out users.
+    /// </remarks>
     [Route("authentication/api/v1")]
     [ApiController]
-    public class LogoutController : ControllerBase
+    public class LogoutController(
+        ILogger<LogoutController> logger,
+        IOptions<GeneralSettings> generalSettings,
+        IOptions<OidcProviderSettings> oidcProviderSettings,
+        IEventLog eventLog,
+        IFeatureManager featureManager,
+        IRequestSystemUser requestSystemUser,
+        IChangeRequestSystemUser changeRequestSystemUser,
+        IOidcServerService oidcServerService) : ControllerBase
     {
         private const string OriginalIssClaimName = "originaliss";
 
-        private readonly GeneralSettings _generalSettings;
+        private readonly GeneralSettings _generalSettings = generalSettings.Value;
    
-        private readonly OidcProviderSettings _oidcProviderSettings;
-        private readonly JwtSecurityTokenHandler _validator;
+        private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
+        private readonly JwtSecurityTokenHandler _validator = new JwtSecurityTokenHandler();
 
-        private readonly IEventLog _eventLog;
-        private readonly IFeatureManager _featureManager;
-        private readonly IRequestSystemUser _requestSystemUser;
-        private readonly IChangeRequestSystemUser _changeRequestSystemUser;
-
-        /// <summary>
-        /// Defay
-        /// </summary>
-        public LogoutController(
-            ILogger<LogoutController> logger,
-            IOptions<GeneralSettings> generalSettings,
-            IOptions<OidcProviderSettings> oidcProviderSettings,
-            IEventLog eventLog,
-            IFeatureManager featureManager,
-            IRequestSystemUser requestSystemUser,
-            IChangeRequestSystemUser changeRequestSystemUser)
-        {
-            _generalSettings = generalSettings.Value;
-            _oidcProviderSettings = oidcProviderSettings.Value;
-            _validator = new JwtSecurityTokenHandler();
-            _eventLog = eventLog;
-            _featureManager = featureManager;
-            _requestSystemUser = requestSystemUser;
-            _changeRequestSystemUser = changeRequestSystemUser;
-        }
+        private readonly IEventLog _eventLog = eventLog;
+        private readonly IFeatureManager _featureManager = featureManager;
+        private readonly IRequestSystemUser _requestSystemUser = requestSystemUser;
+        private readonly IChangeRequestSystemUser _changeRequestSystemUser = changeRequestSystemUser;
+        private readonly IOidcServerService _oidcServerService = oidcServerService;
 
         /// <summary>
-        /// Logs out user
+        /// Logs out user. This uses OIDC end session endpoint if enabled.
+        /// This is the legacy endpoint used by Altinn Studio and Altinn Apps.
+        /// See also OIDCForntChannel controller end_session endpoint.
         /// </summary>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status302Found)]
         [HttpGet("logout")]
-        public ActionResult Logout()
+        public async Task<ActionResult> Logout(CancellationToken cancellationToken = default)
         {
-            JwtSecurityToken jwt = null;
-            string orgIss = null;
-            string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
-            if (_validator.CanReadToken(tokenCookie))
+            if (_generalSettings.AuthorizationServerEnabled)
             {
-                jwt = _validator.ReadJwtToken(tokenCookie);
-                orgIss = jwt.Claims.Where(c => c.Type.Equals(OriginalIssClaimName)).Select(c => c.Value).FirstOrDefault();
-            }
+                System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+                string ua = Request.Headers.UserAgent.ToString();
+                string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : Hashing.Sha256Base64Url(ua);
 
-            OidcProvider provider = GetOidcProvider(orgIss);
-            if (provider == null)
+                EndSessionInput input = new()
+                {
+                    IdTokenHint = null,
+                    PostLogoutRedirectUri = null,
+                    State = null,
+                    User = HttpContext.User,
+                    ClientIp = ip,
+                    UserAgentHash = userAgentHash
+                };
+
+                EndSessionResult result = await _oidcServerService.EndSessionAsync(input, cancellationToken);
+
+                SetCacheHeaders();
+
+                // Apply cookie instructions produced by the service
+                SetCookies(result.Cookies);
+
+                if (result.RedirectUri is not null)
+                {
+                    return Redirect(result.RedirectUri.ToString());
+                }
+
+                return Redirect(_generalSettings.BaseUrl);
+            }
+            else
             {
-                _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext);
-                return Redirect(_generalSettings.SBLLogoutEndpoint);
+                JwtSecurityToken? jwt = null;
+                string? orgIss = null;
+                string? tokenCookie = Request.Cookies.TryGetValue(_generalSettings.JwtCookieName, out var tc) ? tc : null;
+                if (!string.IsNullOrEmpty(tokenCookie) && _validator.CanReadToken(tokenCookie))
+                {
+                    jwt = _validator.ReadJwtToken(tokenCookie);
+                    orgIss = jwt.Claims.Where(c => c.Type.Equals(OriginalIssClaimName)).Select(c => c.Value).FirstOrDefault();
+                }
+
+                OidcProvider provider = GetOidcProvider(orgIss);
+                if (provider == null)
+                {
+                    _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
+                    return Redirect(_generalSettings.SBLLogoutEndpoint);
+                }
+
+                CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
+                Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
+                Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
+
+                _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
+                return Redirect(provider.LogoutEndpoint);
             }
-
-            CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
-            Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
-
-            _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext);
-            return Redirect(provider.LogoutEndpoint);
         }
 
         /// <summary>
@@ -103,11 +130,19 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             string logoutInfoCookie = Request.Cookies[_generalSettings.AltinnLogoutInfoCookieName];
             CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            Response.Cookies.Delete(_generalSettings.AltinnLogoutInfoCookieName, opt);
-
+            
             Dictionary<string, string> cookieValues = logoutInfoCookie?.Split('?')
-                .Select(x => x.Split('='))
+                .Select(x => x.Split(['='], 2))
                 .ToDictionary(x => x[0], x => x[1]);
+
+            // if amSafeRedirectUrl is set in cookie, the am bff handles the redirect and deletes cookie
+            if (cookieValues != null && cookieValues.ContainsKey("amSafeRedirectUrl"))
+            {
+                string bffUrl = $"https://am.ui.{_generalSettings.HostName}/accessmanagement/api/v1/logoutredirect";
+                return Redirect(bffUrl);
+            }
+
+            Response.Cookies.Delete(_generalSettings.AltinnLogoutInfoCookieName, opt);
 
             if (cookieValues != null && cookieValues.TryGetValue("SystemuserRequestId", out string requestId) && Guid.TryParse(requestId, out Guid requestGuid))
             {
@@ -143,7 +178,7 @@ namespace Altinn.Platform.Authentication.Controllers
             Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
             Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
             string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
-            _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext);
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
             return Ok();
         }
 
@@ -155,6 +190,28 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return null;
+        }
+
+        private void SetCacheHeaders()
+        {
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
+        }
+
+        private void SetCookies(IReadOnlyList<CookieInstruction> Cookies)
+        {
+            foreach (CookieInstruction c in Cookies)
+            {
+                Response.Cookies.Append(c.Name, c.Value ?? string.Empty, new CookieOptions
+                {
+                    HttpOnly = c.HttpOnly,
+                    Secure = c.Secure,
+                    Path = c.Path ?? "/",
+                    Domain = c.Domain,
+                    Expires = c.Expires,
+                    SameSite = c.SameSite
+                });
+            }
         }
     }
 }

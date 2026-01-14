@@ -2,7 +2,6 @@
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Integration.Configuration;
 using Altinn.Common.AccessTokenClient.Services;
-using Altinn.Platform.Register.Models;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -11,11 +10,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 using System.Text;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Authorization.ProblemDetails;
+using Altinn.Register.Contracts.V1;
 
 namespace Altinn.Authentication.Integration.Clients;
 
@@ -81,6 +80,33 @@ public class PartiesClient : IPartiesClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // PartiesClient // GetPartyAsync // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string endpointUrl = $"parties/byuuid/{partyUuId}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
+
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, accessToken, cancellationToken);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                return JsonSerializer.Deserialize<Party>(responseContent, _serializerOptions);
+            }
+
+            _logger.LogError("Authentication // PartiesClient // GetPartyByUuId // Unexpected HttpStatusCode: {StatusCode}\n {responseContent}", response.StatusCode, responseContent);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // PartiesClient // GetPartyByUuId // Exception");
             throw;
         }
     }

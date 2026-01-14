@@ -1,10 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 
@@ -28,7 +32,13 @@ public class DelegationHelper(
     /// <param name="cancellationToken">cancel token</param>
     /// <returns>DelegationCheckResult record</returns>
     public async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, List<Right> requestedRights, bool fromBff, CancellationToken cancellationToken = default)
-    { 
+    {
+        using var activity = AuthenticationTelemetry.StartActivity(
+                name: nameof(UserDelegationCheckForReportee),
+                tags: [
+                    new("system.id", systemId),
+                ]);
+
         (bool allVerified, List<Right> verifiedRights) = await VerifySubsetOfRights(requestedRights, systemId, fromBff, cancellationToken);
         if (!allVerified)
         {
@@ -142,6 +152,29 @@ public class DelegationHelper(
     }
 
     /// <summary>
+    /// Converts the old resource format to new format for app
+    /// </summary>
+    /// <returns>resource format in old format for app</returns>
+    public static List<AttributePair> ConvertOldAppResourceFormatToNewAppResourceFormat(List<AttributePair> resource)
+    {
+        if (resource.Count == 2)
+        {
+            var orgAttribute = resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.OrgAttribute);
+            var appAttribute = resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.AppAttribute);
+            if (orgAttribute != null && appAttribute != null)
+            {
+                return new List<AttributePair>
+                {
+                    new AttributePair { Id = AttributeIdentifier.ResourceRegistryAttribute, Value = $"app_{orgAttribute.Value}_{appAttribute.Value}" }
+                };
+            }
+        }
+
+        // Not old app format, preserve as-is
+        return resource.ToList();
+    }
+
+    /// <summary>
     /// Maps the DetailExternal list to a ProblemInstance
     /// </summary>
     /// <param name="errors">the error received from access management</param>
@@ -174,6 +207,83 @@ public class DelegationHelper(
         }
 
         return Problem.UnableToDoDelegationCheck;
+    }
+
+    /// <summary>
+    /// Validates delegation rights for a list of access packages for a party
+    /// </summary>
+    /// <param name="partyId">the id of the party that delegates access</param>
+    /// <param name="systemId">the id of the system that the vendor requests access for</param>
+    /// <param name="accessPackages">list of accesspackages to be delegated</param>
+    /// <param name="fromBff">if the check is for the user driver or vendor driven system user creation</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    public async Task<Result<AccessPackageDelegationCheckResult>> ValidateDelegationRightsForAccessPackages(Guid partyId, string systemId, List<AccessPackage> accessPackages, bool fromBff, CancellationToken cancellationToken = default)
+    {
+        // 1. Verify that the access packages are valid for the system
+        (bool allVerified, List<AccessPackage> validAccessPackages, List<AccessPackage> invalidAccessPackages) = await ValidateRequestedAccessPackages(accessPackages, systemId, fromBff, cancellationToken);
+
+        if (!allVerified)
+        {
+            var errors = invalidAccessPackages.Select(pkg => new DetailExternal
+            {
+                Code = DetailCodeExternal.Unknown,
+                Description = "Unknown Access Package",
+                Parameters = new Dictionary<string, List<AttributePair>>
+            {
+                { "Urn", new List<AttributePair> { new AttributePair { Id = "Urn", Value = pkg.Urn ?? string.Empty } } }
+            }
+            }).ToList();
+
+            var problemExtensionData = ProblemExtensionData.Create(new[]
+            {
+                new KeyValuePair<string, string>("Invalid Urn Details : ", string.Join(" | ", invalidAccessPackages))
+            });
+            ProblemInstance problemInstance = Problem.AccessPackage_ValidationFailed.Create(problemExtensionData);
+            return new Result<AccessPackageDelegationCheckResult>(problemInstance);
+        }
+
+        // 2. Check if access packages are delegable
+        var urns = validAccessPackages
+                        .Where(pkg => !string.IsNullOrEmpty(pkg.Urn))
+                        .Select(pkg => pkg.Urn!)
+                        .ToArray();
+
+        var resultList = await accessManagementClient
+            .CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken)
+            .ToListAsync(cancellationToken);
+
+        // Check for any problems before further processing
+        foreach (var result in resultList)
+        {
+            if (result.IsProblem)
+            {
+                var problemExtensionData = ProblemExtensionData.Create(new[]
+                {
+                    new KeyValuePair<string, string>("Problem Detail : ", result.Problem.Detail)
+                });
+                ProblemInstance problemInstance = Problem.AccessPackage_DelegationCheckFailed.Create(problemExtensionData);
+                return new Result<AccessPackageDelegationCheckResult>(problemInstance);
+            }
+        }
+
+        List<AccessPackageDto.Check> delegationCheckResults = resultList
+            .Where(r => r.IsSuccess && r.Value is not null)
+            .Select(r => r.Value!)
+            .ToList();
+
+        // 3. Process results
+        bool canDelegate = delegationCheckResults.All(r => r.Result);
+
+        if (canDelegate)
+        {
+            // Success on delegation check
+            return new AccessPackageDelegationCheckResult(true, validAccessPackages);
+        }
+        else
+        {
+            return new Result<AccessPackageDelegationCheckResult>(Problem.AccessPackage_Delegation_MissingRequiredAccess);
+        }
     }
 
     private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccess(List<DelegationResponseData> rightResponse)
@@ -260,5 +370,74 @@ public class DelegationHelper(
         }
 
         return (allVerified, verifiedRights);
+    }
+
+    private async Task<(bool AllVerified, List<AccessPackage> ValidAccessPackages, List<AccessPackage> InvalidAccessPackages)> ValidateRequestedAccessPackages(List<AccessPackage> requestedAccessPackages, string systemId, bool fromBff, CancellationToken cancellationToken)
+    {
+        List<AccessPackage> validAccessPackages = [];
+        List<AccessPackage> invalidAccessPackages = [];
+
+        List<AccessPackage> systemAccessPackages = await systemRegisterService.GetAccessPackagesForRegisteredSystem(systemId, cancellationToken);
+
+        if (fromBff)
+        {
+            return (true, systemAccessPackages, invalidAccessPackages);
+        }
+
+        foreach (var pkg in requestedAccessPackages)
+        {
+            if (systemAccessPackages.Any(s => s.Urn == pkg.Urn))
+            {
+                validAccessPackages.Add(pkg);
+            }
+            else
+            {
+                invalidAccessPackages.Add(pkg);
+            }
+        }
+
+        if (invalidAccessPackages.Count > 0)
+        {
+            return (false, validAccessPackages, invalidAccessPackages);
+        }
+
+        return (true, validAccessPackages, invalidAccessPackages);
+    }
+
+    /// <summary>
+    /// Gets the Accesspackages that are delegated to the SystemUser
+    /// </summary>
+    /// <param name="partyUuId">The partyUuid which owns the SystemUser</param>
+    /// <param name="systemUserId">The Guid Id for the SystemUser</param>
+    /// <param name="cancellationToken">Cancellation Token</param>
+    /// <returns></returns>
+    public async Task<Result<List<AccessPackage>>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken = default)
+    {
+        var packagePermissions = await accessManagementClient.GetAccessPackagesForSystemUser(partyUuId, systemUserId, cancellationToken).ToListAsync(cancellationToken);
+
+        List<PackagePermission> delegations = packagePermissions
+            .Where(r => r.IsSuccess && r.Value is not null)
+            .Select(r => r.Value!)
+            .ToList();
+
+        // 3. Process results
+        GetDelegatedPackagesFromDelegations(delegations, out List<AccessPackage> accessPackages);
+        return accessPackages;
+    }
+
+    private static void GetDelegatedPackagesFromDelegations(
+        List<PackagePermission> delegations,
+        out List<AccessPackage> accessPackages)
+    {
+        accessPackages = [];
+        foreach (PackagePermission packagePermission in delegations)
+        {
+            if (packagePermission.Package is not null)
+            {
+                AccessPackage accessPackage = new AccessPackage();
+                accessPackage.Urn = packagePermission.Package.Urn;
+                accessPackages.Add(accessPackage);
+            }
+        }
     }
 }

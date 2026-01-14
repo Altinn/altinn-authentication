@@ -1,29 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
-using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
+using Altinn.Platform.Authentication.Filters;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Register.Models;
 using AltinnCore.Authentication.Utils;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Altinn.Authentication.Controllers;
 #nullable enable
@@ -38,6 +34,7 @@ public class RequestSystemUserController : ControllerBase
     private readonly IRequestSystemUser _requestSystemUser;
     private readonly GeneralSettings _generalSettings;
     private readonly ISystemUserService _systemUserService;
+    private readonly ILogger<RequestSystemUserController> _logger;
 
     /// <summary>
     /// Constructor
@@ -45,11 +42,13 @@ public class RequestSystemUserController : ControllerBase
     public RequestSystemUserController(
         IRequestSystemUser requestSystemUser,
         IOptions<GeneralSettings> generalSettings,
-        ISystemUserService systemUserService)
+        ISystemUserService systemUserService,
+        ILogger<RequestSystemUserController> logger)
     {
         _requestSystemUser = requestSystemUser;
         _generalSettings = generalSettings.Value;
         _systemUserService = systemUserService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -60,17 +59,17 @@ public class RequestSystemUserController : ControllerBase
     /// <summary>
     /// First part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL1 = "https://am.ui.";
+    public const string CONFIRMURL_PREFIX = "https://am.ui.";
 
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Request
     /// </summary>
-    public const string CONFIRMURL2 = "/accessmanagement/ui/systemuser/request?id=";
+    public const string CONFIRMURL_STANDARD_REQUEST = "/accessmanagement/ui/systemuser/request?id=";
 
     /// <summary>
     /// Second part of the Route for the Confirm URL on the Authn.UI that the Vendor can direct their customer to Approve the Agent Request
     /// </summary>
-    public const string CONFIRMURL3 = "/accessmanagement/ui/systemuser/agentrequest?id=";
+    public const string CONFIRMURL_AGENTREQUEST = "/accessmanagement/ui/systemuser/agentrequest?id=";
 
     /// <summary>
     /// Query parameter to not choose a reportee when the end user is redirected to the Authn.UI to approve the Request.
@@ -95,8 +94,9 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="createRequest">The request model</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Response model of CreateRequestSystemUserResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]    
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor")]
+    [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<RequestSystemResponse>> CreateRequest([FromBody] CreateRequestSystemUser createRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
@@ -113,7 +113,7 @@ public class RequestSystemUserController : ControllerBase
             SystemId = createRequest.SystemId,
         };
         
-        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        SystemUserInternalDTO? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId, cancellationToken);
         if (existing is not null)
         {
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
@@ -123,7 +123,7 @@ public class RequestSystemUserController : ControllerBase
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -133,7 +133,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -148,6 +148,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>A response model containing the details of the created agent request.</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE)]
     [HttpPost("vendor/agent")]
+    [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<AgentRequestSystemResponse>> CreateAgentRequest([FromBody] CreateAgentRequestSystemUser createAgentRequest, CancellationToken cancellationToken = default)
     {
         string platform = _generalSettings.PlatformEndpoint;
@@ -165,7 +166,7 @@ public class RequestSystemUserController : ControllerBase
             SystemId = createAgentRequest.SystemId,
         };
 
-        SystemUser? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId);
+        SystemUserInternalDTO? existing = await _systemUserService.GetSystemUserByExternalRequestId(externalRequestId, cancellationToken);
         if (existing is not null)
         {
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
@@ -175,7 +176,7 @@ public class RequestSystemUserController : ControllerBase
         Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
         if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -185,7 +186,7 @@ public class RequestSystemUserController : ControllerBase
         if (response.IsSuccess)
         {
             string fullCreatedUri = platform + CREATEDURIMIDSECTION + response.Value.Id;
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL3 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Created(fullCreatedUri, response.Value);
         }
 
@@ -233,7 +234,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -264,7 +265,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -307,7 +308,7 @@ public class RequestSystemUserController : ControllerBase
         
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -348,7 +349,7 @@ public class RequestSystemUserController : ControllerBase
 
         if (response.IsSuccess)
         {
-            response.Value.ConfirmUrl = CONFIRMURL1 + _generalSettings.HostName + CONFIRMURL2 + response.Value.Id + REPORTEESELECTIONPARAMETER;
+            response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
         }
 
@@ -454,6 +455,34 @@ public class RequestSystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Escalates the Approval of the systemuser request, since the logged in user lack the AccessManager Role
+    /// The request is forwarded to the Portal where it will be visible for users with the AccessManager Role
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="requestId">The UUID of the request to be approved</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("{party}/{requestId}/escalate")]
+    public async Task<ActionResult<bool>> EscalateApprovalSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.EscalateApprovalSystemUser(requestId, party, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
     /// Approves the systemuser request of type agent and creates a system user of type agent
     /// </summary>
     /// <param name="party">the partyId</param>
@@ -467,6 +496,34 @@ public class RequestSystemUserController : ControllerBase
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.ApproveAndCreateAgentSystemUser(requestId, party, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Escalates the Approval of the Agent Systemuser request, since the logged in user lack the AccessManager Role
+    /// The request is forwarded to the Portal where it will be visible for users with the AccessManager Role
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="requestId">The UUID of the request to be approved</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpPost("agent/{party}/{requestId}/escalate")]
+    public async Task<ActionResult<AgentRequestSystemResponse>> EscalateApprovalAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<bool> response = await _requestSystemUser.EscalateApprovalAgentSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();
@@ -593,6 +650,60 @@ public class RequestSystemUserController : ControllerBase
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
         Result<bool> response = await _requestSystemUser.RejectSystemUser(party, requestId, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Get an unpaginated list of the Pending Standard Requests
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="orgno">the party org no, in string format</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpGet("{party}/{orgno}/pending")]
+    public async Task<ActionResult<List<RequestSystemResponse>>> GetPendingStandardRequests(int party, string orgno, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<List<RequestSystemResponse>> response = await _requestSystemUser.GetPendingStandardRequests(orgno, userId, cancellationToken);
+        if (response.IsProblem)
+        {
+            return response.Problem.ToActionResult();
+        }
+
+        if (response.IsSuccess)
+        {
+            return Ok(response.Value);
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Get an unpaginated list of the Pending Agent Requests
+    /// </summary>
+    /// <param name="party">the partyId</param>
+    /// <param name="orgno">the party org no, in string format</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Status response model CreateRequestSystemUserResponse</returns>
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [HttpGet("agent/{party}/{orgno}/pending")]
+    public async Task<ActionResult<List<AgentRequestSystemResponse>>> GetPendingAgentRequests(int party, string orgno, CancellationToken cancellationToken = default)
+    {
+        int userId = AuthenticationHelper.GetUserId(HttpContext);
+        Result<List<AgentRequestSystemResponse>> response = await _requestSystemUser.GetPendingAgentRequests(orgno, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

@@ -1,12 +1,10 @@
 using System.Net;
-using System.Text.Json;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Clients;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Domain;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoints;
 using Altinn.Platform.Authentication.SystemIntegrationTests.Utils.TestSetup;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 
@@ -18,16 +16,14 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Tests;
 [Trait("Category", "IntegrationTest")]
 public class ChangeRequestTests : TestFixture
 {
-    private readonly ITestOutputHelper _outputHelper;
     private readonly PlatformAuthenticationClient _platformAuthentication;
 
-    public ChangeRequestTests(ITestOutputHelper outputHelper)
+    public ChangeRequestTests()
     {
-        _outputHelper = outputHelper;
         _platformAuthentication = new PlatformAuthenticationClient();
     }
 
-    [Fact]
+    [Fact(Skip = "Fikses senere, men kjøres som en del av Playwright testsuite nå schedulert daglig.")]
     public async Task MakeChangeRequestAsVendorTest()
     {
         // Prepare
@@ -39,7 +35,9 @@ public class ChangeRequestTests : TestFixture
         var systemId = await _platformAuthentication.Common.CreateAndApproveSystemUserRequest(maskinportenToken, externalRef, testperson, clientId);
 
         // Act
-        var changeRequestResponse = await SubmitChangeRequest(systemId, externalRef, maskinportenToken);
+        var systemUserId = await _platformAuthentication.SystemUserClient.GetSystemUserVendorByQuery(systemId, testperson.Org, externalRef, maskinportenToken);
+
+        var changeRequestResponse = await SubmitChangeRequest(systemUserId, systemId, externalRef, maskinportenToken);
 
         Common.AssertSuccess(changeRequestResponse, "Change request submission failed");
         Assert.Equal(HttpStatusCode.Created, changeRequestResponse.StatusCode);
@@ -55,8 +53,8 @@ public class ChangeRequestTests : TestFixture
         await AssertRequestRetrievalById(requestId, systemId, externalRef, maskinportenToken);
         await AssertRequestRetrievalByExternalRef(systemId, externalRef, maskinportenToken);
 
-        var systemUsers = await _platformAuthentication.SystemUserClient.GetSystemUsersForTestUser(testperson);
-        
+        List<SystemUser> systemUsers = await _platformAuthentication.SystemUserClient.GetSystemUsersForTestUser(testperson);
+
         //Cleanup
         await _platformAuthentication.SystemUserClient.DeleteSystemUser(testperson.AltinnPartyId, systemUsers.FirstOrDefault()?.Id);
     }
@@ -110,6 +108,7 @@ public class ChangeRequestTests : TestFixture
     {
         var approveUrl = Endpoints.ApproveChangeRequest.Url()
             .Replace("{partyId}", testperson.AltinnPartyId)
+            .Replace("{partyId}", testperson.AltinnPartyUuid)
             .Replace("{requestId}", requestId);
 
         var approvalResp =
@@ -118,14 +117,18 @@ public class ChangeRequestTests : TestFixture
         return approvalResp;
     }
 
-    private async Task<HttpResponseMessage> SubmitChangeRequest(string systemId, string externalRef, string? maskinportenToken)
+    private async Task<HttpResponseMessage> SubmitChangeRequest(string systemUserId, string systemId, string externalRef, string? maskinportenToken)
     {
         var changeRequestBody =
             (await Helper.ReadFile("Resources/Testdata/ChangeRequest/ChangeRequest.json"))
             .Replace("{systemId}", systemId)
             .Replace("{externalRef}", externalRef);
 
-        var changeRequestResponse = await _platformAuthentication.PostAsync(Endpoints.PostChangeRequestVendor.Url(),
+        var correlationId = Guid.NewGuid().ToString();
+
+        var url = $"{Endpoints.PostChangeRequestVendor.Url()}?correlation-id={Uri.EscapeDataString(correlationId)}&system-user-id={Uri.EscapeDataString(systemUserId)}";
+
+        var changeRequestResponse = await _platformAuthentication.PostAsync(url,
             changeRequestBody,
             maskinportenToken);
 

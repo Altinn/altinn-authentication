@@ -2,6 +2,7 @@
 using System.Data.Common;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
+using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Persistance.Extensions;
@@ -18,8 +19,8 @@ public class ChangeRequestRepository(
     ILogger<ChangeRequestRepository> logger) : IChangeRequestRepository
 {
     private readonly ILogger _logger = logger;
-    private const int REQUEST_TIMEOUT_DAYS = 10;
-    private const int ARCHIVE_TIMEOUT_DAYS = 60;
+    private const int REQUEST_TIMEOUT_DAYS = 180;
+    private const int ARCHIVE_TIMEOUT_DAYS = 180;
 
     /// <inheritdoc/>
     public async Task<Result<bool>> CreateChangeRequest(ChangeRequestResponse createRequest)
@@ -33,6 +34,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls)
             VALUES(
@@ -43,6 +46,8 @@ public class ChangeRequestRepository(
                 @party_org_no,
                 @required_rights,
                 @unwanted_rights,
+                @required_accesspackages,
+                @unwanted_accesspackages,
                 @status,
                 @redirect_urls);"
         ;
@@ -58,6 +63,9 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
             command.Parameters.Add(new("required_rights", NpgsqlDbType.Jsonb) { Value = createRequest.RequiredRights });
             command.Parameters.Add(new("unwanted_rights", NpgsqlDbType.Jsonb) { Value = createRequest.UnwantedRights });
+            command.Parameters.Add(new("required_accesspackages", NpgsqlDbType.Jsonb) { Value = createRequest.RequiredAccessPackages });
+            command.Parameters.Add(new("unwanted_accesspackages", NpgsqlDbType.Jsonb) { Value = createRequest.UnwantedAccessPackages });
+
             command.Parameters.AddWithValue("status", createRequest.Status);
 
             if (createRequest.RedirectUrl is not null)
@@ -79,7 +87,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<bool> ApproveAndDelegateOnSystemUser(Guid requestId, SystemUser toBeChanged, int userId, CancellationToken cancellationToken)
+    public async Task<bool> PersistApprovalOfChangeRequest(Guid requestId, SystemUserInternalDTO toBeChanged, int userId, CancellationToken cancellationToken)
     {
         string changed_by = "userId:" + userId.ToString();
 
@@ -181,6 +189,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls,
                 created
@@ -195,7 +205,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("system_id", systemId);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -217,6 +227,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls,
                 created
@@ -235,7 +247,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("party_org_no", externalRequestId.OrgNo);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
             return dbres;
         }
@@ -247,7 +259,7 @@ public class ChangeRequestRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<ChangeRequestResponse?> GetChangeRequestByInternalId(Guid internalId)
+    public async Task<ChangeRequestResponse?> GetChangeRequestById(Guid id)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -258,6 +270,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls,
                 created 
@@ -270,10 +284,10 @@ public class ChangeRequestRepository(
         {
             await using NpgsqlCommand command = dataSource.CreateCommand(QUERY);
 
-            command.Parameters.AddWithValue("request_id", internalId);
+            command.Parameters.AddWithValue("request_id", id);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
                         
             return dbres;
@@ -297,6 +311,8 @@ public class ChangeRequestRepository(
                 party_org_no,
                 required_rights,
                 unwanted_rights,
+                required_accesspackages,
+                unwanted_accesspackages,
                 request_status,
                 redirect_urls,
                 created 
@@ -312,7 +328,7 @@ public class ChangeRequestRepository(
             command.Parameters.AddWithValue("system_user_id", systemUserId);
 
             var dbres = await command.ExecuteEnumerableAsync()
-                .SelectAwait(ConvertFromReaderToChangeRequest)
+                .Select(ConvertFromReaderToChangeRequest)
                 .FirstOrDefaultAsync();
                         
             return dbres;
@@ -354,7 +370,7 @@ public class ChangeRequestRepository(
         }
     }
 
-    private static ValueTask<ChangeRequestResponse> ConvertFromReaderToChangeRequest(NpgsqlDataReader reader)
+    private static ChangeRequestResponse ConvertFromReaderToChangeRequest(NpgsqlDataReader reader)
     {
         string? redirect_url = null;
 
@@ -372,6 +388,8 @@ public class ChangeRequestRepository(
             PartyOrgNo = reader.GetFieldValue<string>("party_org_no"),
             RequiredRights = reader.GetFieldValue<List<Right>>("required_rights"),
             UnwantedRights = reader.GetFieldValue<List<Right>>("unwanted_rights"),
+            RequiredAccessPackages = reader.GetFieldValue<List<AccessPackage>>("required_accesspackages"),
+            UnwantedAccessPackages = reader.GetFieldValue<List<AccessPackage>>("unwanted_accesspackages"),
             Status = reader.GetFieldValue<string>("request_status"),
             Created = reader.GetFieldValue<DateTime>("created"),
             RedirectUrl = redirect_url
@@ -379,9 +397,9 @@ public class ChangeRequestRepository(
 
         if (response.Created < DateTime.UtcNow.AddDays(-REQUEST_TIMEOUT_DAYS))
         {
-            response.Status = RequestStatus.Timedout.ToString();
+            response.TimedOut = true;
         }
 
-        return new ValueTask<ChangeRequestResponse>(response);
+        return response;
     }
 }

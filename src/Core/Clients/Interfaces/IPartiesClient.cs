@@ -1,7 +1,6 @@
 ﻿using Altinn.Authorization.ProblemDetails;
-using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
-using Altinn.Platform.Register.Models;
+using Altinn.Register.Contracts.V1;
 
 namespace Altinn.Authentication.Core.Clients.Interfaces;
 
@@ -33,6 +32,14 @@ public interface IPartiesClient
     /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
     /// <returns>party information</returns>
     Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns partyInfo
+    /// </summary>
+    /// <param name="partyUuId">The party uuid to lookup</param>
+    /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
+    /// <returns>party information</returns>
+    Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Return all customers of a specific type for party

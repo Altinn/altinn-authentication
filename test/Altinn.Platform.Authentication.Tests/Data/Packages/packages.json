@@ -1,73 +1,83 @@
 [
   {
     "id": "1dba50d6-f604-48e9-bd41-82321b13e85c",
-    "urn": "urn:altinn:accesspackage:skattnaering",
+    "urn": "urn:altinn:accesspackage:skatt-naering",
     "name": "Skatt næring",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til skatt for næringer. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.  ",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "4c859601-9b2b-4662-af39-846f4117ad7a",
     "urn": "urn:altinn:accesspackage:skattegrunnlag",
     "name": "Skattegrunnlag",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til innhenting av skattegrunnlag. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.  ",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "9a61b136-7810-4939-ab6d-84938e9a12c6",
     "urn": "urn:altinn:accesspackage:merverdiavgift",
     "name": "Merverdiavgift",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til merverdiavgift. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "4f4d4567-2384-49fa-b34b-84b4b77139d8",
     "urn": "urn:altinn:accesspackage:motorvognavgift",
     "name": "Motorvognavgifter",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til motorvognavgifter. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "b4e69b54-895e-42c5-bf0d-861a571cd282",
-    "urn": "urn:altinn:accesspackage:regnskapokonomirapport",
+    "urn": "urn:altinn:accesspackage:regnskap-okonomi-rapport",
     "name": "Regnskap og økonomirapportering",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til regnskap og øknomirapportering som ikke tilhører skatt og merverdiavgift. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "a02fc602-872a-4671-b338-8b86a64b534a",
-    "urn": "urn:altinn:accesspackage:kravogutlegg",
+    "urn": "urn:altinn:accesspackage:krav-og-utlegg",
     "name": "Krav, betalinger og utlegg",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til krav og utlegg. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
-    "IsDelegable": false
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "1886712b-e077-445a-ab3f-8c8bdebccc67",
-    "urn": "urn:altinn:accesspackage:reviorattesterer",
+    "urn": "urn:altinn:accesspackage:revisorattesterer",
     "name": "Revisorattesterer",
     "description": "Denne fullmakten gir tilgang til alle tjenester som krever revisorattestering. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "74c1dcf6-a760-4065-83f0-8edc6dec5dba",
     "urn": "urn:altinn:accesspackage:saeravgifter",
     "name": "Særavgifter",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til særavgifter. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "eb9006a6-dbd5-4155-9174-91e182a56715",
-    "urn": "urn:altinn:accesspackage:kredittogoppgjoer",
+    "urn": "urn:altinn:accesspackage:kreditt-og-oppgjoer",
     "name": "Kreditt- og oppgjørsordninger",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til kreditt- og oppgjørsordninger. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "deb7f8ae-8427-469d-b824-937c146c0489",
     "urn": "urn:altinn:accesspackage:toll",
     "name": "Toll",
     "description": "Denne tilgangspakken gir fullmakter til tjenester knyttet til toll og fortolling. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
-    "IsDelegable": true
+    "IsDelegable": true,
+    "IsAssignable": true
   },
   {
     "id": "0195efb8-7c80-7cf2-bcc8-720a3fb39d44",
@@ -76,6 +86,138 @@
     "description": "Denne fullmakten gir forretningsfører for Borettslag og Eierseksjonssameie tilgang til å opptre på vegne av kunde, og utføre alle tjenester som krever denne fullmakten. Dette er tjenester som tjenestetilbyder har vurdert det som naturlig at en forretningsfører utfører på vegne av sin kunde. Fullmakt hos forretningsfører oppstår når Borettslaget eller Eierseksjonssameiet registrerer forretningsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
     "isDelegable": true,
     "isAssignable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "955d5779-3e2b-4098-b11d-0431dc41ddbe",
+    "name": "Regnskapsfører med signeringsrettighet",
+    "urn": "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet",
+    "description": "Denne fullmakten gir tilgang til regnskapfører å kunne signere på vegne av kunden for alle tjenester som krever signeringsrett. Dette er tjenester som man har vurdert det som naturlig at en regnskapsfører utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte regnskapsførere. Fullmakt hos regnskapfører oppstår når kunden registrerer regnskapsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
+    "isDelegable": true,
+    "isAssignable": false,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "a5f7f72a-9b89-445d-85bb-06f678a3d4d1",
+    "name": "Regnskapsfører uten signeringsrettighet",
+    "urn": "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet",
+    "description": "Denne fullmakten gir tilgang til å kunne utføre alle tjenester som ikke krever signeringsrett. Dette er tjenester som man har vurdert det som naturlig at en regnskapsfører utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte regnskapsførere. Fullmakt hos regnskapfører oppstår når kunden registrerer regnskapsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
+    "isDelegable": true,
+    "isAssignable": false,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "43becc6a-8c6c-4e9e-bb2f-08fe588ada21",
+    "name": "Regnskapsfører lønn",
+    "urn": "urn:altinn:accesspackage:regnskapsforer-lonn",
+    "description": "Denne fullmakten gir tilgang til regnskapsfører å rapportere lønn for sin kunde. Dette er tjenester som man har vurdert det som naturlig at en regnskapsfører utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte regnskapsførere. Fullmakt hos regnskapfører oppstår når kunden registrerer regnskapsfører i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
+    "isDelegable": true,
+    "isAssignable": false,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "2f176732-b1e9-449b-9918-090d1fa986f6",
+    "name": "Ansvarlig revisor",
+    "urn": "urn:altinn:accesspackage:ansvarlig-revisor",
+    "description": "Denne fullmakten gir revisor tilgang til å opptre som ansvarlig revisor for en kunde og utføre alle tjenester som krever denne fullmakten. Dette er tjenester som tjenestetilbyder har vurdert det som naturlig at en revisor utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte revisorer. Fullmakt hos revisor oppstår når kunden registrerer revisor i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
+    "isDelegable": true,
+    "isAssignable": false,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "96120c32-389d-46eb-8212-0a6540540c25",
+    "name": "Revisormedarbeider",
+    "urn": "urn:altinn:accesspackage:revisormedarbeider",
+    "description": "Denne fullmakten gir revisor tilgang til å opptre som revisormedarbeider for en kunde og utføre alle tjenester som krever denne fullmakten. Dette er tjenester som tjenestetilbyder har vurdert det som naturlig at en revisor utfører på vegne av sin kunde. Fullmakten gis kun til autoriserte revisorer. Fullmakt hos revisor oppstår når kunden registrerer revisor i Enhetsregisteret. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
+    "isDelegable": true,
+    "isAssignable": false,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "c0eb20c1-2268-48f5-88c5-f26cb47a6b1f",
+    "name": "Eksplisitt tjenestedelegering",
+    "urn": "urn:altinn:accesspackage:eksplisitt",
+    "description": "Denne fullmakten er ikke delegerbar, og er ikke knyttet til noen roller i ENhetsregisteret. Tilgang til tjenester knyttet til denne pakken kan gis av Hovedadministrator gjennom enkeltrettighetsdelegering.",
+    "isDelegable": false,
+    "isAssignable": false,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "0195efb8-7c80-7e82-9b4f-7d63e773bbca",
+    "name": "Klientadministrator",
+    "urn": "urn:altinn:accesspackage:klientadministrator",
+    "description": "Gir mulighet til å administrere tilgang til tjenester videre til ansatte på vegne av deres kunder",
+    "isDelegable": false,
+    "isAssignable": true,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "0195efb8-7c80-7a95-ad36-900c3d8ad300",
+    "name": "Tilgangsstyrer",
+    "urn": "urn:altinn:accesspackage:tilgangsstyrer",
+    "description": "Gir mulighet til å gi videre tilganger for virksomheten som man selv har mottatt",
+    "isDelegable": false,
+    "isAssignable": true,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "0195efb8-7c80-7e16-ab0c-36dc8ab1a29d",
+    "name": "Hovedadministrator",
+    "urn": "urn:altinn:accesspackage:hovedadministrator",
+    "description": "Gir mulighet til å administrere alle tilganger for virksomheten",
+    "isDelegable": false,
+    "isAssignable": true,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "0195efb8-7c80-7b30-a84d-f37fed9fb89c",
+    "name": "Maskinporten administrator",
+    "urn": "urn:altinn:accesspackage:maskinporten-administrator",
+    "description": "Gir bruker mulighet til å administrere tilgang til maskinporten scopes",
+    "isDelegable": false,
+    "isAssignable": true,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "0195efb8-7c80-7e9c-95c1-48937e23960a",
+    "name": "Konkursbo administrator",
+    "urn": "urn:altinn:accesspackage:konkursbo-tilgangsstyrer",
+    "description": "Gir bruker mulighet til å administrere konkursbo",
+    "isDelegable": false,
+    "isAssignable": true,
+    "isResourcePolicyAvailable": false,
+    "area": null,
+    "resources": null
+  },
+  {
+    "id": "c5bbbc3f-605a-4dcb-a587-32124d7bb76d",
+    "name": "Jordbruk",
+    "urn": "urn:altinn:accesspackage:jordbruk",
+    "description": "Denne tilgangspakken gir tilgang til tjenester knyttet til jordbruk. Ved regelverksendringer eller innføring av nye digitale tjenester kan det bli endringer i tilganger som fullmakten gir.",
+    "isDelegable": true,
+    "isAssignable": true,
+    "isResourcePolicyAvailable": false,
     "area": null,
     "resources": null
   }

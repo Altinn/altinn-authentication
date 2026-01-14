@@ -18,11 +18,11 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
     - name: Build the Docker image
       run: docker build . --tag altinn-authentication:${{github.sha}}
 
-    - uses: Azure/container-scan@v0.1
+    - uses: Azure/container-scan@f9af925b897d8af5f7e0026b8bca9346261abc93 # v0.1
       with:
         image-name: altinn-authentication:${{ github.sha }}
       env:

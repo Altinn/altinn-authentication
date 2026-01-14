@@ -1,0 +1,33 @@
+{
+  "ScenarioId": "NewUidd_UidpUser",
+  "Title": "",
+  "Description": "En selvidentifisert bruker som først logger på via Altinn 2",
+  "Ssn": null,
+  "UserId": null,
+  "PartyId": null,
+  "UserName": null,
+  "ExternalIdentity": "66a633c43ef2f656978f957532ce6d0de6f5e13f1e0618b37b4b2a70573e5551",
+  "Amr": [ "SelfIdentified" ],
+  "Acr": [ "level0" ],
+  "DownstreamClientCallbackUrl": "https://af.altinn.no/api/cb",
+  "CustomClaims": {
+    "urn:feide:aarstrinn": "10",
+    "urn:feide:klasse": "10A",
+    "urn:feide:skoleeier:orgnr": "123456789",
+    "urn:feide:skole:orgnr": "987654321",
+    "urn:elevundersokelsen:undersokelse.id": "test-undersokelse"
+  },
+  "Scopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "AllowedScopes": [
+    "openid",
+    "digdir:dialogporten.noconsent",
+    "altinn:portal/enduser"
+  ],
+  "RedirectUris": [
+    "https://af.altinn.no/api/cb"
+  ]
+}

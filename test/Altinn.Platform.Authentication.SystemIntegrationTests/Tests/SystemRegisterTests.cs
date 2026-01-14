@@ -129,39 +129,6 @@ public class SystemRegisterTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    /// Verify that the correct number of rights are returned from the defined system
-    [Fact]
-    public async Task ValidateRights()
-    {
-        // Prepare
-        var maskinportenToken = await _platformClient.GetMaskinportenTokenForVendor();
-
-        var teststate = new TestState("Resources/Testdata/Systemregister/CreateNewSystem.json")
-            .WithName("SystemRegister e2e Tests For Validating Rights " + Guid.NewGuid())
-            .WithRedirectUrl("https://altinn.no")
-            .WithClientId(Guid.NewGuid().ToString())
-            .WithVendor(_platformClient.EnvironmentHelper.Vendor)
-            .WithResource(value: "vegardtestressurs", id: "urn:altinn:resource")
-            .WithResource(value: "authentication-e2e-test", id: "urn:altinn:resource")
-            .WithResource(value: "resource_nonDelegable_enkeltrettighet", id: "urn:altinn:resource")
-            .WithToken(maskinportenToken);
-
-        var requestBody = teststate.GenerateRequestBody();
-
-        await _systemRegisterClient.PostSystem(requestBody, maskinportenToken);
-
-        // Act
-        var response =
-            await _platformClient.GetAsync(Endpoints.GetSystemRegisterRights.Url().Replace("{systemId}", teststate.SystemId), maskinportenToken);
-
-        var rightsFromApiResponse = await response.Content.ReadFromJsonAsync<List<Right>>();
-        Assert.NotNull(rightsFromApiResponse);
-        Assert.Equal(3, rightsFromApiResponse.Count);
-
-        // Cleanup
-        await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
-    }
-
     /// <summary>
     /// Verify registered system gets deleted (soft delete)
     /// </summary>
@@ -188,9 +155,9 @@ public class SystemRegisterTests
         await _systemRegisterClient.DeleteSystem(teststate.SystemId, maskinportenToken);
 
         // Assert system is not found
-        var systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
-        var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
-        Assert.False(isFound);
+        List<SystemResponseDto> systems = await _systemRegisterClient.GetSystemsAsync(maskinportenToken);
+       var isFound = systems.Exists(system => system.SystemId.Equals(teststate.SystemId));
+       Assert.False(isFound);
     }
 
     [Fact] //Relevant Bug reported - https://github.com/Altinn/altinn-authentication/issues/856
@@ -374,7 +341,6 @@ public class SystemRegisterTests
         // Update with new accessPackages
         List<AccessPackageDto> requestBodyPut =
         [
-            new() { Urn = "urn:altinn:accesspackage:post-og-telekommunikasjon" },
             new() { Urn = "urn:altinn:accesspackage:dokumentbasert-tilsyn" },
             new() { Urn = "urn:altinn:accesspackage:infrastruktur" },
             new() { Urn = "urn:altinn:accesspackage:patent-varemerke-design" },

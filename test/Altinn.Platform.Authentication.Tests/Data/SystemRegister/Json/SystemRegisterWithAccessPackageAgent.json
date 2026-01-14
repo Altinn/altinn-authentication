@@ -17,6 +17,9 @@
   "accessPackages": [
     {
       "urn": "urn:altinn:accesspackage:forretningsforer-eiendom"
+    },
+    {
+      "urn": "urn:altinn:accesspackage:skatt-naering"
     }
   ],
   "rights": [
@@ -38,5 +41,5 @@
     "https://nrk.no",
     "https://altinn.no"
   ],
-  "isVisible": true
+  "isVisible": false
 }

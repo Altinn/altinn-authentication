@@ -26,8 +26,7 @@ public class Common
     private SystemRegisterClient SystemRegisterClient => _platformClient.SystemRegisterClient;
     private SystemUserClient SystemUserClient => _platformClient.SystemUserClient;
 
-    public async Task<string> CreateAndApproveSystemUserRequest(string? maskinportenToken, string externalRef,
-        Testuser testuser, string clientId)
+    public async Task<string> CreateAndApproveSystemUserRequest(string? maskinportenToken, string externalRef, Testuser testuser, string clientId)
     {
         var testState = new TestState("Resources/Testdata/ChangeRequest/CreateNewSystem.json")
             .WithClientId(clientId)
@@ -64,11 +63,13 @@ public class Common
 
         // Approve
         var approveResp =
-            await ApproveRequest($"authentication/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve",
+            await ApproveRequest($"accessmanagement/api/v1/systemuser/request/{testuser.AltinnPartyId}/{id}/approve",
                 testuser);
+        
+        // https://am.ui.tt02.altinn.no/accessmanagement/api/v1/systemuser/request/51642319/3cf62206-7967-49cb-b731-336397af9145/approve
 
         Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
-            "Received status code " + approveResp.StatusCode + "when attempting to approve");
+            "Received status code " + approveResp.StatusCode + "when attempting to approve: " + await approveResp.Content.ReadAsStringAsync() );
 
         return testState.SystemId;
     }
@@ -91,7 +92,7 @@ public class Common
         return resp.Content;
     }
 
-    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
+    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
     {
         // Use the PostAsync method for the approval request
         var response = await _platformClient.PostAsync(endpoint, string.Empty, testperson.AltinnToken);
@@ -138,59 +139,9 @@ public class Common
             $"[Response was {response.StatusCode} : Response body was: {await response.Content.ReadAsStringAsync()}]");
     }
 
-    public async Task CreateRequestWithManalExample(string? maskinportenToken, string externalRef, Testuser testuser,
-        string clientId)
+    public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser, string externalRef)
     {
-        var testState = new TestState("Resources/Testdata/Systemregister/VendorExampleUrls.json")
-            .WithName("E2E tests - Redirect URL" + Guid.NewGuid())
-            .WithClientId(clientId)
-            .WithVendor(testuser.Org)
-            .WithAllowedRedirectUrls(
-                "https://www.cloud-booking.net/misc/integration.htm?integration=Altinn3&action=authCallback",
-                "https://test.cloud-booking.net/misc/integration.htm?integration=Altinn3&action=authCallback"
-            )
-            .WithToken(maskinportenToken);
-
-        var requestBodySystemRegister = testState.GenerateRequestBody();
-
-        // Register system
-        var response = await SystemRegisterClient.PostSystem(requestBodySystemRegister, maskinportenToken);
-        Assert.True(response.IsSuccessStatusCode, response.ReasonPhrase);
-
-        // Prepare system user request
-        var requestBody = (await Helper.ReadFile("Resources/Testdata/ChangeRequest/CreateSystemUserRequest.json"))
-            .Replace("{systemId}", testState.SystemId)
-            .Replace("{redirectUrl}", "")
-            .Replace("{externalRef}", externalRef);
-
-        // Act
-        var userResponse = await _platformClient.PostAsync(Endpoints.CreateSystemUserRequest.Url(), requestBody,
-            maskinportenToken);
-
-        // Assert
-        var content = await userResponse.Content.ReadAsStringAsync();
-
-        Assert.True(userResponse.StatusCode == HttpStatusCode.Created,
-            $"Unexpected status code: {userResponse.StatusCode} - {content}");
-
-        using var jsonDocSystemRequestResponse = JsonDocument.Parse(content);
-        var id = jsonDocSystemRequestResponse.RootElement.GetProperty("id").GetString();
-
-        var url = Endpoints.ApproveSystemUserRequest.Url()
-            ?.Replace("{party}", testuser.AltinnPartyId)
-            .Replace("{requestId}", id);
-        // Approve
-        var approveResp =
-            await ApproveRequest(url, testuser);
-
-        Assert.True(HttpStatusCode.OK == approveResp.StatusCode,
-            "Received status code " + approveResp.StatusCode + "when attempting to approve");
-    }
-
-    public async Task<SystemUser?> GetSystemUserOnSystemIdForAgenOnOrg(string systemId, Testuser testuser,
-        string externalRef = "")
-    {
-        var systemUsers = await SystemUserClient.GetSystemUsersForAgentTestUser(testuser);
+        List<SystemUser> systemUsers = await SystemUserClient.GetSystemUsersForAgentTestUser(testuser);
         return systemUsers.Find(user => user.SystemId == systemId && user.ExternalRef == externalRef);
     }
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
@@ -25,7 +26,7 @@ namespace Altinn.Platform.Authentication.Helpers
         /// </summary>
         /// <param name="jwtToken">authenticated token</param>
         /// <param name="eventType">authentication event type</param>
-        /// <param name="context">the http context</param>
+        /// <param name="ipadress">the IP address</param>
         /// <param name="currentDateTime">the timestamp of the event</param>
         /// <param name="externalSessionId">the external session id</param>
         /// <param name="isAuthenticated">true when the request is authenticated</param>
@@ -33,7 +34,7 @@ namespace Altinn.Platform.Authentication.Helpers
         public static AuthenticationEvent MapAuthenticationEvent(
             string jwtToken, 
             AuthenticationEventType eventType, 
-            HttpContext context, 
+            IPAddress? ipadress, 
             DateTimeOffset currentDateTime,
             string? externalSessionId,
             bool isAuthenticated = true)
@@ -77,15 +78,19 @@ namespace Altinn.Platform.Authentication.Helpers
                             case "acr":
                                 authenticationEvent.AuthenticationLevel = AuthenticationHelper.GetAuthenticationLevelForIdPorten(claim.Value);
                                 break;
-                            case "jti":
+                            case "sid":
                                 authenticationEvent.SessionId = claim.Value;
                                 break;
                         }
                     }
 
+                    if (ipadress != null && authenticationEvent.IpAddress == null)
+                    {
+                        authenticationEvent.IpAddress = ipadress.ToString();
+                    }
+
                     authenticationEvent.Created = currentDateTime;
                     authenticationEvent.EventType = eventType;
-                    authenticationEvent.IpAddress = GetClientIpAddress(context);
                     authenticationEvent.IsAuthenticated = isAuthenticated;
                     authenticationEvent.ExternalSessionId = externalSessionId;
                 }
@@ -117,7 +122,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 authenticationEvent.EventType = eventType;
                 authenticationEvent.IpAddress = GetClientIpAddress(context);
                 authenticationEvent.IsAuthenticated = authenticatedUser.IsAuthenticated;
-                authenticationEvent.SessionId = authenticatedUser.SessionId;
+                authenticationEvent.SessionId = authenticatedUser.Sid;
                 authenticationEvent.ExternalSessionId = authenticatedUser.ExternalSessionId;
             }
 

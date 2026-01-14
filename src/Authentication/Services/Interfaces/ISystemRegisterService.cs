@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using Altinn.Platform.Authentication.Core.Models.SystemRegisters;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 
 #nullable enable
@@ -21,6 +22,14 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="cancellation">The cancellation token</param>
         /// <returns></returns>
         Task<List<RegisteredSystemResponse>> GetListRegSys(CancellationToken cancellation = default);
+
+        /// <summary>
+        /// Retrieves a list of registered systems associated with the specified vendor organization.
+        /// </summary>
+        /// <param name="vendorOrgNumber">The organization number of the vendor whose registered systems are to be retrieved.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>list of systems for vendor</returns>
+        Task<List<RegisteredSystemResponse>> GetListOfSystemsForVendor(string vendorOrgNumber, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Retrieves the list, if any, of the Default Rights the System Provider
@@ -53,26 +62,30 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Inserts a new Registered System
         /// </summary>
         /// <param name="system">The descriptor DTO for a new System</param>
+        /// <param name="systemChangeLog">SystemChangeLog</param>
         /// <param name="cancellation">The Cancelation token</param>
         /// <returns></returns>
-        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, CancellationToken cancellation = default);
+        Task<Guid?> CreateRegisteredSystem(RegisterSystemRequest system, SystemChangeLog systemChangeLog, CancellationToken cancellation = default);
 
         /// <summary>
         /// Updates the rights on a registered system
         /// </summary>
         /// <param name="rights">A list of rights</param>
         /// <param name="systemId">The human readable string id</param>
+        /// <param name="systemChangeLog">the system change log</param>
+        /// <param name="cancellationToken"> The cancellation token</param>
         /// <returns>true if changed</returns>
-        Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId);
+        Task<bool> UpdateRightsForRegisteredSystem(List<Right> rights, string systemId, SystemChangeLog systemChangeLog, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Updates the access packages on a registered system
         /// </summary>
         /// <param name="accessPackages">A list of access packages</param>
         /// <param name="systemId">The human readable string id</param>
+        /// <param name="systemChangeLog">SystemChangeLog</param>
         /// <param name="cancellation">The cancellation token</param>
         /// <returns>true if changed</returns>
-        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, CancellationToken cancellation = default);
+        Task<bool> UpdateAccessPackagesForRegisteredSystem(List<AccessPackage> accessPackages, string systemId, SystemChangeLog systemChangeLog, CancellationToken cancellation = default);
 
         /// <summary>
         /// Set's the product's is_deleted column to True.
@@ -81,16 +94,19 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="id">The human readable string id</param>
         /// <param name="systemInternalId">The internal system idenficator for a system</param>
+        /// <param name="systemChangeLog">SystemChangeLog</param>
+        /// <param name="cancellation">the cancellation token</param>
         /// <returns>True if set to deleted</returns>
-        Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId);
+        Task<bool> SetDeleteRegisteredSystemById(string id, Guid systemInternalId, SystemChangeLog systemChangeLog, CancellationToken cancellation = default);
 
         /// <summary>
         /// Replaces the entire registered system
         /// </summary>
         /// <param name="updateSystem">The updated system model</param>
+        /// <param name="systemChangeLog">SystemChangeLog</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns></returns>
-        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, CancellationToken cancellationToken);
+        Task<bool> UpdateWholeRegisteredSystem(RegisterSystemRequest updateSystem, SystemChangeLog systemChangeLog, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if one of the clientid exists
@@ -117,7 +133,7 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<bool> DoesResourceIdExists(List<Right> rights, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Checks if the resourceids are found in resource register
+        /// Checks if the acesspackages are found in altinn
         /// </summary>
         /// <param name="accessPackages">access packages</param>
         /// <param name="cancellationToken">the cancellation token</param>
@@ -129,8 +145,30 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// </summary>
         /// <param name="accessPackages">access packages to be validated</param>
         /// <param name="cancellationToken">the cancellation token</param>
-        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register</returns>
-        Task<(List<string> invalidFormatUrns, List<string> notFoundUrns, List<string> notDelegableUrns)>
+        /// <returns>list of invalid access package format, packages that are not valid because they are not found in altinn's resource register, and packages with IsAssignable false</returns>
+        Task<(List<string> InvalidFormatUrns, List<string> NotFoundUrns, List<string> NotDelegableUrns, List<string> NonAssignableUrns)>
             GetInvalidAccessPackageUrnsDetailed(List<AccessPackage> accessPackages, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Gets the change log for a specific system identified by its internal ID.
+        /// </summary>
+        /// <param name="systemInternalId">the internal id of the system</param>
+        /// <param name="cancellationToken">the cancellation token</param>
+        /// <returns></returns>
+        Task<IList<SystemChangeLog>> GetChangeLogAsync(Guid systemInternalId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Identifies resource IDs in the given rights that have invalid format, are not found, or are not delegable.
+        /// </summary>
+        /// <remarks>
+        /// Each resource attribute is checked for correct ID format, then looked up in the resource registry.
+        /// Resources whose <see cref="ServiceResource.ResourceType"/> is not in <see cref="WhitelistedResourceTypes"/>
+        /// are treated as not delegable.</remarks>
+        /// <param name="rights">A list of rights to be validated.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A tuple containing three lists: <see cref="List{T}"/> of rights that are not in valid format, <see cref="List{T}"/> of rights that are not found and  <see cref="List{T}"/>
+        /// of rights that are not delegable.</returns>
+        Task<(List<string> InvalidFormatResourceIds, List<string> NotFoundResourceIds, List<string> NotDelegableResourceIds)>
+            GetInvalidResourceIdsDetailed(List<Right> rights, CancellationToken cancellationToken);
     }
 }

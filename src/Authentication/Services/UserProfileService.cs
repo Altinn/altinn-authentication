@@ -1,14 +1,13 @@
 using System;
-using System.IO;
 using System.Net.Http;
-using System.Runtime.Serialization.Json;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 using Altinn.Platform.Authentication.Configuration;
+using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Services.Interfaces;
-using Altinn.Platform.Profile.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -17,6 +16,8 @@ namespace Altinn.Platform.Authentication.Services
     /// <inheritdoc/>
     public class UserProfileService : IUserProfileService
     {
+        private static readonly JsonSerializerOptions _options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
         private readonly GeneralSettings _settings;
         private readonly HttpClient _client;
         private readonly ILogger _logger;
@@ -38,16 +39,14 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<UserProfile> GetUser(string ssnOrExternalIdentity)
         {
             UserProfile user = null;
-            DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(UserProfile));
-
+       
             Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/");
             StringContent requestBody = new StringContent(JsonSerializer.Serialize(ssnOrExternalIdentity), Encoding.UTF8, "application/json");
 
             HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                Stream stream = await response.Content.ReadAsStreamAsync();
-                user = serializer.ReadObject(stream) as UserProfile;
+                user = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
             }
             else
             {
@@ -65,7 +64,6 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<UserProfile> CreateUser(UserProfile user)
         {
             UserProfile createdProfile = null;
-            DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(UserProfile));
 
             Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/create/");
             StringContent requestBody = new StringContent(JsonSerializer.Serialize(user), Encoding.UTF8, "application/json");
@@ -73,8 +71,7 @@ namespace Altinn.Platform.Authentication.Services
             HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                Stream stream = await response.Content.ReadAsStreamAsync();
-                createdProfile = serializer.ReadObject(stream) as UserProfile;
+                createdProfile = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
             }
             else
             {

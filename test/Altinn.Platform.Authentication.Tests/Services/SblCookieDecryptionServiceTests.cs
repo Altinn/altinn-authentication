@@ -132,7 +132,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
 
         private void InitializeMocks(HttpResponseMessage httpResponseMessage)
         {
-            GeneralSettings generalSettings = new GeneralSettings { BridgeAuthnApiEndpoint = "http://localhost" };
+            GeneralSettings generalSettings = new GeneralSettings { BridgeAuthnApiEndpoint = "http://localhost", OidcRefreshTokenPepper = "YWRzZmFzZmRhc2ZzYWVmZWY=" };
             _generalSettingsOptions.Setup(s => s.Value).Returns(generalSettings);
 
             _handlerMock.Protected()

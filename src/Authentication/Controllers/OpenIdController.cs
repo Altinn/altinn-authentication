@@ -48,6 +48,9 @@ namespace Altinn.Platform.Authentication.Controllers
         public DiscoveryDocument GetOpenIdConfigurationAsync()
         {
             string baseUrl = _generalSettings.AltinnOidcIssuerUrl;
+            string tokenUrl = _generalSettings.AltinnOidcTokenEndpoint;
+            string authorizeUrl = _generalSettings.AltinnOidcAuthorizeEndpoint;
+            string endSessionUrl = _generalSettings.AltinnOidcEndSessionEndpoint;
 
             DiscoveryDocument discoveryDocument = new DiscoveryDocument
             {
@@ -55,10 +58,10 @@ namespace Altinn.Platform.Authentication.Controllers
                 Issuer = new Uri(baseUrl).ToString(),
 
                 // REQUIRED
-                AuthorizationEndpoint = new Uri(baseUrl).ToString(),
+                AuthorizationEndpoint = new Uri(authorizeUrl).ToString(),
 
                 // This is REQUIRED unless only the Implicit Flow is used.
-                TokenEndpoint = new Uri(baseUrl).ToString(),
+                TokenEndpoint = new Uri(tokenUrl).ToString(),
 
                 // REQUIRED
                 JwksUri = new Uri(baseUrl + ".well-known/openid-configuration/jwks").ToString(),
@@ -70,7 +73,9 @@ namespace Altinn.Platform.Authentication.Controllers
                 SubjectTypesSupported = new[] { "pairwise" },
 
                 // REQUIRED
-                IdTokenSigningAlgValuesSupported = new[] { "RS256" }
+                IdTokenSigningAlgValuesSupported = new[] { "RS256" },
+
+                EndSessionEndpoint = new Uri(endSessionUrl).ToString(),
             };
 
             return discoveryDocument;

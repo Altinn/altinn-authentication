@@ -1,13 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Security;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -15,22 +11,19 @@ using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Controllers;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Model;
-using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
-using Altinn.Platform.Profile.Models;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.FeatureManagement;
 using Moq;
 using Xunit;
@@ -50,7 +43,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IOrganisationsService> _organisationsService = new();
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
-        private readonly Mock<TimeProvider> _timeProviderMock = new();
+        private readonly FakeTimeProvider _timeProviderMock = new();
         private readonly Mock<IFeatureManager> _featureManager = new();
 
         protected override void ConfigureServices(IServiceCollection services)
@@ -93,7 +86,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton<IChangeRequestSystemUser, ChangeRequestSystemUserServiceMock>();
             services.AddSingleton(_featureManager.Object);
             services.AddSingleton(_eventQueue.Object);
-            services.AddSingleton(_timeProviderMock.Object);
+            services.AddSingleton((TimeProvider)_timeProviderMock);
             services.AddSingleton(_organisationsService.Object);            
             _configuration = configuration;
         }
@@ -334,6 +327,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task Logout_HandleLoggedOut_RedirectToConsentRedirectUrl()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "/authentication/api/v1/logout/handleloggedout");
+            requestMessage.Headers.Add("Cookie", "AltinnLogoutInfo=amSafeRedirectUrl=aHR0cHM6Ly9sb2NhbGhvc3Q=");
+
+            // Act
+            HttpResponseMessage response = await client.SendAsync(requestMessage);
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
+
+            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            Assert.Equal("https://am.ui.localhost/accessmanagement/api/v1/logoutredirect", locationValues?.First());
+        }
+
+        [Fact]
         public async Task Logout_HandleLoggedOut_RedirectToSBL()
         {
             // Arrange
@@ -444,7 +456,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
-            return Path.Combine(unitTestFolder, $"../../../appsettings.json");
+            return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
         private static AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true)
@@ -463,7 +475,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private void SetupDateTimeMock()
         {
-            _timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
+            _timeProviderMock.SetUtcNow(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
     }
 }

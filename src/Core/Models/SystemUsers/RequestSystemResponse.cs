@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Altinn.Platform.Authentication.Core.Models.AccessPackages;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.SystemUsers;
@@ -16,6 +17,12 @@ public class RequestSystemResponse()
     [Required]
     [JsonPropertyName("id")]
     public Guid Id { get; set; }
+
+    /// <summary>
+    /// An optional name used only in display on UI. If not set by the request it will default to the System-Name. 
+    /// </summary>
+    [JsonPropertyName("integrationTitle")]
+    public string? IntegrationTitle { get; set; }
 
     /// <summary>
     /// Either just the Orgno for the customer, or a TenantId or other form of disambiguation Id the Vendor needs.
@@ -43,11 +50,19 @@ public class RequestSystemResponse()
 
     /// <summary>
     /// The set of Rights requested for this system user. Must be equal to or less than the set defined in the Registered System.
-    /// Must be a minimum of 1 selected Right.
+    /// Must be a minimum of 1 selected Right or AccessPackage.
     /// </summary>
     [Required]
     [JsonPropertyName("rights")]
-    public List<Right> Rights { get; set; }
+    public List<Right> Rights { get; set; } = [];
+
+    /// <summary>
+    /// The set of AccessPackages requested for this system user. Must be equal to or less than the set defined in the Registered System.
+    /// Must be a minimum of 1 selected AccessPackages or Right.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("accessPackages")]
+    public List<AccessPackage> AccessPackages { get; set; } = [];
 
     /// <summary>
     /// Initially the request is "new", 
@@ -72,9 +87,21 @@ public class RequestSystemResponse()
     public string? ConfirmUrl { get; set; }
 
     /// <summary>
+    /// Tracks if the original user creating the Request have escalated the Approval of this Request
+    /// to somebody else in the organisation with AccessManager (Package:Tilgangsstyring)
+    /// </summary>
+    public bool Escalated { get; set; }
+
+    /// <summary>
     /// The date and time the Request was created,
     /// used to determine if the Request is still valid.
     /// </summary>
-    [JsonIgnore]
     public DateTime Created { get; set; }
+
+    /// <summary>
+    /// After 180 days, a Request is considered timed out, and will be archived.
+    /// The Vendor should verify the Request before the time out period; 
+    /// and use the SystemUser Id for further calls after approval.
+    /// </summary>
+    public bool TimedOut { get; set; }
 }

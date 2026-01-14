@@ -5,10 +5,10 @@ namespace Altinn.Platform.Authentication.SystemIntegrationTests.Utils.ApiEndpoin
 public enum Endpoints
 {
     // System Register Endpoints
-    [EndpointInfo("authentication/api/v1/systemregister", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor", "GET")]
     GetAllSystemsFromRegister,
 
-    [EndpointInfo("authentication/api/v1/systemregister/{systemId}", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "GET")]
     GetSystemRegisterById,
 
     [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "GET")]
@@ -26,7 +26,7 @@ public enum Endpoints
     [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}", "DELETE")]
     DeleteSystemSystemRegister,
 
-    [EndpointInfo("authentication/api/v1/systemregister/{systemId}/rights", "GET")]
+    [EndpointInfo("authentication/api/v1/systemregister/vendor/{systemId}/rights", "GET")]
     GetSystemRegisterRights,
 
     [EndpointInfo("authentication/api/v1/systemregister/vendor", "POST")]
@@ -78,6 +78,10 @@ public enum Endpoints
 
     [EndpointInfo("authentication/api/v1/systemuser/request/{party}/{requestId}/reject", "POST")]
     RejectSystemUserRequest,
+    
+    [EndpointInfo("authentication/api/v1/systemuser/vendor/byquery?system-id={systemId}&orgno={orgNo}&external-ref={externalRef}", "GET")]
+    GetSystemUserVendorByQuery,
+    
 
     //Change request endpoints
     [EndpointInfo("authentication/api/v1/systemuser/changerequest/vendor", "POST")]
@@ -131,10 +135,29 @@ public enum Endpoints
 
     [EndpointInfo("authentication/api/v1/systemuser/agent/{party}/{systemUserId}", "DELETE")]
     DeleteAgentSystemUser,
+    
+    // Enduser / Vendor delegation Endpoints
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}&client={clientId}", "GET")]
+    VendorDeleteClient,
+    
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}&client={clientId}", "POST")]
+    VendorAddClients,
+    
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/agents", "POST")]
+    VendorGetSystemUserAgents,
+    
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients?agent={systemUserId}", "GET")]
+    VendorGetDelegatedClients,
+    
+    [EndpointInfo("authentication/api/v1/enduser/systemuser/clients/available", "GET")]
+    VendorGetAvailableClients,
+
 
     // Authorization endpoints
     [EndpointInfo("authorization/api/v1/decision", "POST")]
-    Decision
+    Decision,
+    
+    
 }
 
 [AttributeUsage(AttributeTargets.Field)]

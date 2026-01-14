@@ -1,0 +1,43 @@
+{
+  "links": {
+    "next": null
+  },
+  "data": [
+    {
+      "package": {
+        "id": "0195efb8-7c80-7e82-9b4f-7d63e773bbca",
+        "urn": "urn:altinn:accesspackage:skatt-naering",
+        "areaId": "e4ae823f-41db-46ed-873f-8a5d1378fff8"
+      },
+      "result": true,
+      "reasons": [
+        {
+          "description": "Direct-RolePackage",
+          "roleId": "9e5d3acf-cef7-4bbe-b101-8e9ab7b8b3e4",
+          "roleUrn": "urn:altinn:external-role:ccr:styreleder",
+          "fromId": "066148fe-7077-4484-b7ea-44b5ede0014e",
+          "fromName": "ULASTELIG RETTFERDIG TIGER AS",
+          "toId": "a5eb95db-97fc-4bd4-a6f6-b9214bc24549",
+          "toName": "OPPRIKTIG KAMEL",
+          "viaId": null,
+          "viaName": null,
+          "viaRoleId": null,
+          "viaRoleUrn": null
+        },
+        {
+          "description": "Direct-RolePackage",
+          "roleId": "55bd7d4d-08dd-46ee-ac8e-3a44d800d752",
+          "roleUrn": "urn:altinn:external-role:ccr:daglig-leder",
+          "fromId": "066148fe-7077-4484-b7ea-44b5ede0014e",
+          "fromName": "ULASTELIG RETTFERDIG TIGER AS",
+          "toId": "a5eb95db-97fc-4bd4-a6f6-b9214bc24549",
+          "toName": "OPPRIKTIG KAMEL",
+          "viaId": null,
+          "viaName": null,
+          "viaRoleId": null,
+          "viaRoleUrn": null
+        }
+      ]
+    }
+  ]
+}

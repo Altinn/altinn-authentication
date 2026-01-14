@@ -20,4 +20,10 @@ public class DelegationResponse
 
     [JsonPropertyName("assignmentId")]
     public Guid? AssignmentId { get; set; }
+
+    [JsonPropertyName("customerName")]
+    public string? CustomerName { get; set; }
+
+    [JsonPropertyName("customerOrganizationNumber")]
+    public string? CustomerOrganizationNumber { get; set; }
 }

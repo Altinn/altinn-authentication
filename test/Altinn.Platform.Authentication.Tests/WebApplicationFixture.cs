@@ -2,7 +2,9 @@
 
 using System;
 using System.Threading.Tasks;
+using Altinn.Common.AccessToken.Services;
 using Altinn.Common.Authentication.Configuration;
+using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests;
@@ -30,13 +33,20 @@ public class WebApplicationFixture
         await _factory.DisposeAsync();
     }
 
-    public WebApplicationFactory<Program> CreateServer(Action<IServiceCollection>? configureServices = null)
+    public WebApplicationFactory<Program> CreateServer(
+        Action<IWebHostBuilder>? configureBuilder = null,
+        Action<IServiceCollection>? configureServices = null)
     {
         return _factory.WithWebHostBuilder(builder =>
         {
+            if (configureBuilder is not null)
+            {
+                configureBuilder(builder);
+            }
+
             if (configureServices is not null)
             {
-                builder.ConfigureTestServices(configureServices);
+                builder.ConfigureServices(configureServices);
             }
         });
     }
@@ -47,21 +57,25 @@ public class WebApplicationFixture
         {
             builder.ConfigureAppConfiguration(config =>
             {
-                config.AddConfiguration(new ConfigurationBuilder()
-                        .AddJsonFile("appsettings.test.json")
-                        .Build());
+                var testConfig = new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.test.json", optional: false, reloadOnChange: true)
+                    .Build();
+                config.AddConfiguration(testConfig);
             });
 
             builder.ConfigureTestServices(services =>
             {
-                var timeProvider = new AdvanceableTimeProvider();
+                var timeProvider = new FakeTimeProvider();
 
                 // services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
-                
+
                 // services.AddSingleton<IPostConfigureOptions<OidcProviderSettings>, OidcProviderPostConfigureSettingsStub>();
+                services.AddSingleton(timeProvider);
                 services.AddSingleton<TimeProvider>(timeProvider);
-                
+
                 // services.AddSingleton<AdvanceableTimeProvider>(timeProvider);
+
+                services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             });
 
             base.ConfigureWebHost(builder);

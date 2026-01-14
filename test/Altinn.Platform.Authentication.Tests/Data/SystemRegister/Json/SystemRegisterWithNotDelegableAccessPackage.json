@@ -16,7 +16,7 @@
   },
   "accessPackages": [
     {
-      "urn": "urn:altinn:accesspackage:kravogutlegg"
+      "urn": "urn:altinn:accesspackage:eksplisitt"
     }
   ],
   "rights": [
@@ -38,5 +38,5 @@
     "https://nrk.no",
     "https://altinn.no"
   ],
-  "isVisible": true
+  "isVisible": false
 }

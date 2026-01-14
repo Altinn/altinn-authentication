@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using Altinn.Platform.Authentication.Tests.Mocks;
 using Azure.Messaging;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.FeatureManagement;
 using Moq;
 using Newtonsoft.Json;
@@ -23,7 +25,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
 {
     public class EventLogServiceTest
     {
-        private readonly Mock<TimeProvider> timeProviderMock = new Mock<TimeProvider>();
+        private readonly FakeTimeProvider timeProviderMock = new();
 
         [Fact]
         public async Task QueueAuthenticationEvent_OK()
@@ -39,7 +41,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             featureManageMock
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
-            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
+            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
             // Act
@@ -82,11 +84,13 @@ namespace Altinn.Platform.Authentication.Tests.Services
             featureManageMock
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
-            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
+            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
+            IPAddress address = IPAddress.Parse("255.1.3.12");
+
             // Act
-            service.CreateAuthenticationEventAsync(featureManageMock.Object, externalToken, AuthenticationEventType.Authenticate, context.Object);
+            service.CreateAuthenticationEventAsync(featureManageMock.Object, externalToken, AuthenticationEventType.Authenticate, address);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Once);
         }
@@ -105,7 +109,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             featureManageMock
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
-            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
+            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
             // Act
@@ -128,11 +132,13 @@ namespace Altinn.Platform.Authentication.Tests.Services
             featureManageMock
                 .Setup(m => m.IsEnabledAsync("AuditLog"))
                 .Returns(Task.FromResult(true));
-            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock.Object);
+            var service = GetEventLogService(queueMock: queueMock.Object, timeProviderMock);
             Mock<HttpContext> context = new Mock<HttpContext>();
 
+            IPAddress ipadress = IPAddress.Parse("244.233.12.2");
+
             // Act
-            service.CreateAuthenticationEventAsync(featureManageMock.Object, token, AuthenticationEventType.Authenticate, context.Object);
+            service.CreateAuthenticationEventAsync(featureManageMock.Object, token, AuthenticationEventType.Authenticate, ipadress);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Never);
         }
@@ -159,11 +165,6 @@ namespace Altinn.Platform.Authentication.Tests.Services
             };
 
             return authenticatedUser;
-        }
-
-        private void SetupDateTimeMock()
-        {
-            timeProviderMock.Setup(x => x.GetUtcNow()).Returns(new DateTimeOffset(2018, 05, 15, 02, 05, 00, TimeSpan.Zero));
         }
     }
 }
