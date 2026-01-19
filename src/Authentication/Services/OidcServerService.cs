@@ -1525,7 +1525,7 @@ namespace Altinn.Platform.Authentication.Services
                 UserProfile userToCreate = new()
                 {
                     ExternalIdentity = issExternalIdentity,
-                    UserName = "idporten:" + userAuthenticationModel.Email,
+                    UserName = "epost:" + userAuthenticationModel.Email,
                     UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
                 };
 
