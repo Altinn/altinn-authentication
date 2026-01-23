@@ -443,7 +443,7 @@ public class SystemUserTests : IDisposable
         return content;
     }
 
-    private async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
+    private async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
     {
         // Get the Altinn token
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
