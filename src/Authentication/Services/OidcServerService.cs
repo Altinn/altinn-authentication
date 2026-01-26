@@ -1,16 +1,4 @@
 ﻿#nullable enable
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Constants;
@@ -23,12 +11,25 @@ using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Urn;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -1518,7 +1519,7 @@ namespace Altinn.Platform.Authentication.Services
             else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
             {
                 // TODO. Usikker om vi trenger å prefixe med iss nå
-                string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + userAuthenticationModel.Email;
+                string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + UrnEncoded.Create(userAuthenticationModel.Email).Value;
                 userProfile = await _userProfileService.GetUser(issExternalIdentity);
 
                 if (userProfile != null)
