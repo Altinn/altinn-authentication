@@ -1389,6 +1389,11 @@ namespace Altinn.Platform.Authentication.Services
                 q["acr_values"] = string.Join(' ', incoming.AcrValues);
             }
 
+            if (q["acr_values"] != null && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
+            {
+                q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + q["acr_values"];
+            }
+
             if (incoming.Prompts is { Length: > 0 })
             {
                 q["prompt"] = string.Join(' ', incoming.Prompts);
@@ -1429,6 +1434,10 @@ namespace Altinn.Platform.Authentication.Services
             if (incoming.AcrValues is { Length: > 0 })
             {
                 q["acr_values"] = string.Join(' ', incoming.AcrValues);
+            }
+            else
+            {
+                q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + AuthzConstants.CLAIM_ACR_IDPORTEN_SUBSTANTIAL;
             }
 
             var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };
