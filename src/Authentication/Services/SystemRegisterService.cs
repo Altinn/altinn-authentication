@@ -190,7 +190,7 @@ namespace Altinn.Platform.Authentication.Services
             foreach (AccessPackage accessPackage in accessPackages)
             {
                 // get the urn value from the access package f.eks get regnskapsforer-med-signeringsrettighet from urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet
-                string urnValue = accessPackage.Urn.Split(":")[3];
+                string urnValue = accessPackage.Urn!;
                 package = await _accessManagementClient.GetAccessPackage(urnValue);
                 if (package == null || !package.IsDelegable)
                 {
