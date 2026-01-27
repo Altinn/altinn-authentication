@@ -891,7 +891,8 @@ public class RequestSystemUserService(
             ConfirmUrl = request.ConfirmUrl,
             Created = request.Created,
             RedirectUrl = request.RedirectUrl,
-            SystemUserType = request.UserType.ToString()
+            SystemUserType = request.UserType.ToString(),
+            Escalated = request.Escalated
         };
     }
 
@@ -957,6 +958,7 @@ public class RequestSystemUserService(
                 AccessPackages = request.AccessPackages,
                 Status = request.Status,
                 ConfirmUrl = request.ConfirmUrl,
+                Escalated = request.Escalated,
                 Created = request.Created,
                 RedirectUrl = request.RedirectUrl
             };       
