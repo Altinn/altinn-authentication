@@ -23,6 +23,7 @@ using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Urn;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
@@ -1123,6 +1124,10 @@ namespace Altinn.Platform.Authentication.Services
             {
                 externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
             }
+            else if (!string.IsNullOrEmpty(userIdenity.Email))
+            {
+                externalId = $"{AltinnCoreClaimTypes.IdPortenEmailPrefix}:{UrnEncoded.Create(userIdenity.Email).Value}";
+            }
             else if (!string.IsNullOrEmpty(userIdenity.ExternalIdentity))
             {
                 externalId = userIdenity.ExternalIdentity;
@@ -1385,6 +1390,11 @@ namespace Altinn.Platform.Authentication.Services
                 q["acr_values"] = string.Join(' ', incoming.AcrValues);
             }
 
+            if (q["acr_values"] != null && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
+            {
+                q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + q["acr_values"];
+            }
+
             if (incoming.Prompts is { Length: > 0 })
             {
                 q["prompt"] = string.Join(' ', incoming.Prompts);
@@ -1425,6 +1435,10 @@ namespace Altinn.Platform.Authentication.Services
             if (incoming.AcrValues is { Length: > 0 })
             {
                 q["acr_values"] = string.Join(' ', incoming.AcrValues);
+            }
+            else
+            {
+                q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + AuthzConstants.CLAIM_ACR_IDPORTEN_SUBSTANTIAL;
             }
 
             var ub = new UriBuilder(p.AuthorizationEndpoint) { Query = q.ToString()! };
@@ -1501,6 +1515,34 @@ namespace Altinn.Platform.Authentication.Services
                 userAuthenticationModel.PartyUuid = userCreated.UserUuid;
                 userAuthenticationModel.Amr = ["SelfIdentified"];
                 userAuthenticationModel.Acr = "Selfidentified";
+            }
+            else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
+            {
+                // TODO. Usikker om vi trenger å prefixe med iss nå
+                string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + UrnEncoded.Create(userAuthenticationModel.Email).Value;
+                userProfile = await _userProfileService.GetUser(issExternalIdentity);
+
+                if (userProfile != null)
+                {
+                    userAuthenticationModel.UserID = userProfile.UserId;
+                    userAuthenticationModel.PartyID = userProfile.PartyId;
+                    userAuthenticationModel.PartyUuid = userProfile.UserUuid;
+                    userAuthenticationModel.Username = userProfile.UserName;
+                    return userAuthenticationModel;
+                }
+
+                // Todo: Verifiser prefix på brukernavn
+                UserProfile userToCreate = new()
+                {
+                    ExternalIdentity = issExternalIdentity,
+                    UserName = "epost:" + userAuthenticationModel.Email,
+                    UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
+                };
+
+                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
+                userAuthenticationModel.UserID = userCreated.UserId;
+                userAuthenticationModel.PartyID = userCreated.PartyId;
+                userAuthenticationModel.PartyUuid = userCreated.UserUuid;
             }
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {

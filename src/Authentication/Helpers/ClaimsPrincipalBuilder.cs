@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
+using Altinn.Urn;
 using AltinnCore.Authentication.Constants;
 
 namespace Altinn.Platform.Authentication.Core.Helpers
@@ -59,11 +57,18 @@ namespace Altinn.Platform.Authentication.Core.Helpers
             {
                 claims.Add(new Claim("pid", oidcBindingContext.ExternalId.Replace($"{AltinnCoreClaimTypes.PersonIdentifier}:", string.Empty)));
             }
-            else if (oidcBindingContext.ExternalId != null)
+            else if (oidcBindingContext.ExternalId != null && !oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.IdPortenEmailPrefix))
             {
                 claims.Add(new Claim("orgsub", oidcBindingContext.ExternalId));
             }
 
+            if (oidcBindingContext.ExternalId != null && oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.IdPortenEmailPrefix))
+            {
+                UrnEncoded.TryUnescape(oidcBindingContext.ExternalId.AsSpan(AltinnCoreClaimTypes.IdPortenEmailPrefix.Length + 1), out var emailEncoded);
+                claims.Add(new Claim(AltinnCoreClaimTypes.Email, emailEncoded.Value));
+                claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifer, oidcBindingContext.ExternalId));
+            }
+         
             if (oidcBindingContext.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcBindingContext.Acr));

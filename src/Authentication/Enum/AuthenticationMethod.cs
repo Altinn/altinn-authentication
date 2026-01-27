@@ -119,5 +119,10 @@ namespace Altinn.Platform.Authentication.Enum
         /// user is logged in with the help of Maskinporten
         /// </summary>
         MaskinPorten = 20,
+
+        /// <summary>
+        /// user is logged in with the help of  Idporten epost
+        /// </summary>
+        IdportenEpost = 21,
     }
 }
