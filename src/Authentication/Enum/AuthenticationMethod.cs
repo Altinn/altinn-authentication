@@ -121,8 +121,13 @@ namespace Altinn.Platform.Authentication.Enum
         MaskinPorten = 20,
 
         /// <summary>
+        /// User is logged in with help of IDPORTEN TOTP (Time-based One-Time Password).
+        /// </summary>
+        MinIDTOTP = 21,
+
+        /// <summary>
         /// user is logged in with the help of  Idporten epost
         /// </summary>
-        IdportenEpost = 21,
+        IdportenEpost = 22,
     }
 }
