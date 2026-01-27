@@ -177,6 +177,13 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim(OriginalIssClaimName, oidcSession.Provider));
             }
 
+            if (oidcSession.ExternalId != null && oidcSession.ExternalId.StartsWith(AltinnCoreClaimTypes.IdPortenEmailPrefix))
+            {
+                UrnEncoded.TryUnescape(oidcSession.ExternalId.AsSpan(AltinnCoreClaimTypes.IdPortenEmailPrefix.Length + 1), out var emailEncoded);
+                claims.Add(new Claim(AltinnCoreClaimTypes.Email, emailEncoded.Value));
+                claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifer, oidcSession.ExternalId));
+            }
+
             if (oidcSession.Acr != null)
             {
                 claims.Add(new Claim("acr", oidcSession.Acr));
