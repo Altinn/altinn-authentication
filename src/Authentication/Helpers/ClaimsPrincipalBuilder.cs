@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -64,7 +65,8 @@ namespace Altinn.Platform.Authentication.Core.Helpers
 
             if (oidcBindingContext.ExternalId != null && oidcBindingContext.ExternalId.StartsWith(AltinnCoreClaimTypes.IdPortenEmailPrefix))
             {
-                UrnEncoded.TryUnescape(oidcBindingContext.ExternalId.AsSpan(AltinnCoreClaimTypes.IdPortenEmailPrefix.Length + 1), out var emailEncoded);
+                var parsed = UrnEncoded.TryUnescape(oidcBindingContext.ExternalId.AsSpan(AltinnCoreClaimTypes.IdPortenEmailPrefix.Length + 1), out var emailEncoded);
+                Debug.Assert(parsed);
                 claims.Add(new Claim(AltinnCoreClaimTypes.Email, emailEncoded.Value));
                 claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifer, oidcBindingContext.ExternalId));
             }
@@ -179,7 +181,8 @@ namespace Altinn.Platform.Authentication.Core.Helpers
 
             if (oidcSession.ExternalId != null && oidcSession.ExternalId.StartsWith(AltinnCoreClaimTypes.IdPortenEmailPrefix))
             {
-                UrnEncoded.TryUnescape(oidcSession.ExternalId.AsSpan(AltinnCoreClaimTypes.IdPortenEmailPrefix.Length + 1), out var emailEncoded);
+                var parsed = UrnEncoded.TryUnescape(oidcSession.ExternalId.AsSpan(AltinnCoreClaimTypes.IdPortenEmailPrefix.Length + 1), out var emailEncoded);
+                Debug.Assert(parsed);
                 claims.Add(new Claim(AltinnCoreClaimTypes.Email, emailEncoded.Value));
                 claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifer, oidcSession.ExternalId));
             }
