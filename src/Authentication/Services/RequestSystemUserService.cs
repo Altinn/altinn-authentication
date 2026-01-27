@@ -763,8 +763,14 @@ public class RequestSystemUserService(
         {
             return Problem.SystemIdNotFound;
         }
+
+        Guid nextId = Guid.Empty;
+        if (continueRequest is not null && continueRequest.ContinuationToken != Guid.Empty)
+        {
+            nextId = continueRequest.ContinuationToken;
+        }
         
-        List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, cancellationToken);
+        List<RequestSystemResponse>? theList = await requestRepository.GetAllRequestsBySystem(systemId, nextId, cancellationToken);
         theList ??= [];
 
         return Page.Create(theList, _paginationSize, static theList => theList.Id); 
@@ -789,7 +795,13 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
-        List<AgentRequestSystemResponse>? theList = await requestRepository.GetAllAgentRequestsBySystem(systemId, cancellationToken);
+        Guid nextId = Guid.Empty;
+        if (continueRequest is not null && continueRequest.ContinuationToken != Guid.Empty)
+        {
+            nextId = continueRequest.ContinuationToken;
+        }
+
+        List<AgentRequestSystemResponse>? theList = await requestRepository.GetAllAgentRequestsBySystem(systemId, nextId, cancellationToken);
         theList ??= [];
 
         return Page.Create(theList, _paginationSize, static theList => theList.Id);

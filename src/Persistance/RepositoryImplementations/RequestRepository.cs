@@ -506,7 +506,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    public async Task<List<RequestSystemResponse>> GetAllRequestsBySystem(string systemId, Guid continueFrom, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -523,8 +523,10 @@ public class RequestRepository : IRequestRepository
                 created
             FROM business_application.request r
             WHERE r.system_id = @system_id
+                and r.id > @continue_from
                 and r.is_deleted = false
-                and systemuser_type = @systemuser_type;";
+                and systemuser_type = @systemuser_type
+            ORDER BY r.id ASC;";
 
         try
         {
@@ -532,6 +534,7 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("system_id", systemId);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Standard;
+            command.Parameters.AddWithValue("continue_from", continueFrom);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .Select(ConvertFromReaderToRequest)
@@ -586,7 +589,7 @@ public class RequestRepository : IRequestRepository
     }
 
     /// <inheritdoc/>  
-    public async Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, CancellationToken cancellationToken)
+    public async Task<List<AgentRequestSystemResponse>> GetAllAgentRequestsBySystem(string systemId, Guid continueFrom, CancellationToken cancellationToken)
     {
         const string QUERY = /*strpsql*/@"
             SELECT 
@@ -602,6 +605,7 @@ public class RequestRepository : IRequestRepository
                 created
             FROM business_application.request r
             WHERE r.system_id = @system_id
+                and r.id > @continue_from
                 and r.is_deleted = false
                 and systemuser_type = @systemuser_type;";
 
@@ -611,6 +615,7 @@ public class RequestRepository : IRequestRepository
 
             command.Parameters.AddWithValue("system_id", systemId);
             command.Parameters.Add<SystemUserType>("systemuser_type").TypedValue = SystemUserType.Agent;
+            command.Parameters.AddWithValue("continue_from", continueFrom);
 
             return await command.ExecuteEnumerableAsync(cancellationToken)
                 .Select(ConvertFromReaderToAgentRequest)
