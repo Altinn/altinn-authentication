@@ -957,6 +957,7 @@ public class RequestSystemUserService(
                 AccessPackages = request.AccessPackages,
                 Status = request.Status,
                 ConfirmUrl = request.ConfirmUrl,
+                Escalated = request.Escalated,
                 Created = request.Created,
                 RedirectUrl = request.RedirectUrl
             };       
