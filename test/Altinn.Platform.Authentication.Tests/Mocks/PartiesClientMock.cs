@@ -104,4 +104,9 @@ public class PartiesClientMock : IPartiesClient
     {
         return Task.FromResult(GetTestDataParties(GetCustomerPartiesPath()).Find(p => p.PartyUuid == partyUuId));
     }
+
+    public async Task<Result<bool>> CheckIfUserHasRelationToPartyUuid()
+    {
+        return true;
+    }
 }

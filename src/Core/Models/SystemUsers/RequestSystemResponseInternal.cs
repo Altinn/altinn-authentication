@@ -100,6 +100,15 @@ public class RequestSystemResponseInternal()
     public bool Escalated { get; set; }
 
     /// <summary>
+    /// Indicates if the user is allowed to escalate the approval of this Request
+    /// is only true for the current logged in user trying to read the Request
+    /// if he has any Relation (Right, AccessPackage or Role) with the PartyUuid
+    /// but does not have AccessManager (Package:Tilgangsstyring) yet.
+    /// </summary>
+    [JsonPropertyName("userMayEscalateButNotApprove")]
+    public bool UserMayEscalateButNotApprove { get; set; }
+
+    /// <summary>
     /// The date and time the Request was created,
     /// used to determine if the Request is still valid.
     /// </summary>
