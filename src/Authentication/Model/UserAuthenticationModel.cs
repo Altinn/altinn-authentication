@@ -144,6 +144,6 @@ namespace Altinn.Platform.Authentication.Model
         /// <summary>
         /// Gets the email address associated with the user.
         /// </summary>
-        public string Email { get; internal set; }
+        public string? Email { get; internal set; }
     }
 }
