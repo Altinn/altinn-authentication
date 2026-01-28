@@ -90,6 +90,12 @@ namespace Altinn.Platform.Authentication.Helpers
                 }
 
                 // ID-porten specific claims
+                if (claim.Type.Equals("email"))
+                {
+                    userAuthenticationModel.Email = claim.Value;
+                    continue;
+                }
+
                 if (claim.Type.Equals("pid"))
                 {
                     userAuthenticationModel.SSN = claim.Value;
@@ -192,6 +198,7 @@ namespace Altinn.Platform.Authentication.Helpers
             switch (acr.ToLower(CultureInfo.InvariantCulture))
             {
                 case "level0":
+                case "selfregistered-email":
                 case "idporten-loa-low":
                     return SecurityLevel.SelfIdentifed;
                 case "level1":
@@ -232,6 +239,8 @@ namespace Altinn.Platform.Authentication.Helpers
                     return Enum.AuthenticationMethod.EIDAS;
                 case "maskinporten":
                     return Enum.AuthenticationMethod.MaskinPorten;
+                case "Selfregistered-email":
+                    return AuthenticationMethod.IdportenEpost;
                 case "TestID":
                     return AuthenticationMethod.IdportenTestId;
                 case "SelfIdentified":
