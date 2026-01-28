@@ -189,8 +189,7 @@ namespace Altinn.Platform.Authentication.Services
             Package? package = null;
             foreach (AccessPackage accessPackage in accessPackages)
             {
-                // get the urn value from the access package f.eks get regnskapsforer-med-signeringsrettighet from urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet
-                string urnValue = accessPackage.Urn.Split(":")[3];
+                string urnValue = accessPackage.Urn!;
                 package = await _accessManagementClient.GetAccessPackage(urnValue);
                 if (package == null || !package.IsDelegable)
                 {
@@ -229,8 +228,7 @@ namespace Altinn.Platform.Authentication.Services
                         continue;
                     }
 
-                    string urnValue = urnParts[3];
-                    Package? package = await _accessManagementClient.GetAccessPackage(urnValue);
+                    Package? package = await _accessManagementClient.GetAccessPackage(urn);
 
                     if (package == null)
                     {
