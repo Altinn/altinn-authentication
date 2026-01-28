@@ -356,6 +356,7 @@ public class RequestSystemUserService(
             Rights = res.Rights,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
+            Created = res.Created,
             RedirectUrl = res.RedirectUrl,
             TimedOut = res.TimedOut
         };
@@ -386,6 +387,7 @@ public class RequestSystemUserService(
             Rights = res.Rights,
             AccessPackages = res.AccessPackages,
             Status = res.Status,
+            Created = res.Created,
             RedirectUrl = res.RedirectUrl,
             TimedOut = res.TimedOut
         };
@@ -472,6 +474,7 @@ public class RequestSystemUserService(
             AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
+            Created = find.Created,
             RedirectUrl = find.RedirectUrl
         };
 
@@ -507,6 +510,7 @@ public class RequestSystemUserService(
             AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
+            Created = find.Created,
             RedirectUrl = find.RedirectUrl
         };
 
