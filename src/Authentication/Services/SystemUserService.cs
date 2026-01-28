@@ -639,6 +639,11 @@ namespace Altinn.Platform.Authentication.Services
             bool[] validate = new bool[rights.Count];
             foreach (var requestRight in rights)
             {
+                if (requestRight.Resource.Count != 1)
+                {
+                    return Problem.Rights_NotFound_Or_NotDelegable;
+                }
+
                 // Find the first matching Right in the list of Rights, with a matching TOP level AttributePair in the Resource list
                 List<Right> topMatchesInSystem = FindListOfMatchingRightsOnTopAttribute(requestRight.Resource[0], systemInfo.Rights);
                 if (topMatchesInSystem.Count == 0)
