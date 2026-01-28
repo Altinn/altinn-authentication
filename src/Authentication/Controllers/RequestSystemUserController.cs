@@ -380,7 +380,7 @@ public class RequestSystemUserController : ControllerBase
     /// <returns>RequestSystemResponse model</returns>    
     [Authorize]
     [HttpGet("{requestId}")]
-    public async Task<ActionResult<RequestSystemResponse>> GetRequestById(Guid requestId)
+    public async Task<ActionResult<RequestSystemResponseInternal>> GetRequestById(Guid requestId)
     {
         Result<RequestSystemResponseInternal> verify = await _requestSystemUser.CheckUserAuthorizationAndGetRequest(requestId);
         if (verify.IsProblem)
