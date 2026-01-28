@@ -77,7 +77,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true";
+            string endpointUrl = $"authorizedparty/{partyId}?includeAltinn2=true&includeAltinn3=true";
 
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
 
