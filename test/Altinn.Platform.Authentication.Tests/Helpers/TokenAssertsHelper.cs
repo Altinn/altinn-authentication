@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Tests.Models;
@@ -56,9 +57,18 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.True(accessTokenPrincipal.Identity.IsAuthenticated);
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "iss" && c.Value.Equals("http://localhost/authentication/api/v1/openid/"));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
-            if (!testScenario.Acr.Contains("level0"))
+            if (!testScenario.Acr.Contains("level0") && !testScenario.Acr.Contains("selfregistered-email"))
             {
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "pid" && c.Value.Equals(testScenario.Ssn));
+            }
+
+            if (testScenario.Acr.Contains("selfregistered-email"))
+            {
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && c.Value.Equals(AuthenticationMethod.IdportenEpost.ToString()));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.Email && c.Value.Equals(testScenario.Email));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.ExternalIdentifer && c.Value.Equals(AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + testScenario.Email));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "acr" && c.Value.Equals(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "amr" && c.Value.Equals(AuthzConstants.CLAIM_AMR_IDPORTEN_EMAIL));
             }
 
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
@@ -91,7 +101,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && !string.IsNullOrEmpty(c.Value));
             string method = idTokenPrincipal.Claims.First(c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod).Value;
-            if (!method.Equals(AuthenticationMethod.SelfIdentified.ToString()))
+            if (!method.Equals(AuthenticationMethod.SelfIdentified.ToString()) && !method.Equals(AuthenticationMethod.IdportenEpost.ToString()))
             {
                 Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "pid" && !string.IsNullOrEmpty(c.Value));
             }
