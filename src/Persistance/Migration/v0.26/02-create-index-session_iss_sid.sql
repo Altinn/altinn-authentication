@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS oidc_session_upstream_issuer_sid on oidcserver.oidc_session(upstream_issuer, upstream_session_sid);

@@ -167,8 +167,10 @@ namespace Altinn.Platform.Authentication.Controllers
                 User = HttpContext.User
             };
 
-            UpstreamFrontChannelLogoutResult result = await _oidcServerService.HandleUpstreamFrontChannelLogoutAsync(logoutInput, cancellationToken);
-
+            using CancellationTokenSource cts = new();
+            cts.CancelAfter(TimeSpan.FromSeconds(30)); // Prevent hanging if downstream is slow
+            UpstreamFrontChannelLogoutResult result = await _oidcServerService.HandleUpstreamFrontChannelLogoutAsync(logoutInput, cts.Token);
+      
             SetCacheHeaders();
 
             // Best-effort cookie ops (may be blocked by 3p cookie settings)
