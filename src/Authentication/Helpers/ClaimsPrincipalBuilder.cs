@@ -68,7 +68,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 var parsed = UrnEncoded.TryUnescape(oidcBindingContext.ExternalId.AsSpan(AltinnCoreClaimTypes.IdPortenEmailPrefix.Length + 1), out var emailEncoded);
                 Debug.Assert(parsed);
                 claims.Add(new Claim(AltinnCoreClaimTypes.Email, emailEncoded.Value));
-                claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifer, oidcBindingContext.ExternalId));
+                claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifier, oidcBindingContext.ExternalId));
             }
          
             if (oidcBindingContext.Acr != null)
@@ -184,7 +184,7 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 var parsed = UrnEncoded.TryUnescape(oidcSession.ExternalId.AsSpan(AltinnCoreClaimTypes.IdPortenEmailPrefix.Length + 1), out var emailEncoded);
                 Debug.Assert(parsed);
                 claims.Add(new Claim(AltinnCoreClaimTypes.Email, emailEncoded.Value));
-                claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifer, oidcSession.ExternalId));
+                claims.Add(new Claim(AltinnCoreClaimTypes.ExternalIdentifier, oidcSession.ExternalId));
             }
 
             if (oidcSession.Acr != null)
