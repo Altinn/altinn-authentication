@@ -66,7 +66,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             {
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && c.Value.Equals(AuthenticationMethod.IdportenEpost.ToString()));
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.Email && c.Value.Equals(testScenario.Email));
-                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.ExternalIdentifer && c.Value.Equals(AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + testScenario.Email));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.ExternalIdentifier && c.Value.Equals(AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + testScenario.Email));
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "acr" && c.Value.Equals(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL));
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "amr" && c.Value.Equals(AuthzConstants.CLAIM_AMR_IDPORTEN_EMAIL));
             }

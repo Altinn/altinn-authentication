@@ -83,6 +83,6 @@ namespace AltinnCore.Authentication.Constants
         /// <summary>
         /// Urn claim type for external identifier. The value will contain information about which external identity provider
         /// </summary>
-        public const string ExternalIdentifer = "urn:altinn:party:external-identifer";
+        public const string ExternalIdentifier = "urn:altinn:party:external-identifier";
     }
 }
