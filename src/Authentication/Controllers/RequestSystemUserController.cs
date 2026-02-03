@@ -377,7 +377,7 @@ public class RequestSystemUserController : ControllerBase
     /// Used by the BFF to retrieve the chosen Request by Guid Id alone,
     /// authorized manually via pdp that the logged in user can access the request.
     /// </summary>
-    /// <returns>RequestSystemResponse model</returns>    
+    /// <returns>RequestSystemResponseInternal model</returns>    
     [Authorize]
     [HttpGet("{requestId}")]
     public async Task<ActionResult<RequestSystemResponseInternal>> GetRequestById(Guid requestId)

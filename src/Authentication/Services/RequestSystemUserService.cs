@@ -932,6 +932,10 @@ public class RequestSystemUserService(
         }
 
         string token = JwtTokenUtil.GetTokenFromContext(context, generalSettings.Value.JwtCookieName);
+        if (string.IsNullOrEmpty(token))
+        {
+            return Problem.RequestNotFound;
+        }
 
         AuthorizedPartyExternal? hasRelationParty = await _accessManagemetClient.GetPartyFromReporteeListIfExists(party.PartyId, token);
         if (hasRelationParty is not null)
