@@ -92,7 +92,7 @@ namespace Altinn.Platform.Authentication.Helpers
                 // ID-porten specific claims
                 if (claim.Type.Equals("email"))
                 {
-                    userAuthenticationModel.Email = claim.Value;
+                    userAuthenticationModel.Email = claim.Value.ToLowerInvariant();
                     continue;
                 }
 
