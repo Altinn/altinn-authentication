@@ -199,9 +199,9 @@ public class AccessManagementClientMock: IAccessManagementClient
         throw new NotImplementedException();
     }
 
-    public Task<AuthorizedPartyExternal> GetPartyFromReporteeListIfExists(int partyId, string token)
+    public async Task<AuthorizedPartyExternal> GetPartyFromReporteeListIfExists(int partyId, string token)
     {
-        throw new NotImplementedException();
+        return new AuthorizedPartyExternal();
     }
 
     public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)

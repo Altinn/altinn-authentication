@@ -46,6 +46,11 @@ namespace Altinn.AccessManagement.Tests.Mocks
                 return new XacmlJsonResponse() { Response = [new() { Decision = "Permit" }] };
             }
 
+            if (MockShortCutForNoReporteeInRoute1336(xacmlJsonRequest.Request.AccessSubject))
+            {
+                return new XacmlJsonResponse() { Response = [new() { Decision = "Not Applicable" }] };
+            }
+
             return await Authorize(xacmlJsonRequest.Request);
         }
 
@@ -293,6 +298,26 @@ namespace Altinn.AccessManagement.Tests.Mocks
             }
 
             if (subjectUserId == 1338)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool MockShortCutForNoReporteeInRoute1336(List<XacmlJsonCategory> subjects)
+        {
+            int subjectUserId = 0;
+
+            foreach (XacmlJsonCategory sub in subjects)
+            {
+                if (sub.Attribute.FirstOrDefault(a => a.AttributeId == AltinnCoreClaimTypes.UserId) is { } userIdAttribute)
+                {
+                    subjectUserId = Convert.ToInt32(userIdAttribute.Value);
+                }
+            }
+
+            if (subjectUserId == 1336)
             {
                 return true;
             }
