@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.AccessManagement.Core.Helpers;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
@@ -36,6 +37,7 @@ public class RequestSystemUserService(
     ISystemRegisterRepository systemRegisterRepository,
     IRequestRepository requestRepository,
     IOptions<PaginationOptions> _paginationOption,
+    IOptions<GeneralSettings> generalSettings,
     ISystemUserService systemUserService)
     : IRequestSystemUser
 {
@@ -871,7 +873,7 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
-        Result<Party> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
+        Result<(Party Party, bool HasRelationButNotApprove)> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
         if (validatedParty.IsProblem)
         {
             return validatedParty.Problem;
@@ -883,8 +885,8 @@ public class RequestSystemUserService(
             ExternalRef = request.ExternalRef,
             SystemId = request.SystemId,
             PartyOrgNo = request.PartyOrgNo,
-            PartyId = validatedParty.Value.PartyId,
-            PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
+            PartyId = validatedParty.Value.Party.PartyId,
+            PartyUuid = (Guid)validatedParty.Value.Party.PartyUuid!,
             Rights = [],
             AccessPackages = request.AccessPackages,
             Status = request.Status,
@@ -892,11 +894,12 @@ public class RequestSystemUserService(
             Created = request.Created,
             RedirectUrl = request.RedirectUrl,
             SystemUserType = request.UserType.ToString(),
-            Escalated = request.Escalated
+            Escalated = request.Escalated,
+            UserMayEscalateButNotApprove = validatedParty.Value.HasRelationButNotApprove
         };
     }
 
-    private async Task<Result<Party>> ValidateAndVerifyRequest(string orgNo)
+    private async Task<Result<(Party Party, bool HasRelation)>> ValidateAndVerifyRequest(string orgNo)
     {
         HttpContext? context = httpContextAccessor.HttpContext;
         if (context is null)
@@ -925,9 +928,22 @@ public class RequestSystemUserService(
 
         if (SpecificDecisionHelper.ValidatePdpDecision(response, context.User))
         {
-            return party;
+            return (party, false);
         }
 
+        string token = JwtTokenUtil.GetTokenFromContext(context, generalSettings.Value.JwtCookieName);
+        if (string.IsNullOrEmpty(token))
+        {
+            return Problem.RequestNotFound;
+        }
+
+        AuthorizedPartyExternal? hasRelationParty = await _accessManagemetClient.GetPartyFromReporteeListIfExists(party.PartyId, token);
+        if (hasRelationParty is not null)
+        {
+            return (party, true);
+        }
+
+        // User is not access manager and has no relation
         return Problem.Request_UserIsNotAccessManager;
     }
 
@@ -940,7 +956,7 @@ public class RequestSystemUserService(
             return Problem.RequestNotFound;
         }
 
-        Result<Party> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
+        Result<(Party Party, bool HasRelationButNotApprove)> validatedParty = await ValidateAndVerifyRequest(request.PartyOrgNo);
         if (validatedParty.IsProblem)
         {
             return validatedParty.Problem;
@@ -952,15 +968,16 @@ public class RequestSystemUserService(
                 ExternalRef = request.ExternalRef,
                 SystemId = request.SystemId,
                 PartyOrgNo = request.PartyOrgNo,
-                PartyId = validatedParty.Value.PartyId,
-                PartyUuid = (Guid)validatedParty.Value.PartyUuid!,
+                PartyId = validatedParty.Value.Party.PartyId,
+                PartyUuid = (Guid)validatedParty.Value.Party.PartyUuid!,
                 Rights = request.Rights,
                 AccessPackages = request.AccessPackages,
                 Status = request.Status,
                 ConfirmUrl = request.ConfirmUrl,
                 Escalated = request.Escalated,
                 Created = request.Created,
-                RedirectUrl = request.RedirectUrl
+                RedirectUrl = request.RedirectUrl,
+                UserMayEscalateButNotApprove = validatedParty.Value.HasRelationButNotApprove
             };       
     }
 

@@ -19,6 +19,12 @@ public class RequestSystemResponseInternal()
     public Guid Id { get; set; }
 
     /// <summary>
+    /// An optional name used only in display on UI. If not set by the request it will default to the System-Name. 
+    /// </summary>
+    [JsonPropertyName("integrationTitle")]
+    public string? IntegrationTitle { get; set; }
+
+    /// <summary>
     /// Either just the Orgno for the customer, or a TenantId or other form of disambiguation Id the Vendor needs.
     /// Is one of the three parts of the External Request Id.
     /// A blank ExternalRef will be overwritten as a copy of the Cutomer's OrgNo
@@ -98,6 +104,15 @@ public class RequestSystemResponseInternal()
     /// </summary>
     [JsonPropertyName("escalated")]
     public bool Escalated { get; set; }
+
+    /// <summary>
+    /// Indicates if the user is allowed to escalate the approval of this Request
+    /// is only true for the current logged in user trying to read the Request
+    /// if he has any Relation (Right, AccessPackage or Role) with the PartyUuid
+    /// but does not have AccessManager (Package:Tilgangsstyring) yet.
+    /// </summary>
+    [JsonPropertyName("userMayEscalateButNotApprove")]
+    public bool UserMayEscalateButNotApprove { get; set; }
 
     /// <summary>
     /// The date and time the Request was created,

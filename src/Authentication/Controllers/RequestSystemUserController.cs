@@ -377,10 +377,10 @@ public class RequestSystemUserController : ControllerBase
     /// Used by the BFF to retrieve the chosen Request by Guid Id alone,
     /// authorized manually via pdp that the logged in user can access the request.
     /// </summary>
-    /// <returns>RequestSystemResponse model</returns>    
-    [Authorize]
+    /// <returns>RequestSystemResponseInternal model</returns>    
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [HttpGet("{requestId}")]
-    public async Task<ActionResult<RequestSystemResponse>> GetRequestById(Guid requestId)
+    public async Task<ActionResult<RequestSystemResponseInternal>> GetRequestById(Guid requestId)
     {
         Result<RequestSystemResponseInternal> verify = await _requestSystemUser.CheckUserAuthorizationAndGetRequest(requestId);
         if (verify.IsProblem)
@@ -414,7 +414,7 @@ public class RequestSystemUserController : ControllerBase
     /// Is different from the Vendor endpoint, since this authenticates the Facilitator and not the Vendor
     /// </summary>
     /// <returns>AgentRequestSystemResponse model</returns>
-    [Authorize]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [HttpGet("agent/{requestId}")]
     public async Task<ActionResult<RequestSystemResponseInternal>> GetAgentRequestById(Guid requestId)
     {
