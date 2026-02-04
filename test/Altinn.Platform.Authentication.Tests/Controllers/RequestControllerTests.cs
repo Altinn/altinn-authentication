@@ -1163,7 +1163,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, now: TestTime));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1178,6 +1178,65 @@ public class RequestControllerTests(
 
         Assert.Equal(res.Id, requestGet.Id);
         Assert.Equal(partyId, requestGet.PartyId);
+    }
+
+    [Fact]
+    public async Task Get_Request_Only_By_RequestId_Forbidden()
+    {
+        // Missing Portal scope
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair()
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange
+        CreateRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right],
+            AccessPackages = []
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? res = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        // Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: false, now: TestTime));
+
+        int partyId = 500000;
+
+        string partyEndpoint = $"/authentication/api/v1/systemuser/request/{res.Id}";
+
+        HttpRequestMessage partyReqMessage = new(HttpMethod.Get, partyEndpoint);
+        HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Forbidden, partyResponse.StatusCode);
     }
 
     [Fact]
@@ -1426,7 +1485,7 @@ public class RequestControllerTests(
         Assert.Single(requests);
         Assert.True(requests[0].Escalated);
     }
-
+       
     [Fact]
     public async Task Get_AgentRequest_Only_By_RequestId()
     {
@@ -1466,7 +1525,7 @@ public class RequestControllerTests(
 
         // Party Get Request
         HttpClient client2 = CreateClient();
-        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, now: TestTime));
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope:true, now: TestTime));
 
         int partyId = 500000;
 
@@ -1481,6 +1540,57 @@ public class RequestControllerTests(
 
         Assert.Equal(res.Id, requestGet.Id);
         Assert.Equal(partyId, requestGet.PartyId);
+    }
+
+    [Fact]
+    public async Task Get_AgentRequest_Only_By_RequestId_Forbidden()
+    {
+        // Missing Portal scope
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        HttpClient client = CreateClient();
+        string token = AddSystemUserRequestWriteTestTokenToClient(client);
+        string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skatt-naering"
+        };
+
+        // Arrange
+        CreateAgentRequestSystemUser req = new()
+        {
+            ExternalRef = "external",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(res);
+        Assert.Equal(req.ExternalRef, res.ExternalRef);
+
+        // Party Get Request
+        HttpClient client2 = CreateClient();
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: false, now: TestTime));
+
+        int partyId = 500000;
+
+        string partyEndpoint = $"/authentication/api/v1/systemuser/request/agent/{res.Id}";
+
+        HttpRequestMessage partyReqMessage = new(HttpMethod.Get, partyEndpoint);
+        HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Forbidden, partyResponse.StatusCode);
     }
 
     [Fact]

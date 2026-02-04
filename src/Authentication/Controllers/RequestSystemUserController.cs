@@ -378,7 +378,7 @@ public class RequestSystemUserController : ControllerBase
     /// authorized manually via pdp that the logged in user can access the request.
     /// </summary>
     /// <returns>RequestSystemResponseInternal model</returns>    
-    [Authorize]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [HttpGet("{requestId}")]
     public async Task<ActionResult<RequestSystemResponseInternal>> GetRequestById(Guid requestId)
     {
@@ -414,7 +414,7 @@ public class RequestSystemUserController : ControllerBase
     /// Is different from the Vendor endpoint, since this authenticates the Facilitator and not the Vendor
     /// </summary>
     /// <returns>AgentRequestSystemResponse model</returns>
-    [Authorize]
+    [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
     [HttpGet("agent/{requestId}")]
     public async Task<ActionResult<RequestSystemResponseInternal>> GetAgentRequestById(Guid requestId)
     {
