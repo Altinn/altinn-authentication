@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using Altinn.AccessManagement.Core.Helpers;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
@@ -22,7 +17,13 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.KeyVault.Models;
 using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Services;
 #nullable enable
@@ -1023,13 +1024,32 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
     {
-        return await requestRepository.SetRequestEscalated(requestId,userId, cancellationToken);
-    }
+        HttpContext? context = httpContextAccessor.HttpContext;
+        if (context is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        string token = JwtTokenUtil.GetTokenFromContext(context, generalSettings.Value.JwtCookieName);
+        if (string.IsNullOrEmpty(token))
+        {
+            return Problem.RequestNotFound;
+        }
+
+        AuthorizedPartyExternal? hasRelationParty = await _accessManagemetClient.GetPartyFromReporteeListIfExists(party, token);
+        if (hasRelationParty is not null)
+        {
+            return await requestRepository.SetRequestEscalated(requestId, userId, cancellationToken);
+        }
+
+        return false;
+    }    
 
     /// <inheritdoc/>
     public async Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
     {
-        return await requestRepository.SetRequestEscalated(requestId, userId, cancellationToken);
+        // Deprecated: use EscalateApprovalSystemUser
+        return await EscalateApprovalSystemUser(requestId, party, userId, cancellationToken);
     }
 
     /// <inheritdoc/>
