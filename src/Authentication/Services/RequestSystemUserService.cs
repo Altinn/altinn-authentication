@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using Altinn.AccessManagement.Core.Helpers;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
@@ -17,13 +22,7 @@ using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.KeyVault.Models;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Altinn.Platform.Authentication.Services;
 #nullable enable
