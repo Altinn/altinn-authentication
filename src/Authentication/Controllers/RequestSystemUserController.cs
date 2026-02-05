@@ -463,7 +463,6 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("{party}/{requestId}/escalate")]
     public async Task<ActionResult<bool>> EscalateApprovalSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
@@ -518,12 +517,11 @@ public class RequestSystemUserController : ControllerBase
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Status response model CreateRequestSystemUserResponse</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
     [HttpPost("agent/{party}/{requestId}/escalate")]
-    public async Task<ActionResult<AgentRequestSystemResponse>> EscalateApprovalAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<bool>> EscalateApprovalAgentSystemUserRequest(int party, Guid requestId, CancellationToken cancellationToken = default)
     {
         int userId = AuthenticationHelper.GetUserId(HttpContext);
-        Result<bool> response = await _requestSystemUser.EscalateApprovalAgentSystemUser(requestId, party, userId, cancellationToken);
+        Result<bool> response = await _requestSystemUser.EscalateApprovalSystemUser(requestId, party, userId, cancellationToken);
         if (response.IsProblem)
         {
             return response.Problem.ToActionResult();

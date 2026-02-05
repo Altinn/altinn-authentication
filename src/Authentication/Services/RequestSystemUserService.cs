@@ -1023,13 +1023,32 @@ public class RequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<bool>> EscalateApprovalSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
     {
-        return await requestRepository.SetRequestEscalated(requestId,userId, cancellationToken);
-    }
+        HttpContext? context = httpContextAccessor.HttpContext;
+        if (context is null)
+        {
+            return Problem.RequestNotFound;
+        }
+
+        string token = JwtTokenUtil.GetTokenFromContext(context, generalSettings.Value.JwtCookieName);
+        if (string.IsNullOrEmpty(token))
+        {
+            return Problem.RequestNotFound;
+        }
+
+        AuthorizedPartyExternal? hasRelationParty = await _accessManagemetClient.GetPartyFromReporteeListIfExists(party, token);
+        if (hasRelationParty is not null)
+        {
+            return await requestRepository.SetRequestEscalated(requestId, userId, cancellationToken);
+        }
+
+        return false;
+    }    
 
     /// <inheritdoc/>
     public async Task<Result<bool>> EscalateApprovalAgentSystemUser(Guid requestId, int party, int userId, CancellationToken cancellationToken)
     {
-        return await requestRepository.SetRequestEscalated(requestId, userId, cancellationToken);
+        // Deprecated: use EscalateApprovalSystemUser
+        return await EscalateApprovalSystemUser(requestId, party, userId, cancellationToken);
     }
 
     /// <inheritdoc/>
