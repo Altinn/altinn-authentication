@@ -9,7 +9,6 @@
     <PackageReference Include="Altinn.Authorization.ABAC" Version="0.1.1" />
     <PackageReference Include="Altinn.Platform.Storage.Interface" Version="4.3.0" />
     <PackageReference Include="Altinn.Register.Contracts" Version="1.4.1" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.1.0" />
     <PackageReference Include="Testcontainers" Version="4.10.0" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.10.0" />
