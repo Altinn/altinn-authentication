@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Altinn.Authentication.Integration.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Profile;
@@ -18,8 +19,15 @@ namespace Altinn.Platform.Authentication.Services
     /// </summary>
     public class ProfileService : IProfile
     {
+        private static readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web) 
+        { 
+            Converters = 
+            { 
+                new JsonStringEnumConverter() 
+            } 
+        };
+
         private readonly HttpClient _profileClient;
-        private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         private readonly ILogger _logger;
         private readonly PlatformSettings _platformSettings;
 
