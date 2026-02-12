@@ -113,6 +113,11 @@ namespace Altinn.Platform.Authentication.Core.Helpers
                 claims.Add(new Claim("nonce", oidcBindingContext.Nonce));
             }
 
+            if (oidcBindingContext.ClientId != null && isIDToken)
+            {
+                claims.Add(new Claim("aud", oidcBindingContext.ClientId));
+            }
+
             if (oidcBindingContext.AuthTime != null)
             {
                 long authTimeEpoch = ((DateTimeOffset)oidcBindingContext.AuthTime).ToUnixTimeSeconds();

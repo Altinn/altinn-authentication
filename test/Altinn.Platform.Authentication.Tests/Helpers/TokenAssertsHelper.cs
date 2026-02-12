@@ -99,6 +99,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.True(idTokenPrincipal.Identity.IsAuthenticated);
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "iss" && c.Value.Equals("http://localhost/authentication/api/v1/openid/"));
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "sub" && !string.IsNullOrEmpty(c.Value));
+            Assert.Contains(idTokenPrincipal.Claims, c => c.Type == "aud" && !string.IsNullOrEmpty(c.Value) && c.Value == testScenario.DownstreamClientId);
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && !string.IsNullOrEmpty(c.Value));
             string method = idTokenPrincipal.Claims.First(c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod).Value;
             if (!method.Equals(AuthenticationMethod.SelfIdentified.ToString()) && !method.Equals(AuthenticationMethod.IdportenEpost.ToString()))
@@ -114,7 +115,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyUUID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.UserId && !string.IsNullOrEmpty(c.Value));
             Assert.DoesNotContain(idTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains("openid"));
-
+          
             return sid;
         }
 
