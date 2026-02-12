@@ -7,6 +7,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Tests.Models;
+using Altinn.Urn;
 using AltinnCore.Authentication.Constants;
 using Xunit;
 
@@ -50,7 +51,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
         public static void AssertAccessToken(string accessToken, OidcTestScenario testScenario, DateTimeOffset now)
         {
             ClaimsPrincipal accessTokenPrincipal = JwtTokenMock.ValidateToken(accessToken, now);
-  
+
             Assert.NotNull(accessTokenPrincipal);
             Assert.NotNull(accessTokenPrincipal.Identity);
             Assert.NotEmpty(accessTokenPrincipal.Claims);
@@ -66,13 +67,13 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             {
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.AuthenticateMethod && c.Value.Equals(AuthenticationMethod.IdportenEpost.ToString()));
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.Email && c.Value.Equals(testScenario.Email));
-                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.ExternalIdentifier && c.Value.Equals(AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + testScenario.Email));
+                Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.ExternalIdentifier && c.Value.Equals(AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + UrnEncoded.Create(testScenario.Email!).Encoded));
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "acr" && c.Value.Equals(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL));
                 Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "amr" && c.Value.Equals(AuthzConstants.CLAIM_AMR_IDPORTEN_EMAIL));
             }
 
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == "sid" && !string.IsNullOrEmpty(c.Value));
- 
+
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyUUID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(accessTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.UserId && !string.IsNullOrEmpty(c.Value));
@@ -115,7 +116,7 @@ namespace Altinn.Platform.Authentication.Tests.Helpers
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.PartyUUID && !string.IsNullOrEmpty(c.Value));
             Assert.Contains(idTokenPrincipal.Claims, c => c.Type == AltinnCoreClaimTypes.UserId && !string.IsNullOrEmpty(c.Value));
             Assert.DoesNotContain(idTokenPrincipal.Claims, c => c.Type == "scope" && c.Value.Contains("openid"));
-          
+
             return sid;
         }
 
