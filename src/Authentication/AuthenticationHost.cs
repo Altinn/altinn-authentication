@@ -75,7 +75,7 @@ internal static class AuthenticationHost
         services.AddAutoMapper(cfg => { }, typeof(Program));
         services.AddControllers().AddJsonOptions(options =>
         {
-            options.JsonSerializerOptions.WriteIndented = true;
+            options.JsonSerializerOptions.WriteIndented = descriptor.IsLocalDev;
             options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         });
 
