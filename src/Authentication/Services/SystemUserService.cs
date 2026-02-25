@@ -548,7 +548,7 @@ namespace Altinn.Platform.Authentication.Services
             if (newSystemUser.UserType == SystemUserType.Standard)
             {
                 // Push system user to Access Management
-                Result<bool> partyCreated = await _accessManagementClient.PushSystemUserToAM(partyUuId, systemUser, cancellationToken);
+                Result<bool> partyCreated = await _accessManagementClient.PushSystemUserToAM(partyUuid, inserted, cancellationToken);
 
                 if (partyCreated.IsProblem)
                 {
