@@ -168,4 +168,14 @@ public interface IAccessManagementClient
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Delegate OWN company to the Agent SystemUser
+    /// </summary>    
+    /// <param name="systemUser">The Agent SystemUser</param>
+    /// <param name="request">Post Body from BFF containing customerId</param>
+    /// <param name="userId">Logged in user</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Success or Failure</returns>  
+    Task<Result<List<AgentDelegationResponse>>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 }

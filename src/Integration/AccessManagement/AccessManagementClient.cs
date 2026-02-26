@@ -602,6 +602,12 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
+    public async Task<Result<List<AgentDelegationResponse>>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
     public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken)
     {
         try
@@ -925,5 +931,5 @@ public class AccessManagementClient : IAccessManagementClient
             ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem, problemExtensionData);
             return new Result<bool>(problemInstance);
         }
-    }   
+    }
 }
