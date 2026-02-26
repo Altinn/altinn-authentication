@@ -545,6 +545,17 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToCreate;
             }
 
+            if (newSystemUser.UserType == SystemUserType.Standard)
+            {
+                // Push system user to Access Management
+                Result<bool> partyCreated = await _accessManagementClient.PushSystemUserToAM(partyUuid, inserted, cancellationToken);
+
+                if (partyCreated.IsProblem)
+                {
+                    return partyCreated.Problem;
+                }
+            }
+
             if (IsStandardSystemUserDelegatgeSingleRights(newSystemUser, regSystem, delegationCheckFinalResult))
             {
                 Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult!.RightResponses!);
@@ -913,14 +924,6 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUserInternalDTO systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken)
         {
-            // Push system user to Access Management
-            Result<bool> partyCreated = await _accessManagementClient.PushSystemUserToAM(partyUuId, systemUser, cancellationToken);
-
-            if (partyCreated.IsProblem)
-            {
-                return partyCreated.Problem;
-            }
-
             // Add the system user as right holder
             Result<bool> result = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuId, Guid.Parse(systemUser.Id), cancellationToken);
             if (result.IsProblem)
