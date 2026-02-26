@@ -672,7 +672,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateCustomerToAgentSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateSelfToAgentSystemUser // Exception");
             throw;
         }
     }
