@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -20,13 +19,12 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
-using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
+
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 #nullable enable
@@ -854,30 +852,31 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+        public async Task<Result<bool>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken)
         {
-            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateSelfToAgentSystemUser(systemUser, request, userId, cancellationToken);
-            if (result.IsSuccess)
+            if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
             {
-                List<DelegationResponse> theList = [];
-
-                foreach (var item in result.Value)
-                {
-                    var newDel = new DelegationResponse()
-                    {
-                        DelegationId = item.DelegationId,
-                        CustomerId = item.FromEntityId,
-                        AgentSystemUserId = new Guid(systemUser.Id!)
-                    };
-
-                    theList.Add(newDel);
-                }
-
-                return theList;
+                return Problem.AgentSystemUser_ExpectedAgentUserType;
             }
 
-            return result.Problem;
-        }  
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemUser.SystemId, cancellationToken);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            if (systemUser.AccessPackages is not null && systemUser.AccessPackages.Count > 0)
+            {
+                // Even if we want to delegate to an agent system user, validate accesspackages are delegable for a Standard SystemUser, for themselves. (Ie not Revisor, etc ...)
+                Result<bool> validatedRequestedPackages = await ValidateAccessPackages(systemUser.AccessPackages, regSystem, isAgentRequest:false);
+                if (validatedRequestedPackages.IsProblem)
+                {
+                    return validatedRequestedPackages.Problem;
+                }
+            }
+
+            return await DelegateAccessPackagesToSystemUser(Guid.Parse(systemUser.PartyUuId), systemUser, systemUser.AccessPackages!, cancellationToken);
+        }
 
         /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId)

@@ -433,7 +433,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/self/")]
-    public async Task<ActionResult<List<DelegationResponse>>> DelegateSelfToAgentSystemUser(string party, Guid systemUserId, [FromBody] AgentDelegationInputDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<List<DelegationResponse>>> DelegateSelfToAgentSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -449,7 +449,7 @@ public class SystemUserController : ControllerBase
             return Forbid();
         }
 
-        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateSelfToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        Result<bool> delegationResult = await _systemUserService.DelegateSelfToAgentSystemUser(systemUser, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok(delegationResult.Value);

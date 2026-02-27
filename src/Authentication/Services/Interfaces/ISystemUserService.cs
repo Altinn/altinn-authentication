@@ -236,9 +236,8 @@ public interface ISystemUserService
     /// The service is idempotent.
     /// </summary>
     /// <param name="systemUser">SystemUser</param>
-    /// <param name="request">AgentDelegationInputDto</param>
     /// <param name="userId">the user id of the logged in user</param>
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
-    Task<Result<List<DelegationResponse>>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
 }
