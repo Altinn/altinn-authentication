@@ -433,7 +433,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/self/")]
-    public async Task<ActionResult<List<DelegationResponse>>> DelegateSelfToAgentSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken)
+    public async Task<ActionResult<bool>> DelegateSelfToAgentSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
