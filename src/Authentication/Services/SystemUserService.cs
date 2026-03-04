@@ -871,22 +871,29 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_ExpectedAgentUserType;
             }
 
+            if (systemUser.PartyUuId is null)
+            {
+                return Problem.Party_PartyUuid_NotFound;
+            }
+
+            if (systemUser.AccessPackages is null || systemUser.AccessPackages.Count == 0)
+            {
+                return Problem.AccessPackage_NotFound;
+            }
+
             RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemUser.SystemId, cancellationToken);
             if (regSystem is null)
             {
                 return Problem.SystemIdNotFound;
             }
-
-            if (systemUser.AccessPackages is not null && systemUser.AccessPackages.Count > 0)
+      
+            // Even if we want to delegate to an agent system user, validate accesspackages are delegable for a Standard SystemUser, for themselves. (Ie not Revisor, etc ...)
+            Result<bool> validatedRequestedPackages = await ValidateAccessPackages(systemUser.AccessPackages, regSystem, isAgentRequest:false);
+            if (validatedRequestedPackages.IsProblem)
             {
-                // Even if we want to delegate to an agent system user, validate accesspackages are delegable for a Standard SystemUser, for themselves. (Ie not Revisor, etc ...)
-                Result<bool> validatedRequestedPackages = await ValidateAccessPackages(systemUser.AccessPackages, regSystem, isAgentRequest:false);
-                if (validatedRequestedPackages.IsProblem)
-                {
-                    return validatedRequestedPackages.Problem;
-                }
+                return validatedRequestedPackages.Problem;
             }
-
+           
             return await DelegateAccessPackagesToSystemUser(Guid.Parse(systemUser.PartyUuId), systemUser, systemUser.AccessPackages!, cancellationToken);
         }
 
