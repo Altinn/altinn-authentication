@@ -860,6 +860,11 @@ namespace Altinn.Platform.Authentication.Services
                 return result.Problem;
             }
 
+            if (result.Value.Count == 0)
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -915,8 +920,14 @@ namespace Altinn.Platform.Authentication.Services
             {
                 foreach (AccessPackage accessPackage in systemUser.AccessPackages)
                 {
-                    var removeSystemUserResult = await accessManagementClient.DeleteSingleAccessPackageFromSystemUser(
+                    if (accessPackage.Urn is null)
+                    {
+                        return Problem.AccessPackage_NotFound;
+                    }
+
+                    var removeSystemUserResult = await _accessManagementClient.DeleteSingleAccessPackageFromSystemUser(
                         Guid.Parse(systemUser.PartyUuId), Guid.Parse(systemUser.Id), accessPackage.Urn, cancellationToken);
+
                     if (removeSystemUserResult.IsProblem)
                     {
                         return removeSystemUserResult.Problem;
