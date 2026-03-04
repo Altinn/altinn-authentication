@@ -459,6 +459,41 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// The endpoint is idempotent.
+    /// </summary>
+    /// <returns>OK</returns>    
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpPost("agent/{party}/{systemUserId}/revokeself/")]
+    public async Task<ActionResult<bool>> RevokeSelfFromAgentSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken)
+    {
+        var userId = AuthenticationHelper.GetUserId(HttpContext);
+
+        SystemUserInternalDTO? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
+        if (systemUser is null)
+        {
+            ModelState.AddModelError("return", $"SystemUser with Id {systemUserId} Not Found");
+            return ValidationProblem(ModelState);
+        }
+
+        if (systemUser.PartyId != party)
+        {
+            return Forbid();
+        }
+
+        Result<bool> delegationResult = await _systemUserService.RevokeSelfFromAgentSystemUser(systemUser, userId, cancellationToken);
+        if (delegationResult.IsSuccess)
+        {
+            return Ok(delegationResult.Value);
+        }
+
+        return delegationResult.Problem.ToActionResult();
+    }
+
+    /// <summary>
     /// Delete a customer from an Agent SystemUser.
     /// </summary>
     /// <returns></returns>

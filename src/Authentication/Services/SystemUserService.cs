@@ -879,6 +879,33 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
+        public async Task<Result<bool>> RevokeSelfFromAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken)
+        {
+            if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
+            {
+                return Problem.AgentSystemUser_ExpectedAgentUserType;
+            }
+
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemUser.SystemId, cancellationToken);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            if (systemUser.AccessPackages is not null && systemUser.AccessPackages.Count > 0)
+            {
+                // Even if we want to delegate to an agent system user, validate accesspackages are delegable for a Standard SystemUser, for themselves. (Ie not Revisor, etc ...)
+                Result<bool> validatedRequestedPackages = await ValidateAccessPackages(systemUser.AccessPackages, regSystem, isAgentRequest: false);
+                if (validatedRequestedPackages.IsProblem)
+                {
+                    return validatedRequestedPackages.Problem;
+                }
+            }
+
+            return await DelegateAccessPackagesToSystemUser(Guid.Parse(systemUser.PartyUuId), systemUser, systemUser.AccessPackages!, cancellationToken);
+        }
+
+        /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId)
         {
             Party party = await _partiesClient.GetPartyAsync(partyId);
