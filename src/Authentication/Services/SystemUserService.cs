@@ -892,17 +892,20 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            if (systemUser.AccessPackages is not null && systemUser.AccessPackages.Count > 0)
+            if (systemUser.AccessPackages?.Count > 0)
             {
-                // Even if we want to delegate to an agent system user, validate accesspackages are delegable for a Standard SystemUser, for themselves. (Ie not Revisor, etc ...)
-                Result<bool> validatedRequestedPackages = await ValidateAccessPackages(systemUser.AccessPackages, regSystem, isAgentRequest: false);
-                if (validatedRequestedPackages.IsProblem)
+                foreach (AccessPackage accessPackage in systemUser.AccessPackages)
                 {
-                    return validatedRequestedPackages.Problem;
+                    var removeSystemUserResult = await accessManagementClient.DeleteSingleAccessPackageFromSystemUser(
+                        Guid.Parse(systemUser.PartyUuId), Guid.Parse(systemUser.Id), accessPackage.Urn, cancellationToken);
+                    if (removeSystemUserResult.IsProblem)
+                    {
+                        return removeSystemUserResult.Problem;
+                    }
                 }
             }
 
-            return await DelegateAccessPackagesToSystemUser(Guid.Parse(systemUser.PartyUuId), systemUser, systemUser.AccessPackages!, cancellationToken);
+            return true;
         }
 
         /// <inheritdoc/>
