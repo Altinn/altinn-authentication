@@ -852,6 +852,18 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
+        public async Task<Result<bool>> IsSelfDelegatedToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken)
+        {
+            Result<List<AccessPackage>> result = await GetAccessPackagesForSystemUser(Guid.Parse(systemUser.PartyUuId), Guid.Parse(systemUser.Id), cancellationToken);
+            if (result.IsProblem)
+            {
+                return result.Problem;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc/>
         public async Task<Result<bool>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken)
         {
             if (systemUser.UserType != Core.Enums.SystemUserType.Agent)

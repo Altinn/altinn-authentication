@@ -241,4 +241,5 @@ public interface ISystemUserService
     /// <returns>Result of True or False</returns> 
     Task<Result<bool>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
     Task<Result<bool>> RevokeSelfFromAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
+    Task<Result<bool>> IsSelfDelegatedToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
 }

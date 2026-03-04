@@ -519,7 +519,7 @@ public class SystemUserController : ControllerBase
             return Forbid();
         }
 
-        Result<bool> delegationResult = await _systemUserService.RevokeSelfFromAgentSystemUser(systemUser, userId, cancellationToken);
+        Result<bool> delegationResult = await _systemUserService.IsSelfDelegatedToAgentSystemUser(systemUser, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok(delegationResult.Value);
