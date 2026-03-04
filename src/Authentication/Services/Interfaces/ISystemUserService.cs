@@ -240,6 +240,22 @@ public interface ISystemUserService
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
     Task<Result<bool>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Removes the delegation of OWN company to an Agent SystemUser.
+    /// </summary>
+    /// <param name="systemUser">the systemuser</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns>
     Task<Result<bool>> RevokeSelfFromAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Tells whether the delegation of OWN company to an Agent SystemUser exists.
+    /// </summary>
+    /// <param name="systemUser">the systemuser</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns>
     Task<Result<bool>> IsSelfDelegatedToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
 }
