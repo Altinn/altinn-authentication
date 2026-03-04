@@ -447,9 +447,4 @@ public class AccessManagementClientMock: IAccessManagementClient
         List<RightDelegation> delegatedRights = JsonSerializer.Deserialize<List<RightDelegation>>(content, _serializerOptions)!;
         return new Result<List<RightDelegation>>(delegatedRights);
     }
-
-    public Task<Result<List<AgentDelegationResponse>>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
 }
