@@ -433,7 +433,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}/self/")]
-    public async Task<ActionResult<bool>> DelegateSelfToAgentSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken)
+    public async Task<ActionResult<bool>> DelegateSelfToAgentSystemUser(string party, Guid systemUserId, [FromQuery] Guid partyUuid, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -448,6 +448,8 @@ public class SystemUserController : ControllerBase
         {
             return Forbid();
         }
+
+        systemUser.PartyUuId = partyUuid.ToString();
 
         Result<bool> delegationResult = await _systemUserService.DelegateSelfToAgentSystemUser(systemUser, userId, cancellationToken);
         if (delegationResult.IsSuccess)
@@ -468,7 +470,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("agent/{party}/{systemUserId}/self/")]
-    public async Task<ActionResult<bool>> RevokeSelfFromAgentSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken)
+    public async Task<ActionResult<bool>> RevokeSelfFromAgentSystemUser(string party, Guid systemUserId, [FromQuery] Guid partyUuid, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -483,6 +485,8 @@ public class SystemUserController : ControllerBase
         {
             return Forbid();
         }
+
+        systemUser.PartyUuId = partyUuid.ToString();
 
         Result<bool> delegationResult = await _systemUserService.RevokeSelfFromAgentSystemUser(systemUser, userId, cancellationToken);
         if (delegationResult.IsSuccess)
@@ -503,7 +507,7 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("agent/{party}/{systemUserId}/self/")]
-    public async Task<ActionResult<bool>> IsSelfDelegatedToAgentSystemUser(string party, Guid systemUserId, CancellationToken cancellationToken)
+    public async Task<ActionResult<bool>> IsSelfDelegatedToAgentSystemUser(string party, Guid systemUserId, [FromQuery] Guid partyUuid, CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -518,6 +522,8 @@ public class SystemUserController : ControllerBase
         {
             return Forbid();
         }
+
+        systemUser.PartyUuId = partyUuid.ToString();
 
         Result<bool> delegationResult = await _systemUserService.IsSelfDelegatedToAgentSystemUser(systemUser, userId, cancellationToken);
         if (delegationResult.IsSuccess)
