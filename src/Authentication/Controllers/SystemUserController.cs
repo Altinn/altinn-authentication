@@ -424,7 +424,8 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// Assigns the user's own Organisation to the Agent SystemUser, and delegates all Access Packages listed in it to the SystemUser,
+    /// in the same way as if it was a standard SystemUser. Not eligible for Access Packages with explicit exclusions.
     /// The endpoint is idempotent.
     /// </summary>
     /// <returns>OK</returns>    
@@ -461,7 +462,8 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// Revokes all delegations of Access Packages from the user's own Organisation to the Agent SystemUser.
+    /// Any Client delegations are untouched.
     /// The endpoint is idempotent.
     /// </summary>
     /// <returns>OK</returns>    
@@ -498,7 +500,7 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// Checks if the user's own Organisation has delegated AccessPackages to the Agent SystemUser.
     /// The endpoint is idempotent.
     /// </summary>
     /// <returns>OK</returns>    
