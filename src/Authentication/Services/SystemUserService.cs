@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -20,13 +19,12 @@ using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
-using Altinn.Platform.Authentication.Persistance.RepositoryImplementations;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
+
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 #nullable enable
@@ -392,15 +390,15 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         private async Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(
-            SystemUserType systemUserType, 
-            string systemId, 
-            string partyId, 
-            int userId, 
-            string? externalRef, 
-            Guid? requestId, 
+            SystemUserType systemUserType,
+            string systemId,
+            string partyId,
+            int userId,
+            string? externalRef,
+            Guid? requestId,
             string? integrationTitle = default,
-            List<AccessPackage>? accessPackages = default, 
-            List<Right>? rights = default, 
+            List<AccessPackage>? accessPackages = default,
+            List<Right>? rights = default,
             CancellationToken cancellationToken = default)
         {
             // Step 1 in refactoring of the systemuser creation process, after this method is verified to work, 
@@ -467,7 +465,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemUserType == SystemUserType.Standard && rights is not null && rights.Count > 0)
             {
-                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, rights, fromBff:false, cancellationToken);
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, rights, fromBff: false, cancellationToken);
 
                 if (delegationCheckFinalResult?.RightResponses is null)
                 {
@@ -484,7 +482,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemUserType == SystemUserType.Standard && accessPackages is not null && accessPackages.Count > 0)
             {
-                var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, accessPackages, fromBff:false, cancellationToken);
+                var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, accessPackages, fromBff: false, cancellationToken);
                 if (accessPackageCheckResult.IsProblem)
                 {
                     return accessPackageCheckResult.Problem;
@@ -520,17 +518,17 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
-            
+
         }
 
         private async Task<Result<SystemUserInternalDTO>> InsertNewSystemUser(
-            SystemUserInternalDTO newSystemUser, 
-            int userId, 
-            RegisteredSystemResponse regSystem, 
-            DelegationCheckResult? delegationCheckFinalResult, 
-            string partyId, 
-            AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult, 
-            Guid partyUuid, 
+            SystemUserInternalDTO newSystemUser,
+            int userId,
+            RegisteredSystemResponse regSystem,
+            DelegationCheckResult? delegationCheckFinalResult,
+            string partyId,
+            AccessPackageDelegationCheckResult? accessPackageDelegationCheckResult,
+            Guid partyUuid,
             CancellationToken cancellationToken)
         {
             Guid? insertedId = await _repository.InsertSystemUser(newSystemUser, userId);
@@ -601,44 +599,44 @@ namespace Altinn.Platform.Authentication.Services
 
         /// <inheritdoc/>
         public async Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(
-            AgentRequestSystemResponse request, 
-            string partyId, 
-            int userId, 
+            AgentRequestSystemResponse request,
+            string partyId,
+            int userId,
             CancellationToken cancellationToken)
         {
             return await CreateSystemUserFromApprovedVendorRequest(
-                SystemUserType.Agent, 
-                request.SystemId, 
-                partyId, 
-                userId, 
-                externalRef:request.ExternalRef, 
-                request.Id, 
+                SystemUserType.Agent,
+                request.SystemId,
+                partyId,
+                userId,
+                externalRef: request.ExternalRef,
+                request.Id,
                 request.IntegrationTitle,
-                request.AccessPackages, 
-                null, 
+                request.AccessPackages,
+                null,
                 cancellationToken);
         }
 
         /// <inheritdoc/>
         public async Task<Result<SystemUserInternalDTO>> CreateSystemUserFromApprovedVendorRequest(
-            RequestSystemResponse request, 
-            string partyId, 
-            int userId, 
+            RequestSystemResponse request,
+            string partyId,
+            int userId,
             CancellationToken cancellationToken)
         {
             return await CreateSystemUserFromApprovedVendorRequest(
-                SystemUserType.Standard, 
-                request.SystemId, 
-                partyId, 
-                userId, 
-                externalRef: request.ExternalRef, 
-                request.Id, 
+                SystemUserType.Standard,
+                request.SystemId,
+                partyId,
+                userId,
+                externalRef: request.ExternalRef,
+                request.Id,
                 request.IntegrationTitle,
-                request.AccessPackages, 
-                request.Rights, 
+                request.AccessPackages,
+                request.Rights,
                 cancellationToken);
-        }                
-     
+        }
+
         /// <inheritdoc/>
         public Result<bool> ValidateRights(List<Right> rights, RegisteredSystemResponse systemInfo)
         {
@@ -709,7 +707,7 @@ namespace Altinn.Platform.Authentication.Services
             foreach (AccessPackage accessPackage in accessPackages)
             {
                 bool found = systemInfo.AccessPackages.Any(systemPackage => accessPackage.Urn == systemPackage.Urn);
-                
+
                 if (found)
                 {
                     string urnValue = accessPackage.Urn!;
@@ -732,15 +730,15 @@ namespace Altinn.Platform.Authentication.Services
                 else
                 {
                     notFoundPackages.Add(accessPackage.Urn!);
-                }                    
+                }
             }
-            
+
             if (notFoundPackages.Count > 0)
             {
                 var problemExtensionData = ProblemExtensionData.Create(new[]
                 {
                     new KeyValuePair<string, string>($"NotFoundPackages", string.Join(", ", notFoundPackages))
-                });          
+                });
                 return Problem.AccessPackage_NotFound.Create(problemExtensionData);
             }
 
@@ -749,7 +747,7 @@ namespace Altinn.Platform.Authentication.Services
                 var problemExtensionData = ProblemExtensionData.Create(new[]
                 {
                     new KeyValuePair<string, string>($"NotDelegablePackages", string.Join(", ", notDelegablePackages))
-                });          
+                });
                 return isAgentRequest ? Problem.AccessPackage_NotDelegable_Agent.Create(problemExtensionData) : Problem.AccessPackage_NotDelegable_Standard.Create(problemExtensionData);
             }
 
@@ -851,6 +849,93 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return result.Problem;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> IsSelfDelegatedToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken)
+        {
+            Result<List<AccessPackage>> result = await GetAccessPackagesForSystemUser(Guid.Parse(systemUser.PartyUuId), Guid.Parse(systemUser.Id), cancellationToken);
+            if (result.IsProblem)
+            {
+                return result.Problem;
+            }
+
+            if (result.Value.Count == 0)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken)
+        {
+            if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
+            {
+                return Problem.AgentSystemUser_ExpectedAgentUserType;
+            }
+
+            if (systemUser.PartyUuId is null)
+            {
+                return Problem.Party_PartyUuid_NotFound;
+            }
+
+            if (systemUser.AccessPackages is null || systemUser.AccessPackages.Count == 0)
+            {
+                return Problem.AccessPackage_NotFound;
+            }
+
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemUser.SystemId, cancellationToken);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+      
+            // Even if we want to delegate to an agent system user, validate accesspackages are delegable for a Standard SystemUser, for themselves. (Ie not Revisor, etc ...)
+            Result<bool> validatedRequestedPackages = await ValidateAccessPackages(systemUser.AccessPackages, regSystem, isAgentRequest:false);
+            if (validatedRequestedPackages.IsProblem)
+            {
+                return validatedRequestedPackages.Problem;
+            }
+           
+            return await DelegateAccessPackagesToSystemUser(Guid.Parse(systemUser.PartyUuId), systemUser, systemUser.AccessPackages!, cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> RevokeSelfFromAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken)
+        {
+            if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
+            {
+                return Problem.AgentSystemUser_ExpectedAgentUserType;
+            }
+
+            RegisteredSystemResponse? regSystem = await _registerRepository.GetRegisteredSystemById(systemUser.SystemId, cancellationToken);
+            if (regSystem is null)
+            {
+                return Problem.SystemIdNotFound;
+            }
+
+            if (systemUser.AccessPackages?.Count > 0)
+            {
+                foreach (AccessPackage accessPackage in systemUser.AccessPackages)
+                {
+                    if (accessPackage.Urn is null)
+                    {
+                        return Problem.AccessPackage_NotFound;
+                    }
+
+                    var removeSystemUserResult = await _accessManagementClient.DeleteSingleAccessPackageFromSystemUser(
+                        Guid.Parse(systemUser.PartyUuId), Guid.Parse(systemUser.Id), accessPackage.Urn, cancellationToken);
+
+                    if (removeSystemUserResult.IsProblem)
+                    {
+                        return removeSystemUserResult.Problem;
+                    }
+                }
+            }
+
+            return true;
         }
 
         /// <inheritdoc/>
@@ -1150,6 +1235,6 @@ namespace Altinn.Platform.Authentication.Services
                     accessPackages.Add(accessPackage);
                 }
             }
-        }        
+        }
     }
 }

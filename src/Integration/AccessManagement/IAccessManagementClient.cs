@@ -168,4 +168,4 @@ public interface IAccessManagementClient
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default);
-}
+  }

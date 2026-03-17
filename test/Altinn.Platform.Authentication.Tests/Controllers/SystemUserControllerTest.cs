@@ -2361,5 +2361,621 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             return response;
         }
+
+        // Self-Delegation Tests
+
+        /// <summary>
+        /// Tests that DelegateSelfToAgentSystemUser returns OK when the agent system user exists and belongs to the party.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_DelegateSelf_ReturnsOk()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skatt-naering"
+            };
+
+            // Arrange
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+
+            // Approve the request
+            HttpClient client2 = CreateClient();
+
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            // Get the agent system user
+            HttpRequestMessage getAgent = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
+
+            var systemUserList = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
+            Assert.NotNull(systemUserList);
+            Assert.NotEmpty(systemUserList);
+
+            Guid systemUserId = Guid.Parse(systemUserList[0].Id);
+            Guid partyUuid = Guid.NewGuid();
+
+            // Act - Delegate self
+            string delegateSelfEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}";
+            HttpRequestMessage delegateSelfMessage = new(HttpMethod.Post, delegateSelfEndpoint);
+            delegateSelfMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage delegateSelfResponse = await client2.SendAsync(delegateSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, delegateSelfResponse.StatusCode);
+            bool? result = await delegateSelfResponse.Content.ReadFromJsonAsync<bool>();
+            Assert.NotNull(result);
+            Assert.True(result);
+        }
+
+        /// <summary>
+        /// Tests that DelegateSelfToAgentSystemUser returns Unauthorized when no token is provided.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_DelegateSelf_ReturnsUnauthorized()
+        {
+            HttpClient client = CreateClient();
+
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+            Guid partyUuid = Guid.NewGuid();
+
+            HttpRequestMessage delegateSelfMessage = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}");
+            HttpResponseMessage delegateSelfResponse = await client.SendAsync(delegateSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, delegateSelfResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests that DelegateSelfToAgentSystemUser returns BadRequest (ValidationProblem) when the system user does not exist.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_DelegateSelf_SystemUserNotFound_ReturnsBadRequest()
+        {
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+            Guid partyUuid = Guid.NewGuid();
+
+            HttpRequestMessage delegateSelfMessage = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}");
+            HttpResponseMessage delegateSelfResponse = await client.SendAsync(delegateSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.BadRequest, delegateSelfResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests that DelegateSelfToAgentSystemUser returns Forbid when party does not match.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_DelegateSelf_PartyMismatch_ReturnsForbidden()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skatt-naering"
+            };
+
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+
+            HttpClient client2 = CreateClient();
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            HttpRequestMessage getAgent = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
+
+            var systemUserList = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
+            Assert.NotNull(systemUserList);
+            Assert.NotEmpty(systemUserList);
+
+            Guid systemUserId = Guid.Parse(systemUserList[0].Id);
+            Guid partyUuid = Guid.NewGuid();
+
+            // Use a different party that does not own the system user
+            int wrongPartyId = 500801;
+
+            string delegateSelfEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUserId}/self/?partyUuid={partyUuid}";
+            HttpRequestMessage delegateSelfMessage = new(HttpMethod.Post, delegateSelfEndpoint);
+            delegateSelfMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage delegateSelfResponse = await client2.SendAsync(delegateSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Forbidden, delegateSelfResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests that RevokeSelfFromAgentSystemUser returns OK when the agent system user exists and belongs to the party.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_RevokeSelf_ReturnsOk()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skatt-naering"
+            };
+
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+
+            HttpClient client2 = CreateClient();
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            HttpRequestMessage getAgent = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
+
+            var systemUserList = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
+            Assert.NotNull(systemUserList);
+            Assert.NotEmpty(systemUserList);
+
+            Guid systemUserId = Guid.Parse(systemUserList[0].Id);
+            Guid partyUuid = Guid.NewGuid();
+
+            // Act - Revoke self
+            string revokeSelfEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}";
+            HttpRequestMessage revokeSelfMessage = new(HttpMethod.Delete, revokeSelfEndpoint);
+            revokeSelfMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage revokeSelfResponse = await client2.SendAsync(revokeSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, revokeSelfResponse.StatusCode);
+            bool? result = await revokeSelfResponse.Content.ReadFromJsonAsync<bool>();
+            Assert.NotNull(result);
+            Assert.True(result);
+        }
+
+        /// <summary>
+        /// Tests that RevokeSelfFromAgentSystemUser returns Unauthorized when no token is provided.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_RevokeSelf_ReturnsUnauthorized()
+        {
+            HttpClient client = CreateClient();
+
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+            Guid partyUuid = Guid.NewGuid();
+
+            HttpRequestMessage revokeSelfMessage = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}");
+            HttpResponseMessage revokeSelfResponse = await client.SendAsync(revokeSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, revokeSelfResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests that RevokeSelfFromAgentSystemUser returns BadRequest (ValidationProblem) when the system user does not exist.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_RevokeSelf_SystemUserNotFound_ReturnsBadRequest()
+        {
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+            Guid partyUuid = Guid.NewGuid();
+
+            HttpRequestMessage revokeSelfMessage = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}");
+            HttpResponseMessage revokeSelfResponse = await client.SendAsync(revokeSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.BadRequest, revokeSelfResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests that RevokeSelfFromAgentSystemUser returns Forbid when party does not match.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_RevokeSelf_PartyMismatch_ReturnsForbidden()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skatt-naering"
+            };
+
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+
+            HttpClient client2 = CreateClient();
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            HttpRequestMessage getAgent = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
+
+            var systemUserList = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
+            Assert.NotNull(systemUserList);
+            Assert.NotEmpty(systemUserList);
+
+            Guid systemUserId = Guid.Parse(systemUserList[0].Id);
+            Guid partyUuid = Guid.NewGuid();
+
+            int wrongPartyId = 500801;
+
+            string revokeSelfEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUserId}/self/?partyUuid={partyUuid}";
+            HttpRequestMessage revokeSelfMessage = new(HttpMethod.Delete, revokeSelfEndpoint);
+            revokeSelfMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage revokeSelfResponse = await client2.SendAsync(revokeSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Forbidden, revokeSelfResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests that IsSelfDelegatedToAgentSystemUser returns OK with true/false when the agent system user exists and belongs to the party.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_IsSelfDelegated_ReturnsOk()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skatt-naering"
+            };
+
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+
+            HttpClient client2 = CreateClient();
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            HttpRequestMessage getAgent = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
+
+            var systemUserList = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
+            Assert.NotNull(systemUserList);
+            Assert.NotEmpty(systemUserList);
+
+            Guid systemUserId = Guid.Parse(systemUserList[0].Id);
+            Guid partyUuid = Guid.NewGuid();
+
+            // Act - Check if self delegated
+            string isSelfDelegatedEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}";
+            HttpRequestMessage isSelfDelegatedMessage = new(HttpMethod.Get, isSelfDelegatedEndpoint);
+            isSelfDelegatedMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage isSelfDelegatedResponse = await client2.SendAsync(isSelfDelegatedMessage, HttpCompletionOption.ResponseContentRead);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, isSelfDelegatedResponse.StatusCode);
+            bool? result = await isSelfDelegatedResponse.Content.ReadFromJsonAsync<bool>();
+            Assert.NotNull(result);
+        }
+
+        /// <summary>
+        /// Tests that IsSelfDelegatedToAgentSystemUser returns Unauthorized when no token is provided.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_IsSelfDelegated_ReturnsUnauthorized()
+        {
+            HttpClient client = CreateClient();
+
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+            Guid partyUuid = Guid.NewGuid();
+
+            HttpRequestMessage isSelfDelegatedMessage = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}");
+            HttpResponseMessage isSelfDelegatedResponse = await client.SendAsync(isSelfDelegatedMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, isSelfDelegatedResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests that IsSelfDelegatedToAgentSystemUser returns BadRequest (ValidationProblem) when the system user does not exist.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_IsSelfDelegated_SystemUserNotFound_ReturnsBadRequest()
+        {
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+            Guid partyUuid = Guid.NewGuid();
+
+            HttpRequestMessage isSelfDelegatedMessage = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}");
+            HttpResponseMessage isSelfDelegatedResponse = await client.SendAsync(isSelfDelegatedMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.BadRequest, isSelfDelegatedResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests that IsSelfDelegatedToAgentSystemUser returns Forbid when party does not match.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_IsSelfDelegated_PartyMismatch_ReturnsForbidden()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skatt-naering"
+            };
+
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+
+            HttpClient client2 = CreateClient();
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            HttpRequestMessage getAgent = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
+
+            var systemUserList = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
+            Assert.NotNull(systemUserList);
+            Assert.NotEmpty(systemUserList);
+
+            Guid systemUserId = Guid.Parse(systemUserList[0].Id);
+            Guid partyUuid = Guid.NewGuid();
+
+            int wrongPartyId = 500801;
+
+            string isSelfDelegatedEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUserId}/self/?partyUuid={partyUuid}";
+            HttpRequestMessage isSelfDelegatedMessage = new(HttpMethod.Get, isSelfDelegatedEndpoint);
+            isSelfDelegatedMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage isSelfDelegatedResponse = await client2.SendAsync(isSelfDelegatedMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Forbidden, isSelfDelegatedResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// Tests the full flow: delegate self, verify it is delegated, revoke self, verify revocation.
+        /// </summary>
+        [Fact]
+        public async Task AgentSystemUser_SelfDelegation_FullFlow_DelegateCheckRevoke()
+        {
+            // Create System used for test
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            string token = AddSystemUserRequestWriteTestTokenToClient(client);
+            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
+
+            AccessPackage accessPackage = new()
+            {
+                Urn = "urn:altinn:accesspackage:skatt-naering"
+            };
+
+            CreateAgentRequestSystemUser req = new()
+            {
+                ExternalRef = "external",
+                SystemId = "991825827_the_matrix",
+                PartyOrgNo = "910493353",
+                AccessPackages = [accessPackage]
+            };
+
+            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(req)
+            };
+            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+            Assert.NotNull(res);
+
+            HttpClient client2 = CreateClient();
+            int partyId = 500000;
+
+            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
+            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
+            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+
+            HttpRequestMessage getAgent = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/agent/{partyId}");
+            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
+
+            var systemUserList = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
+            Assert.NotNull(systemUserList);
+            Assert.NotEmpty(systemUserList);
+
+            Guid systemUserId = Guid.Parse(systemUserList[0].Id);
+            Guid partyUuid = Guid.NewGuid();
+
+            string selfEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/self/?partyUuid={partyUuid}";
+
+            // Step 1: Delegate self
+            HttpRequestMessage delegateSelfMessage = new(HttpMethod.Post, selfEndpoint);
+            delegateSelfMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage delegateSelfResponse = await client2.SendAsync(delegateSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, delegateSelfResponse.StatusCode);
+            bool? delegateResult = await delegateSelfResponse.Content.ReadFromJsonAsync<bool>();
+            Assert.True(delegateResult);
+
+            // Step 2: Check if self delegated
+            HttpRequestMessage checkMessage = new(HttpMethod.Get, selfEndpoint);
+            checkMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage checkResponse = await client2.SendAsync(checkMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, checkResponse.StatusCode);
+            bool? checkResult = await checkResponse.Content.ReadFromJsonAsync<bool>();
+            Assert.NotNull(checkResult);
+
+            // Step 3: Revoke self
+            HttpRequestMessage revokeSelfMessage = new(HttpMethod.Delete, selfEndpoint);
+            revokeSelfMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+            HttpResponseMessage revokeSelfResponse = await client2.SendAsync(revokeSelfMessage, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, revokeSelfResponse.StatusCode);
+            bool? revokeResult = await revokeSelfResponse.Content.ReadFromJsonAsync<bool>();
+            Assert.True(revokeResult);
+        }
     }
 }

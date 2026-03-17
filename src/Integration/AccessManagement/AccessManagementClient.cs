@@ -925,5 +925,5 @@ public class AccessManagementClient : IAccessManagementClient
             ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem, problemExtensionData);
             return new Result<bool>(problemInstance);
         }
-    }   
+    }
 }

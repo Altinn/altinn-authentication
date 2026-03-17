@@ -230,5 +230,32 @@ public interface ISystemUserService
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns>true if the delegations are successful</returns>
     Task<Result<StandardSystemUserDelegations>> GetListOfDelegationsForStandardSystemUser(int partyId, Guid systemUserId, CancellationToken cancellationToken);
-  
+
+    /// <summary>
+    /// Creates a delegation of OWN company to an Agent SystemUser.
+    /// The service is idempotent.
+    /// </summary>
+    /// <param name="systemUser">SystemUser</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns> 
+    Task<Result<bool>> DelegateSelfToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Removes the delegation of OWN company to an Agent SystemUser.
+    /// </summary>
+    /// <param name="systemUser">the systemuser</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns>
+    Task<Result<bool>> RevokeSelfFromAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Tells whether the delegation of OWN company to an Agent SystemUser exists.
+    /// </summary>
+    /// <param name="systemUser">the systemuser</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns>
+    Task<Result<bool>> IsSelfDelegatedToAgentSystemUser(SystemUserInternalDTO systemUser, int userId, CancellationToken cancellationToken);
 }
