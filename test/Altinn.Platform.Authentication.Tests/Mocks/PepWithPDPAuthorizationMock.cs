@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Altinn.AccessManagement.Core.Constants;
@@ -493,6 +494,27 @@ namespace Altinn.AccessManagement.Tests.Mocks
             string content = File.ReadAllText(Path.Combine(GetInstancePath(), $"{partyPart}/{instancePart}.json"));
             Instance instance = (Instance)JsonConvert.DeserializeObject(content, typeof(Instance));
             return instance;
+        }
+
+        public async Task<XacmlJsonResponse> GetDecisionForRequest(XacmlJsonRequestRoot xacmlJsonRequest, CancellationToken cancellationToken)
+        {
+            if (MockShortCutForNoReporteeInRoute(xacmlJsonRequest.Request.AccessSubject))
+            {
+                return new XacmlJsonResponse() { Response = [new() { Decision = "Permit" }] };
+            }
+
+            if (MockShortCutForNoReporteeInRoute1336(xacmlJsonRequest.Request.AccessSubject))
+            {
+                return new XacmlJsonResponse() { Response = [new() { Decision = "Not Applicable" }] };
+            }
+
+            return await Authorize(xacmlJsonRequest.Request);
+        }
+
+        public async Task<bool> GetDecisionForUnvalidateRequest(XacmlJsonRequestRoot xacmlJsonRequest, ClaimsPrincipal user, CancellationToken cancellationToken)
+        {
+            XacmlJsonResponse response = await GetDecisionForRequest(xacmlJsonRequest, cancellationToken);
+            return DecisionHelper.ValidatePdpDecision(response.Response, user);
         }
     }
 
