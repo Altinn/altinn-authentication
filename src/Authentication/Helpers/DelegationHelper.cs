@@ -66,27 +66,26 @@ public class DelegationHelper(
 
         List<RightResponses> rightResponsesList = [];
         List<DetailExternal> allErrorDetails = [];
-        RightResponses rightResponses;
 
         foreach (Right right in verifiedRights)
         {
             string resourceId = right.Resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.ResourceRegistryAttribute)?.Value ?? string.Empty;
 
-            var resourceCheckDto = await accessManagementClient.CheckDelegationAccessNew(partyId.ToString(), resourceId, cancellationToken);
+            var resourceCheckDto = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), resourceId, cancellationToken);
             
             if (resourceCheckDto is null)
             {
                 return new DelegationCheckResult(false, null, null);
             }
 
-            (bool canDelegate, List<DetailExternal> errors) = ResolveIfHasAccessNew(resourceCheckDto);
+            (bool canDelegate, List<DetailExternal> errors, List<string> rightKeys) = ResolveIfHasAccessNew(resourceCheckDto);
 
             if (!canDelegate)
             {
                 return new DelegationCheckResult(false, rightResponsesList, errors);
             }
 
-            // rightResponsesList.Add(new RightResponses(rightResponses)); TODO: Map ResourceCheckDto to RightResponses if needed for the response, currently returning empty list as the BFF/UI does not utilize this data yet.
+            rightResponsesList.Add(new RightResponses(rightKeys));
         }
 
         if (allErrorDetails.Count > 0)
@@ -318,10 +317,11 @@ public class DelegationHelper(
         return (canDelegate, errors);
     }
 
-    private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccessNew(ResourceCheckDto resourceCheckDto)
+    private static (bool CanDelegate, List<DetailExternal> Errors, List<string> RightKeys) ResolveIfHasAccessNew(ResourceCheckDto resourceCheckDto)
     {
         List<DetailExternal> errors = [];
-        var canDelegate = false;
+        bool canDelegate = false;
+        List<string> rightKeys = [];
 
         foreach (var rightCheckDto in resourceCheckDto.Rights)
         {
@@ -331,6 +331,7 @@ public class DelegationHelper(
             if (rightCheckDto.Result)
             {
                 canDelegate = true;
+                rightKeys.Add(rightCheckDto.Right.Key);
             }
 
             if (!rightCheckDto.Result)
@@ -344,12 +345,10 @@ public class DelegationHelper(
                         Parameters = []
                     }));
                 }
-               
-                canDelegate = false;
             }
         }
 
-        return (canDelegate, errors);
+        return (canDelegate, errors, rightKeys);
     }
 
     /// <summary>

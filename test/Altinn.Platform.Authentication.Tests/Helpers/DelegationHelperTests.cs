@@ -325,13 +325,37 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(s => s.GetRightsForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Right> { right });
 
+            ResourceCheckDto dto = new()
+            {
+                Resource = new ResourceDto()
+                {
+                    Id = Guid.NewGuid(),
+                },
+                Rights =
+            [
+                new RightCheckDto()
+                {
+                    Right = new()
+                    {
+                        Key = "right1"
+                    },
+                    Result = true
+                },
+                new RightCheckDto()
+                {
+                    Right = new()
+                    {
+                        Key = "right2"
+                    },
+                    Result = false
+                }
+            ]
+            };
+
             // Delegation is allowed
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<DelegationCheckRequest>()))
-                .ReturnsAsync(new List<DelegationResponseData>
-                {
-            new DelegationResponseData { Status = "Delegable" }
-                });
+                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(dto);
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
@@ -383,9 +407,36 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(s => s.GetRightsForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Right> { right });
 
+            ResourceCheckDto dto = new()
+            {
+                Resource = new ResourceDto()
+                {
+                    Id = Guid.NewGuid(),
+                },
+                Rights =
+           [
+               new RightCheckDto()
+                {
+                    Right = new()
+                    {
+                        Key = "right1"
+                    },
+                    Result = true
+                },
+                new RightCheckDto()
+                {
+                    Right = new()
+                    {
+                        Key = "right2"
+                    },
+                    Result = false
+                }
+           ]
+            };
+
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<DelegationCheckRequest>()))
-                .ReturnsAsync((List<DelegationResponseData>?)null);
+                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(dto);
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
@@ -410,19 +461,36 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(s => s.GetRightsForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Right> { right });
 
-            accessManagementClient
-                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<DelegationCheckRequest>()))
-                .ReturnsAsync(new List<DelegationResponseData>
+            ResourceCheckDto dto = new()
+            {
+                Resource = new ResourceDto()
                 {
-                new DelegationResponseData
+                    Id = Guid.NewGuid(),
+                },
+                Rights =
+           [
+               new RightCheckDto()
                 {
-                    Status = "NotDelegable",
-                    Details = new List<DetailExternal>
+                    Right = new()
                     {
-                        new DetailExternal { Description = "Delegation denied" }
-                    }
+                        Key = "right1"
+                    },
+                    Result = true
+                },
+                new RightCheckDto()
+                {
+                    Right = new()
+                    {
+                        Key = "right2"
+                    },
+                    Result = false
                 }
-                });
+           ]
+            };
+
+            accessManagementClient
+                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(dto);
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 

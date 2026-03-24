@@ -63,7 +63,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         _env = env;
     }
 
-    public Task<List<DelegationResponseData>> CheckDelegationAccess(string partyId, DelegationCheckRequest request)
+    public Task<List<DelegationResponseData>> CheckDelegationAccessOld(string partyId, DelegationCheckRequest request)
     {
         string dataFileName;
         if (partyId == "500004")
@@ -448,7 +448,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return new Result<List<RightDelegation>>(delegatedRights);
     }
 
-    public async Task<ResourceCheckDto> CheckDelegationAccessNew(string partyId, string resource, CancellationToken cancellationToken = default)
+    public async Task<ResourceCheckDto> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default)
     {
         return new() 
         { 

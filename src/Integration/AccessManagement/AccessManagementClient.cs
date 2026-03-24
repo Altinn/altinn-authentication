@@ -121,7 +121,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<List<DelegationResponseData>?> CheckDelegationAccess(string partyId, DelegationCheckRequest request)
+    public async Task<List<DelegationResponseData>?> CheckDelegationAccessOld(string partyId, DelegationCheckRequest request)
     {
         try
         {
@@ -141,7 +141,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<ResourceCheckDto?> CheckDelegationAccessNew(string partyId, string resource, CancellationToken cancellationToken) 
+    public async Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken) 
     {
 
         try

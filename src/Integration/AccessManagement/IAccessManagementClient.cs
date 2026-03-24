@@ -28,7 +28,7 @@ public interface IAccessManagementClient
     /// Verifies that the rights can be delegated, and gets the correct model to use in the Delegate step
     /// </summary>
     /// <param name="partyId">The party id</param>
-    Task<List<DelegationResponseData>?> CheckDelegationAccess(string partyId, DelegationCheckRequest request);
+    Task<List<DelegationResponseData>?> CheckDelegationAccessOld(string partyId, DelegationCheckRequest request);
 
     /// <summary>
     /// Delegates the rights to the systemuser
@@ -174,5 +174,5 @@ public interface IAccessManagementClient
     /// The input Right id is for the whole resource, and the returned RightKeys are the ones needed to delegate the specific Action(s) to the resource.
     /// </summary>
     /// <param name="partyId">The party id</param>
-    Task<ResourceCheckDto> CheckDelegationAccessNew(string partyId, string resource, CancellationToken cancellationToken = default);
+    Task<ResourceCheckDto> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default);
 }
