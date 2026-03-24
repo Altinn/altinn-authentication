@@ -204,7 +204,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            int partyId = 500000;
+            int partyId = 500011;
             Guid id = Guid.NewGuid();
 
             string para = $"{partyId}/{id}";
@@ -575,7 +575,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            int partyId = 500000;
+            int partyId = 500011;
 
             SystemUserRequestDto newSystemUser = new()
             {
@@ -2145,7 +2145,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            int partyId = 500000;
+            int partyId = 500011;
 
             SystemUserRequestDto newSystemUser = new()
             {

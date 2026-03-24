@@ -417,7 +417,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             dataFileName = "Data/Delegation/RightsForSystemUser.json";
         }
-        else if (party == new Guid("500006"))
+        else if (party == new Guid("00000000-0000-0000-0005-000000000000"))
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToGetDelegatedRights);
             return new Result<List<RightDelegation>>(problemInstance);
