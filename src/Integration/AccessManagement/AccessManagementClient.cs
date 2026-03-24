@@ -449,38 +449,11 @@ public class AccessManagementClient : IAccessManagementClient
 
     private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, RightResponses rightResponses)
     {
-        List<Right> rights = [];
-
-        foreach (DelegationResponseData inner in rightResponses.ResponseDataSet)
-        {
-            Right right = new()
-            {
-                Action = inner.Action,
-                Resource = inner.Resource,
-            };
-
-            rights.Add(right);
-        }
-
-        DelegationRequest rightsDelegationRequest = new()
-        {
-            To =
-            [
-                new AttributePair()
-                {
-                    Id = "urn:altinn:systemuser:uuid",
-                    Value = systemUser.Id
-                }
-            ],
-
-            Rights = rights
-        };
-
         try
         {
-            string endpointUrl = $"internal/{partyId}/rights/delegation/offered";
+            string endpointUrl = $"enduser/connections/resources/rights?party={partyId}&to={systemUser.Id}&resource={rightResponses.resourceId}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(rightsDelegationRequest));
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(rightResponses.RightKeyListDto));
 
             if (response.IsSuccessStatusCode)
             {

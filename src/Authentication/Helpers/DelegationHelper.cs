@@ -85,7 +85,9 @@ public class DelegationHelper(
                 return new DelegationCheckResult(false, rightResponsesList, errors);
             }
 
-            rightResponsesList.Add(new RightResponses(rightKeys));
+            RightKeyListDto rightKeyList = new RightKeyListDto { DirectRightKeys = rightKeys };
+
+            rightResponsesList.Add(new RightResponses(resourceId, rightKeyList));
         }
 
         if (allErrorDetails.Count > 0)
