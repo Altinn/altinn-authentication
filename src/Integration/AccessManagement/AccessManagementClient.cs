@@ -120,27 +120,6 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    /// <inheritdoc />
-    public async Task<List<DelegationResponseData>?> CheckDelegationAccessOld(string partyId, DelegationCheckRequest request)
-    {
-        try
-        {
-            string endpointUrl = $"internal/{partyId}/rights/delegation/delegationcheck";
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            string content = JsonSerializer.Serialize(request, _serializerOptions);
-            StringContent requestBody = new(content, Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody);
-            response.EnsureSuccessStatusCode();
-            return JsonSerializer.Deserialize<List<DelegationResponseData>>(await response.Content.ReadAsStringAsync(), _serializerOptions);
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccess // Exception");
-            throw;
-        }
-    }
-
     public async Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken) 
     {
 
@@ -481,31 +460,20 @@ public class AccessManagementClient : IAccessManagementClient
 
     private async Task<bool> RevokeRightsToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)
     {
-        DelegationRequest revokeDelegatedRights = new()
-        {
-            To =
-            [
-                new AttributePair()
-                {
-                    Id = "urn:altinn:systemuser:uuid",
-                    Value = systemUser.Id
-                }
-            ],
-
-            Rights = rights
-        };
-
         try
         {
-            string endpointUrl = $"internal/{partyId}/rights/delegation/offered/revoke";
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(revokeDelegatedRights));
-            var result = await HandleResponse(response, "RevokeRightsToSystemUser");
-            if (result.IsProblem)
+            foreach (Right right in rights)
             {
-                return false;
+                string rightId = right.Resource.First().Value.ToString();
+                string endpointUrl = $"enduser/connections/resources?party={partyId}&to={systemUser.Id}&resource={rightId}";
+                string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+                HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
+                var result = await HandleResponse(response, "RevokeRightsToSystemUser");
+                if (result.IsProblem)
+                {
+                    return false;
+                }                
             }
-
             return true;
         }
         catch (Exception ex)
@@ -513,7 +481,6 @@ public class AccessManagementClient : IAccessManagementClient
             _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeSingleRightToSystemUser // Exception");
             throw;
         }
-
     }
 
     /// <inheritdoc />
