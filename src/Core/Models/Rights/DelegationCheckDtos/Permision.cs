@@ -16,7 +16,7 @@ public class Permision
     /// Reason  code indicating the type of delegation check result.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public required DelegationCheckReasonCode PermisionKey { get; set; }
+    public required DetailCodeExternal PermisionKey { get; set; }
 
     /// <summary>
     /// Role ID of the role providing access

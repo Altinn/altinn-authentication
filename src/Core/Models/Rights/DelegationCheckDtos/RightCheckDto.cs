@@ -19,10 +19,10 @@ public class RightCheckDto
     /// <summary>
     /// Reason for the result of the delegation check.
     /// </summary>
-    internal IEnumerable<Permision> Permissions { get; set; } = [];
+    public IEnumerable<Permision> Permissions { get; set; } = [];
 
     /// <summary>
     /// List of reasons for permit or deny
     /// </summary>
-    public IEnumerable<DelegationCheckReasonCode> ReasonCodes { get; set; }
+    public IEnumerable<DetailCodeExternal> ReasonCodes { get; set; } = [];
 }

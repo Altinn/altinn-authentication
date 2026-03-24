@@ -66,32 +66,27 @@ public class DelegationHelper(
 
         List<RightResponses> rightResponsesList = [];
         List<DetailExternal> allErrorDetails = [];
+        RightResponses rightResponses;
 
         foreach (Right right in verifiedRights)
         {
-            var resource = new List<AttributePair>();
-            resource = ConvertAppResourceToOldResourceFormat(right.Resource);
+            string resourceId = right.Resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.ResourceRegistryAttribute)?.Value ?? string.Empty;
 
-            DelegationCheckRequest request = new()
-            {
-                Resource = resource
-            };
-
-            List<DelegationResponseData>? rightResponses = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), request);
-
-            if (rightResponses is null)
+            var resourceCheckDto = await accessManagementClient.CheckDelegationAccessNew(partyId.ToString(), resourceId, cancellationToken);
+            
+            if (resourceCheckDto is null)
             {
                 return new DelegationCheckResult(false, null, null);
             }
 
-            (bool canDelegate, List<DetailExternal> errors) = ResolveIfHasAccess(rightResponses);
+            (bool canDelegate, List<DetailExternal> errors) = ResolveIfHasAccessNew(resourceCheckDto);
 
             if (!canDelegate)
             {
                 return new DelegationCheckResult(false, rightResponsesList, errors);
             }
 
-            rightResponsesList.Add(new RightResponses(rightResponses));
+            // rightResponsesList.Add(new RightResponses(rightResponses)); TODO: Map ResourceCheckDto to RightResponses if needed for the response, currently returning empty list as the BFF/UI does not utilize this data yet.
         }
 
         if (allErrorDetails.Count > 0)
@@ -317,6 +312,40 @@ public class DelegationHelper(
                 }
 
                 canDelegate = false; 
+            }
+        }
+
+        return (canDelegate, errors);
+    }
+
+    private static (bool CanDelegate, List<DetailExternal> Errors) ResolveIfHasAccessNew(ResourceCheckDto resourceCheckDto)
+    {
+        List<DetailExternal> errors = [];
+        var canDelegate = false;
+
+        foreach (var rightCheckDto in resourceCheckDto.Rights)
+        {
+            // We only need one right to be delegable for the Delegate step afterwards.
+            // Those rights that are not delegable will be added to the error details,
+            // but will not block the delegation check if at least one right is delegable.
+            if (rightCheckDto.Result)
+            {
+                canDelegate = true;
+            }
+
+            if (!rightCheckDto.Result)
+            {
+                if (rightCheckDto.Permissions is not null && rightCheckDto.Permissions.Any())
+                {
+                    errors.AddRange(rightCheckDto.Permissions.Select(p => new DetailExternal
+                    {
+                        Code = p.PermisionKey,
+                        Description = p.Description,
+                        Parameters = []
+                    }));
+                }
+               
+                canDelegate = false;
             }
         }
 

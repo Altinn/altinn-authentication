@@ -310,7 +310,14 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var systemRegisterService = new Mock<ISystemRegisterService>();
             var accessManagementClient = new Mock<IAccessManagementClient>();
 
-            var right = new Right { Action = "read", Resource = new List<AttributePair>() };
+            var right = new Right 
+            { 
+                Action = "read", Resource = new List<AttributePair>
+                {
+                    new() { Id = "urn:altinn:resource", Value = "report" }
+                } 
+            };
+
             var requestedRights = new List<Right> { right };
 
             // System contains the requested right

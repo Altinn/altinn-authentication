@@ -447,4 +447,34 @@ public class AccessManagementClientMock: IAccessManagementClient
         List<RightDelegation> delegatedRights = JsonSerializer.Deserialize<List<RightDelegation>>(content, _serializerOptions)!;
         return new Result<List<RightDelegation>>(delegatedRights);
     }
+
+    public async Task<ResourceCheckDto> CheckDelegationAccessNew(string partyId, string resource, CancellationToken cancellationToken = default)
+    {
+        return new() 
+        { 
+            Resource = new ResourceDto() 
+            { 
+                Id = Guid.NewGuid(),
+            }, 
+            Rights = 
+            [
+                new RightCheckDto() 
+                { 
+                    Right = new()
+                    {
+                        Key = "right1"
+                    }, 
+                    Result = true 
+                }, 
+                new RightCheckDto() 
+                { 
+                    Right = new()
+                    {
+                        Key = "right2"
+                    },
+                    Result = false 
+                }
+            ]        
+        };
+    }
 }
