@@ -659,7 +659,9 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<RightDelegation>>(_serializerOptions, cancellationToken) ?? [];
+                var result = await response.Content.ReadFromJsonAsync<IEnumerable<ResourcePermissionDto>>(_serializerOptions, cancellationToken) ?? [];
+                List<RightDelegation> delegations = MapPermissionsDtoToRightDelegations(result);
+                    
             }
 
             _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {partyUuid}. StatusCode: {response.StatusCode}");
@@ -672,6 +674,58 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
 
         }
+    }
+
+    private static List<RightDelegation> MapPermissionsDtoToRightDelegations(IEnumerable<ResourcePermissionDto> result)
+    {
+        List<RightDelegation> delegations = [];
+        foreach (var r in result)
+        {
+            List<AttributeMatchExternal> fromList = [];
+            List<AttributeMatchExternal> toList = [];
+            List<AttributeMatchExternal> resourceList = [];
+
+            if (r.Resource == null || r.Permissions == null)
+            {
+                throw new InvalidOperationException("Received invalid data from Access Management API: Resource or Permissions is null.");
+            }
+
+            resourceList.Add( new AttributeMatchExternal
+            {
+                Id = "urn:altinn:resource",
+                Value = r.Resource.Name
+            });
+
+            foreach (var permission in r.Permissions)
+            {
+                if (permission.From != null)
+                {
+                    fromList.Add(new AttributeMatchExternal
+                        {
+                            Id = permission.From.Type,
+                            Value = permission.From.Id.ToString()
+                    });
+                }
+                if (permission.To != null)
+                {
+                    toList.Add(new AttributeMatchExternal
+                    {
+                        Id = permission.To.Type,
+                        Value = permission.To.Id.ToString()
+                    });
+                }
+            }
+
+            RightDelegation delegation = new()
+            {
+                From = fromList,
+                To = toList,
+                Resource = resourceList
+            };
+
+            delegations.Add(delegation);
+        }
+        return delegations;
     }
 
     public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
