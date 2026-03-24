@@ -141,6 +141,24 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
+    public async Task<ResourceCheckDto?> CheckDelegationAccessNew(string partyId, string resource, CancellationToken cancellationToken) 
+    {
+
+        try
+        {
+            string endpointUrl = $"enduser/connections/resources/delegationcheck?party={partyId}&resource={resource}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<ResourceCheckDto>(_serializerOptions, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccessNew // Exception");
+            throw;
+        }
+    }
+
     /// <inheritdoc />
     public async IAsyncEnumerable<Result<AccessPackageDto.Check>> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
