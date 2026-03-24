@@ -161,7 +161,7 @@ public interface IAccessManagementClient
     /// <param name="party">The Guid Id for the party</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default);
+    Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, Guid party, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Verifies that the Right can be delegated, and gets the correct RightKeys to use in the Delegate step afterwards.

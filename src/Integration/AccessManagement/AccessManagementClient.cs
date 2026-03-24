@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Register.Contracts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
 using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
+using SystemUserType = Altinn.Platform.Authentication.Core.Enums.SystemUserType;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -631,10 +633,10 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
+    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, Guid partyUuid, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (party <= 0)
+        if (partyUuid == Guid.Empty)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -644,7 +646,7 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.SystemUserNotFound;
         }
 
-        string endpointUrl = $"internal/{party}/rights/delegation/offered?to={systemUserId}";
+        string endpointUrl = $"enduser/connections/resources/rights?party={partyUuid}&to={systemUserId}";
 
         try
         {
@@ -655,7 +657,7 @@ public class AccessManagementClient : IAccessManagementClient
                 return await response.Content.ReadFromJsonAsync<List<RightDelegation>>(_serializerOptions, cancellationToken) ?? [];
             }
 
-            _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {party}. StatusCode: {response.StatusCode}");
+            _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {partyUuid}. StatusCode: {response.StatusCode}");
             return Problem.SystemUser_FailedToGetDelegatedRights;
 
         }

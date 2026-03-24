@@ -410,14 +410,14 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
+    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, Guid party, CancellationToken cancellationToken = default)
     {
         string dataFileName = string.Empty;
         if (systemUserId == new Guid("ec6831bc-379c-469a-8e41-d37d398772c9"))
         {
             dataFileName = "Data/Delegation/RightsForSystemUser.json";
         }
-        else if (party == 500006)
+        else if (party == new Guid("500006"))
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToGetDelegatedRights);
             return new Result<List<RightDelegation>>(problemInstance);

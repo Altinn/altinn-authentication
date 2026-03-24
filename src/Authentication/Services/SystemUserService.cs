@@ -1067,7 +1067,7 @@ namespace Altinn.Platform.Authentication.Services
 
             string systemId = systemUser.SystemId;
 
-            var rightsResult = await GetDelegatedRightsForSystemUser(systemUserId, partyId, cancellationToken);
+            var rightsResult = await GetDelegatedRightsForSystemUser(systemUserId, partyUuId, cancellationToken);
 
             if (rightsResult.IsProblem)
             {
@@ -1097,12 +1097,12 @@ namespace Altinn.Platform.Authentication.Services
         /// Gets the delegated rights for a standard system user
         /// </summary>
         /// <param name="systemUserId">the unique identifier for the system user </param>
-        /// <param name="partyId">the unique identifier for the party</param>
+        /// <param name="partyUuid">the unique identifier for the party</param>
         /// <param name="cancellationToken">the cancellation token</param>
         /// <returns>list of delegated rights for the system user</returns>
-        public async Task<Result<List<Right>>> GetDelegatedRightsForSystemUser(Guid systemUserId, int partyId, CancellationToken cancellationToken)
+        public async Task<Result<List<Right>>> GetDelegatedRightsForSystemUser(Guid systemUserId, Guid partyUuid, CancellationToken cancellationToken)
         {
-            var rightsDelegationResult = await _accessManagementClient.GetSingleRightDelegationsForStandardUser(systemUserId, partyId, cancellationToken);
+            var rightsDelegationResult = await _accessManagementClient.GetSingleRightDelegationsForStandardUser(systemUserId, partyUuid, cancellationToken);
             if (rightsDelegationResult.IsProblem)
             {
                 return rightsDelegationResult.Problem!;
