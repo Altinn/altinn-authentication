@@ -71,7 +71,7 @@ public class DelegationHelper(
         {
             string resourceId = right.Resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.ResourceRegistryAttribute)?.Value ?? string.Empty;
 
-            var resourceCheckDto = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), resourceId, cancellationToken);
+            ResourceCheckDto? resourceCheckDto = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), resourceId, cancellationToken);
             
             if (resourceCheckDto is null)
             {

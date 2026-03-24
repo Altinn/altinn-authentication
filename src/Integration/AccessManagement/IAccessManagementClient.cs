@@ -174,5 +174,5 @@ public interface IAccessManagementClient
     /// The input Right id is for the whole resource, and the returned RightKeys are the ones needed to delegate the specific Action(s) to the resource.
     /// </summary>
     /// <param name="partyId">The party id</param>
-    Task<ResourceCheckDto> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default);
+    Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default);
 }

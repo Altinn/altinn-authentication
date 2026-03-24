@@ -421,7 +421,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                     {
                         Key = "right1"
                     },
-                    Result = true
+                    Result = false
                 },
                 new RightCheckDto()
                 {
@@ -445,8 +445,8 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.False(result.CanDelegate);
-            Assert.Null(result.RightResponses);
-            Assert.Null(result.errors);
+            Assert.Empty(result.RightResponses);
+            Assert.Empty(result.errors);
         }
 
         [Fact]
@@ -468,24 +468,24 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                     Id = Guid.NewGuid(),
                 },
                 Rights =
-           [
+            [
                new RightCheckDto()
                 {
                     Right = new()
                     {
                         Key = "right1"
                     },
-                    Result = true
-                },
-                new RightCheckDto()
-                {
-                    Right = new()
-                    {
-                        Key = "right2"
-                    },
-                    Result = false
+                    Result = false,
+                    Permissions = 
+                    [
+                        new Permision() 
+                        { 
+                            Description = "Delegation denied",                            
+                            PermisionKey = DetailCodeExternal.MissingDelegationAccess
+                        }
+                    ]
                 }
-           ]
+            ]
             };
 
             accessManagementClient

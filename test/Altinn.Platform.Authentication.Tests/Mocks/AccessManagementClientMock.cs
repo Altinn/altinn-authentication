@@ -448,8 +448,13 @@ public class AccessManagementClientMock: IAccessManagementClient
         return new Result<List<RightDelegation>>(delegatedRights);
     }
 
-    public async Task<ResourceCheckDto> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default)
+    public async Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default)
     {
+        if (partyId == "500004")
+        {
+            return null;
+        }
+
         return new() 
         { 
             Resource = new ResourceDto() 
