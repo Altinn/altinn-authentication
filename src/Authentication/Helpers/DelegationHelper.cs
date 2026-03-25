@@ -69,29 +69,25 @@ public class DelegationHelper(
 
         foreach (Right right in verifiedRights)
         {
-            var resource = new List<AttributePair>();
-            resource = ConvertAppResourceToOldResourceFormat(right.Resource);
+            string resourceId = right.Resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.ResourceRegistryAttribute)?.Value ?? string.Empty;
 
-            DelegationCheckRequest request = new()
-            {
-                Resource = resource
-            };
-
-            List<DelegationResponseData>? rightResponses = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), request);
-
-            if (rightResponses is null)
+            ResourceCheckDto? resourceCheckDto = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), resourceId, cancellationToken);
+            
+            if (resourceCheckDto is null)
             {
                 return new DelegationCheckResult(false, null, null);
             }
 
-            (bool canDelegate, List<DetailExternal> errors) = ResolveIfHasAccess(rightResponses);
+            (bool canDelegate, List<DetailExternal> errors, List<string> rightKeys) = ResolveIfHasAccessNew(resourceCheckDto);
 
             if (!canDelegate)
             {
                 return new DelegationCheckResult(false, rightResponsesList, errors);
             }
 
-            rightResponsesList.Add(new RightResponses(rightResponses));
+            RightKeyListDto rightKeyList = new RightKeyListDto { DirectRightKeys = rightKeys };
+
+            rightResponsesList.Add(new RightResponses(resourceId, rightKeyList));
         }
 
         if (allErrorDetails.Count > 0)
@@ -321,6 +317,40 @@ public class DelegationHelper(
         }
 
         return (canDelegate, errors);
+    }
+
+    private static (bool CanDelegate, List<DetailExternal> Errors, List<string> RightKeys) ResolveIfHasAccessNew(ResourceCheckDto resourceCheckDto)
+    {
+        List<DetailExternal> errors = [];
+        bool canDelegate = false;
+        List<string> rightKeys = [];
+
+        foreach (var rightCheckDto in resourceCheckDto.Rights)
+        {
+            // We only need one right to be delegable for the Delegate step afterwards.
+            // Those rights that are not delegable will be added to the error details,
+            // but will not block the delegation check if at least one right is delegable.
+            if (rightCheckDto.Result)
+            {
+                canDelegate = true;
+                rightKeys.Add(rightCheckDto.Right.Key);
+            }
+
+            if (!rightCheckDto.Result)
+            {
+                if (rightCheckDto.Permissions is not null && rightCheckDto.Permissions.Any())
+                {
+                    errors.AddRange(rightCheckDto.Permissions.Select(p => new DetailExternal
+                    {
+                        Code = p.PermisionKey,
+                        Description = p.Description,
+                        Parameters = []
+                    }));
+                }
+            }
+        }
+
+        return (canDelegate, errors, rightKeys);
     }
 
     /// <summary>

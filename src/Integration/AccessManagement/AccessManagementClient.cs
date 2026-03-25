@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Register.Contracts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
 using static Altinn.Platform.Authentication.Core.Models.SystemUsers.ClientDto;
+using SystemUserType = Altinn.Platform.Authentication.Core.Enums.SystemUserType;
 
 
 namespace Altinn.Platform.Authentication.Integration.AccessManagement;
@@ -120,23 +122,25 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    /// <inheritdoc />
-    public async Task<List<DelegationResponseData>?> CheckDelegationAccess(string partyId, DelegationCheckRequest request)
+    public async Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken) 
     {
         try
         {
-            string endpointUrl = $"internal/{partyId}/rights/delegation/delegationcheck";
+            string endpointUrl = $"enduser/connections/resources/delegationcheck?party={partyId}&resource={resource}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            string content = JsonSerializer.Serialize(request, _serializerOptions);
-            StringContent requestBody = new(content, Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, requestBody);
-            response.EnsureSuccessStatusCode();
-            return JsonSerializer.Deserialize<List<DelegationResponseData>>(await response.Content.ReadAsStringAsync(), _serializerOptions);
-
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
+                _logger.LogError($"Authentication. // AccessManagementClient // CheckDelegationAccess // Title: {problemDetails.Title}, HttpStatusCode : {response.StatusCode},Problem: {problemDetails.Detail}");
+                return null;
+            }
+            return await response.Content.ReadFromJsonAsync<ResourceCheckDto>(_serializerOptions, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccess // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccessNew // Exception");
             throw;
         }
     }
@@ -431,38 +435,11 @@ public class AccessManagementClient : IAccessManagementClient
 
     private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, RightResponses rightResponses)
     {
-        List<Right> rights = [];
-
-        foreach (DelegationResponseData inner in rightResponses.ResponseDataSet)
-        {
-            Right right = new()
-            {
-                Action = inner.Action,
-                Resource = inner.Resource,
-            };
-
-            rights.Add(right);
-        }
-
-        DelegationRequest rightsDelegationRequest = new()
-        {
-            To =
-            [
-                new AttributePair()
-                {
-                    Id = "urn:altinn:systemuser:uuid",
-                    Value = systemUser.Id
-                }
-            ],
-
-            Rights = rights
-        };
-
         try
         {
-            string endpointUrl = $"internal/{partyId}/rights/delegation/offered";
+            string endpointUrl = $"enduser/connections/resources/rights?party={partyId}&to={systemUser.Id}&resource={rightResponses.resourceId}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(rightsDelegationRequest));
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(rightResponses.RightKeyListDto));
 
             if (response.IsSuccessStatusCode)
             {
@@ -490,31 +467,20 @@ public class AccessManagementClient : IAccessManagementClient
 
     private async Task<bool> RevokeRightsToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)
     {
-        DelegationRequest revokeDelegatedRights = new()
-        {
-            To =
-            [
-                new AttributePair()
-                {
-                    Id = "urn:altinn:systemuser:uuid",
-                    Value = systemUser.Id
-                }
-            ],
-
-            Rights = rights
-        };
-
         try
         {
-            string endpointUrl = $"internal/{partyId}/rights/delegation/offered/revoke";
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(revokeDelegatedRights));
-            var result = await HandleResponse(response, "RevokeRightsToSystemUser");
-            if (result.IsProblem)
+            foreach (Right right in rights)
             {
-                return false;
+                string rightId = right.Resource.First().Value.ToString();
+                string endpointUrl = $"enduser/connections/resources?party={partyId}&to={systemUser.Id}&resource={rightId}";
+                string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+                HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
+                var result = await HandleResponse(response, "RevokeRightsToSystemUser");
+                if (result.IsProblem)
+                {
+                    return false;
+                }                
             }
-
             return true;
         }
         catch (Exception ex)
@@ -522,7 +488,6 @@ public class AccessManagementClient : IAccessManagementClient
             _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeSingleRightToSystemUser // Exception");
             throw;
         }
-
     }
 
     /// <inheritdoc />
@@ -673,10 +638,10 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
+    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, Guid partyUuid, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (party <= 0)
+        if (partyUuid == Guid.Empty)
         {
             return Problem.Reportee_Orgno_NotFound;
         }
@@ -686,7 +651,7 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.SystemUserNotFound;
         }
 
-        string endpointUrl = $"internal/{party}/rights/delegation/offered?to={systemUserId}";
+        string endpointUrl = $"enduser/connections/resources/rights?party={partyUuid}&to={systemUserId}";
 
         try
         {
@@ -694,10 +659,12 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<RightDelegation>>(_serializerOptions, cancellationToken) ?? [];
+                var result = await response.Content.ReadFromJsonAsync<IEnumerable<ResourcePermissionDto>>(_serializerOptions, cancellationToken) ?? [];
+                List<RightDelegation> delegations = MapPermissionsDtoToRightDelegations(result);
+                    
             }
 
-            _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {party}. StatusCode: {response.StatusCode}");
+            _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {partyUuid}. StatusCode: {response.StatusCode}");
             return Problem.SystemUser_FailedToGetDelegatedRights;
 
         }
@@ -707,6 +674,58 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
 
         }
+    }
+
+    private static List<RightDelegation> MapPermissionsDtoToRightDelegations(IEnumerable<ResourcePermissionDto> result)
+    {
+        List<RightDelegation> delegations = [];
+        foreach (var r in result)
+        {
+            List<AttributeMatchExternal> fromList = [];
+            List<AttributeMatchExternal> toList = [];
+            List<AttributeMatchExternal> resourceList = [];
+
+            if (r.Resource == null || r.Permissions == null)
+            {
+                throw new InvalidOperationException("Received invalid data from Access Management API: Resource or Permissions is null.");
+            }
+
+            resourceList.Add( new AttributeMatchExternal
+            {
+                Id = "urn:altinn:resource",
+                Value = r.Resource.Name
+            });
+
+            foreach (var permission in r.Permissions)
+            {
+                if (permission.From != null)
+                {
+                    fromList.Add(new AttributeMatchExternal
+                        {
+                            Id = permission.From.Type,
+                            Value = permission.From.Id.ToString()
+                    });
+                }
+                if (permission.To != null)
+                {
+                    toList.Add(new AttributeMatchExternal
+                    {
+                        Id = permission.To.Type,
+                        Value = permission.To.Id.ToString()
+                    });
+                }
+            }
+
+            RightDelegation delegation = new()
+            {
+                From = fromList,
+                To = toList,
+                Resource = resourceList
+            };
+
+            delegations.Add(delegation);
+        }
+        return delegations;
     }
 
     public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)

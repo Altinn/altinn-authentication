@@ -25,12 +25,6 @@ public interface IAccessManagementClient
     Task<PartyExternal> GetParty(int partyId, string token);
 
     /// <summary>
-    /// Verifies that the rights can be delegated, and gets the correct model to use in the Delegate step
-    /// </summary>
-    /// <param name="partyId">The party id</param>
-    Task<List<DelegationResponseData>?> CheckDelegationAccess(string partyId, DelegationCheckRequest request);
-
-    /// <summary>
     /// Delegates the rights to the systemuser
     /// </summary>
     /// <param name="partyId">The party id</param>
@@ -167,5 +161,12 @@ public interface IAccessManagementClient
     /// <param name="party">The Guid Id for the party</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default);
-  }
+    Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, Guid party, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verifies that the Right can be delegated, and gets the correct RightKeys to use in the Delegate step afterwards.
+    /// The input Right id is for the whole resource, and the returned RightKeys are the ones needed to delegate the specific Action(s) to the resource.
+    /// </summary>
+    /// <param name="partyId">The party id</param>
+    Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default);
+}

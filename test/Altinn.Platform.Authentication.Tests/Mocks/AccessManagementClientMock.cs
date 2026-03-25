@@ -63,22 +63,6 @@ public class AccessManagementClientMock: IAccessManagementClient
         _env = env;
     }
 
-    public Task<List<DelegationResponseData>> CheckDelegationAccess(string partyId, DelegationCheckRequest request)
-    {
-        string dataFileName;
-        if (partyId == "500004")
-        {
-            dataFileName = "Data/Delegation/DelegationAccessResponse_NotDelegable.json";            
-        }
-        else
-        {
-            dataFileName = "Data/Delegation/DelegationAccessResponse.json";
-        }
-
-        string content = File.ReadAllText(dataFileName);
-        return Task.FromResult((List<DelegationResponseData>)JsonSerializer.Deserialize(content, typeof(List<DelegationResponseData>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
-    }
-
     public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
@@ -426,14 +410,14 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, int party, CancellationToken cancellationToken = default)
+    public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, Guid party, CancellationToken cancellationToken = default)
     {
         string dataFileName = string.Empty;
         if (systemUserId == new Guid("ec6831bc-379c-469a-8e41-d37d398772c9"))
         {
             dataFileName = "Data/Delegation/RightsForSystemUser.json";
         }
-        else if (party == 500006)
+        else if (party == new Guid("00000000-0000-0000-0005-000000000000") || party == new Guid("c8987f17-a1b5-49f3-8ec5-7b58e2e33f42"))
         {
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.SystemUser_FailedToGetDelegatedRights);
             return new Result<List<RightDelegation>>(problemInstance);
@@ -446,5 +430,40 @@ public class AccessManagementClientMock: IAccessManagementClient
         string content = File.ReadAllText(dataFileName);
         List<RightDelegation> delegatedRights = JsonSerializer.Deserialize<List<RightDelegation>>(content, _serializerOptions)!;
         return new Result<List<RightDelegation>>(delegatedRights);
+    }
+
+    public async Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default)
+    {
+        if (partyId == "500004")
+        {
+            return null;
+        }
+
+        return new() 
+        { 
+            Resource = new ResourceDto() 
+            { 
+                Id = Guid.NewGuid(),
+            }, 
+            Rights = 
+            [
+                new RightCheckDto() 
+                { 
+                    Right = new()
+                    {
+                        Key = "right1"
+                    }, 
+                    Result = true 
+                }, 
+                new RightCheckDto() 
+                { 
+                    Right = new()
+                    {
+                        Key = "right2"
+                    },
+                    Result = false 
+                }
+            ]        
+        };
     }
 }

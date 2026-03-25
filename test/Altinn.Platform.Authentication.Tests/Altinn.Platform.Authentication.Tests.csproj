@@ -95,6 +95,9 @@
     <None Update="Data\ResourceRegistry\ttd-am-k6.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\Roles\user_1337\party_500011\roles.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\Roles\user_1337\party_500007\roles.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
