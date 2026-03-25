@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
@@ -6,6 +7,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights;
 /// This model describes a an Attribute consisting of an Attribute Type and Attribute Value which can also be represented as a Urn by combining the properties as '{type}:{value}'
 /// It's used both for external API input/output but also internally for working with attributes and matching to XACML-attributes used in policies, indentifying for instance a resource, a user, a party or an action.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class AttributeDto
 {
     /// <summary>

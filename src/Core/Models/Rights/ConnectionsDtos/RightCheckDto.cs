@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
 /// <summary>
 /// Right check Dto for response of delegation check
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class RightCheckDto
 {
     /// <summary>

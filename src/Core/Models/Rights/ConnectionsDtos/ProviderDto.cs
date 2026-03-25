@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
 /// <summary>
 /// Extended Provider
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class ProviderDto
 {
     /// <summary>

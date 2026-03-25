@@ -1,5 +1,8 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace Altinn.Platform.Authentication.Core.Models.Rights;
+
+[ExcludeFromCodeCoverage]
 public class RightDto
 {
     /// <summary>

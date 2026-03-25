@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
 /// <summary>
 /// Delegation check model for a resource
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class ResourceCheckDto
 {
     /// <summary>

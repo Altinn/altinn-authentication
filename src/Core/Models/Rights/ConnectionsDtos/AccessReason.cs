@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
 /// <summary>
 /// Reason for access (Dto)
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class AccessReason
 {
     private readonly AccessReasonFlag flag;

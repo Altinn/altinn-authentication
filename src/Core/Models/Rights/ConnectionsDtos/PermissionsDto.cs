@@ -1,7 +1,10 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.Rights;
 /// <summary>
 /// Permission
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class PermissionDto
 {
     /// <summary>

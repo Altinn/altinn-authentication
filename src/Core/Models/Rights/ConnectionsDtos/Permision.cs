@@ -1,10 +1,12 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
 /// <summary>
 /// Resource delegation check response model
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class Permision
 {
     /// <summary>

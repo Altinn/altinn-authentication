@@ -1,10 +1,12 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
 /// <summary>
 /// Compact Entity Model
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class CompactEntityDto
 {
     /// <summary>

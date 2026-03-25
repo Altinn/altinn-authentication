@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
 /// <summary>
 /// Define the types of Resources
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class TypeDto
 {
     /// <summary>
