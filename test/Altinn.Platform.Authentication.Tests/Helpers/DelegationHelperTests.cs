@@ -360,7 +360,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.UserDelegationCheckForReportee(1, "sys", requestedRights, false);
+            var result = await helper.UserDelegationCheckForReportee(Guid.NewGuid(), "sys", requestedRights, false);
 
             // Assert
             Assert.True(result.CanDelegate);
@@ -386,7 +386,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.UserDelegationCheckForReportee(1, "sys", new List<Right> { requestedRight }, false);
+            var result = await helper.UserDelegationCheckForReportee(Guid.NewGuid(), "sys", new List<Right> { requestedRight }, false);
 
             // Assert
             Assert.False(result.CanDelegate);
@@ -441,7 +441,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.UserDelegationCheckForReportee(1, "sys", new List<Right> { right }, false);
+            var result = await helper.UserDelegationCheckForReportee(Guid.NewGuid(), "sys", new List<Right> { right }, false);
 
             // Assert
             Assert.False(result.CanDelegate);
@@ -495,7 +495,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
 
             // Act
-            var result = await helper.UserDelegationCheckForReportee(1, "sys", new List<Right> { right }, false);
+            var result = await helper.UserDelegationCheckForReportee(Guid.NewGuid(), "sys", new List<Right> { right }, false);
 
             // Assert
             Assert.False(result.CanDelegate);

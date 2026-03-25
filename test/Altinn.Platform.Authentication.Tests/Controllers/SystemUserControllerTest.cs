@@ -690,7 +690,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
             int partyId = 500004;
-            Guid id = Guid.NewGuid();
+            Guid id = new("2c022f99-b975-48fb-8c74-9c1ef579b515");
 
             string para = $"{partyId}/{id}";
             SystemUserRequestDto newSystemUser = new()
