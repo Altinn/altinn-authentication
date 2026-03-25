@@ -3,7 +3,6 @@ using Altinn.Authentication.Core.Problems;
 using Altinn.Authentication.Integration.Configuration;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessTokenClient.Services;
-using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Exceptions;
 using Altinn.Platform.Authentication.Core.Extensions;
 using Altinn.Platform.Authentication.Core.Models;
@@ -11,7 +10,6 @@ using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
-using Altinn.Register.Contracts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -122,11 +120,11 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken) 
+    public async Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken) 
     {
         try
         {
-            string endpointUrl = $"enduser/connections/resources/delegationcheck?party={partyId}&resource={resource}";
+            string endpointUrl = $"enduser/connections/resources/delegationcheck?party={partyUuid}&resource={resource}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
             if (!response.IsSuccessStatusCode)
@@ -271,11 +269,11 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<RightResponses> responseData)
+    public async Task<Result<bool>> DelegateRightToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, List<RightResponses> responseData)
     {
         foreach (RightResponses rightResponse in responseData)
         {
-            Result<RightsDelegationResponseExternal> result = await DelegateSingleRightToSystemUser(partyId, systemUser, rightResponse);
+            Result<RightsDelegationResponseExternal> result = await DelegateSingleRightToSystemUser(partyUuid, systemUser, rightResponse);
 
             if (result.IsProblem)
             {
@@ -351,9 +349,9 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)
+    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, List<Right> rights)
     {
-        if (!await RevokeRightsToSystemUser(partyId, systemUser, rights))
+        if (!await RevokeRightsToSystemUser(partyUuid, systemUser, rights))
         {
             return Problem.Rights_FailedToRevoke;
         }
@@ -433,11 +431,11 @@ public class AccessManagementClient : IAccessManagementClient
         } while (endpointUrl is not null);
     }
 
-    private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, RightResponses rightResponses)
+    private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, RightResponses rightResponses)
     {
         try
         {
-            string endpointUrl = $"enduser/connections/resources/rights?party={partyId}&to={systemUser.Id}&resource={rightResponses.resourceId}";
+            string endpointUrl = $"enduser/connections/resources/rights?party={partyUuid}&to={systemUser.Id}&resource={rightResponses.resourceId}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(rightResponses.RightKeyListDto));
 
@@ -465,14 +463,14 @@ public class AccessManagementClient : IAccessManagementClient
 
     }
 
-    private async Task<bool> RevokeRightsToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)
+    private async Task<bool> RevokeRightsToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, List<Right> rights)
     {
         try
         {
             foreach (Right right in rights)
             {
                 string rightId = right.Resource.First().Value.ToString();
-                string endpointUrl = $"enduser/connections/resources?party={partyId}&to={systemUser.Id}&resource={rightId}";
+                string endpointUrl = $"enduser/connections/resources?party={partyUuid}&to={systemUser.Id}&resource={rightId}";
                 string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
                 HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
                 var result = await HandleResponse(response, "RevokeRightsToSystemUser");

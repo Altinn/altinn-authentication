@@ -398,7 +398,7 @@ public class ChangeRequestSystemUserService(
         // Delegate new Single Rights to the SystemUser
         if (delegationCheckFinalResult.CanDelegate && delegationCheckFinalResult.RightResponses?.Count > 0)
         {
-            Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), toBeChanged, delegationCheckFinalResult.RightResponses);
+            Result<bool> delegationSucceeded = await accessManagementClient.DelegateRightToSystemUser(partyUuid, toBeChanged, delegationCheckFinalResult.RightResponses);
             if (delegationSucceeded.IsProblem)
             {
                 return delegationSucceeded.Problem;
@@ -408,7 +408,7 @@ public class ChangeRequestSystemUserService(
         // Attempt to Revoke Single Rights from the SystemUser
         if (systemUserChangeRequest.UnwantedRights?.Count > 0)
         {
-            var revokeRightResult = await accessManagementClient.RevokeDelegatedRightToSystemUser(partyId.ToString(), toBeChanged, systemUserChangeRequest.UnwantedRights);
+            var revokeRightResult = await accessManagementClient.RevokeDelegatedRightToSystemUser(partyUuid, toBeChanged, systemUserChangeRequest.UnwantedRights);
             if (revokeRightResult.IsProblem)
             {
                 return revokeRightResult.Problem;
