@@ -437,7 +437,13 @@ public class AccessManagementClient : IAccessManagementClient
         {
             string endpointUrl = $"enduser/connections/resources/rights?party={partyUuid}&to={systemUser.Id}&resource={rightResponses.resourceId}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(rightResponses.RightKeyListDto));
+
+            var requestBody = new RightKeyListDto
+            {
+                DirectRightKeys = rightResponses.RightKeyListDto.DirectRightKeys
+            };
+
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(requestBody));
 
             if (response.IsSuccessStatusCode)
             {
@@ -460,7 +466,6 @@ public class AccessManagementClient : IAccessManagementClient
             _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateSingleRightToSystemUser // Exception");
             throw;
         }
-
     }
 
     private async Task<bool> RevokeRightsToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, List<Right> rights)
