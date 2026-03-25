@@ -81,6 +81,7 @@ public sealed class AccessReason
 /// <summary>
 /// Mapping helper for AccessReason and AccessResonFlag
 /// </summary>
+[ExcludeFromCodeCoverage]
 public static class AccessReasonMapping
 {
     private static readonly Dictionary<AccessReasonFlag, AccessReasonRecord> FlagToItem =
@@ -138,6 +139,7 @@ public static class AccessReasonMapping
 /// </summary>
 /// <param name="Name">Name</param>
 /// <param name="Description">Description</param>
+[ExcludeFromCodeCoverage]
 public sealed record AccessReasonRecord(string Name, string Description);
 
 /// <summary>
