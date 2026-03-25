@@ -349,7 +349,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (regSystem.Rights is not null && regSystem.Rights.Count > 0)
             {
-                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, [], true, cancellationToken);
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyUuid, regSystem.Id, [], true, cancellationToken);
 
                 if (delegationCheckFinalResult?.RightResponses is null)
                 {
@@ -465,7 +465,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemUserType == SystemUserType.Standard && rights is not null && rights.Count > 0)
             {
-                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(int.Parse(partyId), regSystem.Id, rights, fromBff: false, cancellationToken);
+                delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyUuid, regSystem.Id, rights, fromBff: false, cancellationToken);
 
                 if (delegationCheckFinalResult?.RightResponses is null)
                 {

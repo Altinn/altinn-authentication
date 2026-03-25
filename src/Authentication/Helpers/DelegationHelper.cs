@@ -31,7 +31,7 @@ public class DelegationHelper(
     /// <param name="fromBff">the BFF/UI does not currently support a subset of the Rights, all will be delegated</param>
     /// <param name="cancellationToken">cancel token</param>
     /// <returns>DelegationCheckResult record</returns>
-    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(int partyId, string systemId, List<Right> requestedRights, bool fromBff, CancellationToken cancellationToken = default)
+    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(Guid partyId, string systemId, List<Right> requestedRights, bool fromBff, CancellationToken cancellationToken = default)
     {
         using var activity = AuthenticationTelemetry.StartActivity(
                 name: nameof(UserDelegationCheckForReportee),

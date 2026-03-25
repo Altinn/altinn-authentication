@@ -364,7 +364,7 @@ public class ChangeRequestSystemUserService(
         // Check Single Rights to be added 
         if (systemUserChangeRequest.RequiredRights?.Count > 0)
         {
-            delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyId, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
+            delegationCheckFinalResult = await delegationHelper.UserDelegationCheckForReportee(partyUuid, regSystem.Id, systemUserChangeRequest.RequiredRights, false, cancellationToken);
             if (!delegationCheckFinalResult.CanDelegate || delegationCheckFinalResult.RightResponses is null)
             {
                 return Problem.Rights_NotFound_Or_NotDelegable;

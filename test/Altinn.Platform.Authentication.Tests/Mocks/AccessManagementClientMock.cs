@@ -434,7 +434,7 @@ public class AccessManagementClientMock: IAccessManagementClient
 
     public async Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default)
     {
-        if (partyId == "500004")
+        if (partyId == "2c022f99-b975-48fb-8c74-9c1ef579b515")
         {
             return null;
         }
