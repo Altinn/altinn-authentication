@@ -204,7 +204,7 @@ namespace Altinn.Platform.Authentication.Services
                     right.Resource = resource;
                 }
 
-                var revokeRightResult = await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyId, systemUser, rights);
+                var revokeRightResult = await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyUuid, systemUser, rights);
                 if (revokeRightResult.IsProblem)
                 {
                     return revokeRightResult.Problem;
@@ -556,7 +556,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (IsStandardSystemUserDelegatgeSingleRights(newSystemUser, regSystem, delegationCheckFinalResult))
             {
-                Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyId.ToString(), inserted, delegationCheckFinalResult!.RightResponses!);
+                Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyUuid, inserted, delegationCheckFinalResult!.RightResponses!);
                 if (delegationSucceeded.IsProblem)
                 {
                     await _repository.SetDeleteSystemUserById((Guid)insertedId);

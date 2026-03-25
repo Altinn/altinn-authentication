@@ -138,9 +138,9 @@ public class AccessManagementClientMock: IAccessManagementClient
         return found;   
     }
 
-    public async Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<RightResponses> rights)
+    public async Task<Result<bool>> DelegateRightToSystemUser(Guid partyId, SystemUserInternalDTO systemUser, List<RightResponses> rights)
     {
-        if (partyId == "500005")
+        if (partyId == Guid.Parse("c48fc8fc-3695-40d5-90d1-fd12cb51075b"))
         {
             return Problem.Rights_FailedToDelegate;
         }
@@ -188,7 +188,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return new AuthorizedPartyExternal();
     }
 
-    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights)
+    public async Task<Result<bool>> RevokeDelegatedRightToSystemUser(Guid partyId, SystemUserInternalDTO systemUser, List<Right> rights)
     {
         return await Task.FromResult(true);
     }
@@ -432,9 +432,9 @@ public class AccessManagementClientMock: IAccessManagementClient
         return new Result<List<RightDelegation>>(delegatedRights);
     }
 
-    public async Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default)
+    public async Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyId, string resource, CancellationToken cancellationToken = default)
     {
-        if (partyId == "2c022f99-b975-48fb-8c74-9c1ef579b515")
+        if (partyId == Guid.Parse("2c022f99-b975-48fb-8c74-9c1ef579b515"))
         {
             return null;
         }

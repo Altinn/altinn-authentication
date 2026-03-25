@@ -27,20 +27,18 @@ public interface IAccessManagementClient
     /// <summary>
     /// Delegates the rights to the systemuser
     /// </summary>
-    /// <param name="partyId">The party id</param>
-    /// <param name="token">The authorization header bearer token</param>
+    /// <param name="partyUuid">The party id</param>
     /// <param name="rights">The Rights to be delegated to the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser to receive the rights</param>
-    Task<Result<bool>> DelegateRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<RightResponses> rights);
+    Task<Result<bool>> DelegateRightToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, List<RightResponses> rights);
 
     /// <summary>
     /// Revokes the Delegated the rights to the systemuser
     /// </summary>
-    /// <param name="partyId">The party id</param>
-    /// <param name="token">The authorization header bearer token</param>
+    /// <param name="partyUuid">The party id</param>
     /// <param name="rights">The Rights to be revoked for the systemuser on behalf of the Party</param>
     /// <param name="systemUser">The SystemUser that misses the rights</param>
-    Task<Result<bool>> RevokeDelegatedRightToSystemUser(string partyId, SystemUserInternalDTO systemUser, List<Right> rights);
+    Task<Result<bool>> RevokeDelegatedRightToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, List<Right> rights);
 
     /// <summary>
     /// Delegate a customer to the Agent SystemUser
@@ -167,6 +165,7 @@ public interface IAccessManagementClient
     /// Verifies that the Right can be delegated, and gets the correct RightKeys to use in the Delegate step afterwards.
     /// The input Right id is for the whole resource, and the returned RightKeys are the ones needed to delegate the specific Action(s) to the resource.
     /// </summary>
-    /// <param name="partyId">The party id</param>
-    Task<ResourceCheckDto?> CheckDelegationAccess(string partyId, string resource, CancellationToken cancellationToken = default);
+    /// <param name="partyUuid">The party id</param>
+    /// <param name="resource">The resource id</param>
+    Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken = default);
 }

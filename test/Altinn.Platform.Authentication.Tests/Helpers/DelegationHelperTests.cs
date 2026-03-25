@@ -354,7 +354,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Delegation is allowed
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(a => a.CheckDelegationAccess(It.IsAny<Guid>(), It.IsAny<string>()))
                 .ReturnsAsync(dto);
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
@@ -435,7 +435,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             };
 
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(a => a.CheckDelegationAccess(It.IsAny<Guid>(), It.IsAny<string>()))
                 .ReturnsAsync(dto);
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
@@ -489,7 +489,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             };
 
             accessManagementClient
-                .Setup(a => a.CheckDelegationAccess(It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(a => a.CheckDelegationAccess(It.IsAny<Guid>(), It.IsAny<string>()))
                 .ReturnsAsync(dto);
 
             var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);

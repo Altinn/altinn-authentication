@@ -25,13 +25,13 @@ public class DelegationHelper(
     /// <summary>
     /// Checks Delegation for a user
     /// </summary>
-    /// <param name="partyId">reportee</param>
+    /// <param name="partyUuid">reportee</param>
     /// <param name="systemId">the system</param>
     /// <param name="requestedRights">The set of requested Rights, (currently empty collection from the BFF/UI), Request or ChangeRequest </param>
     /// <param name="fromBff">the BFF/UI does not currently support a subset of the Rights, all will be delegated</param>
     /// <param name="cancellationToken">cancel token</param>
     /// <returns>DelegationCheckResult record</returns>
-    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(Guid partyId, string systemId, List<Right> requestedRights, bool fromBff, CancellationToken cancellationToken = default)
+    public async Task<DelegationCheckResult> UserDelegationCheckForReportee(Guid partyUuid, string systemId, List<Right> requestedRights, bool fromBff, CancellationToken cancellationToken = default)
     {
         using var activity = AuthenticationTelemetry.StartActivity(
                 name: nameof(UserDelegationCheckForReportee),
@@ -71,7 +71,7 @@ public class DelegationHelper(
         {
             string resourceId = right.Resource.FirstOrDefault(attr => attr.Id == AttributeIdentifier.ResourceRegistryAttribute)?.Value ?? string.Empty;
 
-            ResourceCheckDto? resourceCheckDto = await accessManagementClient.CheckDelegationAccess(partyId.ToString(), resourceId, cancellationToken);
+            ResourceCheckDto? resourceCheckDto = await accessManagementClient.CheckDelegationAccess(partyUuid, resourceId, cancellationToken);
             
             if (resourceCheckDto is null)
             {
