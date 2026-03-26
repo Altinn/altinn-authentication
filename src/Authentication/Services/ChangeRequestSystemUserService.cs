@@ -395,6 +395,13 @@ public class ChangeRequestSystemUserService(
             }
         }
 
+        // Add the system user as right holder ( is idempotent, and there could be edge cases where the systemuser did not already have this )
+        Result<bool> result = await accessManagementClient.AddSystemUserAsRightHolder(partyUuid, Guid.Parse(toBeChanged.Id), cancellationToken);
+        if (result.IsProblem)
+        {
+            return result.Problem;
+        }
+
         // Delegate new Single Rights to the SystemUser
         if (delegationCheckFinalResult.CanDelegate && delegationCheckFinalResult.RightResponses?.Count > 0)
         {

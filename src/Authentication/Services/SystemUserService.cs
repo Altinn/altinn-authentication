@@ -8,7 +8,6 @@ using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Configuration;
-using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
@@ -26,6 +25,7 @@ using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
 
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
+using SystemUserType = Altinn.Platform.Authentication.Core.Enums.SystemUserType;
 
 #nullable enable
 namespace Altinn.Platform.Authentication.Services
@@ -554,6 +554,13 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
+            // Add the system user as right holder
+            Result<bool> result = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuid, Guid.Parse(inserted.Id), cancellationToken);
+            if (result.IsProblem)
+            {
+                return result.Problem;
+            }
+
             if (IsStandardSystemUserDelegatgeSingleRights(newSystemUser, regSystem, delegationCheckFinalResult))
             {
                 Result<bool> delegationSucceeded = await _accessManagementClient.DelegateRightToSystemUser(partyUuid, inserted, delegationCheckFinalResult!.RightResponses!);
@@ -1009,13 +1016,6 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<bool>> DelegateAccessPackagesToSystemUser(Guid partyUuId, SystemUserInternalDTO systemUser, List<AccessPackage> accessPackages, CancellationToken cancellationToken)
         {
-            // Add the system user as right holder
-            Result<bool> result = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuId, Guid.Parse(systemUser.Id), cancellationToken);
-            if (result.IsProblem)
-            {
-                return result.Problem;
-            }
-
             // 2. Delegate the access packages to the system user
             foreach (AccessPackage accessPackage in accessPackages)
             {
