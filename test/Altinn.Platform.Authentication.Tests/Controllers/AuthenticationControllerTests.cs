@@ -1758,6 +1758,50 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(principal.HasClaim(c => c.Type == "amr"));
         }
 
+        /// <summary>
+        /// Test of method <see cref="AuthenticationController.RefreshJwtCookie"/>.
+        /// </summary>
+        [Fact]
+        public async Task RefreshJwtCookie_ValidToken_ReturnsNewTokenWithPid_Refresh()
+        {
+            // Arrange
+            List<Claim> claims = new List<Claim>();
+
+            string amr = "Minid-PIN";
+            string acr = "idporten-loa-high";
+            string sid = "BHqitIevJmeX_IrOzmS1XOvAQAWlrTK2OioLnx43Kqw";
+
+            claims.Add(new Claim("amr", amr));
+            claims.Add(new Claim("acr", acr));
+            claims.Add(new Claim("sid", sid));
+            claims.Add(new Claim(AltinnCoreClaimTypes.UserId, "20000"));
+            claims.Add(new Claim("scope", "oidc altinn:instances.read"));
+
+            ClaimsIdentity identity = new ClaimsIdentity();
+            identity.AddClaims(claims);
+            ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
+
+            UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
+            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
+
+            HttpClient client = CreateClient();
+
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
+
+            string url = "/authentication/api/v1/refresh?enrichPid=true";
+
+            HttpClient refreshClient = CreateClient();
+            refreshClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
+            HttpResponseMessage refreshedTokenMessage = await refreshClient.GetAsync(url);
+            string refreshedToken = await refreshedTokenMessage.Content.ReadAsStringAsync();
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, TimeProvider.GetUtcNow());
+
+            Assert.NotNull(principal);
+            Assert.Equal("12345678901", principal.FindFirstValue("pid"));
+            Assert.True(principal.HasClaim(c => c.Type == "amr"));
+        }
+
         private static string GetConfigPath()
         {
             string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);

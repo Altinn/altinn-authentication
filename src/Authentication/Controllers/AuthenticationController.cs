@@ -457,13 +457,30 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpGet("refresh")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult> RefreshJwtCookie(CancellationToken cancellationToken)
+        public async Task<ActionResult> RefreshJwtCookie(bool enrichPid = false, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Starting to refresh token...");
 
             ClaimsPrincipal principal = HttpContext.User;
 
             _logger.LogInformation("Refreshing token....");
+
+            if (enrichPid)
+            {
+                int userId = AuthenticationHelper.GetUserId(HttpContext);
+                if (userId != 0)
+                {
+                    UserProfile userProfile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userId });
+                    if (userProfile != null && userProfile.Party != null && !string.IsNullOrWhiteSpace(userProfile.Party.SSN))
+                    {
+                        ClaimsIdentity identity = principal.Identity as ClaimsIdentity;
+                        if (identity != null)
+                        {
+                            identity.AddClaim(new Claim("pid", userProfile.Party.SSN, ClaimValueTypes.String, _generalSettings.AltinnOidcIssuerUrl));
+                        }
+                    }
+                }
+            }
 
             string serializedToken = await GenerateToken(principal);
 
