@@ -285,7 +285,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
+            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent, client);
             if (result.IsSuccess)
             {
                 DelegationResponse? delegation = result.Value?.FirstOrDefault(d => d.CustomerId == client);

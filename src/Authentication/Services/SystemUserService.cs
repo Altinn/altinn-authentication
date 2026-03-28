@@ -946,7 +946,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId)
+        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
         {
             Party party = await _partiesClient.GetPartyAsync(partyId);
 
@@ -955,7 +955,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_DelegationNotFound;
             }
 
-            var res = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitator);
+            var res = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitator, client);
             if (res.IsSuccess)
             {
                 return ConvertExtDelegationToDTO(res.Value);

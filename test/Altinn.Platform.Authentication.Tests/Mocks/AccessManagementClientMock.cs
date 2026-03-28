@@ -193,7 +193,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return await Task.FromResult(true);
     }
 
-    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default)
     {
         List<ConnectionDto> delegations = [];
 

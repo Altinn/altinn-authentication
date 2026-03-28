@@ -604,7 +604,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitator == Guid.Empty)
@@ -618,7 +618,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         ;
 
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}";
+        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}(client != null ? &client={client} : null)";
 
         try
         {
