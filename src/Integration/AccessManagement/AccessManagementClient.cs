@@ -618,7 +618,11 @@ public class AccessManagementClient : IAccessManagementClient
         }
         ;
 
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}(client != null ? &client={client} : null)";
+        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}";
+        if (client.HasValue)
+        {
+            endpointUrl += $"&client={client}";
+        }
 
         try
         {
