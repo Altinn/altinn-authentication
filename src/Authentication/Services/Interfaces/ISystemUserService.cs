@@ -139,8 +139,9 @@ public interface ISystemUserService
     /// <param name="party">int party</param>
     /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
     /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
+    /// <param name="client">The Guid for the client</param>
     /// <returns>List of Client Delegations</returns>
-    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId);
+    Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId, Guid? client = null);
 
     /// <summary>
     /// Delete the client delegation to the Agent SystemUser
