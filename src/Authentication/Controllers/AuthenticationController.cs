@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Constants;
@@ -25,6 +26,7 @@ using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Register.Contracts.V1;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -78,6 +80,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
         private readonly IOidcProvider _oidcProvider;
         private readonly IProfile _profileService;
+        private readonly IPartiesClient _partiesClient;
         private readonly IOidcServerService _oidcServerService;
         private readonly TimeProvider _timeProvider;
 
@@ -111,7 +114,8 @@ namespace Altinn.Platform.Authentication.Controllers
             IGuidService guidService,
             IProfile profileService,
             IOidcServerService oidcServerService,
-            TimeProvider timeProvider)
+            TimeProvider timeProvider,
+            IPartiesClient partiesClient)
         {
             _logger = logger;
             _generalSettings = generalSettings.Value;
@@ -132,6 +136,7 @@ namespace Altinn.Platform.Authentication.Controllers
             _profileService = profileService;
             _oidcServerService = oidcServerService;
             _timeProvider = timeProvider;
+            _partiesClient = partiesClient;
             if (_generalSettings.PartnerScopes != null)
             {
                 _partnerScopes = _generalSettings.PartnerScopes.Split(";").ToList();
@@ -467,16 +472,16 @@ namespace Altinn.Platform.Authentication.Controllers
 
             if (enrichPid && !principal.Claims.Any(c => c.Type == "pid"))
             {
-                int userId = AuthenticationHelper.GetUserId(HttpContext);
-                if (userId != 0)
+                Guid partyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
+                if (partyUuid != Guid.Empty)
                 {
-                    UserProfile userProfile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userId });
-                    if (userProfile != null && userProfile.Party != null && !string.IsNullOrWhiteSpace(userProfile.Party.SSN))
+                    Party party = await _partiesClient.GetPartyByUuId(partyUuid);
+                    if (party != null && !string.IsNullOrWhiteSpace(party.SSN))
                     {
                         ClaimsIdentity? identity = principal.Identity as ClaimsIdentity;
                         if (identity != null)
                         {
-                            identity.AddClaim(new Claim("pid", userProfile.Party.SSN, ClaimValueTypes.String, _generalSettings.AltinnOidcIssuerUrl));
+                            identity.AddClaim(new Claim("pid", party.SSN, ClaimValueTypes.String, _generalSettings.AltinnOidcIssuerUrl));
                         }
                     }
                 }
