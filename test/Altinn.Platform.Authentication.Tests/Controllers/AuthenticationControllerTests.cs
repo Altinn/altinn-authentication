@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
@@ -21,6 +22,7 @@ using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
+using Altinn.Register.Contracts.V1;
 using AltinnCore.Authentication.Constants;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
@@ -47,6 +49,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
+        private readonly Mock<IPartiesClient> _partiesClient = new();
         private IConfiguration _configuration;
 
         protected override void ConfigureHost(IWebHostBuilder builder)
@@ -87,6 +90,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.Configure<GeneralSettings>(generalSettingSection);
             services.AddSingleton(_cookieDecryptionService);
             services.AddSingleton(_userProfileService);
+            services.AddSingleton(_partiesClient.Object);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
@@ -1767,22 +1771,25 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange
             List<Claim> claims = new List<Claim>();
 
+
             string amr = "Minid-PIN";
             string acr = "idporten-loa-high";
             string sid = "BHqitIevJmeX_IrOzmS1XOvAQAWlrTK2OioLnx43Kqw";
+
+            string uuid = Guid.NewGuid().ToString();
 
             claims.Add(new Claim("amr", amr));
             claims.Add(new Claim("acr", acr));
             claims.Add(new Claim("sid", sid));
             claims.Add(new Claim(AltinnCoreClaimTypes.UserId, "20000"));
             claims.Add(new Claim("scope", "oidc altinn:instances.read"));
+            claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, uuid));
 
             ClaimsIdentity identity = new ClaimsIdentity();
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
-            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
+            _partiesClient.Setup(u => u.GetPartyByUuId(It.IsAny<Guid>())).ReturnsAsync(new Party { PartyId = 50001, SSN = "12345678901" });
 
             HttpClient client = CreateClient();
 
