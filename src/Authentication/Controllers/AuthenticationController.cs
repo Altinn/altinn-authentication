@@ -465,7 +465,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             _logger.LogInformation("Refreshing token....");
 
-            if (enrichPid)
+            if (enrichPid && !principal.Claims.Any(c => c.Type == "pid"))
             {
                 int userId = AuthenticationHelper.GetUserId(HttpContext);
                 if (userId != 0)
@@ -473,7 +473,7 @@ namespace Altinn.Platform.Authentication.Controllers
                     UserProfile userProfile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userId });
                     if (userProfile != null && userProfile.Party != null && !string.IsNullOrWhiteSpace(userProfile.Party.SSN))
                     {
-                        ClaimsIdentity identity = principal.Identity as ClaimsIdentity;
+                        ClaimsIdentity? identity = principal.Identity as ClaimsIdentity;
                         if (identity != null)
                         {
                             identity.AddClaim(new Claim("pid", userProfile.Party.SSN, ClaimValueTypes.String, _generalSettings.AltinnOidcIssuerUrl));
