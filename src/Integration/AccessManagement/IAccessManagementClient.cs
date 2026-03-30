@@ -55,9 +55,10 @@ public interface IAccessManagementClient
     /// </summary>
     /// <param name="systemUserId">The Guid Id for the Agent SystemUser</param>
     /// <param name="facilitator">The Guid Id for the Facilitator</param>
+    /// <param name="client">The Guid Id for the Client</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, CancellationToken cancellationToken = default);
+    Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the access package for the given urn value
