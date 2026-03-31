@@ -1771,7 +1771,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange
             List<Claim> claims = new List<Claim>();
 
-
             string amr = "Minid-PIN";
             string acr = "idporten-loa-high";
             string sid = "BHqitIevJmeX_IrOzmS1XOvAQAWlrTK2OioLnx43Kqw";
