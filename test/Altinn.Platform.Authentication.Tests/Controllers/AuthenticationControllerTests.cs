@@ -6,8 +6,10 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
@@ -21,6 +23,7 @@ using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
+using Altinn.Register.Contracts.V1;
 using AltinnCore.Authentication.Constants;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
@@ -47,6 +50,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
+        private readonly Mock<IPartiesClient> _partiesClient = new();
         private IConfiguration _configuration;
 
         protected override void ConfigureHost(IWebHostBuilder builder)
@@ -87,6 +91,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.Configure<GeneralSettings>(generalSettingSection);
             services.AddSingleton(_cookieDecryptionService);
             services.AddSingleton(_userProfileService);
+            services.AddSingleton(_partiesClient.Object);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
             services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
@@ -1755,6 +1760,52 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(principal);
             Assert.NotEqual(sid, principal.FindFirstValue("sid"));
             Assert.Equal(altinnSessionId, principal.FindFirstValue("sid"));
+            Assert.True(principal.HasClaim(c => c.Type == "amr"));
+        }
+
+        /// <summary>
+        /// Test of method <see cref="AuthenticationController.RefreshJwtCookie"/>.
+        /// </summary>
+        [Fact]
+        public async Task RefreshJwtCookie_ValidToken_ReturnsNewTokenWithPid_Refresh()
+        {
+            // Arrange
+            List<Claim> claims = new List<Claim>();
+
+            string amr = "Minid-PIN";
+            string acr = "idporten-loa-high";
+            string sid = "BHqitIevJmeX_IrOzmS1XOvAQAWlrTK2OioLnx43Kqw";
+
+            string uuid = Guid.NewGuid().ToString();
+
+            claims.Add(new Claim("amr", amr));
+            claims.Add(new Claim("acr", acr));
+            claims.Add(new Claim("sid", sid));
+            claims.Add(new Claim(AltinnCoreClaimTypes.UserId, "20000"));
+            claims.Add(new Claim("scope", "oidc altinn:instances.read"));
+            claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, uuid));
+
+            ClaimsIdentity identity = new ClaimsIdentity();
+            identity.AddClaims(claims);
+            ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
+
+            _partiesClient.Setup(u => u.GetPartyByUuId(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(new Party { PartyId = 50001, SSN = "12345678901" });
+
+            HttpClient client = CreateClient();
+
+            string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
+
+            string url = "/authentication/api/v1/refresh?enrichPid=true";
+
+            HttpClient refreshClient = CreateClient();
+            refreshClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", externalToken);
+            HttpResponseMessage refreshedTokenMessage = await refreshClient.GetAsync(url);
+            string refreshedToken = await refreshedTokenMessage.Content.ReadAsStringAsync();
+            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(refreshedToken, TimeProvider.GetUtcNow());
+
+            Assert.NotNull(principal);
+            Assert.Equal("12345678901", principal.FindFirstValue("pid"));
             Assert.True(principal.HasClaim(c => c.Type == "amr"));
         }
 
