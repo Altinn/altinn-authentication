@@ -475,7 +475,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 Guid partyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
                 if (partyUuid != Guid.Empty)
                 {
-                    Party party = await _partiesClient.GetPartyByUuId(partyUuid);
+                    Party party = await _partiesClient.GetPartyByUuId(partyUuid, cancellationToken);
                     if (party != null && !string.IsNullOrWhiteSpace(party.SSN))
                     {
                         ClaimsIdentity? identity = principal.Identity as ClaimsIdentity;
