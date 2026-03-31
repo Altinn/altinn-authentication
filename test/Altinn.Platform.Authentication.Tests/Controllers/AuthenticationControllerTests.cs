@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -1788,7 +1789,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            _partiesClient.Setup(u => u.GetPartyByUuId(It.IsAny<Guid>())).ReturnsAsync(new Party { PartyId = 50001, SSN = "12345678901" });
+            _partiesClient.Setup(u => u.GetPartyByUuId(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(new Party { PartyId = 50001, SSN = "12345678901" });
 
             HttpClient client = CreateClient();
 
