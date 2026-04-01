@@ -273,20 +273,16 @@ public class AccessManagementClient : IAccessManagementClient
     {
         foreach (RightResponses rightResponse in responseData)
         {
-            Result<RightsDelegationResponseExternal> result = await DelegateSingleRightToSystemUser(partyUuid, systemUser, rightResponse);
+            Result<bool> result = await DelegateSingleRightToSystemUser(partyUuid, systemUser, rightResponse);
 
             if (result.IsProblem)
             {
                 return new Result<bool>(result.Problem!);
             }
 
-            bool allDelegated = result.Value.RightDelegationResults.All(r => r.Status == DelegationStatusExternal.Delegated);
-            if (!allDelegated)
+            if (!result.Value)
             {
-                var notDelegatedDetails = result.Value.RightDelegationResults
-                    .Where(r => r.Status != DelegationStatusExternal.Delegated)
-                    .Select(r => r.Details)
-                    .ToList();
+                var notDelegatedDetails = rightResponse.resourceId;
 
                 var problemDetails = new ProblemDetails
                 {
@@ -431,7 +427,7 @@ public class AccessManagementClient : IAccessManagementClient
         } while (endpointUrl is not null);
     }
 
-    private async Task<Result<RightsDelegationResponseExternal>> DelegateSingleRightToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, RightResponses rightResponses)
+    private async Task<Result<bool>> DelegateSingleRightToSystemUser(Guid partyUuid, SystemUserInternalDTO systemUser, RightResponses rightResponses)
     {
         try
         {
@@ -447,9 +443,7 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                RightsDelegationResponseExternal result = JsonSerializer.Deserialize<RightsDelegationResponseExternal>(responseContent, _serializerOptions)!;
-                return new Result<RightsDelegationResponseExternal>(result);
+                return true;
             }
             else
             {
@@ -458,7 +452,7 @@ public class AccessManagementClient : IAccessManagementClient
                 _logger.LogError($"Authentication // AccessManagementClient // DelegateSingleRightToSystemUser // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
                 ProblemInstance problemInstance = ProblemInstance.Create(Problem.Rights_FailedToDelegate);
-                return new Result<RightsDelegationResponseExternal>(problemInstance);
+                return problemInstance;
             }
         }
         catch (Exception ex)
