@@ -106,7 +106,7 @@ namespace Altinn.Platform.Authentication.Services
             // 7) Rotate refresh token (every use)
             string newRefreshToken = CryptoHelpers.RandomBase64Url(48);
             byte[] newLookupKey = RefreshTokenCrypto.ComputeLookupKey(newRefreshToken, serverPepper);
-            var (newHash, newSalt, newIters) = RefreshTokenCrypto.HashForStorage(newRefreshToken, iterations: row.Iterations);
+            var (newHash, newSalt, newIters) = RefreshTokenCrypto.HashForStorage(newRefreshToken, serverPepper);
 
             var newRow = new RefreshTokenRow
             {
@@ -215,7 +215,7 @@ namespace Altinn.Platform.Authentication.Services
                 return (Value: TokenResult.InvalidGrant("Invalid refresh_token"), null, null, null, null);
             }
 
-            if (!RefreshTokenCrypto.Verify(request.RefreshToken, row.Salt, row.Iterations, row.Hash))
+            if (!RefreshTokenCrypto.Verify(request.RefreshToken, serverPepper, row.Hash, row.Salt, row.Iterations))
             {
                 return (Value: TokenResult.InvalidGrant("Invalid refresh_token"), null, null, null, null);
             }
@@ -436,10 +436,8 @@ namespace Altinn.Platform.Authentication.Services
             // Generate opaque token
             string refreshToken = CryptoHelpers.RandomBase64Url(48);
 
-            // Fast lookup key + slow hash for storage
             byte[] lookupKey = RefreshTokenCrypto.ComputeLookupKey(refreshToken, serverPepper);
-            var (hash, salt, iters) = RefreshTokenCrypto.HashForStorage(
-                refreshToken, iterations: 600_000);
+            var (hash, salt, iters) = RefreshTokenCrypto.HashForStorage(refreshToken, serverPepper);
 
             DateTimeOffset sliding = now.AddMinutes(_generalSettings.JwtValidityMinutes);
             DateTimeOffset absolute = now.AddMinutes(_generalSettings.MaxSessionTimeInMinutes);
