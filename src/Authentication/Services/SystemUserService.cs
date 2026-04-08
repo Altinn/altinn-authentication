@@ -543,17 +543,14 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_FailedToCreate;
             }
 
-            if (newSystemUser.UserType == SystemUserType.Standard)
+            // Push system user to Access Management, both Standard and Agent type system users are pushed
+            Result<bool> partyCreated = await _accessManagementClient.PushSystemUserToAM(partyUuid, inserted, cancellationToken);
+
+            if (partyCreated.IsProblem)
             {
-                // Push system user to Access Management
-                Result<bool> partyCreated = await _accessManagementClient.PushSystemUserToAM(partyUuid, inserted, cancellationToken);
-
-                if (partyCreated.IsProblem)
-                {
-                    return partyCreated.Problem;
-                }
+                return partyCreated.Problem;
             }
-
+            
             // Add the system user as right holder
             Result<bool> result = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuid, Guid.Parse(inserted.Id), cancellationToken);
             if (result.IsProblem)
