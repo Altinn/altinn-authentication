@@ -469,7 +469,7 @@ public class AccessManagementClient : IAccessManagementClient
             foreach (Right right in rights)
             {
                 string rightId = right.Resource.First().Value.ToString();
-                string endpointUrl = $"enduser/connections/resources?party={partyUuid}&to={systemUser.Id}&resource={rightId}";
+                string endpointUrl = $"enduser/connections/resources?party={partyUuid}&from={partyUuid}&to={systemUser.Id}&resource={rightId}";
                 string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
                 HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
                 var result = await HandleResponse(response, "RevokeRightsToSystemUser");
@@ -652,7 +652,7 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.SystemUserNotFound;
         }
 
-        string endpointUrl = $"enduser/connections/resources/rights?party={partyUuid}&to={systemUserId}";
+        string endpointUrl = $"enduser/connections/resources/rights?party={partyUuid}&from={partyUuid}&to={systemUserId}";
 
         try
         {
