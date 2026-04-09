@@ -652,7 +652,7 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.SystemUserNotFound;
         }
 
-        string endpointUrl = $"enduser/connections/resources/rights?party={partyUuid}&to={systemUserId}";
+        string endpointUrl = $"internal/{party}/rights/delegation/offered?to={systemUserId}"; // $"enduser/connections/resources/rights?party={partyUuid}&to={systemUserId}";
 
         try
         {
