@@ -662,7 +662,7 @@ public class AccessManagementClient : IAccessManagementClient
             {
                 var result = await response.Content.ReadFromJsonAsync<IEnumerable<ResourcePermissionDto>>(_serializerOptions, cancellationToken) ?? [];
                 List<RightDelegation> delegations = MapPermissionsDtoToRightDelegations(result);
-                    
+                return delegations;    
             }
 
             _logger.LogError($"Authentication // AccessManagementClient // GetSingleRightDelegationsForStandardUser // Failed to get delegated rights from access management for {systemUserId} with party {partyUuid}. StatusCode: {response.StatusCode}");
@@ -691,31 +691,14 @@ public class AccessManagementClient : IAccessManagementClient
                 throw new InvalidOperationException("Received invalid data from Access Management API: Resource or Permissions is null.");
             }
 
+            // there is only one resource per resource, the old DTO needs a list though
+            // the frontend does not care about the from and to, we only need to fill out
+            // the rights list in the systemuser.
             resourceList.Add( new AttributeMatchExternal
             {
                 Id = "urn:altinn:resource",
                 Value = r.Resource.Name
-            });
-
-            foreach (var permission in r.Permissions)
-            {
-                if (permission.From != null)
-                {
-                    fromList.Add(new AttributeMatchExternal
-                        {
-                            Id = permission.From.Type,
-                            Value = permission.From.Id.ToString()
-                    });
-                }
-                if (permission.To != null)
-                {
-                    toList.Add(new AttributeMatchExternal
-                    {
-                        Id = permission.To.Type,
-                        Value = permission.To.Id.ToString()
-                    });
-                }
-            }
+            });                        
 
             RightDelegation delegation = new()
             {
