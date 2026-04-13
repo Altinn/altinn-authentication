@@ -222,7 +222,7 @@ namespace AltinnCore.Authentication.JwtCookie
                     return AuthenticateResult.Fail(jwtCookieFailedContext.Exception);
                 }
 
-                Logger.LogInformation("Successfully validated the token.");
+                Logger.LogDebug("Successfully validated the token.");
                 JwtCookieValidatedContext jwtCookieValidatedContext = new JwtCookieValidatedContext(Context, Scheme, Options)
                 {
                     Principal = principal,
