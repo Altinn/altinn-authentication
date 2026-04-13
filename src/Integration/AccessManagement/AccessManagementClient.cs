@@ -215,6 +215,7 @@ public class AccessManagementClient : IAccessManagementClient
                 EntityType = "Systembruker",
                 EntityVariantType = FormatEntityVariantType(systemUser.UserType)
             };
+            /// This endpoint is only for internal use, and does not need to be rewritten to the new connections-api
             string endpointUrl = $"internal/party";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
