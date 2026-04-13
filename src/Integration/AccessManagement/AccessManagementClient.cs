@@ -236,7 +236,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"internal/connections?party={partyUuId}&to={systemUserId}";
+            string endpointUrl = $"enduser/connections?party={partyUuId}&to={systemUserId}";
 
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
@@ -255,8 +255,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"internal/connections?party={partyUuId}&to={systemUserId}&cascade={cascade}";
-
+            string endpointUrl = $"enduser/connections?party={partyUuId}&from={partyUuId}&to={systemUserId}&cascade={cascade}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
             return await HandleResponse(response, "RemoveSystemUserAsRightHolder");
@@ -304,7 +303,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"internal/connections/accesspackages?party={partyUuId}&from={partyUuId}&to={systemUserId}&package={urn}";
+            string endpointUrl = $"enduser/connections/accesspackages?party={partyUuId}&to={systemUserId}&package={urn}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
             return await HandleResponse(response, "DelegateSingleAccessPackageToSystemUser");
@@ -361,7 +360,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"internal/connections/accesspackages?party={partyUuId}&from={partyUuId}&to={systemUserId}&package={urn}";
+            string endpointUrl = $"enduser/connections/accesspackages?party={partyUuId}&from={partyUuId}&to={systemUserId}&package={urn}";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
             return await HandleResponse(response, "DeleteSingleAccessPackageFromSystemUser");
@@ -377,7 +376,7 @@ public class AccessManagementClient : IAccessManagementClient
     /// <inheritdoc />
     public async IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyId, Guid systemUserId, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        string? endpointUrl = $"internal/connections/accesspackages?party={partyId}&to={systemUserId}";
+        string? endpointUrl = $"enduser/connections/accesspackages?party={partyId}&from={partyId}&to={systemUserId}";
 
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         PaginatedInput<PackagePermission>? paginatedPackagePermissions = null;
