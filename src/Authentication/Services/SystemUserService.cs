@@ -550,12 +550,25 @@ namespace Altinn.Platform.Authentication.Services
             {
                 return partyCreated.Problem;
             }
-            
-            // Add the system user as right holder
-            Result<bool> result = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuid, Guid.Parse(inserted.Id), cancellationToken);
-            if (result.IsProblem)
+
+            // Add the new system user as a right holder in Access Management, both Standard and Agent type system users are added as right holders
+            // This is needed for the delegation of rights and access packages to work when reporting for _own_ business.
+            Result<bool> holderresult = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuid, Guid.Parse(inserted.Id), cancellationToken);
+            if (holderresult.IsProblem)
             {
-                return result.Problem;
+                return holderresult.Problem;
+            }
+
+            // Only Agent systemusers are added as Agents in Access Management, needed for _via_ reporting.
+            if (newSystemUser.UserType == SystemUserType.Agent)
+            {
+                {
+                    Result<bool> agentresult = await _accessManagementClient.AddSystemUserAsAgent(partyUuid, Guid.Parse(inserted.Id), cancellationToken);
+                    if (agentresult.IsProblem)
+                    {
+                        return agentresult.Problem;
+                    }
+                }
             }
 
             if (IsStandardSystemUserDelegatgeSingleRights(newSystemUser, regSystem, delegationCheckFinalResult))

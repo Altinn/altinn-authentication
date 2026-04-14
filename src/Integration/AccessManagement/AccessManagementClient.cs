@@ -9,6 +9,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -215,7 +216,7 @@ public class AccessManagementClient : IAccessManagementClient
                 EntityType = "Systembruker",
                 EntityVariantType = FormatEntityVariantType(systemUser.UserType)
             };
-            /// This endpoint is only for internal use, and does not need to be rewritten to the new connections-api
+            /// JK: This endpoint is only for internal use, and does not need to be rewritten to the new connections-api
             string endpointUrl = $"internal/party";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
@@ -227,6 +228,25 @@ public class AccessManagementClient : IAccessManagementClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string endpointUrl = $"enduser/clientdelegations/agents?party={partyUuId}&to={systemUserId}";
+
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
+            return await HandleResponse(response, "AddSystemUserAsAgent");
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
             throw;
         }
     }
@@ -299,6 +319,19 @@ public class AccessManagementClient : IAccessManagementClient
         return new Result<bool>(true);
     }
 
+    /// <summary>
+    /// Primarily for a Standard SystemUser based on the RightHolder asssignment. 
+    /// 
+    /// Or an Agent SystemUser which is also a RightHolder for it's facilitator/provider/owner,
+    /// but NOT for the clients of the facilitator/provider/owner, as the delegation of access packages 
+    /// to agent system users is handled in a different endpoint and with a different data model.
+    /// See clientdelegation endpoints for that.
+    /// </summary>
+    /// <param name="partyUuId">guid id for facilitator/provider/owner</param>
+    /// <param name="systemUserId">the systemuser</param>
+    /// <param name="urn">the accesspackage urn</param>
+    /// <param name="cancellationToken">cancel</param>
+    /// <returns>bool</returns>
     public async Task<Result<bool>> DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
     {
         try
@@ -490,8 +523,6 @@ public class AccessManagementClient : IAccessManagementClient
     /// <inheritdoc />
     public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
-        const string AGENT = "agent";
-
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (!Guid.TryParse(request.FacilitatorId, out Guid facilitator))
         {
@@ -508,7 +539,16 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.SystemUserNotFound;
         }
 
-        List<CreateSystemDelegationRolePackageDto> rolePackages = [];
+        List<DelegationBatchInputDto.AgentPermissionDto> batchValues = [];
+
+        // Nothing has happened to the system user, we can not delegate any accesspackages.
+        // But we have successfully "delegated" the empty set of ap, so we return true.
+        // Perhaps future implementations will contain agent systems without accesspackages, 
+        // and there is no need to return a hard error when nothing changes.
+        if (systemUser.AccessPackages is null || systemUser.AccessPackages.Count == 0)
+        {
+            return new Result<List<AgentDelegationResponse>>([]);
+        }
 
         foreach (var pac in systemUser.AccessPackages)
         {
@@ -522,29 +562,24 @@ public class AccessManagementClient : IAccessManagementClient
                 return Problem.RoleNotFoundForPackage;
             }
 
-            CreateSystemDelegationRolePackageDto rolePackage = new()
+            DelegationBatchInputDto.AgentPermissionDto rolePackage = new()
             {
-                RoleIdentifier = role,
-                PackageUrn = pac.Urn!.ToString()
+                Role = role,
+                Packages = [ pac.Urn!.ToString() ]
             };
 
-            rolePackages.Add(rolePackage);
+            batchValues.Add(rolePackage);
         }
 
-        AgentDelegationRequest agentDelegationRequest = new()
+        DelegationBatchInputDto delegationBatchInputDto = new()
         {
-            AgentId = agentSystemUserId,
-            AgentName = systemUser.IntegrationTitle,
-            AgentRole = AGENT,
-            ClientId = clientId,
-            FacilitatorId = facilitator,
-            RolePackages = rolePackages
+            Values = batchValues
         };
 
         try
         {
-            string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
+            string endpointUrl = $"enduser/systemuserclientdelegation/agents/accesspackages?party={facilitator}&from={clientId}&to={agentSystemUserId}";
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(delegationBatchInputDto));
 
             List<AgentDelegationResponse> found = await response.Content.ReadFromJsonAsync<List<AgentDelegationResponse>>(_serializerOptions, cancellationToken) ?? [];
 
@@ -720,7 +755,7 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
+        string endpointUrl = $"enduser/clientdelegations/clients?provider={facilitatorId}";
 
         if (packages != null && packages.Count > 0)
         {
@@ -898,7 +933,8 @@ public class AccessManagementClient : IAccessManagementClient
             "PushSystemUserToAM" => Problem.SystemUser_FailedToPushSystemUser,
             "RevokeRightsToSystemUser" => Problem.Rights_FailedToRevoke,
             "DeleteSingleAccessPackageFromSystemUser" => Problem.SystemUser_FailedToDeleteAccessPackage,
-            "DelegateSingleAccessPackageToSystemUser" => Problem.AccessPackage_DelegationFailed
+            "DelegateSingleAccessPackageToSystemUser" => Problem.AccessPackage_DelegationFailed,
+            "AddSystemUserAsAgent" => Problem.SystemUser_FailedToAddAsAgent
         };
 
         if (response.IsSuccessStatusCode)

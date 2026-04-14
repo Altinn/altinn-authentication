@@ -169,4 +169,13 @@ public interface IAccessManagementClient
     /// <param name="partyUuid">The party id</param>
     /// <param name="resource">The resource id</param>
     Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Adds a System User as an Agent for the Party
+    /// </summary>
+    /// <param name="partyUuid">the identifier of the via party ( the faciliator/provider )</param>
+    /// <param name="guid">the system user id acting as the agent</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuid, Guid guid, CancellationToken cancellationToken);
 }
