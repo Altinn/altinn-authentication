@@ -88,7 +88,7 @@ public class SystemUserController : ControllerBase
     /// Returns the list of agent SystemUsers this PartyID has registered
     /// </summary>
     /// <returns>List of SystemUsers</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_CLIENTDELEGATION_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}")]
     public async Task<ActionResult<List<SystemUserInternalDTO>>> GetListOfAgentSystemUsersPartyHas(int party)
@@ -101,7 +101,7 @@ public class SystemUserController : ControllerBase
     /// Get list of delegations to this agent systemuser
     /// </summary>
     /// <returns>List of DelegationResponse</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_CLIENTDELEGATION_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
     public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId)
@@ -120,7 +120,7 @@ public class SystemUserController : ControllerBase
     /// Return a single SystemUser by PartyId and SystemUserId
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_CLIENTDELEGATION_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("{party}/{systemUserId}")]
@@ -393,7 +393,7 @@ public class SystemUserController : ControllerBase
     /// The endpoint is idempotent.
     /// </summary>
     /// <returns>OK</returns>    
-    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_CLIENTDELEGATION_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_WRITE)]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -540,7 +540,7 @@ public class SystemUserController : ControllerBase
     /// Delete a customer from an Agent SystemUser.
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_CLIENTDELEGATION_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_WRITE)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("agent/{party}/delegation/{delegationId}")]
@@ -579,7 +579,7 @@ public class SystemUserController : ControllerBase
     /// Get list of clients for a facilitator
     /// </summary>
     /// <returns>List of Clients</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_CLIENTDELEGATION_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}/clients")]
     public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
