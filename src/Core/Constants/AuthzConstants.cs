@@ -46,7 +46,6 @@ namespace Altinn.Platform.Authentication.Core.Constants
         /// </summary>
         public const string POLICY_SYSTEMUSER_OVERVIEW_WRITE = "SystemUserOverviewWrite";
 
-
         /// <summary>
         /// Policy tag for reading access management information
         /// </summary>

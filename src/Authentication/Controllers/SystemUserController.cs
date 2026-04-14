@@ -85,7 +85,7 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Returns the list of SystemUsers this PartyID has registered
+    /// Returns the list of agent SystemUsers this PartyID has registered
     /// </summary>
     /// <returns>List of SystemUsers</returns>
     [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
