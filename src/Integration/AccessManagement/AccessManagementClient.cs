@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
@@ -747,7 +748,7 @@ public class AccessManagementClient : IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public async Task<Result<List<AgentClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -755,48 +756,45 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        string endpointUrl = $"enduser/clientdelegations/clients?provider={facilitatorId}";
-
-        if (packages != null && packages.Count > 0)
-        {
-            foreach (var package in packages)
-            {
-                endpointUrl = $"{endpointUrl}&packages={package}";
-            }
-        }
+        string endpointUrl = $"enduser/clientdelegations/clients?party={facilitatorId}";        
 
         try
         {
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, null, cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<ClientDto>>(_serializerOptions, cancellationToken) ?? [];
+                var all = await response.Content.ReadFromJsonAsync<List<AgentClientDto>>(_serializerOptions, cancellationToken) ?? [];
+
+                // If no packages are required in the systemuser, we return all clients. Perhaps future implementations will allow unfiltered systemusers.
+                // If the set of clients is empty, we return the empty set, regardless of the packages required in the systemuser.
+                if (all.Count == 0 || packages == null || packages.Count == 0)
+                {
+                    return all;
+                }
+
+                return FilterClientsWithCorrectPackages( all, packages);
             }
             else
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
-                    return new Result<List<ClientDto>>(problemInstance);
+                    return Problem.AgentSystemUser_FailedToGetClients_Unauthorized;
                 }
                 else if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-                    return new Result<List<ClientDto>>(problemInstance);
+                    return Problem.AgentSystemUser_FailedToGetClients_Forbidden;
                 }
                 else
                 {
-                    string responseContent = await response.Content.ReadAsStringAsync();
+                    var problemDetails = response.Content.ReadFromJsonAsync<ProblemDetails>(_serializerOptions, cancellationToken).Result;
 
-                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                    _logger.LogError($"Authentication // AccessManagementClient // GetClientsForFacilitator // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
-                    var problemExtensionData = ProblemExtensionData.Create(new[]
-                    {
-                    new KeyValuePair<string, string>("Problem Detail : ", problemDetails.Detail)
-                    });
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
-                    return new Result<List<ClientDto>>(problemInstance);
+                    _logger.LogError($"Authentication // AccessManagementClient // GetClientsForFacilitator // Title: {problemDetails?.Title ?? ""}, Problem: {problemDetails?.Detail ?? "na"}");
+                    var problemExtensionData = ProblemExtensionData.Create(
+                    [
+                        new KeyValuePair<string, string>("Problem Detail : ", problemDetails?.Detail ?? "")
+                    ]);
+                    return ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);                    
                 }
             }
         }
@@ -806,6 +804,27 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
 
         }
+    }
+
+    private static Result<List<AgentClientDto>> FilterClientsWithCorrectPackages(List<AgentClientDto> agentClientDtos, List<string> packages)
+    {
+        List<AgentClientDto> filteredClients = [];
+        foreach (var client in agentClientDtos)
+        {
+            if (client.Access != null)
+            {
+                foreach (var access in client.Access)
+                {
+                    if (access.Packages != null && access.Packages.Any(p => packages.Contains(p.Urn, StringComparer.OrdinalIgnoreCase)))
+                    {
+                        filteredClients.Add(client);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return filteredClients;
     }
 
     /// <summary>
