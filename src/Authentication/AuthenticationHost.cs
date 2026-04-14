@@ -209,6 +209,8 @@ internal static class AuthenticationHost
                 policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_access_management")))
             .AddPolicy(AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ, policy =>
                 policy.Requirements.Add(new ResourceAccessRequirement("read", "altinn_system_user_overview")))
+            .AddPolicy(AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_WRITE, policy =>
+                policy.Requirements.Add(new ResourceAccessRequirement("write", "altinn_system_user_overview")))
             .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERREQUEST_WRITE, policy =>
                 policy.RequireScopeAnyOf(AuthzConstants.SCOPE_SYSTEMUSER_REQUEST_WRITE))
             .AddPolicy(AuthzConstants.POLICY_SCOPE_SYSTEMUSERLOOKUP, policy =>
