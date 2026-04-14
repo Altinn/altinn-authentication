@@ -88,7 +88,7 @@ public class SystemUserController : ControllerBase
     /// Returns the list of SystemUsers this PartyID has registered
     /// </summary>
     /// <returns>List of SystemUsers</returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("agent/{party}")]
     public async Task<ActionResult<List<SystemUserInternalDTO>>> GetListOfAgentSystemUsersPartyHas(int party)
@@ -120,7 +120,7 @@ public class SystemUserController : ControllerBase
     /// Return a single SystemUser by PartyId and SystemUserId
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_READ)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_READ)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet("{party}/{systemUserId}")]
