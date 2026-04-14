@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xacml:Policy xmlns:xsl="http://www.w3.org/2001/XMLSchema-instance" xmlns:xacml="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17" PolicyId="urn:altinn:resource:altinn_access_management:policyid:1" Version="1.0" RuleCombiningAlgId="urn:oasis:names:tc:xacml:3.0:rule-combining-algorithm:deny-overrides">
+<xacml:Policy xmlns:xsl="http://www.w3.org/2001/XMLSchema-instance" xmlns:xacml="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17" PolicyId="urn:altinn:resource:altinn_system_user_overview:policyid:1" Version="1.0" RuleCombiningAlgId="urn:oasis:names:tc:xacml:3.0:rule-combining-algorithm:deny-overrides">
   <xacml:Target/>
   <xacml:Rule RuleId="urn:altinn:resource:altinn_system_user_overview:ruleid:1" Effect="Permit">
-    <xacml:Description>SystemResource policy for resource; altinn_system_user_overview for roles; ADMAI and HADM to have access to actions; read and write</xacml:Description>
+    <xacml:Description>SystemResource policy for resource; altinn_system_user_overview for roles; ADMAI, HADM and KLADM to have access to actions; read and write</xacml:Description>
     <xacml:Target>
       <xacml:AnyOf>
         <xacml:AllOf>
