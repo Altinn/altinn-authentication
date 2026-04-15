@@ -467,8 +467,8 @@ public class AccessManagementClientMock: IAccessManagementClient
         };
     }
 
-    public Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuid, Guid guid, CancellationToken cancellationToken)
+    public async Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuid, Guid guid, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return true;
     }
 }
