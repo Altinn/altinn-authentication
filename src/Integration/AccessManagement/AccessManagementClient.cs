@@ -522,7 +522,7 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (!Guid.TryParse(request.FacilitatorId, out Guid facilitator))
@@ -548,7 +548,7 @@ public class AccessManagementClient : IAccessManagementClient
         // and there is no need to return a hard error when nothing changes.
         if (systemUser.AccessPackages is null || systemUser.AccessPackages.Count == 0)
         {
-            return new Result<List<AgentDelegationResponse>>([]);
+            return new Result<List<DelegationDto>>([]);
         }
 
         foreach (var pac in systemUser.AccessPackages)
@@ -582,14 +582,14 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"enduser/systemuserclientdelegation/agents/accesspackages?party={facilitator}&from={clientId}&to={agentSystemUserId}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(delegationBatchInputDto));
 
-            List<AgentDelegationResponse> found = await response.Content.ReadFromJsonAsync<List<AgentDelegationResponse>>(_serializerOptions, cancellationToken) ?? [];
+            List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
 
             if (response.IsSuccessStatusCode && found is not null)
             {
                 return found;
             }
 
-            return new Result<List<AgentDelegationResponse>>(Problem.Rights_FailedToDelegate);
+            return new Result<List<DelegationDto>>(Problem.Rights_FailedToDelegate);
 
         }
         catch (Exception ex)
@@ -621,7 +621,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"internal/systemuserclientdelegation/deleteagentassignment?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&agentid={HttpUtility.UrlEncode(systemUserId.ToString())}&cascade=true";
+            string endpointUrl = $"enduser/systemuserclientdelegation/agents?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&to={HttpUtility.UrlEncode(systemUserId.ToString())}&cascade=true";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
@@ -629,7 +629,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DeleteSystemUserAssignment // Exception");
             throw;
         }
     }

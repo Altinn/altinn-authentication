@@ -12,12 +12,14 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
 using Microsoft.Extensions.Options;
@@ -856,6 +858,32 @@ namespace Altinn.Platform.Authentication.Services
                     {
                         DelegationId = item.DelegationId,
                         CustomerId = item.FromEntityId,
+                        AgentSystemUserId = new Guid(systemUser.Id!)
+                    };
+
+                    theList.Add(newDel);
+                }
+
+                return theList;
+            }
+
+            return result.Problem;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken)
+        {
+            Result<List<DelegationDto>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, provider, client, userId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                List<DelegationResponse> theList = [];
+
+                foreach (var item in result.Value)
+                {
+                    var newDel = new DelegationResponse()
+                    {
+                        DelegationId = Guid.Empty,
+                        CustomerId = item.FromId,
                         AgentSystemUserId = new Guid(systemUser.Id!)
                     };
 

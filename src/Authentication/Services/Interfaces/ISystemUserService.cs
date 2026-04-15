@@ -9,6 +9,7 @@ using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Model;
 using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
@@ -131,6 +132,18 @@ public interface ISystemUserService
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
     Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// The service is idempotent.
+    /// </summary>
+    /// <param name="systemUser">SystemUser</param>
+    /// <param name="provider">The via partyuuid (facilitator) </param>
+    /// <param name="client">The client's partyuuid</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns> 
+    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
