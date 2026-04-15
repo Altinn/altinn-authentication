@@ -773,7 +773,7 @@ public class AccessManagementClient : IAccessManagementClient
                     return all;
                 }
 
-                return FilterClientsWithCorrectPackages( all, packages);
+                return FilterClientsWithAllRequiredPackages( all, packages);
             }
             else
             {
@@ -806,20 +806,28 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    private static Result<List<AgentClientDto>> FilterClientsWithCorrectPackages(List<AgentClientDto> agentClientDtos, List<string> packages)
+    private static Result<List<AgentClientDto>> FilterClientsWithAllRequiredPackages(List<AgentClientDto> agentClientDtos, List<string> packages)
     {
         List<AgentClientDto> filteredClients = [];
         foreach (var client in agentClientDtos)
         {
             if (client.Access != null)
             {
+                HashSet<string> clientPackageUrns = new(StringComparer.OrdinalIgnoreCase);
                 foreach (var access in client.Access)
                 {
-                    if (access.Packages != null && access.Packages.Any(p => packages.Contains(p.Urn, StringComparer.OrdinalIgnoreCase)))
+                    if (access.Packages != null)
                     {
-                        filteredClients.Add(client);
-                        break;
+                        foreach (var p in access.Packages)
+                        {
+                            clientPackageUrns.Add(p.Urn);
+                        }
                     }
+                }
+
+                if (packages.All(clientPackageUrns.Contains))
+                {
+                    filteredClients.Add(client);
                 }
             }
         }
@@ -983,5 +991,10 @@ public class AccessManagementClient : IAccessManagementClient
             ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem, problemExtensionData);
             return new Result<bool>(problemInstance);
         }
+    }
+
+    Task<Result<List<ClientDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }
