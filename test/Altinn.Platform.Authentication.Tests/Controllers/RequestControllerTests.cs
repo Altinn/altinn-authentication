@@ -3886,6 +3886,7 @@ public class RequestControllerTests(
         Assert.Equal(clientGuid, delegationResult[0].CustomerId);
         Assert.Equal(Guid.Parse(systemUser.Id), delegationResult[0].AgentSystemUserId);
     }
+
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
         var tasks = Enumerable.Range(0, paginationSize + 1)
