@@ -1,14 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Altinn.AccessManagement.Tests.Mocks;
+﻿using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authentication.Tests.Mocks;
@@ -35,6 +25,7 @@ using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -45,6 +36,16 @@ using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Xunit;
 using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
@@ -3885,6 +3886,52 @@ public class RequestControllerTests(
         Assert.NotEmpty(delegationResult);
         Assert.Equal(clientGuid, delegationResult[0].CustomerId);
         Assert.Equal(Guid.Parse(systemUser.Id), delegationResult[0].AgentSystemUserId);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_UnknownSystemUserId_ReturnsBadRequest()
+    {
+        // Arrange
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+        Guid unknownSystemUserId = Guid.NewGuid();
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.NewGuid();
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{unknownSystemUserId}?provider={providerGuid}&client={clientGuid}";
+
+        // Act
+        HttpResponseMessage delegateResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, delegateResponse.StatusCode);
+        HttpValidationProblemDetails? problem = await delegateResponse.Content.ReadFromJsonAsync<HttpValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Contains("return", problem.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_NoToken_ReturnsUnauthorized()
+    {
+        // Arrange: no auth token set on client
+        HttpClient unauthClient = CreateClient();
+
+        int partyId = 500000;
+        Guid systemUserId = Guid.NewGuid();
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.NewGuid();
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?provider={providerGuid}&client={clientGuid}";
+
+        // Act
+        HttpResponseMessage delegateResponse = await unauthClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, delegateResponse.StatusCode);
     }
 
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
