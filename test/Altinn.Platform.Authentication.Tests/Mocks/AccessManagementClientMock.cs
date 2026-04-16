@@ -279,21 +279,21 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public Task<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         if (facilitatorId.ToString() == "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
         {
-            return Task.FromResult<Result<List<ClientDto>>>(new List<ClientDto>());
+            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(new List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>());
         }
 
         if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
         {
-            return Task.FromResult<Result<List<ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
         }
 
         if (facilitatorId.ToString() == "7bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
         {
-            return Task.FromResult<Result<List<ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
         }
 
         JsonSerializerOptions options = new JsonSerializerOptions
@@ -302,7 +302,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         };
 
         string clientData = File.OpenText("Data/Customers/customerlist.json").ReadToEnd();
-        List<ClientDto> clients = JsonSerializer.Deserialize<List<ClientDto>>(clientData, options)!;
+        List<Platform.Authentication.Core.Models.SystemUsers.ClientDto> clients = JsonSerializer.Deserialize<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>(clientData, options)!;
 
         if (packages != null && packages.Count > 0)
         {
@@ -316,7 +316,7 @@ public class AccessManagementClientMock: IAccessManagementClient
                 .ToList();
         }
 
-        return Task.FromResult<Result<List<ClientDto>>>(clients);
+        return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(clients);
     }
 
     public async IAsyncEnumerable<Result<AccessPackageDto.Check>> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -488,14 +488,24 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult<Result<List<DelegationDto>>>(delegations);
     }
 
-    Task<Result<List<AgentClientDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
+    Task<Result<List<Platform.Authentication.Core.Models.Rights.ConnectionsDtos.ClientDelegationDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
     {
-        List<AgentClientDto> clients = [];
-        return Task.FromResult<Result<List<AgentClientDto>>>(clients);
+        List<Platform.Authentication.Core.Models.Rights.ConnectionsDtos.ClientDelegationDto> clients = [];
+        return Task.FromResult<Result<List<Platform.Authentication.Core.Models.Rights.ConnectionsDtos.ClientDelegationDto>>>(clients);
     }
 
     public async Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuid, Guid systemuser, bool cascade = false, CancellationToken cancellationToken = default)
     {
         return true;
+    }
+
+    public async Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, DelegationBatchInputDto batch, CancellationToken cancellationToken)
+    {
+        return true;
+    }
+
+    public async Task<Result<List<RoleAccessPackages>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, Guid client, CancellationToken cancellationToken = default)
+    {
+        return new List<RoleAccessPackages>(); 
     }
 }

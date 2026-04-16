@@ -435,6 +435,35 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Revokes a client/customer from an Agent SystemUser.
+    /// <param name="party">The party Id of the reportee.</param>
+    /// <param name="systemuser">The partyUuid of the Agent SystemUser to delegete TO.</param> 
+    /// <param name="provider">The partyUuid of the organisation providing the VIA relationship.</param>
+    /// <param name="client">The partyUuid of the client the delegation is FROM.</param>
+    /// <param name="cancellationToken"></param>
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpDelete("agent/{party}/{systemuser}/client")]
+    public async Task<ActionResult> RevokeClientFromAgentSystemUser(
+        string party, 
+        Guid systemuser,
+        [FromQuery] Guid client, 
+        [FromQuery] Guid provider, 
+        CancellationToken cancellationToken = default)
+    {
+        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, systemuser, client, provider, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok();
+        }
+
+        return result.Problem.ToActionResult();
+    }
+
+    /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
     /// The endpoint is idempotent.
     /// </summary>

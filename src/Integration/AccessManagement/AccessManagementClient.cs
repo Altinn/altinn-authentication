@@ -646,6 +646,33 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
+    public async Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, DelegationBatchInputDto batch, CancellationToken cancellationToken)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+
+        try
+        {
+            string endpointUrl = $"enduser/systemuserclientdelegation/agents/accesspackages?party={provider}&from={client}&to={systemuser}";
+            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl, JsonContent.Create(batch));
+
+            List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
+
+            if (response.IsSuccessStatusCode && found is not null)
+            {
+                return true;
+            }
+
+            return Problem.CustomerDelegation_FailedToRevoke;
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateCustomerToAgentSystemUser // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Result<bool>> OldDeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken)
     {
         try
@@ -794,7 +821,7 @@ public class AccessManagementClient : IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public async Task<Result<List<Core.Models.SystemUsers.ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -818,19 +845,19 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<ClientDto>>(_serializerOptions, cancellationToken) ?? [];
+                return await response.Content.ReadFromJsonAsync<List<Core.Models.SystemUsers.ClientDto>>(_serializerOptions, cancellationToken) ?? [];
             }
             else
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
-                    return new Result<List<ClientDto>>(problemInstance);
+                    return new Result<List<Core.Models.SystemUsers.ClientDto>>(problemInstance);
                 }
                 else if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-                    return new Result<List<ClientDto>>(problemInstance);
+                    return new Result<List<Core.Models.SystemUsers.ClientDto>>(problemInstance);
                 }
                 else
                 {
@@ -843,7 +870,7 @@ public class AccessManagementClient : IAccessManagementClient
                     new KeyValuePair<string, string>("Problem Detail : ", problemDetails.Detail)
                     });
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
-                    return new Result<List<ClientDto>>(problemInstance);
+                    return new Result<List<Core.Models.SystemUsers.ClientDto>>(problemInstance);
                 }
             }
         }
@@ -855,7 +882,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<AgentClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -871,7 +898,7 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                var all = await response.Content.ReadFromJsonAsync<List<AgentClientDto>>(_serializerOptions, cancellationToken) ?? [];
+                var all = await response.Content.ReadFromJsonAsync<List<ClientDelegationDto>>(_serializerOptions, cancellationToken) ?? [];
 
                 // If no packages are required in the systemuser, we return all clients. Perhaps future implementations will allow unfiltered systemusers.
                 // If the set of clients is empty, we return the empty set, regardless of the packages required in the systemuser.
@@ -913,9 +940,9 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    private static Result<List<AgentClientDto>> FilterClientsWithAllRequiredPackages(List<AgentClientDto> agentClientDtos, List<string> packages)
+    private static Result<List<ClientDelegationDto>> FilterClientsWithAllRequiredPackages(List<ClientDelegationDto> agentClientDtos, List<string> packages)
     {
-        List<AgentClientDto> filteredClients = [];
+        List<ClientDelegationDto> filteredClients = [];
         foreach (var client in agentClientDtos)
         {
             if (client.Access != null)
@@ -942,6 +969,62 @@ public class AccessManagementClient : IAccessManagementClient
         }
 
         return filteredClients;
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<List<RoleAccessPackages>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, Guid client, CancellationToken cancellationToken = default)
+    {
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
+        string endpointUrl = $"enduser/clientdelegations/clients?party={provider}&from={client}";
+
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, null, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var all = await response.Content.ReadFromJsonAsync<List<AgentDelegationDto>>(_serializerOptions, cancellationToken) ?? [];
+                var forAgent = all.Where(a => a.Agent.Id == systemUserId).ToList();
+                
+                List<RoleAccessPackages> result = [];
+
+                foreach (var delegation in forAgent)
+                {
+                    if (delegation.Access != null)
+                    {
+                        result.AddRange(delegation.Access);
+                    }
+                }
+                return result;
+            }
+            else
+            {
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    return Problem.AgentSystemUser_FailedToGetClients_Unauthorized;
+                }
+                else if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    return Problem.AgentSystemUser_FailedToGetClients_Forbidden;
+                }
+                else
+                {
+                    var problemDetails = response.Content.ReadFromJsonAsync<ProblemDetails>(_serializerOptions, cancellationToken).Result;
+                    _logger.LogError($"Authentication // AccessManagementClient // GetClientDelegationsForAgent // Title: {problemDetails?.Title ?? ""}, Problem: {problemDetails?.Detail ?? "na"}");
+                    var problemExtensionData = ProblemExtensionData.Create(new[]
+                    {
+                        new KeyValuePair<string, string>("Problem Detail : ", problemDetails?.Detail ?? "")
+                    });
+                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
+                    return new Result<List<RoleAccessPackages>>(problemInstance);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // GetClientDelegationsForAgent // Exception");
+            throw;
+        }
+
     }
 
     /// <summary>
@@ -1100,5 +1183,5 @@ public class AccessManagementClient : IAccessManagementClient
             ProblemInstance problemInstance = ProblemInstance.Create(logContextProblem, problemExtensionData);
             return new Result<bool>(problemInstance);
         }
-    }
+    }   
 }

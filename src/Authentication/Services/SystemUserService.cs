@@ -937,7 +937,7 @@ namespace Altinn.Platform.Authentication.Services
 
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
-            Result<List<AgentClientDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
+            Result<List<Core.Models.Rights.ConnectionsDtos.ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
             if (clients.IsProblem)
             {
                 throw new Exception($"Failed to get clients for provider {provider} with packages {string.Join(", ", packageUrns)}. Error: {clients.Problem?.Detail}");
@@ -1065,6 +1065,29 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
         {
             Result<bool> result = await _accessManagementClient.OldDeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
+            if (result.IsProblem)
+            {
+                return result.Problem;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string party, Guid systemuser, Guid client, Guid provider, CancellationToken cancellationToken = default)
+        {
+            DelegationBatchInputDto batch = new()
+            {
+                Values = [] // The batch input only requires the Role-AP mapping for delegation, not for revocation, so we can send an empty list here.
+            };
+
+            Result<List<RoleAccessPackages>> accessResult = await _accessManagementClient.GetClientDelegationsForAgent(systemuser, provider, client, cancellationToken);
+            if (accessResult.IsSuccess)
+            {
+                batch.Values = ConvertAccessToPrimitive(accessResult.Value);
+            }
+
+            Result<bool> result = await _accessManagementClient.RevokeClientFromAgentSystemUser(provider, client, systemuser, batch, cancellationToken);
             if (result.IsProblem)
             {
                 return result.Problem;
@@ -1255,7 +1278,7 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
-        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<ClientDto> value)
+        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<Core.Models.SystemUsers.ClientDto> value)
         {
             List<Customer> result = [];
             foreach (var item in value)
@@ -1273,7 +1296,7 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
-        private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<AgentClientDto> value)
+        private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<Core.Models.Rights.ConnectionsDtos.ClientDelegationDto> value)
         {
             List<ExternalClientDto> result = [];
             foreach (var item in value)
@@ -1378,6 +1401,6 @@ namespace Altinn.Platform.Authentication.Services
                     accessPackages.Add(accessPackage);
                 }
             }
-        }
+        }       
     }
 }

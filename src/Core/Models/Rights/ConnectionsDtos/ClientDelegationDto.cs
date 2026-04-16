@@ -8,7 +8,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 /// Model can be used both to represent a connection received from another party or a connection provided to another party.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class AgentClientDto
+public class ClientDelegationDto
 {
     /// <summary>
     /// Gets or sets the party

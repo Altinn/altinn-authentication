@@ -64,6 +64,16 @@ public interface IAccessManagementClient
     Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUserId, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Revokes a client/customer from an Agent SystemUser.
+    /// <param name="systemuser">The partyUuid of the Agent SystemUser to delegete TO.</param> 
+    /// <param name="provider">The partyUuid of the organisation providing the VIA relationship.</param>
+    /// <param name="client">The partyUuid of the client the delegation is FROM.</param>
+    /// <param name="cancellationToken"></param>
+    /// </summary>
+    /// <returns></returns>
+    Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, DelegationBatchInputDto batch, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Retrieves the list of all delegationIds 
     /// </summary>
     /// <param name="systemUserId">The Guid Id for the Agent SystemUser</param>
@@ -104,10 +114,20 @@ public interface IAccessManagementClient
     /// <summary>
     /// Get clients for a facilitator
     /// </summary>
-    /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
+    /// <param name="provider">The partyUuid of the VIA organisastion</param>
     /// <param name="packages">Access package URNs</param>
-    Task<Result<List<AgentClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
+    /// <returns>List of clients FROM which the VIA provider can delegate packages TO an entity</returns>
+    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, List<string> packages, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets all packages that are delegated to the agent system user, via the provider from the client 
+    /// </summary>
+    /// <param name="systemUserId">partyUuid TO</param>
+    /// <param name="provider">partyUuid VIA</param>
+    /// <param name="client">partyUuid FROM</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<Result<List<RoleAccessPackages>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, Guid client, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Verifies if the user has the necessary rights to delegate the requested access packages
