@@ -63,7 +63,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         _env = env;
     }
 
-    public async Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<AgentDelegationResponse>>> OldDelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
@@ -193,7 +193,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return await Task.FromResult(true);
     }
 
-    public async Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ConnectionDto>>> OldGetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default)
     {
         List<ConnectionDto> delegations = [];
 
@@ -239,7 +239,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> OldDeleteCustomerDelegationToAgent(Guid partyUUId, Guid delegationId, CancellationToken cancellationToken = default)
     {
         switch (partyUUId.ToString())
         {

@@ -7,14 +7,5 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 public class DelegationBatchInputDto
 {
     [JsonPropertyName("values")]
-    public List<AgentPermissionDto> Values { get; set; } = [];
-
-    public class AgentPermissionDto
-    {
-        [JsonPropertyName("role")]
-        public string Role { get; set; }
-
-        [JsonPropertyName("packages")]
-        public List<string> Packages { get; set; }
-    }
+    public List<RoleAccessPackagesPrimitive> Values { get; set; } = [];
 }

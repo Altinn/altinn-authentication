@@ -389,8 +389,13 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new delegation of a customer to an Agent SystemUser.
-    /// For the new connections api.
+    /// Creates a new delegation from a Client/Customer to an Agent SystemUser via the Reportee/Provider. 
+    /// All the required AccessPackages in the SystemUser will be delegated.
+    /// <param name="party">The party Id of the reportee.</param>
+    /// <param name="systemUserId">The partyUuid of the Agent SystemUser to delegete TO.</param> 
+    /// <param name="provider">The partyUuid of the organisation providing the VIA relationship.</param>
+    /// <param name="client">The partyUuid of the client the delegation is FROM.</param>
+    /// <param name="cancellationToken"></param>
     /// The endpoint is idempotent.
     /// </summary>
     /// <returns>OK</returns>    
@@ -399,7 +404,12 @@ public class SystemUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpPost("agent/{party}/{systemUserId}")]
-    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser(string party, Guid systemUserId, [FromQuery] Guid provider, [FromQuery] Guid client, CancellationToken cancellationToken)
+    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser(
+        string party, 
+        Guid systemUserId, 
+        [FromQuery] Guid provider, 
+        [FromQuery] Guid client, 
+        CancellationToken cancellationToken)
     {
         var userId = AuthenticationHelper.GetUserId(HttpContext);
 
@@ -450,7 +460,7 @@ public class SystemUserController : ControllerBase
             return Forbid();
         }
 
-        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        Result<List<DelegationResponse>> delegationResult = await _systemUserService.OldDelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok(delegationResult.Value);
@@ -620,7 +630,7 @@ public class SystemUserController : ControllerBase
     [HttpGet("agent/{party}/clients")]
     public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
     {
-        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
+        var result = await _systemUserService.OldGetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
 
         if (result.IsSuccess)
         {

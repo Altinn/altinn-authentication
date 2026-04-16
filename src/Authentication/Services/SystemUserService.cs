@@ -845,9 +845,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
-        {
-            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        public async Task<Result<List<DelegationResponse>>> OldDelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+        {           
+            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.OldDelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
             if (result.IsSuccess)
             {
                 List<DelegationResponse> theList = [];
@@ -873,7 +873,18 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken)
         {
-            Result<List<DelegationDto>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, provider, client, userId, cancellationToken);
+            List<AccessPackage> packages = systemUser.AccessPackages ?? [];
+            AgentDelegationInputDto request = new()
+            {
+                CustomerId = systemUser.PartyUuId!,
+                FacilitatorId = provider.ToString(),
+                Access = packages.Select(p => new ClientDto.ClientRoleAccessPackages()
+                {
+                    AccessPackageUrn = p.Urn!
+                }).ToList()
+            };
+
+            Result<List<DelegationDto>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request,userId, cancellationToken);
             if (result.IsSuccess)
             {
                 List<DelegationResponse> theList = [];
@@ -993,7 +1004,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_DelegationNotFound;
             }
 
-            var res = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitator, client);
+            var res = await _accessManagementClient.OldGetDelegationsForAgent(systemUserId, facilitator, client);
             if (res.IsSuccess)
             {
                 return ConvertExtDelegationToDTO(res.Value);
@@ -1005,7 +1016,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
         {
-            Result<bool> result = await _accessManagementClient.DeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
+            Result<bool> result = await _accessManagementClient.OldDeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
             if (result.IsProblem)
             {
                 return result.Problem;
@@ -1066,6 +1077,18 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
+        {
+            var res = await _accessManagementClient.OldGetClientsForFacilitator(facilitator, packages, cancellationToken);
+            if (res.IsSuccess)
+            {
+                return OldConvertConnectionDTOToClient(res.Value);
+            }
+
+            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
         }
 
         /// <inheritdoc/>
@@ -1184,7 +1207,7 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
-        private static Result<List<Customer>> ConvertConnectionDTOToClient(List<ClientDto> value)
+        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<ClientDto> value)
         {
             List<Customer> result = [];
             foreach (var item in value)
@@ -1194,6 +1217,24 @@ namespace Altinn.Platform.Authentication.Services
                     DisplayName = item.Party.Name,
                     OrganizationIdentifier = item.Party.OrganizationNumber,
                     PartyUuid = item.Party.Id,
+                    Access = item.Access
+                };
+                result.Add(newCustomer);
+            }
+
+            return result;
+        }
+
+        private static Result<List<Customer>> ConvertConnectionDTOToClient(List<AgentClientDto> value)
+        {
+            List<Customer> result = [];
+            foreach (var item in value)
+            {
+                var newCustomer = new Customer()
+                {
+                    DisplayName = item.Client.Name,
+                    OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
+                    PartyUuid = item.Client.Id,
                     Access = item.Access
                 };
                 result.Add(newCustomer);

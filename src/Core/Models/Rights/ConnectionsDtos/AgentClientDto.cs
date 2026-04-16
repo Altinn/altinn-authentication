@@ -20,23 +20,5 @@ public class AgentClientDto
     /// Gets or sets a collection of all access information for the client 
     /// </summary>
     [JsonPropertyName("access")]
-    public List<RoleAccessPackages> Access { get; set; } = [];
-
-    /// <summary>
-    /// Composite Key instances
-    /// </summary>
-    public class RoleAccessPackages
-    {
-        /// <summary>
-        /// Roles
-        /// </summary>
-        [JsonPropertyName("role")]
-        public CompactRoleDto Role { get; set; }
-
-        /// <summary>
-        /// Packages
-        /// </summary>
-        [JsonPropertyName("packages")]
-        public CompactPackageDto[] Packages { get; set; }
-    }
+    public List<RoleAccessPackages> Access { get; set; } = [];  
 }

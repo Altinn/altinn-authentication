@@ -131,7 +131,7 @@ public interface ISystemUserService
     /// <param name="userId">the user id of the logged in user</param>
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
-    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<List<DelegationResponse>>> OldDelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
@@ -184,7 +184,7 @@ public interface ISystemUserService
     /// <param name="featureManager">FeatureManager</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of Clients</returns>
-    Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
+    Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delegate access packages to a system user.
