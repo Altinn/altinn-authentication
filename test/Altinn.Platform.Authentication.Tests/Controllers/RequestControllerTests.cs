@@ -3975,8 +3975,7 @@ public class RequestControllerTests(
         // Get the system user Id
         HttpClient vendorClient2 = CreateClient();
         string[] prefixes = ["altinn", "digdir"];
-        vendorClient2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",
-            PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime));
+        vendorClient2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime));
 
         Paginated<SystemUserExternalDTO>? page = await (await vendorClient2.GetAsync(
             "/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix"))
