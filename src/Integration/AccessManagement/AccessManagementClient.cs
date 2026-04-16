@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
+using Altinn.Register.Contracts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -250,6 +251,26 @@ public class AccessManagementClient : IAccessManagementClient
             _logger.LogError(ex, "Authentication // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
             throw;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuId, Guid systemUserId, bool cascade = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string endpointUrl = $"enduser/clientdelegations/agents?party={partyUuId}&to={systemUserId}&cascade={cascade}";
+
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl, null);
+            return await HandleResponse(response, "AddSystemUserAsAgent");
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
+            throw;
+        }
+        ;
     }
 
     /// <inheritdoc />
@@ -906,7 +927,9 @@ public class AccessManagementClient : IAccessManagementClient
                     {
                         foreach (var p in access.Packages)
                         {
-                            clientPackageUrns.Add(p.Urn);
+                            // the response uses urn, whilst the list is the name element only
+                            string pname = p.Urn?.Split(":")[3]!;
+                            clientPackageUrns.Add(pname);
                         }
                     }
                 }

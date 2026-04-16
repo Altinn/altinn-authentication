@@ -279,7 +279,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         }
     }
 
-    public Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         if (facilitatorId.ToString() == "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
         {
@@ -478,12 +478,12 @@ public class AccessManagementClientMock: IAccessManagementClient
         throw new NotImplementedException();
     }
 
-    public Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    Task<Result<List<AgentClientDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
 
-    Task<Result<List<AgentClientDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
+    public Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuid, Guid systemuser, bool cascade = false, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

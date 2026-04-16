@@ -873,13 +873,21 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken)
         {
-            List<AccessPackage> packages = systemUser.AccessPackages ?? [];
-            List<RoleAccessPackagesPrimitive> values = [];
+            List<AccessPackage> packages = systemUser.AccessPackages ?? [];             
 
             // 1 Check that the system user is of type Agent and has a list of AP, if not return error
+            if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
+            {
+                return Problem.AgentSystemUser_ExpectedAgentUserType;
+            }
+
+            if (systemUser.AccessPackages is null || systemUser.AccessPackages?.Count == 0)
+            {
+                return Problem.AccessPackage_NotFound;
+            }
 
             // 2 Get the Client and verify it has the requested AP list in it's Access, and to get the Role-Package mapping needed for the delegation call to AM, if not return error             
-            List<RoleAccessPackagesPrimitive> clientAccess = await ValidateClientForAgentSystemUser(packages, provider, client, cancellationToken);
+            List<RoleAccessPackagesPrimitive> values = await ValidateClientForAgentSystemUser(packages, provider, client, cancellationToken);
 
             // 3 Build the batch input
             DelegationBatchInputDto batch = new()
@@ -897,7 +905,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     var newDel = new DelegationResponse()
                     {
-                        DelegationId = Guid.Empty,
+                        DelegationId = Guid.Empty, // to be deprecated, but we init it now to not break deserialization in the front end
                         CustomerId = item.FromId,
                         AgentSystemUserId = new Guid(systemUser.Id!)
                     };
