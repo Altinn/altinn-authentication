@@ -475,16 +475,27 @@ public class AccessManagementClientMock: IAccessManagementClient
 
     public Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUserId, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        List<DelegationDto> delegations =
+        [
+            new DelegationDto
+            {
+                FromId = client,
+                ToId = systemUserId,
+                Changed = true
+            }
+        ];
+
+        return Task.FromResult<Result<List<DelegationDto>>>(delegations);
     }
 
     Task<Result<List<AgentClientDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        List<AgentClientDto> clients = [];
+        return Task.FromResult<Result<List<AgentClientDto>>>(clients);
     }
 
-    public Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuid, Guid systemuser, bool cascade = false, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuid, Guid systemuser, bool cascade = false, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return true;
     }
 }

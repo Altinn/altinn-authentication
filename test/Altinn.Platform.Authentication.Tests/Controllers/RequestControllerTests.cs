@@ -3810,6 +3810,82 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
     }
 
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_ReturnsOK()
+    {
+        // Arrange: create system register with access package
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage registerResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+
+        // Create agent request via vendor endpoint
+        HttpClient vendorClient = CreateClient();
+        AddSystemUserRequestWriteTestTokenToClient(vendorClient);
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skatt-naering"
+        };
+
+        CreateAgentRequestSystemUser createReq = new()
+        {
+            ExternalRef = "delegate-new-queryp",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage createReqMsg = new(HttpMethod.Post, "/authentication/api/v1/systemuser/request/vendor/agent")
+        {
+            Content = JsonContent.Create(createReq)
+        };
+        HttpResponseMessage createReqResponse = await vendorClient.SendAsync(createReqMsg, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, createReqResponse.StatusCode);
+
+        AgentRequestSystemResponse? agentRequest = await createReqResponse.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(agentRequest);
+
+        // Approve the agent request
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{agentRequest.Id}/approve";
+        HttpResponseMessage approveResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, approveEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        // Retrieve the created agent system user via vendor endpoint to get its Id
+        HttpClient vendorClient2 = CreateClient();
+        string[] prefixes = ["altinn", "digdir"];
+        string vendorToken = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
+        vendorClient2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", vendorToken);
+
+        HttpResponseMessage getSystemUsersResponse = await vendorClient2.GetAsync($"/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix");
+        Assert.Equal(HttpStatusCode.OK, getSystemUsersResponse.StatusCode);
+        Paginated<SystemUserExternalDTO>? page = await getSystemUsersResponse.Content.ReadFromJsonAsync<Paginated<SystemUserExternalDTO>>(_options);
+        Assert.NotNull(page);
+        SystemUserExternalDTO? systemUser = page.Items.FirstOrDefault(s => s.ExternalRef == createReq.ExternalRef);
+        Assert.NotNull(systemUser);
+
+        // Act: call the new POST agent/{party}/{systemUserId} endpoint with query params
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.NewGuid();
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUser.Id}?provider={providerGuid}&client={clientGuid}";
+
+        HttpResponseMessage delegateResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, delegateResponse.StatusCode);
+        List<DelegationResponse>? delegationResult = await delegateResponse.Content.ReadFromJsonAsync<List<DelegationResponse>>();
+        Assert.NotNull(delegationResult);
+        Assert.NotEmpty(delegationResult);
+        Assert.Equal(clientGuid, delegationResult[0].CustomerId);
+        Assert.Equal(Guid.Parse(systemUser.Id), delegationResult[0].AgentSystemUserId);
+    }
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)
     {
         var tasks = Enumerable.Range(0, paginationSize + 1)
