@@ -598,65 +598,14 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+    public async Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUser, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (!Guid.TryParse(request.FacilitatorId, out Guid facilitator))
-        {
-            return Problem.Reportee_Orgno_NotFound;
-        }
-
-        if (!Guid.TryParse(request.CustomerId, out Guid clientId))
-        {
-            return Problem.CustomerIdNotFound;
-        }
-
-        if (!Guid.TryParse(systemUser.Id, out Guid agentSystemUserId))
-        {
-            return Problem.SystemUserNotFound;
-        }
-
-        List<RoleAccessPackagesPrimitive> batchValues = [];
-
-        // Nothing has happened to the system user, we can not delegate any accesspackages.
-        // But we have successfully "delegated" the empty set of ap, so we return true.
-        // Perhaps future implementations will contain agent systems without accesspackages, 
-        // and there is no need to return a hard error when nothing changes.
-        if (systemUser.AccessPackages is null || systemUser.AccessPackages.Count == 0)
-        {
-            return new Result<List<DelegationDto>>([]);
-        }
-
-        foreach (var pac in systemUser.AccessPackages)
-        {
-            string? role;
-
-            role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
-            
-
-            if (role is null)
-            {
-                return Problem.RoleNotFoundForPackage;
-            }
-
-            RoleAccessPackagesPrimitive rolePackage = new()
-            {
-                Role = role,
-                Packages = [ pac.Urn!.ToString() ]
-            };
-
-            batchValues.Add(rolePackage);
-        }
-
-        DelegationBatchInputDto delegationBatchInputDto = new()
-        {
-            Values = batchValues
-        };
-
+        
         try
         {
-            string endpointUrl = $"enduser/systemuserclientdelegation/agents/accesspackages?party={facilitator}&from={clientId}&to={agentSystemUserId}";
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(delegationBatchInputDto));
+            string endpointUrl = $"enduser/systemuserclientdelegation/agents/accesspackages?party={provider}&from={client}&to={systemUser}";
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(batch));
 
             List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
 

@@ -18,6 +18,7 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Pagination;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Register.Contracts.V1;
@@ -470,5 +471,20 @@ public class AccessManagementClientMock: IAccessManagementClient
     public async Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuid, Guid guid, CancellationToken cancellationToken)
     {
         return true;
+    }
+
+    public Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUserId, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<Result<List<AgentClientDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -55,12 +55,13 @@ public interface IAccessManagementClient
     /// Delegate a customer to the Agent SystemUser
     /// For the new connections API
     /// </summary>    
-    /// <param name="systemUser">The Agent SystemUser</param>
-    /// <param name="request">Post Body from BFF containing customerId</param>
-    /// <param name="userId">Logged in user</param>
+    /// <param name="systemUserId">The Agent SystemUser delegatged TO.</param>
+    /// <param name="batch">Post Body containing list of Role/Package to be delegated FROM the client.</param>
+    /// <param name="provider">The partyUuid of the VIA organisation.</param>
+    /// <param name="client">The partyUuid of the client on delegated FROM.</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUserId, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list of all delegationIds 

@@ -874,17 +874,21 @@ namespace Altinn.Platform.Authentication.Services
         public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken)
         {
             List<AccessPackage> packages = systemUser.AccessPackages ?? [];
-            AgentDelegationInputDto request = new()
+            List<RoleAccessPackagesPrimitive> values = [];
+
+            // 1 Check that the system user is of type Agent and has a list of AP, if not return error
+
+            // 2 Get the Client and verify it has the requested AP list in it's Access, and to get the Role-Package mapping needed for the delegation call to AM, if not return error             
+            List<RoleAccessPackagesPrimitive> clientAccess = await ValidateClientForAgentSystemUser(packages, provider, client, cancellationToken);
+
+            // 3 Build the batch input
+            DelegationBatchInputDto batch = new()
             {
-                CustomerId = systemUser.PartyUuId!,
-                FacilitatorId = provider.ToString(),
-                Access = packages.Select(p => new ClientDto.ClientRoleAccessPackages()
-                {
-                    AccessPackageUrn = p.Urn!
-                }).ToList()
+                Values = values
             };
 
-            Result<List<DelegationDto>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request,userId, cancellationToken);
+            // 4 If the check is passed, do the delegation call to AM with the bacth of Role/AP for the Client, and return the result.
+            Result<List<DelegationDto>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(new Guid(systemUser.Id), batch, provider, client, cancellationToken);
             if (result.IsSuccess)
             {
                 List<DelegationResponse> theList = [];
@@ -905,6 +909,31 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return result.Problem;
+        }
+
+        private async Task<List<RoleAccessPackagesPrimitive>> ValidateClientForAgentSystemUser(List<AccessPackage> packages, Guid provider, Guid client, CancellationToken cancellationToken)
+        {
+            List<RoleAccessPackagesPrimitive> clientAccessPrimitive = [];
+            List<RoleAccessPackages> clientAccess = [];
+
+            List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
+
+            Result<List<AgentClientDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
+            if (clients.IsProblem)
+            {
+                throw new Exception($"Failed to get clients for provider {provider} with packages {string.Join(", ", packageUrns)}. Error: {clients.Problem?.Detail}");
+            }
+
+            foreach (var agentClient in clients.Value)
+            {
+                if (agentClient.Client.Id == client)
+                {                    
+                    clientAccessPrimitive = ConvertAccessToPrimitive(agentClient.Access);
+                    break;
+                }
+            }
+
+            return clientAccessPrimitive;
         }
 
         /// <inheritdoc/>
@@ -1092,7 +1121,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
+        public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
             var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
             if (res.IsSuccess)
@@ -1225,22 +1254,38 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
-        private static Result<List<Customer>> ConvertConnectionDTOToClient(List<AgentClientDto> value)
+        private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<AgentClientDto> value)
         {
-            List<Customer> result = [];
+            List<ExternalClientDto> result = [];
             foreach (var item in value)
             {
-                var newCustomer = new Customer()
+                var newCustomer = new ExternalClientDto()
                 {
                     DisplayName = item.Client.Name,
                     OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
                     PartyUuid = item.Client.Id,
-                    Access = item.Access
+                    Access = ConvertAccessToPrimitive(item.Access)
                 };
                 result.Add(newCustomer);
             }
 
             return result;
+        }
+
+        private static List<RoleAccessPackagesPrimitive> ConvertAccessToPrimitive(List<RoleAccessPackages> access)
+        {
+            List<RoleAccessPackagesPrimitive> primitiveList = [];
+            foreach (var item in access)
+            {
+                RoleAccessPackagesPrimitive primitive = new()
+                {
+                    Role = item.Role.Urn,
+                    Packages = [.. item.Packages.Select(p => p.Urn!)]
+                };
+                primitiveList.Add(primitive);
+            }
+
+            return primitiveList;
         }
 
         private static Result<List<Customer>> ConvertPartyCustomerToClient(CustomerList value)
