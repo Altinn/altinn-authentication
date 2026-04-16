@@ -158,7 +158,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <summary>
-        /// Set the Delete flag on the identified SystemUser
+        /// Set the Delete flag on the identified SystemUser in the Authentication db,
+        /// and cascade delete in Access Management by revoking rights and access packages, 
+        /// and removing the system user as right holder and agent if applicable.
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
         public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
@@ -225,13 +227,22 @@ namespace Altinn.Platform.Authentication.Services
 
             if (accessPackagesForSystemUser.Count > 0)
             {
-                var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, true, cancellationToken);
+                var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, cascade: true, cancellationToken);
                 if (removeSystemUserResult.IsProblem)
                 {
                     return removeSystemUserResult.Problem;
                 }
 
                 isAccessPackagesDeleted = removeSystemUserResult.Value;
+            }
+
+            if (systemUser.UserType == SystemUserType.Agent)
+            {
+                var removeAgentResult = await _accessManagementClient.RevokeSystemUserAsAgent(partyUuid, systemUserId, cascade: true, cancellationToken);
+                if (removeAgentResult.IsProblem)
+                {
+                    return removeAgentResult.Problem;
+                }
             }
 
             if ((rights.Count > 0 && !isRightsDeleted) || (accessPackagesForSystemUser.Count > 0 && !isAccessPackagesDeleted))
