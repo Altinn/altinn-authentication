@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 
@@ -6,6 +7,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 /// DTO used for delegegation.Needs to deserialize child objects, 
 /// see also the primitive version if those are not available.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class RoleAccessPackages
 {
     /// <summary>
@@ -26,6 +28,7 @@ public class RoleAccessPackages
 /// The string primitive version of RoleAccessPackages, 
 /// used for the batch delegation endpoint, 
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class RoleAccessPackagesPrimitive
 {
     [JsonPropertyName("role")]

@@ -1,9 +1,12 @@
-﻿namespace Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 
 /// <summary>
 /// Used to represent a connected client party in an Agent-SystemUser Client-Delegation context,
 /// sent to external SystemUserClientDelegation API users, or the BFF/AM.UI
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class ExternalClientDto
 {
     /// <summary>
