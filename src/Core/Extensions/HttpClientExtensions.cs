@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Core.Extensions;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Extensions;
 
 /// <summary>
 /// This extension is created to make it easy to add a bearer token to a HttpRequests.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public static class HttpClientExtension
 {
 /// <summary>
