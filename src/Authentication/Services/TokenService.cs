@@ -371,9 +371,34 @@ namespace Altinn.Platform.Authentication.Services
                         return (null, TokenResult.InvalidClient("Client not allowed to use client_secret"));
                     }
 
-                    if (!ClientSecrets.Verify(client.ClientSecretHash, auth.ClientSecret!))
+                    byte[] clientSecretPepper;
+                    try
+                    {
+                        clientSecretPepper = Convert.FromBase64String(_generalSettings.OidcRefreshTokenPepper);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Client secret pepper is not configured or invalid.");
+                        return (null, TokenResult.InvalidClient("Server configuration error"));
+                    }
+
+                    if (!ClientSecrets.Verify(client.ClientSecretHash, auth.ClientSecret!, clientSecretPepper))
                     {
                         return (null, TokenResult.InvalidClient("Invalid client secret"));
+                    }
+
+                    if (Pbkdf2SecretVerifier.IsLegacy(client.ClientSecretHash))
+                    {
+                        try
+                        {
+                            string rehashed = ClientSecretHasher.HashHmac(auth.ClientSecret!, clientSecretPepper);
+                            await clientRepo.UpdateClientSecretHashAsync(client.ClientId, rehashed, ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Auth already succeeded — rehash failure must not fail the request.
+                            _logger.LogWarning(ex, "Opportunistic client secret rehash failed for client_id={ClientId}", client.ClientId);
+                        }
                     }
 
                     break;
