@@ -625,7 +625,7 @@ public class AccessManagementClient : IAccessManagementClient
         
         try
         {
-            string endpointUrl = $"enduser/systemuserclientdelegation/agents/accesspackages?party={provider}&from={client}&to={systemUser}";
+            string endpointUrl = $"enduser/clientdelegations/agents/accesspackages?party={provider}&from={client}&to={systemUser}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(batch));
 
             List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
@@ -652,7 +652,7 @@ public class AccessManagementClient : IAccessManagementClient
 
         try
         {
-            string endpointUrl = $"enduser/systemuserclientdelegation/agents/accesspackages?party={provider}&from={client}&to={systemuser}";
+            string endpointUrl = $"enduser/clientdelegations/agents/accesspackages?party={provider}&from={client}&to={systemuser}";
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl, JsonContent.Create(batch));
 
             List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
@@ -694,7 +694,7 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"enduser/systemuserclientdelegation/agents?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&to={HttpUtility.UrlEncode(systemUserId.ToString())}&cascade=true";
+            string endpointUrl = $"enduser/clientdelegations/agents?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&to={HttpUtility.UrlEncode(systemUserId.ToString())}&cascade=true";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
