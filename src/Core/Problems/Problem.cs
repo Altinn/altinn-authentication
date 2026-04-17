@@ -407,4 +407,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor Request_UserIsNotAccessManager { get; }
         = _factory.Create(66, HttpStatusCode.Forbidden, "The request requires logged in user to have accessmanager write.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemUser_FailedToAddAsAgent { get; }
+        = _factory.Create(67, HttpStatusCode.BadRequest, "Unable to add system user as agent for the organisation");    
 }

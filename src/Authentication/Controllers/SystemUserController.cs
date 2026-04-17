@@ -389,6 +389,81 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
+    /// Creates a new delegation from a Client/Customer to an Agent SystemUser via the Reportee/Provider. 
+    /// All the required AccessPackages in the SystemUser will be delegated.
+    /// <param name="party">The party Id of the reportee.</param>
+    /// <param name="systemUserId">The partyUuid of the Agent SystemUser to delegete TO.</param> 
+    /// <param name="provider">The partyUuid of the organisation providing the VIA relationship.</param>
+    /// <param name="client">The partyUuid of the client the delegation is FROM.</param>
+    /// <param name="cancellationToken"></param>
+    /// The endpoint is idempotent.
+    /// </summary>
+    /// <returns>OK</returns>    
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpPost("agent/{party}/{systemUserId}")]
+    public async Task<ActionResult<List<DelegationResponse>>> DelegateToAgentSystemUser(
+        string party, 
+        Guid systemUserId, 
+        [FromQuery] Guid provider, 
+        [FromQuery] Guid client, 
+        CancellationToken cancellationToken)
+    {
+        var userId = AuthenticationHelper.GetUserId(HttpContext);
+
+        SystemUserInternalDTO? systemUser = await _systemUserService.GetSingleSystemUserById(systemUserId);
+        if (systemUser is null)
+        {
+            ModelState.AddModelError("return", $"SystemUser with Id {systemUserId} Not Found");
+            return ValidationProblem(ModelState);
+        }
+
+        if (systemUser.PartyId != party)
+        {
+            return Forbid();
+        }
+
+        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, provider, client, userId, cancellationToken);
+        if (delegationResult.IsSuccess)
+        {
+            return Ok(delegationResult.Value);
+        }
+
+        return delegationResult.Problem.ToActionResult();
+    }
+
+    /// <summary>
+    /// Revokes a client/customer from an Agent SystemUser.
+    /// <param name="party">The party Id of the reportee.</param>
+    /// <param name="systemuser">The partyUuid of the Agent SystemUser to delegete TO.</param> 
+    /// <param name="provider">The partyUuid of the organisation providing the VIA relationship.</param>
+    /// <param name="client">The partyUuid of the client the delegation is FROM.</param>
+    /// <param name="cancellationToken"></param>
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpDelete("agent/{party}/{systemuser}/client")]
+    public async Task<ActionResult> RevokeClientFromAgentSystemUser(
+        string party, 
+        Guid systemuser,
+        [FromQuery] Guid client, 
+        [FromQuery] Guid provider, 
+        CancellationToken cancellationToken = default)
+    {
+        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, systemuser, client, provider, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok();
+        }
+
+        return result.Problem.ToActionResult();
+    }
+
+    /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
     /// The endpoint is idempotent.
     /// </summary>
@@ -414,7 +489,7 @@ public class SystemUserController : ControllerBase
             return Forbid();
         }
 
-        Result<List<DelegationResponse>> delegationResult = await _systemUserService.DelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        Result<List<DelegationResponse>> delegationResult = await _systemUserService.OldDelegateToAgentSystemUser(systemUser, request, userId, cancellationToken);
         if (delegationResult.IsSuccess)
         {
             return Ok(delegationResult.Value);
@@ -584,7 +659,7 @@ public class SystemUserController : ControllerBase
     [HttpGet("agent/{party}/clients")]
     public async Task<ActionResult<List<Customer>>> GetClientsForFacilitator([FromQuery]Guid facilitator, [FromQuery] List<string> packages = null, CancellationToken cancellationToken = default)
     {
-        var result = await _systemUserService.GetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
+        var result = await _systemUserService.OldGetClientsForFacilitator(facilitator, packages, _featureManager, cancellationToken);
 
         if (result.IsSuccess)
         {

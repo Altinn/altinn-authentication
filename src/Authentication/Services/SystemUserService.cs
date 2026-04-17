@@ -12,12 +12,14 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
 using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
+using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
 using Microsoft.Extensions.Options;
@@ -156,7 +158,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <summary>
-        /// Set the Delete flag on the identified SystemUser
+        /// Set the Delete flag on the identified SystemUser in the Authentication db,
+        /// and cascade delete in Access Management by revoking rights and access packages, 
+        /// and removing the system user as right holder and agent if applicable.
         /// </summary>
         /// <returns>Boolean True if row affected</returns>
         public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
@@ -223,13 +227,22 @@ namespace Altinn.Platform.Authentication.Services
 
             if (accessPackagesForSystemUser.Count > 0)
             {
-                var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, true, cancellationToken);
+                var removeSystemUserResult = await _accessManagementClient.RemoveSystemUserAsRightHolder(partyUuid, systemUserId, cascade: true, cancellationToken);
                 if (removeSystemUserResult.IsProblem)
                 {
                     return removeSystemUserResult.Problem;
                 }
 
                 isAccessPackagesDeleted = removeSystemUserResult.Value;
+            }
+
+            if (systemUser.UserType == SystemUserType.Agent)
+            {
+                var removeAgentResult = await _accessManagementClient.RevokeSystemUserAsAgent(partyUuid, systemUserId, cascade: true, cancellationToken);
+                if (removeAgentResult.IsProblem)
+                {
+                    return removeAgentResult.Problem;
+                }
             }
 
             if ((rights.Count > 0 && !isRightsDeleted) || (accessPackagesForSystemUser.Count > 0 && !isAccessPackagesDeleted))
@@ -550,12 +563,25 @@ namespace Altinn.Platform.Authentication.Services
             {
                 return partyCreated.Problem;
             }
-            
-            // Add the system user as right holder
-            Result<bool> result = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuid, Guid.Parse(inserted.Id), cancellationToken);
-            if (result.IsProblem)
+
+            // Add the new system user as a right holder in Access Management, both Standard and Agent type system users are added as right holders
+            // This is needed for the delegation of rights and access packages to work when reporting for _own_ business.
+            Result<bool> holderresult = await _accessManagementClient.AddSystemUserAsRightHolder(partyUuid, Guid.Parse(inserted.Id), cancellationToken);
+            if (holderresult.IsProblem)
             {
-                return result.Problem;
+                return holderresult.Problem;
+            }
+
+            // Only Agent systemusers are added as Agents in Access Management, needed for _via_ reporting.
+            if (newSystemUser.UserType == SystemUserType.Agent)
+            {
+                {
+                    Result<bool> agentresult = await _accessManagementClient.AddSystemUserAsAgent(partyUuid, Guid.Parse(inserted.Id), cancellationToken);
+                    if (agentresult.IsProblem)
+                    {
+                        return agentresult.Problem;
+                    }
+                }
             }
 
             if (IsStandardSystemUserDelegatgeSingleRights(newSystemUser, regSystem, delegationCheckFinalResult))
@@ -830,9 +856,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
-        {
-            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
+        public async Task<Result<List<DelegationResponse>>> OldDelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
+        {           
+            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.OldDelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
             if (result.IsSuccess)
             {
                 List<DelegationResponse> theList = [];
@@ -853,6 +879,80 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return result.Problem;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken)
+        {
+            List<AccessPackage> packages = systemUser.AccessPackages ?? [];             
+
+            // 1 Check that the system user is of type Agent and has a list of AP, if not return error
+            if (systemUser.UserType != Core.Enums.SystemUserType.Agent)
+            {
+                return Problem.AgentSystemUser_ExpectedAgentUserType;
+            }
+
+            if (systemUser.AccessPackages is null || systemUser.AccessPackages?.Count == 0)
+            {
+                return Problem.AccessPackage_NotFound;
+            }
+
+            // 2 Get the Client and verify it has the requested AP list in it's Access, and to get the Role-Package mapping needed for the delegation call to AM, if not return error             
+            List<RoleAccessPackagesPrimitive> values = await ValidateClientForAgentSystemUser(packages, provider, client, cancellationToken);
+
+            // 3 Build the batch input
+            DelegationBatchInputDto batch = new()
+            {
+                Values = values
+            };
+
+            // 4 If the check is passed, do the delegation call to AM with the bacth of Role/AP for the Client, and return the result.
+            Result<List<DelegationDto>> result = await _accessManagementClient.DelegateCustomerToAgentSystemUser(new Guid(systemUser.Id), batch, provider, client, cancellationToken);
+            if (result.IsSuccess)
+            {
+                List<DelegationResponse> theList = [];
+
+                foreach (var item in result.Value)
+                {
+                    var newDel = new DelegationResponse()
+                    {
+                        DelegationId = Guid.Empty, // to be deprecated, but we init it now to not break deserialization in the front end
+                        CustomerId = item.FromId,
+                        AgentSystemUserId = new Guid(systemUser.Id!)
+                    };
+
+                    theList.Add(newDel);
+                }
+
+                return theList;
+            }
+
+            return result.Problem;
+        }
+
+        private async Task<List<RoleAccessPackagesPrimitive>> ValidateClientForAgentSystemUser(List<AccessPackage> packages, Guid provider, Guid client, CancellationToken cancellationToken)
+        {
+            List<RoleAccessPackagesPrimitive> clientAccessPrimitive = [];
+            List<RoleAccessPackages> clientAccess = [];
+
+            List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
+
+            Result<List<Core.Models.Rights.ConnectionsDtos.ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
+            if (clients.IsProblem)
+            {
+                throw new Exception($"Failed to get clients for provider {provider} with packages {string.Join(", ", packageUrns)}. Error: {clients.Problem?.Detail}");
+            }
+
+            foreach (var agentClient in clients.Value)
+            {
+                if (agentClient.Client.Id == client)
+                {                    
+                    clientAccessPrimitive = ConvertAccessToPrimitive(agentClient.Access);
+                    break;
+                }
+            }
+
+            return clientAccessPrimitive;
         }
 
         /// <inheritdoc/>
@@ -952,7 +1052,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.AgentSystemUser_DelegationNotFound;
             }
 
-            var res = await _accessManagementClient.GetDelegationsForAgent(systemUserId, facilitator, client);
+            var res = await _accessManagementClient.OldGetDelegationsForAgent(systemUserId, facilitator, client);
             if (res.IsSuccess)
             {
                 return ConvertExtDelegationToDTO(res.Value);
@@ -964,7 +1064,30 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid partyUUId, CancellationToken cancellationToken = default)
         {
-            Result<bool> result = await _accessManagementClient.DeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
+            Result<bool> result = await _accessManagementClient.OldDeleteCustomerDelegationToAgent(partyUUId, delegationId, cancellationToken);
+            if (result.IsProblem)
+            {
+                return result.Problem;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string party, Guid systemuser, Guid client, Guid provider, CancellationToken cancellationToken = default)
+        {
+            DelegationBatchInputDto batch = new()
+            {
+                Values = [] // The batch input only requires the Role-AP mapping for delegation, not for revocation, so we can send an empty list here.
+            };
+
+            Result<List<RoleAccessPackages>> accessResult = await _accessManagementClient.GetClientDelegationsForAgent(systemuser, provider, client, cancellationToken);
+            if (accessResult.IsSuccess)
+            {
+                batch.Values = ConvertAccessToPrimitive(accessResult.Value);
+            }
+
+            Result<bool> result = await _accessManagementClient.RevokeClientFromAgentSystemUser(provider, client, systemuser, batch, cancellationToken);
             if (result.IsProblem)
             {
                 return result.Problem;
@@ -1028,7 +1151,19 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
+        public async Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
+        {
+            var res = await _accessManagementClient.OldGetClientsForFacilitator(facilitator, packages, cancellationToken);
+            if (res.IsSuccess)
+            {
+                return OldConvertConnectionDTOToClient(res.Value);
+            }
+
+            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
             var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
             if (res.IsSuccess)
@@ -1143,7 +1278,7 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
-        private static Result<List<Customer>> ConvertConnectionDTOToClient(List<ClientDto> value)
+        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<Core.Models.SystemUsers.ClientDto> value)
         {
             List<Customer> result = [];
             foreach (var item in value)
@@ -1159,6 +1294,40 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return result;
+        }
+
+        private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<Core.Models.Rights.ConnectionsDtos.ClientDelegationDto> value)
+        {
+            List<ExternalClientDto> result = [];
+            foreach (var item in value)
+            {
+                var newCustomer = new ExternalClientDto()
+                {
+                    DisplayName = item.Client.Name,
+                    OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
+                    PartyUuid = item.Client.Id,
+                    Access = ConvertAccessToPrimitive(item.Access)
+                };
+                result.Add(newCustomer);
+            }
+
+            return result;
+        }
+
+        private static List<RoleAccessPackagesPrimitive> ConvertAccessToPrimitive(List<RoleAccessPackages> access)
+        {
+            List<RoleAccessPackagesPrimitive> primitiveList = [];
+            foreach (var item in access)
+            {
+                RoleAccessPackagesPrimitive primitive = new()
+                {
+                    Role = item.Role.Urn,
+                    Packages = [.. item.Packages.Select(p => p.Urn!)]
+                };
+                primitiveList.Add(primitive);
+            }
+
+            return primitiveList;
         }
 
         private static Result<List<Customer>> ConvertPartyCustomerToClient(CustomerList value)
@@ -1232,6 +1401,6 @@ namespace Altinn.Platform.Authentication.Services
                     accessPackages.Add(accessPackage);
                 }
             }
-        }
+        }       
     }
 }

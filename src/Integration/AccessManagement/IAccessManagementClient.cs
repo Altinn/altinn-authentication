@@ -2,6 +2,7 @@ using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using System.Runtime.CompilerServices;
 
@@ -48,7 +49,29 @@ public interface IAccessManagementClient
     /// <param name="userId">Logged in user</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>Success or Failure</returns>    
-    Task<Result<List<AgentDelegationResponse>>> DelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<List<AgentDelegationResponse>>> OldDelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Delegate a customer to the Agent SystemUser
+    /// For the new connections API
+    /// </summary>    
+    /// <param name="systemUserId">The Agent SystemUser delegatged TO.</param>
+    /// <param name="batch">Post Body containing list of Role/Package to be delegated FROM the client.</param>
+    /// <param name="provider">The partyUuid of the VIA organisation.</param>
+    /// <param name="client">The partyUuid of the client on delegated FROM.</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>Success or Failure</returns>    
+    Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUserId, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Revokes a client/customer from an Agent SystemUser.
+    /// <param name="systemuser">The partyUuid of the Agent SystemUser to delegete TO.</param> 
+    /// <param name="provider">The partyUuid of the organisation providing the VIA relationship.</param>
+    /// <param name="client">The partyUuid of the client the delegation is FROM.</param>
+    /// <param name="cancellationToken"></param>
+    /// </summary>
+    /// <returns></returns>
+    Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, DelegationBatchInputDto batch, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list of all delegationIds 
@@ -58,7 +81,7 @@ public interface IAccessManagementClient
     /// <param name="client">The Guid Id for the Client</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
-    Task<Result<List<ConnectionDto>>> GetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default);
+    Task<Result<List<ConnectionDto>>> OldGetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the access package for the given urn value
@@ -72,7 +95,7 @@ public interface IAccessManagementClient
     /// </summary>
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="delegationId">The delegation id</param>
-    Task<Result<bool>> DeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> OldDeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Revokes the assignment of
@@ -86,7 +109,25 @@ public interface IAccessManagementClient
     /// </summary>
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
     /// <param name="packages">Access package URNs</param>
-    Task<Result<List<ClientDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
+    Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get clients for a facilitator
+    /// </summary>
+    /// <param name="provider">The partyUuid of the VIA organisastion</param>
+    /// <param name="packages">Access package URNs</param>
+    /// <returns>List of clients FROM which the VIA provider can delegate packages TO an entity</returns>
+    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, List<string> packages, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all packages that are delegated to the agent system user, via the provider from the client 
+    /// </summary>
+    /// <param name="systemUserId">partyUuid TO</param>
+    /// <param name="provider">partyUuid VIA</param>
+    /// <param name="client">partyUuid FROM</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<Result<List<RoleAccessPackages>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, Guid client, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Verifies if the user has the necessary rights to delegate the requested access packages
@@ -169,4 +210,22 @@ public interface IAccessManagementClient
     /// <param name="partyUuid">The party id</param>
     /// <param name="resource">The resource id</param>
     Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Adds a System User as an Agent for the Party
+    /// </summary>
+    /// <param name="partyUuid">the identifier of the via party ( the faciliator/provider )</param>
+    /// <param name="systemuser">the system user id acting as the agent</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuid, Guid systemuser, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Revokes a System User as an Agent for the Party
+    /// </summary>
+    /// <param name="partyUuid">the identifier of the via party ( the faciliator/provider )</param>
+    /// <param name="systemuser">the system user id acting as the agent</param>
+    /// <param name="cancellationToken">the cancellation token</param>
+    /// <returns></returns>
+    Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuid, Guid systemuser, bool cascade = false, CancellationToken cancellationToken = default);
 }

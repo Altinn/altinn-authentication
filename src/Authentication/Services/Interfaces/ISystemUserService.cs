@@ -7,8 +7,10 @@ using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Parties;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.SystemRegister.Models;
+using Altinn.Platform.Authentication.Model;
 using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services.Interfaces;
@@ -130,7 +132,19 @@ public interface ISystemUserService
     /// <param name="userId">the user id of the logged in user</param>
     /// <param name="cancellationToken">CancellationToken</param>
     /// <returns>Result of True or False</returns> 
-    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+    Task<Result<List<DelegationResponse>>> OldDelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Creates a new delegation of a customer to an Agent SystemUser.
+    /// The service is idempotent.
+    /// </summary>
+    /// <param name="systemUser">SystemUser</param>
+    /// <param name="provider">The via partyuuid (facilitator) </param>
+    /// <param name="client">The client's partyuuid</param>
+    /// <param name="userId">the user id of the logged in user</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>Result of True or False</returns> 
+    Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
@@ -154,6 +168,17 @@ public interface ISystemUserService
     Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid facilitatorId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Revokes a client/customer from an Agent SystemUser.
+    /// <param name="party">The party Id of the reportee.</param>
+    /// <param name="systemuser">The partyUuid of the Agent SystemUser to delegete TO.</param> 
+    /// <param name="provider">The partyUuid of the organisation providing the VIA relationship.</param>
+    /// <param name="client">The partyUuid of the client the delegation is FROM.</param>
+    /// <param name="cancellationToken"></param>
+    /// </summary>
+    /// <returns></returns>
+    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string party, Guid systemuser, Guid client, Guid provider, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Delete the agent system user (soft delete)
     /// </summary>
     /// <param name="partyId">the party id of the reportee</param>
@@ -171,7 +196,17 @@ public interface ISystemUserService
     /// <param name="featureManager">FeatureManager</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of Clients</returns>
-    Task<Result<List<Customer>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
+    Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a list of clients available for a facilitator,
+    /// </summary>
+    /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
+    /// <param name="packages">An array of access package URNs. Only clients associated with at least one of these access packages will be included in the result.</param>
+    /// <param name="featureManager">FeatureManager</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of Clients</returns>
+    Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delegate access packages to a system user.

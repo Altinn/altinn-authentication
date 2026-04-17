@@ -35,6 +35,7 @@ using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -42,9 +43,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Microsoft.Identity.Client;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
-using Newtonsoft.Json.Linq;
 using Xunit;
 using static Altinn.Authorization.ABAC.Constants.XacmlConstants;
 
@@ -3808,6 +3807,193 @@ public class RequestControllerTests(
         HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_ReturnsOK()
+    {
+        // Arrange: create system register with access package
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage registerResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+
+        // Create agent request via vendor endpoint
+        HttpClient vendorClient = CreateClient();
+        AddSystemUserRequestWriteTestTokenToClient(vendorClient);
+
+        AccessPackage accessPackage = new()
+        {
+            Urn = "urn:altinn:accesspackage:skatt-naering"
+        };
+
+        CreateAgentRequestSystemUser createReq = new()
+        {
+            ExternalRef = "delegate-new-queryp",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [accessPackage]
+        };
+
+        HttpRequestMessage createReqMsg = new(HttpMethod.Post, "/authentication/api/v1/systemuser/request/vendor/agent")
+        {
+            Content = JsonContent.Create(createReq)
+        };
+        HttpResponseMessage createReqResponse = await vendorClient.SendAsync(createReqMsg, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, createReqResponse.StatusCode);
+
+        AgentRequestSystemResponse? agentRequest = await createReqResponse.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(agentRequest);
+
+        // Approve the agent request
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+        string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{agentRequest.Id}/approve";
+        HttpResponseMessage approveResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, approveEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        // Retrieve the created agent system user via vendor endpoint to get its Id
+        HttpClient vendorClient2 = CreateClient();
+        string[] prefixes = ["altinn", "digdir"];
+        string vendorToken = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime);
+        vendorClient2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", vendorToken);
+
+        HttpResponseMessage getSystemUsersResponse = await vendorClient2.GetAsync($"/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix");
+        Assert.Equal(HttpStatusCode.OK, getSystemUsersResponse.StatusCode);
+        Paginated<SystemUserExternalDTO>? page = await getSystemUsersResponse.Content.ReadFromJsonAsync<Paginated<SystemUserExternalDTO>>(_options);
+        Assert.NotNull(page);
+        SystemUserExternalDTO? systemUser = page.Items.FirstOrDefault(s => s.ExternalRef == createReq.ExternalRef);
+        Assert.NotNull(systemUser);
+
+        // Act: call the new POST agent/{party}/{systemUserId} endpoint with query params
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.NewGuid();
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUser.Id}?provider={providerGuid}&client={clientGuid}";
+
+        HttpResponseMessage delegateResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, delegateResponse.StatusCode);
+        List<DelegationResponse>? delegationResult = await delegateResponse.Content.ReadFromJsonAsync<List<DelegationResponse>>();
+        Assert.NotNull(delegationResult);
+        Assert.NotEmpty(delegationResult);
+        Assert.Equal(clientGuid, delegationResult[0].CustomerId);
+        Assert.Equal(Guid.Parse(systemUser.Id), delegationResult[0].AgentSystemUserId);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_UnknownSystemUserId_ReturnsBadRequest()
+    {
+        // Arrange
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int partyId = 500000;
+        Guid unknownSystemUserId = Guid.NewGuid();
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.NewGuid();
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{unknownSystemUserId}?provider={providerGuid}&client={clientGuid}";
+
+        // Act
+        HttpResponseMessage delegateResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, delegateResponse.StatusCode);
+        HttpValidationProblemDetails? problem = await delegateResponse.Content.ReadFromJsonAsync<HttpValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Contains("return", problem.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_NoToken_ReturnsUnauthorized()
+    {
+        // Arrange: no auth token set on client
+        HttpClient unauthClient = CreateClient();
+
+        int partyId = 500000;
+        Guid systemUserId = Guid.NewGuid();
+        Guid providerGuid = Guid.NewGuid();
+        Guid clientGuid = Guid.NewGuid();
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?provider={providerGuid}&client={clientGuid}";
+
+        // Act
+        HttpResponseMessage delegateResponse = await unauthClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, delegateResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task AgentSystemUser_DelegateNew_QueryParam_Post_WrongParty_ReturnsForbidden()
+    {
+        // Arrange: create system register and an approved agent system user owned by partyId 500000
+        string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
+        HttpResponseMessage registerResponse = await CreateSystemRegister(dataFileName);
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+
+        HttpClient vendorClient = CreateClient();
+        AddSystemUserRequestWriteTestTokenToClient(vendorClient);
+
+        CreateAgentRequestSystemUser createReq = new()
+        {
+            ExternalRef = "delegate-wrong-party",
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            AccessPackages = [new AccessPackage { Urn = "urn:altinn:accesspackage:skatt-naering" }]
+        };
+
+        HttpResponseMessage createReqResponse = await vendorClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, "/authentication/api/v1/systemuser/request/vendor/agent")
+            {
+                Content = JsonContent.Create(createReq)
+            },
+            HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, createReqResponse.StatusCode);
+
+        AgentRequestSystemResponse? agentRequest = await createReqResponse.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(agentRequest);
+
+        // Approve with the correct party (500000)
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+
+        int correctPartyId = 500000;
+        HttpResponseMessage approveResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, $"/authentication/api/v1/systemuser/request/agent/{correctPartyId}/{agentRequest.Id}/approve"),
+            HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        // Get the system user Id
+        HttpClient vendorClient2 = CreateClient();
+        string[] prefixes = ["altinn", "digdir"];
+        vendorClient2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.write", prefixes, TestTime));
+
+        Paginated<SystemUserExternalDTO>? page = await (await vendorClient2.GetAsync(
+            "/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix"))
+            .Content.ReadFromJsonAsync<Paginated<SystemUserExternalDTO>>(_options);
+        Assert.NotNull(page);
+        SystemUserExternalDTO? systemUser = page.Items.FirstOrDefault(s => s.ExternalRef == createReq.ExternalRef);
+        Assert.NotNull(systemUser);
+
+        // Act: call with a different party than the system user's owner
+        int wrongPartyId = 999999;
+        string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUser.Id}?provider={Guid.NewGuid()}&client={Guid.NewGuid()}";
+
+        HttpResponseMessage delegateResponse = await partyClient.SendAsync(
+            new HttpRequestMessage(HttpMethod.Post, delegateEndpoint),
+            HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert: controller returns Forbid() because systemUser.PartyId != party
+        Assert.Equal(HttpStatusCode.Forbidden, delegateResponse.StatusCode);
     }
 
     private static async Task CreateSeveralRequest(HttpClient client, int paginationSize, string systemId)

@@ -1,8 +1,11 @@
-﻿namespace Altinn.Platform.Authentication.Core.Extensions;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Altinn.Platform.Authentication.Core.Extensions;
 
 /// <summary>
 /// This extension is created to make it easy to add a bearer token to a HttpRequests.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public static class HttpClientExtension
 {
 /// <summary>
@@ -88,5 +91,26 @@ public static Task<HttpResponseMessage> PutAsync(this HttpClient httpClient, str
     }
 
     return httpClient.SendAsync(request, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Extension that add authorization header to request.
+    /// </summary>
+    /// <param name="httpClient">The HttpClient.</param>
+    /// <param name="authorizationToken">the authorization token (jwt).</param>
+    /// <param name="requestUri">The request Uri.</param>
+    /// <param name="platformAccessToken">The platformAccess tokens.</param>
+    /// <returns>A HttpResponseMessage.</returns>
+    public static Task<HttpResponseMessage> DeleteAsync(this HttpClient httpClient, string authorizationToken, string requestUri, HttpContent content, string platformAccessToken = null)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
+        request.Headers.Add("Authorization", "Bearer " + authorizationToken);
+        request.Content = content;
+        if (!string.IsNullOrEmpty(platformAccessToken))
+        {
+            request.Headers.Add("PlatformAccessToken", platformAccessToken);
+        }
+
+        return httpClient.SendAsync(request, CancellationToken.None);
     }
 }
