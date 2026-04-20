@@ -628,13 +628,19 @@ public class AccessManagementClient : IAccessManagementClient
             string endpointUrl = $"enduser/clientdelegations/agents/accesspackages?party={provider}&from={client}&to={systemUser}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(batch));
 
-            List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
-
-            if (response.IsSuccessStatusCode && found is not null)
+            if (response.IsSuccessStatusCode && response.StatusCode == HttpStatusCode.OK)
             {
-                return found;
-            }
+                List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
 
+                if (found is not null)
+                {
+                    return found;
+                }
+
+                return new Result<List<DelegationDto>>(Problem.Rights_FailedToDelegate);
+            }
+            var err = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError($"Authentication // AccessManagementClient // DelegateCustomerToAgentSystemUse Error: {err}");
             return new Result<List<DelegationDto>>(Problem.Rights_FailedToDelegate);
 
         }
