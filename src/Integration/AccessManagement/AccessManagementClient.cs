@@ -635,14 +635,10 @@ public class AccessManagementClient : IAccessManagementClient
                 if (found is not null && found.Count > 0)
                 {
                     return found;
-                }
-
-                return Problem.Rights_FailedToDelegate;
+                }            
             }
-            var err = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError($"Authentication // AccessManagementClient // DelegateCustomerToAgentSystemUse Error: {err}");
-            return Problem.Rights_FailedToDelegate;
 
+            return Problem.Rights_FailedToDelegate;
         }
         catch (Exception ex)
         {
