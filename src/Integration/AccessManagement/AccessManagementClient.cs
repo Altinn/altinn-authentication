@@ -630,18 +630,18 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode && response.StatusCode == HttpStatusCode.OK)
             {
-                List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
+                List<DelegationDto>? found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken);
 
-                if (found is not null)
+                if (found is not null && found.Count > 0)
                 {
                     return found;
                 }
 
-                return new Result<List<DelegationDto>>(Problem.Rights_FailedToDelegate);
+                return Problem.Rights_FailedToDelegate;
             }
             var err = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogError($"Authentication // AccessManagementClient // DelegateCustomerToAgentSystemUse Error: {err}");
-            return new Result<List<DelegationDto>>(Problem.Rights_FailedToDelegate);
+            return Problem.Rights_FailedToDelegate;
 
         }
         catch (Exception ex)
