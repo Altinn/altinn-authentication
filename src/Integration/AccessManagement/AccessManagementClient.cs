@@ -821,7 +821,7 @@ public class AccessManagementClient : IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<List<Core.Models.SystemUsers.ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -845,19 +845,19 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<Core.Models.SystemUsers.ClientDto>>(_serializerOptions, cancellationToken) ?? [];
+                return await response.Content.ReadFromJsonAsync<List<ClientDto>>(_serializerOptions, cancellationToken) ?? [];
             }
             else
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
-                    return new Result<List<Core.Models.SystemUsers.ClientDto>>(problemInstance);
+                    return new Result<List<ClientDto>>(problemInstance);
                 }
                 else if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-                    return new Result<List<Core.Models.SystemUsers.ClientDto>>(problemInstance);
+                    return new Result<List<ClientDto>>(problemInstance);
                 }
                 else
                 {
@@ -870,7 +870,7 @@ public class AccessManagementClient : IAccessManagementClient
                     new KeyValuePair<string, string>("Problem Detail : ", problemDetails.Detail)
                     });
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
-                    return new Result<List<Core.Models.SystemUsers.ClientDto>>(problemInstance);
+                    return new Result<List<ClientDto>>(problemInstance);
                 }
             }
         }
@@ -898,8 +898,8 @@ public class AccessManagementClient : IAccessManagementClient
 
             if (response.IsSuccessStatusCode)
             {
-                var all = await response.Content.ReadFromJsonAsync<List<ClientDelegationDto>>(_serializerOptions, cancellationToken) ?? [];
-
+                var res = await response.Content.ReadFromJsonAsync<PaginatedResult<List<ClientDelegationDto>>>(_serializerOptions, cancellationToken);
+                var all = res?.Data ?? [];
                 // If no packages are required in the systemuser, we return all clients. Perhaps future implementations will allow unfiltered systemusers.
                 // If the set of clients is empty, we return the empty set, regardless of the packages required in the systemuser.
                 if (all.Count == 0 || packages == null || packages.Count == 0)
@@ -982,7 +982,8 @@ public class AccessManagementClient : IAccessManagementClient
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
-                var all = await response.Content.ReadFromJsonAsync<List<AgentDelegationDto>>(_serializerOptions, cancellationToken) ?? [];
+                var res = await response.Content.ReadFromJsonAsync<PaginatedResult<List<AgentDelegationDto>>>(_serializerOptions, cancellationToken);
+                var all = res?.Data ?? [];
                 var forAgent = all.Where(a => a.Agent.Id == systemUserId).ToList();
                 
                 List<RoleAccessPackages> result = [];
