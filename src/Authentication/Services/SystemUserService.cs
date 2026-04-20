@@ -904,6 +904,11 @@ namespace Altinn.Platform.Authentication.Services
                 return values.Problem;
             }
 
+            if (values.Value.Count == 0)
+            {
+                return Problem.AccessPackage_NotFound;
+            }
+
             // 3 Build the batch input
             DelegationBatchInputDto batch = new()
             {
