@@ -955,8 +955,23 @@ namespace Altinn.Platform.Authentication.Services
             foreach (var agentClient in clients.Value)
             {
                 if (agentClient.Client.Id == client)
-                {                    
-                    clientAccessPrimitive = ConvertAccessToPrimitive(agentClient.Access);
+                {
+                    var allPrimitives = ConvertAccessToPrimitive(agentClient.Access);
+
+                    // Filter to only include role-package mappings where the packages overlap with the requested packages
+                    foreach (var primitive in allPrimitives)
+                    {
+                        var matchingPackages = primitive.Packages.Where(p => packageUrns.Contains(p)).ToList();
+                        if (matchingPackages.Count > 0)
+                        {
+                            clientAccessPrimitive.Add(new RoleAccessPackagesPrimitive
+                            {
+                                Role = primitive.Role,
+                                Packages = matchingPackages
+                            });
+                        }
+                    }
+
                     break;
                 }
             }
