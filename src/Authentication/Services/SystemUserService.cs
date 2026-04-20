@@ -898,12 +898,21 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             // 2 Get the Client and verify it has the requested AP list in it's Access, and to get the Role-Package mapping needed for the delegation call to AM, if not return error             
-            List<RoleAccessPackagesPrimitive> values = await ValidateClientForAgentSystemUser(packages, provider, client, cancellationToken);
+            Result<List<RoleAccessPackagesPrimitive>> values = await ValidateClientForAgentSystemUser(packages, provider, client, cancellationToken);
+            if (values.IsProblem)
+            {
+                return values.Problem;
+            }
+
+            if (values.Value.Count == 0)
+            {
+                return Problem.AccessPackage_NotFound;
+            }
 
             // 3 Build the batch input
             DelegationBatchInputDto batch = new()
             {
-                Values = values
+                Values = values.Value
             };
 
             // 4 If the check is passed, do the delegation call to AM with the bacth of Role/AP for the Client, and return the result.
@@ -930,24 +939,39 @@ namespace Altinn.Platform.Authentication.Services
             return result.Problem;
         }
 
-        private async Task<List<RoleAccessPackagesPrimitive>> ValidateClientForAgentSystemUser(List<AccessPackage> packages, Guid provider, Guid client, CancellationToken cancellationToken)
+        private async Task<Result<List<RoleAccessPackagesPrimitive>>> ValidateClientForAgentSystemUser(List<AccessPackage> packages, Guid provider, Guid client, CancellationToken cancellationToken)
         {
             List<RoleAccessPackagesPrimitive> clientAccessPrimitive = [];
             List<RoleAccessPackages> clientAccess = [];
 
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
-            Result<List<Core.Models.Rights.ConnectionsDtos.ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
+            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
             if (clients.IsProblem)
             {
-                throw new Exception($"Failed to get clients for provider {provider} with packages {string.Join(", ", packageUrns)}. Error: {clients.Problem?.Detail}");
+                return clients.Problem;
             }
 
             foreach (var agentClient in clients.Value)
             {
                 if (agentClient.Client.Id == client)
-                {                    
-                    clientAccessPrimitive = ConvertAccessToPrimitive(agentClient.Access);
+                {
+                    var allPrimitives = ConvertAccessToPrimitive(agentClient.Access);
+
+                    // Filter to only include role-package mappings where the packages overlap with the requested packages
+                    foreach (var primitive in allPrimitives)
+                    {
+                        var matchingPackages = primitive.Packages.Where(p => packageUrns.Contains(p)).ToList();
+                        if (matchingPackages.Count > 0)
+                        {
+                            clientAccessPrimitive.Add(new RoleAccessPackagesPrimitive
+                            {
+                                Role = primitive.Role,
+                                Packages = matchingPackages
+                            });
+                        }
+                    }
+
                     break;
                 }
             }
