@@ -942,8 +942,7 @@ namespace Altinn.Platform.Authentication.Services
         private async Task<Result<List<RoleAccessPackagesPrimitive>>> ValidateClientForAgentSystemUser(List<AccessPackage> packages, Guid provider, Guid client, CancellationToken cancellationToken)
         {
             List<RoleAccessPackagesPrimitive> clientAccessPrimitive = [];
-            List<RoleAccessPackages> clientAccess = [];
-
+            bool[] outerValidationSet = new bool[packages.Count];
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
             Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
@@ -956,24 +955,39 @@ namespace Altinn.Platform.Authentication.Services
             {
                 if (agentClient.Client.Id == client)
                 {
-                    var allPrimitives = ConvertAccessToPrimitive(agentClient.Access);
-
-                    // Filter to only include role-package mappings where the packages overlap with the requested packages
-                    foreach (var primitive in allPrimitives)
+                    foreach (var access in agentClient.Access)
                     {
-                        var matchingPackages = primitive.Packages.Where(p => packageUrns.Contains(p)).ToList();
-                        if (matchingPackages.Count > 0)
+                        List<string> clientAccessPackages = [];
+                        foreach (var package in access.Packages)
                         {
-                            clientAccessPrimitive.Add(new RoleAccessPackagesPrimitive
+                            if (packageUrns.Contains(package.Urn))
                             {
-                                Role = primitive.Role,
-                                Packages = matchingPackages
-                            });
+                                clientAccessPackages.Add(package.Urn);
+                                outerValidationSet[packages.FindIndex(p => p.Urn == package.Urn)] = true;
+                            }
+                        }
+
+                        if (clientAccessPackages.Count > 0)
+                        {
+                            var roleAccess = new RoleAccessPackagesPrimitive()
+                            {
+                                Role = access.Role.Urn,
+                                Packages = clientAccessPackages
+                            };
+                            clientAccessPrimitive.Add(roleAccess);
                         }
                     }
 
-                    break;
+                    if (outerValidationSet.All(v => v))
+                    {
+                        break;
+                    }
                 }
+            }
+
+            if (!outerValidationSet.All(v => v))
+            {
+                return Problem.AccessPackage_NotFound;
             }
 
             return clientAccessPrimitive;
