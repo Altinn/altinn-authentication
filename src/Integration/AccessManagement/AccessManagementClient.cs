@@ -648,18 +648,16 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, DelegationBatchInputDto batch, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
         try
         {
-            string endpointUrl = $"enduser/clientdelegations/agents/accesspackages?party={provider}&from={client}&to={systemuser}";
-            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl, JsonContent.Create(batch));
+            string endpointUrl = $"enduser/clientdelegations/agents/clients?party={provider}&from={client}&to={systemuser}&cascade=true";
+            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
-            List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
-
-            if (response.IsSuccessStatusCode && found is not null)
+            if (response.IsSuccessStatusCode)
             {
                 return true;
             }

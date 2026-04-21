@@ -498,8 +498,13 @@ public class AccessManagementClientMock: IAccessManagementClient
         return true;
     }
 
-    public async Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, DelegationBatchInputDto batch, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, CancellationToken cancellationToken)
     {
+        if (client == Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d"))
+        {
+            return Problem.CustomerDelegation_FailedToRevoke;
+        }
+
         return true;
     }
 

@@ -71,7 +71,7 @@ public interface IAccessManagementClient
     /// <param name="cancellationToken"></param>
     /// </summary>
     /// <returns></returns>
-    Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, DelegationBatchInputDto batch, CancellationToken cancellationToken);
+    Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the list of all delegationIds 

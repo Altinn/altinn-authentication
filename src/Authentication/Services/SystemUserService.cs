@@ -1114,18 +1114,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string party, Guid systemuser, Guid client, Guid provider, CancellationToken cancellationToken = default)
         {
-            DelegationBatchInputDto batch = new()
-            {
-                Values = [] // The batch input only requires the Role-AP mapping for delegation, not for revocation, so we can send an empty list here.
-            };
-
-            Result<List<RoleAccessPackages>> accessResult = await _accessManagementClient.GetClientDelegationsForAgent(systemuser, provider, client, cancellationToken);
-            if (accessResult.IsSuccess)
-            {
-                batch.Values = ConvertAccessToPrimitive(accessResult.Value);
-            }
-
-            Result<bool> result = await _accessManagementClient.RevokeClientFromAgentSystemUser(provider, client, systemuser, batch, cancellationToken);
+            Result<bool> result = await _accessManagementClient.RevokeClientFromAgentSystemUser(provider, client, systemuser, cancellationToken);
             if (result.IsProblem)
             {
                 return result.Problem;
