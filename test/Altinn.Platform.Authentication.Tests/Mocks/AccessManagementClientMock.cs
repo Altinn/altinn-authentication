@@ -488,10 +488,9 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult<Result<List<DelegationDto>>>(delegations);
     }
 
-    Task<Result<List<Platform.Authentication.Core.Models.Rights.ConnectionsDtos.ClientDelegationDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
+    Task<Result<List<ClientDelegationDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
     {
-        List<Platform.Authentication.Core.Models.Rights.ConnectionsDtos.ClientDelegationDto> clients = [];
-        return Task.FromResult<Result<List<Platform.Authentication.Core.Models.Rights.ConnectionsDtos.ClientDelegationDto>>>(clients);
+        return Task.FromResult<Result<List<ClientDelegationDto>>>(GetMockClientDelegations());
     }
 
     public async Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuid, Guid systemuser, bool cascade = false, CancellationToken cancellationToken = default)
@@ -506,6 +505,226 @@ public class AccessManagementClientMock: IAccessManagementClient
 
     public async Task<Result<List<RoleAccessPackages>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, Guid client, CancellationToken cancellationToken = default)
     {
+        if (client == Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d"))
+        {
+            List<RoleAccessPackages> roleAccessPackages =
+            [
+                new()
+                {
+                    Role = new CompactRoleDto()
+                    {
+                        Id = Guid.NewGuid(),
+                        Urn = "skatt"
+                    },
+                    Packages =
+                    [
+                        new CompactPackageDto()
+                        {
+                            Id = Guid.NewGuid(),
+                            Urn = "urn:altinn:accesspackage:skatt-naering"
+                        }
+                    ]
+                },
+                new()
+                {
+                    Role = new CompactRoleDto()
+                    {
+                        Id = Guid.NewGuid(),
+                        Urn = "skatt"
+                    },
+                    Packages =
+                    [
+                        new CompactPackageDto()
+                        {
+                            Id = Guid.NewGuid(),
+                            Urn = "urn:altinn:accesspackage:forretningsforer-eiendom"
+                        }
+                    ]
+                }
+            ];
+            return roleAccessPackages;
+        }
+
         return new List<RoleAccessPackages>(); 
+    }
+
+    private static List<ClientDelegationDto> GetMockClientDelegations()
+    {
+        return
+        [
+            new() 
+            {
+                Client = new CompactEntityDto
+                {
+                    Id = Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d"),
+                    Name = "SPRUDLENDE KRY TIGER AS",
+                    Type = "Organisasjon",
+                    Variant = "AS",
+                    PartyId = 51423145,
+                    OrganizationIdentifier = "312403072",
+                    IsDeleted = false
+                },
+                Access =
+                [
+                    new() 
+                    {
+                        Role = new CompactRoleDto
+                        {
+                            Id = Guid.Parse("46e27685-b3ba-423e-8b42-faab54de5817"),
+                            Code = "regnskapsforer",
+                            Urn = "urn:altinn:external-role:ccr:regnskapsforer",
+                            LegacyUrn = "urn:altinn:rolecode:regn"
+                        },
+                        Packages = [
+                        
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("a5f7f72a-9b89-445d-85bb-06f678a3d4d1"),
+                                Urn = "urn:altinn:accesspackage:skatt-naering",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            },
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("43becc6a-8c6c-4e9e-bb2f-08fe588ada21"),
+                                Urn = "urn:altinn:accesspackage:regnskapsforer-lonn",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            }
+                        ]
+                    },
+                    new()
+                    {
+                        Role = new CompactRoleDto
+                        {
+                            Id = Guid.Parse("46e27685-b3ba-423e-8b42-faab54de5817"),
+                            Code = "regnskapsforer",
+                            Urn = "urn:altinn:external-role:ccr:regnskapsforer",
+                            LegacyUrn = "urn:altinn:rolecode:regn"
+                        },
+                        Packages = [
+
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("a5f7f72a-9b89-445d-85bb-06f678a3d4d1"),
+                                Urn = "urn:altinn:accesspackage:skatt-naerfefing",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            },
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("43becc6a-8c6c-4e9e-bb2f-08fe588ada21"),
+                                Urn = "urn:altinn:accesspackage:regnskapsferorer-lonn",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            },
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("955d5779-3e2b-4098-b11d-0431dc41ddbe"),
+                                Urn = "urn:altinn:accesspackage:forretningsforer-eiendom",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            }
+                        ]
+                    }
+                ]
+            },
+            new ClientDelegationDto
+            {
+                Client = new CompactEntityDto
+                {
+                    Id = Guid.Parse("035aa3a6-014a-4e58-ad05-4a1c586496f0"),
+                    Name = "SKY OPPRIKTIG TIGER AS",
+                    Type = "Organisasjon",
+                    Variant = "AS",
+                    PartyId = 51466571,
+                    OrganizationIdentifier = "312858762",
+                    IsDeleted = false
+                },
+                Access =
+                [
+                    new()
+                    {
+                        Role = new CompactRoleDto
+                        {
+                            Id = Guid.Parse("46e27685-b3ba-423e-8b42-faab54de5817"),
+                            Code = "regnskapsforer",
+                            Urn = "urn:altinn:external-role:ccr:regnskapsforer",
+                            LegacyUrn = "urn:altinn:rolecode:regn"
+                        },
+                        Packages =
+                        [
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("43becc6a-8c6c-4e9e-bb2f-08fe588ada21"),
+                                Urn = "urn:altinn:accesspackage:regnskapsforer-lonn",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            },
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("955d5779-3e2b-4098-b11d-0431dc41ddbe"),
+                                Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            },
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("a5f7f72a-9b89-445d-85bb-06f678a3d4d1"),
+                                Urn = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            }
+                        ]
+                    }
+                ]                
+            },
+            new ClientDelegationDto
+            {
+                Client = new CompactEntityDto
+                {
+                    Id = Guid.Parse("06160751-53c0-4dcd-bbb9-0c54f5d230df"),
+                    Name = "VIKTIG MORSOM KROKODILLE",
+                    Type = "Organisasjon",
+                    Variant = "STI",
+                    PartyId = 51497959,
+                    OrganizationIdentifier = "313920879",
+                    IsDeleted = false
+                },
+                Access =
+                [
+                    new() 
+                    {
+                        Role = new CompactRoleDto
+                        {
+                            Id = Guid.Parse("46e27685-b3ba-423e-8b42-faab54de5817"),
+                            Code = "regnskapsforer",
+                            Urn = "urn:altinn:external-role:ccr:regnskapsforer",
+                            LegacyUrn = "urn:altinn:rolecode:regn"
+                        },
+                        Packages =
+                        [
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("a5f7f72a-9b89-445d-85bb-06f678a3d4d1"),
+                                Urn = "urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            },
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("955d5779-3e2b-4098-b11d-0431dc41ddbe"),
+                                Urn = "urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            },
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("43becc6a-8c6c-4e9e-bb2f-08fe588ada21"),
+                                Urn = "urn:altinn:accesspackage:regnskapsforer-lonn",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            },
+                            new CompactPackageDto
+                            {
+                                Id = Guid.Parse("43becc6a-8c6c-4e9e-bb2f-08fe588ada22"),
+                                Urn = "urn:altinn:accesspackage:forretningsforer-eiendom",
+                                AreaId = Guid.Parse("64cbcdc8-01c9-448c-b3d2-eb9582beb3c2")
+                            }
+
+                        ]
+                    }
+                ]
+            }
+        ];
     }
 }
