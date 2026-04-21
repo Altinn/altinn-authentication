@@ -488,7 +488,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult<Result<List<DelegationDto>>>(delegations);
     }
 
-    Task<Result<List<ClientDelegationDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
+    Task<Result<List<ClientDelegationDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, CancellationToken cancellationToken)
     {
         return Task.FromResult<Result<List<ClientDelegationDto>>>(GetMockClientDelegations());
     }

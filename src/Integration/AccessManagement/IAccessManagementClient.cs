@@ -115,9 +115,8 @@ public interface IAccessManagementClient
     /// Get clients for a facilitator
     /// </summary>
     /// <param name="provider">The partyUuid of the VIA organisastion</param>
-    /// <param name="packages">Access package URNs</param>
     /// <returns>List of clients FROM which the VIA provider can delegate packages TO an entity</returns>
-    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, List<string> packages, CancellationToken cancellationToken = default);
+    Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid provider, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets all packages that are delegated to the agent system user, via the provider from the client 
