@@ -1201,11 +1201,17 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
+        public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
+            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, cancellationToken);
             if (res.IsSuccess)
             {
+                if (packages is not null && packages.Count > 0)
+                {
+                    // If a list of packages to filter on is provided, filter the clients based on those packages before converting to DTOs
+                    var filtered = res.Value.Where(client => client.Access.Any(access => access.Packages.Any(p => packages.Contains(p.Urn)))).ToList();
+                }
+
                 return ConvertConnectionDTOToClient(res.Value);
             }
 

@@ -206,7 +206,7 @@ public interface ISystemUserService
     /// <param name="featureManager">FeatureManager</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of Clients</returns>
-    Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
+    Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delegate access packages to a system user.
