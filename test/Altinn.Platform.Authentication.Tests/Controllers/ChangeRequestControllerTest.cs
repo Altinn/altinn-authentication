@@ -107,7 +107,7 @@ public class ChangeRequestControllerTest(
         services.AddSingleton(guidService.Object);
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
         services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-        services.AddSingleton(_pdpMock.Object);
+        services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
         services.AddSingleton<ISystemUserService, SystemUserService>();
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();

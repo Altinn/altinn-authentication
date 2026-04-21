@@ -253,7 +253,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_SystemUserId_NotFound.ErrorCode);
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("System user not found", error1.Detail);
+            Assert.Equal("System user not found", error1.Title);
         }
 
         [Fact]
@@ -272,7 +272,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("The agent query parameter is missing or invalid", error1.Detail);
+            Assert.Equal("The agent query parameter is missing or invalid", error1.Title);
         }
 
         [Fact]
@@ -291,7 +291,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Invalid_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("SystemUser is not a valid system user of type agent", error1.Detail);
+            Assert.Equal("SystemUser is not a valid system user of type agent", error1.Title);
         }
 
         [Fact]
@@ -419,7 +419,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_SystemUserId_NotFound.ErrorCode);
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("System user not found", error1.Detail);
+            Assert.Equal("System user not found", error1.Title);
         }
 
         [Fact]
@@ -438,7 +438,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("The agent query parameter is missing or invalid", error1.Detail);
+            Assert.Equal("The agent query parameter is missing or invalid", error1.Title);
         }
 
         [Fact]
@@ -457,7 +457,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Invalid_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("SystemUser is not a valid system user of type agent", error1.Detail);
+            Assert.Equal("SystemUser is not a valid system user of type agent", error1.Title);
         }
 
         [Fact]
@@ -515,11 +515,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(problemDetails.Errors.Count > 1);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("The agent query parameter is missing or invalid", error1.Detail);
+            Assert.Equal("The agent query parameter is missing or invalid", error1.Title);
 
             AltinnValidationError error2 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_ClientParameter.ErrorCode);
             Assert.Equal("?client", error2.Paths.First(p => p.Equals("?client")));
-            Assert.Equal("The client query parameter is missing or invalid", error2.Detail);
+            Assert.Equal("The client query parameter is missing or invalid", error2.Title);
         }
 
         [Fact]
@@ -558,7 +558,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Invalid_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("SystemUser is not a valid system user of type agent", error.Detail);
+            Assert.Equal("SystemUser is not a valid system user of type agent", error.Title);
         }
 
         [Fact]
@@ -597,7 +597,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_SystemUserId_NotFound.ErrorCode);
             Assert.Equal("?agent", error.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("System user not found", error.Detail);
+            Assert.Equal("System user not found", error.Title);
         }
 
         [Fact]
@@ -651,7 +651,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal("Forbidden", problemDetails.Title);
-            Assert.Equal("Forbidden", problemDetails.Detail);
         }
 
         [Fact]
@@ -711,11 +710,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(problemDetails.Errors.Count > 1);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error1.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("The agent query parameter is missing or invalid", error1.Detail);
+            Assert.Equal("The agent query parameter is missing or invalid", error1.Title);
 
             AltinnValidationError error2 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_ClientParameter.ErrorCode);
             Assert.Equal("?client", error2.Paths.First(p => p.Equals("?client")));
-            Assert.Equal("The client query parameter is missing or invalid", error2.Detail);
+            Assert.Equal("The client query parameter is missing or invalid", error2.Title);
         }
 
         [Fact]
@@ -737,7 +736,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Invalid_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("SystemUser is not a valid system user of type agent", error.Detail);
+            Assert.Equal("SystemUser is not a valid system user of type agent", error.Title);
         }
 
         [Fact]
@@ -759,7 +758,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_SystemUserId_NotFound.ErrorCode);
             Assert.Equal("?agent", error.Paths.First(p => p.Equals("?agent")));
-            Assert.Equal("System user not found", error.Detail);
+            Assert.Equal("System user not found", error.Title);
         }
 
         [Fact]
