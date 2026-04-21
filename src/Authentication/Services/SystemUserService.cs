@@ -945,7 +945,7 @@ namespace Altinn.Platform.Authentication.Services
             bool[] outerValidationSet = new bool[packages.Count];
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
-            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
+            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, cancellationToken);
             if (clients.IsProblem)
             {
                 return clients.Problem;

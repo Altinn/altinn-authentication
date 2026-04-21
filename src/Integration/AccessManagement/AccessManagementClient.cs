@@ -884,7 +884,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -901,15 +901,8 @@ public class AccessManagementClient : IAccessManagementClient
             if (response.IsSuccessStatusCode)
             {
                 var res = await response.Content.ReadFromJsonAsync<PaginatedResult<List<ClientDelegationDto>>>(_serializerOptions, cancellationToken);
-                var all = res?.Data ?? [];
-                // If no packages are required in the systemuser, we return all clients. Perhaps future implementations will allow unfiltered systemusers.
-                // If the set of clients is empty, we return the empty set, regardless of the packages required in the systemuser.
-                if (all.Count == 0 || packages == null || packages.Count == 0)
-                {
-                    return all;
-                }
-
-                return FilterClientsWithAllRequiredPackages( all, packages);
+                var all = res?.Data ?? [];               
+                return all;
             }
             else
             {
@@ -940,37 +933,6 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
 
         }
-    }
-
-    private static Result<List<ClientDelegationDto>> FilterClientsWithAllRequiredPackages(List<ClientDelegationDto> agentClientDtos, List<string> packages)
-    {
-        List<ClientDelegationDto> filteredClients = [];
-        foreach (var client in agentClientDtos)
-        {
-            if (client.Access != null)
-            {
-                HashSet<string> clientPackageUrns = new(StringComparer.OrdinalIgnoreCase);
-                foreach (var access in client.Access)
-                {
-                    if (access.Packages != null)
-                    {
-                        foreach (var p in access.Packages)
-                        {
-                            // the response uses urn, whilst the list is the name element only
-                            string pname = p.Urn?.Split(":")[3]!;
-                            clientPackageUrns.Add(pname);
-                        }
-                    }
-                }
-
-                if (packages.All(clientPackageUrns.Contains))
-                {
-                    filteredClients.Add(client);
-                }
-            }
-        }
-
-        return filteredClients;
     }
 
     /// <inheritdoc />
