@@ -508,28 +508,43 @@ public class AccessManagementClientMock: IAccessManagementClient
         return true;
     }
 
-    public async Task<Result<List<RoleAccessPackages>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, Guid client, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDelegationDto>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, CancellationToken cancellationToken = default)
     {
-        if (client == Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d"))
+        // Simulate Unauthorized
+        if (provider == Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"))
         {
-            List<RoleAccessPackages> roleAccessPackages =
+            return Problem.AgentSystemUser_FailedToGetClients_Unauthorized;
+        }
+
+        // Simulate Forbidden
+        if (provider == Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"))
+        {
+            return Problem.AgentSystemUser_FailedToGetClients_Forbidden;
+        }
+
+        // Simulate generic failure
+        if (provider == Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"))
+        {
+            ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients);
+            return new Result<List<ClientDelegationDto>>(problemInstance);
+        }
+
+        // Simulate empty result
+        if (systemUserId == Guid.Parse("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"))
+        {
+            return new List<ClientDelegationDto>();
+        }
+
+        List<ClientDelegationDto> clientDelegations =
+        [
+            new()
+        {
+            Client = new CompactEntityDto()
+            {
+                Id = Guid.NewGuid(),
+            },
+            Access =
             [
-                new()
-                {
-                    Role = new CompactRoleDto()
-                    {
-                        Id = Guid.NewGuid(),
-                        Urn = "skatt"
-                    },
-                    Packages =
-                    [
-                        new CompactPackageDto()
-                        {
-                            Id = Guid.NewGuid(),
-                            Urn = "urn:altinn:accesspackage:skatt-naering"
-                        }
-                    ]
-                },
                 new()
                 {
                     Role = new CompactRoleDto()
@@ -546,11 +561,11 @@ public class AccessManagementClientMock: IAccessManagementClient
                         }
                     ]
                 }
-            ];
-            return roleAccessPackages;
+            ]
         }
+        ];
 
-        return new List<RoleAccessPackages>(); 
+        return clientDelegations;
     }
 
     private static List<ClientDelegationDto> GetMockClientDelegations()

@@ -1081,7 +1081,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
+        public async Task<Result<List<DelegationResponse>>> OldGetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
         {
             Party party = await _partiesClient.GetPartyAsync(partyId);
 
@@ -1094,6 +1094,33 @@ namespace Altinn.Platform.Authentication.Services
             if (res.IsSuccess)
             {
                 return ConvertExtDelegationToDTO(res.Value);
+            }
+
+            return res.Problem ?? Problem.UnableToDoDelegationCheck;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
+        {
+            Party party = await _partiesClient.GetPartyAsync(partyId);
+            List<DelegationResponse> found = [];
+
+            if (party.PartyUuid != facilitator)
+            {
+                return Problem.AgentSystemUser_DelegationNotFound;
+            }
+
+            var res = await _accessManagementClient.GetClientDelegationsForAgent(systemUserId, facilitator);
+            if (res.IsSuccess)
+            {
+                found = ConvertClientDelegationDtoToResponse(res.Value, systemUserId);
+
+                if (client.HasValue)
+                {
+                    found = [.. found.Where(d => d.CustomerId == client.Value)];
+                }
+
+                return found;
             }
 
             return res.Problem ?? Problem.UnableToDoDelegationCheck;
@@ -1311,7 +1338,7 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
-        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<Core.Models.SystemUsers.ClientDto> value)
+        private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<ClientDto> value)
         {
             List<Customer> result = [];
             foreach (var item in value)
@@ -1329,7 +1356,7 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
-        private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<Core.Models.Rights.ConnectionsDtos.ClientDelegationDto> value)
+        private static Result<List<ExternalClientDto>> ConvertConnectionDTOToClient(List<ClientDelegationDto> value)
         {
             List<ExternalClientDto> result = [];
             foreach (var item in value)
@@ -1340,6 +1367,25 @@ namespace Altinn.Platform.Authentication.Services
                     OrganizationIdentifier = item.Client.OrganizationIdentifier ?? string.Empty,
                     PartyUuid = item.Client.Id,
                     Access = ConvertAccessToPrimitive(item.Access)
+                };
+                result.Add(newCustomer);
+            }
+
+            return result;
+        }
+
+        private static List<DelegationResponse> ConvertClientDelegationDtoToResponse(List<ClientDelegationDto> value, Guid systemUserId)
+        {
+            List<DelegationResponse> result = [];
+            foreach (var item in value)
+            {
+                var newCustomer = new DelegationResponse()
+                {
+                    CustomerName = item.Client.Name ?? string.Empty,
+                    CustomerId = item.Client.Id,
+                    DelegationId = item.Client.Id,
+                    AgentSystemUserId = systemUserId,
+                    CustomerOrganizationNumber = item.Client.OrganizationIdentifier ?? string.Empty
                 };
                 result.Add(newCustomer);
             }

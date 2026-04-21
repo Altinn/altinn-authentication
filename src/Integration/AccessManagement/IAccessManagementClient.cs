@@ -126,7 +126,7 @@ public interface IAccessManagementClient
     /// <param name="client">partyUuid FROM</param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<Result<List<RoleAccessPackages>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, Guid client, CancellationToken cancellationToken = default);
+    Task<Result<List<ClientDelegationDto>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Verifies if the user has the necessary rights to delegate the requested access packages
