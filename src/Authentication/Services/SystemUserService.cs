@@ -925,7 +925,7 @@ namespace Altinn.Platform.Authentication.Services
                 {
                     var newDel = new DelegationResponse()
                     {
-                        DelegationId = Guid.Empty, // to be deprecated, but we init it now to not break deserialization in the front end
+                        DelegationId = item.FromId,
                         CustomerId = item.FromId,
                         AgentSystemUserId = new Guid(systemUser.Id!)
                     };
