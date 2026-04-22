@@ -106,7 +106,7 @@ namespace Altinn.Platform.Authentication.Services
             // 7) Rotate refresh token (every use)
             string newRefreshToken = CryptoHelpers.RandomBase64Url(48);
             byte[] newLookupKey = RefreshTokenCrypto.ComputeLookupKey(newRefreshToken, serverPepper);
-            var (newHash, newSalt, newIters) = RefreshTokenCrypto.HashForStorage(newRefreshToken, iterations: row.Iterations);
+            var (newHash, newSalt, newIters) = RefreshTokenCrypto.HashForStorage(newRefreshToken, serverPepper);
 
             var newRow = new RefreshTokenRow
             {
@@ -215,7 +215,7 @@ namespace Altinn.Platform.Authentication.Services
                 return (Value: TokenResult.InvalidGrant("Invalid refresh_token"), null, null, null, null);
             }
 
-            if (!RefreshTokenCrypto.Verify(request.RefreshToken, row.Salt, row.Iterations, row.Hash))
+            if (!RefreshTokenCrypto.Verify(request.RefreshToken, serverPepper, row.Hash, row.Salt, row.Iterations))
             {
                 return (Value: TokenResult.InvalidGrant("Invalid refresh_token"), null, null, null, null);
             }
@@ -371,9 +371,34 @@ namespace Altinn.Platform.Authentication.Services
                         return (null, TokenResult.InvalidClient("Client not allowed to use client_secret"));
                     }
 
-                    if (!ClientSecrets.Verify(client.ClientSecretHash, auth.ClientSecret!))
+                    byte[] clientSecretPepper;
+                    try
+                    {
+                        clientSecretPepper = Convert.FromBase64String(_generalSettings.OidcRefreshTokenPepper);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Client secret pepper is not configured or invalid.");
+                        return (null, TokenResult.InvalidClient("Server configuration error"));
+                    }
+
+                    if (!ClientSecrets.Verify(client.ClientSecretHash, auth.ClientSecret!, clientSecretPepper))
                     {
                         return (null, TokenResult.InvalidClient("Invalid client secret"));
+                    }
+
+                    if (Pbkdf2SecretVerifier.IsLegacy(client.ClientSecretHash))
+                    {
+                        try
+                        {
+                            string rehashed = ClientSecretHasher.HashHmac(auth.ClientSecret!, clientSecretPepper);
+                            await clientRepo.UpdateClientSecretHashAsync(client.ClientId, rehashed, ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Auth already succeeded — rehash failure must not fail the request.
+                            _logger.LogWarning(ex, "Opportunistic client secret rehash failed for client_id={ClientId}", client.ClientId);
+                        }
                     }
 
                     break;
@@ -436,10 +461,8 @@ namespace Altinn.Platform.Authentication.Services
             // Generate opaque token
             string refreshToken = CryptoHelpers.RandomBase64Url(48);
 
-            // Fast lookup key + slow hash for storage
             byte[] lookupKey = RefreshTokenCrypto.ComputeLookupKey(refreshToken, serverPepper);
-            var (hash, salt, iters) = RefreshTokenCrypto.HashForStorage(
-                refreshToken, iterations: 600_000);
+            var (hash, salt, iters) = RefreshTokenCrypto.HashForStorage(refreshToken, serverPepper);
 
             DateTimeOffset sliding = now.AddMinutes(_generalSettings.JwtValidityMinutes);
             DateTimeOffset absolute = now.AddMinutes(_generalSettings.MaxSessionTimeInMinutes);
