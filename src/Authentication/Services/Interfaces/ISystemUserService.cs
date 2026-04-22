@@ -155,6 +155,17 @@ public interface ISystemUserService
     /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
     /// <param name="client">The Guid for the client</param>
     /// <returns>List of Client Delegations</returns>
+    Task<Result<List<DelegationResponse>>> OldGetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId, Guid? client = null);
+
+    /// <summary>
+    /// Returns a list of the Delegations (of clients) to an Agent SystemUser,
+    /// retrieved in turn from the AccessManagement db.
+    /// </summary>
+    /// <param name="party">int party</param>
+    /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
+    /// <param name="systemUserId">The Guid for the Agent SystemUser</param>
+    /// <param name="client">The Guid for the client</param>
+    /// <returns>List of Client Delegations</returns>
     Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId, Guid? client = null);
 
     /// <summary>

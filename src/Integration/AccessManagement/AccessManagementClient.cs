@@ -648,18 +648,16 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, DelegationBatchInputDto batch, CancellationToken cancellationToken)
+    public async Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, CancellationToken cancellationToken)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
 
         try
         {
-            string endpointUrl = $"enduser/clientdelegations/agents/accesspackages?party={provider}&from={client}&to={systemuser}";
-            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl, JsonContent.Create(batch));
+            string endpointUrl = $"enduser/clientdelegations/agents/clients?party={provider}&from={client}&to={systemuser}&cascade=true";
+            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
-            List<DelegationDto> found = await response.Content.ReadFromJsonAsync<List<DelegationDto>>(_serializerOptions, cancellationToken) ?? [];
-
-            if (response.IsSuccessStatusCode && found is not null)
+            if (response.IsSuccessStatusCode)
             {
                 return true;
             }
@@ -936,30 +934,18 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<RoleAccessPackages>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, Guid client, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDelegationDto>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
-        string endpointUrl = $"enduser/clientdelegations/clients?party={provider}&from={client}";
+        string endpointUrl = $"enduser/clientdelegations/agents/accesspackages?party={provider}&to={systemUserId}";
 
         try
         {
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
-                var res = await response.Content.ReadFromJsonAsync<PaginatedResult<List<AgentDelegationDto>>>(_serializerOptions, cancellationToken);
-                var all = res?.Data ?? [];
-                var forAgent = all.Where(a => a.Agent.Id == systemUserId).ToList();
-                
-                List<RoleAccessPackages> result = [];
-
-                foreach (var delegation in forAgent)
-                {
-                    if (delegation.Access != null)
-                    {
-                        result.AddRange(delegation.Access);
-                    }
-                }
-                return result;
+                var res = await response.Content.ReadFromJsonAsync<PaginatedResult<List<ClientDelegationDto>>>(_serializerOptions, cancellationToken);
+                return res?.Data ?? [];                                
             }
             else
             {
@@ -975,12 +961,12 @@ public class AccessManagementClient : IAccessManagementClient
                 {
                     var problemDetails = response.Content.ReadFromJsonAsync<ProblemDetails>(_serializerOptions, cancellationToken).Result;
                     _logger.LogError($"Authentication // AccessManagementClient // GetClientDelegationsForAgent // Title: {problemDetails?.Title ?? ""}, Problem: {problemDetails?.Detail ?? "na"}");
-                    var problemExtensionData = ProblemExtensionData.Create(new[]
-                    {
+                    var problemExtensionData = ProblemExtensionData.Create(
+                    [
                         new KeyValuePair<string, string>("Problem Detail : ", problemDetails?.Detail ?? "")
-                    });
+                    ]);
                     ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
-                    return new Result<List<RoleAccessPackages>>(problemInstance);
+                    return new Result<List<ClientDelegationDto>>(problemInstance);
                 }
             }
         }
