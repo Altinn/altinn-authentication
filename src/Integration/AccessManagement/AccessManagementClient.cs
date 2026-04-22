@@ -806,7 +806,7 @@ public class AccessManagementClient : IAccessManagementClient
             resourceList.Add( new AttributeMatchExternal
             {
                 Id = "urn:altinn:resource",
-                Value = r.Resource.Name
+                Value = r.Resource.RefId
             });                        
 
             RightDelegation delegation = new()
