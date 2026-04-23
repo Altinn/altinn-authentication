@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Altinn.AccessManagement.Core.Constants;
@@ -493,6 +494,16 @@ namespace Altinn.AccessManagement.Tests.Mocks
             string content = File.ReadAllText(Path.Combine(GetInstancePath(), $"{partyPart}/{instancePart}.json"));
             Instance instance = (Instance)JsonConvert.DeserializeObject(content, typeof(Instance));
             return instance;
+        }
+
+        public Task<XacmlJsonResponse> GetDecisionForRequest(XacmlJsonRequestRoot xacmlJsonRequest, CancellationToken cancellationToken)
+        {
+            return GetDecisionForRequest(xacmlJsonRequest);
+        }
+
+        public Task<bool> GetDecisionForUnvalidateRequest(XacmlJsonRequestRoot xacmlJsonRequest, ClaimsPrincipal user, CancellationToken cancellationToken)
+        {
+            return GetDecisionForUnvalidateRequest(xacmlJsonRequest, user);
         }
     }
 

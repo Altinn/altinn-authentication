@@ -14,6 +14,7 @@ using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authentication.Core.Problems;
 using Altinn.Authentication.Tests.Mocks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Common.PEP.Interfaces;
 using Altinn.Platform.Authentication.Clients.Interfaces;
@@ -661,7 +662,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response2.StatusCode);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await response2.Content.ReadAsStringAsync(), _options);
-            Assert.Equal(Problem.SystemUser_FailedToRemoveRightHolder.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.SystemUser_FailedToRemoveRightHolder.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -707,7 +708,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await createSystemUserResponse.Content.ReadAsStringAsync(), _options);
             
             Assert.Equal(HttpStatusCode.Forbidden, createSystemUserResponse.StatusCode);
-            Assert.Equal(Problem.UnableToDoDelegationCheck.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.UnableToDoDelegationCheck.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -1111,7 +1112,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage createSystemUserResponse = await client.SendAsync(createSystemUserRequest, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, createSystemUserResponse.StatusCode);  
             var problemDetails = await createSystemUserResponse.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.Reportee_Orgno_NotFound.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.Reportee_Orgno_NotFound.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -1719,7 +1720,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.CustomerDelegation_FailedToRevoke.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.CustomerDelegation_FailedToRevoke.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -1735,7 +1736,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_DelegationNotFound.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AgentSystemUser_DelegationNotFound.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -1751,7 +1752,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_DeleteDelegation_PartyMismatch.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AgentSystemUser_DeleteDelegation_PartyMismatch.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -1767,7 +1768,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_InvalidDelegationFacilitator.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AgentSystemUser_InvalidDelegationFacilitator.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -1905,7 +1906,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_FailedToDeleteAgent.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AgentSystemUser_FailedToDeleteAgent.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -2043,7 +2044,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.BadRequest, response3.StatusCode);
             var problemDetails = await response3.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_TooManyAssignments.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AgentSystemUser_TooManyAssignments.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -2462,7 +2463,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(HttpStatusCode.InternalServerError, clientListResponse.StatusCode);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await clientListResponse.Content.ReadAsStringAsync(), _options);
-            Assert.Equal(Problem.SystemUser_FailedToGetDelegatedRights.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.SystemUser_FailedToGetDelegatedRights.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         [Fact]
@@ -2501,7 +2502,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(HttpStatusCode.InternalServerError, clientListResponse.StatusCode);
             var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(await clientListResponse.Content.ReadAsStringAsync(), _options);
-            Assert.Equal(Problem.AccessPackage_FailedToGetDelegatedPackages.Detail, problemDetails?.Detail);
+            Assert.Equal(Problem.AccessPackage_FailedToGetDelegatedPackages.ToProblemDetails().Title, problemDetails?.Title);
         }
 
         private async Task CreateSeveralSystemUsers(HttpClient client, int paginationSize, string systemId)

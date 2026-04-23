@@ -47,7 +47,7 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
-            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+            ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
             if (systemUserErrors.TryToActionResult(out ActionResult errorResult))
             {
@@ -107,7 +107,7 @@ namespace Altinn.Platform.Authentication.Controllers
         {
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
-            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+            ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
             if (systemUserErrors.TryToActionResult(out ActionResult errorResult))
             {
@@ -166,9 +166,9 @@ namespace Altinn.Platform.Authentication.Controllers
         public async Task<ActionResult<ClientDelegationResponse>> DelegateClientToSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
-            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
-            ValidationErrorBuilder clientErrors = ValidateClient(client);
-            ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
+            ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+            ValidationProblemBuilder clientErrors = ValidateClient(client);
+            ValidationProblemBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
             if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
@@ -255,9 +255,9 @@ namespace Altinn.Platform.Authentication.Controllers
             Guid delegationId = Guid.Empty;
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
-            ValidationErrorBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
-            ValidationErrorBuilder clientErrors = ValidateClient(client);
-            ValidationErrorBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
+            ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
+            ValidationProblemBuilder clientErrors = ValidateClient(client);
+            ValidationProblemBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
             if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
@@ -430,9 +430,9 @@ namespace Altinn.Platform.Authentication.Controllers
             return ClientInfoPaginated.Create(clients, null, systemUserInfo);
         }
 
-        private static ValidationErrorBuilder ValidateSystemUser(SystemUserInternalDTO systemUser, Guid systemUserId)
+        private static ValidationProblemBuilder ValidateSystemUser(SystemUserInternalDTO systemUser, Guid systemUserId)
         {
-            ValidationErrorBuilder errors = default;
+            ValidationProblemBuilder errors = default;
 
             if (systemUserId == Guid.Empty)
             {
@@ -461,9 +461,9 @@ namespace Altinn.Platform.Authentication.Controllers
             return errors;
         }
 
-        private static ValidationErrorBuilder ValidateClient(Guid client)
+        private static ValidationProblemBuilder ValidateClient(Guid client)
         {
-            ValidationErrorBuilder errors = default;
+            ValidationProblemBuilder errors = default;
             if (client == Guid.Empty)
             {
                 errors.Add(ValidationErrors.SystemUser_Missing_ClientParameter, [
@@ -474,9 +474,9 @@ namespace Altinn.Platform.Authentication.Controllers
             return errors;
         }
 
-        private static ValidationErrorBuilder MergeValidationErrors(params ValidationErrorBuilder[] errorBuilders)
+        private static ValidationProblemBuilder MergeValidationErrors(params ValidationProblemBuilder[] errorBuilders)
         {
-            ValidationErrorBuilder mergedErrors = default;
+            ValidationProblemBuilder mergedErrors = default;
             foreach (var errorBuilder in errorBuilders)
             {
                 foreach (var error in errorBuilder)
