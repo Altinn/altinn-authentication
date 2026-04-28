@@ -40,3 +40,4 @@ msbuild.wrn
 TestResults
 /test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Environment/environment.json
 /test/Altinn.Platform.Authentication.SystemIntegrationTests/Resources/Jwks/jwks.json
+/.claude/settings.local.json
