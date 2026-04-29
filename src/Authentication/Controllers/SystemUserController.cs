@@ -399,7 +399,7 @@ public class SystemUserController : ControllerBase
     /// The endpoint is idempotent.
     /// </summary>
     /// <returns>OK</returns>    
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_WRITE)]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -443,7 +443,7 @@ public class SystemUserController : ControllerBase
     /// <param name="cancellationToken"></param>
     /// </summary>
     /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_ACCESS_MANAGEMENT_WRITE)]
+    [Authorize(Policy = AuthzConstants.POLICY_SYSTEMUSER_OVERVIEW_WRITE)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpDelete("agent/{party}/{systemuser}/client")]
