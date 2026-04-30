@@ -201,13 +201,6 @@ namespace Altinn.Platform.Authentication.Services
             bool isAccessPackagesDeleted = false;
             if (rights.Count > 0)
             {
-                foreach (Right right in rights)
-                {
-                    List<AttributePair> resource = DelegationHelper.ConvertAppResourceToOldResourceFormat(right.Resource);
-
-                    right.Resource = resource;
-                }
-
                 var revokeRightResult = await _accessManagementClient.RevokeDelegatedRightToSystemUser(partyUuid, systemUser, rights);
                 if (revokeRightResult.IsProblem)
                 {
