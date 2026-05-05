@@ -4,7 +4,6 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -79,6 +78,54 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return createdProfile;
+        }
+
+        /// <summary>
+        /// Validates a users credentials by sending them to the SBL Bridge Profile API, and returns the user profile if the credentials are valid.
+        /// </summary>
+        public async Task<UserCredentialVerificationResult> ValidateCredentialsAsync(string username, string password)
+        {
+            UserProfile identifedProfile = null;
+
+            SiUserCredentialsCredentials credentials = new SiUserCredentialsCredentials()
+            {
+                UserName = username,
+                Password = password
+            };
+
+            Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/create/");
+            StringContent requestBody = new StringContent(JsonSerializer.Serialize(credentials), Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                identifedProfile = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                return new UserCredentialVerificationResult()
+                {
+                    IsLocked = true
+                };
+            }
+            else
+            {
+                _logger.LogError("Validating user credentials failed for username {Username} with statuscode {StatusCode}", username, response.StatusCode);
+                return new UserCredentialVerificationResult() { IsLocked = false };
+            }
+
+            if (identifedProfile != null && identifedProfile.UserType != Core.Models.Profile.Enums.UserType.SelfIdentified)
+            {
+                return new UserCredentialVerificationResult()
+                {
+                    WrongUserType = true
+                };
+            }
+
+            UserCredentialVerificationResult result = new UserCredentialVerificationResult();
+            result.UserProfile = identifedProfile; 
+
+            return result;
         }
     }
 }
