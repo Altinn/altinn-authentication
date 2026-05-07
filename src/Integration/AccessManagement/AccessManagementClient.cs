@@ -235,25 +235,6 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            string endpointUrl = $"enduser/clientdelegations/agents?party={partyUuId}&to={systemUserId}";
-
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
-            return await HandleResponse(response, "AddSystemUserAsAgent");
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
-            throw;
-        }
-    }
-
-    /// <inheritdoc />
     public async Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuId, Guid systemUserId, bool cascade = false, CancellationToken cancellationToken = default)
     {
         try
@@ -262,34 +243,15 @@ public class AccessManagementClient : IAccessManagementClient
 
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl, null);
-            return await HandleResponse(response, "AddSystemUserAsAgent");
+            return await HandleResponse(response, "RevokeSystemUserAsAgent");
 
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
+            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeSystemUserAsAgent // Exception");
             throw;
         }
         ;
-    }
-
-    /// <inheritdoc />
-    public async Task<Result<bool>> AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            string endpointUrl = $"enduser/connections?party={partyUuId}&to={systemUserId}";
-
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null);
-            return await HandleResponse(response, "AddSystemUserAsRightHolder");
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // AddSystemUserAsRightHolder // Exception");
-            throw;
-        }
     }
 
     /// <inheritdoc />
