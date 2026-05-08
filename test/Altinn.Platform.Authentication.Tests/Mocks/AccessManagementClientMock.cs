@@ -352,11 +352,6 @@ public class AccessManagementClientMock: IAccessManagementClient
         return true;
     }
 
-    public async Task<Result<bool>> AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
-    {
-        return true;
-    }
-
     public async Task<Result<bool>> DelegateSingleAccessPackageToSystemUser(Guid partyUuId, Guid systemUserId, string urn, CancellationToken cancellationToken)
     {
         return true;
@@ -466,11 +461,6 @@ public class AccessManagementClientMock: IAccessManagementClient
                 }
             ]        
         };
-    }
-
-    public async Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuid, Guid guid, CancellationToken cancellationToken)
-    {
-        return true;
     }
 
     public Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUserId, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken)
