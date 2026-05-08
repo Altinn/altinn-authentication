@@ -243,7 +243,7 @@ public class AccessManagementClient : IAccessManagementClient
 
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl, null);
-            return await HandleResponse(response, "RevokeSystemUserAsAgent");
+            return await HandleResponse(response, "AddSystemUserAsAgent");
 
         }
         catch (Exception ex)
