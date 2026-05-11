@@ -92,6 +92,18 @@ public class PartiesClientMock : IPartiesClient
             party = null;
         }
 
+        // Bug repro fixture for SystemUserClientDelegationControllerTest. The orgno follows
+        // the 91049335x test series used elsewhere in this mock; the specific value carries
+        // no meaning. The PartyId is intentionally absent from parties.json so that
+        // GetPartyAsync(int) returns null while GetPartyByOrgNo succeeds, mirroring the TT02
+        // failure mode where parties/lookup accepts an enterprise token but parties/{partyId}
+        // does not.
+        if (!string.IsNullOrEmpty(orgNo) && orgNo == "910493357")
+        {
+            party.PartyId = 500999;
+            party.PartyUuid = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        }
+
         return Task.FromResult<Party>(party);
     }
     
