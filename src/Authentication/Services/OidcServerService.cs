@@ -11,12 +11,14 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Models.Profile;
+using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
@@ -47,6 +49,7 @@ namespace Altinn.Platform.Authentication.Services
         IOidcProvider oidcProvider,
         IUpstreamTokenValidator upstreamTokenValidator,
         IUserProfileService userProfileService,
+        IRegisterUserProvisioningClient registerUserProvisioningClient,
         IProfile profile,
         IOidcSessionRepository oidcSessionRepository,
         IAuthorizationCodeRepository authorizationCodeRepository,
@@ -70,6 +73,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IOidcProvider _oidcProvider = oidcProvider;
         private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
         private readonly IUserProfileService _userProfileService = userProfileService;
+        private readonly IRegisterUserProvisioningClient _registerUserProvisioningClient = registerUserProvisioningClient;
         private readonly IProfile _profileService = profile;
         private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
         private readonly IAuthorizationCodeRepository _authorizationCodeRepo = authorizationCodeRepository;
@@ -1489,6 +1493,31 @@ namespace Altinn.Platform.Authentication.Services
             else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
             {
                 string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
+                string userName = CreateUserName(userAuthenticationModel, provider);
+                SelfIdentifiedUserType selfIdentifiedUserType = provider?.SelfIdentifiedUserType ?? SelfIdentifiedUserType.Legacy;
+
+                if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
+                {
+                    var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                        selfIdentifiedUserType,
+                        issExternalIdentity,
+                        userName,
+                        CancellationToken.None);
+
+                    if (provisioned is null)
+                    {
+                        return userAuthenticationModel;
+                    }
+
+                    userAuthenticationModel.UserID = (int)provisioned.UserId;
+                    userAuthenticationModel.PartyID = (int)provisioned.PartyId;
+                    userAuthenticationModel.PartyUuid = provisioned.PartyUuid;
+                    userAuthenticationModel.Username = provisioned.UserName;
+                    userAuthenticationModel.Amr = ["SelfIdentified"];
+                    userAuthenticationModel.Acr = "Selfidentified";
+                    return userAuthenticationModel;
+                }
+
                 userProfile = await _userProfileService.GetUser(issExternalIdentity);
 
                 if (userProfile != null)
@@ -1505,7 +1534,7 @@ namespace Altinn.Platform.Authentication.Services
                 UserProfile userToCreate = new()
                 {
                     ExternalIdentity = issExternalIdentity,
-                    UserName = CreateUserName(userAuthenticationModel, provider),
+                    UserName = userName,
                     UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
                 };
 
@@ -1520,6 +1549,28 @@ namespace Altinn.Platform.Authentication.Services
             {
                 // TODO. Usikker om vi trenger å prefixe med iss nå
                 string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + UrnEncoded.Create(userAuthenticationModel.Email.ToLowerInvariant()).Encoded;
+                string userName = "epost:" + userAuthenticationModel.Email;
+
+                if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
+                {
+                    var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                        SelfIdentifiedUserType.IdPortenEmail,
+                        issExternalIdentity,
+                        userName,
+                        CancellationToken.None);
+
+                    if (provisioned is null)
+                    {
+                        return userAuthenticationModel;
+                    }
+
+                    userAuthenticationModel.UserID = (int)provisioned.UserId;
+                    userAuthenticationModel.PartyID = (int)provisioned.PartyId;
+                    userAuthenticationModel.PartyUuid = provisioned.PartyUuid;
+                    userAuthenticationModel.Username = provisioned.UserName;
+                    return userAuthenticationModel;
+                }
+
                 userProfile = await _userProfileService.GetUser(issExternalIdentity);
 
                 if (userProfile != null)
@@ -1535,7 +1586,7 @@ namespace Altinn.Platform.Authentication.Services
                 UserProfile userToCreate = new()
                 {
                     ExternalIdentity = issExternalIdentity,
-                    UserName = "epost:" + userAuthenticationModel.Email,
+                    UserName = userName,
                     UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
                 };
 
@@ -1558,6 +1609,31 @@ namespace Altinn.Platform.Authentication.Services
             }
             
             return userAuthenticationModel;
+        }
+
+        private async Task<SelfIdentifiedUserProvisioningResponse?> GetOrCreateSelfIdentifiedUserViaRegister(
+            SelfIdentifiedUserType selfIdentifiedUserType,
+            string externalIdentity,
+            string userName,
+            CancellationToken cancellationToken)
+        {
+            var request = new SelfIdentifiedUserProvisioningRequest
+            {
+                SelfIdentifiedUserType = selfIdentifiedUserType,
+                ExternalIdentity = externalIdentity,
+                UserName = userName,
+            };
+
+            var response = await _registerUserProvisioningClient.GetOrCreateUser(request, cancellationToken);
+
+            if (response is null)
+            {
+                _logger.LogError(
+                    "Register self-identified provisioning returned no result for externalIdentity {ExternalIdentity}; sign-in cannot complete.",
+                    externalIdentity);
+            }
+
+            return response;
         }
 
         private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)
