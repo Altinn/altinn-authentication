@@ -226,6 +226,52 @@ namespace Altinn.Platform.Authentication.Persistance.RepositoryImplementations.O
                 }
             }
 
+        /// <inheritdoc/>
+        public async Task<bool> TryUpgradeClientSecretHashAsync(string clientId, string expectedCurrentHash, string newClientSecretHash, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                throw new ArgumentException("ClientId is required.", nameof(clientId));
+            }
+
+            if (string.IsNullOrWhiteSpace(expectedCurrentHash))
+            {
+                throw new ArgumentException("Expected current hash is required.", nameof(expectedCurrentHash));
+            }
+
+            if (string.IsNullOrWhiteSpace(newClientSecretHash))
+            {
+                throw new ArgumentException("New client secret hash is required.", nameof(newClientSecretHash));
+            }
+
+            const string SQL = /*strpsql*/ @"
+                UPDATE oidcserver.client
+                   SET client_secret_hash = @client_secret_hash,
+                       updated_at         = @updated_at
+                 WHERE client_id = @client_id
+                   AND client_secret_hash = @expected_current_hash;";
+
+            try
+            {
+                await using var cmd = _datasource.CreateCommand(SQL);
+                cmd.Parameters.Add(new NpgsqlParameter<string>("client_id", clientId));
+                cmd.Parameters.Add(new NpgsqlParameter<string>("expected_current_hash", expectedCurrentHash));
+                cmd.Parameters.Add(new NpgsqlParameter<string>("client_secret_hash", newClientSecretHash));
+                cmd.Parameters.AddWithValue("updated_at", _timeProvider.GetUtcNow());
+
+                int rowsAffected = await cmd.ExecuteNonQueryAsync(cancellationToken);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                var sanitizedClientId = clientId.Replace(Environment.NewLine, string.Empty)
+                                                  .Replace("\r", string.Empty)
+                                                  .Replace("\n", string.Empty);
+                _logger.LogError(ex, "Authentication // OidcServerRepository // TryUpgradeClientSecretHashAsync // client_id={ClientId}", sanitizedClientId);
+                throw;
+            }
+        }
+
         private static TEnum ParseEnum<TEnum>(string value, TEnum fallback)
             where TEnum : struct
             => Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
