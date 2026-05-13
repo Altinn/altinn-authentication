@@ -392,7 +392,12 @@ namespace Altinn.Platform.Authentication.Services
                         try
                         {
                             string rehashed = ClientSecretHasher.HashHmac(auth.ClientSecret!, clientSecretPepper);
-                            await clientRepo.UpdateClientSecretHashAsync(client.ClientId, rehashed, ct);
+                            bool upgraded = await clientRepo.TryUpgradeClientSecretHashAsync(client.ClientId, client.ClientSecretHash!, rehashed, ct);
+                            if (!upgraded)
+                            {
+                                // Stored hash changed under us (concurrent rotation) — nothing to upgrade.
+                                _logger.LogDebug("Skipped opportunistic client secret rehash for client_id={ClientId}: stored hash changed", client.ClientId);
+                            }
                         }
                         catch (Exception ex)
                         {
