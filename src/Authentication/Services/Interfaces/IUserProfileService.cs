@@ -21,5 +21,10 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="user">The user</param>
         /// <returns></returns>
         Task<UserProfile> CreateUser(UserProfile user);
+
+        /// <summary>
+        /// Endpoints that lookup a user based on username and password. This is used for validating credentials when using basic authentication.
+        /// </summary>
+        Task<UserCredentialVerificationResult> ValidateCredentialsAsync(string username, string password);
     }
 }
