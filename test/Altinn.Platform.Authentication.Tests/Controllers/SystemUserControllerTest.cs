@@ -679,7 +679,42 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage request2 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{Guid.NewGuid()}");
             HttpResponseMessage response2 = await client.SendAsync(request2, HttpCompletionOption.ResponseContentRead);
             Assert.Equal(HttpStatusCode.NotFound, response2.StatusCode);
-        } 
+        }
+
+        [Fact]
+        public async Task SystemUser_Delete_WithSingleAppResource_ReturnsAccepted()
+        {
+            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithApp.json";
+            _ = await CreateSystemRegister(dataFileName);
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+
+            int partyId = 500000;
+
+            SystemUserRequestDto newSystemUser = new()
+            {
+                IntegrationTitle = "IntegrationTitleValue",
+                SystemId = "991825827_system_with_app",
+            };
+
+            HttpRequestMessage createRequest = new(HttpMethod.Post, $"/authentication/api/v1/systemuser/{partyId}/create")
+            {
+                Content = JsonContent.Create<SystemUserRequestDto>(newSystemUser, new MediaTypeHeaderValue("application/json"))
+            };
+            HttpResponseMessage createResponse = await client.SendAsync(createRequest, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
+            SystemUserInternalDTO? created = await createResponse.Content.ReadFromJsonAsync<SystemUserInternalDTO>();
+            Assert.NotNull(created);
+
+            HttpRequestMessage deleteRequest = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/{partyId}/{created.Id}");
+            HttpResponseMessage deleteResponse = await client.SendAsync(deleteRequest, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.Accepted, deleteResponse.StatusCode);
+
+            HttpRequestMessage getAfterDeleteRequest = new(HttpMethod.Get, $"/authentication/api/v1/systemuser/{partyId}/{created.Id}");
+            HttpResponseMessage getAfterDeleteResponse = await client.SendAsync(getAfterDeleteRequest, HttpCompletionOption.ResponseContentRead);
+            Assert.Equal(HttpStatusCode.NotFound, getAfterDeleteResponse.StatusCode);
+        }
 
         [Fact]
         public async Task SystemUser_CreateAndDelegate_Returns_DelegationErrorDetail()
