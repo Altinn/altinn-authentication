@@ -58,5 +58,17 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// </list>
         /// </remarks>
         Task<OidcClient> InsertClientAsync(OidcClientCreate create, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Replaces the stored <c>client_secret_hash</c> only if it currently equals
+        /// <paramref name="expectedCurrentHash"/>. Used to opportunistically migrate legacy PBKDF2
+        /// hashes to HMAC-SHA256 after a successful verify, without clobbering a concurrent rotation.
+        /// </summary>
+        /// <param name="clientId">The client whose stored hash should be replaced.</param>
+        /// <param name="expectedCurrentHash">The hash value the caller just verified against; the update is a no-op if the stored hash no longer matches this.</param>
+        /// <param name="newClientSecretHash">The new self-describing hash string (e.g. <c>hmac$sha256$...</c>).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns><c>true</c> if the hash was replaced; <c>false</c> if the stored hash no longer matches <paramref name="expectedCurrentHash"/> (e.g. a concurrent rotation occurred).</returns>
+        Task<bool> TryUpgradeClientSecretHashAsync(string clientId, string expectedCurrentHash, string newClientSecretHash, CancellationToken cancellationToken = default);
     }
 }

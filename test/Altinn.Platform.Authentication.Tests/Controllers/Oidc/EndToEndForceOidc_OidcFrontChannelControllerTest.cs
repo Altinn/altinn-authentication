@@ -162,13 +162,16 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         [Fact]
         public async Task TC1_Auth_Aa_App_Af_App_Af_Logout_End_To_End_OK()
         {
-            // Create HttpClient with default headers for IP, UA, correlation. 
+            // Create HttpClient with default headers for IP, UA, correlation.
             using HttpClient client = CreateClientWithHeaders();
             OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_HappyFlow");
 
             // Insert a client that matches the authorize request
             OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
             _ = await Repository.InsertClientAsync(create);
+
+            // Sanity: the test scenario seeds the client with a legacy PBKDF2 hash.
+            await TokenAssertsHelper.AssertClientSecretIsLegacyPbkdf2(Repository, testScenario.DownstreamClientId);
 
             // 08:00:00 UTC — start of day: user signs in to Arbeidsflate (RP).
             // Arbeidsflate redirects the browser to the Altinn Authentication OIDC Provider’s /authorize endpoint.
@@ -207,6 +210,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             Assert.Equal(HttpStatusCode.OK, tokenResp.StatusCode);
             TokenResponseDto? tokenResult = await tokenResp.Content.ReadFromJsonAsync<TokenResponseDto>(jsonSerializerOptions);
             string tokenString = await tokenResp.Content.ReadAsStringAsync();
+
+            // The first successful client_secret verify must have rehashed the stored hash to HMAC-SHA256.
+            await TokenAssertsHelper.AssertClientSecretMigratedToHmac(Repository, testScenario.DownstreamClientId);
 
             // Asserts on token response structure
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());

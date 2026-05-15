@@ -146,15 +146,6 @@ public interface IAccessManagementClient
     Task<Result<bool>> PushSystemUserToAM(Guid partyUuId, SystemUserInternalDTO systemUser, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Adds a System User as a Right Holder for the Party
-    /// </summary>
-    /// <param name="partyUuId">the identifier of the party</param>
-    /// <param name="systemUserId">the system user id</param>
-    /// <param name="cancellationToken">the cancellation token</param>
-    /// <returns></returns>
-    Task<Result<bool>> AddSystemUserAsRightHolder(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken);
-
-    /// <summary>
     /// Removes a System User as a Right Holder for the Party
     /// </summary>
     /// <param name="partyUuId">the identifier of the party</param>
@@ -209,15 +200,6 @@ public interface IAccessManagementClient
     /// <param name="partyUuid">The party id</param>
     /// <param name="resource">The resource id</param>
     Task<ResourceCheckDto?> CheckDelegationAccess(Guid partyUuid, string resource, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Adds a System User as an Agent for the Party
-    /// </summary>
-    /// <param name="partyUuid">the identifier of the via party ( the faciliator/provider )</param>
-    /// <param name="systemuser">the system user id acting as the agent</param>
-    /// <param name="cancellationToken">the cancellation token</param>
-    /// <returns></returns>
-    Task<Result<bool>> AddSystemUserAsAgent(Guid partyUuid, Guid systemuser, CancellationToken cancellationToken);
 
     /// <summary>
     /// Revokes a System User as an Agent for the Party
