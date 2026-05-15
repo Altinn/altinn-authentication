@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -19,7 +18,6 @@ using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using Altinn.Register.Contracts.V1;
 using AltinnCore.Authentication.JwtCookie;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -29,7 +27,7 @@ using Xunit;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers;
 
-public class SelfIDentifedAuthenticationControllerTests(
+public class SelfIdentifiedAuthenticationControllerTests(
     DbFixture dbFixture,
     WebApplicationFixture webApplicationFixture)
     : WebApplicationTests(dbFixture, webApplicationFixture)
@@ -82,13 +80,7 @@ public class SelfIDentifedAuthenticationControllerTests(
                 }
             });
 
-        HttpClient client = CreateClient();
-        client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, addPortalScope: true, now: TestTime));
-
-        HttpResponseMessage response = await client.PostAsync(
-            "/api/SelfIDentifedAuthentication/validate-credentials?userName=user&password=pass",
-            content: null);
+        HttpResponseMessage response = await PostCredentials("user", "pass");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -103,20 +95,49 @@ public class SelfIDentifedAuthenticationControllerTests(
             .Setup(s => s.ValidateCredentialsAsync("user", "badpass"))
             .ReturnsAsync(new UserCredentialVerificationResult());
 
-        HttpClient client = CreateClient();
-        client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, addPortalScope: true, now: TestTime));
-
-        HttpResponseMessage response = await client.PostAsync(
-            "/api/SelfIDentifedAuthentication/validate-credentials?userName=user&password=badpass",
-            content: null);
+        HttpResponseMessage response = await PostCredentials("user", "badpass");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ValidateCredentials_ReturnsTooManyRequests_WhenAccountIsLocked()
+    {
+        _userProfileService
+            .Setup(s => s.ValidateCredentialsAsync("user", "pass"))
+            .ReturnsAsync(new UserCredentialVerificationResult { IsLocked = true });
+
+        HttpResponseMessage response = await PostCredentials("user", "pass");
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ValidateCredentials_ReturnsForbidden_WhenWrongUserType()
+    {
+        _userProfileService
+            .Setup(s => s.ValidateCredentialsAsync("user", "pass"))
+            .ReturnsAsync(new UserCredentialVerificationResult { WrongUserType = true });
+
+        HttpResponseMessage response = await PostCredentials("user", "pass");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    private async Task<HttpResponseMessage> PostCredentials(string userName, string password)
+    {
+        HttpClient client = CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, addPortalScope: true, now: TestTime));
+
+        return await client.PostAsJsonAsync(
+            "/api/SelfIdentifiedAuthentication/validate-credentials",
+            new SiUserCredentials { UserName = userName, Password = password });
+    }
+
     private static string GetConfigPath()
     {
-        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(SelfIDentifedAuthenticationControllerTests).Assembly.Location).LocalPath);
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(SelfIdentifiedAuthenticationControllerTests).Assembly.Location).LocalPath);
         return Path.Combine(unitTestFolder!, "../../../appsettings.test.json");
     }
 

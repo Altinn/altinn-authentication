@@ -81,37 +81,45 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <summary>
-        /// Validates a users credentials by sending them to the SBL Bridge Profile API, and returns the user profile if the credentials are valid.
+        /// Validates a self identified user's credentials against the SBL Bridge authentication API
+        /// (<c>authentication/api/siuser</c>), and returns the user profile when the credentials are valid.
         /// </summary>
         public async Task<UserCredentialVerificationResult> ValidateCredentialsAsync(string username, string password)
         {
             UserProfile identifedProfile = null;
 
-            SiUserCredentialsCredentials credentials = new SiUserCredentialsCredentials()
+            SiUserCredentials credentials = new SiUserCredentials()
             {
                 UserName = username,
                 Password = password
             };
 
-            Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/create/");
-            StringContent requestBody = new StringContent(JsonSerializer.Serialize(credentials), Encoding.UTF8, "application/json");
+            Uri endpointUrl = new Uri($"{_settings.BridgeAuthnApiEndpoint}siuser");
+            using StringContent requestBody = new StringContent(JsonSerializer.Serialize(credentials), Encoding.UTF8, "application/json");
 
-            HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
+            using HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 identifedProfile = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
             {
+                // Bridge returns 429 when the account is locked out due to too many failed attempts.
                 return new UserCredentialVerificationResult()
                 {
                     IsLocked = true
                 };
             }
+            else if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest)
+            {
+                // Bridge returns 404 when the credentials are not authenticated and 400 for empty
+                // username/password. Both are expected outcomes - not errors, and the username must not be logged.
+                return new UserCredentialVerificationResult();
+            }
             else
             {
-                _logger.LogError("Validating user credentials failed for username {Username} with statuscode {StatusCode}", username, response.StatusCode);
-                return new UserCredentialVerificationResult() { IsLocked = false };
+                _logger.LogError("Validating user credentials failed with statuscode {StatusCode}", response.StatusCode);
+                return new UserCredentialVerificationResult();
             }
 
             if (identifedProfile != null && identifedProfile.UserType != Core.Models.Profile.Enums.UserType.SelfIdentified)
