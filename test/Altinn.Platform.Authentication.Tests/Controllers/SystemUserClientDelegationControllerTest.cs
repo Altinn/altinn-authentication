@@ -131,6 +131,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 { new Guid("d54a721a-b231-4e28-9245-782697ed2bbb"), "555555555" }, // Added for Standard user
                 { new Guid("88e6d38a-1b48-46b9-b1cf-ec5ffbe0c144"), "123447789" }, // Invalid partyorgno
                 { new Guid("65055192-f4a9-4b47-bc24-46c4b97081c1"), "123357789" }, // Invalid facilitator
+                { new Guid("0e2e1234-1111-1111-1111-111111111111"), "910493357" }, // Bug repro: GetPartyByOrgNo returns a PartyId that's absent from parties.json, so the redundant GetPartyAsync(int) inside OldGetListOfDelegationsForAgentSystemUser returns null
             };
 
             _systemUserRepository
@@ -475,6 +476,53 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(problemDetails);
             Assert.Equal("System Owner not Found", problemDetails.Title);
             Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
+        }
+
+        // Bug repro: in TT02 this endpoint returns 500 for valid agent system users because
+        // OldGetListOfDelegationsForAgentSystemUser does a redundant GetPartyAsync(int) lookup
+        // and then dereferences party.PartyUuid without a null check. The lookup fails when
+        // the enterprise (Maskinporten-exchanged) token is rejected by the parties/{partyId}
+        // endpoint, even though parties/lookup accepts it. This test reproduces that mismatch
+        // via the 910493999 fixture in PartiesClientMock — GetPartyByOrgNo returns a Party with
+        // PartyId 599999 that is intentionally missing from parties.json.
+        // Expected behavior after fix: 200 OK with the delegations returned by AccessManagement.
+        [Fact]
+        public async Task GetClientsDelegatedToSystemUser_ReturnsOk_WhenInternalPartyLookupByIdReturnsNull()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+            Guid systemUserId = new Guid("0e2e1234-1111-1111-1111-111111111111");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
+            ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            Assert.NotNull(result);
+            Assert.Contains(result.Items, c => c.ClientId == new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"));
+        }
+
+        // Same bug, exercised through the DELETE endpoint. The controller's
+        // RemoveClientFromSystemUser calls the same OldGetListOfDelegationsForAgentSystemUser
+        // to resolve the delegationId before removing it, so it 500s on the same NRE.
+        [Fact]
+        public async Task RemoveClientFromSystemUser_ReturnsOk_WhenInternalPartyLookupByIdReturnsNull()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+            Guid systemUserId = new Guid("0e2e1234-1111-1111-1111-111111111111");
+            Guid clientId = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"); // matches CustomerId returned by AccessManagementClientMock.OldGetDelegationsForAgent
+
+            HttpRequestMessage removeRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
+            removeRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
+            HttpResponseMessage removeResponse = await client.SendAsync(removeRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, removeResponse.StatusCode);
+            ClientDelegationResponse clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await removeResponse.Content.ReadAsStringAsync(), _options);
+            Assert.NotNull(clientDelegationResponse);
+            Assert.Equal(systemUserId, clientDelegationResponse.Agent);
+            Assert.Equal(clientId, clientDelegationResponse.Client);
         }
 
         [Fact]

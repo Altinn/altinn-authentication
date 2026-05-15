@@ -106,9 +106,12 @@ public class SystemUserController : ControllerBase
     [HttpGet("agent/{party}/{facilitator}/{systemUserId}/delegations")]
     public async Task<ActionResult<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId)
     {
+        // `party` is retained in the route for backwards compatibility but no longer
+        // used by the service: the facilitator (the party's UUID) is the canonical key.
+        _ = party;
         List<DelegationResponse> ret = [];
-        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(party, facilitator, systemUserId);
-        if (result.IsSuccess) 
+        var result = await _systemUserService.GetListOfDelegationsForAgentSystemUser(facilitator, systemUserId);
+        if (result.IsSuccess)
         {
             ret = result.Value;
         }

@@ -1054,15 +1054,8 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> OldGetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
+        public async Task<Result<List<DelegationResponse>>> OldGetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId, Guid? client = null)
         {
-            Party party = await _partiesClient.GetPartyAsync(partyId);
-
-            if (party.PartyUuid != facilitator)
-            {
-                return Problem.AgentSystemUser_DelegationNotFound;
-            }
-
             var res = await _accessManagementClient.OldGetDelegationsForAgent(systemUserId, facilitator, client);
             if (res.IsSuccess)
             {
@@ -1073,15 +1066,9 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
+        public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(Guid facilitator, Guid systemUserId, Guid? client = null)
         {
-            Party party = await _partiesClient.GetPartyAsync(partyId);
             List<DelegationResponse> found = [];
-
-            if (party.PartyUuid != facilitator)
-            {
-                return Problem.AgentSystemUser_DelegationNotFound;
-            }
 
             var res = await _accessManagementClient.GetClientDelegationsForAgent(systemUserId, facilitator);
             if (res.IsSuccess)
