@@ -131,6 +131,7 @@ internal static class AuthenticationHost
         services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
         services.AddHttpClient<IResourceRegistryClient, ResourceRegistryClient>();
         services.AddHttpClient<IPartiesClient, PartiesClient>();
+        services.AddHttpClient<IRegisterUserProvisioningClient, RegisterUserProvisioningClient>();
         services.AddHttpClient<IProfile, ProfileService>();
         services.AddHttpClient<IOidcDownstreamLogout, OidcDownstreamLogoutClient>();
         services.AddSingleton<IAccessTokenGenerator, AccessTokenGenerator>();
