@@ -1502,6 +1502,7 @@ namespace Altinn.Platform.Authentication.Services
                         selfIdentifiedUserType,
                         issExternalIdentity,
                         userName,
+                        email: null,
                         CancellationToken.None);
 
                     if (provisioned is null)
@@ -1557,6 +1558,7 @@ namespace Altinn.Platform.Authentication.Services
                         SelfIdentifiedUserType.IdPortenEmail,
                         issExternalIdentity,
                         userName,
+                        userAuthenticationModel.Email,
                         CancellationToken.None);
 
                     if (provisioned is null)
@@ -1615,6 +1617,7 @@ namespace Altinn.Platform.Authentication.Services
             SelfIdentifiedUserType selfIdentifiedUserType,
             string externalIdentity,
             string userName,
+            string? email,
             CancellationToken cancellationToken)
         {
             var request = new SelfIdentifiedUserProvisioningRequest
@@ -1622,6 +1625,7 @@ namespace Altinn.Platform.Authentication.Services
                 SelfIdentifiedUserType = selfIdentifiedUserType,
                 ExternalIdentity = externalIdentity,
                 UserName = userName,
+                Email = email,
             };
 
             var response = await _registerUserProvisioningClient.GetOrCreateUser(request, cancellationToken);

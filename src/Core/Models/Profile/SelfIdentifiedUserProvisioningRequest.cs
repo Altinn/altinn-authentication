@@ -27,5 +27,12 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
         /// </summary>
         [JsonPropertyName("userName")]
         public string UserName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the user's email. Required when <see cref="SelfIdentifiedUserType"/>
+        /// is <see cref="SelfIdentifiedUserType.IdPortenEmail"/>; ignored otherwise.
+        /// </summary>
+        [JsonPropertyName("email")]
+        public string? Email { get; set; }
     }
 }
