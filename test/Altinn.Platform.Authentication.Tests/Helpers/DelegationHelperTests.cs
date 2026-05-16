@@ -211,7 +211,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.True(result.IsProblem);
-            Assert.Equal(Problem.AccessPackage_ValidationFailed.Detail, result.Problem.Detail);      
+            Assert.Equal(Problem.AccessPackage_ValidationFailed.ToProblemDetails().Title, result.Problem.Title);      
             Assert.Equal("AccessPackage { Urn = urn:invalid }", result.Problem.Extensions.GetValueOrDefault("Invalid Urn Details : "));
         }
 
@@ -246,7 +246,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.True(result.IsProblem);
-            Assert.Equal(Problem.AccessPackage_Delegation_MissingRequiredAccess.Detail, result.Problem.Detail);
+            Assert.Equal(Problem.AccessPackage_Delegation_MissingRequiredAccess.ToProblemDetails().Title, result.Problem.Title  );
         }
 
         [Fact]

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authorization.ABAC.Xacml.JsonProfile;
 using Altinn.Common.PEP.Interfaces;
@@ -53,10 +54,20 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
             return Task.FromResult(response);
         }
 
+        public Task<XacmlJsonResponse> GetDecisionForRequest(XacmlJsonRequestRoot xacmlJsonRequest, CancellationToken cancellationToken)
+        {
+            return GetDecisionForRequest(xacmlJsonRequest);
+        }
+
         /// <inheritdoc/>
         public Task<bool> GetDecisionForUnvalidateRequest(XacmlJsonRequestRoot xacmlJsonRequest, ClaimsPrincipal user)
         {
             return Task.FromResult(true);
+        }
+
+        public Task<bool> GetDecisionForUnvalidateRequest(XacmlJsonRequestRoot xacmlJsonRequest, ClaimsPrincipal user, CancellationToken cancellationToken)
+        {
+            return GetDecisionForUnvalidateRequest(xacmlJsonRequest, user);
         }
     }
 }

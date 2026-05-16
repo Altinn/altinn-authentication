@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.AccessManagement.Tests.Mocks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -107,7 +108,7 @@ public class ChangeRequestControllerTest(
         services.AddSingleton(guidService.Object);
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
         services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
-        services.AddSingleton(_pdpMock.Object);
+        services.AddSingleton<IPDP>(_pdpMock.Object);
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
         services.AddSingleton<ISystemUserService, SystemUserService>();
         services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
@@ -130,7 +131,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -254,7 +255,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -429,7 +430,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -536,7 +537,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -649,7 +650,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -788,7 +789,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -941,7 +942,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -1088,7 +1089,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -1253,7 +1254,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -1391,7 +1392,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -1747,7 +1748,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -1889,7 +1890,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -2029,7 +2030,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -2168,7 +2169,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });
@@ -2306,7 +2307,7 @@ public class ChangeRequestControllerTest(
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
 
-        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>())).ReturnsAsync(new XacmlJsonResponse
+        _pdpMock.Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>())).ReturnsAsync(new XacmlJsonResponse
         {
             Response = xacmlJsonResults
         });

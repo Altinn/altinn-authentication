@@ -309,8 +309,8 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
         ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
-        Assert.Equal(Problem.AccessPackage_NotDelegable_Standard.Detail, problemDetails.Detail);
-        Assert.True(problemDetails.Extensions.Count == 2);
+        Assert.Equal(Problem.AccessPackage_NotDelegable_Standard.ToProblemDetails().Title, problemDetails.Title);
+        Assert.True(problemDetails.Extensions.Count == 4);
         Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
     }
 
@@ -585,8 +585,8 @@ public class RequestControllerTests(
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
         ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
-        Assert.Equal(Problem.AccessPackage_NotDelegable_Agent.Detail, problemDetails.Detail);
-        Assert.True(problemDetails.Extensions.Count == 2);
+        Assert.Equal(Problem.AccessPackage_NotDelegable_Agent.ToProblemDetails().Title, problemDetails.Title);
+        Assert.True(problemDetails.Extensions.Count == 4);
         Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
     }
 
@@ -949,7 +949,7 @@ public class RequestControllerTests(
         string debug = "pause_here";
         Assert.Equal(HttpStatusCode.NotFound, message2.StatusCode);
         ProblemDetails? problem = await message2.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Detail);
+        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Title);
     }
 
     [Fact]
@@ -2769,7 +2769,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.Forbidden, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("Party does not match request's orgno", problem!.Detail);
+        Assert.Equal("Party does not match request's orgno", problem!.Title);
     }
 
     [Fact]
@@ -2835,7 +2835,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.BadRequest, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Delegation failed.", problem!.Detail);
+        Assert.Equal("The Delegation failed.", problem!.Title);
     }
 
     [Fact]
@@ -3055,7 +3055,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.NotFound, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Id does not refer to an AgentRequest in our system.", problem!.Detail);
+        Assert.Equal("The Id does not refer to an AgentRequest in our system.", problem!.Title);
     }
 
     [Fact]
@@ -3552,7 +3552,7 @@ public class RequestControllerTests(
         HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.NotFound, approveResponseMessage.StatusCode);
         ProblemDetails? problem = await approveResponseMessage.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Detail);
+        Assert.Equal("The Id does not refer to a Request in our system.", problem!.Title);
     }
 
     [Fact]
