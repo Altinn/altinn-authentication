@@ -1,4 +1,5 @@
-using System.Linq;
+using System.Globalization;
+using Altinn.Register.Contracts;
 
 #nullable enable
 
@@ -8,84 +9,35 @@ namespace Altinn.Platform.Authentication.Helpers
     /// Detects synthetic (Tenor / Skatteetaten test) Norwegian national identity
     /// numbers (fødselsnummer).
     ///
-    /// An fnr is 11 digits: DD MM YY III KK. Synthetic test persons are marked by
-    /// adding 80 to the month, i.e. <c>MM</c> in the range 81–92 (real month =
-    /// MM − 80). A synthetic person may additionally be a D-number (day + 40,
-    /// <c>DD</c> in 41–71); the synthetic marker is always the month + 80.
+    /// Validity (11 digits + mod11 control digits, old and new algorithm) is
+    /// delegated to <see cref="PersonIdentifier"/> from
+    /// <c>Altinn.Register.Contracts</c>. On top of that, synthetic test persons
+    /// are marked by adding 80 to the month, i.e. <c>MM</c> in the range 81–92.
     ///
     /// <see cref="IsSyntheticTenor"/> is a <b>positive, fail-closed</b> check: it
-    /// returns true ONLY for a well-formed synthetic fnr. Any parse, format or
-    /// mod11 failure returns false. An ordinary fnr and a real D-number
-    /// (month 01–12) fail the <c>MM ∈ 81–92</c> test unconditionally, so a real
-    /// identity can never be classified as synthetic. See issue #1409 / #1983.
+    /// returns true ONLY for a valid fnr whose month is in 81–92. Any invalid or
+    /// non-synthetic number (every ordinary fnr and real D-number, month 01–12)
+    /// returns false. See issue #1409 / #1983.
     /// </summary>
     public static class SyntheticPersonIdentifier
     {
-        private static readonly int[] K1Weights = { 3, 7, 6, 1, 8, 9, 4, 5, 2 };
-        private static readonly int[] K2Weights = { 5, 4, 3, 2, 7, 6, 5, 4, 3, 2 };
-
         /// <summary>
-        /// True only for a well-formed synthetic (Tenor) fødselsnummer. Any other
+        /// True only for a valid synthetic (Tenor) fødselsnummer. Any other
         /// input — including every ordinary fnr and every real D-number — returns
         /// false (fail-closed).
         /// </summary>
         public static bool IsSyntheticTenor(string? pid)
         {
-            if (pid is null || pid.Length != 11 || !pid.All(char.IsDigit))
+            // Validity: 11 digits + mod11 control digits.
+            if (!PersonIdentifier.TryParse(pid, provider: null, out _))
             {
                 return false;
             }
 
-            int day = int.Parse(pid.Substring(0, 2));
-            int month = int.Parse(pid.Substring(2, 2));
-
-            // The synthetic marker: month + 80. The invariant a real identity
-            // can never satisfy.
-            if (month is < 81 or > 92)
-            {
-                return false;
-            }
-
-            int normalizedDay = day > 40 ? day - 40 : day; // allow synthetic D-number
-            int normalizedMonth = month - 80;
-
-            if (normalizedDay is < 1 or > 31 || normalizedMonth is < 1 or > 12)
-            {
-                return false;
-            }
-
-            return HasValidControlDigits(pid);
-        }
-
-        private static bool HasValidControlDigits(string pid)
-        {
-            int[] d = pid.Select(c => c - '0').ToArray();
-
-            int k1 = Mod11(d, K1Weights, 9);
-            if (k1 == 10 || k1 != d[9])
-            {
-                return false;
-            }
-
-            int k2 = Mod11(d, K2Weights, 10);
-            if (k2 == 10 || k2 != d[10])
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private static int Mod11(int[] digits, int[] weights, int count)
-        {
-            int sum = 0;
-            for (int i = 0; i < count; i++)
-            {
-                sum += digits[i] * weights[i];
-            }
-
-            int remainder = sum % 11;
-            return remainder == 0 ? 0 : 11 - remainder;
+            // Synthetic marker: the month component (digits 3-4) has 80 added,
+            // i.e. MM in 81–92. pid is guaranteed to be 11 digits here.
+            int month = int.Parse(pid!.Substring(2, 2), CultureInfo.InvariantCulture);
+            return month is >= 81 and <= 92;
         }
     }
 }
