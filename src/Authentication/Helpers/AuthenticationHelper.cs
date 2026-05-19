@@ -184,7 +184,20 @@ namespace Altinn.Platform.Authentication.Helpers
                     }
                 }
             }
-             
+
+            // Authoritative synthetic-only gate. For a provider configured as
+            // test-only (e.g. mockporten), a pid claim that is not a well-formed
+            // synthetic (Tenor) fødselsnummer is rejected fail-closed, so an
+            // ordinary national identity number can never be authenticated
+            // through that provider regardless of what the upstream IdP asserts.
+            // See issue #1409 / #1983.
+            if (provider.RequireSyntheticPid
+                && !string.IsNullOrEmpty(userAuthenticationModel.SSN)
+                && !SyntheticPersonIdentifier.IsSyntheticTenor(userAuthenticationModel.SSN))
+            {
+                userAuthenticationModel.IsAuthenticated = false;
+            }
+
             return userAuthenticationModel;
         }
 
