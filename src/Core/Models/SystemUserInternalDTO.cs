@@ -75,6 +75,9 @@ namespace Altinn.Platform.Authentication.Core.Models
         [JsonPropertyName("created")]
         public System.DateTime Created { get; set; } = DateTime.UtcNow;
 
+        [JsonIgnore]
+        public System.DateTime LastChanged { get; set; }
+
         /// <summary>
         /// False by default, if a SystemUser is deleted in the API,
         /// it is marked as IsDeleted ("tombstoned") rather than actually deleted
