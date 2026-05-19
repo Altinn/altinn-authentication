@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Authentication;
 using System.Security.Claims;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -65,13 +66,14 @@ namespace Altinn.Platform.Authentication.Tests
         }
 
         [Fact]
-        public void GetUserFromToken_RequireSyntheticPid_OrdinaryPid_RejectedFailClosed()
+        public void GetUserFromToken_RequireSyntheticPid_OrdinaryPid_Throws()
         {
             var provider = new OidcProvider { IssuerKey = "mockporten", RequireSyntheticPid = true };
 
-            var result = AuthenticationHelper.GetUserFromToken(TokenWithPid("01017012345"), provider);
-
-            Assert.False(result.IsAuthenticated);
+            // Throws (rather than returning not-authenticated) so the request
+            // is guaranteed to abort and cannot be mishandled downstream.
+            Assert.Throws<AuthenticationException>(
+                () => AuthenticationHelper.GetUserFromToken(TokenWithPid("01017012345"), provider));
         }
 
         [Fact]
