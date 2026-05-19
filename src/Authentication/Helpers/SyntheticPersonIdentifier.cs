@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using Altinn.Register.Contracts;
 
@@ -36,7 +37,7 @@ namespace Altinn.Platform.Authentication.Helpers
 
             // Synthetic marker: the month component (digits 3-4) has 80 added,
             // i.e. MM in 81–92. pid is guaranteed to be 11 digits here.
-            int month = int.Parse(pid!.Substring(2, 2), CultureInfo.InvariantCulture);
+            int month = int.Parse(pid!.AsSpan(2, 2), CultureInfo.InvariantCulture);
             return month is >= 81 and <= 92;
         }
     }
