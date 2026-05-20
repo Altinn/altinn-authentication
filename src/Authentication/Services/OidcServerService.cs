@@ -211,12 +211,16 @@ namespace Altinn.Platform.Authentication.Services
             (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
 
             // ========= 8) Build upstream authorize URL =========
+            // existingSession is null here only when the user is not logged in (anonymous flow).
+            // When we have a session (even one that needs an ACR upgrade) we know the user, so
+            // we must not silently widen the requested acr_values with selfregistered-email.
             Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
                 provider,
                 upstreamState,
                 upstreamNonce,
                 upstreamPkceChallenge,
-                request);
+                request,
+                hasExistingSession: existingSession is not null);
 
             // ========= 9) Return redirect upstream =========
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
@@ -1372,7 +1376,8 @@ namespace Altinn.Platform.Authentication.Services
                 string upstreamState,
                 string upstreamNonce,
                 string upstreamCodeChallenge,
-                AuthorizeRequest incoming)
+                AuthorizeRequest incoming,
+                bool hasExistingSession)
         {
             var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
             q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
@@ -1390,7 +1395,11 @@ namespace Altinn.Platform.Authentication.Services
                 q["acr_values"] = string.Join(' ', incoming.AcrValues);
             }
 
-            if (q["acr_values"] != null && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
+            // Only widen acr_values with selfregistered-email when the user is anonymous.
+            // On an ACR upgrade for an already-logged-in user the requested LoA must be sent as-is.
+            if (!hasExistingSession
+                && q["acr_values"] != null
+                && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
             {
                 q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + q["acr_values"];
             }
