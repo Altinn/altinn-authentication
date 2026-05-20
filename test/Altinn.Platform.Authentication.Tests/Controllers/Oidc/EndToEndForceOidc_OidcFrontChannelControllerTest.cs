@@ -1537,8 +1537,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // First /authorize is anonymous (no existing session): upstream acr_values must be widened with
             // selfregistered-email so the user can still pick e-mail login at ID-porten.
             string initialUpstreamAcr = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["acr_values"] ?? string.Empty;
-            Assert.Contains("selfregistered-email", initialUpstreamAcr);
-            Assert.Contains("idporten-loa-substantial", initialUpstreamAcr);
+            Assert.Equal("selfregistered-email idporten-loa-substantial", initialUpstreamAcr);
 
             // Assume it takes 1 minute for the user to authenticate at the upstream provider
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
@@ -1619,8 +1618,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // must be exactly what the downstream client asked for — selfregistered-email must NOT be
             // appended on top of the higher LoA. See issue #1988.
             string upgradeUpstreamAcr = HttpUtility.ParseQueryString(authorizationUpgradeRequestResponse.Headers.Location!.Query)["acr_values"] ?? string.Empty;
-            Assert.DoesNotContain("selfregistered-email", upgradeUpstreamAcr);
-            Assert.Contains("idporten-loa-high", upgradeUpstreamAcr);
+            Assert.Equal("idporten-loa-high", upgradeUpstreamAcr);
 
             // Assume it takes 1 minute for the user to authenticate at the upstream provider. Now with BankID level 4
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01

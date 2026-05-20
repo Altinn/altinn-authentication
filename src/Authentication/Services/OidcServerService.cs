@@ -211,16 +211,22 @@ namespace Altinn.Platform.Authentication.Services
             (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
 
             // ========= 8) Build upstream authorize URL =========
-            // existingSession is null here only when the user is not logged in (anonymous flow).
-            // When we have a session (even one that needs an ACR upgrade) we know the user, so
-            // we must not silently widen the requested acr_values with selfregistered-email.
+            // A live (non-expired) session means the user is logged in and the request is an ACR
+            // upgrade — in that case we know the user and must not silently widen the requested
+            // acr_values with selfregistered-email. An expired session row counts as anonymous:
+            // session-handle / Altinn-2-ticket lookups above do not check expiry, so we mirror the
+            // validity check from the session-reuse branch.
+            bool hasLiveSession = existingSession is not null
+                && existingSession.ExpiresAt.HasValue
+                && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value;
+
             Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
                 provider,
                 upstreamState,
                 upstreamNonce,
                 upstreamPkceChallenge,
                 request,
-                hasExistingSession: existingSession is not null);
+                hasExistingSession: hasLiveSession);
 
             // ========= 9) Return redirect upstream =========
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
