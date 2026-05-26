@@ -5,7 +5,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
 {
     /// <summary>
     /// Wire payload for the 200 OK response from
-    /// <c>POST /register/api/v2/internal/users/self-identified</c>.
+    /// <c>POST /register/api/v2/internal/parties/self-identified</c>.
     /// </summary>
     public sealed class SelfIdentifiedUserProvisioningResponse
     {
@@ -23,7 +23,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
 
         /// <summary>Gets or sets the username.</summary>
         [JsonPropertyName("userName")]
-        public string UserName { get; set; } = string.Empty;
+        public required string UserName { get; set; }
 
         /// <summary>Gets or sets the self-identified user type.</summary>
         [JsonPropertyName("selfIdentifiedUserType")]

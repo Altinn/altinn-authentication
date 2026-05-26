@@ -131,7 +131,19 @@ internal static class AuthenticationHost
         services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();
         services.AddHttpClient<IResourceRegistryClient, ResourceRegistryClient>();
         services.AddHttpClient<IPartiesClient, PartiesClient>();
-        services.AddHttpClient<IRegisterUserProvisioningClient, RegisterUserProvisioningClient>();
+        services.AddHttpClient<IRegisterUserProvisioningClient, RegisterUserProvisioningClient>((sp, client) =>
+        {
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Altinn.Authentication.Integration.Configuration.PlatformSettings>>().Value;
+            var baseAddress = settings.ApiRegisterInternalEndpoint
+                ?? throw new InvalidOperationException("PlatformSettings.ApiRegisterInternalEndpoint is not configured.");
+            client.BaseAddress = new Uri(baseAddress);
+
+            if (!string.IsNullOrEmpty(settings.SubscriptionKeyHeaderName)
+                && !string.IsNullOrEmpty(settings.SubscriptionKey))
+            {
+                client.DefaultRequestHeaders.Add(settings.SubscriptionKeyHeaderName, settings.SubscriptionKey);
+            }
+        });
         services.AddHttpClient<IProfile, ProfileService>();
         services.AddHttpClient<IOidcDownstreamLogout, OidcDownstreamLogoutClient>();
         services.AddSingleton<IAccessTokenGenerator, AccessTokenGenerator>();

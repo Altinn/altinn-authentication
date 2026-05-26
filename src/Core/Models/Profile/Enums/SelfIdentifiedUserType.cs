@@ -5,7 +5,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile.Enums
     /// <summary>
     /// The self-identified user type. Mirrors register's
     /// <c>Altinn.Register.Contracts.SelfIdentifiedUserType</c> wire shape so payloads round-trip
-    /// across the <c>POST /register/api/v2/internal/users/self-identified</c> contract.
+    /// across the <c>POST /register/api/v2/internal/parties/self-identified</c> contract.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter<SelfIdentifiedUserType>))]
     public enum SelfIdentifiedUserType

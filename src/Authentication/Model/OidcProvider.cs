@@ -1,5 +1,3 @@
-using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
-
 namespace Altinn.Platform.Authentication.Model
 {
     /// <summary>
@@ -86,14 +84,5 @@ namespace Altinn.Platform.Authentication.Model
         /// Defines the default authentication method
         /// </summary>
         public string DefaultAuthenticationMethod { get; set; } = "SelfIdentified";
-
-        /// <summary>
-        /// The self-identified user type used when provisioning a new user from this provider via
-        /// register's <c>POST /register/api/v2/internal/users/self-identified</c> endpoint
-        /// (only consulted when the <c>RegisterSelfIdentifiedUserProvisioning</c> feature flag is on).
-        /// Defaults to <see cref="SelfIdentifiedUserType.Legacy"/>; set to
-        /// <see cref="SelfIdentifiedUserType.Educational"/> for UIDP / FEIDE providers.
-        /// </summary>
-        public SelfIdentifiedUserType SelfIdentifiedUserType { get; set; } = SelfIdentifiedUserType.Legacy;
     }
 }

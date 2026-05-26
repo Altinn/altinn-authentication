@@ -1494,12 +1494,11 @@ namespace Altinn.Platform.Authentication.Services
             {
                 string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
                 string userName = CreateUserName(userAuthenticationModel, provider);
-                SelfIdentifiedUserType selfIdentifiedUserType = provider?.SelfIdentifiedUserType ?? SelfIdentifiedUserType.Legacy;
 
                 if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
                 {
                     var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
-                        selfIdentifiedUserType,
+                        SelfIdentifiedUserType.Educational,
                         issExternalIdentity,
                         userName,
                         email: null,

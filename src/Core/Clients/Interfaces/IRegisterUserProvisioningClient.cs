@@ -4,7 +4,7 @@ namespace Altinn.Authentication.Core.Clients.Interfaces
 {
     /// <summary>
     /// Client for register's permanent self-identified-user provisioning endpoint
-    /// (<c>POST /register/api/v2/internal/users/self-identified</c>). Replaces the
+    /// (<c>POST /register/api/v2/internal/parties/self-identified</c>). Replaces the
     /// SBL Bridge <c>users/</c> + <c>users/create/</c> two-call flow with one
     /// atomic get-or-create call. Gated by the
     /// <c>RegisterSelfIdentifiedUserProvisioning</c> feature flag.
