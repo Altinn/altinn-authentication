@@ -28,7 +28,7 @@
 
         /// <summary>
         /// Gets or sets the register internal v2 api endpoint
-        /// (e.g. <c>https://platform.&lt;env&gt;.altinn.cloud/register/api/v2/internal/users/</c>).
+        /// (e.g. <c>https://platform.&lt;env&gt;.altinn.cloud/register/api/v2/internal/</c>).
         /// Used by <see cref="Altinn.Authentication.Core.Clients.Interfaces.IRegisterUserProvisioningClient"/>.
         /// </summary>
         public string? ApiRegisterInternalEndpoint { get; set; }

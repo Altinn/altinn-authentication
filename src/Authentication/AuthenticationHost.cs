@@ -136,6 +136,14 @@ internal static class AuthenticationHost
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Altinn.Authentication.Integration.Configuration.PlatformSettings>>().Value;
             var baseAddress = settings.ApiRegisterInternalEndpoint
                 ?? throw new InvalidOperationException("PlatformSettings.ApiRegisterInternalEndpoint is not configured.");
+
+            // HttpClient.BaseAddress merges relative request URIs per RFC 3986: without a trailing
+            // '/', the last path segment is treated as a "file" and replaced by the relative path.
+            if (!baseAddress.EndsWith('/'))
+            {
+                baseAddress += "/";
+            }
+
             client.BaseAddress = new Uri(baseAddress);
 
             if (!string.IsNullOrEmpty(settings.SubscriptionKeyHeaderName)
