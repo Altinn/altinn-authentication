@@ -42,9 +42,14 @@ namespace Altinn.Platform.Authentication.Core.Constants
         public const string POLICY_SYSTEMUSER_OVERVIEW_READ = "SystemUserOverviewRead";
 
         /// <summary>
-        /// Policy tag for writing system user overview
+        /// Policy tag for reading client administration
         /// </summary>
-        public const string POLICY_SYSTEMUSER_OVERVIEW_WRITE = "SystemUserOverviewWrite";
+        public const string POLICY_CLIENT_ADMINISTRATION_READ = "ClientAdministrationRead";
+
+        /// <summary>
+        /// Policy tag for writing client administration
+        /// </summary>
+        public const string POLICY_CLIENT_ADMINISTRATION_WRITE = "ClientAdministrationWrite";
 
         /// <summary>
         /// Policy tag for reading access management information

@@ -216,12 +216,22 @@ namespace Altinn.Platform.Authentication.Services
             (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
 
             // ========= 8) Build upstream authorize URL =========
+            // A live (non-expired) session means the user is logged in and the request is an ACR
+            // upgrade — in that case we know the user and must not silently widen the requested
+            // acr_values with selfregistered-email. An expired session row counts as anonymous:
+            // session-handle / Altinn-2-ticket lookups above do not check expiry, so we mirror the
+            // validity check from the session-reuse branch.
+            bool hasLiveSession = existingSession is not null
+                && existingSession.ExpiresAt.HasValue
+                && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value;
+
             Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
                 provider,
                 upstreamState,
                 upstreamNonce,
                 upstreamPkceChallenge,
-                request);
+                request,
+                hasExistingSession: hasLiveSession);
 
             // ========= 9) Return redirect upstream =========
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
@@ -1377,7 +1387,8 @@ namespace Altinn.Platform.Authentication.Services
                 string upstreamState,
                 string upstreamNonce,
                 string upstreamCodeChallenge,
-                AuthorizeRequest incoming)
+                AuthorizeRequest incoming,
+                bool hasExistingSession)
         {
             var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
             q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
@@ -1395,7 +1406,11 @@ namespace Altinn.Platform.Authentication.Services
                 q["acr_values"] = string.Join(' ', incoming.AcrValues);
             }
 
-            if (q["acr_values"] != null && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
+            // Only widen acr_values with selfregistered-email when the user is anonymous.
+            // On an ACR upgrade for an already-logged-in user the requested LoA must be sent as-is.
+            if (!hasExistingSession
+                && q["acr_values"] != null
+                && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
             {
                 q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + q["acr_values"];
             }
