@@ -5,6 +5,7 @@ using System.Text.Json;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Common.AccessTokenClient.Services;
 using Altinn.Platform.Authentication.Core.Models.Profile;
+using Altinn.Register.Contracts;
 using Microsoft.Extensions.Logging;
 
 namespace Altinn.Authentication.Integration.Clients;
@@ -24,7 +25,7 @@ public sealed class RegisterUserProvisioningClient(
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     /// <inheritdoc/>
-    public async Task<SelfIdentifiedUserProvisioningResponse?> GetOrCreateUser(
+    public async Task<SelfIdentifiedUser?> GetOrCreateUser(
         SelfIdentifiedUserProvisioningRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -44,7 +45,7 @@ public sealed class RegisterUserProvisioningClient(
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                return await response.Content.ReadFromJsonAsync<SelfIdentifiedUserProvisioningResponse>(
+                return await response.Content.ReadFromJsonAsync<SelfIdentifiedUser>(
                     JsonOptions,
                     cancellationToken);
             }

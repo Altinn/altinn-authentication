@@ -25,6 +25,7 @@ using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Register.Contracts;
 using Altinn.Urn;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
@@ -1509,10 +1510,10 @@ namespace Altinn.Platform.Authentication.Services
                         return userAuthenticationModel;
                     }
 
-                    userAuthenticationModel.UserID = (int)provisioned.UserId;
-                    userAuthenticationModel.PartyID = (int)provisioned.PartyId;
-                    userAuthenticationModel.PartyUuid = provisioned.PartyUuid;
-                    userAuthenticationModel.Username = provisioned.UserName;
+                    userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                    userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                    userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                    userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
                     userAuthenticationModel.Amr = ["SelfIdentified"];
                     userAuthenticationModel.Acr = "Selfidentified";
                     return userAuthenticationModel;
@@ -1565,10 +1566,10 @@ namespace Altinn.Platform.Authentication.Services
                         return userAuthenticationModel;
                     }
 
-                    userAuthenticationModel.UserID = (int)provisioned.UserId;
-                    userAuthenticationModel.PartyID = (int)provisioned.PartyId;
-                    userAuthenticationModel.PartyUuid = provisioned.PartyUuid;
-                    userAuthenticationModel.Username = provisioned.UserName;
+                    userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                    userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                    userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                    userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
                     return userAuthenticationModel;
                 }
 
@@ -1612,7 +1613,7 @@ namespace Altinn.Platform.Authentication.Services
             return userAuthenticationModel;
         }
 
-        private async Task<SelfIdentifiedUserProvisioningResponse?> GetOrCreateSelfIdentifiedUserViaRegister(
+        private async Task<SelfIdentifiedUser?> GetOrCreateSelfIdentifiedUserViaRegister(
             SelfIdentifiedUserType selfIdentifiedUserType,
             string externalIdentity,
             string userName,

@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
+using Altinn.Register.Contracts;
 
 namespace Altinn.Platform.Authentication.Core.Models.Profile
 {

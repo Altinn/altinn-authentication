@@ -1,4 +1,5 @@
 using Altinn.Platform.Authentication.Core.Models.Profile;
+using Altinn.Register.Contracts;
 
 namespace Altinn.Authentication.Core.Clients.Interfaces
 {
@@ -17,7 +18,7 @@ namespace Altinn.Authentication.Core.Clients.Interfaces
         /// <param name="request">The provisioning request.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>The provisioned user, or <see langword="null"/> on transport failure.</returns>
-        Task<SelfIdentifiedUserProvisioningResponse?> GetOrCreateUser(
+        Task<SelfIdentifiedUser?> GetOrCreateUser(
             SelfIdentifiedUserProvisioningRequest request,
             CancellationToken cancellationToken = default);
     }
