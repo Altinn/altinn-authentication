@@ -11,18 +11,21 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Clients.Interfaces;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Models.Profile;
+using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Altinn.Register.Contracts;
 using Altinn.Urn;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
@@ -47,6 +50,7 @@ namespace Altinn.Platform.Authentication.Services
         IOidcProvider oidcProvider,
         IUpstreamTokenValidator upstreamTokenValidator,
         IUserProfileService userProfileService,
+        IRegisterUserProvisioningClient registerUserProvisioningClient,
         IProfile profile,
         IOidcSessionRepository oidcSessionRepository,
         IAuthorizationCodeRepository authorizationCodeRepository,
@@ -70,6 +74,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly IOidcProvider _oidcProvider = oidcProvider;
         private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
         private readonly IUserProfileService _userProfileService = userProfileService;
+        private readonly IRegisterUserProvisioningClient _registerUserProvisioningClient = registerUserProvisioningClient;
         private readonly IProfile _profileService = profile;
         private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
         private readonly IAuthorizationCodeRepository _authorizationCodeRepo = authorizationCodeRepository;
@@ -211,12 +216,22 @@ namespace Altinn.Platform.Authentication.Services
             (OidcProvider provider, string upstreamState, string upstreamNonce, string upstreamPkceChallenge) = await CreateUpstreamLoginTransaction(request, tx, cancellationToken);
 
             // ========= 8) Build upstream authorize URL =========
+            // A live (non-expired) session means the user is logged in and the request is an ACR
+            // upgrade — in that case we know the user and must not silently widen the requested
+            // acr_values with selfregistered-email. An expired session row counts as anonymous:
+            // session-handle / Altinn-2-ticket lookups above do not check expiry, so we mirror the
+            // validity check from the session-reuse branch.
+            bool hasLiveSession = existingSession is not null
+                && existingSession.ExpiresAt.HasValue
+                && _timeProvider.GetUtcNow() < existingSession.ExpiresAt.Value;
+
             Uri authorizeUrl = BuildUpstreamAuthorizeUrl(
                 provider,
                 upstreamState,
                 upstreamNonce,
                 upstreamPkceChallenge,
-                request);
+                request,
+                hasExistingSession: hasLiveSession);
 
             // ========= 9) Return redirect upstream =========
             return AuthorizeResult.RedirectUpstream(authorizeUrl, upstreamState, tx.RequestId);
@@ -1372,7 +1387,8 @@ namespace Altinn.Platform.Authentication.Services
                 string upstreamState,
                 string upstreamNonce,
                 string upstreamCodeChallenge,
-                AuthorizeRequest incoming)
+                AuthorizeRequest incoming,
+                bool hasExistingSession)
         {
             var q = System.Web.HttpUtility.ParseQueryString(string.Empty);
             q["response_type"] = string.IsNullOrWhiteSpace(p.ResponseType) ? "code" : p.ResponseType;
@@ -1390,7 +1406,11 @@ namespace Altinn.Platform.Authentication.Services
                 q["acr_values"] = string.Join(' ', incoming.AcrValues);
             }
 
-            if (q["acr_values"] != null && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
+            // Only widen acr_values with selfregistered-email when the user is anonymous.
+            // On an ACR upgrade for an already-logged-in user the requested LoA must be sent as-is.
+            if (!hasExistingSession
+                && q["acr_values"] != null
+                && !q["acr_values"]!.Contains(AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL))
             {
                 q["acr_values"] = AuthzConstants.CLAIM_ACR_IDPORTEN_EMAIL + " " + q["acr_values"];
             }
@@ -1489,6 +1509,31 @@ namespace Altinn.Platform.Authentication.Services
             else if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
             {
                 string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
+                string userName = CreateUserName(userAuthenticationModel, provider);
+
+                if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
+                {
+                    var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                        SelfIdentifiedUserType.Educational,
+                        issExternalIdentity,
+                        userName,
+                        email: null,
+                        CancellationToken.None);
+
+                    if (provisioned is null)
+                    {
+                        return userAuthenticationModel;
+                    }
+
+                    userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                    userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                    userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                    userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
+                    userAuthenticationModel.Amr = ["SelfIdentified"];
+                    userAuthenticationModel.Acr = "Selfidentified";
+                    return userAuthenticationModel;
+                }
+
                 userProfile = await _userProfileService.GetUser(issExternalIdentity);
 
                 if (userProfile != null)
@@ -1505,7 +1550,7 @@ namespace Altinn.Platform.Authentication.Services
                 UserProfile userToCreate = new()
                 {
                     ExternalIdentity = issExternalIdentity,
-                    UserName = CreateUserName(userAuthenticationModel, provider),
+                    UserName = userName,
                     UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
                 };
 
@@ -1520,6 +1565,29 @@ namespace Altinn.Platform.Authentication.Services
             {
                 // TODO. Usikker om vi trenger å prefixe med iss nå
                 string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + UrnEncoded.Create(userAuthenticationModel.Email.ToLowerInvariant()).Encoded;
+                string userName = "epost:" + userAuthenticationModel.Email;
+
+                if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
+                {
+                    var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                        SelfIdentifiedUserType.IdPortenEmail,
+                        issExternalIdentity,
+                        userName,
+                        userAuthenticationModel.Email,
+                        CancellationToken.None);
+
+                    if (provisioned is null)
+                    {
+                        return userAuthenticationModel;
+                    }
+
+                    userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                    userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                    userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                    userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
+                    return userAuthenticationModel;
+                }
+
                 userProfile = await _userProfileService.GetUser(issExternalIdentity);
 
                 if (userProfile != null)
@@ -1535,7 +1603,7 @@ namespace Altinn.Platform.Authentication.Services
                 UserProfile userToCreate = new()
                 {
                     ExternalIdentity = issExternalIdentity,
-                    UserName = "epost:" + userAuthenticationModel.Email,
+                    UserName = userName,
                     UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
                 };
 
@@ -1558,6 +1626,33 @@ namespace Altinn.Platform.Authentication.Services
             }
             
             return userAuthenticationModel;
+        }
+
+        private async Task<SelfIdentifiedUser?> GetOrCreateSelfIdentifiedUserViaRegister(
+            SelfIdentifiedUserType selfIdentifiedUserType,
+            string externalIdentity,
+            string userName,
+            string? email,
+            CancellationToken cancellationToken)
+        {
+            var request = new SelfIdentifiedUserProvisioningRequest
+            {
+                SelfIdentifiedUserType = selfIdentifiedUserType,
+                ExternalIdentity = externalIdentity,
+                UserName = userName,
+                Email = email,
+            };
+
+            var response = await _registerUserProvisioningClient.GetOrCreateUser(request, cancellationToken);
+
+            if (response is null)
+            {
+                _logger.LogError(
+                    "Register self-identified provisioning returned no result for externalIdentity {ExternalIdentity}; sign-in cannot complete.",
+                    externalIdentity);
+            }
+
+            return response;
         }
 
         private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)

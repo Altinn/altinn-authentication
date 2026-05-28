@@ -1534,6 +1534,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
             Debug.Assert(createdUpstreamLogingTransaction != null);
 
+            // First /authorize is anonymous (no existing session): upstream acr_values must be widened with
+            // selfregistered-email so the user can still pick e-mail login at ID-porten.
+            string initialUpstreamAcr = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["acr_values"] ?? string.Empty;
+            Assert.Equal("selfregistered-email idporten-loa-substantial", initialUpstreamAcr);
+
             // Assume it takes 1 minute for the user to authenticate at the upstream provider
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
 
@@ -1608,6 +1613,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // Assert: Result of /authorize. Should be a redirect to upstream provider with code_challenge, state, etc. LoginTransaction should be persisted. UpstreamLoginTransaction should be persisted.
             (string? upstreamUpgradeState, UpstreamLoginTransaction? createdUpstreamUpgradeLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationUpgradeRequestResponse, _fakeTime.GetUtcNow());
             Debug.Assert(createdUpstreamUpgradeLogingTransaction != null);
+
+            // Upgrade /authorize runs with an existing session, so the user is known: upstream acr_values
+            // must be exactly what the downstream client asked for — selfregistered-email must NOT be
+            // appended on top of the higher LoA. See issue #1988.
+            string upgradeUpstreamAcr = HttpUtility.ParseQueryString(authorizationUpgradeRequestResponse.Headers.Location!.Query)["acr_values"] ?? string.Empty;
+            Assert.Equal("idporten-loa-high", upgradeUpstreamAcr);
 
             // Assume it takes 1 minute for the user to authenticate at the upstream provider. Now with BankID level 4
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
