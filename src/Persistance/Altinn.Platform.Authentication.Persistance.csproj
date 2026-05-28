@@ -19,6 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Altinn.Authorization.ServiceDefaults" Version="5.5.0" />
 	  <PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="5.2.2" />
 	  <PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql.Yuniql" Version="5.2.2" />
 	  <PackageReference Include="Altinn.Register.Contracts" Version="1.7.0" />
