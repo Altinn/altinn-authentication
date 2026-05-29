@@ -36,6 +36,7 @@ namespace Altinn.Platform.Authentication.Services
             ResourceType.CorrespondenceService,
             ResourceType.BrokerService,
             ResourceType.GenericAccessResource,
+            ResourceType.MigratedApp
         };
 
         /// <summary>
