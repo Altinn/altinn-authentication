@@ -252,7 +252,7 @@ public class RequestSystemUserService(
     /// Validate that the combination of SystemId, PartyOrg and External ref does not currently exist in the active Request table (not soft-deleted).
     /// If a pending Request exists with the same ExternalRequestId, we return the pending Request.
     /// If an active SystemUser exists with the same ExternalRequestId, we return a Problem.
-    /// If the id's refer to a Rejected or Denied Request, we soft-delete the old Request so a new one can be generated.
+    /// If the id's refer to a Rejected Request, we soft-delete the old Request so a new one can be generated.
     /// </summary>
     /// <param name="externalRequestId">Combination of SystemId, PartyOrg and External Ref</param>
     /// <returns>Result or Problem</returns>
@@ -270,10 +270,10 @@ public class RequestSystemUserService(
             return Problem.ExternalRequestIdPending;
         }
 
-        // A previously Rejected or Denied Request must not block the creation of a new Request for the
+        // A previously Rejected Request must not block the creation of a new Request for the
         // same ExternalRequestId. Soft-delete the old Request so a fresh one can be generated, even when
         // no ExternalRef is supplied (in which case it defaults to the PartyOrgNo).
-        if (res is not null && (res.Status == RequestStatus.Denied.ToString() || res.Status == RequestStatus.Rejected.ToString()))
+        if (res is not null && res.Status == RequestStatus.Rejected.ToString())
         {
             await requestRepository.DeleteRequestByRequestId(res.Id);
         }

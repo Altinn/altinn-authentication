@@ -2903,6 +2903,73 @@ public class RequestControllerTests(
     }
 
     [Fact]
+    public async Task Request_Create_AfterReject_WithoutExternalRef_GeneratesNewRequest()
+    {
+        // Create System used for test
+        string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+        await CreateSystemRegister(dataFileName);
+
+        HttpClient client = CreateClient();
+        AddSystemUserRequestWriteTestTokenToClient(client);
+        const string endpoint = "/authentication/api/v1/systemuser/request/vendor";
+
+        Right right = new()
+        {
+            Resource =
+            [
+                new AttributePair
+                {
+                    Id = "urn:altinn:resource",
+                    Value = "ske-krav-og-betalinger"
+                }
+            ]
+        };
+
+        // Arrange: a request WITHOUT an ExternalRef (it defaults to the PartyOrgNo)
+        CreateRequestSystemUser req = new()
+        {
+            SystemId = "991825827_the_matrix",
+            PartyOrgNo = "910493353",
+            Rights = [right]
+        };
+
+        // Act: vendor creates the first request
+        HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.Created, message.StatusCode);
+
+        RequestSystemResponse? firstRequest = await message.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(firstRequest);
+
+        // The end user rejects the first request
+        HttpClient partyClient = CreateClient();
+        partyClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
+        int partyId = 500000;
+
+        string rejectEndpoint = $"/authentication/api/v1/systemuser/request/{partyId}/{firstRequest.Id}/reject";
+        HttpResponseMessage rejectResponseMessage = await partyClient.SendAsync(new HttpRequestMessage(HttpMethod.Post, rejectEndpoint), HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, rejectResponseMessage.StatusCode);
+
+        // Act: vendor creates a new request again WITHOUT an ExternalRef, same System and PartyOrgNo
+        HttpRequestMessage secondRequestMessage = new(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(req)
+        };
+        HttpResponseMessage secondMessage = await client.SendAsync(secondRequestMessage, HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert: a brand new request is generated, not the old rejected one returned
+        Assert.Equal(HttpStatusCode.Created, secondMessage.StatusCode);
+
+        RequestSystemResponse? secondRequest = await secondMessage.Content.ReadFromJsonAsync<RequestSystemResponse>();
+        Assert.NotNull(secondRequest);
+        Assert.NotEqual(firstRequest.Id, secondRequest.Id);
+        Assert.Equal(RequestStatus.New.ToString(), secondRequest.Status);
+    }
+
+    [Fact]
     public async Task Approve_ClientRequest_By_RequestId_Success()
     {
         // Create System used for test
