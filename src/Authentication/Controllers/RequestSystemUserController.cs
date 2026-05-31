@@ -119,9 +119,14 @@ public class RequestSystemUserController : ControllerBase
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
         }
 
-        // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
+        // Check to see if the Request already exists, and is still active (a New or Accepted Request).
+        // A Timed Out, Rejected or Denied Request must not be returned; instead we fall through and
+        // generate a brand new Request (the old one is soft-deleted in the service).
         Result<RequestSystemResponse> response = await _requestSystemUser.GetRequestByExternalRef(externalRequestId, vendorOrgNo);
-        if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
+        if (response.IsSuccess
+            && response.Value.Status != RequestStatus.Timedout.ToString()
+            && response.Value.Status != RequestStatus.Rejected.ToString()
+            && response.Value.Status != RequestStatus.Denied.ToString())
         {
             response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_STANDARD_REQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
@@ -172,9 +177,14 @@ public class RequestSystemUserController : ControllerBase
             return ProblemInstance.Create(Altinn.Authentication.Core.Problems.Problem.SystemUser_AlreadyExists).ToActionResult();
         }
 
-        // Check to see if the Request already exists, and is still active ( Status is not Timed Out)
+        // Check to see if the Request already exists, and is still active (a New or Accepted Request).
+        // A Timed Out, Rejected or Denied Request must not be returned; instead we fall through and
+        // generate a brand new Request (the old one is soft-deleted in the service).
         Result<AgentRequestSystemResponse> response = await _requestSystemUser.GetAgentRequestByExternalRef(externalRequestId, vendorOrgNo);
-        if (response.IsSuccess && response.Value.Status != RequestStatus.Timedout.ToString())
+        if (response.IsSuccess
+            && response.Value.Status != RequestStatus.Timedout.ToString()
+            && response.Value.Status != RequestStatus.Rejected.ToString()
+            && response.Value.Status != RequestStatus.Denied.ToString())
         {
             response.Value.ConfirmUrl = CONFIRMURL_PREFIX + _generalSettings.HostName + CONFIRMURL_AGENTREQUEST + response.Value.Id + REPORTEESELECTIONPARAMETER;
             return Ok(response.Value);
