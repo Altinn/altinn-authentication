@@ -107,6 +107,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 OidcProvider provider = GetOidcProvider(orgIss);
                 if (provider == null)
                 {
+                    DeleteLegacySblCookies();
                     _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
                     return Redirect(await ResolveLogoutFallbackAsync());
                 }
@@ -162,6 +163,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Redirect(redirectUrl.Value);
             }
 
+            DeleteLegacySblCookies();
             return Redirect(await ResolveLogoutFallbackAsync());
         }
 
@@ -173,6 +175,16 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return _generalSettings.SBLLogoutEndpoint;
+        }
+
+        private void DeleteLegacySblCookies()
+        {
+            CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
+            Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
+            if (!string.Equals(_generalSettings.SblAuthCookieEnvSpecificName, _generalSettings.SblAuthCookieName, StringComparison.Ordinal))
+            {
+                Response.Cookies.Delete(_generalSettings.SblAuthCookieEnvSpecificName, opt);
+            }
         }
 
         /// <summary>
