@@ -108,7 +108,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 if (provider == null)
                 {
                     _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
-                    return Redirect(_generalSettings.SBLLogoutEndpoint);
+                    return Redirect(await ResolveLogoutFallbackAsync());
                 }
 
                 CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
@@ -162,7 +162,17 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Redirect(redirectUrl.Value);
             }
 
-            return Redirect(_generalSettings.SBLLogoutEndpoint);
+            return Redirect(await ResolveLogoutFallbackAsync());
+        }
+
+        private async Task<string> ResolveLogoutFallbackAsync()
+        {
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.Altinn2LogoutRedirectDisabled))
+            {
+                return _generalSettings.BaseUrl;
+            }
+
+            return _generalSettings.SBLLogoutEndpoint;
         }
 
         /// <summary>

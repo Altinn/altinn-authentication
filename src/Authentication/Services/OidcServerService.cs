@@ -505,7 +505,7 @@ namespace Altinn.Platform.Authentication.Services
                 _logger.LogDebug("EndSession: no sid from cookie or id_token_hint; returning cookie delete only.");
                 return new EndSessionResult
                 {
-                    RedirectUri = new Uri(_generalSettings.SBLLogoutEndpoint), // Redirect to SBL logout as a safe default
+                    RedirectUri = await ResolveLogoutFallbackAsync(),
                     State = input.State,
                     Cookies = new[]
                     {
@@ -566,7 +566,8 @@ namespace Altinn.Platform.Authentication.Services
                 if (issuer.Equals(AuthzConstants.ISSUER_ALTINN_PORTAL, StringComparison.OrdinalIgnoreCase))
                 {
                     // Session was created based on Altinn 2 ticket. Redirect back to Altinn 2 for logout
-                    redirect = new Uri(_generalSettings.SBLLogoutEndpoint);
+                    // unless the Altinn 2 servers are gone — in which case fall back to BaseUrl.
+                    redirect = await ResolveLogoutFallbackAsync();
                 }
                 else
                 {
@@ -634,6 +635,16 @@ namespace Altinn.Platform.Authentication.Services
                 State = input.State,
                 Cookies = [deleteRuntime, deleteSession]
             };
+        }
+
+        private async Task<Uri> ResolveLogoutFallbackAsync()
+        {
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.Altinn2LogoutRedirectDisabled))
+            {
+                return new Uri(_generalSettings.BaseUrl);
+            }
+
+            return new Uri(_generalSettings.SBLLogoutEndpoint);
         }
 
         /// <summary>
