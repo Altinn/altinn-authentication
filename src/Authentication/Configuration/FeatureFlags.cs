@@ -32,11 +32,11 @@
         public const string SblBridgeCookieTicketDecryption = "SblBridgeCookieTicketDecryption";
 
         /// <summary>
-        /// When enabled, disables the SBL Bridge enterprise-user authentication call
-        /// (<c>POST authentication/api/enterpriseuser</c>) and returns HTTP 410 Gone with a
+        /// When enabled, disables the enterprise-user authentication path (SBL Bridge
+        /// <c>POST authentication/api/enterpriseuser</c>) and returns HTTP 410 Gone with a
         /// problem-details body pointing callers to Systembruker or ID-porten. Tracked in
         /// issue #2008 (SBL Bridge decommission, deadline 2026-06-19).
         /// </summary>
-        public const string SblBridgeEnterpriseUserAuthentication = "SblBridgeEnterpriseUserAuthentication";
+        public const string EnterpriseUserAuthenticationDisabled = "EnterpriseUserAuthenticationDisabled";
     }
 }

@@ -743,7 +743,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private async Task<(UserAuthenticationResult? AuthenticatedEnterpriseUser, ActionResult? Error)> HandleEnterpriseUserLogin(string enterpriseUserHeader, string orgNumber)
         {
-            if (await _featureManager.IsEnabledAsync(FeatureFlags.SblBridgeEnterpriseUserAuthentication))
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.EnterpriseUserAuthenticationDisabled))
             {
                 ProblemDetails problem = new ProblemDetails
                 {
