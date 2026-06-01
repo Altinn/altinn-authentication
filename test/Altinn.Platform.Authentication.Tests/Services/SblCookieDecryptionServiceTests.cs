@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Services;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 
 using Moq;
 using Moq.Protected;
@@ -27,6 +28,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         private readonly Mock<HttpMessageHandler> _handlerMock;
         private readonly Mock<IOptions<GeneralSettings>> _generalSettingsOptions;
         private readonly Mock<ILogger<SblCookieDecryptionService>> _logger;
+        private readonly Mock<IFeatureManager> _featureManager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SblCookieDecryptionServiceTests"/> class.
@@ -36,6 +38,8 @@ namespace Altinn.Platform.Authentication.Tests.Services
             _generalSettingsOptions = new Mock<IOptions<GeneralSettings>>();
             _handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             _logger = new Mock<ILogger<SblCookieDecryptionService>>();
+            _featureManager = new Mock<IFeatureManager>();
+            _featureManager.Setup(f => f.IsEnabledAsync(It.IsAny<string>())).ReturnsAsync(false);
         }
 
         /// <summary>
@@ -55,7 +59,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             InitializeMocks(httpResponseMessage);
 
             HttpClient httpClient = new HttpClient(_handlerMock.Object);
-            SblCookieDecryptionService target = new SblCookieDecryptionService(httpClient, _generalSettingsOptions.Object, _logger.Object);
+            SblCookieDecryptionService target = new SblCookieDecryptionService(httpClient, _generalSettingsOptions.Object, _logger.Object, _featureManager.Object);
 
             // Act
             UserAuthenticationModel actual = await target.DecryptTicket("random and irrelevant bytes");
@@ -82,7 +86,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             InitializeMocks(httpResponseMessage);
 
             HttpClient httpClient = new HttpClient(_handlerMock.Object);
-            SblCookieDecryptionService target = new SblCookieDecryptionService(httpClient, _generalSettingsOptions.Object, _logger.Object);
+            SblCookieDecryptionService target = new SblCookieDecryptionService(httpClient, _generalSettingsOptions.Object, _logger.Object, _featureManager.Object);
 
             SblBridgeResponseException actual = null;
 
@@ -119,7 +123,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             InitializeMocks(httpResponseMessage);
 
             HttpClient httpClient = new HttpClient(_handlerMock.Object);
-            SblCookieDecryptionService target = new SblCookieDecryptionService(httpClient, _generalSettingsOptions.Object, _logger.Object);
+            SblCookieDecryptionService target = new SblCookieDecryptionService(httpClient, _generalSettingsOptions.Object, _logger.Object, _featureManager.Object);
 
             // Act
             UserAuthenticationModel actual = await target.DecryptTicket("random and irrelevant bytes");
@@ -128,6 +132,32 @@ namespace Altinn.Platform.Authentication.Tests.Services
             _handlerMock.VerifyAll();
 
             Assert.Null(actual);
+        }
+
+        /// <summary>
+        /// Testing the <see cref="SblCookieDecryptionService.DecryptTicket"/> method.
+        /// </summary>
+        [Fact]
+        public async Task DecryptTicket_FeatureFlagEnabled_ReturnsNullWithoutCallingBridge()
+        {
+            // Arrange
+            GeneralSettings generalSettings = new GeneralSettings { BridgeAuthnApiEndpoint = "http://localhost", OidcRefreshTokenPepper = "YWRzZmFzZmRhc2ZzYWVmZWY=" };
+            _generalSettingsOptions.Setup(s => s.Value).Returns(generalSettings);
+            _featureManager.Setup(f => f.IsEnabledAsync(FeatureFlags.SblBridgeCookieTicketDecryption)).ReturnsAsync(true);
+
+            HttpClient httpClient = new HttpClient(_handlerMock.Object);
+            SblCookieDecryptionService target = new SblCookieDecryptionService(httpClient, _generalSettingsOptions.Object, _logger.Object, _featureManager.Object);
+
+            // Act
+            UserAuthenticationModel actual = await target.DecryptTicket("random and irrelevant bytes");
+
+            // Assert
+            Assert.Null(actual);
+            _handlerMock.Protected().Verify(
+                "SendAsync",
+                Times.Never(),
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>());
         }
 
         private void InitializeMocks(HttpResponseMessage httpResponseMessage)

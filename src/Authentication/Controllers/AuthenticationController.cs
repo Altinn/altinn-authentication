@@ -743,6 +743,18 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private async Task<(UserAuthenticationResult? AuthenticatedEnterpriseUser, ActionResult? Error)> HandleEnterpriseUserLogin(string enterpriseUserHeader, string orgNumber)
         {
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.SblBridgeEnterpriseUserAuthentication))
+            {
+                ProblemDetails problem = new ProblemDetails
+                {
+                    Status = StatusCodes.Status410Gone,
+                    Title = "Virksomhetsbruker is no longer available",
+                    Detail = "Virksomhetsbruker (enterprise user) is no longer available. It has been replaced by Systembruker (system user) or ID-porten, depending on the use case. See https://docs.altinn.studio for migration guidance.",
+                    Type = "https://docs.altinn.studio"
+                };
+                return (null, new ObjectResult(problem) { StatusCode = StatusCodes.Status410Gone });
+            }
+
             EnterpriseUserCredentials credentials;
 
             try

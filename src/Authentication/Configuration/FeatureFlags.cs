@@ -22,5 +22,21 @@
         /// one atomic call. Tracked under the SBL Bridge decommission (deadline 2026-06-19).
         /// </summary>
         public const string RegisterSelfIdentifiedUserProvisioning = "RegisterSelfIdentifiedUserProvisioning";
+
+        /// <summary>
+        /// When enabled, disables the SBL Bridge cookie ticket decryption call
+        /// (<c>POST authentication/api/tickets</c>). No replacement exists; the A2 cookie→token
+        /// flow will be removed entirely after the SBL Bridge decommission (deadline 2026-06-19).
+        /// Tracked in issue #2008.
+        /// </summary>
+        public const string SblBridgeCookieTicketDecryption = "SblBridgeCookieTicketDecryption";
+
+        /// <summary>
+        /// When enabled, disables the SBL Bridge enterprise-user authentication call
+        /// (<c>POST authentication/api/enterpriseuser</c>) and returns HTTP 410 Gone with a
+        /// problem-details body pointing callers to Systembruker or ID-porten. Tracked in
+        /// issue #2008 (SBL Bridge decommission, deadline 2026-06-19).
+        /// </summary>
+        public const string SblBridgeEnterpriseUserAuthentication = "SblBridgeEnterpriseUserAuthentication";
     }
 }
