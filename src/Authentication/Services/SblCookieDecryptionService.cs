@@ -47,9 +47,9 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc />
         public async Task<UserAuthenticationModel> DecryptTicket(string encryptedTicket)
         {
-            if (await _featureManager.IsEnabledAsync(FeatureFlags.SblBridgeCookieTicketDecryption))
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.CookieTicketDecryptionDisabled))
             {
-                _logger.LogInformation("SBL Bridge cookie ticket decryption is disabled by feature flag {Flag}", FeatureFlags.SblBridgeCookieTicketDecryption);
+                _logger.LogInformation("Cookie ticket decryption is disabled by feature flag {Flag}", FeatureFlags.CookieTicketDecryptionDisabled);
                 return null;
             }
 

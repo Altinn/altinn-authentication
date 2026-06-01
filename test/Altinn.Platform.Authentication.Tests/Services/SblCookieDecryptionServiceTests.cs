@@ -143,7 +143,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             // Arrange
             GeneralSettings generalSettings = new GeneralSettings { BridgeAuthnApiEndpoint = "http://localhost", OidcRefreshTokenPepper = "YWRzZmFzZmRhc2ZzYWVmZWY=" };
             _generalSettingsOptions.Setup(s => s.Value).Returns(generalSettings);
-            _featureManager.Setup(f => f.IsEnabledAsync(FeatureFlags.SblBridgeCookieTicketDecryption)).ReturnsAsync(true);
+            _featureManager.Setup(f => f.IsEnabledAsync(FeatureFlags.CookieTicketDecryptionDisabled)).ReturnsAsync(true);
 
             HttpClient httpClient = new HttpClient(_handlerMock.Object);
             SblCookieDecryptionService target = new SblCookieDecryptionService(httpClient, _generalSettingsOptions.Object, _logger.Object, _featureManager.Object);
