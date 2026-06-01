@@ -436,16 +436,21 @@ namespace Altinn.Platform.Authentication.Controllers
                         return StatusCode(StatusCodes.Status503ServiceUnavailable);
                     }
 
+                    if (userAuthentication == null)
+                    {
+                        return Redirect(sblRedirectUrl);
+                    }
+
                     if (userAuthentication.UserID.HasValue && userAuthentication.UserID.Value != 0 && userAuthentication.PartyUuid == null)
                     {
                         UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
                         userAuthentication.PartyUuid = profile.UserUuid;
                     }
 
-                    if (userAuthentication != null && userAuthentication.IsAuthenticated)
+                    if (userAuthentication.IsAuthenticated)
                     {
                         await CreateTokenCookie(userAuthentication);
-                        
+
                         return Redirect(validatedGoToUri.AbsoluteUri);
                     }
                 }
