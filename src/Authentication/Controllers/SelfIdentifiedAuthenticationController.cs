@@ -11,7 +11,7 @@ namespace Altinn.Platform.Authentication.Controllers
     /// <summary>
     /// Controller for self identified authentication. This is used for users that are not registered in the system, but still need to be able to authenticate and use the system. The controller should have methods that validates the credentials of the user and returns a token that can be used for subsequent requests.
     /// </summary>
-    [Route("api/[controller]")]
+    [Route("authentication/api/v1/enduser/selfidentified")]
     [ApiController]
     public class SelfIdentifiedAuthenticationController(IUserProfileService profileService) : ControllerBase
     {
