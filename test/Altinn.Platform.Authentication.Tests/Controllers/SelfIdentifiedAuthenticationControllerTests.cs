@@ -131,7 +131,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
             new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, addPortalScope: true, now: TestTime));
 
         return await client.PostAsJsonAsync(
-            "/api/SelfIdentifiedAuthentication/validate-credentials",
+            "/authentication/api/v1/enduser/selfidentified/validate-credentials",
             new SiUserCredentials { UserName = userName, Password = password });
     }
 
