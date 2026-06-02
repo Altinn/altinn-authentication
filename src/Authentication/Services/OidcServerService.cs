@@ -785,7 +785,8 @@ namespace Altinn.Platform.Authentication.Services
                 return new AuthenticateFromSessionResult
                 {
                     Kind = AuthenticateFromSessionResultKind.Success,
-                    Cookies = [cookieInstruction]
+                    Cookies = [cookieInstruction],
+                    Acr = oidcSession.Acr
                 };
             }
 
@@ -843,7 +844,8 @@ namespace Altinn.Platform.Authentication.Services
                 return new AuthenticateFromAltinn2TicketResult
                 {
                     Kind = AuthenticateFromAltinn2TicketResultKind.Success,
-                    Cookies = [cookieInstruction, altinnSessionCookie]
+                    Cookies = [cookieInstruction, altinnSessionCookie],
+                    Acr = session.Acr
                 };
             }
 
