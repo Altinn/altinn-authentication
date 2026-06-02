@@ -503,35 +503,38 @@ namespace Altinn.Platform.Authentication.Services
             if (string.IsNullOrWhiteSpace(sid))
             {
                 _logger.LogDebug("EndSession: no sid from cookie or id_token_hint; returning cookie delete only.");
+                List<CookieInstruction> noSidCookies = new()
+                {
+                    new CookieInstruction
+                    {
+                        Name = _generalSettings.JwtCookieName,
+                        Value = string.Empty,
+                        HttpOnly = true,
+                        Secure = true,
+                        Path = "/",
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UnixEpoch,
+                        Domain = _generalSettings.HostName,
+                    },
+                    new CookieInstruction
+                    {
+                        Name = _generalSettings.AltinnSessionCookieName,
+                        Value = string.Empty,
+                        HttpOnly = true,
+                        Secure = true,
+                        Path = "/",
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UnixEpoch,
+                        Domain = _generalSettings.HostName,
+                    }
+                };
+                noSidCookies.AddRange(BuildLegacySblCookieDeletes());
+
                 return new EndSessionResult
                 {
-                    RedirectUri = new Uri(_generalSettings.SBLLogoutEndpoint), // Redirect to SBL logout as a safe default
+                    RedirectUri = await ResolveLogoutFallbackAsync(),
                     State = input.State,
-                    Cookies = new[]
-                    {
-                        new CookieInstruction
-                        {
-                            Name = _generalSettings.JwtCookieName,
-                            Value = string.Empty,
-                            HttpOnly = true,
-                            Secure = true,
-                            Path = "/",
-                            SameSite = SameSiteMode.Lax,
-                            Expires = DateTimeOffset.UnixEpoch,
-                            Domain = _generalSettings.HostName,
-                        },
-                        new CookieInstruction
-                        {
-                            Name = _generalSettings.AltinnSessionCookieName,
-                            Value = string.Empty,
-                            HttpOnly = true,
-                            Secure = true,
-                            Path = "/",
-                            SameSite = SameSiteMode.Lax,
-                            Expires = DateTimeOffset.UnixEpoch,
-                            Domain = _generalSettings.HostName,
-                        }
-                    }
+                    Cookies = noSidCookies
                 };
             }
 
@@ -566,7 +569,8 @@ namespace Altinn.Platform.Authentication.Services
                 if (issuer.Equals(AuthzConstants.ISSUER_ALTINN_PORTAL, StringComparison.OrdinalIgnoreCase))
                 {
                     // Session was created based on Altinn 2 ticket. Redirect back to Altinn 2 for logout
-                    redirect = new Uri(_generalSettings.SBLLogoutEndpoint);
+                    // unless the Altinn 2 servers are gone — in which case fall back to BaseUrl.
+                    redirect = await ResolveLogoutFallbackAsync();
                 }
                 else
                 {
@@ -628,12 +632,55 @@ namespace Altinn.Platform.Authentication.Services
                 Domain = _generalSettings.HostName,
             };
             
+            List<CookieInstruction> finalCookies = new() { deleteRuntime, deleteSession };
+            finalCookies.AddRange(BuildLegacySblCookieDeletes());
+
             return new EndSessionResult
             {
                 RedirectUri = redirect,
                 State = input.State,
-                Cookies = [deleteRuntime, deleteSession]
+                Cookies = finalCookies
             };
+        }
+
+        private async Task<Uri> ResolveLogoutFallbackAsync()
+        {
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.Altinn2LogoutRedirectDisabled))
+            {
+                return new Uri(_generalSettings.BaseUrl);
+            }
+
+            return new Uri(_generalSettings.SBLLogoutEndpoint);
+        }
+
+        private IEnumerable<CookieInstruction> BuildLegacySblCookieDeletes()
+        {
+            yield return new CookieInstruction
+            {
+                Name = _generalSettings.SblAuthCookieName,
+                Value = string.Empty,
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UnixEpoch,
+                Domain = _generalSettings.HostName,
+            };
+
+            if (!string.Equals(_generalSettings.SblAuthCookieEnvSpecificName, _generalSettings.SblAuthCookieName, StringComparison.Ordinal))
+            {
+                yield return new CookieInstruction
+                {
+                    Name = _generalSettings.SblAuthCookieEnvSpecificName,
+                    Value = string.Empty,
+                    HttpOnly = true,
+                    Secure = true,
+                    Path = "/",
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTimeOffset.UnixEpoch,
+                    Domain = _generalSettings.HostName,
+                };
+            }
         }
 
         /// <summary>

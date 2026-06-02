@@ -13,6 +13,7 @@ using Altinn.Platform.Authentication.Services.Interfaces;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -23,6 +24,7 @@ namespace Altinn.Platform.Authentication.Services
     {
         private readonly ILogger<SblCookieDecryptionService> _logger;
         private readonly GeneralSettings _generalSettings;
+        private readonly IFeatureManager _featureManager;
 
         private readonly HttpClient _client;
 
@@ -32,17 +34,25 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="httpClient">The <see cref="HttpClient"/> to use when performing requests against SblBridge.</param>
         /// <param name="generalSettings">General settings for the authentication application.</param>
         /// <param name="logger">A generic logger.</param>
+        /// <param name="featureManager">Feature manager used to gate the SBL Bridge call.</param>
         public SblCookieDecryptionService(
-            HttpClient httpClient, IOptions<GeneralSettings> generalSettings, ILogger<SblCookieDecryptionService> logger)
+            HttpClient httpClient, IOptions<GeneralSettings> generalSettings, ILogger<SblCookieDecryptionService> logger, IFeatureManager featureManager)
         {
             _client = httpClient;
             _logger = logger;
             _generalSettings = generalSettings.Value;
+            _featureManager = featureManager;
         }
 
         /// <inheritdoc />
         public async Task<UserAuthenticationModel> DecryptTicket(string encryptedTicket)
         {
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.CookieTicketDecryptionDisabled))
+            {
+                _logger.LogInformation("Cookie ticket decryption is disabled by feature flag {Flag}", FeatureFlags.CookieTicketDecryptionDisabled);
+                return null;
+            }
+
             DataContractJsonSerializer serializer = new(typeof(UserAuthenticationModel));
             Uri endpointUrl = new Uri($"{_generalSettings.BridgeAuthnApiEndpoint}tickets");
 
