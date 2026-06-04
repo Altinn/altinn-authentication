@@ -10,7 +10,7 @@ jobs:
     name: Add issue to Team Authorization project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@1f2db0f17f4dca7786abfab9ca41e2bdcca1e27a # main
+      - uses: actions/add-to-project@8b5d8dd2895c251002b427e4688a6115b5ed2f09 # main
         with:
           project-url: https://github.com/orgs/Altinn/projects/75
           github-token: ${{ secrets.ASSIGN_PROJECT_TOKEN }}
