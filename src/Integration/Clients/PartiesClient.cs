@@ -15,6 +15,8 @@ using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Core.Enums;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Register.Contracts.V1;
+using System.Text.Json.Serialization;
+using RegisterContracts = Altinn.Register.Contracts;
 
 namespace Altinn.Authentication.Integration.Clients;
 
@@ -30,6 +32,10 @@ public class PartiesClient : IPartiesClient
     private readonly PlatformSettings _platformSettings;
     private readonly IAccessTokenGenerator _accessTokenGenerator;
     private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    // Plain web defaults for the Register v2 polymorphic party contracts (Party/PartyUser/PartyUrn).
+    // These carry their own attribute-based converters, mirroring RegisterUserProvisioningClient.
+    private static readonly JsonSerializerOptions _registerQueryOptions = new(JsonSerializerDefaults.Web);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PartiesClient"/> class
@@ -169,6 +175,62 @@ public class PartiesClient : IPartiesClient
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<RegisterContracts.Party?> GetPartyByPersonId(string ssn, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_platformSettings.ApiRegisterInternalEndpoint))
+            {
+                _logger.LogError("Authentication // PartiesClient // GetPartyByPersonId // ApiRegisterInternalEndpoint is not configured");
+                return null;
+            }
+
+            // The query endpoint lives under the v2 internal base, while this client's BaseAddress
+            // points at the v1 register base, so build an absolute URI. 'fields' must explicitly
+            // include 'user' - querying by person-id only auto-includes the person identifier, not
+            // the associated user object (UserId/UserName).
+            string baseInternal = _platformSettings.ApiRegisterInternalEndpoint.TrimEnd('/');
+            string endpointUrl = $"{baseInternal}/parties/query?fields=uuid,id,user";
+
+            string personUrn = RegisterContracts.PartyUrn.PersonId.Create(RegisterContracts.PersonIdentifier.Parse(ssn)).ToString();
+            PartyQueryRequest queryRequest = new([personUrn]);
+
+            StringContent requestBody = new(JsonSerializer.Serialize(queryRequest, _registerQueryOptions), Encoding.UTF8, "application/json");
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
+
+            HttpResponseMessage response = await _client.PostAsync(null, endpointUrl, requestBody, accessToken);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            // 200 = all urns matched. 206 = at least one urn did not resolve; for a single lookup that means "not found".
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                PartyQueryResponse? result = JsonSerializer.Deserialize<PartyQueryResponse>(responseContent, _registerQueryOptions);
+                return result?.Data?.FirstOrDefault();
+            }
+
+            if (response.StatusCode == HttpStatusCode.PartialContent)
+            {
+                _logger.LogInformation("Authentication // PartiesClient // GetPartyByPersonId // Person not found in Register");
+                return null;
+            }
+
+            _logger.LogError("Authentication // PartiesClient // GetPartyByPersonId // Unexpected HttpStatusCode: {StatusCode}", response.StatusCode);
+            return null;
+        }
+        catch (Exception ex) when (ex is FormatException or ArgumentException)
+        {
+            // PersonIdentifier.Parse rejects a malformed national identity number. The SSN must not be logged.
+            _logger.LogError("Authentication // PartiesClient // GetPartyByPersonId // Invalid person identifier");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // PartiesClient // GetPartyByPersonId // Exception");
+            throw;
+        }
+    }
+
     /// <inheritdoc />
     public async Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken)
     {
@@ -273,4 +335,17 @@ public class PartiesClient : IPartiesClient
             throw;
         }
     }
+
+    /// <summary>
+    /// Request payload for <c>POST register/api/v2/internal/parties/query</c>. The party URNs are
+    /// sent as their canonical string form (e.g. <c>urn:altinn:person:identifier-no:{ssn}</c>).
+    /// </summary>
+    private sealed record PartyQueryRequest(
+        [property: JsonPropertyName("data")] IReadOnlyList<string> Data);
+
+    /// <summary>
+    /// Response wrapper for <c>POST register/api/v2/internal/parties/query</c>.
+    /// </summary>
+    private sealed record PartyQueryResponse(
+        [property: JsonPropertyName("data")] IReadOnlyList<RegisterContracts.Party>? Data);
 }

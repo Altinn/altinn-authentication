@@ -1,6 +1,7 @@
 ﻿using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Register.Contracts.V1;
+using RegisterContracts = Altinn.Register.Contracts;
 
 namespace Altinn.Authentication.Core.Clients.Interfaces;
 
@@ -40,6 +41,22 @@ public interface IPartiesClient
     /// <param name="cancellationToken">The cancellation token<see cref="CancellationToken"/></param>
     /// <returns>party information</returns>
     Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Looks up a person party in Register by national identity number (SSN), returning the
+    /// party together with its associated Altinn user (<c>UserId</c>/<c>UserName</c>), <c>PartyId</c>
+    /// and <c>PartyUuid</c>.
+    /// </summary>
+    /// <remarks>
+    /// Backed by <c>POST register/api/v2/internal/parties/query</c> with <c>fields=uuid,id,user</c>.
+    /// Intended as the Register-based replacement for the SBL Bridge user lookup
+    /// (<c>profile/users/</c>) in the ID-porten token exchange. Note the returned party may have an
+    /// unset <see cref="RegisterContracts.PartyUser"/> when the person has no associated Altinn user.
+    /// </remarks>
+    /// <param name="ssn">The person's national identity number (fødselsnummer).</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The matched party, or <see langword="null"/> if the person was not found.</returns>
+    Task<RegisterContracts.Party?> GetPartyByPersonId(string ssn, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Return all customers of a specific type for party
