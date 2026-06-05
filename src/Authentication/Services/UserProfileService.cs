@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Profile;
@@ -195,6 +196,20 @@ namespace Altinn.Platform.Authentication.Services
                     Party = new Party { PartyUuid = credential.PartyUuid }
                 }
             };
+        }
+
+        /// <inheritdoc/>
+        public async Task<string> GetSelfIdentifiedUserEmailAsync(string username, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(username))
+            {
+                return null;
+            }
+
+            SelfIdentifiedUserCredential credential =
+                await _selfIdentifiedUserCredentialRepository.GetByUsernameAsync(username, cancellationToken);
+
+            return credential?.Email;
         }
 
         /// <summary>

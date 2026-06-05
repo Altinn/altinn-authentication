@@ -105,6 +105,39 @@ public class UserProfileServiceLocalSiTests
         _repo.Verify(r => r.GetByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task GetSelfIdentifiedUserEmail_ReturnsStoredEmail()
+    {
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.Email = "user@example.com";
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
+
+        string email = await CreateService().GetSelfIdentifiedUserEmailAsync("user");
+
+        Assert.Equal("user@example.com", email);
+    }
+
+    [Fact]
+    public async Task GetSelfIdentifiedUserEmail_UnknownUser_ReturnsNull()
+    {
+        _repo.Setup(r => r.GetByUsernameAsync("nobody", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SelfIdentifiedUserCredential?)null);
+
+        string email = await CreateService().GetSelfIdentifiedUserEmailAsync("nobody");
+
+        Assert.Null(email);
+    }
+
+    [Fact]
+    public async Task GetSelfIdentifiedUserEmail_EmptyInput_ReturnsNullWithoutRepoLookup()
+    {
+        string email = await CreateService().GetSelfIdentifiedUserEmailAsync(string.Empty);
+
+        Assert.Null(email);
+        _repo.Verify(r => r.GetByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static SelfIdentifiedUserCredential Credential() => new()
     {
         PartyUuid = PartyUuid,
