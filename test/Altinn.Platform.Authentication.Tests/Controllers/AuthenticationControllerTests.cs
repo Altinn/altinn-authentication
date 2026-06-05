@@ -57,6 +57,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             builder.UseSetting("feature_management:feature_flags:0:id", "AuditLog");
             builder.UseSetting("feature_management:feature_flags:0:enabled", "true");
+
+            // The ID-porten exchange tests in this class exercise the Profile-API branch, so the
+            // Register lookup flag must be off here regardless of its (now enabled-by-default) value.
+            builder.UseSetting("feature_management:feature_flags:1:id", FeatureFlags.IdPortenUserLookupFromRegister);
+            builder.UseSetting("feature_management:feature_flags:1:enabled", "false");
             base.ConfigureHost(builder);
         }
 

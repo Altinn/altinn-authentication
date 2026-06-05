@@ -8,6 +8,7 @@ using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Register.Contracts.V1;
+using RegisterContracts = Altinn.Register.Contracts;
 
 namespace Altinn.Authentication.Tests.Mocks;
 
@@ -98,6 +99,12 @@ public class PartiesClientMock : IPartiesClient
     public Task<Result<CustomerList>> GetPartyCustomers(Guid partyUuid, string accessPackage, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/>
+    public Task<RegisterContracts.Party?> GetPartyIdentifiersAndUsernameByPersonIdentifier(string ssn, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<RegisterContracts.Party?>(null);
     }
 
     public Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
