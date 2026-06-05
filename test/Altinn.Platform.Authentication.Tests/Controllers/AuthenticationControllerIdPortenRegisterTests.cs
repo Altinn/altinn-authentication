@@ -163,6 +163,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("20000", principal.FindFirstValue("urn:altinn:userid"));
             Assert.Equal("steph", principal.FindFirstValue("urn:altinn:username"));
             Assert.Equal("50001", principal.FindFirstValue("urn:altinn:partyid"));
+            Assert.Equal("5c0656db-cf51-43a9-bd68-d8a55e7b6f3b", principal.FindFirstValue("urn:altinn:party:uuid"));
             Assert.Equal("4", principal.FindFirstValue("urn:altinn:authlevel"));
 
             _partiesClient.Verify(p => p.GetPartyByPersonId(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);

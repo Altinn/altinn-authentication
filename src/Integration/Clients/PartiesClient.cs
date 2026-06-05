@@ -220,8 +220,10 @@ public class PartiesClient : IPartiesClient
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException)
         {
-            // PersonIdentifier.Parse rejects a malformed national identity number. The SSN must not be logged.
-            _logger.LogError("Authentication // PartiesClient // GetPartyByPersonId // Invalid person identifier");
+            // PersonIdentifier.Parse rejects a malformed national identity number. Returning null is the
+            // expected outcome for invalid input, so this is logged as a warning, not an error. The SSN
+            // must not be logged.
+            _logger.LogWarning("Authentication // PartiesClient // GetPartyByPersonId // Invalid person identifier");
             return null;
         }
         catch (Exception ex)

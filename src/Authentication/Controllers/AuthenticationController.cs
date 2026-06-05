@@ -908,6 +908,12 @@ namespace Altinn.Platform.Authentication.Controllers
                     partyUuid = profile.UserUuid;
                 }
 
+                if (!partyUuid.HasValue)
+                {
+                    _logger.LogInformation("ID-porten exchange: party UUID missing for user.");
+                    return Unauthorized();
+                }
+
                 string issuer = _generalSettings.AltinnOidcIssuerUrl;
 
                 string authLevelValue = "0";
@@ -934,7 +940,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userId.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userName, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, partyId.ToString(), ClaimValueTypes.Integer32, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuid.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuid.Value.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authMethod, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue, ClaimValueTypes.Integer32, issuer));
                 claims.AddRange(token.Claims);
