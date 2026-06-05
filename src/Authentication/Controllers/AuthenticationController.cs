@@ -148,6 +148,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         /// <param name="goTo">The url to redirect to if everything validates ok</param>
         /// <param name="dontChooseReportee">Parameter to indicate disabling of reportee selection in Altinn Portal.</param>
+        /// <param name="acrValues">Optional requested authentication level (space-separated acr_values). When the current session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>redirect to correct url based on the validation of the form authentication sbl cookie</returns>
         [AllowAnonymous]
@@ -155,9 +156,16 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(void), StatusCodes.Status503ServiceUnavailable)]
         [HttpGet("authentication")]
-        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery] bool dontChooseReportee, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery] bool dontChooseReportee, [FromQuery(Name = "acr_values")] string? acrValues = null, CancellationToken cancellationToken = default)
         {
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+
+            // Optional requested authentication level (acr_values). Lets unregistered clients (e.g. Altinn Apps)
+            // ask for a higher level than the user's current session — i.e. trigger a step-up (level 3 -> 4).
+            if (!AuthenticationHelper.TryParseAcrValues(acrValues, out string[] requestedAcrValues))
+            {
+                return BadRequest("Invalid acr_values.");
+            }
 
             if (string.IsNullOrEmpty(goTo) && HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName] != null)
             {
@@ -243,8 +251,14 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         try
                         {
-                            await _oidcServerService.HandleSessionRefresh(User, cancellationToken);
-                            return Redirect(validatedGoToUri.AbsoluteUri);
+                            OidcSession? refreshedSession = await _oidcServerService.HandleSessionRefresh(User, cancellationToken);
+
+                            // Only reuse the existing session if it already satisfies the requested level.
+                            // Otherwise fall through and re-authenticate upstream at the higher level (step-up).
+                            if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues))
+                            {
+                                return Redirect(validatedGoToUri.AbsoluteUri);
+                            }
                         }
                         catch
                         {
@@ -266,7 +280,10 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookieValue };
                         AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
-                        if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
+
+                        // Reuse the session only when it already meets the requested level; otherwise step up.
+                        if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success)
+                            && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues))
                         {
                             foreach (var c in authenticateFromSessionResult.Cookies)
                             {
@@ -305,7 +322,10 @@ namespace Altinn.Platform.Authentication.Controllers
                         };
                         
                         AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
-                        if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success))
+
+                        // Reuse the Altinn 2 session only when it already meets the requested level; otherwise step up.
+                        if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success)
+                            && !AuthenticationHelper.NeedAcrUpgrade(ticketResult.Acr, requestedAcrValues))
                         {
                             foreach (var c in ticketResult.Cookies)
                             {
@@ -333,7 +353,7 @@ namespace Altinn.Platform.Authentication.Controllers
                         ClientIp = ip,
                         UserAgentHash = userAgentHash,
                         CorrelationId = corr,
-                        AcrValues = []
+                        AcrValues = requestedAcrValues
                     };
 
                     AuthorizeResult result = await _oidcServerService.AuthorizeUnregisteredClient(authorizeUnregisteredClientRequest, cancellationToken);

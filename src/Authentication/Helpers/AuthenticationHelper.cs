@@ -29,6 +29,14 @@ namespace Altinn.Platform.Authentication.Helpers
         private const string IdPortenAcrHigh = "idporten-loa-high";
 
         /// <summary>
+        /// The acr_values accepted on the public authentication entry point. Mirrors the allow-list
+        /// enforced for registered clients in <c>AuthorizeRequestValidator</c>.
+        /// </summary>
+        private static readonly HashSet<string> AllowedAcrValues = new(
+            new[] { "selfregistered-email", "idporten-loa-substantial", "idporten-loa-high", "level0", "level1", "level2" },
+            StringComparer.Ordinal);
+
+        /// <summary>
         /// Get user information from the token
         /// </summary>
         /// <param name="jwtSecurityToken">jwt token</param>
@@ -740,6 +748,34 @@ namespace Altinn.Platform.Authentication.Helpers
            }
 
            return false;
+        }
+
+        /// <summary>
+        /// Parses and validates a space-separated <c>acr_values</c> string from the public authentication
+        /// entry point against the allowed set.
+        /// </summary>
+        /// <param name="raw">The raw, space-separated acr_values query value. Null/empty is valid (no level requested).</param>
+        /// <param name="values">The parsed acr values, or an empty array when none were requested or validation failed.</param>
+        /// <returns><c>true</c> when the input is absent or contains only allowed values; otherwise <c>false</c>.</returns>
+        public static bool TryParseAcrValues(string? raw, out string[] values)
+        {
+            values = Array.Empty<string>();
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return true;
+            }
+
+            string[] parsed = raw.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (string v in parsed)
+            {
+                if (!AllowedAcrValues.Contains(v))
+                {
+                    return false;
+                }
+            }
+
+            values = parsed;
+            return true;
         }
     }
 }
