@@ -19,3 +19,8 @@ WHERE password_expiry < now();
 SELECT count(*) AS bad_rows
 FROM oidcserver.selfidentified_user_credential
 WHERE coalesce(password_hash, '') = '' OR coalesce(salt, '') = '';
+
+-- Forgot-password readiness: how many users lack an email (cannot receive reset info)
+SELECT count(*) AS rows_without_email
+FROM oidcserver.selfidentified_user_credential
+WHERE coalesce(email, '') = '';

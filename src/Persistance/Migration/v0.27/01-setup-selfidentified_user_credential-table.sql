@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS oidcserver.selfidentified_user_credential (
     salt             TEXT         NOT NULL,   -- Base64
     password_expiry  TIMESTAMPTZ  NOT NULL,
 
+    -- Contact, for the "forgot password" flow (send reset info by email; no auto-generated password).
+    -- Source: AUTHN_UserProfile.email (VARCHAR 400). Nullable - not every SI user has an email.
+    email            TEXT         NULL,
+
     -- Status / bookkeeping
     is_active        BOOLEAN      NOT NULL DEFAULT TRUE,
     altinn2_user_id  INTEGER      NULL,       -- source ref for traceability (AUTHN_UserProfile.uid)

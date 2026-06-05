@@ -38,6 +38,12 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
         public DateTimeOffset PasswordExpiry { get; set; }
 
         /// <summary>
+        /// Gets or sets the user's email address (source: <c>AUTHN_UserProfile.email</c>). Used by the
+        /// forgot-password flow to send reset information; no new password is generated. May be null.
+        /// </summary>
+        public string? Email { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether the credential is active.
         /// </summary>
         public bool IsActive { get; set; }

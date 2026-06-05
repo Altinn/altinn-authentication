@@ -41,19 +41,22 @@
      AUTHN_UserProfile.password     -> password_hash   (Base64 SHA1, verbatim)
      AUTHN_UserProfile.salt         -> salt            (Base64, verbatim)
      AUTHN_UserProfile.passwordExpiry -> password_expiry (UTC -> ...Z)
+     AUTHN_UserProfile.email        -> email           (VARCHAR 400; NULL preserved as NULL;
+                                                         used by the forgot-password flow)
    ============================================================================ */
 
 SET NOCOUNT ON;
 
 SELECT
     'INSERT INTO oidcserver.selfidentified_user_credential '
-  + '(party_uuid, user_id, user_name, password_hash, salt, password_expiry, is_active, altinn2_user_id) VALUES ('
+  + '(party_uuid, user_id, user_name, password_hash, salt, password_expiry, email, is_active, altinn2_user_id) VALUES ('
   + '''' + LOWER(CONVERT(varchar(36), up.UserUUID_AK)) + ''', '
   + CONVERT(varchar(20), up.uid) + ', '
   + '''' + REPLACE(up.username, '''', '''''') + ''', '
   + '''' + REPLACE(up.password, '''', '''''') + ''', '
   + '''' + REPLACE(up.salt,     '''', '''''') + ''', '
   + '''' + CONVERT(varchar(23), up.passwordExpiry, 126) + 'Z'', '
+  + CASE WHEN up.email IS NULL THEN 'NULL' ELSE '''' + REPLACE(up.email, '''', '''''') + '''' END + ', '
   + 'TRUE, '
   + CONVERT(varchar(20), up.uid)
   + ') ON CONFLICT (user_id) DO NOTHING;'  AS pg_insert

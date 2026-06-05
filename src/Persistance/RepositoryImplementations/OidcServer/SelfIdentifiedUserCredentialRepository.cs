@@ -27,7 +27,7 @@ public sealed class SelfIdentifiedUserCredentialRepository(NpgsqlDataSource ds, 
         // index can be added if lookup volume warrants it.
         const string SQL = /*strpsql*/ @"
             SELECT party_uuid, user_id, user_name, password_hash, salt, password_expiry,
-                   is_active, altinn2_user_id, imported_at
+                   email, is_active, altinn2_user_id, imported_at
               FROM oidcserver.selfidentified_user_credential
              WHERE lower(user_name) = lower(@user_name)
              LIMIT 1;";
@@ -54,6 +54,7 @@ public sealed class SelfIdentifiedUserCredentialRepository(NpgsqlDataSource ds, 
             PasswordHash = r.GetFieldValue<string>("password_hash"),
             Salt = r.GetFieldValue<string>("salt"),
             PasswordExpiry = r.GetFieldValue<DateTimeOffset>("password_expiry"),
+            Email = r.IsDBNull("email") ? null : r.GetFieldValue<string>("email"),
             IsActive = r.GetFieldValue<bool>("is_active"),
             Altinn2UserId = r.IsDBNull("altinn2_user_id") ? null : r.GetFieldValue<int?>("altinn2_user_id"),
             ImportedAt = r.GetFieldValue<DateTimeOffset>("imported_at")
