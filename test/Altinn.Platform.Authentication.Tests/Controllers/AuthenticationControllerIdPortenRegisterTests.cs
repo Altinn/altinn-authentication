@@ -32,7 +32,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     /// <summary>
     /// Covers the Register branch of the ID-porten token exchange, i.e. when the
     /// <see cref="FeatureFlags.IdPortenUserLookupFromRegister"/> flag is enabled and the user fields
-    /// are resolved from Register (<see cref="IPartiesClient.GetPartyByPersonId"/>) instead of the
+    /// are resolved from Register (<see cref="IPartiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier"/>) instead of the
     /// platform Profile API. The flag-off (Profile) branch is covered by
     /// <see cref="AuthenticationControllerTests"/>.
     /// </summary>
@@ -142,7 +142,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
             _partiesClient
-                .Setup(p => p.GetPartyByPersonId(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(party);
 
             HttpClient client = CreateClient();
@@ -166,7 +166,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("5c0656db-cf51-43a9-bd68-d8a55e7b6f3b", principal.FindFirstValue("urn:altinn:party:uuid"));
             Assert.Equal("4", principal.FindFirstValue("urn:altinn:authlevel"));
 
-            _partiesClient.Verify(p => p.GetPartyByPersonId(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+            _partiesClient.Verify(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         private static string GetConfigPath()

@@ -102,7 +102,7 @@ public class PartiesClientMock : IPartiesClient
     }
 
     /// <inheritdoc/>
-    public Task<RegisterContracts.Party?> GetPartyByPersonId(string ssn, CancellationToken cancellationToken = default)
+    public Task<RegisterContracts.Party?> GetPartyIdentifiersAndUsernameByPersonIdentifier(string ssn, CancellationToken cancellationToken = default)
     {
         return Task.FromResult<RegisterContracts.Party?>(null);
     }

@@ -878,7 +878,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 if (await _featureManager.IsEnabledAsync(FeatureFlags.IdPortenUserLookupFromRegister))
                 {
                     // Register: POST /register/api/v2/internal/parties/query (fields=uuid,id,user).
-                    RegisterContracts.Party? party = await _partiesClient.GetPartyByPersonId(pid);
+                    RegisterContracts.Party? party = await _partiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier(pid);
 
                     if (party is null || !party.User.HasValue || !party.User.Value.UserId.HasValue)
                     {
