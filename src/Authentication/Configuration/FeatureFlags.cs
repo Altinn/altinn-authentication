@@ -24,6 +24,15 @@
         public const string RegisterSelfIdentifiedUserProvisioning = "RegisterSelfIdentifiedUserProvisioning";
 
         /// <summary>
+        /// When enabled, self-identified (SI) user credential validation is performed locally
+        /// against <c>oidcserver.selfidentified_user_credential</c> (SHA1 + salt) instead of
+        /// calling SBL Bridge (<c>POST authentication/api/siuser</c>). Lets the flag be flipped
+        /// per environment once the migrated credentials are imported. Tracked in issue #2025
+        /// (SBL Bridge decommission, deadline 2026-06-19).
+        /// </summary>
+        public const string LocalSelfIdentifiedCredentialValidation = "LocalSelfIdentifiedCredentialValidation";
+
+        /// <summary>
         /// When enabled, disables the cookie ticket decryption path (SBL Bridge
         /// <c>POST authentication/api/tickets</c>). No replacement exists; the A2 cookie→token
         /// flow will be removed entirely after the SBL Bridge decommission (deadline 2026-06-19).

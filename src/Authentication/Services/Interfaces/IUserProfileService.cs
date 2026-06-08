@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.Profile;
 
@@ -26,5 +27,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Endpoints that lookup a user based on username and password. This is used for validating credentials when using basic authentication.
         /// </summary>
         Task<UserCredentialVerificationResult> ValidateCredentialsAsync(string username, string password);
+
+        /// <summary>
+        /// Gets the stored email for a self-identified user, used by the forgot-password flow to send
+        /// reset information. Returns <c>null</c> when the user is unknown or has no email on file.
+        /// </summary>
+        /// <param name="username">The self-identified user's username (login key).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        Task<string> GetSelfIdentifiedUserEmailAsync(string username, CancellationToken cancellationToken = default);
     }
 }
