@@ -10,6 +10,8 @@ using Altinn.Platform.Authentication.Core.Models.AccessPackages;
 using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -180,7 +182,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                     .Select(c => new Result<AccessPackageDto.Check>(c)) // Use constructor
                     .ToAsyncEnumerable());
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, NullLogger<DelegationHelper>.Instance);
 
             // Act
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
@@ -204,7 +206,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(s => s.GetAccessPackagesForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(systemPackages);
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, NullLogger<DelegationHelper>.Instance);
 
             // Act
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
@@ -230,7 +232,12 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             var checkResult = new List<AccessPackageDto.Check>
             {
-                new() { Package = new(), Result = false, Reasons = new List<AccessPackageDto.Check.Reason> { new() { Description = "Not allowed" } } }
+                new()
+                {
+                    Package = new() { Urn = "urn:valid" },
+                    Result = false,
+                    Reasons = new List<AccessPackageDto.Check.Reason> { new() { Description = "Not allowed" } }
+                }
             };
 
             accessManagementClient
@@ -239,7 +246,8 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Select(c => new Result<AccessPackageDto.Check>(c)) // Use constructor
                 .ToAsyncEnumerable());
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var loggerMock = new Mock<ILogger<DelegationHelper>>();
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, loggerMock.Object);
 
             // Act
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
@@ -247,6 +255,16 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             // Assert
             Assert.True(result.IsProblem);
             Assert.Equal(Problem.AccessPackage_Delegation_MissingRequiredAccess.Detail, result.Problem.Detail);
+
+            // Issue #2027: the failed package urn and its reason must be logged so the failure is debuggable in App Insights.
+            loggerMock.Verify(
+                l => l.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("urn:valid") && state.ToString()!.Contains("Not allowed")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -266,7 +284,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
                 .Returns(AsyncEnumerable.Empty<Result<AccessPackageDto.Check>>());
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, NullLogger<DelegationHelper>.Instance);
 
             // Act
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
@@ -293,7 +311,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
                 .Returns(AsyncEnumerable.Empty<Result<AccessPackageDto.Check>>());
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, NullLogger<DelegationHelper>.Instance);
 
             // Act
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
@@ -357,7 +375,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(a => a.CheckDelegationAccess(It.IsAny<Guid>(), It.IsAny<string>()))
                 .ReturnsAsync(dto);
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, NullLogger<DelegationHelper>.Instance);
 
             // Act
             var result = await helper.UserDelegationCheckForReportee(Guid.NewGuid(), "sys", requestedRights, false);
@@ -383,7 +401,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(s => s.GetRightsForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Right>());
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, NullLogger<DelegationHelper>.Instance);
 
             // Act
             var result = await helper.UserDelegationCheckForReportee(Guid.NewGuid(), "sys", new List<Right> { requestedRight }, false);
@@ -438,7 +456,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(a => a.CheckDelegationAccess(It.IsAny<Guid>(), It.IsAny<string>()))
                 .ReturnsAsync(dto);
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, NullLogger<DelegationHelper>.Instance);
 
             // Act
             var result = await helper.UserDelegationCheckForReportee(Guid.NewGuid(), "sys", new List<Right> { right }, false);
@@ -492,7 +510,8 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(a => a.CheckDelegationAccess(It.IsAny<Guid>(), It.IsAny<string>()))
                 .ReturnsAsync(dto);
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var loggerMock = new Mock<ILogger<DelegationHelper>>();
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, loggerMock.Object);
 
             // Act
             var result = await helper.UserDelegationCheckForReportee(Guid.NewGuid(), "sys", new List<Right> { right }, false);
@@ -502,6 +521,16 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             Assert.NotNull(result.RightResponses);
             Assert.NotEmpty(result.errors);
             Assert.Contains(result.errors, e => e.Description == "Delegation denied");
+
+            // Issue #2027: the reason the right is not delegable must be logged for App Insights.
+            loggerMock.Verify(
+                l => l.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("not delegable") && state.ToString()!.Contains("Delegation denied")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
         }
     }
 }

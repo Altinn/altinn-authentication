@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Altinn.Platform.Authentication.Helpers;
 #nullable enable
@@ -20,7 +21,8 @@ namespace Altinn.Platform.Authentication.Helpers;
 /// </summary>
 public class DelegationHelper(
     ISystemRegisterService systemRegisterService,
-    IAccessManagementClient accessManagementClient)
+    IAccessManagementClient accessManagementClient,
+    ILogger<DelegationHelper> logger)
 {
     /// <summary>
     /// Checks Delegation for a user
@@ -75,6 +77,8 @@ public class DelegationHelper(
             
             if (resourceCheckDto is null)
             {
+                // HTTP failure during the delegation check is already logged with the response body,
+                // status code, party and resource in AccessManagementClient.CheckDelegationAccess.
                 return new DelegationCheckResult(false, null, null);
             }
 
@@ -82,6 +86,20 @@ public class DelegationHelper(
 
             if (!canDelegate)
             {
+                // The delegation check completed (HTTP 200) but the resource right is not delegable.
+                // Log the resource and the reason codes/descriptions returned by Access Management
+                // so the failure is debuggable in App Insights (issue #2027).
+                string errorDetails = errors is not null && errors.Count > 0
+                    ? string.Join("; ", errors.Select(e => $"{e.Code}: {e.Description}"))
+                    : "no reason provided";
+
+                logger.LogError(
+                    "Authentication // DelegationHelper // UserDelegationCheckForReportee // Resource right not delegable // Party: {PartyUuid}, System: {SystemId}, Resource: {Resource}, Reasons: {Reasons}",
+                    partyUuid,
+                    systemId,
+                    resourceId,
+                    errorDetails);
+
                 return new DelegationCheckResult(false, rightResponsesList, errors);
             }
 
@@ -254,6 +272,8 @@ public class DelegationHelper(
         {
             if (result.IsProblem)
             {
+                // HTTP failure during the delegation check is already logged with the response body,
+                // status code, party and packages in AccessManagementClient.CheckDelegationAccessForAccessPackage.
                 var problemExtensionData = ProblemExtensionData.Create(new[]
                 {
                     new KeyValuePair<string, string>("Problem Detail : ", result.Problem.Detail)
@@ -278,6 +298,28 @@ public class DelegationHelper(
         }
         else
         {
+            // The delegation check completed (HTTP 200) but one or more access packages are not delegable.
+            // Log which packages failed and the reasons returned by Access Management to make this debuggable
+            // in App Insights (issue #2027).
+            List<AccessPackageDto.Check> notDelegable = delegationCheckResults.Where(r => !r.Result).ToList();
+
+            string notDelegableDetails = string.Join(
+                " | ",
+                notDelegable.Select(r =>
+                {
+                    string urn = r.Package?.Urn ?? "unknown";
+                    string reasons = r.Reasons is not null && r.Reasons.Any()
+                        ? string.Join("; ", r.Reasons.Select(reason => reason.Description))
+                        : "no reason provided";
+                    return $"{urn}: {reasons}";
+                }));
+
+            logger.LogError(
+                "Authentication // DelegationHelper // ValidateDelegationRightsForAccessPackages // Access package(s) not delegable // Party: {PartyId}, System: {SystemId}, NotDelegable: {NotDelegable}",
+                partyId,
+                systemId,
+                notDelegableDetails);
+
             return new Result<AccessPackageDelegationCheckResult>(Problem.AccessPackage_Delegation_MissingRequiredAccess);
         }
     }
