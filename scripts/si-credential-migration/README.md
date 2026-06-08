@@ -23,6 +23,7 @@ One-off manual data migration of self-identified (SI) user credentials. Tracked 
 ## Notes
 
 - Only `UserTypeID = 2` (self-identified), `statusId = 1` (active) rows are exported — SSN (`1`) and enterprise (`3`) users are excluded.
+- `ExternalIdentity IS NULL` is required: "uidp" users (self-identified accounts linked to an external identity / ID-porten) authenticate via their external identity, not the stored username/password+salt, so their SI credentials are **not** migrated. Adding this filter also cuts the export down substantially.
 - `password_hash` and `salt` are copied **verbatim** (Base64). Altinn 3 re-runs the same SHA1+salt verification — no password reset required.
 - `passwordExpiry` is emitted as UTC ISO-8601 with a trailing `Z`. Confirm the source column is stored in UTC before importing.
 - `email` (source `AUTHN_UserProfile.email`, VARCHAR 400) is exported for the **forgot-password** flow — Altinn 3 emails reset info to this address; it does **not** generate a new password. `NULL` emails are preserved as `NULL`; the verify script counts how many users lack an email. The actual reset-ticket/flow (Altinn 2 `AUTHN_PasswordResetTicket`) is a separate runtime feature, not part of this data migration.

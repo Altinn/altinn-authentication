@@ -27,8 +27,13 @@
    import will not error on rows that already exist.
 
    FILTER (matches issue #2025 / #2007 task C):
-     - UserTypeID = 2   -> self-identified only (NOT 1=SSN, NOT 3=enterprise)
-     - statusId   = 1   -> active users only
+     - UserTypeID = 2           -> self-identified only (NOT 1=SSN, NOT 3=enterprise)
+     - statusId   = 1           -> active users only
+     - ExternalIdentity IS NULL -> exclude "uidp" users (SI accounts linked to an
+                                   external identity / ID-porten). They authenticate
+                                   via their external identity, not the stored
+                                   username/password+salt, so their SI credentials
+                                   must not be migrated.
      - username/password/salt present
    Remove the passwordExpiry filter intentionally: expired rows are imported and
    the expiry policy is enforced in Altinn 3 (see issue "Open decisions").
@@ -47,7 +52,7 @@
 
 SET NOCOUNT ON;
 
-SELECT
+SELECT top 10
     'INSERT INTO oidcserver.selfidentified_user_credential '
   + '(party_uuid, user_id, user_name, password_hash, salt, password_expiry, email, is_active, altinn2_user_id) VALUES ('
   + '''' + LOWER(CONVERT(varchar(36), up.UserUUID_AK)) + ''', '
@@ -61,10 +66,11 @@ SELECT
   + CONVERT(varchar(20), up.uid)
   + ') ON CONFLICT (user_id) DO NOTHING;'  AS pg_insert
 FROM
-    [AuthenticationDB].[dbo].[AUTHN_UserProfile] AS up
+    [Authentication].[dbo].[AUTHN_UserProfile] AS up
 WHERE
     up.UserTypeID = 2
     AND up.statusId = 1
+    AND up.ExternalIdentity IS NULL   -- exclude uidp (externally-linked) users
     AND up.username IS NOT NULL
     AND up.password IS NOT NULL
     AND up.salt IS NOT NULL
