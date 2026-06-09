@@ -412,5 +412,29 @@ public static class Problem
     /// Gets a <see cref="ProblemDescriptor"/>.
     /// </summary>
     public static ProblemDescriptor SystemUser_FailedToAddAsAgent { get; }
-        = _factory.Create(67, HttpStatusCode.BadRequest, "Unable to add system user as agent for the organisation");    
+        = _factory.Create(67, HttpStatusCode.BadRequest, "Unable to add system user as agent for the organisation");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightMissingPackageAccess { get; }
+        = _factory.Create(68, HttpStatusCode.Forbidden, "DelegationCheck failed with error: Has not access by a delegation of package in Altinn.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightAccessListValidationFail { get; }
+        = _factory.Create(69, HttpStatusCode.Forbidden, "DelegationCheck failed with error: The receiver does not have the right based on Access List delegation.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightResourceNotDelegable { get; }
+        = _factory.Create(70, HttpStatusCode.Forbidden, "DelegationCheck failed with error: The resource cannot be delegated to another user or entity.");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor DelegationRightResourceIsMaskinPortenSchema { get; }
+        = _factory.Create(71, HttpStatusCode.Forbidden, "DelegationCheck failed with error: The resource is not delegable because it is a Maskinporten schema resource.");
 }

@@ -87,18 +87,27 @@ public class DelegationHelper(
             if (!canDelegate)
             {
                 // The delegation check completed (HTTP 200) but the resource right is not delegable.
-                // Log the resource and the reason codes/descriptions returned by Access Management
-                // so the failure is debuggable in App Insights (issue #2027).
-                string errorDetails = errors is not null && errors.Count > 0
-                    ? string.Join("; ", errors.Select(e => $"{e.Code}: {e.Description}"))
-                    : "no reason provided";
+                // Access Management returns the actual reason in each right's ReasonCodes (e.g.
+                // MissingPackageAccess, MissingRoleAccess, MissingDelegationAccess) - not in Permissions -
+                // so read ReasonCodes directly to make the failure debuggable in App Insights (issue #2027).
+                string reasonDetails = string.Join(
+                    " | ",
+                    resourceCheckDto.Rights
+                        .Where(r => !r.Result)
+                        .Select(r =>
+                        {
+                            string reasonCodes = r.ReasonCodes is not null && r.ReasonCodes.Any()
+                                ? string.Join(", ", r.ReasonCodes)
+                                : "no reason provided";
+                            return $"{r.Right?.Key}: {reasonCodes}";
+                        }));
 
                 logger.LogError(
                     "Authentication // DelegationHelper // UserDelegationCheckForReportee // Resource right not delegable // Party: {PartyUuid}, System: {SystemId}, Resource: {Resource}, Reasons: {Reasons}",
                     partyUuid,
                     systemId,
                     resourceId,
-                    errorDetails);
+                    reasonDetails);
 
                 return new DelegationCheckResult(false, rightResponsesList, errors);
             }
@@ -195,32 +204,23 @@ public class DelegationHelper(
     /// <returns></returns>
     public static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
     {
-        if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
+        if (errors is null || errors.Count == 0)
         {
             return Problem.UnableToDoDelegationCheck;
         }
-
-        if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
+  
+        return errors[0].Code switch
         {
-            return Problem.DelegationRightMissingRoleAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
-        {
-            return Problem.DelegationRightMissingDelegationAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
-        {
-            return Problem.DelegationRightMissingSrrRightAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
-        {
-            return Problem.DelegationRightInsufficientAuthenticationLevel;
-        }
-
-        return Problem.UnableToDoDelegationCheck;
+            DetailCodeExternal.MissingPackageAccess => Problem.DelegationRightMissingPackageAccess,
+            DetailCodeExternal.MissingRoleAccess => Problem.DelegationRightMissingRoleAccess,
+            DetailCodeExternal.MissingDelegationAccess => Problem.DelegationRightMissingDelegationAccess,
+            DetailCodeExternal.MissingSrrRightAccess => Problem.DelegationRightMissingSrrRightAccess,
+            DetailCodeExternal.InsufficientAuthenticationLevel => Problem.DelegationRightInsufficientAuthenticationLevel,
+            DetailCodeExternal.AccessListValidationFail => Problem.DelegationRightAccessListValidationFail,
+            DetailCodeExternal.ResourceNotDelegable => Problem.DelegationRightResourceNotDelegable,
+            DetailCodeExternal.ResourceIsMaskinPortenSchema => Problem.DelegationRightResourceIsMaskinPortenSchema,
+            _ => Problem.UnableToDoDelegationCheck
+        };
     }
 
     /// <summary>
@@ -387,6 +387,13 @@ public class DelegationHelper(
                         Code = p.PermisionKey,
                         Description = p.Description,
                         Parameters = []
+                    }));
+                }
+                else if (rightCheckDto.ReasonCodes is not null && rightCheckDto.ReasonCodes.Any())
+                {                   
+                    errors.AddRange(rightCheckDto.ReasonCodes.Select(code => new DetailExternal
+                    {
+                        Code = code
                     }));
                 }
             }
