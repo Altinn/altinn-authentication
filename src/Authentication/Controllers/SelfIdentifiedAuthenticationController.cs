@@ -1,6 +1,9 @@
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Profile;
+using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -13,9 +16,12 @@ namespace Altinn.Platform.Authentication.Controllers
     /// </summary>
     [Route("authentication/api/v1/enduser/selfidentified")]
     [ApiController]
-    public class SelfIdentifiedAuthenticationController(IUserProfileService profileService) : ControllerBase
+    public class SelfIdentifiedAuthenticationController(
+        IUserProfileService profileService,
+        ISelfIdentifiedLinkService linkService) : ControllerBase
     {
         private readonly IUserProfileService _profileService = profileService;
+        private readonly ISelfIdentifiedLinkService _linkService = linkService;
 
         /// <summary>
         /// Validates username and password for a self identified user. The credentials are verified against the
@@ -44,6 +50,30 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return Unauthorized(new { Message = "Invalid credentials." });
+        }
+
+        /// <summary>
+        /// Requests an account-link email for a self-identified user (forgot-password / account-claim
+        /// flow, issue #2035). Looks up the SI user by username and, when it exists with a stored email,
+        /// sends a link (carrying a short-lived token binding the SI user to the authenticated person)
+        /// to that email. Always responds <c>202 Accepted</c> regardless of whether the user exists, so
+        /// the username cannot be enumerated.
+        /// </summary>
+        [HttpPost("link-request")]
+        [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+        public async Task<ActionResult> RequestLink([FromBody] SelfIdentifiedLinkRequest request, CancellationToken cancellationToken)
+        {
+            Guid toPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
+            if (toPartyUuid == Guid.Empty)
+            {
+                // The authenticated caller has no party UUID claim, so there is no usable 'to' party to
+                // bind the link to. This is a precondition failure, not a property of the SI username.
+                return BadRequest(new { Message = "Authenticated user has no party UUID." });
+            }
+
+            await _linkService.RequestLinkAsync(request.UserName, toPartyUuid, cancellationToken);
+
+            return Accepted();
         }
     }
 }
