@@ -23,8 +23,8 @@ namespace Altinn.Platform.Authentication.Tests.Services;
 /// </summary>
 public class SelfIdentifiedLinkTokenServiceTests
 {
-    private const int SourceUserId = 1337;
-    private static readonly Guid TargetPartyUuid = Guid.Parse("2c3bb12a-5e41-4cc9-9a36-7b5ac6f9f102");
+    private static readonly Guid FromPartyUuid = Guid.Parse("2c3bb12a-5e41-4cc9-9a36-7b5ac6f9f102");
+    private static readonly Guid ToPartyUuid = Guid.Parse("9f1d6e0b-3a72-4f1e-8c44-1b2c3d4e5f60");
 
     private static readonly DateTimeOffset Now = new(2026, 6, 9, 12, 0, 0, TimeSpan.Zero);
 
@@ -38,16 +38,16 @@ public class SelfIdentifiedLinkTokenServiceTests
     };
 
     [Fact]
-    public async Task MintThenValidate_RoundTrips_SourceAndTarget()
+    public async Task MintThenValidate_RoundTrips_FromAndToParties()
     {
         SelfIdentifiedLinkTokenService service = CreateService();
 
-        string token = await service.MintAsync(SourceUserId, TargetPartyUuid);
+        string token = await service.MintAsync(FromPartyUuid, ToPartyUuid);
         SelfIdentifiedLinkTokenResult result = await service.ValidateAsync(token);
 
         Assert.True(result.IsValid);
-        Assert.Equal(SourceUserId, result.SourceUserId);
-        Assert.Equal(TargetPartyUuid, result.TargetPartyUuid);
+        Assert.Equal(FromPartyUuid, result.FromPartyUuid);
+        Assert.Equal(ToPartyUuid, result.ToPartyUuid);
         Assert.False(string.IsNullOrEmpty(result.TokenId));
         Assert.Null(result.Error);
     }
@@ -72,7 +72,7 @@ public class SelfIdentifiedLinkTokenServiceTests
     public async Task Validate_ExpiredToken_IsInvalid()
     {
         SelfIdentifiedLinkTokenService service = CreateService();
-        string token = await service.MintAsync(SourceUserId, TargetPartyUuid);
+        string token = await service.MintAsync(FromPartyUuid, ToPartyUuid);
 
         // Advance past lifetime + clock skew.
         _timeProvider.Advance(TimeSpan.FromMinutes(_settings.LifetimeMinutes) + TimeSpan.FromSeconds(_settings.ClockSkewSeconds + 1));
@@ -86,7 +86,7 @@ public class SelfIdentifiedLinkTokenServiceTests
     public async Task Validate_WithinLifetime_IsValid()
     {
         SelfIdentifiedLinkTokenService service = CreateService();
-        string token = await service.MintAsync(SourceUserId, TargetPartyUuid);
+        string token = await service.MintAsync(FromPartyUuid, ToPartyUuid);
 
         _timeProvider.Advance(TimeSpan.FromMinutes(_settings.LifetimeMinutes - 1));
 
@@ -109,7 +109,7 @@ public class SelfIdentifiedLinkTokenServiceTests
         });
         SelfIdentifiedLinkTokenService validating = CreateService(cert, _settings);
 
-        string token = await minting.MintAsync(SourceUserId, TargetPartyUuid);
+        string token = await minting.MintAsync(FromPartyUuid, ToPartyUuid);
         SelfIdentifiedLinkTokenResult result = await validating.ValidateAsync(token);
 
         Assert.False(result.IsValid);
@@ -128,7 +128,7 @@ public class SelfIdentifiedLinkTokenServiceTests
         });
         SelfIdentifiedLinkTokenService validating = CreateService(cert, _settings);
 
-        string token = await minting.MintAsync(SourceUserId, TargetPartyUuid);
+        string token = await minting.MintAsync(FromPartyUuid, ToPartyUuid);
         SelfIdentifiedLinkTokenResult result = await validating.ValidateAsync(token);
 
         Assert.False(result.IsValid);
@@ -142,7 +142,7 @@ public class SelfIdentifiedLinkTokenServiceTests
         SelfIdentifiedLinkTokenService minting = CreateService(CreateSelfSignedCertificate(), _settings);
         SelfIdentifiedLinkTokenService validating = CreateService(CreateSelfSignedCertificate(), _settings);
 
-        string token = await minting.MintAsync(SourceUserId, TargetPartyUuid);
+        string token = await minting.MintAsync(FromPartyUuid, ToPartyUuid);
         SelfIdentifiedLinkTokenResult result = await validating.ValidateAsync(token);
 
         Assert.False(result.IsValid);

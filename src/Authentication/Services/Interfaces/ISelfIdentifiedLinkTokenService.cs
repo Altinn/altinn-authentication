@@ -19,10 +19,11 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
     public interface ISelfIdentifiedLinkTokenService
     {
         /// <summary>
-        /// Mints a signed link token binding the authenticated requester (<paramref name="sourceUserId"/>)
-        /// to the self-identified user being claimed (<paramref name="targetPartyUuid"/>).
+        /// Mints a signed link token binding the self-identified user being claimed
+        /// (<paramref name="fromPartyUuid"/>, the connection <c>from</c> party) to the authenticated
+        /// person who triggered the request (<paramref name="toPartyUuid"/>, the connection <c>to</c> party).
         /// </summary>
-        Task<string> MintAsync(int sourceUserId, Guid targetPartyUuid, CancellationToken cancellationToken = default);
+        Task<string> MintAsync(Guid fromPartyUuid, Guid toPartyUuid, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Validates a link token (signature, issuer, audience, lifetime and purpose) and returns the

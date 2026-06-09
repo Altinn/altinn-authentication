@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -24,11 +23,17 @@ namespace Altinn.Platform.Authentication.Services
     /// </summary>
     public class SelfIdentifiedLinkTokenService : ISelfIdentifiedLinkTokenService
     {
-        /// <summary>Custom claim type carrying the authenticated requester's user id.</summary>
-        public const string SourceUserIdClaim = "source_user_id";
+        /// <summary>
+        /// Custom claim type carrying the party UUID of the self-identified user being claimed - the
+        /// connection <c>from</c> party (identified by the username supplied in the request).
+        /// </summary>
+        public const string FromPartyUuidClaim = "from_party_uuid";
 
-        /// <summary>Custom claim type carrying the party UUID of the self-identified user being claimed.</summary>
-        public const string TargetPartyUuidClaim = "target_party_uuid";
+        /// <summary>
+        /// Custom claim type carrying the party UUID of the authenticated person who triggered the
+        /// request - the connection <c>to</c> party. The redeeming caller must equal this value.
+        /// </summary>
+        public const string ToPartyUuidClaim = "to_party_uuid";
 
         /// <summary>Claim type identifying the token's single purpose.</summary>
         public const string PurposeClaim = "purpose";
@@ -57,7 +62,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<string> MintAsync(int sourceUserId, Guid targetPartyUuid, CancellationToken cancellationToken = default)
+        public async Task<string> MintAsync(Guid fromPartyUuid, Guid toPartyUuid, CancellationToken cancellationToken = default)
         {
             X509Certificate2 certificate = await GetSigningCertificate();
 
@@ -66,8 +71,8 @@ namespace Altinn.Platform.Authentication.Services
             List<Claim> claims =
             [
                 new(PurposeClaim, PurposeValue),
-                new(SourceUserIdClaim, sourceUserId.ToString(CultureInfo.InvariantCulture)),
-                new(TargetPartyUuidClaim, targetPartyUuid.ToString()),
+                new(FromPartyUuidClaim, fromPartyUuid.ToString()),
+                new(ToPartyUuidClaim, toPartyUuid.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             ];
 
@@ -146,15 +151,15 @@ namespace Altinn.Platform.Authentication.Services
                     return SelfIdentifiedLinkTokenResult.Invalid("Token purpose mismatch.");
                 }
 
-                if (!TryGetIntClaim(jwt, SourceUserIdClaim, out int sourceUserId) ||
-                    !TryGetGuidClaim(jwt, TargetPartyUuidClaim, out Guid targetPartyUuid))
+                if (!TryGetGuidClaim(jwt, FromPartyUuidClaim, out Guid fromPartyUuid) ||
+                    !TryGetGuidClaim(jwt, ToPartyUuidClaim, out Guid toPartyUuid))
                 {
-                    return SelfIdentifiedLinkTokenResult.Invalid("Token is missing required source/target claims.");
+                    return SelfIdentifiedLinkTokenResult.Invalid("Token is missing required from/to party claims.");
                 }
 
                 string? jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
 
-                return SelfIdentifiedLinkTokenResult.Valid(sourceUserId, targetPartyUuid, jti);
+                return SelfIdentifiedLinkTokenResult.Valid(fromPartyUuid, toPartyUuid, jti);
             }
             catch (SecurityTokenException ex)
             {
@@ -180,12 +185,6 @@ namespace Altinn.Platform.Authentication.Services
 
             return certificate
                 ?? throw new InvalidOperationException("No self-identified link-token signing certificate with a private key is available.");
-        }
-
-        private static bool TryGetIntClaim(JwtSecurityToken jwt, string claimType, out int value)
-        {
-            string? raw = jwt.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
-            return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         private static bool TryGetGuidClaim(JwtSecurityToken jwt, string claimType, out Guid value)
