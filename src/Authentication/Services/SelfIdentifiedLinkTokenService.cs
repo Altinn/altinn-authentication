@@ -27,8 +27,8 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>Custom claim type carrying the authenticated requester's user id.</summary>
         public const string SourceUserIdClaim = "source_user_id";
 
-        /// <summary>Custom claim type carrying the self-identified user id being claimed.</summary>
-        public const string TargetUserIdClaim = "target_user_id";
+        /// <summary>Custom claim type carrying the party UUID of the self-identified user being claimed.</summary>
+        public const string TargetPartyUuidClaim = "target_party_uuid";
 
         /// <summary>Claim type identifying the token's single purpose.</summary>
         public const string PurposeClaim = "purpose";
@@ -57,7 +57,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<string> MintAsync(int sourceUserId, int targetUserId, CancellationToken cancellationToken = default)
+        public async Task<string> MintAsync(int sourceUserId, Guid targetPartyUuid, CancellationToken cancellationToken = default)
         {
             X509Certificate2 certificate = await GetSigningCertificate();
 
@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Services
             [
                 new(PurposeClaim, PurposeValue),
                 new(SourceUserIdClaim, sourceUserId.ToString(CultureInfo.InvariantCulture)),
-                new(TargetUserIdClaim, targetUserId.ToString(CultureInfo.InvariantCulture)),
+                new(TargetPartyUuidClaim, targetPartyUuid.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             ];
 
@@ -147,14 +147,14 @@ namespace Altinn.Platform.Authentication.Services
                 }
 
                 if (!TryGetIntClaim(jwt, SourceUserIdClaim, out int sourceUserId) ||
-                    !TryGetIntClaim(jwt, TargetUserIdClaim, out int targetUserId))
+                    !TryGetGuidClaim(jwt, TargetPartyUuidClaim, out Guid targetPartyUuid))
                 {
-                    return SelfIdentifiedLinkTokenResult.Invalid("Token is missing required user id claims.");
+                    return SelfIdentifiedLinkTokenResult.Invalid("Token is missing required source/target claims.");
                 }
 
                 string? jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
 
-                return SelfIdentifiedLinkTokenResult.Valid(sourceUserId, targetUserId, jti);
+                return SelfIdentifiedLinkTokenResult.Valid(sourceUserId, targetPartyUuid, jti);
             }
             catch (SecurityTokenException ex)
             {
@@ -186,6 +186,12 @@ namespace Altinn.Platform.Authentication.Services
         {
             string? raw = jwt.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
             return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
+        private static bool TryGetGuidClaim(JwtSecurityToken jwt, string claimType, out Guid value)
+        {
+            string? raw = jwt.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
+            return Guid.TryParse(raw, out value);
         }
     }
 }

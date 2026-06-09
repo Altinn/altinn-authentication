@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.Profile;
@@ -19,9 +20,9 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
     {
         /// <summary>
         /// Mints a signed link token binding the authenticated requester (<paramref name="sourceUserId"/>)
-        /// to the self-identified user being claimed (<paramref name="targetUserId"/>).
+        /// to the self-identified user being claimed (<paramref name="targetPartyUuid"/>).
         /// </summary>
-        Task<string> MintAsync(int sourceUserId, int targetUserId, CancellationToken cancellationToken = default);
+        Task<string> MintAsync(int sourceUserId, Guid targetPartyUuid, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Validates a link token (signature, issuer, audience, lifetime and purpose) and returns the
