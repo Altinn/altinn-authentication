@@ -89,6 +89,7 @@ internal static class AuthenticationHost
         services.Configure<AccessManagementSettings>(config.GetSection("AccessManagementSettings"));
         services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
         services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
+        services.Configure<SelfIdentifiedLinkTokenSettings>(config.GetSection("SelfIdentifiedLinkTokenSettings"));
         services.Configure<QueueStorageSettings>(config.GetSection("QueueStorageSettings"));
         services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
 
@@ -183,6 +184,8 @@ internal static class AuthenticationHost
         services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddSingleton<ITokenIssuer, TokenIssuerService>();
+        services.AddSingleton<ISelfIdentifiedLinkTokenCertificateProvider, SelfIdentifiedLinkTokenCertificateProvider>();
+        services.AddSingleton<ISelfIdentifiedLinkTokenService, SelfIdentifiedLinkTokenService>();
         services.TryAddSingleton<AuthenticationTelemetry>();
 
         services.ConfigureOpenTelemetryTracerProvider(m => m.AddSource(AuthenticationTelemetry.Name));
