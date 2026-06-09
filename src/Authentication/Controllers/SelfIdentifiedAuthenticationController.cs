@@ -18,10 +18,12 @@ namespace Altinn.Platform.Authentication.Controllers
     [ApiController]
     public class SelfIdentifiedAuthenticationController(
         IUserProfileService profileService,
-        ISelfIdentifiedLinkService linkService) : ControllerBase
+        ISelfIdentifiedLinkService linkService,
+        ISelfIdentifiedLinkTokenService linkTokenService) : ControllerBase
     {
         private readonly IUserProfileService _profileService = profileService;
         private readonly ISelfIdentifiedLinkService _linkService = linkService;
+        private readonly ISelfIdentifiedLinkTokenService _linkTokenService = linkTokenService;
 
         /// <summary>
         /// Validates username and password for a self identified user. The credentials are verified against the
@@ -74,6 +76,40 @@ namespace Altinn.Platform.Authentication.Controllers
             await _linkService.RequestLinkAsync(request.UserName, toPartyUuid, cancellationToken);
 
             return Accepted();
+        }
+
+        /// <summary>
+        /// Redeems a self-identified account-link token from the email (issue #2035). Validates the
+        /// token and enforces that the authenticated caller is the same person who requested the link
+        /// (<c>to_party_uuid</c>). On success returns the SI account's party UUID (<c>from_party_uuid</c>)
+        /// - the same shape as <c>validate-credentials</c> - so access-management reuses its existing
+        /// connection-creation step unchanged.
+        /// </summary>
+        [HttpPost("validate-link-token")]
+        [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
+        public async Task<ActionResult> ValidateLinkToken([FromBody] SelfIdentifiedLinkTokenRequest request, CancellationToken cancellationToken)
+        {
+            Guid callerPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
+            if (callerPartyUuid == Guid.Empty)
+            {
+                return BadRequest(new { Message = "Authenticated user has no party UUID." });
+            }
+
+            SelfIdentifiedLinkTokenResult result = await _linkTokenService.ValidateAsync(request.Token, cancellationToken);
+
+            if (!result.IsValid)
+            {
+                return Unauthorized(new { Message = "Invalid or expired link token." });
+            }
+
+            // Requester == consumer: the link may only be redeemed by the same person who requested it.
+            if (result.ToPartyUuid != callerPartyUuid)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { Message = "Link token does not belong to the authenticated user." });
+            }
+
+            // Single-use (jti) enforcement is not yet implemented - tracked as an open item in #2035.
+            return Ok(result.FromPartyUuid);
         }
     }
 }
