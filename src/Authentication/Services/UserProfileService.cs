@@ -199,7 +199,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<string> GetSelfIdentifiedUserEmailAsync(string username, CancellationToken cancellationToken = default)
+        public async Task<SelfIdentifiedLinkTarget> GetSelfIdentifiedLinkTargetAsync(string username, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(username))
             {
@@ -209,7 +209,19 @@ namespace Altinn.Platform.Authentication.Services
             SelfIdentifiedUserCredential credential =
                 await _selfIdentifiedUserCredentialRepository.GetByUsernameAsync(username, cancellationToken);
 
-            return credential?.Email;
+            // A single null result covers every "cannot proceed" case (unknown, inactive, no email),
+            // so the caller responds identically and does not reveal which one. The username must not
+            // be logged.
+            if (credential is null || !credential.IsActive || string.IsNullOrEmpty(credential.Email))
+            {
+                return null;
+            }
+
+            return new SelfIdentifiedLinkTarget
+            {
+                PartyUuid = credential.PartyUuid,
+                Email = credential.Email
+            };
         }
 
         /// <summary>

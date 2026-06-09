@@ -106,35 +106,64 @@ public class UserProfileServiceLocalSiTests
     }
 
     [Fact]
-    public async Task GetSelfIdentifiedUserEmail_ReturnsStoredEmail()
+    public async Task GetSelfIdentifiedLinkTarget_ReturnsPartyUuidAndEmail()
     {
         SelfIdentifiedUserCredential credential = Credential();
         credential.Email = "user@example.com";
         _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
             .ReturnsAsync(credential);
 
-        string email = await CreateService().GetSelfIdentifiedUserEmailAsync("user");
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync("user");
 
-        Assert.Equal("user@example.com", email);
+        Assert.NotNull(target);
+        Assert.Equal(PartyUuid, target!.PartyUuid);
+        Assert.Equal("user@example.com", target.Email);
     }
 
     [Fact]
-    public async Task GetSelfIdentifiedUserEmail_UnknownUser_ReturnsNull()
+    public async Task GetSelfIdentifiedLinkTarget_UnknownUser_ReturnsNull()
     {
         _repo.Setup(r => r.GetByUsernameAsync("nobody", It.IsAny<CancellationToken>()))
             .ReturnsAsync((SelfIdentifiedUserCredential?)null);
 
-        string email = await CreateService().GetSelfIdentifiedUserEmailAsync("nobody");
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync("nobody");
 
-        Assert.Null(email);
+        Assert.Null(target);
     }
 
     [Fact]
-    public async Task GetSelfIdentifiedUserEmail_EmptyInput_ReturnsNullWithoutRepoLookup()
+    public async Task GetSelfIdentifiedLinkTarget_InactiveUser_ReturnsNull()
     {
-        string email = await CreateService().GetSelfIdentifiedUserEmailAsync(string.Empty);
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.Email = "user@example.com";
+        credential.IsActive = false;
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
 
-        Assert.Null(email);
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync("user");
+
+        Assert.Null(target);
+    }
+
+    [Fact]
+    public async Task GetSelfIdentifiedLinkTarget_NoEmail_ReturnsNull()
+    {
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.Email = null;
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
+
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync("user");
+
+        Assert.Null(target);
+    }
+
+    [Fact]
+    public async Task GetSelfIdentifiedLinkTarget_EmptyInput_ReturnsNullWithoutRepoLookup()
+    {
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync(string.Empty);
+
+        Assert.Null(target);
         _repo.Verify(r => r.GetByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
