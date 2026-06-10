@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Helpers;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,11 +21,13 @@ namespace Altinn.Platform.Authentication.Controllers
     public class SelfIdentifiedAuthenticationController(
         IUserProfileService profileService,
         ISelfIdentifiedLinkService linkService,
-        ISelfIdentifiedLinkTokenService linkTokenService) : ControllerBase
+        ISelfIdentifiedLinkTokenService linkTokenService,
+        IAccessManagementClient accessManagementClient) : ControllerBase
     {
         private readonly IUserProfileService _profileService = profileService;
         private readonly ISelfIdentifiedLinkService _linkService = linkService;
         private readonly ISelfIdentifiedLinkTokenService _linkTokenService = linkTokenService;
+        private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
 
         /// <summary>
         /// Validates username and password for a self identified user. The credentials are verified against the
@@ -82,14 +85,15 @@ namespace Altinn.Platform.Authentication.Controllers
 
         /// <summary>
         /// Redeems a self-identified account-link token from the email (issue #2035). Validates the
-        /// token and enforces that the authenticated caller is the same person who requested the link
-        /// (<c>to_party_uuid</c>). On success returns the SI account's party UUID (<c>from_party_uuid</c>)
-        /// - the same shape as <c>validate-credentials</c> - so access-management reuses its existing
-        /// connection-creation step unchanged.
+        /// token, enforces that the authenticated caller is the same person who requested the link
+        /// (<c>to_party_uuid</c>), and then creates the connection in access-management **directly**
+        /// (from the SI user to the authenticated person) so the redemption + delegation is a single
+        /// atomic call and does not depend on the BFF performing the second step. On success returns
+        /// the SI account's party UUID (<c>from_party_uuid</c>).
         /// </summary>
-        [HttpPost("validate-link-token")]
+        [HttpPost("redeem-link")]
         [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
-        public async Task<ActionResult> ValidateLinkToken([FromBody] SelfIdentifiedLinkTokenRequest request, CancellationToken cancellationToken)
+        public async Task<ActionResult> RedeemLink([FromBody] SelfIdentifiedLinkTokenRequest request, CancellationToken cancellationToken)
         {
             Guid callerPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
             if (callerPartyUuid == Guid.Empty)
@@ -108,6 +112,16 @@ namespace Altinn.Platform.Authentication.Controllers
             if (result.ToPartyUuid != callerPartyUuid)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { Message = "Link token does not belong to the authenticated user." });
+            }
+
+            // Create the connection directly in access-management (from SI user -> authenticated person),
+            // rather than returning the party UUID and letting the BFF do it.
+            bool created = await _accessManagementClient.CreateSelfIdentifiedUserConnection(
+                result.FromPartyUuid, result.ToPartyUuid, cancellationToken);
+
+            if (!created)
+            {
+                return StatusCode(StatusCodes.Status502BadGateway, new { Message = "Failed to create the self-identified user connection." });
             }
 
             // Single-use (jti) enforcement is not yet implemented - tracked as an open item in #2035.

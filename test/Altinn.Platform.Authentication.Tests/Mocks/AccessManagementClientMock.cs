@@ -184,6 +184,11 @@ public class AccessManagementClientMock: IAccessManagementClient
         throw new NotImplementedException();
     }
 
+    public Task<bool> CreateSelfIdentifiedUserConnection(Guid from, Guid to, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(true);
+    }
+
     public async Task<AuthorizedPartyExternal> GetPartyFromReporteeListIfExists(int partyId, string token)
     {
         return new AuthorizedPartyExternal();

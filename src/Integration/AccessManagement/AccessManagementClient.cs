@@ -235,6 +235,36 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
+    public async Task<bool> CreateSelfIdentifiedUserConnection(Guid from, Guid to, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string endpointUrl = $"internal/connections/selfidentifiedusers?from={from}&to={to}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
+
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null, accessToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError(
+                "Authentication // AccessManagementClient // CreateSelfIdentifiedUserConnection // HttpStatusCode: {StatusCode} // {Body}",
+                response.StatusCode,
+                responseContent);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Authentication // AccessManagementClient // CreateSelfIdentifiedUserConnection // Exception");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuId, Guid systemUserId, bool cascade = false, CancellationToken cancellationToken = default)
     {
         try

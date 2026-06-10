@@ -209,4 +209,16 @@ public interface IAccessManagementClient
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
     Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuid, Guid systemuser, bool cascade = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates the self-identified user connection in Access Management (issue #2035): a
+    /// "rettighetshaver" relation from the SI user (<paramref name="from"/>) to the authenticated
+    /// person (<paramref name="to"/>). Calls the internal AM endpoint directly with a platform access
+    /// token, so the link-redemption flow does not depend on the BFF performing the delegation.
+    /// </summary>
+    /// <param name="from">The SI user's party UUID (connection source).</param>
+    /// <param name="to">The authenticated person's party UUID (connection target).</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns><c>true</c> when the connection was created; <c>false</c> on a non-success response (logged).</returns>
+    Task<bool> CreateSelfIdentifiedUserConnection(Guid from, Guid to, CancellationToken cancellationToken = default);
 }
