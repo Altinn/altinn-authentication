@@ -13,14 +13,16 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
     {
         /// <summary>
         /// Requests an account-link email for the SI user identified by <paramref name="userName"/>,
-        /// to be sent to that user's stored email. When the user is unknown, inactive or has no email,
-        /// this is a silent no-op (so the caller can respond identically and avoid user enumeration).
+        /// to be sent to that user's stored email. Returns the <b>masked</b> recipient address (e.g.
+        /// <c>r*****@g****.com</c>) so the caller can show where the email went, or <c>null</c> when no
+        /// email was sent (unknown/inactive/no-email user, or a delivery failure). The full address is
+        /// never returned.
         /// </summary>
         /// <param name="userName">The SI user's username (the connection <c>from</c> party).</param>
         /// <param name="toPartyUuid">
         /// The authenticated person who triggered the request (the connection <c>to</c> party).
         /// </param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        Task RequestLinkAsync(string userName, Guid toPartyUuid, CancellationToken cancellationToken = default);
+        Task<string?> RequestLinkAsync(string userName, Guid toPartyUuid, CancellationToken cancellationToken = default);
     }
 }

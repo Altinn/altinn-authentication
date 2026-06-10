@@ -58,28 +58,58 @@ public class SelfIdentifiedLinkServiceTests
             })
             .ReturnsAsync(true);
 
-        await CreateService().RequestLinkAsync(UserName, ToPartyUuid);
+        string? masked = await CreateService().RequestLinkAsync(UserName, ToPartyUuid);
 
         _tokenService.Verify(t => t.MintAsync(FromPartyUuid, ToPartyUuid, It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal(Email, sentTo);
         Assert.Equal("Test subject", sentSubject);
         Assert.NotNull(sentBody);
         Assert.Contains($"{_settings.AccessManagementLinkUrl}?token={Token}", sentBody!);
+
+        // Caller gets the masked address, never the full one.
+        Assert.Equal("s*****@e****.com", masked);
     }
 
     [Fact]
-    public async Task RequestLink_UnknownTarget_DoesNotMintOrSend()
+    public async Task RequestLink_UnknownTarget_DoesNotMintOrSend_ReturnsNull()
     {
         _profile.Setup(p => p.GetSelfIdentifiedLinkTargetAsync(UserName, It.IsAny<CancellationToken>()))
             .ReturnsAsync((SelfIdentifiedLinkTarget?)null);
 
-        await CreateService().RequestLinkAsync(UserName, ToPartyUuid);
+        string? masked = await CreateService().RequestLinkAsync(UserName, ToPartyUuid);
 
+        Assert.Null(masked);
         _tokenService.Verify(
             t => t.MintAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
         _notification.Verify(
             n => n.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task RequestLink_SendFails_ReturnsNull()
+    {
+        _profile.Setup(p => p.GetSelfIdentifiedLinkTargetAsync(UserName, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SelfIdentifiedLinkTarget { PartyUuid = FromPartyUuid, Email = Email });
+        _tokenService.Setup(t => t.MintAsync(FromPartyUuid, ToPartyUuid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Token);
+        _notification
+            .Setup(n => n.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        string? masked = await CreateService().RequestLinkAsync(UserName, ToPartyUuid);
+
+        Assert.Null(masked);
+    }
+
+    [Theory]
+    [InlineData("rune@gmail.com", "r*****@g****.com")]
+    [InlineData("a@b.no", "a*****@b****.no")]
+    [InlineData("first.last@sub.example.org", "f*****@s****.org")]
+    [InlineData("notanemail", "*****")]
+    public void MaskEmail_MasksAsExpected(string input, string expected)
+    {
+        Assert.Equal(expected, SelfIdentifiedLinkService.MaskEmail(input));
     }
 
     private SelfIdentifiedLinkService CreateService() =>

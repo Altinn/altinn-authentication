@@ -43,17 +43,17 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task RequestLinkAsync(string userName, Guid toPartyUuid, CancellationToken cancellationToken = default)
+        public async Task<string?> RequestLinkAsync(string userName, Guid toPartyUuid, CancellationToken cancellationToken = default)
         {
             SelfIdentifiedLinkTarget? target =
                 await _userProfileService.GetSelfIdentifiedLinkTargetAsync(userName, cancellationToken);
 
             if (target is null)
             {
-                // Unknown / inactive / no email. Silent no-op - the caller responds identically so the
-                // existence of the username is not revealed. The username must not be logged.
+                // Unknown / inactive / no email. No email is sent and no masked address is returned.
+                // The username must not be logged.
                 _logger.LogInformation("Self-identified link request had no eligible target; no email sent.");
-                return;
+                return null;
             }
 
             string token = await _linkTokenService.MintAsync(target.PartyUuid, toPartyUuid, cancellationToken);
@@ -67,7 +67,37 @@ namespace Altinn.Platform.Authentication.Services
             if (!sent)
             {
                 _logger.LogError("Self-identified link email was not accepted by the Notifications service.");
+                return null;
             }
+
+            // Only the masked address is returned to the caller; the full email never leaves here.
+            return MaskEmail(target.Email);
+        }
+
+        /// <summary>
+        /// Masks an email address for display, revealing only the first character of the local part and
+        /// of the domain name plus the TLD, e.g. <c>rune@gmail.com</c> -&gt; <c>r*****@g****.com</c>.
+        /// Uses fixed-length masks so the original lengths are not revealed.
+        /// </summary>
+        public static string MaskEmail(string email)
+        {
+            int at = email.IndexOf('@');
+            if (at <= 0 || at == email.Length - 1)
+            {
+                // Not a normal address - don't reveal anything.
+                return "*****";
+            }
+
+            string local = email[..at];
+            string domain = email[(at + 1)..];
+            string maskedLocal = local[0] + new string('*', 5);
+
+            int dot = domain.LastIndexOf('.');
+            string maskedDomain = dot <= 0
+                ? domain[0] + new string('*', 4)
+                : domain[0] + new string('*', 4) + domain[dot..];
+
+            return $"{maskedLocal}@{maskedDomain}";
         }
 
         private static string BuildEmailBody(string linkUrl)
