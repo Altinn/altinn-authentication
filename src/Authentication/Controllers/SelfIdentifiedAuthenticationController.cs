@@ -30,12 +30,14 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
 
         /// <summary>
-        /// Validates username and password for a self identified user. The credentials are verified against the
-        /// SBL Bridge Profile API and, when valid, the party UUID of the resolved user is returned.
+        /// Validates username and password for a self identified user. When valid, the connection from
+        /// the resolved SI user to the authenticated person is created in access-management **directly**
+        /// (rather than returning the party UUID for the BFF to delegate), then the SI account's party
+        /// UUID is returned.
         /// </summary>
         [HttpPost("validate-credentials")]
         [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
-        public async Task<ActionResult> ValidateCredentials([FromBody] SiUserCredentials credentials)
+        public async Task<ActionResult> ValidateCredentials([FromBody] SiUserCredentials credentials, CancellationToken cancellationToken)
         {
             UserCredentialVerificationResult result =
                 await _profileService.ValidateCredentialsAsync(credentials.UserName, credentials.Password);
@@ -50,12 +52,18 @@ namespace Altinn.Platform.Authentication.Controllers
                 return StatusCode(StatusCodes.Status403Forbidden, new { Message = "User is not a self identified user." });
             }
 
-            if (result.UserProfile?.Party?.PartyUuid is { } partyUuid)
+            if (result.UserProfile?.Party?.PartyUuid is not { } fromPartyUuid)
             {
-                return Ok(partyUuid);
+                return Unauthorized(new { Message = "Invalid credentials." });
             }
 
-            return Unauthorized(new { Message = "Invalid credentials." });
+            Guid toPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
+            if (toPartyUuid == Guid.Empty)
+            {
+                return BadRequest(new { Message = "Authenticated user has no party UUID." });
+            }
+
+            return await CreateConnectionAsync(fromPartyUuid, toPartyUuid, cancellationToken);
         }
 
         /// <summary>
@@ -114,18 +122,28 @@ namespace Altinn.Platform.Authentication.Controllers
                 return StatusCode(StatusCodes.Status403Forbidden, new { Message = "Link token does not belong to the authenticated user." });
             }
 
+            // Single-use (jti) enforcement is not yet implemented - tracked as an open item in #2035.
             // Create the connection directly in access-management (from SI user -> authenticated person),
             // rather than returning the party UUID and letting the BFF do it.
-            bool created = await _accessManagementClient.CreateSelfIdentifiedUserConnection(
-                result.FromPartyUuid, result.ToPartyUuid, cancellationToken);
+            return await CreateConnectionAsync(result.FromPartyUuid, result.ToPartyUuid, cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates the self-identified user connection (<paramref name="fromPartyUuid"/> -&gt;
+        /// <paramref name="toPartyUuid"/>) in access-management and maps the outcome to an action result:
+        /// <c>200 Ok(fromPartyUuid)</c> on success, <c>502 Bad Gateway</c> when access-management rejects
+        /// the call. Shared by the credential and link-redemption flows so both delegate identically.
+        /// </summary>
+        private async Task<ActionResult> CreateConnectionAsync(Guid fromPartyUuid, Guid toPartyUuid, CancellationToken cancellationToken)
+        {
+            bool created = await _accessManagementClient.CreateSelfIdentifiedUserConnection(fromPartyUuid, toPartyUuid, cancellationToken);
 
             if (!created)
             {
                 return StatusCode(StatusCodes.Status502BadGateway, new { Message = "Failed to create the self-identified user connection." });
             }
 
-            // Single-use (jti) enforcement is not yet implemented - tracked as an open item in #2035.
-            return Ok(result.FromPartyUuid);
+            return Ok(fromPartyUuid);
         }
     }
 }
