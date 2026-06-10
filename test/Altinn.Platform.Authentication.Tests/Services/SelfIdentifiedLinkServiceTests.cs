@@ -118,5 +118,6 @@ public class SelfIdentifiedLinkServiceTests
             _tokenService.Object,
             _notification.Object,
             Options.Create(_settings),
+            TimeProvider.System,
             NullLogger<SelfIdentifiedLinkService>.Instance);
 }

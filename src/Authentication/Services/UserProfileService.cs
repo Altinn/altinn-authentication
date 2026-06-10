@@ -198,15 +198,16 @@ namespace Altinn.Platform.Authentication.Services
             };
         }
 
+#nullable enable
         /// <inheritdoc/>
-        public async Task<SelfIdentifiedLinkTarget> GetSelfIdentifiedLinkTargetAsync(string username, CancellationToken cancellationToken = default)
+        public async Task<SelfIdentifiedLinkTarget?> GetSelfIdentifiedLinkTargetAsync(string username, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(username))
             {
                 return null;
             }
 
-            SelfIdentifiedUserCredential credential =
+            SelfIdentifiedUserCredential? credential =
                 await _selfIdentifiedUserCredentialRepository.GetByUsernameAsync(username, cancellationToken);
 
             // A single null result covers every "cannot proceed" case (unknown, inactive, no email),
@@ -223,6 +224,7 @@ namespace Altinn.Platform.Authentication.Services
                 Email = credential.Email
             };
         }
+#nullable restore
 
         /// <summary>
         /// Verifies a plaintext password against an Altinn 2 SHA1 hash and salt, using the same

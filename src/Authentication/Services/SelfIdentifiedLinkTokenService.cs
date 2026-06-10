@@ -164,7 +164,7 @@ namespace Altinn.Platform.Authentication.Services
             catch (SecurityTokenException ex)
             {
                 // Expected for expired / tampered / wrong-audience tokens. Do not log the token.
-                _logger.LogInformation("Self-identified link token rejected: {Reason}", ex.GetType().Name);
+                _logger.LogInformation(ex, "Self-identified link token rejected: {Reason}", ex.GetType().Name);
                 return SelfIdentifiedLinkTokenResult.Invalid("Token validation failed.");
             }
             catch (ArgumentException)

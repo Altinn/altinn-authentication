@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
@@ -23,6 +24,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ISelfIdentifiedLinkTokenService _linkTokenService;
         private readonly IAltinnNotificationClient _notificationClient;
         private readonly SelfIdentifiedLinkSettings _settings;
+        private readonly TimeProvider _timeProvider;
         private readonly ILogger<SelfIdentifiedLinkService> _logger;
 
         /// <summary>
@@ -33,12 +35,14 @@ namespace Altinn.Platform.Authentication.Services
             ISelfIdentifiedLinkTokenService linkTokenService,
             IAltinnNotificationClient notificationClient,
             IOptions<SelfIdentifiedLinkSettings> settings,
+            TimeProvider timeProvider,
             ILogger<SelfIdentifiedLinkService> logger)
         {
             _userProfileService = userProfileService;
             _linkTokenService = linkTokenService;
             _notificationClient = notificationClient;
             _settings = settings.Value;
+            _timeProvider = timeProvider;
             _logger = logger;
         }
 
@@ -59,7 +63,12 @@ namespace Altinn.Platform.Authentication.Services
             string token = await _linkTokenService.MintAsync(target.PartyUuid, toPartyUuid, cancellationToken);
             string linkUrl = QueryHelpers.AddQueryString(_settings.AccessManagementLinkUrl, "token", token);
             string body = BuildEmailBody(linkUrl);
-            string idempotencyId = $"si-link_{target.PartyUuid:N}_{toPartyUuid:N}_{Guid.NewGuid():N}";
+
+            // Idempotency id is bucketed to the minute so accidental double-submits (the same from/to
+            // within the same minute) de-duplicate to a single email on the Notifications side, while a
+            // genuine re-request later still produces a new email.
+            string minuteBucket = _timeProvider.GetUtcNow().ToString("yyyyMMddHHmm", CultureInfo.InvariantCulture);
+            string idempotencyId = $"si-link_{target.PartyUuid:N}_{toPartyUuid:N}_{minuteBucket}";
 
             bool sent = await _notificationClient.SendEmailAsync(
                 target.Email, _settings.EmailSubject, body, idempotencyId, cancellationToken);
