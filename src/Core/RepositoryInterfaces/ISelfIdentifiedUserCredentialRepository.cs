@@ -15,5 +15,20 @@ namespace Altinn.Platform.Authentication.Core.RepositoryInterfaces
         /// can apply policy and distinguish "no user" from "locked / expired".
         /// </summary>
         Task<SelfIdentifiedUserCredential?> GetByUsernameAsync(string userName, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Atomically increments <c>failed_login_attempts</c> for the given user. When the counter
+        /// reaches <paramref name="maxAttempts"/>, <c>lockout_until</c> is set to
+        /// <c>NOW() + <paramref name="lockoutDuration"/></c> in the database.
+        /// Has no effect if the user does not exist.
+        /// </summary>
+        Task RecordFailedAttemptAsync(string userName, int maxAttempts, TimeSpan lockoutDuration, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Resets <c>failed_login_attempts</c> to 0 and clears <c>lockout_until</c> for the given
+        /// user. Called after a successful authentication to clear any accumulated penalty.
+        /// Has no effect if the user does not exist.
+        /// </summary>
+        Task ResetFailedAttemptsAsync(string userName, CancellationToken cancellationToken = default);
     }
 }

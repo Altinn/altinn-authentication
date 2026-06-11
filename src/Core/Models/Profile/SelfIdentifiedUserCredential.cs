@@ -57,5 +57,18 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
         /// Gets or sets the timestamp the row was imported into Altinn 3.
         /// </summary>
         public DateTimeOffset ImportedAt { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of consecutive failed login attempts since the last successful
+        /// login or manual reset. Reset to 0 on successful authentication.
+        /// </summary>
+        public int FailedLoginAttempts { get; set; }
+
+        /// <summary>
+        /// Gets or sets the timestamp until which the account is locked due to too many failed
+        /// login attempts. <c>null</c> means the account is not locked. Reset to <c>null</c> on
+        /// successful authentication.
+        /// </summary>
+        public DateTimeOffset? LockoutUntil { get; set; }
     }
 }

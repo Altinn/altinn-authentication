@@ -28,6 +28,7 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ILogger _logger;
         private readonly IFeatureManager _featureManager;
         private readonly ISelfIdentifiedUserCredentialRepository _selfIdentifiedUserCredentialRepository;
+        private readonly TimeProvider _timeProvider;
 
         /// <summary>
         /// Initialize a new instance of <see cref="UserProfileService"/> with settings for SBL Bridge endpoints.
@@ -37,18 +38,21 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="logger">A generic logger</param>
         /// <param name="featureManager">Feature manager used to switch SI credential validation to the local database</param>
         /// <param name="selfIdentifiedUserCredentialRepository">Repository for locally stored SI credentials</param>
+        /// <param name="timeProvider">Time provider used for lockout comparison (injectable for testing)</param>
         public UserProfileService(
             HttpClient httpClient,
             IOptions<GeneralSettings> settings,
             ILogger<IUserProfileService> logger,
             IFeatureManager featureManager,
-            ISelfIdentifiedUserCredentialRepository selfIdentifiedUserCredentialRepository)
+            ISelfIdentifiedUserCredentialRepository selfIdentifiedUserCredentialRepository,
+            TimeProvider timeProvider)
         {
             _client = httpClient;
             _settings = settings.Value;
             _logger = logger;
             _featureManager = featureManager;
             _selfIdentifiedUserCredentialRepository = selfIdentifiedUserCredentialRepository;
+            _timeProvider = timeProvider;
         }
 
         /// <inheritdoc/>
@@ -161,16 +165,20 @@ namespace Altinn.Platform.Authentication.Services
             return result;
         }
 
+        // Maximum number of consecutive failed attempts before the account is locked.
+        private const int SiMaxFailedAttempts = 5;
+
+        // Duration of the lockout window after hitting the attempt threshold.
+        private static readonly TimeSpan SiLockoutDuration = TimeSpan.FromHours(1);
+
         /// <summary>
         /// Validates SI credentials against the locally migrated credentials in
         /// <c>oidcserver.selfidentified_user_credential</c>. Mirrors the contract of the SBL Bridge
         /// path: returns an empty result for unknown/invalid credentials (so the controller answers
-        /// 401) and a populated <see cref="UserProfile"/> on success.
+        /// 401), <see cref="UserCredentialVerificationResult.IsLocked"/> when the account is
+        /// temporarily locked, and a populated <see cref="UserProfile"/> on success.
+        /// The username must never be logged.
         /// </summary>
-        /// <remarks>
-        /// Lockout/throttling and the expired-password policy are not yet enforced here - both are
-        /// tracked as open items in issue #2025. The username must never be logged.
-        /// </remarks>
         private async Task<UserCredentialVerificationResult> ValidateCredentialsLocallyAsync(string username, string password)
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
@@ -178,12 +186,28 @@ namespace Altinn.Platform.Authentication.Services
                 return new UserCredentialVerificationResult();
             }
 
-            SelfIdentifiedUserCredential credential = await _selfIdentifiedUserCredentialRepository.GetByUsernameAsync(username);
+            SelfIdentifiedUserCredential? credential = await _selfIdentifiedUserCredentialRepository.GetByUsernameAsync(username);
 
-            if (credential is null || !credential.IsActive || !VerifyAltinn2Password(password, credential.PasswordHash, credential.Salt))
+            if (credential is null || !credential.IsActive)
             {
                 return new UserCredentialVerificationResult();
             }
+
+            // Check if the account is still within its lockout window.
+            if (credential.LockoutUntil.HasValue && credential.LockoutUntil.Value > _timeProvider.GetUtcNow())
+            {
+                return new UserCredentialVerificationResult { IsLocked = true };
+            }
+
+            if (!VerifyAltinn2Password(password, credential.PasswordHash, credential.Salt))
+            {
+                await _selfIdentifiedUserCredentialRepository.RecordFailedAttemptAsync(
+                    username, SiMaxFailedAttempts, SiLockoutDuration);
+                return new UserCredentialVerificationResult();
+            }
+
+            // Successful login — clear any accumulated penalty.
+            await _selfIdentifiedUserCredentialRepository.ResetFailedAttemptsAsync(username);
 
             return new UserCredentialVerificationResult
             {
