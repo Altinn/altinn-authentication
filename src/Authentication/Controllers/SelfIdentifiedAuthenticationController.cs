@@ -35,9 +35,9 @@ namespace Altinn.Platform.Authentication.Controllers
         /// (rather than returning the party UUID for the BFF to delegate), then the SI account's party
         /// UUID is returned.
         /// </summary>
-        [HttpPost("validate-credentials")]
+        [HttpPost("link")]
         [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
-        public async Task<ActionResult> ValidateCredentials([FromBody] SiUserCredentials credentials, CancellationToken cancellationToken)
+        public async Task<ActionResult> LinkAccount([FromBody] SiUserCredentials credentials, CancellationToken cancellationToken)
         {
             UserCredentialVerificationResult result =
                 await _profileService.ValidateCredentialsAsync(credentials.UserName, credentials.Password);

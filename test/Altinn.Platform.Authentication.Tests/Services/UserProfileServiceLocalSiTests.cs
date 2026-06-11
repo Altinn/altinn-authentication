@@ -189,7 +189,8 @@ public class UserProfileServiceLocalSiTests
             settings,
             NullLogger<IUserProfileService>.Instance,
             _featureManager.Object,
-            _repo.Object);
+            _repo.Object,
+            TimeProvider.System);
     }
 
     private sealed class ThrowingHandler : HttpMessageHandler

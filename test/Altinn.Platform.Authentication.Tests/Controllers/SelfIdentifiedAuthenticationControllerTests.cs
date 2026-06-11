@@ -70,7 +70,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
     }
 
     [Fact]
-    public async Task ValidateCredentials_ReturnsOk_WhenUserProfileFound()
+    public async Task LinkAccount_ReturnsOk_WhenUserProfileFound()
     {
         var expectedPartyUuid = Guid.Parse("2c3bb12a-5e41-4cc9-9a36-7b5ac6f9f102");
 
@@ -95,7 +95,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
     }
 
     [Fact]
-    public async Task ValidateCredentials_ReturnsUnauthorized_WhenUserProfileMissing()
+    public async Task LinkAccount_ReturnsUnauthorized_WhenUserProfileMissing()
     {
         _userProfileService
             .Setup(s => s.ValidateCredentialsAsync("user", "badpass"))
@@ -107,7 +107,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
     }
 
     [Fact]
-    public async Task ValidateCredentials_ReturnsTooManyRequests_WhenAccountIsLocked()
+    public async Task LinkAccount_ReturnsTooManyRequests_WhenAccountIsLocked()
     {
         _userProfileService
             .Setup(s => s.ValidateCredentialsAsync("user", "pass"))
@@ -119,7 +119,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
     }
 
     [Fact]
-    public async Task ValidateCredentials_ReturnsForbidden_WhenWrongUserType()
+    public async Task LinkAccount_ReturnsForbidden_WhenWrongUserType()
     {
         _userProfileService
             .Setup(s => s.ValidateCredentialsAsync("user", "pass"))
@@ -141,7 +141,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
             new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, claims, addPortalScope: true, now: TestTime));
 
         return await client.PostAsJsonAsync(
-            "/authentication/api/v1/enduser/selfidentified/validate-credentials",
+            "/authentication/api/v1/enduser/selfidentified/link",
             new SiUserCredentials { UserName = userName, Password = password });
     }
 

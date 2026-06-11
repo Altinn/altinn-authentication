@@ -19,7 +19,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
         /// <summary>
         /// Gets the party UUID of the self-identified user being claimed (token <c>from_party_uuid</c>),
         /// identified by the username supplied in the request. This is the connection <c>from</c> party
-        /// access-management uses, matching what <c>validate-credentials</c> returns.
+        /// access-management uses, matching what <c>link</c> returns.
         /// </summary>
         public Guid FromPartyUuid { get; init; }
 
