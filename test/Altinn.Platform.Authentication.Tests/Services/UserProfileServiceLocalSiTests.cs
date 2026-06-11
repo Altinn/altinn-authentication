@@ -70,6 +70,49 @@ public class UserProfileServiceLocalSiTests
 
         Assert.Null(result.UserProfile);
         Assert.False(result.IsLocked);
+        _repo.Verify(r => r.RecordFailedAttemptAsync("user", It.IsAny<int>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ValidateCredentials_Local_ValidCredentials_ResetsFailedAttempts()
+    {
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Credential());
+
+        await CreateService().ValidateCredentialsAsync("user", Password);
+
+        _repo.Verify(r => r.ResetFailedAttemptsAsync("user", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ValidateCredentials_Local_LockedAccount_ReturnsIsLocked()
+    {
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.LockoutUntil = DateTimeOffset.UtcNow.AddHours(1);
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
+
+        UserCredentialVerificationResult result = await CreateService().ValidateCredentialsAsync("user", Password);
+
+        Assert.True(result.IsLocked);
+        Assert.Null(result.UserProfile);
+
+        // Password should not be checked and no attempt recorded while locked.
+        _repo.Verify(r => r.RecordFailedAttemptAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ValidateCredentials_Local_ExpiredLockout_AllowsLogin()
+    {
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.LockoutUntil = DateTimeOffset.UtcNow.AddHours(-1); // lockout has expired
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
+
+        UserCredentialVerificationResult result = await CreateService().ValidateCredentialsAsync("user", Password);
+
+        Assert.False(result.IsLocked);
+        Assert.NotNull(result.UserProfile);
     }
 
     [Fact]
@@ -106,35 +149,64 @@ public class UserProfileServiceLocalSiTests
     }
 
     [Fact]
-    public async Task GetSelfIdentifiedUserEmail_ReturnsStoredEmail()
+    public async Task GetSelfIdentifiedLinkTarget_ReturnsPartyUuidAndEmail()
     {
         SelfIdentifiedUserCredential credential = Credential();
         credential.Email = "user@example.com";
         _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
             .ReturnsAsync(credential);
 
-        string email = await CreateService().GetSelfIdentifiedUserEmailAsync("user");
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync("user");
 
-        Assert.Equal("user@example.com", email);
+        Assert.NotNull(target);
+        Assert.Equal(PartyUuid, target!.PartyUuid);
+        Assert.Equal("user@example.com", target.Email);
     }
 
     [Fact]
-    public async Task GetSelfIdentifiedUserEmail_UnknownUser_ReturnsNull()
+    public async Task GetSelfIdentifiedLinkTarget_UnknownUser_ReturnsNull()
     {
         _repo.Setup(r => r.GetByUsernameAsync("nobody", It.IsAny<CancellationToken>()))
             .ReturnsAsync((SelfIdentifiedUserCredential?)null);
 
-        string email = await CreateService().GetSelfIdentifiedUserEmailAsync("nobody");
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync("nobody");
 
-        Assert.Null(email);
+        Assert.Null(target);
     }
 
     [Fact]
-    public async Task GetSelfIdentifiedUserEmail_EmptyInput_ReturnsNullWithoutRepoLookup()
+    public async Task GetSelfIdentifiedLinkTarget_InactiveUser_ReturnsNull()
     {
-        string email = await CreateService().GetSelfIdentifiedUserEmailAsync(string.Empty);
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.Email = "user@example.com";
+        credential.IsActive = false;
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
 
-        Assert.Null(email);
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync("user");
+
+        Assert.Null(target);
+    }
+
+    [Fact]
+    public async Task GetSelfIdentifiedLinkTarget_NoEmail_ReturnsNull()
+    {
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.Email = null;
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
+
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync("user");
+
+        Assert.Null(target);
+    }
+
+    [Fact]
+    public async Task GetSelfIdentifiedLinkTarget_EmptyInput_ReturnsNullWithoutRepoLookup()
+    {
+        SelfIdentifiedLinkTarget? target = await CreateService().GetSelfIdentifiedLinkTargetAsync(string.Empty);
+
+        Assert.Null(target);
         _repo.Verify(r => r.GetByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -160,7 +232,8 @@ public class UserProfileServiceLocalSiTests
             settings,
             NullLogger<IUserProfileService>.Instance,
             _featureManager.Object,
-            _repo.Object);
+            _repo.Object,
+            TimeProvider.System);
     }
 
     private sealed class ThrowingHandler : HttpMessageHandler

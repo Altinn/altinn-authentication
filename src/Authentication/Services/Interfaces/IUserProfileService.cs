@@ -1,3 +1,4 @@
+#nullable enable
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Platform.Authentication.Core.Models.Profile;
@@ -29,11 +30,13 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         Task<UserCredentialVerificationResult> ValidateCredentialsAsync(string username, string password);
 
         /// <summary>
-        /// Gets the stored email for a self-identified user, used by the forgot-password flow to send
-        /// reset information. Returns <c>null</c> when the user is unknown or has no email on file.
+        /// Looks up the link-flow target for a self-identified user by username (issue #2035): the
+        /// SI user's party UUID (the connection <c>from</c> party) and stored email. Returns
+        /// <c>null</c> when the user is unknown, inactive, or has no email on file - so a single null
+        /// check covers every "cannot proceed" case without revealing which one (no enumeration).
         /// </summary>
-        /// <param name="username">The self-identified user's username (login key).</param>
+        /// <param name="username">The self-identified user's username (login key); may be null/empty.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        Task<string> GetSelfIdentifiedUserEmailAsync(string username, CancellationToken cancellationToken = default);
+        Task<SelfIdentifiedLinkTarget?> GetSelfIdentifiedLinkTargetAsync(string? username, CancellationToken cancellationToken = default);
     }
 }

@@ -1,22 +1,27 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Clients.Interfaces;
+using Altinn.Authentication.Tests.Mocks;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
+using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Platform.Authentication.Tests.Fakes;
 using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using Altinn.Register.Contracts.V1;
+using AltinnCore.Authentication.Constants;
 using AltinnCore.Authentication.JwtCookie;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,6 +55,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
 
         services.Configure<GeneralSettings>(generalSettingSection);
         services.AddSingleton(_userProfileService.Object);
+        services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
         services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
         services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
         services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
@@ -64,7 +70,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
     }
 
     [Fact]
-    public async Task ValidateCredentials_ReturnsOk_WhenUserProfileFound()
+    public async Task LinkAccount_ReturnsOk_WhenUserProfileFound()
     {
         var expectedPartyUuid = Guid.Parse("2c3bb12a-5e41-4cc9-9a36-7b5ac6f9f102");
 
@@ -89,7 +95,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
     }
 
     [Fact]
-    public async Task ValidateCredentials_ReturnsUnauthorized_WhenUserProfileMissing()
+    public async Task LinkAccount_ReturnsUnauthorized_WhenUserProfileMissing()
     {
         _userProfileService
             .Setup(s => s.ValidateCredentialsAsync("user", "badpass"))
@@ -101,7 +107,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
     }
 
     [Fact]
-    public async Task ValidateCredentials_ReturnsTooManyRequests_WhenAccountIsLocked()
+    public async Task LinkAccount_ReturnsTooManyRequests_WhenAccountIsLocked()
     {
         _userProfileService
             .Setup(s => s.ValidateCredentialsAsync("user", "pass"))
@@ -113,7 +119,7 @@ public class SelfIdentifiedAuthenticationControllerTests(
     }
 
     [Fact]
-    public async Task ValidateCredentials_ReturnsForbidden_WhenWrongUserType()
+    public async Task LinkAccount_ReturnsForbidden_WhenWrongUserType()
     {
         _userProfileService
             .Setup(s => s.ValidateCredentialsAsync("user", "pass"))
@@ -126,12 +132,16 @@ public class SelfIdentifiedAuthenticationControllerTests(
 
     private async Task<HttpResponseMessage> PostCredentials(string userName, string password)
     {
+        // The authenticated caller's party UUID is the connection 'to' party; the endpoint now creates
+        // the connection directly, so the token must carry it.
+        List<Claim> claims = [new Claim(AltinnCoreClaimTypes.PartyUUID, Guid.NewGuid().ToString())];
+
         HttpClient client = CreateClient();
         client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, addPortalScope: true, now: TestTime));
+            new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, claims, addPortalScope: true, now: TestTime));
 
         return await client.PostAsJsonAsync(
-            "/authentication/api/v1/enduser/selfidentified/validate-credentials",
+            "/authentication/api/v1/enduser/selfidentified/link",
             new SiUserCredentials { UserName = userName, Password = password });
     }
 

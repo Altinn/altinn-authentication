@@ -89,6 +89,8 @@ internal static class AuthenticationHost
         services.Configure<AccessManagementSettings>(config.GetSection("AccessManagementSettings"));
         services.Configure<Altinn.Platform.Authentication.Model.KeyVaultSettings>(config.GetSection("kvSetting"));
         services.Configure<CertificateSettings>(config.GetSection("CertificateSettings"));
+        services.Configure<SelfIdentifiedLinkTokenSettings>(config.GetSection("SelfIdentifiedLinkTokenSettings"));
+        services.Configure<SelfIdentifiedLinkSettings>(config.GetSection("SelfIdentifiedLinkSettings"));
         services.Configure<QueueStorageSettings>(config.GetSection("QueueStorageSettings"));
         services.Configure<Altinn.Common.AccessToken.Configuration.KeyVaultSettings>(config.GetSection("kvSetting"));
 
@@ -154,6 +156,32 @@ internal static class AuthenticationHost
         });
         services.AddHttpClient<IProfile, ProfileService>();
         services.AddHttpClient<IOidcDownstreamLogout, OidcDownstreamLogoutClient>();
+        services.AddHttpClient<IAltinnNotificationClient, AltinnNotificationClient>((sp, client) =>
+        {
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Altinn.Authentication.Integration.Configuration.PlatformSettings>>().Value;
+
+            // Configured per environment. When absent, the client is still constructible (so unrelated
+            // actions on shared controllers are unaffected) - a send simply fails gracefully and is
+            // logged. The notifications endpoint provisioning is tracked in #2035.
+            var baseAddress = settings.ApiNotificationsEndpoint;
+            if (!string.IsNullOrEmpty(baseAddress))
+            {
+                // BaseAddress must end with '/' so the relative "future/orders" path is appended, not
+                // substituted (RFC 3986).
+                if (!baseAddress.EndsWith('/'))
+                {
+                    baseAddress += "/";
+                }
+
+                client.BaseAddress = new Uri(baseAddress);
+            }
+
+            if (!string.IsNullOrEmpty(settings.SubscriptionKeyHeaderName)
+                && !string.IsNullOrEmpty(settings.SubscriptionKey))
+            {
+                client.DefaultRequestHeaders.Add(settings.SubscriptionKeyHeaderName, settings.SubscriptionKey);
+            }
+        });
         services.AddSingleton<IAccessTokenGenerator, AccessTokenGenerator>();
         services.AddTransient<ISigningCredentialsResolver, SigningCredentialsResolver>();
         services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProvider>();
@@ -183,6 +211,9 @@ internal static class AuthenticationHost
         services.AddSingleton<IUpstreamTokenValidator, UpstreamTokenValidator>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddSingleton<ITokenIssuer, TokenIssuerService>();
+        services.AddSingleton<ISelfIdentifiedLinkTokenCertificateProvider, SelfIdentifiedLinkTokenCertificateProvider>();
+        services.AddSingleton<ISelfIdentifiedLinkTokenService, SelfIdentifiedLinkTokenService>();
+        services.AddScoped<ISelfIdentifiedLinkService, SelfIdentifiedLinkService>();
         services.TryAddSingleton<AuthenticationTelemetry>();
 
         services.ConfigureOpenTelemetryTracerProvider(m => m.AddSource(AuthenticationTelemetry.Name));
