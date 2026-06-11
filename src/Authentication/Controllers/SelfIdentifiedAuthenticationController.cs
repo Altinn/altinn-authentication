@@ -39,6 +39,15 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
         public async Task<ActionResult> LinkAccount([FromBody] SiUserCredentials credentials, CancellationToken cancellationToken)
         {
+            // Check the caller precondition before verifying credentials: a caller without a party UUID
+            // can never complete the link, so rejecting first avoids recording failed-attempt/lockout
+            // side effects on the target SI account (lockout-abuse vector).
+            Guid toPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
+            if (toPartyUuid == Guid.Empty)
+            {
+                return AuthProblem.SelfIdentifiedLink_MissingPartyUuid.ToActionResult();
+            }
+
             UserCredentialVerificationResult result =
                 await _profileService.ValidateCredentialsAsync(credentials.UserName, credentials.Password);
 
@@ -55,12 +64,6 @@ namespace Altinn.Platform.Authentication.Controllers
             if (result.UserProfile?.Party?.PartyUuid is not { } fromPartyUuid)
             {
                 return AuthProblem.SelfIdentifiedLink_InvalidCredentials.ToActionResult();
-            }
-
-            Guid toPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
-            if (toPartyUuid == Guid.Empty)
-            {
-                return AuthProblem.SelfIdentifiedLink_MissingPartyUuid.ToActionResult();
             }
 
             return await CreateConnectionAsync(fromPartyUuid, toPartyUuid, cancellationToken);
