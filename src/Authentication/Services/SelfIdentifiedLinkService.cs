@@ -47,7 +47,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<string?> RequestLinkAsync(string userName, Guid toPartyUuid, CancellationToken cancellationToken = default)
+        public async Task<string?> RequestLinkAsync(string? userName, Guid toPartyUuid, CancellationToken cancellationToken = default)
         {
             SelfIdentifiedLinkTarget? target =
                 await _userProfileService.GetSelfIdentifiedLinkTargetAsync(userName, cancellationToken);
@@ -60,8 +60,13 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
+            if (_settings.AccessManagementLinkUrl is null)
+            {
+                throw new InvalidOperationException("SelfIdentifiedLinkSettings.AccessManagementLinkUrl is not configured.");
+            }
+
             string token = await _linkTokenService.MintAsync(target.PartyUuid, toPartyUuid, cancellationToken);
-            string linkUrl = QueryHelpers.AddQueryString(_settings.AccessManagementLinkUrl, "token", token);
+            string linkUrl = QueryHelpers.AddQueryString(_settings.AccessManagementLinkUrl.AbsoluteUri, "token", token);
             string body = BuildEmailBody(linkUrl);
 
             // Idempotency id is bucketed to the minute so accidental double-submits (the same from/to

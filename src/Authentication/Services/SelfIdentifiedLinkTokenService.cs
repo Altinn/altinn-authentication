@@ -93,11 +93,11 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<SelfIdentifiedLinkTokenResult> ValidateAsync(string token, CancellationToken cancellationToken = default)
+        public async Task<SelfIdentifiedLinkTokenResult> ValidateAsync(string? token, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(token))
             {
-                return SelfIdentifiedLinkTokenResult.Invalid("Token is empty.");
+                return SelfIdentifiedLinkTokenResult.Invalid();
             }
 
             List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
@@ -148,13 +148,15 @@ namespace Altinn.Platform.Authentication.Services
                 string? purpose = jwt.Claims.FirstOrDefault(c => c.Type == PurposeClaim)?.Value;
                 if (!string.Equals(purpose, PurposeValue, StringComparison.Ordinal))
                 {
-                    return SelfIdentifiedLinkTokenResult.Invalid("Token purpose mismatch.");
+                    _logger.LogInformation("Self-identified link token rejected: purpose mismatch.");
+                    return SelfIdentifiedLinkTokenResult.Invalid();
                 }
 
                 if (!TryGetGuidClaim(jwt, FromPartyUuidClaim, out Guid fromPartyUuid) ||
                     !TryGetGuidClaim(jwt, ToPartyUuidClaim, out Guid toPartyUuid))
                 {
-                    return SelfIdentifiedLinkTokenResult.Invalid("Token is missing required from/to party claims.");
+                    _logger.LogInformation("Self-identified link token rejected: missing required from/to party claims.");
+                    return SelfIdentifiedLinkTokenResult.Invalid();
                 }
 
                 string? jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
@@ -165,12 +167,13 @@ namespace Altinn.Platform.Authentication.Services
             {
                 // Expected for expired / tampered / wrong-audience tokens. Do not log the token.
                 _logger.LogInformation(ex, "Self-identified link token rejected: {Reason}", ex.GetType().Name);
-                return SelfIdentifiedLinkTokenResult.Invalid("Token validation failed.");
+                return SelfIdentifiedLinkTokenResult.Invalid();
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
                 // Malformed token string.
-                return SelfIdentifiedLinkTokenResult.Invalid("Token is malformed.");
+                _logger.LogInformation(ex, "Self-identified link token rejected: malformed token.");
+                return SelfIdentifiedLinkTokenResult.Invalid();
             }
         }
 
@@ -178,13 +181,19 @@ namespace Altinn.Platform.Authentication.Services
         {
             List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
 
+            DateTime nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
+
+            // Only sign with a certificate that has a private key and is currently within its validity
+            // window (NotBefore/NotAfter are local time on X509Certificate2, so compare in UTC).
             X509Certificate2? certificate = certificates
-                .Where(c => c.HasPrivateKey)
+                .Where(c => c.HasPrivateKey
+                    && c.NotBefore.ToUniversalTime() <= nowUtc
+                    && c.NotAfter.ToUniversalTime() > nowUtc)
                 .OrderByDescending(c => c.NotBefore)
                 .FirstOrDefault();
 
             return certificate
-                ?? throw new InvalidOperationException("No self-identified link-token signing certificate with a private key is available.");
+                ?? throw new InvalidOperationException("No currently-valid self-identified link-token signing certificate with a private key is available.");
         }
 
         private static bool TryGetGuidClaim(JwtSecurityToken jwt, string claimType, out Guid value)

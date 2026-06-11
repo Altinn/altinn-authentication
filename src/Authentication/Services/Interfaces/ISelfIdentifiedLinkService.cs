@@ -18,11 +18,11 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// email was sent (unknown/inactive/no-email user, or a delivery failure). The full address is
         /// never returned.
         /// </summary>
-        /// <param name="userName">The SI user's username (the connection <c>from</c> party).</param>
+        /// <param name="userName">The SI user's username (the connection <c>from</c> party); may be null/empty.</param>
         /// <param name="toPartyUuid">
         /// The authenticated person who triggered the request (the connection <c>to</c> party).
         /// </param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        Task<string?> RequestLinkAsync(string userName, Guid toPartyUuid, CancellationToken cancellationToken = default);
+        Task<string?> RequestLinkAsync(string? userName, Guid toPartyUuid, CancellationToken cancellationToken = default);
     }
 }

@@ -11,6 +11,6 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
         /// <summary>
         /// Gets or sets the self-identified user's username (login key).
         /// </summary>
-        public string UserName { get; set; } = string.Empty;
+        public string? UserName { get; set; }
     }
 }

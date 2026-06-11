@@ -29,6 +29,6 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// Validates a link token (signature, issuer, audience, lifetime and purpose) and returns the
         /// bound source/target user ids. Never throws on an invalid token - returns an invalid result.
         /// </summary>
-        Task<SelfIdentifiedLinkTokenResult> ValidateAsync(string token, CancellationToken cancellationToken = default);
+        Task<SelfIdentifiedLinkTokenResult> ValidateAsync(string? token, CancellationToken cancellationToken = default);
     }
 }

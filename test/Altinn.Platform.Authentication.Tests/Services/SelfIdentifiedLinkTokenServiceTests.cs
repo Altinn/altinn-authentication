@@ -49,7 +49,6 @@ public class SelfIdentifiedLinkTokenServiceTests
         Assert.Equal(FromPartyUuid, result.FromPartyUuid);
         Assert.Equal(ToPartyUuid, result.ToPartyUuid);
         Assert.False(string.IsNullOrEmpty(result.TokenId));
-        Assert.Null(result.Error);
     }
 
     [Fact]
@@ -162,7 +161,10 @@ public class SelfIdentifiedLinkTokenServiceTests
     {
         using RSA rsa = RSA.Create(2048);
         CertificateRequest request = new("CN=si-link-token-test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
+
+        // Validity window generously brackets the FakeTimeProvider "now" so the service's
+        // currently-valid-certificate check always selects it.
+        return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddYears(-1), DateTimeOffset.UtcNow.AddYears(1));
     }
 
     private sealed class StubCertificateProvider : ISelfIdentifiedLinkTokenCertificateProvider

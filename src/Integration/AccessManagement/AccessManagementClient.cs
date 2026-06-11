@@ -257,10 +257,16 @@ public class AccessManagementClient : IAccessManagementClient
                 responseContent);
             return false;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
+            // Treat transport/runtime failures as a failed delegation so the caller maps it consistently
+            // (instead of surfacing a 500 for what the flow already models as a connection failure).
             _logger.LogError(ex, "Authentication // AccessManagementClient // CreateSelfIdentifiedUserConnection // Exception");
-            throw;
+            return false;
         }
     }
 

@@ -33,7 +33,7 @@ public class SelfIdentifiedLinkServiceTests
 
     private readonly SelfIdentifiedLinkSettings _settings = new()
     {
-        AccessManagementLinkUrl = "https://am.example/accessmanagement/ui/selfidentified-link",
+        AccessManagementLinkUrl = new Uri("https://am.example/accessmanagement/ui/selfidentified-link"),
         EmailSubject = "Test subject",
     };
 

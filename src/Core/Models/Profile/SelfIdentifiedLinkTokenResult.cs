@@ -36,14 +36,11 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
         public string? TokenId { get; init; }
 
         /// <summary>
-        /// Gets a short, non-sensitive reason when <see cref="IsValid"/> is <c>false</c>.
+        /// Creates a failed result. The specific reason is deliberately not carried on the result -
+        /// callers respond with a single generic "invalid token" outcome; the reason is logged by the
+        /// validator instead.
         /// </summary>
-        public string? Error { get; init; }
-
-        /// <summary>
-        /// Creates a failed result with the given reason.
-        /// </summary>
-        public static SelfIdentifiedLinkTokenResult Invalid(string error) => new() { IsValid = false, Error = error };
+        public static SelfIdentifiedLinkTokenResult Invalid() => new() { IsValid = false };
 
         /// <summary>
         /// Creates a successful result with the bound from/to party UUIDs and token id.

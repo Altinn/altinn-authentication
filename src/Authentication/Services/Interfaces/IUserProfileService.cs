@@ -35,8 +35,8 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <c>null</c> when the user is unknown, inactive, or has no email on file - so a single null
         /// check covers every "cannot proceed" case without revealing which one (no enumeration).
         /// </summary>
-        /// <param name="username">The self-identified user's username (login key).</param>
+        /// <param name="username">The self-identified user's username (login key); may be null/empty.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        Task<SelfIdentifiedLinkTarget?> GetSelfIdentifiedLinkTargetAsync(string username, CancellationToken cancellationToken = default);
+        Task<SelfIdentifiedLinkTarget?> GetSelfIdentifiedLinkTargetAsync(string? username, CancellationToken cancellationToken = default);
     }
 }

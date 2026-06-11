@@ -224,7 +224,7 @@ namespace Altinn.Platform.Authentication.Services
 
 #nullable enable
         /// <inheritdoc/>
-        public async Task<SelfIdentifiedLinkTarget?> GetSelfIdentifiedLinkTargetAsync(string username, CancellationToken cancellationToken = default)
+        public async Task<SelfIdentifiedLinkTarget?> GetSelfIdentifiedLinkTargetAsync(string? username, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(username))
             {

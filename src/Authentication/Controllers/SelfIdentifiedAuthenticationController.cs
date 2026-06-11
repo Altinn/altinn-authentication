@@ -2,14 +2,15 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Altinn.Authorization.ProblemDetails;
 using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using AuthProblem = Altinn.Authentication.Core.Problems.Problem;
 
 namespace Altinn.Platform.Authentication.Controllers
 {
@@ -43,23 +44,23 @@ namespace Altinn.Platform.Authentication.Controllers
 
             if (result.IsLocked)
             {
-                return StatusCode(StatusCodes.Status429TooManyRequests, new { Message = "Account is temporarily locked." });
+                return AuthProblem.SelfIdentifiedLink_AccountLocked.ToActionResult();
             }
 
             if (result.WrongUserType)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, new { Message = "User is not a self identified user." });
+                return AuthProblem.SelfIdentifiedLink_WrongUserType.ToActionResult();
             }
 
             if (result.UserProfile?.Party?.PartyUuid is not { } fromPartyUuid)
             {
-                return Unauthorized(new { Message = "Invalid credentials." });
+                return AuthProblem.SelfIdentifiedLink_InvalidCredentials.ToActionResult();
             }
 
             Guid toPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
             if (toPartyUuid == Guid.Empty)
             {
-                return BadRequest(new { Message = "Authenticated user has no party UUID." });
+                return AuthProblem.SelfIdentifiedLink_MissingPartyUuid.ToActionResult();
             }
 
             return await CreateConnectionAsync(fromPartyUuid, toPartyUuid, cancellationToken);
@@ -82,7 +83,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 // The authenticated caller has no party UUID claim, so there is no usable 'to' party to
                 // bind the link to. This is a precondition failure, not a property of the SI username.
-                return BadRequest(new { Message = "Authenticated user has no party UUID." });
+                return AuthProblem.SelfIdentifiedLink_MissingPartyUuid.ToActionResult();
             }
 
             string? maskedEmail = await _linkService.RequestLinkAsync(request.UserName, toPartyUuid, cancellationToken);
@@ -105,20 +106,20 @@ namespace Altinn.Platform.Authentication.Controllers
             Guid callerPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
             if (callerPartyUuid == Guid.Empty)
             {
-                return BadRequest(new { Message = "Authenticated user has no party UUID." });
+                return AuthProblem.SelfIdentifiedLink_MissingPartyUuid.ToActionResult();
             }
 
             SelfIdentifiedLinkTokenResult result = await _linkTokenService.ValidateAsync(request.Token, cancellationToken);
 
             if (!result.IsValid)
             {
-                return Unauthorized(new { Message = "Invalid or expired link token." });
+                return AuthProblem.SelfIdentifiedLink_InvalidToken.ToActionResult();
             }
 
             // Requester == consumer: the link may only be redeemed by the same person who requested it.
             if (result.ToPartyUuid != callerPartyUuid)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, new { Message = "Link token does not belong to the authenticated user." });
+                return AuthProblem.SelfIdentifiedLink_TokenNotForCaller.ToActionResult();
             }
 
             // Single-use (jti) enforcement is not yet implemented - tracked as an open item in #2035.
@@ -130,8 +131,9 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <summary>
         /// Creates the self-identified user connection (<paramref name="fromPartyUuid"/> -&gt;
         /// <paramref name="toPartyUuid"/>) in access-management and maps the outcome to an action result:
-        /// <c>200 Ok(fromPartyUuid)</c> on success, <c>502 Bad Gateway</c> when access-management rejects
-        /// the call. Shared by the credential and link-redemption flows so both delegate identically.
+        /// <c>200 Ok(fromPartyUuid)</c> on success, or the
+        /// <see cref="AuthProblem.SelfIdentifiedLink_ConnectionFailed"/> problem when access-management
+        /// rejects the call. Shared by the credential and link-redemption flows so both delegate identically.
         /// </summary>
         private async Task<ActionResult> CreateConnectionAsync(Guid fromPartyUuid, Guid toPartyUuid, CancellationToken cancellationToken)
         {
@@ -139,7 +141,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             if (!created)
             {
-                return StatusCode(StatusCodes.Status502BadGateway, new { Message = "Failed to create the self-identified user connection." });
+                return AuthProblem.SelfIdentifiedLink_ConnectionFailed.ToActionResult();
             }
 
             return Ok(fromPartyUuid);

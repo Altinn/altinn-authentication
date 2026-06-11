@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,9 @@ using Altinn.Platform.Authentication.Services.Interfaces;
 using AltinnCore.Authentication.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
@@ -50,11 +54,11 @@ public class SelfIdentifiedRedeemLinkTests
     public async Task RedeemLink_InvalidToken_ReturnsUnauthorized_NoDelegation()
     {
         _tokenService.Setup(t => t.ValidateAsync(Token, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(SelfIdentifiedLinkTokenResult.Invalid("bad"));
+            .ReturnsAsync(SelfIdentifiedLinkTokenResult.Invalid());
 
         ActionResult result = await CreateController(CallerPartyUuid).RedeemLink(new() { Token = Token }, default);
 
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        await AssertStatusAsync(result, StatusCodes.Status401Unauthorized);
         _accessManagement.Verify(a => a.CreateSelfIdentifiedUserConnection(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -66,8 +70,7 @@ public class SelfIdentifiedRedeemLinkTests
 
         ActionResult result = await CreateController(CallerPartyUuid).RedeemLink(new() { Token = Token }, default);
 
-        ObjectResult obj = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status403Forbidden, obj.StatusCode);
+        await AssertStatusAsync(result, StatusCodes.Status403Forbidden);
         _accessManagement.Verify(a => a.CreateSelfIdentifiedUserConnection(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -81,8 +84,7 @@ public class SelfIdentifiedRedeemLinkTests
 
         ActionResult result = await CreateController(CallerPartyUuid).RedeemLink(new() { Token = Token }, default);
 
-        ObjectResult obj = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status502BadGateway, obj.StatusCode);
+        await AssertStatusAsync(result, StatusCodes.Status502BadGateway);
     }
 
     [Fact]
@@ -90,8 +92,21 @@ public class SelfIdentifiedRedeemLinkTests
     {
         ActionResult result = await CreateController(Guid.Empty).RedeemLink(new() { Token = Token }, default);
 
-        Assert.IsType<BadRequestObjectResult>(result);
-        _tokenService.Verify(t => t.ValidateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        await AssertStatusAsync(result, StatusCodes.Status400BadRequest);
+        _tokenService.Verify(t => t.ValidateAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // The error responses are ProblemDetailsActionResult (not ObjectResult), so execute the result
+    // against a throwaway HttpContext and read the resulting status code.
+    private static async Task AssertStatusAsync(ActionResult result, int expectedStatusCode)
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Response.Body = new MemoryStream();
+        httpContext.RequestServices = new ServiceCollection().AddLogging().BuildServiceProvider();
+
+        await result.ExecuteResultAsync(new ActionContext(httpContext, new RouteData(), new ActionDescriptor()));
+
+        Assert.Equal(expectedStatusCode, httpContext.Response.StatusCode);
     }
 
     private SelfIdentifiedAuthenticationController CreateController(Guid callerPartyUuid)

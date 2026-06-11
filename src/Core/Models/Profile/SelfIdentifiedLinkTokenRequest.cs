@@ -11,6 +11,6 @@ namespace Altinn.Platform.Authentication.Core.Models.Profile
         /// <summary>
         /// Gets or sets the link token from the email.
         /// </summary>
-        public string Token { get; set; } = string.Empty;
+        public string? Token { get; set; }
     }
 }
