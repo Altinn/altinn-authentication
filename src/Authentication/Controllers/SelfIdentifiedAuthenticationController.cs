@@ -30,10 +30,9 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IAccessManagementClient _accessManagementClient = accessManagementClient;
 
         /// <summary>
-        /// Validates username and password for a self identified user. When valid, the connection from
-        /// the resolved SI user to the authenticated person is created in access-management **directly**
-        /// (rather than returning the party UUID for the BFF to delegate), then the SI account's party
-        /// UUID is returned.
+        /// Links a self-identified user account to the currently authenticated person. Validates the
+        /// supplied SI credentials and, when valid, creates the connection from the SI user to the
+        /// authenticated person directly in access-management. Returns the SI account's party UUID.
         /// </summary>
         [HttpPost("link")]
         [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
