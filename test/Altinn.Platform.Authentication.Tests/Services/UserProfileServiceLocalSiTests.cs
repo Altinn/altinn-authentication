@@ -70,6 +70,49 @@ public class UserProfileServiceLocalSiTests
 
         Assert.Null(result.UserProfile);
         Assert.False(result.IsLocked);
+        _repo.Verify(r => r.RecordFailedAttemptAsync("user", It.IsAny<int>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ValidateCredentials_Local_ValidCredentials_ResetsFailedAttempts()
+    {
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Credential());
+
+        await CreateService().ValidateCredentialsAsync("user", Password);
+
+        _repo.Verify(r => r.ResetFailedAttemptsAsync("user", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ValidateCredentials_Local_LockedAccount_ReturnsIsLocked()
+    {
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.LockoutUntil = DateTimeOffset.UtcNow.AddHours(1);
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
+
+        UserCredentialVerificationResult result = await CreateService().ValidateCredentialsAsync("user", Password);
+
+        Assert.True(result.IsLocked);
+        Assert.Null(result.UserProfile);
+
+        // Password should not be checked and no attempt recorded while locked.
+        _repo.Verify(r => r.RecordFailedAttemptAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ValidateCredentials_Local_ExpiredLockout_AllowsLogin()
+    {
+        SelfIdentifiedUserCredential credential = Credential();
+        credential.LockoutUntil = DateTimeOffset.UtcNow.AddHours(-1); // lockout has expired
+        _repo.Setup(r => r.GetByUsernameAsync("user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(credential);
+
+        UserCredentialVerificationResult result = await CreateService().ValidateCredentialsAsync("user", Password);
+
+        Assert.False(result.IsLocked);
+        Assert.NotNull(result.UserProfile);
     }
 
     [Fact]
