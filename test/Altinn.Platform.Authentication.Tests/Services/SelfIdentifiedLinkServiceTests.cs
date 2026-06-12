@@ -31,10 +31,17 @@ public class SelfIdentifiedLinkServiceTests
     private readonly Mock<ISelfIdentifiedLinkTokenService> _tokenService = new();
     private readonly Mock<IAltinnNotificationClient> _notification = new();
 
+    private const string HostName = "at22.altinn.cloud";
+
     private readonly SelfIdentifiedLinkSettings _settings = new()
     {
-        AccessManagementLinkUrl = new Uri("https://am.example/accessmanagement/ui/selfidentified-link"),
         EmailSubject = "Test subject",
+    };
+
+    private readonly GeneralSettings _generalSettings = new()
+    {
+        HostName = HostName,
+        OidcRefreshTokenPepper = "unit-test-pepper",
     };
 
     [Fact]
@@ -64,7 +71,7 @@ public class SelfIdentifiedLinkServiceTests
         Assert.Equal(Email, sentTo);
         Assert.Equal("Test subject", sentSubject);
         Assert.NotNull(sentBody);
-        Assert.Contains($"{_settings.AccessManagementLinkUrl}?token={Token}", sentBody!);
+        Assert.Contains($"https://am.ui.{HostName}/accessmanagement/ui/altinn2account?token={Token}", sentBody!);
 
         // Caller gets the masked address, never the full one.
         Assert.Equal("s*****@e****.com", masked);
@@ -118,6 +125,7 @@ public class SelfIdentifiedLinkServiceTests
             _tokenService.Object,
             _notification.Object,
             Options.Create(_settings),
+            Options.Create(_generalSettings),
             TimeProvider.System,
             NullLogger<SelfIdentifiedLinkService>.Instance);
 }

@@ -20,10 +20,18 @@ namespace Altinn.Platform.Authentication.Services
     /// </summary>
     public class SelfIdentifiedLinkService : ISelfIdentifiedLinkService
     {
+        // Access-management frontend landing route that consumes the link token. Built from
+        // GeneralSettings.HostName the same way the system-user confirm URLs are
+        // (see RequestSystemUserController/ChangeRequestSystemUserController), so the AM frontend
+        // host is configured in exactly one place (HostName) per environment.
+        private const string LandingUrlPrefix = "https://am.ui.";
+        private const string LandingUrlPath = "/accessmanagement/ui/altinn2account";
+
         private readonly IUserProfileService _userProfileService;
         private readonly ISelfIdentifiedLinkTokenService _linkTokenService;
         private readonly IAltinnNotificationClient _notificationClient;
         private readonly SelfIdentifiedLinkSettings _settings;
+        private readonly GeneralSettings _generalSettings;
         private readonly TimeProvider _timeProvider;
         private readonly ILogger<SelfIdentifiedLinkService> _logger;
 
@@ -35,6 +43,7 @@ namespace Altinn.Platform.Authentication.Services
             ISelfIdentifiedLinkTokenService linkTokenService,
             IAltinnNotificationClient notificationClient,
             IOptions<SelfIdentifiedLinkSettings> settings,
+            IOptions<GeneralSettings> generalSettings,
             TimeProvider timeProvider,
             ILogger<SelfIdentifiedLinkService> logger)
         {
@@ -42,6 +51,7 @@ namespace Altinn.Platform.Authentication.Services
             _linkTokenService = linkTokenService;
             _notificationClient = notificationClient;
             _settings = settings.Value;
+            _generalSettings = generalSettings.Value;
             _timeProvider = timeProvider;
             _logger = logger;
         }
@@ -60,13 +70,14 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            if (_settings.AccessManagementLinkUrl is null)
+            if (string.IsNullOrWhiteSpace(_generalSettings.HostName))
             {
-                throw new InvalidOperationException("SelfIdentifiedLinkSettings.AccessManagementLinkUrl is not configured.");
+                throw new InvalidOperationException("GeneralSettings.HostName is not configured; cannot build the access-management link URL.");
             }
 
             string token = await _linkTokenService.MintAsync(target.PartyUuid, toPartyUuid, cancellationToken);
-            string linkUrl = QueryHelpers.AddQueryString(_settings.AccessManagementLinkUrl.AbsoluteUri, "token", token);
+            string baseUrl = $"{LandingUrlPrefix}{_generalSettings.HostName.Trim()}{LandingUrlPath}";
+            string linkUrl = QueryHelpers.AddQueryString(baseUrl, "token", token);
             string body = BuildEmailBody(linkUrl);
 
             // Idempotency id is bucketed to the minute so accidental double-submits (the same from/to
