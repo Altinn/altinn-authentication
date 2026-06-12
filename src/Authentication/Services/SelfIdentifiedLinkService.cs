@@ -70,13 +70,13 @@ namespace Altinn.Platform.Authentication.Services
                 return null;
             }
 
-            if (string.IsNullOrEmpty(_generalSettings.HostName))
+            if (string.IsNullOrWhiteSpace(_generalSettings.HostName))
             {
                 throw new InvalidOperationException("GeneralSettings.HostName is not configured; cannot build the access-management link URL.");
             }
 
             string token = await _linkTokenService.MintAsync(target.PartyUuid, toPartyUuid, cancellationToken);
-            string baseUrl = $"{LandingUrlPrefix}{_generalSettings.HostName}{LandingUrlPath}";
+            string baseUrl = $"{LandingUrlPrefix}{_generalSettings.HostName.Trim()}{LandingUrlPath}";
             string linkUrl = QueryHelpers.AddQueryString(baseUrl, "token", token);
             string body = BuildEmailBody(linkUrl);
 
