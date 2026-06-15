@@ -371,10 +371,14 @@ public class ChangeRequestSystemUserService(
             }
         }
 
-        // Check AccessPackages to be added
-        if (systemUserChangeRequest.RequiredAccessPackages?.Count > 0)
+        // Check AccessPackages to be added.
+        // Guard on the computed diff (verifiedRequiredAccessPackages), not the original request list:
+        // when every required package is already delegated the diff is empty, and we must skip the
+        // delegation check entirely. Calling it with an empty set degenerates into a check for ALL
+        // packages in the system (no package filter), which fails and breaks idempotent approval.
+        if (verifiedRequiredAccessPackages.Value?.Count > 0)
         {
-            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, verifiedRequiredAccessPackages.Value, fromBff: false, cancellationToken);        
+            Result<AccessPackageDelegationCheckResult> checkAccessPackages = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, verifiedRequiredAccessPackages.Value, fromBff: false, cancellationToken);
             if (checkAccessPackages.IsProblem)   
             {
                 return checkAccessPackages.Problem;

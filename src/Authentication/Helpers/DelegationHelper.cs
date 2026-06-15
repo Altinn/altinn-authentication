@@ -245,6 +245,13 @@ public class DelegationHelper(
                         .Select(pkg => pkg.Urn!)
                         .ToArray();
 
+        // Nothing to check - return early. Calling the delegation-check API without a package filter
+        // makes it evaluate EVERY access package in the system, which would never all be delegable.
+        if (urns.Length == 0)
+        {
+            return new AccessPackageDelegationCheckResult(true, validAccessPackages);
+        }
+
         var resultList = await accessManagementClient
             .CheckDelegationAccessForAccessPackage(partyId, urns, cancellationToken)
             .ToListAsync(cancellationToken);
