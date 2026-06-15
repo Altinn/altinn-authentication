@@ -245,9 +245,12 @@ public class DelegationHelper(
                         .Select(pkg => pkg.Urn!)
                         .ToArray();
 
-        // Nothing to check - return early. Calling the delegation-check API without a package filter
-        // makes it evaluate EVERY access package in the system, which would never all be delegable.
-        if (urns.Length == 0)
+        // Nothing to check - return early only when the validated package list is genuinely empty
+        // (e.g. an idempotent approve where every required package is already delegated). This must
+        // not key off urns.Length, since that would also short-circuit packages missing a URN and
+        // wrongly return them as delegable. Calling the delegation-check API with an empty package
+        // filter makes it evaluate EVERY access package in the system, which would never all be delegable.
+        if (validAccessPackages.Count == 0)
         {
             return new AccessPackageDelegationCheckResult(true, validAccessPackages);
         }
