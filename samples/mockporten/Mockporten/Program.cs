@@ -30,10 +30,12 @@ if (!string.IsNullOrWhiteSpace(keyVaultUri))
 
 services.AddOptions<GeneralSettings>()
     .BindConfiguration("GeneralSettings")
+    .ValidateDataAnnotations()
     .ValidateOnStart();
 
 services.AddOptions<KeyVaultSettings>()
     .BindConfiguration("kvSetting")
+    .ValidateDataAnnotations()
     .ValidateOnStart();
 
 services.AddControllersWithViews();

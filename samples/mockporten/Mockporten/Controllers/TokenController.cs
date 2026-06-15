@@ -1,9 +1,11 @@
 using Mockporten.Configuration;
 using Mockporten.Models;
 using Mockporten.Services;
+using Mockporten.Services.Implementation;
 using Mockporten.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System;
 using System.Threading.Tasks;
 
 namespace Mockporten.Controllers
@@ -39,6 +41,11 @@ namespace Mockporten.Controllers
                 return NotFound();
             }
 
+            if (!string.Equals(grant_type, "authorization_code", StringComparison.Ordinal))
+            {
+                return BadRequest(new { error = "unsupported_grant_type", error_description = "Only authorization_code is supported" });
+            }
+
             string token;
             try
             {
@@ -54,8 +61,8 @@ namespace Mockporten.Controllers
                 id_token = token,
                 access_token = token,
                 token_type = "Bearer",
-                expires_in = 3600,
-                refresh_token = "ADFSFDSFSDFDSFDSF"
+                expires_in = TokenService.AccessTokenLifetimeMinutes * 60,
+                refresh_token = Guid.NewGuid().ToString("N")
             };
             return Ok(grantResponse);
         }

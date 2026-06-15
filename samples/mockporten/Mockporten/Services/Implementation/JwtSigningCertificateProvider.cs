@@ -10,11 +10,8 @@ using Azure.Security.KeyVault.Certificates;
 using Azure.Security.KeyVault.Secrets;
 using Mockporten.Configuration;
 using Mockporten.Services.Interfaces;
-using Microsoft.Azure.KeyVault;
-using Microsoft.Azure.KeyVault.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Rest.Azure;
 
 namespace Mockporten.Services
 {
@@ -83,27 +80,34 @@ namespace Mockporten.Services
 
         private async Task<List<X509Certificate2>> GetAllCertificateVersions(string keyVaultUrl, string certificateName)
         {
-            _logger.LogInformation("In method");
             List<X509Certificate2> certificates = new List<X509Certificate2>();
 
-            CertificateClient certificateClient = new CertificateClient(new Uri(keyVaultUrl), new DefaultAzureCredential());
+            // The credential and clients are stateless - create them once and reuse.
+            DefaultAzureCredential credential = new DefaultAzureCredential();
+            Uri vaultUri = new Uri(keyVaultUrl);
+            CertificateClient certificateClient = new CertificateClient(vaultUri, credential);
+            SecretClient secretClient = new SecretClient(vaultUri, credential);
+
             AsyncPageable<CertificateProperties> certificatePropertiesPage = certificateClient.GetPropertiesOfCertificateVersionsAsync(certificateName);
 
-            if(certificatePropertiesPage == null)
+            if (certificatePropertiesPage == null)
             {
                 throw new Exception("Certificate properties page is null");
             }
 
             await foreach (CertificateProperties certificateProperties in certificatePropertiesPage)
             {
-                _logger.LogInformation("In loop");
                 if (certificateProperties.Enabled == true &&
                     (certificateProperties.ExpiresOn == null || certificateProperties.ExpiresOn >= DateTime.UtcNow))
                 {
-                    SecretClient secretClient = new SecretClient(new Uri(keyVaultUrl), new DefaultAzureCredential());
-
                     KeyVaultSecret secret = await secretClient.GetSecretAsync(certificateProperties.Name, certificateProperties.Version);
-                    X509Certificate2 certificateWithPrivateKey = new X509Certificate2(Convert.FromBase64String(secret.Value), (string)null, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+
+                    // Drop PersistKeySet (writes to machine key store, fails on Linux/containers)
+                    // and use X509CertificateLoader (X509Certificate2(byte[],...) is obsolete in .NET 9).
+                    X509Certificate2 certificateWithPrivateKey = X509CertificateLoader.LoadPkcs12(
+                        Convert.FromBase64String(secret.Value),
+                        null,
+                        X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
                     certificates.Add(certificateWithPrivateKey);
                 }
             }

@@ -7,9 +7,11 @@ namespace Mockporten.Tests
     {
         // Synthetic (Tenor) fnr: month + 80. Constructed and mod11-verified:
         //  - 01818520030: born 01.01.1985, MM=81, valid control digits.
-        //  - 01818520030 as synthetic D-number (day+40 -> 41) = 41818520030.
+        //  - 41818520024: same date as a synthetic D-number (day 41 = real day 1),
+        //    with recomputed mod11 control digits (K1=2, K2=4).
         [Theory]
         [InlineData("01818520030")]
+        [InlineData("41818520024")]
         public void IsSyntheticTenorPid_ValidSynthetic_ReturnsTrue(string pid)
         {
             Assert.True(NorwegianIdentityNumber.IsSyntheticTenorPid(pid));

@@ -1,5 +1,3 @@
-using Microsoft.Azure.KeyVault;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.ComponentModel.DataAnnotations;
 
 namespace Mockporten.Configuration

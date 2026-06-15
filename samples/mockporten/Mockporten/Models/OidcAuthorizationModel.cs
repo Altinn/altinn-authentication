@@ -20,15 +20,15 @@ namespace Mockporten.Models
         public string State { get; set; }
 
         public string Nonce { get; set; }
-        public string Acr_values { get; internal set; }
-        public string Response_mode { get; internal set; }
-        public string Ui_locales { get; internal set; }
-        public string Prompt { get; internal set; }
-        public string Code_challenge { get; internal set; }
-        public string Code_challenge_method { get; internal set; }
-        public string Login_hint { get; internal set; }
-        public string Claims { get; internal set; }
-        public string Request_uri { get; internal set; }
+        public string Acr_values { get; set; }
+        public string Response_mode { get; set; }
+        public string Ui_locales { get; set; }
+        public string Prompt { get; set; }
+        public string Code_challenge { get; set; }
+        public string Code_challenge_method { get; set; }
+        public string Login_hint { get; set; }
+        public string Claims { get; set; }
+        public string Request_uri { get; set; }
 
         public string Pid { get; set;}
 

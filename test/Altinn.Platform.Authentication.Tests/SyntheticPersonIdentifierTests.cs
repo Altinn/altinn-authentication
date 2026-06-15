@@ -14,7 +14,8 @@ namespace Altinn.Platform.Authentication.Tests
         private const string SyntheticPid = "01818520030";
 
         [Theory]
-        [InlineData("01818520030")] // synthetic
+        [InlineData("01818520030")] // synthetic (born 01.01.1985, MM=81)
+        [InlineData("41818520024")] // synthetic D-number (day 41 = real day 1, MM=81), valid mod11
         public void IsSyntheticTenor_ValidSynthetic_ReturnsTrue(string pid)
         {
             Assert.True(SyntheticPersonIdentifier.IsSyntheticTenor(pid));

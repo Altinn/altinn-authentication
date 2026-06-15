@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Mockporten.Controllers
@@ -143,16 +144,10 @@ namespace Mockporten.Controllers
             string code = await _tokenService.GetAuthorizationCode(viewModel);
 
             UriBuilder baseUri = new(viewModel.Redirect_uri);
-            if (baseUri.Query != null && baseUri.Query.Length > 1)
-            {
-                baseUri.Query = baseUri.Query + "&" + "code=" + code;
-            }
-            else
-            {
-                baseUri.Query = "code=" + code;
-            }
-
-            baseUri.Query = baseUri.Query + "&state=" + viewModel.State;
+            string query = "code=" + WebUtility.UrlEncode(code) + "&state=" + WebUtility.UrlEncode(viewModel.State);
+            baseUri.Query = baseUri.Query != null && baseUri.Query.Length > 1
+                ? baseUri.Query + "&" + query
+                : query;
 
             return Redirect(baseUri.ToString());
         }
@@ -173,7 +168,7 @@ namespace Mockporten.Controllers
                 string query = "error=access_denied&error_description=pid_not_synthetic";
                 if (!string.IsNullOrEmpty(state))
                 {
-                    query += "&state=" + state;
+                    query += "&state=" + WebUtility.UrlEncode(state);
                 }
 
                 errorUri.Query = errorUri.Query != null && errorUri.Query.Length > 1

@@ -59,7 +59,7 @@ namespace Mockporten.Configuration
         /// </remarks>
         public int JwtSigningCertificateRolloverDelayHours { get; set; }
 
-        public string IdProviderEndpoint { get; internal set; } = "https://mockporten.azurewebsites.net/";
+        public string IdProviderEndpoint { get; set; } = "https://mockporten.azurewebsites.net/";
 
         public string IssCode { get; set; } = "https://mockporten.azurewebsites.net/authorization";
 

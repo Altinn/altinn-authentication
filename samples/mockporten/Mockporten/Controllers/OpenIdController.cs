@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Mockporten.Controllers
 {
@@ -46,24 +47,24 @@ namespace Mockporten.Controllers
         [Produces("application/json")]
         public async Task<IActionResult> GetOpenIdConfigurationAsync()
         {
-            string baseUrl = _generalSettings.IdProviderEndpoint;
+            string root = _generalSettings.IdProviderEndpoint.TrimEnd('/') + "/";
 
             OpenIdConnectConfiguration discoveryDocument = new OpenIdConnectConfiguration
             {
                 // REQUIRED
-                Issuer = new Uri(baseUrl).ToString(),
+                Issuer = root,
 
-                // REQUIRED
-                AuthorizationEndpoint = new Uri(baseUrl).ToString(),
+                // REQUIRED - the login (authorization) endpoint (AuthorizeController).
+                AuthorizationEndpoint = root + "Authorize",
 
-                // This is REQUIRED unless only the Implicit Flow is used.
-                TokenEndpoint = new Uri(baseUrl).ToString(),
+                // REQUIRED unless only the Implicit Flow is used - the token endpoint (TokenController).
+                TokenEndpoint = root + "token",
 
-                // REQUIRED
-                JwksUri = new Uri(baseUrl + "/api/v1/OpenId/.well-known/openid-configuration/jwks").ToString(),
+                // REQUIRED - this controller's JWKS endpoint.
+                JwksUri = root + "api/v1/openid/.well-known/openid-configuration/jwks",
 
-                // REQUIRED
-                ResponseTypesSupported = { "token" }, // "code", "id_token", "id_token token", 
+                // REQUIRED - this provider implements the authorization-code flow.
+                ResponseTypesSupported = { "code" },
 
                 // REQUIRED
                 SubjectTypesSupported = { "pairwise" },
@@ -96,18 +97,23 @@ namespace Mockporten.Controllers
 
             foreach (X509Certificate2 cert in certificates)
             {
-                string oidFriendlyName = cert.PublicKey.Oid.FriendlyName;
-
                 RSA rsaPublicKey = cert.GetRSAPublicKey();
+                if (rsaPublicKey is null)
+                {
+                    throw new InvalidOperationException($"Certificate {cert.Thumbprint} does not contain an RSA public key.");
+                }
+
                 RSAParameters exportParameters = rsaPublicKey.ExportParameters(false);
-                string exponent = Convert.ToBase64String(exportParameters.Exponent);
-                string modulus = Convert.ToBase64String(exportParameters.Modulus);
+
+                // RFC 7518: JWK 'n' (modulus) and 'e' (exponent) are base64url-encoded.
+                string exponent = Base64UrlEncoder.Encode(exportParameters.Exponent);
+                string modulus = Base64UrlEncoder.Encode(exportParameters.Modulus);
 
                 List<string> chain = ExportChain(cert);
 
                 JwkDocument jwkDocument = new JwkDocument
                 {
-                    KeyType = oidFriendlyName, PublicKeyUse = "sig", KeyId = cert.Thumbprint, Exponent = exponent, Modulus = modulus, X509Chain = chain
+                    KeyType = "RSA", PublicKeyUse = "sig", KeyId = cert.Thumbprint, Exponent = exponent, Modulus = modulus, X509Chain = chain
                 };
 
                 jwksDocument.Keys.Add(jwkDocument);

@@ -24,6 +24,9 @@ namespace Mockporten.Services.Implementation
         private const string TokenUseAuthzCode = "authz_code";
         private const string TokenUseRequestObject = "request_object";
 
+        /// <summary>Lifetime of issued access/id tokens, in minutes.</summary>
+        public const int AccessTokenLifetimeMinutes = 60;
+
         private readonly IJwtSigningCertificateProvider _certificateProvider;
         private readonly GeneralSettings _generalSettings;
         private readonly ILogger<TokenService> _logger;
@@ -52,7 +55,7 @@ namespace Mockporten.Services.Implementation
                 oidcAuthorizationModel.Client_id,
                 oidcAuthorizationModel.Acr_values?.Split(" "),
                 new[] { "bankid" },
-                DateTimeOffset.Now);
+                DateTimeOffset.UtcNow);
 
             ClaimsIdentity identity = (ClaimsIdentity)principal.Identity;
             identity.AddClaim(new Claim(TokenUseClaim, TokenUseAuthzCode, ClaimValueTypes.String, issuer));
@@ -67,7 +70,7 @@ namespace Mockporten.Services.Implementation
                     ClaimValueTypes.String, issuer));
             }
 
-            return await GenerateAccessToken(principal, DateTime.Now.AddMinutes(5));
+            return await GenerateAccessToken(principal, DateTime.UtcNow.AddMinutes(5));
         }
 
         public ClaimsPrincipal GetClaimsPrincipal(string sub, string pid, string locale, string nonce, string sid, string aud, string[] acr, string[] amr, DateTimeOffset auth_time)
@@ -156,7 +159,7 @@ namespace Mockporten.Services.Implementation
             identity.AddClaims(codeToken.Claims.Where(c =>
                 c.Type != "code_challenge" && c.Type != "code_challenge_method" && c.Type != TokenUseClaim));
             ClaimsPrincipal principal = new ClaimsPrincipal(identity);
-            return await GenerateAccessToken(principal, DateTime.Now.AddMinutes(60));
+            return await GenerateAccessToken(principal, DateTime.UtcNow.AddMinutes(AccessTokenLifetimeMinutes));
         }
 
         public async Task<string> CreateRequestObject(OidcAuthorizationModel m)
@@ -194,7 +197,7 @@ namespace Mockporten.Services.Implementation
             identity.AddClaims(claims);
 
             // Short-lived (60s) signed request object - no storage (RFC 9126).
-            return await GenerateAccessToken(new ClaimsPrincipal(identity), DateTime.Now.AddSeconds(60));
+            return await GenerateAccessToken(new ClaimsPrincipal(identity), DateTime.UtcNow.AddSeconds(60));
         }
 
         public async Task<OidcAuthorizationModel> ReadRequestObject(string requestUri)
@@ -296,14 +299,14 @@ namespace Mockporten.Services.Implementation
         {
             List<X509Certificate2> certificates = await _certificateProvider.GetCertificates();
 
-            X509Certificate2 certificate = GetLatestCertificateWithRolloverDelay(
-                certificates, _generalSettings.JwtSigningCertificateRolloverDelayHours);
-            SecurityKey key = new X509SecurityKey(certificate);
+            // Validate against ALL current certificates so a code signed with a
+            // previous certificate during rollover is still accepted.
+            IEnumerable<SecurityKey> keys = certificates.Select(c => new X509SecurityKey(c));
 
             TokenValidationParameters validationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = key,
+                IssuerSigningKeys = keys,
                 ValidateIssuer = false,
                 ValidateAudience = false,
                 RequireExpirationTime = true,
