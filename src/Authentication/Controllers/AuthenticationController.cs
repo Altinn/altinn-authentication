@@ -41,6 +41,7 @@ using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
+using RegisterContracts = Altinn.Register.Contracts;
 using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
 
 namespace Altinn.Platform.Authentication.Controllers
@@ -148,6 +149,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         /// <param name="goTo">The url to redirect to if everything validates ok</param>
         /// <param name="dontChooseReportee">Parameter to indicate disabling of reportee selection in Altinn Portal.</param>
+        /// <param name="acrValues">Optional requested authentication level (space-separated acr_values). When the current session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>redirect to correct url based on the validation of the form authentication sbl cookie</returns>
         [AllowAnonymous]
@@ -155,9 +157,16 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(void), StatusCodes.Status503ServiceUnavailable)]
         [HttpGet("authentication")]
-        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery] bool dontChooseReportee, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery] bool dontChooseReportee, [FromQuery(Name = "acr_values")] string? acrValues = null, CancellationToken cancellationToken = default)
         {
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+
+            // Optional requested authentication level (acr_values). Lets unregistered clients (e.g. Altinn Apps)
+            // ask for a higher level than the user's current session — i.e. trigger a step-up (level 3 -> 4).
+            if (!AuthenticationHelper.TryParseAcrValues(acrValues, out string[] requestedAcrValues))
+            {
+                return BadRequest("Invalid acr_values.");
+            }
 
             if (string.IsNullOrEmpty(goTo) && HttpContext.Request.Cookies[_generalSettings.AuthnGoToCookieName] != null)
             {
@@ -243,8 +252,14 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         try
                         {
-                            await _oidcServerService.HandleSessionRefresh(User, cancellationToken);
-                            return Redirect(validatedGoToUri.AbsoluteUri);
+                            OidcSession? refreshedSession = await _oidcServerService.HandleSessionRefresh(User, cancellationToken);
+
+                            // Only reuse the existing session if it already satisfies the requested level.
+                            // Otherwise fall through and re-authenticate upstream at the higher level (step-up).
+                            if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues))
+                            {
+                                return Redirect(validatedGoToUri.AbsoluteUri);
+                            }
                         }
                         catch
                         {
@@ -266,7 +281,10 @@ namespace Altinn.Platform.Authentication.Controllers
                     {
                         AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookieValue };
                         AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
-                        if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
+
+                        // Reuse the session only when it already meets the requested level; otherwise step up.
+                        if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success)
+                            && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues))
                         {
                             foreach (var c in authenticateFromSessionResult.Cookies)
                             {
@@ -305,7 +323,10 @@ namespace Altinn.Platform.Authentication.Controllers
                         };
                         
                         AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
-                        if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success))
+
+                        // Reuse the Altinn 2 session only when it already meets the requested level; otherwise step up.
+                        if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success)
+                            && !AuthenticationHelper.NeedAcrUpgrade(ticketResult.Acr, requestedAcrValues))
                         {
                             foreach (var c in ticketResult.Cookies)
                             {
@@ -333,7 +354,7 @@ namespace Altinn.Platform.Authentication.Controllers
                         ClientIp = ip,
                         UserAgentHash = userAgentHash,
                         CorrelationId = corr,
-                        AcrValues = []
+                        AcrValues = requestedAcrValues
                     };
 
                     AuthorizeResult result = await _oidcServerService.AuthorizeUnregisteredClient(authorizeUnregisteredClientRequest, cancellationToken);
@@ -436,16 +457,21 @@ namespace Altinn.Platform.Authentication.Controllers
                         return StatusCode(StatusCodes.Status503ServiceUnavailable);
                     }
 
+                    if (userAuthentication == null)
+                    {
+                        return Redirect(sblRedirectUrl);
+                    }
+
                     if (userAuthentication.UserID.HasValue && userAuthentication.UserID.Value != 0 && userAuthentication.PartyUuid == null)
                     {
                         UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
                         userAuthentication.PartyUuid = profile.UserUuid;
                     }
 
-                    if (userAuthentication != null && userAuthentication.IsAuthenticated)
+                    if (userAuthentication.IsAuthenticated)
                     {
                         await CreateTokenCookie(userAuthentication);
-                        
+
                         return Redirect(validatedGoToUri.AbsoluteUri);
                     }
                 }
@@ -743,6 +769,18 @@ namespace Altinn.Platform.Authentication.Controllers
 
         private async Task<(UserAuthenticationResult? AuthenticatedEnterpriseUser, ActionResult? Error)> HandleEnterpriseUserLogin(string enterpriseUserHeader, string orgNumber)
         {
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.EnterpriseUserAuthenticationDisabled))
+            {
+                ProblemDetails problem = new ProblemDetails
+                {
+                    Status = StatusCodes.Status410Gone,
+                    Title = "Virksomhetsbruker is no longer available",
+                    Detail = "Virksomhetsbruker (enterprise user) is no longer available. It has been replaced by Systembruker (system user) or ID-porten, depending on the use case. See https://docs.altinn.studio for migration guidance.",
+                    Type = "https://docs.altinn.studio"
+                };
+                return (null, new ObjectResult(problem) { StatusCode = StatusCodes.Status410Gone });
+            }
+
             EnterpriseUserCredentials credentials;
 
             try
@@ -827,8 +865,54 @@ namespace Altinn.Platform.Authentication.Controllers
                     authMethod = AuthenticationMethod.NotDefined.ToString();
                 }
 
-                UserProfile userProfile = await _userProfileService.GetUser(pid);
-                UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = pid });
+                // SBL Bridge user lookup is being decommissioned (deadline 2026-06-19). The user fields
+                // (UserId/UserName/PartyId/PartyUuid) are now resolved from either Register or the platform
+                // Profile API, selected by the IdPortenUserLookupFromRegister feature flag.
+                // UserProfile userProfile = await _userProfileService.GetUser(pid);
+
+                int userId;
+                string userName;
+                int partyId;
+                Guid? partyUuid;
+
+                if (await _featureManager.IsEnabledAsync(FeatureFlags.IdPortenUserLookupFromRegister))
+                {
+                    // Register: POST /register/api/v2/internal/parties/query (fields=uuid,id,user).
+                    RegisterContracts.Party? party = await _partiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier(pid);
+
+                    if (party is null || !party.User.HasValue || !party.User.Value.UserId.HasValue)
+                    {
+                        _logger.LogInformation("ID-porten exchange: person not found in Register, or has no associated Altinn user.");
+                        return Unauthorized();
+                    }
+
+                    userId = (int)party.User.Value.UserId.Value;
+                    userName = party.User.Value.Username.HasValue ? party.User.Value.Username.Value : string.Empty;
+                    partyId = (int)party.PartyId.Value;
+                    partyUuid = party.Uuid;
+                }
+                else
+                {
+                    // Platform Profile API: POST {ApiProfileEndpoint}internal/user (lookup by SSN).
+                    UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = pid });
+
+                    if (profile is null)
+                    {
+                        _logger.LogInformation("ID-porten exchange: user profile not found.");
+                        return Unauthorized();
+                    }
+
+                    userId = profile.UserId;
+                    userName = profile.UserName;
+                    partyId = profile.PartyId;
+                    partyUuid = profile.UserUuid;
+                }
+
+                if (!partyUuid.HasValue)
+                {
+                    _logger.LogInformation("ID-porten exchange: party UUID missing for user.");
+                    return Unauthorized();
+                }
 
                 string issuer = _generalSettings.AltinnOidcIssuerUrl;
 
@@ -852,11 +936,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 List<Claim> claims = new List<Claim>();
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userProfile.UserName, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userProfile.PartyId.ToString(), ClaimValueTypes.Integer32, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, profile.UserUuid.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userId.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userName, ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, partyId.ToString(), ClaimValueTypes.Integer32, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuid.Value.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authMethod, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue, ClaimValueTypes.Integer32, issuer));
                 claims.AddRange(token.Claims);

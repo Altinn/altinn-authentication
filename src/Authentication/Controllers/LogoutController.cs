@@ -107,8 +107,9 @@ namespace Altinn.Platform.Authentication.Controllers
                 OidcProvider provider = GetOidcProvider(orgIss);
                 if (provider == null)
                 {
+                    DeleteLegacySblCookies();
                     _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
-                    return Redirect(_generalSettings.SBLLogoutEndpoint);
+                    return Redirect(await ResolveLogoutFallbackAsync());
                 }
 
                 CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
@@ -162,7 +163,28 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Redirect(redirectUrl.Value);
             }
 
-            return Redirect(_generalSettings.SBLLogoutEndpoint);
+            DeleteLegacySblCookies();
+            return Redirect(await ResolveLogoutFallbackAsync());
+        }
+
+        private async Task<string> ResolveLogoutFallbackAsync()
+        {
+            if (await _featureManager.IsEnabledAsync(FeatureFlags.Altinn2LogoutRedirectDisabled))
+            {
+                return _generalSettings.BaseUrl;
+            }
+
+            return _generalSettings.SBLLogoutEndpoint;
+        }
+
+        private void DeleteLegacySblCookies()
+        {
+            CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
+            Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
+            if (!string.Equals(_generalSettings.SblAuthCookieEnvSpecificName, _generalSettings.SblAuthCookieName, StringComparison.Ordinal))
+            {
+                Response.Cookies.Delete(_generalSettings.SblAuthCookieEnvSpecificName, opt);
+            }
         }
 
         /// <summary>

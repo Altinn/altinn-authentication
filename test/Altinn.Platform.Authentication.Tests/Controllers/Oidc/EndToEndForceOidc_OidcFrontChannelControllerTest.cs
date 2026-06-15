@@ -1534,6 +1534,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             (string upstreamState, UpstreamLoginTransaction createdUpstreamLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationRequestResponse, _fakeTime.GetUtcNow());
             Debug.Assert(createdUpstreamLogingTransaction != null);
 
+            // First /authorize is anonymous (no existing session): upstream acr_values must be widened with
+            // selfregistered-email so the user can still pick e-mail login at ID-porten.
+            string initialUpstreamAcr = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["acr_values"] ?? string.Empty;
+            Assert.Equal("selfregistered-email idporten-loa-substantial", initialUpstreamAcr);
+
             // Assume it takes 1 minute for the user to authenticate at the upstream provider
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
 
@@ -1609,6 +1614,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             (string? upstreamUpgradeState, UpstreamLoginTransaction? createdUpstreamUpgradeLogingTransaction) = await AssertAutorizeRequestResult(testScenario, authorizationUpgradeRequestResponse, _fakeTime.GetUtcNow());
             Debug.Assert(createdUpstreamUpgradeLogingTransaction != null);
 
+            // Upgrade /authorize runs with an existing session, so the user is known: upstream acr_values
+            // must be exactly what the downstream client asked for — selfregistered-email must NOT be
+            // appended on top of the higher LoA. See issue #1988.
+            string upgradeUpstreamAcr = HttpUtility.ParseQueryString(authorizationUpgradeRequestResponse.Headers.Location!.Query)["acr_values"] ?? string.Empty;
+            Assert.Equal("idporten-loa-high", upgradeUpstreamAcr);
+
             // Assume it takes 1 minute for the user to authenticate at the upstream provider. Now with BankID level 4
             _fakeTime.Advance(TimeSpan.FromMinutes(1)); // 08:01
 
@@ -1665,6 +1676,101 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string frontChannelContent = await frontChannelLogoutResp.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, frontChannelLogoutResp.StatusCode);
             Assert.Equal("OK", frontChannelContent);
+        }
+
+        /// <summary>
+        /// Step-up (level 3 → 4) for the unregistered-client "goto" flow used by Altinn Apps.
+        ///
+        /// 1) A user authenticates at level 3 (substantial) through the standard goto endpoint.
+        /// 2) Calling the goto endpoint again WITHOUT acr_values reuses the level-3 session (regression guard).
+        /// 3) Calling it WITH acr_values=idporten-loa-high must NOT reuse the level-3 session: the user is
+        ///    re-driven upstream at LoA-high, with acr_values sent as-is (no selfregistered-email widening
+        ///    because the user is already known).
+        /// 4) After the upstream callback the previous session is removed and a fresh level-4 session is
+        ///    created, and the browser is redirected back to the App.
+        ///
+        /// Refs #2016.
+        /// </summary>
+        [Fact]
+        public async Task TC13_Auth_App_Level3_StepUp_Level4_Via_Goto_End_To_End_OK()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("Arbeidsflate_Level34");
+
+            const string gotoUrl =
+                "/authentication/api/v1/authentication?goto=https%3A%2F%2Ftad.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba";
+            const string appRedirectPrefix =
+                "https://tad.apps.localhost/tad/pagaendesak?DONTCHOOSEREPORTEE=true#/instance/51441547/26cbe3f0-355d-4459-b085-7edaa899b6ba";
+
+            // === Phase 1: unauthenticated user hits the goto endpoint, no level requested ===
+            HttpResponseMessage initialRedirect = await client.GetAsync(gotoUrl);
+            Assert.Equal(HttpStatusCode.Redirect, initialRedirect.StatusCode);
+            Assert.StartsWith("https://login.idporten.no/authorize", initialRedirect.Headers.Location!.ToString());
+
+            // Anonymous user: upstream acr_values widened with selfregistered-email at substantial.
+            string initialUpstreamAcr = HttpUtility.ParseQueryString(initialRedirect.Headers.Location!.Query)["acr_values"] ?? string.Empty;
+            Assert.Equal("selfregistered-email idporten-loa-substantial", initialUpstreamAcr);
+
+            (string? upstreamState, UpstreamLoginTransaction? upstreamTx) = await AssertAutorizeRequestResult(testScenario, initialRedirect, _fakeTime.GetUtcNow());
+            Debug.Assert(upstreamTx != null);
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            ConfigureMockProviderTokenResponse(testScenario, upstreamTx, _fakeTime.GetUtcNow());
+
+            // === Phase 2: upstream callback -> level-3 session created, redirect back to the App ===
+            string callbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(upstreamState!)}";
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+            Assert.Equal(HttpStatusCode.Redirect, callbackResp.StatusCode);
+            Assert.StartsWith(appRedirectPrefix, callbackResp.Headers.Location!.ToString());
+
+            // Confirm the active session is level 3 (substantial).
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            string level3CookieToken = await (await client.GetAsync("/authentication/api/v1/refresh")).Content.ReadAsStringAsync();
+            string level3Sid = TokenAssertsHelper.AssertCookieAccessToken(level3CookieToken, testScenario, _fakeTime.GetUtcNow());
+            OidcSession? level3Session = await OidcServerDatabaseUtil.GetOidcSessionAsync(level3Sid, DataSource);
+            Assert.Equal("idporten-loa-substantial", level3Session!.Acr);
+
+            // === Phase 3 (regression guard): goto again WITHOUT acr_values -> reuse, straight back to the App ===
+            HttpResponseMessage reuseResp = await client.GetAsync(gotoUrl);
+            Assert.Equal(HttpStatusCode.Redirect, reuseResp.StatusCode);
+            Assert.StartsWith(appRedirectPrefix, reuseResp.Headers.Location!.ToString());
+
+            // === Phase 4: goto again WITH acr_values=idporten-loa-high -> step-up, NOT reuse ===
+            testScenario.Acr = ["idporten-loa-high"];
+            testScenario.Amr = ["BankID Mobil"];
+            testScenario.SetLoginAttempt(2);
+
+            HttpResponseMessage stepUpRedirect = await client.GetAsync(gotoUrl + "&acr_values=idporten-loa-high");
+            Assert.Equal(HttpStatusCode.Redirect, stepUpRedirect.StatusCode);
+            Assert.StartsWith("https://login.idporten.no/authorize", stepUpRedirect.Headers.Location!.ToString());
+
+            // Known user being stepped up: acr_values sent as-is, no selfregistered-email widening.
+            string stepUpUpstreamAcr = HttpUtility.ParseQueryString(stepUpRedirect.Headers.Location!.Query)["acr_values"] ?? string.Empty;
+            Assert.Equal("idporten-loa-high", stepUpUpstreamAcr);
+
+            (string? stepUpState, UpstreamLoginTransaction? stepUpTx) = await AssertAutorizeRequestResult(testScenario, stepUpRedirect, _fakeTime.GetUtcNow());
+            Debug.Assert(stepUpTx != null);
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            ConfigureMockProviderTokenResponse(testScenario, stepUpTx, _fakeTime.GetUtcNow());
+
+            // === Phase 5: upstream callback for the step-up -> old session removed, fresh level-4 session, back to App ===
+            string stepUpCallbackUrl = $"/authentication/api/v1/upstream/callback?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode())}&state={Uri.EscapeDataString(stepUpState!)}";
+            HttpResponseMessage stepUpCallbackResp = await client.GetAsync(stepUpCallbackUrl);
+            Assert.Equal(HttpStatusCode.Redirect, stepUpCallbackResp.StatusCode);
+            Assert.StartsWith(appRedirectPrefix, stepUpCallbackResp.Headers.Location!.ToString());
+
+            // The previous level-3 session must be gone.
+            OidcSession? oldSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(level3Sid, DataSource);
+            Assert.Null(oldSession);
+
+            // The new session must be level 4 (high).
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+            string level4CookieToken = await (await client.GetAsync("/authentication/api/v1/refresh")).Content.ReadAsStringAsync();
+            string level4Sid = TokenAssertsHelper.AssertCookieAccessToken(level4CookieToken, testScenario, _fakeTime.GetUtcNow());
+            OidcSession? level4Session = await OidcServerDatabaseUtil.GetOidcSessionAsync(level4Sid, DataSource);
+            Assert.Equal("idporten-loa-high", level4Session!.Acr);
+            Assert.NotEqual(level3Sid, level4Sid);
         }
 
         [Fact]

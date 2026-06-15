@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Altinn.Platform.Authentication.Core.Models.Rights;
 
@@ -6,6 +8,7 @@ namespace Altinn.Platform.Authentication.Core.Models.Rights;
 /// Reason for access (Dto)
 /// </summary>
 [ExcludeFromCodeCoverage]
+[JsonConverter(typeof(AccessReason.JsonConverter))]
 public sealed class AccessReason
 {
     private readonly AccessReasonFlag flag;
@@ -76,6 +79,33 @@ public sealed class AccessReason
 
     public static implicit operator AccessReasonFlag(AccessReason reason)
         => reason.flag;
+
+    internal sealed class JsonConverter
+        : JsonConverter<AccessReason>
+    {
+        public override AccessReason? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            var repr = JsonSerializer.Deserialize<JsonRepr>(ref reader, options);
+            if (repr is null)
+            {
+                return null;
+            }
+
+            return new AccessReason((AccessReasonFlag)repr.Value);
+        }
+
+        public override void Write(Utf8JsonWriter writer, AccessReason value, JsonSerializerOptions options)
+        {
+            var repr = new JsonRepr { Value = (int)value.flag };
+            JsonSerializer.Serialize(writer, repr, options);
+        }
+
+        internal sealed record JsonRepr
+        {
+            [JsonPropertyName("flag")]
+            public int Value { get; init; }
+        }
+    }
 }
 
 /// <summary>
