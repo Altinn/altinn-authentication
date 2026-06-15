@@ -277,6 +277,37 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
         }
 
         [Fact]
+        public async Task ValidateDelegationRightsForAccessPackages_NoUrnsToCheck_DoesNotCallDelegationCheckApi()
+        {
+            // Regression test: when every requested package is already delegated the diff is empty,
+            // so there are no URNs to check. The delegation-check API must NOT be called, because
+            // calling it without a package filter makes Access Management evaluate EVERY package in
+            // the system - which can never all be delegable and would wrongly fail an idempotent approve.
+
+            // Arrange
+            var systemRegisterService = new Mock<ISystemRegisterService>();
+            var accessManagementClient = new Mock<IAccessManagementClient>();
+            var requested = new List<AccessPackage>();
+            var systemPackages = new List<AccessPackage>();
+
+            systemRegisterService
+                .Setup(s => s.GetAccessPackagesForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(systemPackages);
+
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+
+            // Act
+            var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
+
+            // Assert
+            Assert.True(result.Value.CanDelegate);
+            Assert.Empty(result.Value.AccessPackages);
+            accessManagementClient.Verify(
+                a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
         public async Task ValidateDelegationRightsForAccessPackages_PackageWithNullUrn_SkippedInDelegationCheck()
         {
             // Arrange
