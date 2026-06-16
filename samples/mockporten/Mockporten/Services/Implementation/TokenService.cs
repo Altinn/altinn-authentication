@@ -53,7 +53,13 @@ namespace Mockporten.Services.Implementation
                 oidcAuthorizationModel.Nonce,
                 Guid.NewGuid().ToString(),
                 oidcAuthorizationModel.Client_id,
-                oidcAuthorizationModel.Acr_values?.Split(" "),
+                // Do NOT echo the requested acr_values into the acr claim. acr is a
+                // single *fulfilled* LoA; altinn-authentication maps it via
+                // GetAuthenticationLevelForIdPorten, which matches one token — a
+                // multi-valued acr (e.g. "selfregistered-email idporten-loa-high")
+                // falls through to the lowest level. Test users are asserted at the
+                // default high level instead.
+                null,
                 new[] { "bankid" },
                 DateTimeOffset.UtcNow);
 
@@ -90,7 +96,10 @@ namespace Mockporten.Services.Implementation
             claims.Add(new Claim("nonce", nonce, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("sid", sid, ClaimValueTypes.String, issuer));
             claims.Add(new Claim("aud", aud, ClaimValueTypes.String, issuer));
-            if(acr == null || acr.Length == 0)
+            // Ignore empty/whitespace entries so an empty acr_values still falls
+            // back to the default level rather than emitting an empty acr.
+            acr = acr?.Where(a => !string.IsNullOrWhiteSpace(a)).ToArray();
+            if (acr == null || acr.Length == 0)
             {
                 acr = new string[] { "Level4" };
             }
