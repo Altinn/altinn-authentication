@@ -376,7 +376,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(s => s.GetAccessPackagesForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(systemPackages);
 
-            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object);
+            var helper = new DelegationHelper(systemRegisterService.Object, accessManagementClient.Object, NullLogger<DelegationHelper>.Instance);
 
             // Act
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
