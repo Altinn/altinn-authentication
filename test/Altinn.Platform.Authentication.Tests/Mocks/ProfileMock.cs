@@ -11,6 +11,22 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
     {
         public Task<UserProfile> GetUserProfile(UserProfileLookup profileLookup)
         {
+            // Lookup by SSN is used by the ID-porten token exchange - the Profile/Register replacement
+            // for the decommissioned SBL Bridge user lookup. Return a fully populated profile (matching
+            // the canonical test user) so the default (Profile) path issues a complete token.
+            if (!string.IsNullOrEmpty(profileLookup.Ssn))
+            {
+                UserProfile bySsn = new UserProfile
+                {
+                    UserId = 20000,
+                    PartyId = 50001,
+                    UserName = "steph",
+                    UserUuid = Guid.NewGuid(),
+                    Party = new Party() { PartyId = 50001, SSN = profileLookup.Ssn, Person = new Person() { SSN = profileLookup.Ssn } }
+                };
+                return Task.FromResult(bySsn);
+            }
+
             UserProfile userProfile = new UserProfile
             {
                 UserId = profileLookup.UserId,

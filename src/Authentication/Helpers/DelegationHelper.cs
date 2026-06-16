@@ -11,6 +11,7 @@ using Altinn.Platform.Authentication.Core.Models.Rights;
 using Altinn.Platform.Authentication.Core.Telemetry;
 using Altinn.Platform.Authentication.Integration.AccessManagement;
 using Altinn.Platform.Authentication.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Altinn.Platform.Authentication.Helpers;
 #nullable enable
@@ -20,7 +21,8 @@ namespace Altinn.Platform.Authentication.Helpers;
 /// </summary>
 public class DelegationHelper(
     ISystemRegisterService systemRegisterService,
-    IAccessManagementClient accessManagementClient)
+    IAccessManagementClient accessManagementClient,
+    ILogger<DelegationHelper> logger)
 {
     /// <summary>
     /// Checks Delegation for a user
@@ -75,6 +77,8 @@ public class DelegationHelper(
             
             if (resourceCheckDto is null)
             {
+                // HTTP failure during the delegation check is already logged with the response body,
+                // status code, party and resource in AccessManagementClient.CheckDelegationAccess.
                 return new DelegationCheckResult(false, null, null);
             }
 
@@ -82,6 +86,29 @@ public class DelegationHelper(
 
             if (!canDelegate)
             {
+                // The delegation check completed (HTTP 200) but the resource right is not delegable.
+                // Access Management returns the actual reason in each right's ReasonCodes (e.g.
+                // MissingPackageAccess, MissingRoleAccess, MissingDelegationAccess) - not in Permissions -
+                // so read ReasonCodes directly to make the failure debuggable in App Insights (issue #2027).
+                string reasonDetails = string.Join(
+                    " | ",
+                    resourceCheckDto.Rights
+                        .Where(r => !r.Result)
+                        .Select(r =>
+                        {
+                            string reasonCodes = r.ReasonCodes is not null && r.ReasonCodes.Any()
+                                ? string.Join(", ", r.ReasonCodes)
+                                : "no reason provided";
+                            return $"{r.Right?.Key}: {reasonCodes}";
+                        }));
+
+                logger.LogError(
+                    "Authentication // DelegationHelper // UserDelegationCheckForReportee // Resource right not delegable // Party: {PartyUuid}, System: {SystemId}, Resource: {Resource}, Reasons: {Reasons}",
+                    partyUuid,
+                    systemId,
+                    resourceId,
+                    reasonDetails);
+
                 return new DelegationCheckResult(false, rightResponsesList, errors);
             }
 
@@ -177,32 +204,23 @@ public class DelegationHelper(
     /// <returns></returns>
     public static ProblemInstance MapDetailExternalErrorListToProblemInstance(List<DetailExternal>? errors)
     {
-        if (errors is null || errors.Count == 0 || errors[0].Code == DetailCodeExternal.Unknown)
+        if (errors is null || errors.Count == 0)
         {
             return Problem.UnableToDoDelegationCheck;
         }
-
-        if (errors[0].Code == DetailCodeExternal.MissingRoleAccess)
+  
+        return errors[0].Code switch
         {
-            return Problem.DelegationRightMissingRoleAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.MissingDelegationAccess)
-        {
-            return Problem.DelegationRightMissingDelegationAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.MissingSrrRightAccess)
-        {
-            return Problem.DelegationRightMissingSrrRightAccess;
-        }
-
-        if (errors[0].Code == DetailCodeExternal.InsufficientAuthenticationLevel)
-        {
-            return Problem.DelegationRightInsufficientAuthenticationLevel;
-        }
-
-        return Problem.UnableToDoDelegationCheck;
+            DetailCodeExternal.MissingPackageAccess => Problem.DelegationRightMissingPackageAccess,
+            DetailCodeExternal.MissingRoleAccess => Problem.DelegationRightMissingRoleAccess,
+            DetailCodeExternal.MissingDelegationAccess => Problem.DelegationRightMissingDelegationAccess,
+            DetailCodeExternal.MissingSrrRightAccess => Problem.DelegationRightMissingSrrRightAccess,
+            DetailCodeExternal.InsufficientAuthenticationLevel => Problem.DelegationRightInsufficientAuthenticationLevel,
+            DetailCodeExternal.AccessListValidationFail => Problem.DelegationRightAccessListValidationFail,
+            DetailCodeExternal.ResourceNotDelegable => Problem.DelegationRightResourceNotDelegable,
+            DetailCodeExternal.ResourceIsMaskinPortenSchema => Problem.DelegationRightResourceIsMaskinPortenSchema,
+            _ => Problem.UnableToDoDelegationCheck
+        };
     }
 
     /// <summary>
@@ -264,6 +282,8 @@ public class DelegationHelper(
         {
             if (result.IsProblem)
             {
+                // HTTP failure during the delegation check is already logged with the response body,
+                // status code, party and packages in AccessManagementClient.CheckDelegationAccessForAccessPackage.
                 var problemExtensionData = ProblemExtensionData.Create(new[]
                 {
                     new KeyValuePair<string, string>("Problem Detail : ", result.Problem.Detail)
@@ -288,6 +308,28 @@ public class DelegationHelper(
         }
         else
         {
+            // The delegation check completed (HTTP 200) but one or more access packages are not delegable.
+            // Log which packages failed and the reasons returned by Access Management to make this debuggable
+            // in App Insights (issue #2027).
+            List<AccessPackageDto.Check> notDelegable = delegationCheckResults.Where(r => !r.Result).ToList();
+
+            string notDelegableDetails = string.Join(
+                " | ",
+                notDelegable.Select(r =>
+                {
+                    string urn = r.Package?.Urn ?? "unknown";
+                    string reasons = r.Reasons is not null && r.Reasons.Any()
+                        ? string.Join("; ", r.Reasons.Select(reason => reason.Description))
+                        : "no reason provided";
+                    return $"{urn}: {reasons}";
+                }));
+
+            logger.LogError(
+                "Authentication // DelegationHelper // ValidateDelegationRightsForAccessPackages // Access package(s) not delegable // Party: {PartyId}, System: {SystemId}, NotDelegable: {NotDelegable}",
+                partyId,
+                systemId,
+                notDelegableDetails);
+
             return new Result<AccessPackageDelegationCheckResult>(Problem.AccessPackage_Delegation_MissingRequiredAccess);
         }
     }
@@ -355,6 +397,13 @@ public class DelegationHelper(
                         Code = p.PermisionKey,
                         Description = p.Description,
                         Parameters = []
+                    }));
+                }
+                else if (rightCheckDto.ReasonCodes is not null && rightCheckDto.ReasonCodes.Any())
+                {                   
+                    errors.AddRange(rightCheckDto.ReasonCodes.Select(code => new DetailExternal
+                    {
+                        Code = code
                     }));
                 }
             }

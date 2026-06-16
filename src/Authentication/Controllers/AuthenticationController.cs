@@ -41,6 +41,7 @@ using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
+using RegisterContracts = Altinn.Register.Contracts;
 using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
 
 namespace Altinn.Platform.Authentication.Controllers
@@ -864,8 +865,54 @@ namespace Altinn.Platform.Authentication.Controllers
                     authMethod = AuthenticationMethod.NotDefined.ToString();
                 }
 
-                UserProfile userProfile = await _userProfileService.GetUser(pid);
-                UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = pid });
+                // SBL Bridge user lookup is being decommissioned (deadline 2026-06-19). The user fields
+                // (UserId/UserName/PartyId/PartyUuid) are now resolved from either Register or the platform
+                // Profile API, selected by the IdPortenUserLookupFromRegister feature flag.
+                // UserProfile userProfile = await _userProfileService.GetUser(pid);
+
+                int userId;
+                string userName;
+                int partyId;
+                Guid? partyUuid;
+
+                if (await _featureManager.IsEnabledAsync(FeatureFlags.IdPortenUserLookupFromRegister))
+                {
+                    // Register: POST /register/api/v2/internal/parties/query (fields=uuid,id,user).
+                    RegisterContracts.Party? party = await _partiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier(pid);
+
+                    if (party is null || !party.User.HasValue || !party.User.Value.UserId.HasValue)
+                    {
+                        _logger.LogInformation("ID-porten exchange: person not found in Register, or has no associated Altinn user.");
+                        return Unauthorized();
+                    }
+
+                    userId = (int)party.User.Value.UserId.Value;
+                    userName = party.User.Value.Username.HasValue ? party.User.Value.Username.Value : string.Empty;
+                    partyId = (int)party.PartyId.Value;
+                    partyUuid = party.Uuid;
+                }
+                else
+                {
+                    // Platform Profile API: POST {ApiProfileEndpoint}internal/user (lookup by SSN).
+                    UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { Ssn = pid });
+
+                    if (profile is null)
+                    {
+                        _logger.LogInformation("ID-porten exchange: user profile not found.");
+                        return Unauthorized();
+                    }
+
+                    userId = profile.UserId;
+                    userName = profile.UserName;
+                    partyId = profile.PartyId;
+                    partyUuid = profile.UserUuid;
+                }
+
+                if (!partyUuid.HasValue)
+                {
+                    _logger.LogInformation("ID-porten exchange: party UUID missing for user.");
+                    return Unauthorized();
+                }
 
                 string issuer = _generalSettings.AltinnOidcIssuerUrl;
 
@@ -889,11 +936,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
 
                 List<Claim> claims = new List<Claim>();
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userProfile.UserId.ToString(), ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userProfile.UserName, ClaimValueTypes.String, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userProfile.PartyId.ToString(), ClaimValueTypes.Integer32, issuer));
-                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, profile.UserUuid.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userId.ToString(), ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userName, ClaimValueTypes.String, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, partyId.ToString(), ClaimValueTypes.Integer32, issuer));
+                claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, partyUuid.Value.ToString(), ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, authMethod, ClaimValueTypes.String, issuer));
                 claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, authLevelValue, ClaimValueTypes.Integer32, issuer));
                 claims.AddRange(token.Claims);

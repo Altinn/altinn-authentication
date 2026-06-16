@@ -132,9 +132,13 @@ public class AccessManagementClient : IAccessManagementClient
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, cancellationToken: cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                _logger.LogError($"Authentication. // AccessManagementClient // CheckDelegationAccess // Title: {problemDetails.Title}, HttpStatusCode : {response.StatusCode},Problem: {problemDetails.Detail}");
+                string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError(
+                    "Authentication // AccessManagementClient // CheckDelegationAccess // Delegation check failed // HttpStatusCode: {StatusCode}, Party: {PartyUuid}, Resource: {Resource}, ResponseBody: {ResponseBody}",
+                    response.StatusCode,
+                    partyUuid,
+                    resource,
+                    responseContent);
                 return null;
             }
             return await response.Content.ReadFromJsonAsync<ResourceCheckDto>(_serializerOptions, cancellationToken);
@@ -172,10 +176,14 @@ public class AccessManagementClient : IAccessManagementClient
                 }
                 else
                 {
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                    _logger.LogError($"Authentication. // AccessManagementClient // CheckDelegationAccessForAccessPackage // Title: {problemDetails.Title}, HttpStatusCode : {response.StatusCode},Problem: {problemDetails.Detail}");
-                    problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);                    
+                    string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError(
+                        "Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage // Delegation check failed // HttpStatusCode: {StatusCode}, Party: {PartyId}, Packages: {Packages}, ResponseBody: {ResponseBody}",
+                        response.StatusCode,
+                        partyId,
+                        string.Join(", ", requestedPackages ?? []),
+                        responseContent);
+                    problemInstance = ProblemInstance.Create(Problem.AccessPackage_DelegationCheckFailed);
                 }
                 
             }
@@ -231,6 +239,42 @@ public class AccessManagementClient : IAccessManagementClient
         {
             _logger.LogError(ex, "Authentication // AccessManagementClient // CheckDelegationAccessForAccessPackage // Exception");
             throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> CreateSelfIdentifiedUserConnection(Guid from, Guid to, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string endpointUrl = $"internal/connections/selfidentifiedusers?from={from}&to={to}";
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+            var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
+
+            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, null, accessToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError(
+                "Authentication // AccessManagementClient // CreateSelfIdentifiedUserConnection // HttpStatusCode: {StatusCode} // {Body}",
+                response.StatusCode,
+                responseContent);
+            return false;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Treat transport/runtime failures as a failed delegation so the caller maps it consistently
+            // (instead of surfacing a 500 for what the flow already models as a connection failure).
+            _logger.LogError(ex, "Authentication // AccessManagementClient // CreateSelfIdentifiedUserConnection // Exception");
+            return false;
         }
     }
 

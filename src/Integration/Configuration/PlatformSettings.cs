@@ -57,5 +57,12 @@
         /// Altinn Authorization base url
         /// </summary>
         public string? ApiAuthorizationEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Altinn Notifications api endpoint
+        /// (e.g. <c>https://platform.&lt;env&gt;.altinn.cloud/notifications/api/v1/</c>). Used to send
+        /// the self-identified account-link email (issue #2035).
+        /// </summary>
+        public string? ApiNotificationsEndpoint { get; set; }
     }
 }
