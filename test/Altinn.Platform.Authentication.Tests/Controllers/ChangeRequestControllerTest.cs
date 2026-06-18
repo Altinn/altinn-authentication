@@ -1879,6 +1879,7 @@ public class ChangeRequestControllerTest(
         ChangeRequestResponse? statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(statusResponse);
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
+        Assert.NotEqual(default(DateTime), statusResponse.Created);
     }
 
     /// <summary>
@@ -2019,6 +2020,7 @@ public class ChangeRequestControllerTest(
         ChangeRequestResponse? statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(statusResponse);
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
+        Assert.NotEqual(default(DateTime), statusResponse.Created);
     }
 
     /// <summary>
@@ -2158,6 +2160,7 @@ public class ChangeRequestControllerTest(
         ChangeRequestResponse? statusResponse = await statusChangeResponseMessage.Content.ReadFromJsonAsync<ChangeRequestResponse>();
         Assert.NotNull(statusResponse);
         Assert.Equal(ChangeRequestStatus.New.ToString(), statusResponse.Status);
+        Assert.NotEqual(default(DateTime), statusResponse.Created);
     }
 
     /// <summary>

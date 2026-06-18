@@ -214,7 +214,8 @@ public class ChangeRequestSystemUserService(
             UnwantedRights = res.UnwantedRights,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            SystemUserId = res.SystemUserId
+            SystemUserId = res.SystemUserId,
+            Created = res.Created
         };
     }
 
@@ -245,7 +246,8 @@ public class ChangeRequestSystemUserService(
             UnwantedAccessPackages = res.UnwantedAccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            SystemUserId = res.SystemUserId            
+            SystemUserId = res.SystemUserId,
+            Created = res.Created
         };
     }
 
@@ -298,7 +300,8 @@ public class ChangeRequestSystemUserService(
             UnwantedAccessPackages = find.UnwantedAccessPackages,
             Status = find.Status,
             RedirectUrl = find.RedirectUrl,
-            SystemUserId = find.SystemUserId
+            SystemUserId = find.SystemUserId,
+            Created = find.Created
         };
 
         return request;
