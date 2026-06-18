@@ -720,6 +720,7 @@ public class RequestControllerTests(
         Assert.True(res2 is not null);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
         Assert.Equal(testId, res2.Id);
+        Assert.NotEqual(default(DateTime), res2.Created);
     }
 
     [Fact]
@@ -769,6 +770,7 @@ public class RequestControllerTests(
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
         Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
+        Assert.NotEqual(default(DateTime), res2.Created);
     }
 
     [Fact]
@@ -1006,6 +1008,7 @@ public class RequestControllerTests(
         Assert.True(res2 is not null);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
         Assert.Equal(req.SystemId + req.PartyOrgNo + req.ExternalRef, res2.SystemId + res2.PartyOrgNo + res2.ExternalRef);
+        Assert.NotEqual(default(DateTime), res2.Created);
     }
 
     [Fact]
@@ -1109,10 +1112,11 @@ public class RequestControllerTests(
         HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
 
-        RequestSystemResponse? requestGet = JsonSerializer.Deserialize<RequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
+        RequestSystemResponse? requestGet = await partyResponse.Content.ReadFromJsonAsync<RequestSystemResponse>();
         Assert.NotNull(requestGet);
 
         Assert.Equal(res.Id, requestGet.Id);
+        Assert.NotEqual(default(DateTime), requestGet.Created);
     }
 
     [Fact]
@@ -1788,9 +1792,10 @@ public class RequestControllerTests(
         HttpResponseMessage partyResponse = await client2.SendAsync(partyReqMessage, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, partyResponse.StatusCode);
 
-        AgentRequestSystemResponse? requestGet = JsonSerializer.Deserialize<AgentRequestSystemResponse>(await partyResponse.Content.ReadAsStringAsync());
+        AgentRequestSystemResponse? requestGet = await partyResponse.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.NotNull(requestGet);
         Assert.Equal(res.Id, requestGet.Id);
+        Assert.NotEqual(default(DateTime), requestGet.Created);
     }
 
     [Fact]

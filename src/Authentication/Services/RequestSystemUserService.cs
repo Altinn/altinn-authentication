@@ -359,7 +359,8 @@ public class RequestSystemUserService(
             AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            TimedOut = res.TimedOut
+            TimedOut = res.TimedOut,
+            Created = res.Created
         };
     }
 
@@ -389,7 +390,8 @@ public class RequestSystemUserService(
             AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            TimedOut = res.TimedOut
+            TimedOut = res.TimedOut,
+            Created = res.Created,
         };
     }
 
@@ -423,7 +425,8 @@ public class RequestSystemUserService(
             AccessPackages = res.AccessPackages,
             Status = res.Status,
             RedirectUrl = res.RedirectUrl,
-            TimedOut = res.TimedOut
+            TimedOut = res.TimedOut,
+            Created = res.Created
         };
     }
 
@@ -474,7 +477,8 @@ public class RequestSystemUserService(
             AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
-            RedirectUrl = find.RedirectUrl
+            RedirectUrl = find.RedirectUrl,
+            Created = find.Created
         };
 
         return request;
@@ -509,7 +513,8 @@ public class RequestSystemUserService(
             AccessPackages = find.AccessPackages,
             PartyOrgNo = find.PartyOrgNo,
             Status = find.Status,
-            RedirectUrl = find.RedirectUrl
+            RedirectUrl = find.RedirectUrl,
+            Created = find.Created
         };
 
         return request;
