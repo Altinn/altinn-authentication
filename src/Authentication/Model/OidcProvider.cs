@@ -84,5 +84,16 @@ namespace Altinn.Platform.Authentication.Model
         /// Defines the default authentication method
         /// </summary>
         public string DefaultAuthenticationMethod { get; set; } = "SelfIdentified";
+
+        /// <summary>
+        /// When true, this provider may only authenticate synthetic (Tenor) test
+        /// persons: a token that does not carry a well-formed synthetic
+        /// fødselsnummer (month 81–92, valid mod11) — including a token with no
+        /// <c>pid</c> claim — is rejected fail-closed. Set this on test-only
+        /// providers (e.g. mockporten) so neither an ordinary national identity
+        /// number nor a non-pid identity can be authenticated through them.
+        /// Default false. See issue #1409 / #1983.
+        /// </summary>
+        public bool RequireSyntheticPid { get; set; } = false;
     }
 }
