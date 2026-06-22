@@ -46,7 +46,8 @@ namespace Altinn.Platform.Authentication.Helpers
         /// <returns>user information</returns>
         /// <exception cref="AuthenticationException">
         /// Thrown when the provider has <see cref="OidcProvider.RequireSyntheticPid"/>
-        /// set and the pid claim is not a synthetic (Tenor) fødselsnummer.
+        /// set and the token does not carry a well-formed synthetic (Tenor)
+        /// fødselsnummer (including when no pid is present).
         /// </exception>
         public static UserAuthenticationModel GetUserFromToken(JwtSecurityToken jwtSecurityToken, OidcProvider provider, JwtSecurityToken? accessToken = null)
         {
@@ -198,20 +199,20 @@ namespace Altinn.Platform.Authentication.Helpers
                 }
             }
 
-            // Authoritative synthetic-only gate. For a provider configured as
-            // test-only (e.g. mockporten), a pid claim that is not a well-formed
-            // synthetic (Tenor) fødselsnummer is rejected so an ordinary national
-            // identity number can never be authenticated through that provider
-            // regardless of what the upstream IdP asserts. This throws (rather
-            // than returning a not-authenticated model) so the request is
-            // guaranteed to abort and cannot be mishandled downstream.
-            // See issue #1409 / #1983.
+            // Authoritative synthetic-only gate. A provider configured as test-only
+            // (e.g. mockporten) may authenticate ONLY synthetic (Tenor) test
+            // persons: a token whose pid is not a well-formed synthetic
+            // fødselsnummer — including a token with no pid at all — is rejected,
+            // so neither an ordinary national identity number nor a non-pid identity
+            // can be authenticated through that provider, regardless of what the
+            // upstream IdP asserts. This throws (rather than returning a
+            // not-authenticated model) so the request is guaranteed to abort and
+            // cannot be mishandled downstream. See issue #1409 / #1983.
             if (provider.RequireSyntheticPid
-                && !string.IsNullOrEmpty(userAuthenticationModel.SSN)
                 && !SyntheticPersonIdentifier.IsSyntheticTenor(userAuthenticationModel.SSN))
             {
                 throw new AuthenticationException(
-                    "pid is not a synthetic (Tenor) identifier; this provider only allows synthetic test persons");
+                    "this provider only allows synthetic (Tenor) test persons; a valid synthetic pid is required");
             }
 
             return userAuthenticationModel;

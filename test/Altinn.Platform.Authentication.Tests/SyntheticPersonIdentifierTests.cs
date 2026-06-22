@@ -88,14 +88,15 @@ namespace Altinn.Platform.Authentication.Tests
         }
 
         [Fact]
-        public void GetUserFromToken_RequireSyntheticPid_NoPid_NotAffected()
+        public void GetUserFromToken_RequireSyntheticPid_NoPid_Throws()
         {
             var provider = new OidcProvider { IssuerKey = "mockporten", RequireSyntheticPid = true };
 
-            var result = AuthenticationHelper.GetUserFromToken(TokenWithPid(null), provider);
-
-            // The gate only applies to a pid claim; absence of pid is unchanged.
-            Assert.True(result.IsAuthenticated);
+            // Hardened: a test-only provider requires a valid synthetic pid, so a
+            // token with no pid is rejected fail-closed (only synthetic identities
+            // may authenticate, not merely "no real pid").
+            Assert.Throws<AuthenticationException>(
+                () => AuthenticationHelper.GetUserFromToken(TokenWithPid(null), provider));
         }
     }
 }

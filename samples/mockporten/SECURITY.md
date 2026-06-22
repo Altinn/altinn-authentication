@@ -62,11 +62,10 @@ The gate, in [`AuthenticationHelper.GetUserFromToken`](../../src/Authentication/
 
 ```csharp
 if (provider.RequireSyntheticPid
-    && !string.IsNullOrEmpty(userAuthenticationModel.SSN)
     && !SyntheticPersonIdentifier.IsSyntheticTenor(userAuthenticationModel.SSN))
 {
     throw new AuthenticationException(
-        "pid is not a synthetic (Tenor) identifier; this provider only allows synthetic test persons");
+        "this provider only allows synthetic (Tenor) test persons; a valid synthetic pid is required");
 }
 ```
 
@@ -105,21 +104,21 @@ Properties that make this safe:
 4. **Default-off.** `RequireSyntheticPid` defaults to `false`, so no existing
    provider (ID-porten, Feide, …) changes behaviour. It is opt-in per provider.
 
-### Precise scope (honest caveat)
+### Precise scope
 
-The gate keys on the **`pid` claim** (the national identity number). The condition
-requires a non-empty `SSN`, so:
+The gate requires a **valid synthetic `pid`** to be present — it is fail-closed on
+anything else:
 
-- A `pid` present and **real** → **rejected** (the case we care about).
 - A `pid` present and **synthetic** → allowed (the intended use).
-- **No** `pid` at all → this specific check is skipped — but then there is no
-  national identity being asserted, hence no real person to impersonate. In
-  practice mockporten's login form always requires a `pid` (see below), so a token
-  from mockporten always carries one.
+- A `pid` present and **real** → **rejected**.
+- **No** `pid` at all (or identity carried by some other claim) → **rejected**.
+  `IsSyntheticTenor(null)` is `false`, so a token without a synthetic pid cannot
+  authenticate through a `RequireSyntheticPid` provider.
 
-So the precise guarantee is: **for the national-identity (pid) login path, an
-ordinary fødselsnummer can never be authenticated through a `RequireSyntheticPid`
-provider, regardless of what the upstream IdP claims.**
+So the guarantee is the strong one: **only a synthetic (Tenor) test person can be
+authenticated through a `RequireSyntheticPid` provider — an ordinary fødselsnummer,
+or any token lacking a synthetic pid, is rejected regardless of what the upstream
+IdP claims.**
 
 ### How a mockporten token is actually trusted (and why it can't be hijacked)
 
