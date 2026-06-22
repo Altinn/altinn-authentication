@@ -22,6 +22,7 @@ using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
+using Altinn.Platform.Authentication.Exceptions;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
@@ -312,7 +313,22 @@ namespace Altinn.Platform.Authentication.Services
             // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
-            userIdenity = await IdentifyOrCreateAltinnUser(userIdenity, provider);
+
+            try
+            {
+                userIdenity = await IdentifyOrCreateAltinnUser(userIdenity, provider);
+            }
+            catch (RegisterUserProvisioningException ex)
+            {
+                _logger.LogError(ex, "Self-identified user provisioning via register failed; aborting sign-in.");
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = StatusCodes.Status502BadGateway,
+                    LocalErrorMessage = "User provisioning failed. Please try again later."
+                };
+            }
+
             AddLocalScopes(userIdenity);
 
             // 3. Create or refresh Altinn session session
@@ -1569,11 +1585,6 @@ namespace Altinn.Platform.Authentication.Services
                         email: null,
                         CancellationToken.None);
 
-                    if (provisioned is null)
-                    {
-                        return userAuthenticationModel;
-                    }
-
                     userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
                     userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
                     userAuthenticationModel.PartyUuid = provisioned.Uuid;
@@ -1625,11 +1636,6 @@ namespace Altinn.Platform.Authentication.Services
                         userAuthenticationModel.Email,
                         CancellationToken.None);
 
-                    if (provisioned is null)
-                    {
-                        return userAuthenticationModel;
-                    }
-
                     userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
                     userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
                     userAuthenticationModel.PartyUuid = provisioned.Uuid;
@@ -1677,7 +1683,7 @@ namespace Altinn.Platform.Authentication.Services
             return userAuthenticationModel;
         }
 
-        private async Task<SelfIdentifiedUser?> GetOrCreateSelfIdentifiedUserViaRegister(
+        private async Task<SelfIdentifiedUser> GetOrCreateSelfIdentifiedUserViaRegister(
             SelfIdentifiedUserType selfIdentifiedUserType,
             string externalIdentity,
             string userName,
@@ -1696,9 +1702,8 @@ namespace Altinn.Platform.Authentication.Services
 
             if (response is null)
             {
-                _logger.LogError(
-                    "Register self-identified provisioning returned no result for externalIdentity {ExternalIdentity}; sign-in cannot complete.",
-                    externalIdentity);
+                throw new RegisterUserProvisioningException(
+                    $"Register self-identified provisioning returned no result for externalIdentity '{externalIdentity}'; sign-in cannot complete.");
             }
 
             return response;
