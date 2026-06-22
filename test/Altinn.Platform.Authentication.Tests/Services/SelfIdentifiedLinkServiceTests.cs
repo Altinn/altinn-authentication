@@ -51,7 +51,10 @@ public class SelfIdentifiedLinkServiceTests
 
     [Theory]
     [InlineData("", "Test subject NB")]
+    [InlineData("no_nb", "Test subject NB")]
+    [InlineData("no_nn", "Test subject NN")]
     [InlineData("en", "Test subject EN")]
+    [InlineData("unsupported", "Test subject NB")]
     public async Task RequestLink_ValidTarget_MintsTokenAndSendsEmailWithLink(string languageCode, string expectedSubject)
     {
         _profile.Setup(p => p.GetSelfIdentifiedLinkTargetAsync(UserName, It.IsAny<CancellationToken>()))
