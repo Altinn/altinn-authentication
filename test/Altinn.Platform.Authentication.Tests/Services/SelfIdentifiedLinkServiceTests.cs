@@ -35,7 +35,12 @@ public class SelfIdentifiedLinkServiceTests
 
     private readonly SelfIdentifiedLinkSettings _settings = new()
     {
-        EmailSubject = "Test subject",
+        EmailSubject = new()
+        {
+            ["no_nb"] = "Test subject NB",
+            ["no_nn"] = "Test subject NN",
+            ["en"] = "Test subject EN",
+        },
     };
 
     private readonly GeneralSettings _generalSettings = new()
@@ -44,8 +49,10 @@ public class SelfIdentifiedLinkServiceTests
         OidcRefreshTokenPepper = "unit-test-pepper",
     };
 
-    [Fact]
-    public async Task RequestLink_ValidTarget_MintsTokenAndSendsEmailWithLink()
+    [Theory]
+    [InlineData("", "Test subject NB")]
+    [InlineData("en", "Test subject EN")]
+    public async Task RequestLink_ValidTarget_MintsTokenAndSendsEmailWithLink(string languageCode, string expectedSubject)
     {
         _profile.Setup(p => p.GetSelfIdentifiedLinkTargetAsync(UserName, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SelfIdentifiedLinkTarget { PartyUuid = FromPartyUuid, Email = Email });
@@ -65,11 +72,11 @@ public class SelfIdentifiedLinkServiceTests
             })
             .ReturnsAsync(true);
 
-        string? masked = await CreateService().RequestLinkAsync(UserName, ToPartyUuid);
+        string? masked = await CreateService().RequestLinkAsync(UserName, ToPartyUuid, languageCode);
 
         _tokenService.Verify(t => t.MintAsync(FromPartyUuid, ToPartyUuid, It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal(Email, sentTo);
-        Assert.Equal("Test subject", sentSubject);
+        Assert.Equal(expectedSubject, sentSubject);
         Assert.NotNull(sentBody);
         Assert.Contains($"https://am.ui.{HostName}/accessmanagement/ui/altinn2account?token={Token}", sentBody!);
 
