@@ -79,7 +79,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// </summary>
         [HttpPost("link-request")]
         [Authorize(Policy = AuthzConstants.POLICY_SCOPE_PORTAL)]
-        public async Task<ActionResult> RequestLink([FromQuery] string lang, [FromBody] SelfIdentifiedLinkRequest request, CancellationToken cancellationToken)
+        public async Task<ActionResult> RequestLink([FromQuery] string? lang, [FromBody] SelfIdentifiedLinkRequest request, CancellationToken cancellationToken)
         {
             Guid toPartyUuid = AuthenticationHelper.GetPartyUuId(HttpContext);
             if (toPartyUuid == Guid.Empty)
@@ -89,7 +89,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return AuthProblem.SelfIdentifiedLink_MissingPartyUuid.ToActionResult();
             }
 
-            string? maskedEmail = await _linkService.RequestLinkAsync(request.UserName, toPartyUuid, lang, cancellationToken);
+            string? maskedEmail = await _linkService.RequestLinkAsync(request.UserName, toPartyUuid, lang ?? string.Empty, cancellationToken);
 
             return Ok(new SelfIdentifiedLinkResponse { MaskedEmail = maskedEmail });
         }
