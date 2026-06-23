@@ -57,7 +57,7 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<string?> RequestLinkAsync(string? userName, Guid toPartyUuid, CancellationToken cancellationToken = default)
+        public async Task<string?> RequestLinkAsync(string? userName, Guid toPartyUuid, string lang = "", CancellationToken cancellationToken = default)
         {
             SelfIdentifiedLinkTarget? target =
                 await _userProfileService.GetSelfIdentifiedLinkTargetAsync(userName, cancellationToken);
@@ -78,7 +78,8 @@ namespace Altinn.Platform.Authentication.Services
             string token = await _linkTokenService.MintAsync(target.PartyUuid, toPartyUuid, cancellationToken);
             string baseUrl = $"{LandingUrlPrefix}{_generalSettings.HostName.Trim()}{LandingUrlPath}";
             string linkUrl = QueryHelpers.AddQueryString(baseUrl, "token", token);
-            string body = BuildEmailBody(linkUrl);
+            string body = BuildEmailBody(linkUrl, lang);
+            string subject = _settings.EmailSubject.TryGetValue(lang, out var s) ? s : _settings.EmailSubject["no_nb"];
 
             // Idempotency id is bucketed to the minute so accidental double-submits (the same from/to
             // within the same minute) de-duplicate to a single email on the Notifications side, while a
@@ -87,7 +88,7 @@ namespace Altinn.Platform.Authentication.Services
             string idempotencyId = $"si-link_{target.PartyUuid:N}_{toPartyUuid:N}_{minuteBucket}";
 
             bool sent = await _notificationClient.SendEmailAsync(
-                target.Email, _settings.EmailSubject, body, idempotencyId, cancellationToken);
+                target.Email, subject, body, idempotencyId, cancellationToken);
 
             if (!sent)
             {
@@ -125,17 +126,38 @@ namespace Altinn.Platform.Authentication.Services
             return $"{maskedLocal}@{maskedDomain}";
         }
 
-        private static string BuildEmailBody(string linkUrl)
+        private static string BuildEmailBody(string linkUrl, string lang)
         {
-            // Norwegian template; subject/body localization is a tracked follow-up in #2035.
-            return $"""
-                <p>Hei,</p>
-                <p>Det er bedt om å koble denne selvidentifiserte Altinn-brukeren til en innlogget bruker.</p>
-                <p>Hvis dette var deg, følg lenken under for å fullføre koblingen. Lenken er gyldig en kort stund.</p>
-                <p><a href="{linkUrl}">Fullfør koblingen i Altinn</a></p>
-                <p>Hvis du ikke ba om dette, kan du se bort fra denne e-posten.</p>
-                <p>Med vennlig hilsen,<br>Altinn</p>
-                """;
+            return lang switch
+            {
+                "no_nn" => $"""
+                    <p>Hei,</p>
+                    <p>Det er bedt om å kople denne sjølvidentifiserte Altinn-brukaren til ein innlogga brukar.</p>
+                    <p>Viss dette var deg, følg lenkja under for å fullføre koplinga. Lenkja er gyldig ei kort stund.</p>
+                    <p><a href="{linkUrl}">Fullfør koplinga i Altinn</a></p>
+                    <p>Viss du ikkje bad om dette, kan du sjå bort frå denne e-posten.</p>
+                    <p>Med venleg helsing,<br>Altinn</p>
+                    """,
+
+                "en" => $"""
+                    <p>Hello,</p>
+                    <p>A request has been made to link this self-identified Altinn user to a logged-in user.</p>
+                    <p>If this was you, follow the link below to complete the linking. The link is valid for a short time.</p>
+                    <p><a href="{linkUrl}">Complete the linking in Altinn</a></p>
+                    <p>If you did not request this, you can disregard this email.</p>
+                    <p>Best regards,<br>Altinn</p>
+                    """,
+
+                // Default: Norwegian Bokmål
+                _ => $"""
+                    <p>Hei,</p>
+                    <p>Det er bedt om å koble denne selvidentifiserte Altinn-brukeren til en innlogget bruker.</p>
+                    <p>Hvis dette var deg, følg lenken under for å fullføre koblingen. Lenken er gyldig en kort stund.</p>
+                    <p><a href="{linkUrl}">Fullfør koblingen i Altinn</a></p>
+                    <p>Hvis du ikke ba om dette, kan du se bort fra denne e-posten.</p>
+                    <p>Med vennlig hilsen,<br>Altinn</p>
+                    """
+            };
         }
     }
 }

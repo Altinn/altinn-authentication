@@ -22,7 +22,10 @@ namespace Altinn.Platform.Authentication.Services.Interfaces
         /// <param name="toPartyUuid">
         /// The authenticated person who triggered the request (the connection <c>to</c> party).
         /// </param>
+        /// <param name="lang">
+        /// The language code "no_nb", "no_nn" or "en" for the email text. Defaults to "no_nb" if not set
+        /// </param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        Task<string?> RequestLinkAsync(string? userName, Guid toPartyUuid, CancellationToken cancellationToken = default);
+        Task<string?> RequestLinkAsync(string? userName, Guid toPartyUuid, string lang = "", CancellationToken cancellationToken = default);
     }
 }
