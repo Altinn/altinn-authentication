@@ -76,7 +76,6 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly ISblCookieDecryptionService _cookieDecryptionService;
         private readonly ISigningKeysRetriever _signingKeysRetriever;
         private readonly IUserProfileService _userProfileService;
-        private readonly IEnterpriseUserAuthenticationService _enterpriseUserAuthenticationService;
         private readonly JwtSecurityTokenHandler _validator;
         private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
         private readonly IOidcProvider _oidcProvider;
@@ -105,7 +104,6 @@ namespace Altinn.Platform.Authentication.Controllers
             IJwtSigningCertificateProvider certificateProvider,
             ISblCookieDecryptionService cookieDecryptionService,
             IUserProfileService userProfileService,
-            IEnterpriseUserAuthenticationService enterpriseUserAuthenticationService,
             IOrganisationsService organisationRepository,
             IPublicSigningKeyProvider signingKeysResolver,
             IOidcProvider oidcProvider,
@@ -126,7 +124,6 @@ namespace Altinn.Platform.Authentication.Controllers
             _cookieDecryptionService = cookieDecryptionService;
             _organisationService = organisationRepository;
             _userProfileService = userProfileService;
-            _enterpriseUserAuthenticationService = enterpriseUserAuthenticationService;
             _designerSigningKeysResolver = signingKeysResolver;
             _validator = new JwtSecurityTokenHandler();
             _oidcProvider = oidcProvider;
@@ -711,27 +708,17 @@ namespace Altinn.Platform.Authentication.Controllers
 
                 if (!string.IsNullOrEmpty(Request.Headers["X-Altinn-EnterpriseUser-Authentication"]))
                 {
-                    string? enterpriseUserHeader = Request.Headers["X-Altinn-EnterpriseUser-Authentication"];
-
-                    (UserAuthenticationResult authenticatedEnterpriseUser, ActionResult error) = await HandleEnterpriseUserLogin(enterpriseUserHeader, orgNumber);
-
-                    if (error != null)
+                    // Enterprise-user (virksomhetsbruker) authentication via SBL Bridge was discontinued
+                    // with the Altinn 2 shutdown (#1979 / #2030). Always reject with 410 Gone, pointing
+                    // callers to Systembruker (system user) or ID-porten.
+                    ProblemDetails problem = new ProblemDetails
                     {
-                        return error;
-                    }
-
-                    if (authenticatedEnterpriseUser != null)
-                    {
-                        authenticatemethod = "virksomhetsbruker";
-
-                        string userID = authenticatedEnterpriseUser.UserID.ToString();
-                        string username = authenticatedEnterpriseUser.Username;
-                        string partyId = authenticatedEnterpriseUser.PartyID.ToString();
-
-                        claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userID, ClaimValueTypes.Integer32, issuer));
-                        claims.Add(new Claim(AltinnCoreClaimTypes.UserName, username, ClaimValueTypes.String, issuer));
-                        claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, partyId, ClaimValueTypes.Integer32, issuer));
-                    }
+                        Status = StatusCodes.Status410Gone,
+                        Title = "Virksomhetsbruker is no longer available",
+                        Detail = "Virksomhetsbruker (enterprise user) is no longer available. It has been replaced by Systembruker (system user) or ID-porten, depending on the use case. See https://docs.altinn.studio for migration guidance.",
+                        Type = "https://docs.altinn.studio"
+                    };
+                    return new ObjectResult(problem) { StatusCode = StatusCodes.Status410Gone };
                 }
 
                 claims.Add(new Claim(AltinnCoreClaimTypes.OrgNumber, orgNumber, ClaimValueTypes.String, issuer));
@@ -765,71 +752,6 @@ namespace Altinn.Platform.Authentication.Controllers
                 _logger.LogWarning(ex, "Organisation authentication failed.");
                 return Unauthorized();
             }
-        }
-
-        private async Task<(UserAuthenticationResult? AuthenticatedEnterpriseUser, ActionResult? Error)> HandleEnterpriseUserLogin(string enterpriseUserHeader, string orgNumber)
-        {
-            if (await _featureManager.IsEnabledAsync(FeatureFlags.EnterpriseUserAuthenticationDisabled))
-            {
-                ProblemDetails problem = new ProblemDetails
-                {
-                    Status = StatusCodes.Status410Gone,
-                    Title = "Virksomhetsbruker is no longer available",
-                    Detail = "Virksomhetsbruker (enterprise user) is no longer available. It has been replaced by Systembruker (system user) or ID-porten, depending on the use case. See https://docs.altinn.studio for migration guidance.",
-                    Type = "https://docs.altinn.studio"
-                };
-                return (null, new ObjectResult(problem) { StatusCode = StatusCodes.Status410Gone });
-            }
-
-            EnterpriseUserCredentials credentials;
-
-            try
-            {
-                credentials = DecodeEnterpriseUserHeader(enterpriseUserHeader, orgNumber);
-            }
-            catch (Exception)
-            {
-                return (null, StatusCode(400));
-            }
-
-            HttpResponseMessage response = await _enterpriseUserAuthenticationService.AuthenticateEnterpriseUser(credentials);
-            string content = await response.Content.ReadAsStringAsync();
-
-            switch (response.StatusCode)
-            {
-                case System.Net.HttpStatusCode.BadRequest:
-                    return (null, StatusCode(400));
-                case System.Net.HttpStatusCode.NotFound:
-                    ObjectResult result = StatusCode(401, "The user either does not exist or the password is incorrect.");
-                    return (null, result);
-                case System.Net.HttpStatusCode.TooManyRequests:
-                    if (response.Headers.RetryAfter != null)
-                    {
-                        Response.Headers.Add("Retry-After", response.Headers.RetryAfter.ToString());
-                    }
-
-                    return (null, StatusCode(429));
-                case System.Net.HttpStatusCode.OK:
-                    UserAuthenticationResult userAuthenticationResult = JsonSerializer.Deserialize<UserAuthenticationResult>(content);
-
-                    return (userAuthenticationResult, null);
-                default:
-                    _logger.LogWarning("Unexpected response from SBLBridge during enterprise user authentication. HttpStatusCode={statusCode} Content={content}", response.StatusCode, content);
-                    return (null, StatusCode(502));
-            }
-        }
-
-        private EnterpriseUserCredentials DecodeEnterpriseUserHeader(string encodedCredentials, string orgNumber)
-        {
-            byte[] decodedCredentials = Convert.FromBase64String(encodedCredentials);
-            string decodedString = Encoding.UTF8.GetString(decodedCredentials);
-
-            string[] decodedStringArray = decodedString.Split(":", 2);
-            string usernameFromRequest = decodedStringArray[0];
-            string password = decodedStringArray[1];
-
-            EnterpriseUserCredentials credentials = new EnterpriseUserCredentials { UserName = usernameFromRequest, Password = password, OrganizationNumber = orgNumber };
-            return credentials;
         }
 
         /// <summary>
