@@ -981,7 +981,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
-            Assert.StartsWith("http://localhost/ui/authentication/logout", logoutResp.Headers.Location!.ToString());
+            Assert.StartsWith("http://localhost/", logoutResp.Headers.Location!.ToString());
             OidcAssertHelper.AssertLogoutRedirect(logoutResp, testScenario);
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
@@ -1045,7 +1045,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
-            Assert.StartsWith("http://localhost/ui/authentication/logout", logoutResp.Headers.Location!.ToString());
+            Assert.StartsWith("http://localhost/", logoutResp.Headers.Location!.ToString());
             OidcAssertHelper.AssertLogoutRedirect(logoutResp, testScenario);
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
@@ -1129,7 +1129,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
-            Assert.StartsWith("http://localhost/ui/authentication/logout", logoutResp.Headers.Location!.ToString());
+            Assert.StartsWith("http://localhost/", logoutResp.Headers.Location!.ToString());
             OidcAssertHelper.AssertLogoutRedirect(logoutResp, testScenario);
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);
@@ -1231,7 +1231,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string content = await logoutResp.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.Found, logoutResp.StatusCode);
-            Assert.StartsWith("http://localhost/ui/authentication/logout", logoutResp.Headers.Location!.ToString());
+            Assert.StartsWith("http://localhost/", logoutResp.Headers.Location!.ToString());
             OidcAssertHelper.AssertLogoutRedirect(logoutResp, testScenario);
 
             OidcSession? loggedOutSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sidFromCodeResponse, DataSource);

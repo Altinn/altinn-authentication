@@ -532,7 +532,7 @@ namespace Altinn.Platform.Authentication.Services
 
                 return new EndSessionResult
                 {
-                    RedirectUri = await ResolveLogoutFallbackAsync(),
+                    RedirectUri = new Uri(_generalSettings.BaseUrl),
                     State = input.State,
                     Cookies = noSidCookies
                 };
@@ -568,9 +568,9 @@ namespace Altinn.Platform.Authentication.Services
                 string issuer = oidcSession.UpstreamIssuer;
                 if (issuer.Equals(AuthzConstants.ISSUER_ALTINN_PORTAL, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Session was created based on Altinn 2 ticket. Redirect back to Altinn 2 for logout
-                    // unless the Altinn 2 servers are gone — in which case fall back to BaseUrl.
-                    redirect = await ResolveLogoutFallbackAsync();
+                    // Session was created based on an Altinn 2 ticket. Altinn 2 is shut down, so logout
+                    // falls back to BaseUrl.
+                    redirect = new Uri(_generalSettings.BaseUrl);
                 }
                 else
                 {
@@ -641,16 +641,6 @@ namespace Altinn.Platform.Authentication.Services
                 State = input.State,
                 Cookies = finalCookies
             };
-        }
-
-        private async Task<Uri> ResolveLogoutFallbackAsync()
-        {
-            if (await _featureManager.IsEnabledAsync(FeatureFlags.Altinn2LogoutRedirectDisabled))
-            {
-                return new Uri(_generalSettings.BaseUrl);
-            }
-
-            return new Uri(_generalSettings.SBLLogoutEndpoint);
         }
 
         private IEnumerable<CookieInstruction> BuildLegacySblCookieDeletes()
