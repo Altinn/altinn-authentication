@@ -120,11 +120,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues("location", out values))
-            {
-                Assert.Equal("http://localhost/", values.First());
-            }
+            Assert.True(response.Headers.TryGetValues("location", out IEnumerable<string>? values));
+            Assert.Equal("http://localhost/", values!.First());
         }
 
         /// <summary>
@@ -146,11 +143,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues("location", out values))
-            {
-                Assert.Equal("http://localhost/", values.First());
-            }
+            Assert.True(response.Headers.TryGetValues("location", out IEnumerable<string>? values));
+            Assert.Equal("http://localhost/", values!.First());
         }
 
         /// <summary>
@@ -172,11 +166,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues("location", out values))
-            {
-                Assert.Equal("http://localhost/", values.First());
-            }
+            Assert.True(response.Headers.TryGetValues("location", out IEnumerable<string>? values));
+            Assert.Equal("http://localhost/", values!.First());
         }
 
         /// <summary>
