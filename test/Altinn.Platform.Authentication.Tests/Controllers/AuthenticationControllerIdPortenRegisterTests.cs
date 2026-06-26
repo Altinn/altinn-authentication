@@ -40,7 +40,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
         private readonly Mock<IUserProfileService> _userProfileService = new();
-        private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IGuidService> _guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private readonly Mock<IPartiesClient> _partiesClient = new();
@@ -78,7 +77,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
 
             services.Configure<GeneralSettings>(generalSettingSection);
-            services.AddSingleton(_cookieDecryptionService);
             services.AddSingleton(_userProfileService);
             services.AddSingleton(_partiesClient.Object);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
@@ -90,7 +88,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_eventQueue.Object);
             services.AddSingleton(_guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-            services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
             _guidService.Setup(q => q.NewGuid()).Returns("eaec330c-1e2d-4acb-8975-5f3eba12b2fb");
         }
 

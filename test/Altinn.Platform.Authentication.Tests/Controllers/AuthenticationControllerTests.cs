@@ -47,7 +47,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private const string OrganisationIdentity = "OrganisationLogin";
 
         private readonly Mock<IUserProfileService> _userProfileService = new();
-        private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private readonly Mock<IPartiesClient> _partiesClient = new();
@@ -94,7 +93,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
 
             services.Configure<GeneralSettings>(generalSettingSection);
-            services.AddSingleton(_cookieDecryptionService);
             services.AddSingleton(_userProfileService);
             services.AddSingleton(_partiesClient.Object);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
@@ -106,7 +104,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_eventQueue.Object);            
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-            services.AddSingleton<ISblCookieDecryptionService>(_cookieDecryptionService.Object);
             SetupGuidMock();
             _configuration = configuration;
         }
@@ -350,86 +347,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(principal.HasClaim(c => c.Type == "urn:altinn:org"));
 
             Assert.Equal("ttd", principal.FindFirst(c => c.Type == "urn:altinn:org").Value);
-        }
-
-        /// <summary>
-        /// Test of method <see cref="AuthenticationController.AuthenticateUser"/>.
-        /// Event log : Audit log feature is turned on and the event is logged with expected claims and event type
-        /// </summary>
-        [Fact]
-        public async Task AuthenticateUser_RequestTokenWithValidAltinnCookie_ReturnsNewToken()
-        {
-            // Arrange
-            UserAuthenticationModel userAuthenticationModel = new UserAuthenticationModel
-            {
-                IsAuthenticated = true,
-                AuthenticationLevel = SecurityLevel.QuiteSensitive,
-                AuthenticationMethod = AuthenticationMethod.AltinnPIN,
-                PartyID = 23,
-                UserID = 434,
-                Username = "bob"
-            };
-
-            _cookieDecryptionService.Setup(s => s.DecryptTicket(It.IsAny<string>())).ReturnsAsync(userAuthenticationModel);
-
-            _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
-            AuthenticationEvent expectedAuthenticationEvent = GetAuthenticationEvent(AuthenticationMethod.AltinnPIN, SecurityLevel.QuiteSensitive, null, AuthenticationEventType.Authenticate, 434, true);
-
-            HttpClient client = CreateClient();
-
-            string url = "/authentication/api/v1/authentication?goto=https%3A%2F%2Flocalhost";
-            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
-            requestMessage.Headers.Add("Cookie", ".ASPXAUTH=asdasdasd");
-
-            // Act
-            HttpResponseMessage response = await client.SendAsync(requestMessage);
-
-            // Assert
-            Assert.Equal(HttpStatusCode.Found, response.StatusCode);
-
-            string token = null;
-            string sameSite = null;
-            bool httpOnly = false;
-            bool sessionCookie = true;
-
-            response.Headers.TryGetValues(HeaderNames.SetCookie, out IEnumerable<string> cookies);
-            foreach (string cookie in cookies)
-            {
-                string[] cookieParts = cookie.Split("; ");
-                foreach (string cookiePart in cookieParts)
-                {
-                    string[] cookieKeyValue = cookiePart.Split('=');
-
-                    switch (cookieKeyValue[0])
-                    {
-                        case "AltinnStudioRuntime":
-                            token = cookieKeyValue[1];
-                            break;
-                        case "httponly":
-                            httpOnly = true;
-                            break;
-                        case "expires":
-                            // Cookies WITHOUT 'expires' are session cookies. They are gone when the browser is closed.
-                            sessionCookie = false;
-                            break;
-                        case "samesite":
-                            sameSite = cookieKeyValue[1];
-                            break;
-                    }
-                }
-            }
-
-            Assert.NotNull(token);
-            ClaimsPrincipal principal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
-            Assert.NotNull(principal);
-
-            Assert.True(principal.Claims.ToList().Exists(c => c.Type == "urn:altinn:party:uuid"));
-            Assert.NotNull(sameSite);
-            Assert.Equal("lax", sameSite);
-
-            Assert.True(httpOnly);
-            Assert.True(sessionCookie);
-            AssertionUtil.AssertAuthenticationEvent(_eventQueue, expectedAuthenticationEvent, Times.Once());
         }
 
         /// <summary>
@@ -721,7 +638,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             _configuration["GeneralSettings:EnableOidc"] = "true";
             _configuration["GeneralSettings:ForceOidc"] = "true";
 
-            // HttpClient client = GetTestClient(_cookieDecryptionService.Object, _userProfileService.Object, null, null, null, true, true);
             HttpClient client = CreateClient();
             string redirectUri = "http://localhost/authentication/api/v1/authentication?iss=uidp";
 
@@ -1102,34 +1018,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.Redirect, redirectToOidcProviderResponse.StatusCode);
             Uri redirectToSBLUri = new Uri(redirectToOidcProviderResponse.Headers.Location.ToString());
             Assert.Equal("localhost/ui/authentication", redirectToSBLUri.Host + redirectToSBLUri.AbsolutePath);
-        }
-
-        /// <summary>
-        /// Test of method <see cref="AuthenticationController.AuthenticateUser"/>.
-        /// </summary>
-        [Fact]
-        public async Task AuthenticateUser_RequestTokenWithValidAltinnCookie_SblBridgeUnavailable_ReturnsServiceUnavailable()
-        {
-            // Arrange
-            HttpResponseMessage bridgeResponse = new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.ServiceUnavailable,
-                ReasonPhrase = "Service Unavailable"
-            };
-            SblBridgeResponseException sblBridgeResponseException = new SblBridgeResponseException(bridgeResponse);
-            _cookieDecryptionService.Setup(s => s.DecryptTicket(It.IsAny<string>())).ThrowsAsync(sblBridgeResponseException);
-
-            HttpClient client = CreateClient();
-
-            string url = "/authentication/api/v1/authentication?goto=https%3A%2F%2Flocalhost";
-            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
-            requestMessage.Headers.Add("Cookie", ".ASPXAUTH=asdasdasd");
-
-            // Act
-            HttpResponseMessage response = await client.SendAsync(requestMessage);
-
-            // Assert
-            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         }
 
         /// <summary>

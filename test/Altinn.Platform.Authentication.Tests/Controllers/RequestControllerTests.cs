@@ -58,7 +58,6 @@ public class RequestControllerTests(
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
     
     private readonly Mock<IUserProfileService> _userProfileService = new();
-    private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
     private readonly FakeTimeProvider timeProvider = new();
     private readonly Mock<IGuidService> guidService = new();
@@ -110,7 +109,6 @@ public class RequestControllerTests(
         // services.AddSingleton(timeProviderMock.Object);
         services.AddSingleton(guidService.Object);
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-        services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
         services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
         services.AddSingleton<ISystemUserService, SystemUserService>();    

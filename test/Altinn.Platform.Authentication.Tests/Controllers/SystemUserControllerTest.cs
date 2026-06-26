@@ -53,7 +53,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     {
         private static readonly DateTimeOffset TestTime = new(2025, 05, 15, 02, 05, 00, TimeSpan.Zero);
         private readonly Mock<IUserProfileService> _userProfileService = new Mock<IUserProfileService>();
-        private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new Mock<ISblCookieDecryptionService>();
         private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
         private readonly FakeTimeProvider timeProviderMock = new();
@@ -96,7 +95,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IAccessManagementClient, AccessManagementClientMock>();
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-            services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<IPDP, PepWithPDPAuthorizationMock>();
             services.AddSingleton<IPartiesClient, PartiesClientMock>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();
