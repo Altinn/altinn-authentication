@@ -61,7 +61,6 @@ public class SelfIdentifiedAuthenticationControllerTests(
         services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
         services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
         services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-        services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
         services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
         services.AddSingleton((TimeProvider)_timeProviderMock);
 

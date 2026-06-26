@@ -127,7 +127,6 @@ internal static class AuthenticationHost
 
         services.AddHttpClient<ISblCookieDecryptionService, SblCookieDecryptionService>();
         services.AddHttpClient<IUserProfileService, UserProfileService>();
-        services.AddHttpClient<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationService>();
         services.AddHttpClient<IOrganisationsService, OrganisationsService>();
         services.AddHttpClient<AuthorizationApiClient>();
         services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();

@@ -41,14 +41,6 @@
         public const string CookieTicketDecryptionDisabled = "CookieTicketDecryptionDisabled";
 
         /// <summary>
-        /// When enabled, disables the enterprise-user authentication path (SBL Bridge
-        /// <c>POST authentication/api/enterpriseuser</c>) and returns HTTP 410 Gone with a
-        /// problem-details body pointing callers to Systembruker or ID-porten. Tracked in
-        /// issue #2008 (SBL Bridge decommission, deadline 2026-06-19).
-        /// </summary>
-        public const string EnterpriseUserAuthenticationDisabled = "EnterpriseUserAuthenticationDisabled";
-
-        /// <summary>
         /// Controls the source of the user fields (UserId/UserName/PartyId/PartyUuid) in the
         /// ID-porten token exchange, replacing the (decommissioned) SBL Bridge
         /// <c>profile/users/</c> lookup. When enabled, the fields are read from Register's

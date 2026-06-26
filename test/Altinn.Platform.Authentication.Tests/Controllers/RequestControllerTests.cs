@@ -101,7 +101,6 @@ public class RequestControllerTests(
         services.AddSingleton<IJwtSigningCertificateProvider, JwtSigningCertificateProviderStub>();
         services.AddSingleton<IPostConfigureOptions<JwtCookieOptions>, JwtCookiePostConfigureOptionsStub>();
         services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
-        services.AddSingleton<IEnterpriseUserAuthenticationService, EnterpriseUserAuthenticationServiceMock>();
         services.AddSingleton<IOidcProvider, OidcProviderServiceMock>();
         services.AddSingleton(_eventQueue.Object);
         services.AddSingleton<FakeTimeProvider>(timeProvider);
