@@ -107,7 +107,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
         /// </summary>
         [Fact]
-        public async Task Logout_TimedOut_RedirectToSBL()
+        public async Task Logout_TimedOut_RedirectToBaseUrl()
         {
             // Arrange
             HttpClient client = CreateClient();
@@ -123,7 +123,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IEnumerable<string> values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
+                Assert.Equal("http://localhost", values.First());
             }
         }
 
@@ -131,7 +131,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToSBL()
+        public async Task Logout_LogedIn_RedirectToBaseUrl()
         {
             string token = PrincipalUtil.GetToken(1337, null);
 
@@ -149,7 +149,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IEnumerable<string> values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
+                Assert.Equal("http://localhost", values.First());
             }
         }
 
@@ -157,7 +157,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         /// Validates that a user that is not authenticated is forward to SBL logout (not possible to identify any issorg)
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToSBL_SelfIdentifiedUser()
+        public async Task Logout_LogedIn_RedirectToBaseUrl_SelfIdentifiedUser()
         {
             string token = PrincipalUtil.GetSelfIdentifiedUserToken("siusertest", "12345", "2345678");
 
@@ -175,7 +175,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IEnumerable<string> values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("http://localhost/ui/authentication/logout", values.First());
+                Assert.Equal("http://localhost", values.First());
             }
         }
 
@@ -345,7 +345,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task Logout_HandleLoggedOut_RedirectToSBL()
+        public async Task Logout_HandleLoggedOut_RedirectToBaseUrl()
         {
             // Arrange
             HttpClient client = CreateClient();
@@ -362,7 +362,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
             response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
-            Assert.Equal("http://localhost/ui/authentication/logout", locationValues?.First());
+            Assert.Equal("http://localhost", locationValues?.First());
         }
 
         /// <summary>

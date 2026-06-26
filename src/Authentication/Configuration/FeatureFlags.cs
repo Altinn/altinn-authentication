@@ -49,14 +49,5 @@
         /// decommission (deadline 2026-06-19).
         /// </summary>
         public const string IdPortenUserLookupFromRegister = "IdPortenUserLookupFromRegister";
-
-        /// <summary>
-        /// When enabled, every logout path that would otherwise 302 to the Altinn 2 logout
-        /// endpoint (<c>GeneralSettings.SBLLogoutEndpoint</c>) redirects to
-        /// <c>GeneralSettings.BaseUrl</c> instead. Allows the flag to be flipped per
-        /// environment as Altinn 2 servers are switched off, ahead of the longer-term
-        /// frontchannel logout rewrite in #1582. Tracked in issue #2012.
-        /// </summary>
-        public const string Altinn2LogoutRedirectDisabled = "Altinn2LogoutRedirectDisabled";
     }
 }

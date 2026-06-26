@@ -109,7 +109,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 {
                     DeleteLegacySblCookies();
                     _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
-                    return Redirect(await ResolveLogoutFallbackAsync());
+                    return Redirect(_generalSettings.BaseUrl);
                 }
 
                 CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
@@ -164,17 +164,7 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             DeleteLegacySblCookies();
-            return Redirect(await ResolveLogoutFallbackAsync());
-        }
-
-        private async Task<string> ResolveLogoutFallbackAsync()
-        {
-            if (await _featureManager.IsEnabledAsync(FeatureFlags.Altinn2LogoutRedirectDisabled))
-            {
-                return _generalSettings.BaseUrl;
-            }
-
-            return _generalSettings.SBLLogoutEndpoint;
+            return Redirect(_generalSettings.BaseUrl);
         }
 
         private void DeleteLegacySblCookies()
