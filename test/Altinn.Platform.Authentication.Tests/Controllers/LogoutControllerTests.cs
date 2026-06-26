@@ -123,7 +123,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IEnumerable<string> values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("http://localhost", values.First());
+                Assert.Equal("http://localhost/", values.First());
             }
         }
 
@@ -149,7 +149,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IEnumerable<string> values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("http://localhost", values.First());
+                Assert.Equal("http://localhost/", values.First());
             }
         }
 
@@ -175,7 +175,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IEnumerable<string> values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("http://localhost", values.First());
+                Assert.Equal("http://localhost/", values.First());
             }
         }
 
@@ -362,7 +362,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
             response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
-            Assert.Equal("http://localhost", locationValues?.First());
+            Assert.Equal("http://localhost/", locationValues?.First());
         }
 
         /// <summary>
