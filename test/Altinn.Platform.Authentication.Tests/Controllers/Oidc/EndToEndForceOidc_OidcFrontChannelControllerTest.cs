@@ -2201,12 +2201,38 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private async Task ConfigureProfileMock(OidcTestScenario oidcTestScenario)
         {
             ProfileFileMock profileMock = new ProfileFileMock();
+
+            // Live self-identified provisioning (UIDP and idporten-email external identities) always
+            // goes through the Register provisioning client now - for both new and already-existing
+            // SI users. Set it up for every scenario; it is simply never invoked for SSN / userId
+            // person logins (those resolve via the profile service). The token assertions only require
+            // a non-empty user id, so fixed ids are sufficient.
+            Guid partyGuid = Guid.NewGuid();
+            _registerUserProvisioningClient
+                    .Setup(c => c.GetOrCreateUser(
+                        It.IsAny<SelfIdentifiedUserProvisioningRequest>(),
+                        It.IsAny<System.Threading.CancellationToken>()))
+                    .ReturnsAsync((SelfIdentifiedUserProvisioningRequest req, System.Threading.CancellationToken _) =>
+                        new Altinn.Register.Contracts.SelfIdentifiedUser
+                        {
+                            Uuid = partyGuid,
+                            VersionId = 1UL,
+                            PartyId = 123456U,
+                            DisplayName = req.UserName,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                            ModifiedAt = DateTimeOffset.UtcNow,
+                            IsDeleted = false,
+                            DeletedAt = Altinn.Authorization.ModelUtils.FieldValue.Null,
+                            User = new Altinn.Register.Contracts.PartyUser(
+                                userId: 123456U,
+                                username: req.UserName,
+                                userIds: Altinn.Authorization.ModelUtils.ImmutableValueArray.Create(123456U)),
+                        });
+
             if ((!string.IsNullOrEmpty(oidcTestScenario.ExternalIdentity) || !string.IsNullOrEmpty(oidcTestScenario.Email)) && oidcTestScenario.UserId == null)
             {
                 UserProfile? profile = null;
                 _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(profile);
-
-                Guid partyGuid = Guid.NewGuid();
 
                 _userProfileService
                         .Setup(s => s.CreateUser(It.IsAny<UserProfile>()))
@@ -2217,35 +2243,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                             ExternalIdentity = input.ExternalIdentity,
                             UserId = 123456,
                             PartyId = 123456,
-                           
+
                             Party = new Party()
                             {
                                 PartyUuid = partyGuid
                             },
                             UserUuid = partyGuid
                         });
-
-                // Live SI provisioning now goes through the Register provisioning client.
-                _registerUserProvisioningClient
-                        .Setup(c => c.GetOrCreateUser(
-                            It.IsAny<SelfIdentifiedUserProvisioningRequest>(),
-                            It.IsAny<System.Threading.CancellationToken>()))
-                        .ReturnsAsync((SelfIdentifiedUserProvisioningRequest req, System.Threading.CancellationToken _) =>
-                            new Altinn.Register.Contracts.SelfIdentifiedUser
-                            {
-                                Uuid = partyGuid,
-                                VersionId = 1UL,
-                                PartyId = 123456U,
-                                DisplayName = req.UserName,
-                                CreatedAt = DateTimeOffset.UtcNow,
-                                ModifiedAt = DateTimeOffset.UtcNow,
-                                IsDeleted = false,
-                                DeletedAt = Altinn.Authorization.ModelUtils.FieldValue.Null,
-                                User = new Altinn.Register.Contracts.PartyUser(
-                                    userId: 123456U,
-                                    username: req.UserName,
-                                    userIds: Altinn.Authorization.ModelUtils.ImmutableValueArray.Create(123456U)),
-                            });
             }
             else
             {
