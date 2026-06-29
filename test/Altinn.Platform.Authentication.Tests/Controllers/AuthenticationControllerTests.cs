@@ -35,6 +35,7 @@ using Microsoft.Net.Http.Headers;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using RegisterContracts = Altinn.Register.Contracts;
 
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
@@ -56,11 +57,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             builder.UseSetting("feature_management:feature_flags:0:id", "AuditLog");
             builder.UseSetting("feature_management:feature_flags:0:enabled", "true");
-
-            // The ID-porten exchange tests in this class exercise the Profile-API branch, so the
-            // Register lookup flag must be off here regardless of its (now enabled-by-default) value.
-            builder.UseSetting("feature_management:feature_flags:1:id", FeatureFlags.IdPortenUserLookupFromRegister);
-            builder.UseSetting("feature_management:feature_flags:1:enabled", "false");
             base.ConfigureHost(builder);
         }
 
@@ -1118,8 +1114,26 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
-            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
+            RegisterContracts.Party party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+                """
+                {
+                  "partyType": "person",
+                  "partyUuid": "5c0656db-cf51-43a9-bd68-d8a55e7b6f3b",
+                  "versionId": 1,
+                  "partyId": 50001,
+                  "personIdentifier": "19108000239",
+                  "displayName": "Test Testesen",
+                  "createdAt": "2020-01-01T00:00:00Z",
+                  "modifiedAt": "2020-01-01T00:00:00Z",
+                  "isDeleted": false,
+                  "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
+                }
+                """,
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+            _partiesClient
+                .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(party);
 
             _eventQueue.Setup(q => q.EnqueueAuthenticationEvent(It.IsAny<string>()));
 
@@ -1174,8 +1188,26 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
-            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
+            RegisterContracts.Party party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+                """
+                {
+                  "partyType": "person",
+                  "partyUuid": "5c0656db-cf51-43a9-bd68-d8a55e7b6f3b",
+                  "versionId": 1,
+                  "partyId": 50001,
+                  "personIdentifier": "19108000239",
+                  "displayName": "Test Testesen",
+                  "createdAt": "2020-01-01T00:00:00Z",
+                  "modifiedAt": "2020-01-01T00:00:00Z",
+                  "isDeleted": false,
+                  "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
+                }
+                """,
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+            _partiesClient
+                .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(party);
 
             HttpClient client = CreateClient();
 
@@ -1261,8 +1293,26 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
-            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
+            RegisterContracts.Party party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+                """
+                {
+                  "partyType": "person",
+                  "partyUuid": "5c0656db-cf51-43a9-bd68-d8a55e7b6f3b",
+                  "versionId": 1,
+                  "partyId": 50001,
+                  "personIdentifier": "19108000239",
+                  "displayName": "Test Testesen",
+                  "createdAt": "2020-01-01T00:00:00Z",
+                  "modifiedAt": "2020-01-01T00:00:00Z",
+                  "isDeleted": false,
+                  "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
+                }
+                """,
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+            _partiesClient
+                .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(party);
 
             HttpClient client = CreateClient();
 
@@ -1332,7 +1382,9 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
             string externalToken = JwtTokenMock.GenerateToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
-            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).Throws(new Exception());
+            _partiesClient
+                .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception());
 
             string url = "/authentication/api/v1/exchange/id-porten";
 
