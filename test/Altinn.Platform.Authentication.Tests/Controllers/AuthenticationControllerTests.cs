@@ -1495,8 +1495,26 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            UserProfile userProfile = new UserProfile { UserId = 20000, PartyId = 50001, UserName = "steph" };
-            _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(userProfile);
+            RegisterContracts.Party party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+                """
+                {
+                  "partyType": "person",
+                  "partyUuid": "5c0656db-cf51-43a9-bd68-d8a55e7b6f3b",
+                  "versionId": 1,
+                  "partyId": 50001,
+                  "personIdentifier": "19108000239",
+                  "displayName": "Test Testesen",
+                  "createdAt": "2020-01-01T00:00:00Z",
+                  "modifiedAt": "2020-01-01T00:00:00Z",
+                  "isDeleted": false,
+                  "user": { "userId": 20000, "username": "steph", "userIds": [ 20000 ] }
+                }
+                """,
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+            _partiesClient
+                .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(party);
 
             HttpClient client = CreateClient();
 
