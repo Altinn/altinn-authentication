@@ -2244,7 +2244,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                                 User = new Altinn.Register.Contracts.PartyUser(
                                     userId: 123456U,
                                     username: req.UserName,
-                                    userIds: Altinn.Authorization.ModelUtils.FieldValue.Unset),
+                                    userIds: Altinn.Authorization.ModelUtils.ImmutableValueArray.Create(123456U)),
                             });
             }
             else
