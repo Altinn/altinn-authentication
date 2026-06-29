@@ -255,7 +255,20 @@ namespace Altinn.Platform.Authentication.Services
             // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
-            userIdenity = await IdentifyOrCreateAltinnUser(userIdenity, provider);
+            UserAuthenticationModel? identifiedUser = await IdentifyOrCreateAltinnUser(userIdenity, provider, cancellationToken);
+            if (identifiedUser is null)
+            {
+                // Self-identified user provisioning (via register) failed. Do not continue and create
+                // a session from an incomplete identity (missing UserID/PartyID/PartyUuid).
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Could not provision the self-identified user; sign-in cannot complete."
+                };
+            }
+
+            userIdenity = identifiedUser;
             AddLocalScopes(userIdenity);
 
             // 3. Create or refresh Altinn session session
@@ -1325,7 +1338,7 @@ namespace Altinn.Platform.Authentication.Services
             return ub.Uri;
         }
 
-        private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)
+        private async Task<UserAuthenticationModel?> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
@@ -1376,11 +1389,13 @@ namespace Altinn.Platform.Authentication.Services
                     issExternalIdentity,
                     userName,
                     email: null,
-                    CancellationToken.None);
+                    cancellationToken);
 
                 if (provisioned is null)
                 {
-                    return userAuthenticationModel;
+                    // Provisioning failed - signal the caller to fail the callback rather than
+                    // continuing with an incomplete identity.
+                    return null;
                 }
 
                 userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
@@ -1402,11 +1417,13 @@ namespace Altinn.Platform.Authentication.Services
                     issExternalIdentity,
                     userName,
                     userAuthenticationModel.Email,
-                    CancellationToken.None);
+                    cancellationToken);
 
                 if (provisioned is null)
                 {
-                    return userAuthenticationModel;
+                    // Provisioning failed - signal the caller to fail the callback rather than
+                    // continuing with an incomplete identity.
+                    return null;
                 }
 
                 userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
@@ -1450,9 +1467,10 @@ namespace Altinn.Platform.Authentication.Services
 
             if (response is null)
             {
+                // The external identity can be email-derived (PII); log only a non-reversible hash.
                 _logger.LogError(
-                    "Register self-identified provisioning returned no result for externalIdentity {ExternalIdentity}; sign-in cannot complete.",
-                    externalIdentity);
+                    "Register self-identified provisioning returned no result for externalIdentity hash {ExternalIdentityHash}; sign-in cannot complete.",
+                    HashIDentity(externalIdentity));
             }
 
             return response;
