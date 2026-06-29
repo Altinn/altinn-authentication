@@ -1467,10 +1467,11 @@ namespace Altinn.Platform.Authentication.Services
 
             if (response is null)
             {
-                // The external identity can be email-derived (PII); log only a non-reversible hash.
+                // Log the external identity (may be email-derived) verbatim: this is an internal error
+                // log for a failing sign-in, and support needs to identify which user is affected.
                 _logger.LogError(
-                    "Register self-identified provisioning returned no result for externalIdentity hash {ExternalIdentityHash}; sign-in cannot complete.",
-                    HashIDentity(externalIdentity));
+                    "Register self-identified provisioning returned no result for externalIdentity {ExternalIdentity}; sign-in cannot complete.",
+                    externalIdentity);
             }
 
             return response;
