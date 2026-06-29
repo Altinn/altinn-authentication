@@ -49,7 +49,6 @@ namespace Altinn.Platform.Authentication.Services
         TimeProvider timeProvider,
         IOidcProvider oidcProvider,
         IUpstreamTokenValidator upstreamTokenValidator,
-        IUserProfileService userProfileService,
         IRegisterUserProvisioningClient registerUserProvisioningClient,
         IProfile profile,
         IOidcSessionRepository oidcSessionRepository,
@@ -72,7 +71,6 @@ namespace Altinn.Platform.Authentication.Services
         private readonly TimeProvider _timeProvider = timeProvider;
         private readonly IOidcProvider _oidcProvider = oidcProvider;
         private readonly IUpstreamTokenValidator _upstreamTokenValidator = upstreamTokenValidator;
-        private readonly IUserProfileService _userProfileService = userProfileService;
         private readonly IRegisterUserProvisioningClient _registerUserProvisioningClient = registerUserProvisioningClient;
         private readonly IProfile _profileService = profile;
         private readonly IOidcSessionRepository _oidcSessionRepo = oidcSessionRepository;
@@ -257,7 +255,20 @@ namespace Altinn.Platform.Authentication.Services
             // ===== 2) Exchange upstream code for upstream tokens =====
             OidcProvider provider = ChooseProviderByKey(upstreamTx.Provider);
             UserAuthenticationModel userIdenity = await ExtractUserIdentityFromUpstream(input, upstreamTx, provider, cancellationToken);
-            userIdenity = await IdentifyOrCreateAltinnUser(userIdenity, provider);
+            UserAuthenticationModel? identifiedUser = await IdentifyOrCreateAltinnUser(userIdenity, provider, cancellationToken);
+            if (identifiedUser is null)
+            {
+                // Self-identified user provisioning (via register) failed. Do not continue and create
+                // a session from an incomplete identity (missing UserID/PartyID/PartyUuid).
+                return new UpstreamCallbackResult
+                {
+                    Kind = UpstreamCallbackResultKind.LocalError,
+                    StatusCode = 500,
+                    LocalErrorMessage = "Could not provision the self-identified user; sign-in cannot complete."
+                };
+            }
+
+            userIdenity = identifiedUser;
             AddLocalScopes(userIdenity);
 
             // 3. Create or refresh Altinn session session
@@ -1327,7 +1338,7 @@ namespace Altinn.Platform.Authentication.Services
             return ub.Uri;
         }
 
-        private async Task<UserAuthenticationModel> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider)
+        private async Task<UserAuthenticationModel?> IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider? provider, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(userAuthenticationModel);
 
@@ -1373,55 +1384,27 @@ namespace Altinn.Platform.Authentication.Services
                 string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
                 string userName = CreateUserName(userAuthenticationModel, provider);
 
-                if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
+                var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                    SelfIdentifiedUserType.Educational,
+                    issExternalIdentity,
+                    userName,
+                    email: null,
+                    cancellationToken);
+
+                if (provisioned is null)
                 {
-                    var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
-                        SelfIdentifiedUserType.Educational,
-                        issExternalIdentity,
-                        userName,
-                        email: null,
-                        CancellationToken.None);
-
-                    if (provisioned is null)
-                    {
-                        return userAuthenticationModel;
-                    }
-
-                    userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
-                    userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
-                    userAuthenticationModel.PartyUuid = provisioned.Uuid;
-                    userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
-                    userAuthenticationModel.Amr = ["SelfIdentified"];
-                    userAuthenticationModel.Acr = "Selfidentified";
-                    return userAuthenticationModel;
+                    // Provisioning failed - signal the caller to fail the callback rather than
+                    // continuing with an incomplete identity.
+                    return null;
                 }
 
-                userProfile = await _userProfileService.GetUser(issExternalIdentity);
-
-                if (userProfile != null)
-                {
-                    userAuthenticationModel.UserID = userProfile.UserId;
-                    userAuthenticationModel.PartyID = userProfile.PartyId;
-                    userAuthenticationModel.PartyUuid = userProfile.UserUuid;
-                    userAuthenticationModel.Username = userProfile.UserName;
-                    userAuthenticationModel.Amr = ["SelfIdentified"];
-                    userAuthenticationModel.Acr = "Selfidentified";
-                    return userAuthenticationModel;
-                }
-
-                UserProfile userToCreate = new()
-                {
-                    ExternalIdentity = issExternalIdentity,
-                    UserName = userName,
-                    UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
-                };
-
-                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
-                userAuthenticationModel.UserID = userCreated.UserId;
-                userAuthenticationModel.PartyID = userCreated.PartyId;
-                userAuthenticationModel.PartyUuid = userCreated.UserUuid;
+                userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
                 userAuthenticationModel.Amr = ["SelfIdentified"];
                 userAuthenticationModel.Acr = "Selfidentified";
+                return userAuthenticationModel;
             }
             else if (userAuthenticationModel.Acr != null && userAuthenticationModel.Acr.Equals("selfregistered-email") && !string.IsNullOrEmpty(userAuthenticationModel.Email))
             {
@@ -1429,50 +1412,25 @@ namespace Altinn.Platform.Authentication.Services
                 string issExternalIdentity = AltinnCoreClaimTypes.IdPortenEmailPrefix + ":" + UrnEncoded.Create(userAuthenticationModel.Email.ToLowerInvariant()).Encoded;
                 string userName = "epost:" + userAuthenticationModel.Email;
 
-                if (await _featureManager.IsEnabledAsync(FeatureFlags.RegisterSelfIdentifiedUserProvisioning))
+                var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
+                    SelfIdentifiedUserType.IdPortenEmail,
+                    issExternalIdentity,
+                    userName,
+                    userAuthenticationModel.Email,
+                    cancellationToken);
+
+                if (provisioned is null)
                 {
-                    var provisioned = await GetOrCreateSelfIdentifiedUserViaRegister(
-                        SelfIdentifiedUserType.IdPortenEmail,
-                        issExternalIdentity,
-                        userName,
-                        userAuthenticationModel.Email,
-                        CancellationToken.None);
-
-                    if (provisioned is null)
-                    {
-                        return userAuthenticationModel;
-                    }
-
-                    userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
-                    userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
-                    userAuthenticationModel.PartyUuid = provisioned.Uuid;
-                    userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
-                    return userAuthenticationModel;
+                    // Provisioning failed - signal the caller to fail the callback rather than
+                    // continuing with an incomplete identity.
+                    return null;
                 }
 
-                userProfile = await _userProfileService.GetUser(issExternalIdentity);
-
-                if (userProfile != null)
-                {
-                    userAuthenticationModel.UserID = userProfile.UserId;
-                    userAuthenticationModel.PartyID = userProfile.PartyId;
-                    userAuthenticationModel.PartyUuid = userProfile.UserUuid;
-                    userAuthenticationModel.Username = userProfile.UserName;
-                    return userAuthenticationModel;
-                }
-
-                // Todo: Verifiser prefix på brukernavn
-                UserProfile userToCreate = new()
-                {
-                    ExternalIdentity = issExternalIdentity,
-                    UserName = userName,
-                    UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
-                };
-
-                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
-                userAuthenticationModel.UserID = userCreated.UserId;
-                userAuthenticationModel.PartyID = userCreated.PartyId;
-                userAuthenticationModel.PartyUuid = userCreated.UserUuid;
+                userAuthenticationModel.UserID = (int)provisioned.User.Value.UserId.Value;
+                userAuthenticationModel.PartyID = (int)provisioned.PartyId.Value;
+                userAuthenticationModel.PartyUuid = provisioned.Uuid;
+                userAuthenticationModel.Username = provisioned.User.Value.Username.Value;
+                return userAuthenticationModel;
             }
             else if (userAuthenticationModel.UserID.HasValue && userAuthenticationModel.UserID.Value > 0)
             {
@@ -1509,6 +1467,8 @@ namespace Altinn.Platform.Authentication.Services
 
             if (response is null)
             {
+                // Log the external identity (may be email-derived) verbatim: this is an internal error
+                // log for a failing sign-in, and support needs to identify which user is affected.
                 _logger.LogError(
                     "Register self-identified provisioning returned no result for externalIdentity {ExternalIdentity}; sign-in cannot complete.",
                     externalIdentity);

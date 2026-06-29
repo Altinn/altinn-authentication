@@ -11,7 +11,6 @@ using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Microsoft.FeatureManagement;
 using Moq;
 using Xunit;
 
@@ -34,14 +33,6 @@ public class UserProfileServiceLocalSiTests
     private static readonly Guid PartyUuid = Guid.Parse("2c3bb12a-5e41-4cc9-9a36-7b5ac6f9f102");
 
     private readonly Mock<ISelfIdentifiedUserCredentialRepository> _repo = new();
-    private readonly Mock<IFeatureManager> _featureManager = new();
-
-    public UserProfileServiceLocalSiTests()
-    {
-        _featureManager
-            .Setup(f => f.IsEnabledAsync(FeatureFlags.LocalSelfIdentifiedCredentialValidation))
-            .ReturnsAsync(true);
-    }
 
     [Fact]
     public async Task ValidateCredentials_Local_ValidCredentials_ReturnsProfileWithPartyUuid()
@@ -231,7 +222,6 @@ public class UserProfileServiceLocalSiTests
             client,
             settings,
             NullLogger<IUserProfileService>.Instance,
-            _featureManager.Object,
             _repo.Object,
             TimeProvider.System);
     }

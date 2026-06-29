@@ -10,6 +10,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Clients.Interfaces;
@@ -52,6 +53,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
         private readonly Mock<IUserProfileService> _userProfileService = new();
+        private readonly Mock<IRegisterUserProvisioningClient> _registerUserProvisioningClient = new();
         private readonly Mock<IOidcDownstreamLogout> _downstreamLogoutClient = new();
 
         private FakeTimeProvider _fakeTime = null!;
@@ -93,6 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton<IProfile, ProfileFileMock>();
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
+            services.AddSingleton<IRegisterUserProvisioningClient>(_registerUserProvisioningClient.Object);
             services.AddSingleton<IOidcDownstreamLogout>(_downstreamLogoutClient.Object);
 
             services.PostConfigure<GeneralSettings>(o =>
@@ -2173,6 +2176,52 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 response: oidcCodeResponse);
         }
 
+        /// <summary>
+        /// When register self-identified provisioning fails (returns null) during an external-identity
+        /// sign-in, the upstream callback must fail closed (HTTP 500) and not establish a session from
+        /// an incomplete identity.
+        /// </summary>
+        [Fact]
+        public async Task UIDP_NewUser_RegisterProvisioningFails_FailsClosed_NoSession()
+        {
+            using HttpClient client = CreateClientWithHeaders();
+            OidcTestScenario testScenario = OidcScenarioHelper.GetScenario("New_UidpUser");
+
+            OidcClientCreate create = OidcServerTestUtils.NewClientCreate(testScenario);
+            _ = await Repository.InsertClientAsync(create);
+
+            HttpResponseMessage app2RedirectResponse = await client.GetAsync(
+               "/authentication/api/v1/authentication?iss=uidp-anonym&goto=https%3A%2F%2Fudir.apps.localhost%2Ftad%2Fpagaendesak%3FDONTCHOOSEREPORTEE%3Dtrue%23%2Finstance%2F51441547%2F26cbe3f0-355d-4459-b085-7edaa899b6ba");
+            Assert.Equal(HttpStatusCode.Redirect, app2RedirectResponse.StatusCode);
+
+            string location = app2RedirectResponse.Headers.Location!.ToString();
+            string redirectUri = HttpUtility.ParseQueryString(new Uri(location).Query)["redirect_uri"]!;
+            Uri redirectUriParsed = new Uri(redirectUri!);
+
+            (string? upstreamState, UpstreamLoginTransaction? createdUpstreamLogingTransaction) =
+                await AssertAutorizeRequestResult(testScenario, app2RedirectResponse, _fakeTime.GetUtcNow());
+            Debug.Assert(createdUpstreamLogingTransaction != null);
+
+            _fakeTime.Advance(TimeSpan.FromMinutes(1));
+
+            ConfigureMockUidpProviderTokenResponseUidp(testScenario, createdUpstreamLogingTransaction, _fakeTime.GetUtcNow());
+            await ConfigureProfileMock(testScenario);
+
+            // Register provisioning fails for this attempt.
+            _registerUserProvisioningClient
+                    .Setup(c => c.GetOrCreateUser(
+                        It.IsAny<SelfIdentifiedUserProvisioningRequest>(),
+                        It.IsAny<System.Threading.CancellationToken>()))
+                    .ReturnsAsync((Altinn.Register.Contracts.SelfIdentifiedUser?)null);
+
+            string callbackUrl = $"{redirectUriParsed.AbsolutePath}?code={Uri.EscapeDataString(testScenario.GetUpstreamProviderCode()!)}&state={Uri.EscapeDataString(upstreamState!)}";
+            HttpResponseMessage callbackResp = await client.GetAsync(callbackUrl);
+
+            // Fails closed: server error, and crucially NOT a redirect that would mean a session was created.
+            Assert.Equal(HttpStatusCode.InternalServerError, callbackResp.StatusCode);
+            Assert.Null(callbackResp.Headers.Location);
+        }
+
         private HttpClient CreateClientWithHeaders(Dictionary<string, string>? cookies = null)
         {
             var client = CreateClient();
@@ -2198,30 +2247,43 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         private async Task ConfigureProfileMock(OidcTestScenario oidcTestScenario)
         {
             ProfileFileMock profileMock = new ProfileFileMock();
-            if ((!string.IsNullOrEmpty(oidcTestScenario.ExternalIdentity) || !string.IsNullOrEmpty(oidcTestScenario.Email)) && oidcTestScenario.UserId == null)
-            {
-                UserProfile? profile = null;
-                _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(profile);
 
-                Guid partyGuid = Guid.NewGuid();
-
-                _userProfileService
-                        .Setup(s => s.CreateUser(It.IsAny<UserProfile>()))
-                        .ReturnsAsync((UserProfile input) => new UserProfile
+            // Live self-identified provisioning (UIDP and idporten-email external identities) always
+            // goes through the Register provisioning client now - for both new and already-existing
+            // SI users. Set it up for every scenario; it is simply never invoked for SSN / userId
+            // person logins (those resolve via the profile service). The token assertions only require
+            // a non-empty user id, so fixed ids are sufficient.
+            Guid partyGuid = Guid.NewGuid();
+            _registerUserProvisioningClient
+                    .Setup(c => c.GetOrCreateUser(
+                        It.IsAny<SelfIdentifiedUserProvisioningRequest>(),
+                        It.IsAny<System.Threading.CancellationToken>()))
+                    .ReturnsAsync((SelfIdentifiedUserProvisioningRequest req, System.Threading.CancellationToken _) =>
+                        new Altinn.Register.Contracts.SelfIdentifiedUser
                         {
-                            // copy from the input
-                            UserName = input.UserName,
-                            ExternalIdentity = input.ExternalIdentity,
-                            UserId = 123456,
-                            PartyId = 123456,
-                           
-                            Party = new Party()
-                            {
-                                PartyUuid = partyGuid
-                            },
-                            UserUuid = partyGuid
+                            Uuid = partyGuid,
+                            VersionId = 1UL,
+                            PartyId = 123456U,
+                            DisplayName = req.UserName,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                            ModifiedAt = DateTimeOffset.UtcNow,
+                            IsDeleted = false,
+                            DeletedAt = Altinn.Authorization.ModelUtils.FieldValue.Null,
+                            User = new Altinn.Register.Contracts.PartyUser(
+                                userId: 123456U,
+                                username: req.UserName,
+                                userIds: Altinn.Authorization.ModelUtils.ImmutableValueArray.Create(123456U)),
                         });
 
+            if ((!string.IsNullOrEmpty(oidcTestScenario.ExternalIdentity) || !string.IsNullOrEmpty(oidcTestScenario.Email)) && oidcTestScenario.UserId == null)
+            {
+                // SI provisioning must go through the register client (set up above). Guard the legacy
+                // SBL GetUser/CreateUser path so a regression back to it fails the test loudly instead
+                // of silently passing.
+                _userProfileService.Setup(u => u.GetUser(It.IsAny<string>()))
+                        .ThrowsAsync(new InvalidOperationException("Legacy SBL GetUser must not be called; SI provisioning goes through register."));
+                _userProfileService.Setup(s => s.CreateUser(It.IsAny<UserProfile>()))
+                        .ThrowsAsync(new InvalidOperationException("Legacy SBL CreateUser must not be called; SI provisioning goes through register."));
             }
             else
             {
