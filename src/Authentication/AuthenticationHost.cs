@@ -125,7 +125,7 @@ internal static class AuthenticationHost
                  }
              });
 
-        services.AddHttpClient<IUserProfileService, UserProfileService>();
+        services.AddTransient<IUserProfileService, UserProfileService>();
         services.AddHttpClient<IOrganisationsService, OrganisationsService>();
         services.AddHttpClient<AuthorizationApiClient>();
         services.AddHttpClient<IAccessManagementClient, AccessManagementClient>();

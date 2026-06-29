@@ -2244,10 +2244,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             return client;
         }
 
-        private async Task ConfigureProfileMock(OidcTestScenario oidcTestScenario)
+        private Task ConfigureProfileMock(OidcTestScenario oidcTestScenario)
         {
-            ProfileFileMock profileMock = new ProfileFileMock();
-
             // Live self-identified provisioning (UIDP and idporten-email external identities) always
             // goes through the Register provisioning client now - for both new and already-existing
             // SI users. Set it up for every scenario; it is simply never invoked for SSN / userId
@@ -2275,22 +2273,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                                 userIds: Altinn.Authorization.ModelUtils.ImmutableValueArray.Create(123456U)),
                         });
 
-            if ((!string.IsNullOrEmpty(oidcTestScenario.ExternalIdentity) || !string.IsNullOrEmpty(oidcTestScenario.Email)) && oidcTestScenario.UserId == null)
-            {
-                // SI provisioning must go through the register client (set up above). Guard the legacy
-                // SBL GetUser/CreateUser path so a regression back to it fails the test loudly instead
-                // of silently passing.
-                _userProfileService.Setup(u => u.GetUser(It.IsAny<string>()))
-                        .ThrowsAsync(new InvalidOperationException("Legacy SBL GetUser must not be called; SI provisioning goes through register."));
-                _userProfileService.Setup(s => s.CreateUser(It.IsAny<UserProfile>()))
-                        .ThrowsAsync(new InvalidOperationException("Legacy SBL CreateUser must not be called; SI provisioning goes through register."));
-            }
-            else
-            {
-                UserProfile profile = await profileMock.GetUserProfile(new UserProfileLookup() { UserId = oidcTestScenario.UserId.Value });
-                profile.ExternalIdentity = oidcTestScenario.ExternalIdentity;
-                _userProfileService.Setup(u => u.GetUser(It.IsAny<string>())).ReturnsAsync(profile);
-            }
+            return Task.CompletedTask;
         }
     }
 }

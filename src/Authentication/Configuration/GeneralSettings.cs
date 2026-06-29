@@ -38,16 +38,6 @@ namespace Altinn.Platform.Authentication.Configuration
         public string AltinnLogoutInfoCookieName { get; set; }
 
         /// <summary>
-        /// Gets or sets the bridge authentication api endpoint
-        /// </summary>
-        public string BridgeProfileApiEndpoint { get; set; }
-
-        /// <summary>
-        /// Gets or sets the sbl redirect endpoint
-        /// </summary>
-        public string SBLRedirectEndpoint { get; set; }
-
-        /// <summary>
         /// Gets or sets the platform endpoint
         /// </summary>
         public string PlatformEndpoint { get; set; }

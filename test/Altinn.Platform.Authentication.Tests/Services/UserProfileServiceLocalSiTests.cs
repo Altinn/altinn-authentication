@@ -214,21 +214,8 @@ public class UserProfileServiceLocalSiTests
 
     private UserProfileService CreateService()
     {
-        // A handler that throws if invoked - the local path must never call SBL Bridge.
-        HttpClient client = new(new ThrowingHandler());
-        IOptions<GeneralSettings> settings = Options.Create(new GeneralSettings { OidcRefreshTokenPepper = "unit-test-pepper" });
-
         return new UserProfileService(
-            client,
-            settings,
-            NullLogger<IUserProfileService>.Instance,
             _repo.Object,
             TimeProvider.System);
-    }
-
-    private sealed class ThrowingHandler : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => throw new InvalidOperationException("HTTP call should not happen on the local validation path.");
     }
 }
