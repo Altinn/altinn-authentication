@@ -56,7 +56,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private readonly Mock<ISystemUserRepository> _systemUserRepository = new();
         private readonly Mock<IUserProfileService> _userProfileService = new();
-        private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
         private readonly FakeTimeProvider timeProviderMock = new();
         private readonly Mock<IGuidService> guidService = new();
@@ -97,7 +96,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(guidService.Object);
             services.AddSingleton(_systemUserRepository.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-            services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<IPDP, PDPPermitMock>();
             services.AddSingleton<IPartiesClient, PartiesClientMock>();
             services.AddSingleton<ISystemUserService, SystemUserService>();

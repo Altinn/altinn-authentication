@@ -33,14 +33,6 @@
         public const string LocalSelfIdentifiedCredentialValidation = "LocalSelfIdentifiedCredentialValidation";
 
         /// <summary>
-        /// When enabled, disables the cookie ticket decryption path (SBL Bridge
-        /// <c>POST authentication/api/tickets</c>). No replacement exists; the A2 cookie→token
-        /// flow will be removed entirely after the SBL Bridge decommission (deadline 2026-06-19).
-        /// Tracked in issue #2008.
-        /// </summary>
-        public const string CookieTicketDecryptionDisabled = "CookieTicketDecryptionDisabled";
-
-        /// <summary>
         /// Controls the source of the user fields (UserId/UserName/PartyId/PartyUuid) in the
         /// ID-porten token exchange, replacing the (decommissioned) SBL Bridge
         /// <c>profile/users/</c> lookup. When enabled, the fields are read from Register's

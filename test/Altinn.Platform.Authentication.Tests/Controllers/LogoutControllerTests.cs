@@ -41,7 +41,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
   
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<IOrganisationsService> _organisationsService = new();
-        private readonly Mock<ISblCookieDecryptionService> _cookieDecryptionService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private readonly FakeTimeProvider _timeProviderMock = new();
         private readonly Mock<IFeatureManager> _featureManager = new();
@@ -73,7 +72,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");
 
             services.Configure<GeneralSettings>(generalSettingSection);
-            services.AddSingleton(_cookieDecryptionService.Object);
             services.AddSingleton(_userProfileService.Object);
             services.AddSingleton<IOrganisationsService, OrganisationsServiceMock>();
             services.AddSingleton<ISigningKeysRetriever, SigningKeysRetrieverStub>();
@@ -99,7 +97,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         //    _factory = factory;
         //    _userProfileService = new Mock<IUserProfileService>();
         //    _organisationsService = new Mock<IOrganisationsService>();
-        //    _cookieDecryptionService = new Mock<ISblCookieDecryptionService>();
         //    SetupDateTimeMock();
         //}
 

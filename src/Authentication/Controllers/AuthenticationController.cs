@@ -73,7 +73,6 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly ILogger _logger;
         private readonly IOrganisationsService _organisationService;
         private readonly IJwtSigningCertificateProvider _certificateProvider;
-        private readonly ISblCookieDecryptionService _cookieDecryptionService;
         private readonly ISigningKeysRetriever _signingKeysRetriever;
         private readonly IUserProfileService _userProfileService;
         private readonly JwtSecurityTokenHandler _validator;
@@ -102,7 +101,6 @@ namespace Altinn.Platform.Authentication.Controllers
             IOptions<OidcProviderSettings> oidcProviderSettings,
             ISigningKeysRetriever signingKeysRetriever,
             IJwtSigningCertificateProvider certificateProvider,
-            ISblCookieDecryptionService cookieDecryptionService,
             IUserProfileService userProfileService,
             IOrganisationsService organisationRepository,
             IPublicSigningKeyProvider signingKeysResolver,
@@ -121,7 +119,6 @@ namespace Altinn.Platform.Authentication.Controllers
             _oidcProviderSettings = oidcProviderSettings.Value;
             _signingKeysRetriever = signingKeysRetriever;
             _certificateProvider = certificateProvider;
-            _cookieDecryptionService = cookieDecryptionService;
             _organisationService = organisationRepository;
             _userProfileService = userProfileService;
             _designerSigningKeysResolver = signingKeysResolver;
@@ -306,43 +303,6 @@ namespace Altinn.Platform.Authentication.Controllers
                     string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
                     Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
 
-                    string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
-                    string? encryptedTicket = Request.Cookies[cookieName];
-
-                    if (encryptedTicket != null)
-                    {
-                        AuthenticateFromAltinn2TicketInput ticketInput = new() 
-                        { 
-                            EncryptedTicket = encryptedTicket, 
-                            CreatedByIp = ip ?? System.Net.IPAddress.Loopback,
-                            UserAgentHash = userAgentHash, 
-                            CorrelationId = corr 
-                        };
-                        
-                        AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
-
-                        // Reuse the Altinn 2 session only when it already meets the requested level; otherwise step up.
-                        if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success)
-                            && !AuthenticationHelper.NeedAcrUpgrade(ticketResult.Acr, requestedAcrValues))
-                        {
-                            foreach (var c in ticketResult.Cookies)
-                            {
-                                Response.Cookies.Append(c.Name, c.Value, new CookieOptions
-                                {
-                                    HttpOnly = c.HttpOnly,
-                                    Secure = c.Secure,
-                                    Path = c.Path ?? "/",
-                                    Domain = c.Domain,
-                                    Expires = c.Expires,
-                                    SameSite = c.SameSite
-                                });
-                            }
-
-                            // When you finally redirect:
-                            return Redirect(validatedGoToUri.AbsoluteUri); // not OriginalString
-                        }
-                    }
-
                     // User was not autenticated so start a new authorization request for unregistered clints and redirect to upstream ID- Provider like ID-porten/FEIDE/UIDP
                     AuthorizeUnregisteredClientRequest authorizeUnregisteredClientRequest = new()
                     {
@@ -409,69 +369,9 @@ namespace Altinn.Platform.Authentication.Controllers
                     }
                 }
 
-                if (Request.Cookies[_generalSettings.SblAuthCookieName] == null && Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] == null)
-                {
-                    return Redirect(sblRedirectUrl);
-                }
-
-                string cookieName = Request.Cookies[_generalSettings.SblAuthCookieEnvSpecificName] != null ? _generalSettings.SblAuthCookieEnvSpecificName : _generalSettings.SblAuthCookieName;
-                string? encryptedTicket = Request.Cookies[cookieName];
-                if (_generalSettings.AuthorizationServerEnabled && encryptedTicket != null)
-                {
-                    // Server enabled, but still rely on Altinn 2 for Authentication. Temporary solution during migration period.
-                    AuthenticateFromAltinn2TicketInput ticketInput = new() { EncryptedTicket = encryptedTicket, CreatedByIp = ip ?? System.Net.IPAddress.Loopback };
-                    AuthenticateFromAltinn2TicketResult ticketResult = await _oidcServerService.HandleAuthenticateFromTicket(ticketInput, cancellationToken);
-
-                    if (ticketResult.Kind.Equals(AuthenticateFromAltinn2TicketResultKind.Success))
-                    {
-                        foreach (var c in ticketResult.Cookies)
-                        {
-                            Response.Cookies.Append(c.Name, c.Value, new CookieOptions
-                            {
-                                HttpOnly = c.HttpOnly,
-                                Secure = c.Secure,
-                                Path = c.Path ?? "/",
-                                Domain = c.Domain,
-                                Expires = c.Expires,
-                                SameSite = c.SameSite
-                            });
-                        }
-
-                        // When you finally redirect:
-                        return Redirect(validatedGoToUri.AbsoluteUri); // not OriginalString
-                    }
-                }
-                else
-                {
-                    // Legacy Mode. Decrypt the SBL cookie and create our own JWT cookie
-                    try
-                    {
-                        userAuthentication = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
-                    }
-                    catch (SblBridgeResponseException sblBridgeException)
-                    {
-                        _logger.LogWarning(sblBridgeException, "SBL Bridge replied with {StatusCode} - {ReasonPhrase}", sblBridgeException.Response.StatusCode, sblBridgeException.Response.ReasonPhrase);
-                        return StatusCode(StatusCodes.Status503ServiceUnavailable);
-                    }
-
-                    if (userAuthentication == null)
-                    {
-                        return Redirect(sblRedirectUrl);
-                    }
-
-                    if (userAuthentication.UserID.HasValue && userAuthentication.UserID.Value != 0 && userAuthentication.PartyUuid == null)
-                    {
-                        UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
-                        userAuthentication.PartyUuid = profile.UserUuid;
-                    }
-
-                    if (userAuthentication.IsAuthenticated)
-                    {
-                        await CreateTokenCookie(userAuthentication);
-
-                        return Redirect(validatedGoToUri.AbsoluteUri);
-                    }
-                }
+                // No active Altinn 3 session: send the user to log in. Altinn 2 cookie/ticket
+                // authentication was removed with the Altinn 2 shutdown (#2030).
+                return Redirect(sblRedirectUrl);
             }
 
             return Redirect(sblRedirectUrl);

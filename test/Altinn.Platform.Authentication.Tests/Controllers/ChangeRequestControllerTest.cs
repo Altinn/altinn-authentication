@@ -57,7 +57,6 @@ public class ChangeRequestControllerTest(
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
     private readonly Mock<IUserProfileService> _userProfileService = new();
-    private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
     private readonly FakeTimeProvider timeProviderMock = new();
     private readonly Mock<IGuidService> guidService = new();
@@ -105,7 +104,6 @@ public class ChangeRequestControllerTest(
         services.AddSingleton((TimeProvider)timeProviderMock);
         services.AddSingleton(guidService.Object);
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-        services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
         services.AddSingleton(_pdpMock.Object);
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
         services.AddSingleton<ISystemUserService, SystemUserService>();

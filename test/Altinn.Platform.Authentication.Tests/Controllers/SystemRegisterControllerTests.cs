@@ -46,7 +46,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
         private readonly Mock<IUserProfileService> _userProfileService = new();
-        private readonly Mock<ISblCookieDecryptionService> _sblCookieDecryptionService = new();
 
         private readonly FakeTimeProvider timeProviderMock = new();
         private readonly Mock<IGuidService> guidService = new Mock<IGuidService>();
@@ -105,7 +104,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton((TimeProvider)timeProviderMock);
             services.AddSingleton(guidService.Object);
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
-            services.AddSingleton<ISblCookieDecryptionService>(_sblCookieDecryptionService.Object);
             services.AddSingleton<ISystemUserService, SystemUserService>();
             services.AddSingleton<ISystemRegisterService, SystemRegisterService>();
             services.AddSingleton<IResourceRegistryClient, ResourceRegistryClientMock>();

@@ -58,7 +58,6 @@ namespace Altinn.Platform.Authentication.Services
         ITokenService tokenService,
         IRefreshTokenRepository refreshTokenRepository,
         IUnregisteredClientRepository unregisteredClientRequestRepository,
-        ISblCookieDecryptionService sblCookieDecryptionService,
         IEventLog eventLog,
         IFeatureManager featureManager, 
         IOidcDownstreamLogout oidcDownstreamLogout) : IOidcServerService
@@ -82,7 +81,6 @@ namespace Altinn.Platform.Authentication.Services
         private readonly ITokenService _tokenService = tokenService;
         private readonly IRefreshTokenRepository _refreshTokenRepo = refreshTokenRepository;
         private readonly IUnregisteredClientRepository _unregisteredClientRequestRepository = unregisteredClientRequestRepository;
-        private readonly ISblCookieDecryptionService _cookieDecryptionService = sblCookieDecryptionService;
         private static readonly string DefaultProviderKey = "idporten";
         private readonly IEventLog _eventLog = eventLog;
         private readonly IFeatureManager _featureManager = featureManager;
@@ -141,59 +139,6 @@ namespace Altinn.Platform.Authentication.Services
             {
                 byte[] sessionHandleByte = HashHandle(FromBase64Url(sessionHandle));
                 existingSession = await _oidcSessionRepo.GetBySessionHandleHashAsync(sessionHandleByte, cancellationToken);
-            }
-            else if (!string.IsNullOrEmpty(encryptedTicket))
-            {
-                // Try to extract session from Altinn 2 ticket
-                UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(encryptedTicket);
-                if (userAuthenticationModel?.UserID.HasValue == true && userAuthenticationModel.UserID.Value > 0)
-                {
-                    userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
-
-                    AuthenticateFromAltinn2TicketInput ticketInput = new AuthenticateFromAltinn2TicketInput
-                    {
-                        EncryptedTicket = encryptedTicket,
-                        CreatedByIp = request.ClientIp!,
-                        UserAgentHash = request.UserAgentHash,
-                        CorrelationId = request.CorrelationId!.Value
-                    };
-
-                    EnrichIdentityFromLegacyValues(userAuthenticationModel);
-                    AddLocalScopes(userAuthenticationModel);
-                    (OidcSession session, string newSessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
-
-                    existingSession = session;
-
-                    // Since session was created by Altinn 2 ticket we need to create cookies for the response before returning to the OIDC client
-                    if (session is not null && session.ExpiresAt.HasValue && session.ExpiresAt.Value > _timeProvider.GetUtcNow())
-                    {
-                        string token = await _tokenService.CreateCookieToken(session, cancellationToken);
-                        CookieInstruction cookieInstruction
-                            = new()
-                            {
-                                Name = _generalSettings.JwtCookieName,
-                                Value = token,
-                                HttpOnly = true,
-                                Secure = true,
-                                Path = "/",
-                                SameSite = SameSiteMode.Lax,
-                                Domain = _generalSettings.HostName,
-                            };
-
-                        CookieInstruction altinnSessionCookie = new()
-                        {
-                            Name = _generalSettings.AltinnSessionCookieName,
-                            Value = newSessionHandle,
-                            HttpOnly = true,
-                            Secure = true,
-                            Path = "/",
-                            SameSite = SameSiteMode.Lax,
-                            Domain = _generalSettings.HostName,
-                        };
-
-                        cookieInstructions = new List<CookieInstruction> { cookieInstruction, altinnSessionCookie };
-                    }
-                }
             }
 
             // Verify that found session and Check if existing session meets ACR requirements from request
@@ -786,65 +731,6 @@ namespace Altinn.Platform.Authentication.Services
             };
         }
 
-        /// <summary>
-        /// Handles the authentication process based on the provided Altinn2 ticket input.
-        /// </summary>
-        public async Task<AuthenticateFromAltinn2TicketResult> HandleAuthenticateFromTicket(AuthenticateFromAltinn2TicketInput ticketInput, CancellationToken cancellationToken)
-        {
-            UserAuthenticationModel userAuthenticationModel = await _cookieDecryptionService.DecryptTicket(ticketInput.EncryptedTicket);
-            if (userAuthenticationModel == null || userAuthenticationModel.UserID == null || userAuthenticationModel.UserID.Value == 0)
-            {
-                return new AuthenticateFromAltinn2TicketResult()
-                {
-                    Kind = AuthenticateFromAltinn2TicketResultKind.NoValidSession
-                };
-            }
-
-            userAuthenticationModel = await IdentifyOrCreateAltinnUser(userAuthenticationModel, null);
-
-            EnrichIdentityFromLegacyValues(userAuthenticationModel);
-            AddLocalScopes(userAuthenticationModel);
-            (OidcSession session, string sessionHandle) = await CreateOrUpdateOidcSessionFromAltinn2Ticket(ticketInput, userAuthenticationModel, cancellationToken);
-            if (session is not null && session.ExpiresAt.HasValue && session.ExpiresAt.Value > _timeProvider.GetUtcNow())
-            {
-                string token = await _tokenService.CreateCookieToken(session, cancellationToken);
-                CookieInstruction cookieInstruction
-                    = new()
-                    {
-                        Name = _generalSettings.JwtCookieName,
-                        Value = token,
-                        HttpOnly = true,
-                        Secure = true,
-                        Path = "/",
-                        SameSite = SameSiteMode.Lax,
-                        Domain = _generalSettings.HostName,
-                    };
-
-                CookieInstruction altinnSessionCookie = new()
-                {
-                    Name = _generalSettings.AltinnSessionCookieName,
-                    Value = sessionHandle,
-                    HttpOnly = true,
-                    Secure = true,
-                    Path = "/",
-                    SameSite = SameSiteMode.Lax,
-                    Domain = _generalSettings.HostName,
-                };
-
-                return new AuthenticateFromAltinn2TicketResult
-                {
-                    Kind = AuthenticateFromAltinn2TicketResultKind.Success,
-                    Cookies = [cookieInstruction, altinnSessionCookie],
-                    Acr = session.Acr
-                };
-            }
-
-            return new AuthenticateFromAltinn2TicketResult()
-            {
-                Kind = AuthenticateFromAltinn2TicketResultKind.NoValidSession
-            };
-        }
-
         private void AddLocalScopes(UserAuthenticationModel userAuthenticationModel)
         {
             string[] localScopes = _generalSettings.DefaultPortalScopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -864,15 +750,6 @@ namespace Altinn.Platform.Authentication.Services
             }
         }
 
-        private static void EnrichIdentityFromLegacyValues(UserAuthenticationModel model)
-        {
-            model.Iss = AuthzConstants.ISSUER_ALTINN_PORTAL;
-            model.Amr = [AuthenticationHelper.GetAmrFromAuthenticationMethod(model.AuthenticationMethod)];
-            model.Acr = AuthenticationHelper.GetAcrForAuthenticationLevel(model.AuthenticationLevel);
-            model.TokenIssuer = model.Iss;
-            model.TokenSubject = model.PartyUuid.ToString();
-        }
- 
         private async Task MarkUpstreamTokenExchanged(UpstreamLoginTransaction upstreamTx, UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
         {
             await _upstreamLoginTxRepo.MarkTokenExchangedAsync(
@@ -1213,60 +1090,6 @@ namespace Altinn.Platform.Authentication.Services
                         ProviderClaims = userIdenity.ProviderClaims,
                     },
                     cancellationToken);
-            return (session, sessionHandle);
-        }
-
-        /// <summary>
-        /// Method that creates or updates an OIDC session based on the Altinn2 ticket identity.
-        /// This can be deleted in the future when Altinn2 is decommissioned.
-        /// </summary>
-        private async Task<(OidcSession OidcSession, string SessionHandle)> CreateOrUpdateOidcSessionFromAltinn2Ticket(AuthenticateFromAltinn2TicketInput authInput,  UserAuthenticationModel userIdenity, CancellationToken cancellationToken)
-        {
-            string[]? scopes = [];
-            if (!string.IsNullOrWhiteSpace(userIdenity.Scope))
-            {
-                scopes = userIdenity.Scope.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-            }
-
-            // 1) Generate 256-bit random handle for the cookie
-            byte[] handleBytes = RandomNumberGenerator.GetBytes(32);
-            string sessionHandle = ToBase64Url(handleBytes); // this is what you'll set as the cookie value
-
-            // 2) Hash it for storage (HMAC with server-side pepper)
-            byte[] handleHash = HashHandle(handleBytes);
-
-            string? externalId = null;
-
-            if (!string.IsNullOrEmpty(userIdenity.SSN))
-            {
-                externalId = $"{AltinnCoreClaimTypes.PersonIdentifier}:{userIdenity.SSN}";
-            }
-
-            OidcSession session = await _oidcSessionRepo.CreateSession(
-                new OidcSessionCreate
-                {
-                    Sid = CryptoHelpers.RandomBase64Url(32),
-                    SessionHandleHash = handleHash, // store hash only
-                    Provider = "altinn2",
-                    UpstreamIssuer = userIdenity.TokenIssuer!,
-                    UpstreamSub = userIdenity.TokenSubject!,
-                    SubjectId = $"{AltinnCoreClaimTypes.PartyUUID}:{userIdenity.PartyUuid}",
-                    ExternalId = externalId,
-                    SubjectPartyUuid = userIdenity.PartyUuid,            // <- Altinn GUID
-                    SubjectPartyId = userIdenity.PartyID,              // <- legacy
-                    SubjectUserId = userIdenity.UserID,    
-                    SubjectUserName = userIdenity.Username,  // <- legacy
-                    Acr = userIdenity.Acr,
-                    AuthTime = userIdenity.AuthTime,
-                    Amr = userIdenity.Amr,
-                    Scopes = scopes,
-                    ExpiresAt = _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes),
-                    UpstreamSessionSid = userIdenity.SessionId,
-                    Now = _timeProvider.GetUtcNow(),
-                    CreatedByIp = authInput.CreatedByIp,
-                    UserAgentHash = authInput.UserAgentHash,
-                },
-                cancellationToken);
             return (session, sessionHandle);
         }
 
