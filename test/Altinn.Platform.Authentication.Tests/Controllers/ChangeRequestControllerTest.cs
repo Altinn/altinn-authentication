@@ -244,6 +244,7 @@ public class ChangeRequestControllerTest(
         Assert.Contains("&DONTCHOOSEREPORTEE=true", createdResponse.ConfirmUrl);
         Assert.NotNull(createdResponse.ConfirmUrl);
         Assert.True(DeepCompare(createdResponse.RequiredRights, change.RequiredRights));
+        Assert.NotEqual(default(DateTime), createdResponse.Created);
     }
 
     /// <summary>

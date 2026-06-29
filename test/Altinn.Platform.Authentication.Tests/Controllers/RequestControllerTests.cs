@@ -169,6 +169,7 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
         Assert.NotNull(res.ConfirmUrl);
+        Assert.NotEqual(default(DateTime), res.Created);
     }
 
     [Fact]
@@ -400,6 +401,7 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res.ConfirmUrl);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
+        Assert.NotEqual(default(DateTime), res.Created);
     }
 
     [Fact]
