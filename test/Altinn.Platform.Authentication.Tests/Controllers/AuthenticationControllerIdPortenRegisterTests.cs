@@ -30,11 +30,8 @@ using RegisterContracts = Altinn.Register.Contracts;
 namespace Altinn.Platform.Authentication.Tests.Controllers
 {
     /// <summary>
-    /// Covers the Register branch of the ID-porten token exchange, i.e. when the
-    /// <see cref="FeatureFlags.IdPortenUserLookupFromRegister"/> flag is enabled and the user fields
-    /// are resolved from Register (<see cref="IPartiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier"/>) instead of the
-    /// platform Profile API. The flag-off (Profile) branch is covered by
-    /// <see cref="AuthenticationControllerTests"/>.
+    /// Covers the ID-porten token exchange resolving the user fields
+    /// (<see cref="IPartiesClient.GetPartyIdentifiersAndUsernameByPersonIdentifier"/>) from Register.
     /// </summary>
     public class AuthenticationControllerIdPortenRegisterTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
@@ -48,10 +45,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         {
             builder.UseSetting("feature_management:feature_flags:0:id", "AuditLog");
             builder.UseSetting("feature_management:feature_flags:0:enabled", "true");
-
-            // Enable the Register-based ID-porten user lookup for this test class.
-            builder.UseSetting("feature_management:feature_flags:1:id", FeatureFlags.IdPortenUserLookupFromRegister);
-            builder.UseSetting("feature_management:feature_flags:1:enabled", "true");
             base.ConfigureHost(builder);
         }
 
