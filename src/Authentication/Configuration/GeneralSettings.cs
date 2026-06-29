@@ -40,11 +40,6 @@ namespace Altinn.Platform.Authentication.Configuration
         /// <summary>
         /// Gets or sets the bridge authentication api endpoint
         /// </summary>
-        public string BridgeAuthnApiEndpoint { get; set; }
-
-        /// <summary>
-        /// Gets or sets the bridge authentication api endpoint
-        /// </summary>
         public string BridgeProfileApiEndpoint { get; set; }
 
         /// <summary>
