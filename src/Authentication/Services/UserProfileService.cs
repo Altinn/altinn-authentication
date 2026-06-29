@@ -14,7 +14,6 @@ using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.FeatureManagement;
 
 namespace Altinn.Platform.Authentication.Services
 {
@@ -26,7 +25,6 @@ namespace Altinn.Platform.Authentication.Services
         private readonly GeneralSettings _settings;
         private readonly HttpClient _client;
         private readonly ILogger _logger;
-        private readonly IFeatureManager _featureManager;
         private readonly ISelfIdentifiedUserCredentialRepository _selfIdentifiedUserCredentialRepository;
         private readonly TimeProvider _timeProvider;
 
@@ -36,21 +34,18 @@ namespace Altinn.Platform.Authentication.Services
         /// <param name="httpClient">Httpclient from httpclientfactory</param>
         /// <param name="settings">General settings for the authentication application</param>
         /// <param name="logger">A generic logger</param>
-        /// <param name="featureManager">Feature manager used to switch SI credential validation to the local database</param>
         /// <param name="selfIdentifiedUserCredentialRepository">Repository for locally stored SI credentials</param>
         /// <param name="timeProvider">Time provider used for lockout comparison (injectable for testing)</param>
         public UserProfileService(
             HttpClient httpClient,
             IOptions<GeneralSettings> settings,
             ILogger<IUserProfileService> logger,
-            IFeatureManager featureManager,
             ISelfIdentifiedUserCredentialRepository selfIdentifiedUserCredentialRepository,
             TimeProvider timeProvider)
         {
             _client = httpClient;
             _settings = settings.Value;
             _logger = logger;
-            _featureManager = featureManager;
             _selfIdentifiedUserCredentialRepository = selfIdentifiedUserCredentialRepository;
             _timeProvider = timeProvider;
         }
@@ -102,67 +97,14 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <summary>
-        /// Validates a self identified user's credentials. When the
-        /// <see cref="FeatureFlags.LocalSelfIdentifiedCredentialValidation"/> flag is enabled the
-        /// check is performed locally against <c>oidcserver.selfidentified_user_credential</c>
-        /// (SHA1 + salt); otherwise it is delegated to the SBL Bridge authentication API
-        /// (<c>authentication/api/siuser</c>). On success the user profile is returned.
+        /// Validates a self identified user's credentials locally against
+        /// <c>oidcserver.selfidentified_user_credential</c> (SHA1 + salt). This is the permanent
+        /// path following the SBL Bridge decommission (the legacy <c>authentication/api/siuser</c>
+        /// delegation has been removed). On success the user profile is returned.
         /// </summary>
         public async Task<UserCredentialVerificationResult> ValidateCredentialsAsync(string username, string password)
         {
-            if (await _featureManager.IsEnabledAsync(FeatureFlags.LocalSelfIdentifiedCredentialValidation))
-            {
-                return await ValidateCredentialsLocallyAsync(username, password);
-            }
-
-            UserProfile identifedProfile = null;
-
-            SiUserCredentials credentials = new SiUserCredentials()
-            {
-                UserName = username,
-                Password = password
-            };
-
-            Uri endpointUrl = new Uri($"{_settings.BridgeAuthnApiEndpoint}siuser");
-            using StringContent requestBody = new StringContent(JsonSerializer.Serialize(credentials), Encoding.UTF8, "application/json");
-
-            using HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                identifedProfile = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
-            }
-            else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-            {
-                // Bridge returns 429 when the account is locked out due to too many failed attempts.
-                return new UserCredentialVerificationResult()
-                {
-                    IsLocked = true
-                };
-            }
-            else if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest)
-            {
-                // Bridge returns 404 when the credentials are not authenticated and 400 for empty
-                // username/password. Both are expected outcomes - not errors, and the username must not be logged.
-                return new UserCredentialVerificationResult();
-            }
-            else
-            {
-                _logger.LogError("Validating user credentials failed with statuscode {StatusCode}", response.StatusCode);
-                return new UserCredentialVerificationResult();
-            }
-
-            if (identifedProfile != null && identifedProfile.UserType != Core.Models.Profile.Enums.UserType.SelfIdentified)
-            {
-                return new UserCredentialVerificationResult()
-                {
-                    WrongUserType = true
-                };
-            }
-
-            UserCredentialVerificationResult result = new UserCredentialVerificationResult();
-            result.UserProfile = identifedProfile;
-
-            return result;
+            return await ValidateCredentialsLocallyAsync(username, password);
         }
 
         // Maximum number of consecutive failed attempts before the account is locked.

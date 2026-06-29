@@ -10,6 +10,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
+using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Clients.Interfaces;
@@ -52,6 +53,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         protected NpgsqlDataSource DataSource => Services.GetRequiredService<NpgsqlDataSource>();
 
         private readonly Mock<IUserProfileService> _userProfileService = new();
+        private readonly Mock<IRegisterUserProvisioningClient> _registerUserProvisioningClient = new();
         private readonly Mock<IOidcDownstreamLogout> _downstreamLogoutClient = new();
 
         private FakeTimeProvider _fakeTime = null!;
@@ -93,6 +95,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IPublicSigningKeyProvider, SigningKeyResolverStub>();
             services.AddSingleton<IProfile, ProfileFileMock>();
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
+            services.AddSingleton<IRegisterUserProvisioningClient>(_registerUserProvisioningClient.Object);
             services.AddSingleton<IOidcDownstreamLogout>(_downstreamLogoutClient.Object);
 
             services.PostConfigure<GeneralSettings>(o =>
@@ -2222,6 +2225,27 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                             UserUuid = partyGuid
                         });
 
+                // Live SI provisioning now goes through the Register provisioning client.
+                _registerUserProvisioningClient
+                        .Setup(c => c.GetOrCreateUser(
+                            It.IsAny<SelfIdentifiedUserProvisioningRequest>(),
+                            It.IsAny<System.Threading.CancellationToken>()))
+                        .ReturnsAsync((SelfIdentifiedUserProvisioningRequest req, System.Threading.CancellationToken _) =>
+                            new Altinn.Register.Contracts.SelfIdentifiedUser
+                            {
+                                Uuid = partyGuid,
+                                VersionId = 1UL,
+                                PartyId = 123456U,
+                                DisplayName = req.UserName,
+                                CreatedAt = DateTimeOffset.UtcNow,
+                                ModifiedAt = DateTimeOffset.UtcNow,
+                                IsDeleted = false,
+                                DeletedAt = Altinn.Authorization.ModelUtils.FieldValue.Null,
+                                User = new Altinn.Register.Contracts.PartyUser(
+                                    userId: 123456U,
+                                    username: req.UserName,
+                                    userIds: Altinn.Authorization.ModelUtils.FieldValue.Unset),
+                            });
             }
             else
             {
