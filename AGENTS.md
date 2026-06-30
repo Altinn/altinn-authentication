@@ -33,7 +33,10 @@ dotnet build src/Authentication/Altinn.Platform.Authentication.csproj -clp:Error
 
 ## Landmines — do NOT "fix" these without understanding
 
-- **Production runs `EnableOidc=true`, `ForceOidc=true`, `AuthorizationServerEnabled=true`** in every environment. The authorization-server flow is the only live browser path ([ADR-0002](docs/adr/0002-authorization-server-is-the-live-auth-path.md)). The checked-in `appsettings.json` says `AuthorizationServerEnabled=false` — that is **not** prod.
+- **`AuthenticateUser` no longer branches on `EnableOidc`/`ForceOidc`/`AuthorizationServerEnabled`** — those legacy browser-sign-in branches were collapsed in #2071 ([ADR-0002](docs/adr/0002-authorization-server-is-the-live-auth-path.md)); the authorization-server flow is the only live browser path. Don't reintroduce branching on these in `AuthenticateUser`. The settings still exist (checked-in value `false` — **not** prod), with differing real usage:
+  - `ForceOidc` — still read in `OidcServerService` (session logic).
+  - `AuthorizationServerEnabled` — still read in `LogoutController`, which still has a legacy branch (dead only if prod sets it `true`; a collapse candidate like #2071).
+  - `EnableOidc` — now read **nowhere**; a dead property / safe-removal candidate.
 - **`IsSafeSameOrSubdomainHttps`** (`AuthenticationController`) is an intentional open-redirect guard. The CodeQL "URL redirection" alerts on the `goTo`/upstream redirects are **dismissed false positives** — don't rewrite the redirects to appease a scanner.
 - **`IsValidIssuer`** is *misnamed* (returns `true` for an invalid issuer) but its control flow is **correct**. Fix the name/substring-match if asked, but do not "invert" the logic — that would break it.
 - **`SblAuthCookie*` names + the legacy-cookie delete logic are intentionally kept** to drain stale Altinn 2 cookies, even though the rest of the SBL integration is gone ([ADR-0004](docs/adr/0004-sbl-bridge-altinn2-decommission.md)).

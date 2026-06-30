@@ -23,7 +23,7 @@ We will treat the **authorization-server flow as the single live browser sign-in
 
 - `AuthenticateUser` is now a single, readable flow (see [flows/oidc-authorization-server.md](../flows/oidc-authorization-server.md)); ~1400 lines of dead code/tests removed.
 - This **depends on the three settings staying true in all environments.** If a new environment ever sets one false, the removed behaviour does not come back — that would need a deliberate redesign.
-- The `EnableOidc`/`ForceOidc`/`AuthorizationServerEnabled` settings still exist because other components (`OidcServerService`, `LogoutController`) read them; they were not deleted.
+- The three settings still exist in `GeneralSettings`/appsettings (they were not deleted), but their usage now differs: `ForceOidc` is still read by `OidcServerService`, `AuthorizationServerEnabled` by `LogoutController` (which still has its own legacy branch — a future collapse candidate), while `EnableOidc` is now read **nowhere** and is a dead-property cleanup candidate.
 
 ## References
 

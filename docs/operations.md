@@ -12,7 +12,7 @@ Notable settings:
 | --- | --- |
 | `GeneralSettings:OidcRefreshTokenPepper` | **Secret.** Server-side pepper for hashing session handles / refresh tokens. Required; supply via Key Vault / env. |
 | `GeneralSettings:JwtCookieName`, `SblAuthCookieName`, `AltinnSessionCookieName`, … | Cookie names (see [flows/sessions-and-cookies.md](flows/sessions-and-cookies.md)). |
-| `GeneralSettings:EnableOidc`, `ForceOidc`, `AuthorizationServerEnabled` | All **true** in every environment; the authorization-server flow is the only live path (see [ADR-0002](adr/0002-authorization-server-is-the-live-auth-path.md)). |
+| `GeneralSettings:ForceOidc`, `AuthorizationServerEnabled` | The legacy browser-sign-in branches were collapsed (see [ADR-0002](adr/0002-authorization-server-is-the-live-auth-path.md)); `AuthenticateUser` no longer reads these. `ForceOidc` is still used by `OidcServerService`; `AuthorizationServerEnabled` by `LogoutController` (which still has a legacy branch). `EnableOidc` is now unused (dead-property cleanup candidate). |
 | `GeneralSettings:MaskinportenWellKnownConfigEndpoint`, `IdPortenWellKnownConfigEndpoint` (+ `*Alternative*`) | Upstream discovery endpoints used to fetch signing keys. |
 | `PlatformSettings:Api*Endpoint` | URLs of the Altinn platform dependencies (Register, Access Management, Profile, …). |
 | `kvSetting` / Key Vault | Source of the JWT **signing certificates**. |
