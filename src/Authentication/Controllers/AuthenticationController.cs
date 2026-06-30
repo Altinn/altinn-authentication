@@ -107,7 +107,7 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Endpoint to authenicate user requested by anonynomous clients like Altinn Apps or Access Management UI. 
+        /// Endpoint to authenticate a user requested by anonymous clients like Altinn Apps or Access Management UI.
         /// - Does not require a client registration in the OIDC server, but will redirect to the upstream ID-provider (ID-porten/FEIDE/UIDP) for authentication. Defaults to ID-porten if no iss query parameter is provided.
         /// - Supports optional requested authentication level (acr_values) to trigger a step-up if the current session does not meet the requested level.
         /// - Supports optional goTo parameter to redirect to a specific URL after successful authentication.
@@ -115,7 +115,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <param name="goTo">The url to redirect to if everything validates ok. Only valid to redirect to URLs within the same domain.</param>
         /// <param name="acrValues">Optional requested authentication level (space-separated acr_values). When the current session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
         /// <param name="cancellationToken">The cancellation token</param>
-        /// <returns>redirect to correct url based on the validation of the form authentication sbl cookie</returns>
+        /// <returns>A 302 redirect: to <paramref name="goTo"/> when an existing session already satisfies the request, otherwise to the upstream ID-provider login.</returns>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status302Found)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
