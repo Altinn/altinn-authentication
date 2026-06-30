@@ -36,6 +36,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.1.7" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.18.0" />
+    <!-- Transitive security pins: override vulnerable versions pulled in by dependencies.
+         OpenTelemetry.* (via Altinn.Authorization.ServiceDefaults): GHSA-q834-8qmm-v933, GHSA-mr8r-92fq-pj8p, GHSA-4625-4j76-fww9, GHSA-g94r-2vxg-569j.
+         Microsoft.Rest.ClientRuntime (via Microsoft.Extensions.Configuration.AzureKeyVault): GHSA-whph-446h-6m9v / CVE-2022-26907. -->
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+    <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
