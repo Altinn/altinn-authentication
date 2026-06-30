@@ -26,7 +26,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
 
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using SystemUserType = Altinn.Platform.Authentication.Core.Enums.SystemUserType;
 
 #nullable enable
