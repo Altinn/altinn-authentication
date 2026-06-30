@@ -107,10 +107,12 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Request that handles the form authentication cookie from SBL
+        /// Endpoint to authenicate user requested by anonynomous clients like Altinn Apps or Access Management UI. 
+        /// - Does not require a client registration in the OIDC server, but will redirect to the upstream ID-provider (ID-porten/FEIDE/UIDP) for authentication. Defaults to ID-porten if no iss query parameter is provided.
+        /// - Supports optional requested authentication level (acr_values) to trigger a step-up if the current session does not meet the requested level.
+        /// - Supports optional goTo parameter to redirect to a specific URL after successful authentication.
         /// </summary>
-        /// <param name="goTo">The url to redirect to if everything validates ok</param>
-        /// <param name="dontChooseReportee">Parameter to indicate disabling of reportee selection in Altinn Portal.</param>
+        /// <param name="goTo">The url to redirect to if everything validates ok. Only valid to redirect to URLs within the same domain.</param>
         /// <param name="acrValues">Optional requested authentication level (space-separated acr_values). When the current session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>redirect to correct url based on the validation of the form authentication sbl cookie</returns>
@@ -119,7 +121,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(void), StatusCodes.Status503ServiceUnavailable)]
         [HttpGet("authentication")]
-        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery] bool dontChooseReportee, [FromQuery(Name = "acr_values")] string? acrValues = null, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery(Name = "acr_values")] string? acrValues = null, CancellationToken cancellationToken = default)
         {
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
 
@@ -177,7 +179,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
             }
 
-            // Check to see if we have a valid Session cookie and recreate JWT based on that.
+            // Check to see if we have a valid Session cookie and recreate JWT based on that. This can happen when user did authenticate for Arbeidsflate, but the JWT has expired. In that case we can reuse the session and create a new JWT for the user.
             if (Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out string? sessionCookieValue))
             {
                 AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookieValue };
