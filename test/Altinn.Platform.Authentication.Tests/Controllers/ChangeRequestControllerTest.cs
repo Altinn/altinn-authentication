@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,15 +107,12 @@ public class ChangeRequestControllerTest(
         services.AddSingleton<IUserProfileService>(_userProfileService.Object);
         services.AddSingleton(_pdpMock.Object);
 
-        // Altinn.Common.PEP 4.2.3 added CancellationToken overloads to IPDP, and the PEP
-        // authorization handler now invokes the token overload. The individual tests only
-        // configure the non-token overloads, so forward the token overloads to them.
+        // Altinn.Common.PEP 4.2.3 added a CancellationToken overload to IPDP, and the PEP
+        // authorization handler now invokes it. The individual tests only configure the
+        // non-token GetDecisionForRequest, so forward the token overload to it.
         _pdpMock
             .Setup(p => p.GetDecisionForRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<CancellationToken>()))
             .Returns((XacmlJsonRequestRoot request, CancellationToken _) => _pdpMock.Object.GetDecisionForRequest(request));
-        _pdpMock
-            .Setup(p => p.GetDecisionForUnvalidateRequest(It.IsAny<XacmlJsonRequestRoot>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
-            .Returns((XacmlJsonRequestRoot request, ClaimsPrincipal user, CancellationToken _) => _pdpMock.Object.GetDecisionForUnvalidateRequest(request, user));
 
         services.AddSingleton<IPartiesClient, PartiesClientMock>();
         services.AddSingleton<ISystemUserService, SystemUserService>();
