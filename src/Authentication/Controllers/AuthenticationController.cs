@@ -115,11 +115,11 @@ namespace Altinn.Platform.Authentication.Controllers
         /// - Supports optional goTo parameter to redirect to a specific URL after successful authentication.
         /// </summary>
         /// <param name="goTo">The url to redirect to if everything validates ok. Only valid to redirect to URLs within the same domain.</param>
-        /// <param name="acrValues">Optional requested authentication level as space-separated acr_values. Allowed values are
-        /// <c>idporten-loa-substantial</c>, <c>idporten-loa-high</c>, <c>level0</c>, <c>level1</c>, <c>level2</c> and
-        /// <c>selfregistered-email</c> (validated by <see cref="AuthenticationHelper.TryParseAcrValues"/>); any other value
-        /// yields <c>400 Bad Request</c>. When the current session does not meet the requested level, the user is
-        /// re-authenticated upstream (step-up).</param>
+        /// <param name="acrValues">Optional requested authentication level as space-separated acr_values. The current values are
+        /// <c>idporten-loa-substantial</c>, <c>idporten-loa-high</c> and <c>selfregistered-email</c>; the legacy values
+        /// <c>level0</c>, <c>level1</c> and <c>level2</c> are still accepted but deprecated. Any other value yields
+        /// <c>400 Bad Request</c> (validated by <see cref="AuthenticationHelper.TryParseAcrValues"/>). When the current
+        /// session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
         /// <param name="cancellationToken">The cancellation token</param>
         /// <returns>A 302 redirect: to <paramref name="goTo"/> when an existing session already satisfies the request, otherwise to the upstream ID-provider login.</returns>
         [AllowAnonymous]
