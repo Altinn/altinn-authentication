@@ -12,6 +12,7 @@ These docs are written for **both humans and AI coding agents** — the conceptu
 | [flows/oidc-authorization-server.md](flows/oidc-authorization-server.md) | Browser sign-in: the OIDC authorization-server flow and upstream callback |
 | [flows/token-exchange.md](flows/token-exchange.md) | Exchanging an external token (ID-porten / Maskinporten / Altinn Studio) for an Altinn JWT |
 | [flows/sessions-and-cookies.md](flows/sessions-and-cookies.md) | Sessions, the cookie model, refresh, and logout |
+| [flows/system-user.md](flows/system-user.md) | System users (Systembruker): system register, request/approval, agent delegation |
 | [operations.md](operations.md) | Configuration, feature flags, secrets, health, observability, runbook |
 | [development.md](development.md) | Local setup, build, run, and the (Docker-backed) test strategy |
 | [adr/](adr/) | Architecture Decision Records — the **why** behind the design |

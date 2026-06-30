@@ -108,6 +108,8 @@ flowchart LR
 - **Face 1 (browser)** is stateful: it manages a session and sets cookies. See [flows/oidc-authorization-server.md](flows/oidc-authorization-server.md) and [flows/sessions-and-cookies.md](flows/sessions-and-cookies.md).
 - **Face 2 (API)** is stateless: a caller presents a trusted external token and gets an Altinn JWT in the response body. See [flows/token-exchange.md](flows/token-exchange.md).
 
+Beyond authentication itself, the service also owns the **system-user (Systembruker)** domain — the catalogue of registered systems, the request/approval lifecycle by which a customer grants a vendor's system access, and agent/client delegation. This is a substantial feature in its own right; see [flows/system-user.md](flows/system-user.md).
+
 Both faces ultimately call the **token issuer** (`TokenIssuerService` / the `GenerateToken` path), which signs the Altinn JWT with a certificate selected from Key Vault. The public keys are published at the JWKS endpoint so every other Altinn service can verify the token offline.
 
 ## Key application services
