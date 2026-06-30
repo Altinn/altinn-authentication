@@ -1,99 +1,33 @@
 using System;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Altinn.Platform.Authentication.Configuration;
 using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Core.Models.Profile.Enums;
 using Altinn.Platform.Authentication.Core.RepositoryInterfaces;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Altinn.Platform.Authentication.Services
 {
     /// <inheritdoc/>
     public class UserProfileService : IUserProfileService
     {
-        private static readonly JsonSerializerOptions _options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
-        private readonly GeneralSettings _settings;
-        private readonly HttpClient _client;
-        private readonly ILogger _logger;
         private readonly ISelfIdentifiedUserCredentialRepository _selfIdentifiedUserCredentialRepository;
         private readonly TimeProvider _timeProvider;
 
         /// <summary>
-        /// Initialize a new instance of <see cref="UserProfileService"/> with settings for SBL Bridge endpoints.
+        /// Initialize a new instance of <see cref="UserProfileService"/>.
         /// </summary>
-        /// <param name="httpClient">Httpclient from httpclientfactory</param>
-        /// <param name="settings">General settings for the authentication application</param>
-        /// <param name="logger">A generic logger</param>
         /// <param name="selfIdentifiedUserCredentialRepository">Repository for locally stored SI credentials</param>
         /// <param name="timeProvider">Time provider used for lockout comparison (injectable for testing)</param>
         public UserProfileService(
-            HttpClient httpClient,
-            IOptions<GeneralSettings> settings,
-            ILogger<IUserProfileService> logger,
             ISelfIdentifiedUserCredentialRepository selfIdentifiedUserCredentialRepository,
             TimeProvider timeProvider)
         {
-            _client = httpClient;
-            _settings = settings.Value;
-            _logger = logger;
             _selfIdentifiedUserCredentialRepository = selfIdentifiedUserCredentialRepository;
             _timeProvider = timeProvider;
-        }
-
-        /// <inheritdoc/>
-        public async Task<UserProfile> GetUser(string ssnOrExternalIdentity)
-        {
-            UserProfile user = null;
-       
-            Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/");
-            StringContent requestBody = new StringContent(JsonSerializer.Serialize(ssnOrExternalIdentity), Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                user = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
-            }
-            else
-            {
-                _logger.LogError("Getting user by SSN or external identity failed with statuscode {StatusCode}", response.StatusCode);
-            }
-
-            return user;
-        }
-
-        /// <summary>
-        /// Method to create a new user based on identity
-        /// </summary>
-        /// <param name="user">The userprofile</param>
-        /// <returns>The created users with userId and partyID</returns>
-        public async Task<UserProfile> CreateUser(UserProfile user)
-        {
-            UserProfile createdProfile = null;
-
-            Uri endpointUrl = new Uri($"{_settings.BridgeProfileApiEndpoint}users/create/");
-            StringContent requestBody = new StringContent(JsonSerializer.Serialize(user), Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = await _client.PostAsync(endpointUrl, requestBody);
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                createdProfile = await response.Content.ReadFromJsonAsync<UserProfile>(_options);
-            }
-            else
-            {
-                _logger.LogError("Creating user failed for externalIdentity {ExternalIdentity}", user.ExternalIdentity);
-            }
-
-            return createdProfile;
         }
 
         /// <summary>

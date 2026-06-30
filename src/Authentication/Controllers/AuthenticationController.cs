@@ -3,43 +3,28 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Net.Http;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using Altinn.Authentication.Core.Clients.Interfaces;
 using Altinn.Common.AccessToken.Services;
 using Altinn.Platform.Authentication.Configuration;
-using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
-using Altinn.Platform.Authentication.Core.Models.Profile;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
 using Altinn.Platform.Authentication.Helpers;
-using Altinn.Platform.Authentication.Model;
-using Altinn.Platform.Authentication.Services;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Altinn.Register.Contracts.V1;
 using AltinnCore.Authentication.Constants;
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using RegisterContracts = Altinn.Register.Contracts;
 using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
@@ -47,14 +32,17 @@ using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
 namespace Altinn.Platform.Authentication.Controllers
 {
     /// <summary>
-    /// Handles the authentication of requests to platform
+    /// Handles authentication of requests to the Altinn platform. Exposes:
+    /// <list type="bullet">
+    /// <item><description><c>GET authentication</c> — browser sign-in for anonymous clients; redirects to the upstream ID-provider.</description></item>
+    /// <item><description><c>GET refresh</c> — refreshes the JWT for an already-authenticated user.</description></item>
+    /// <item><description><c>GET exchange/{tokenProvider}</c> — exchanges a trusted external token (ID-porten/Maskinporten/Altinn Studio) for an Altinn JWT.</description></item>
+    /// </list>
     /// </summary>
     [Route("authentication/api/v1")]
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        private const string HeaderValueNoCache = "no-cache";
-        private const string HeaderValueEpocDate = "Thu, 01 Jan 1970 00:00:00 GMT";
         private const string OrganisationIdentity = "OrganisationLogin";
         private const string EndUserSystemIdentity = "EndUserSystemLogin";
         private const string AltinnStudioIdentity = "AltinnStudioDesignerLogin";
@@ -62,9 +50,7 @@ namespace Altinn.Platform.Authentication.Controllers
         private const string AuthLevelClaimName = "acr";
         private const string AuthMethodClaimName = "amr";
         private const string ExternalSessionIdClaimName = "sid";
-        private const string InternalSessionIdClaimName = "sid";
         private const string IssClaimName = "iss";
-        private const string OriginalIssClaimName = "originaliss";
         private const string IdportenLevel0 = "idporten-loa-low";
         private const string IdportenLevel3 = "idporten-loa-substantial";
         private const string IdportenLevel4 = "idporten-loa-high";
@@ -74,17 +60,11 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IOrganisationsService _organisationService;
         private readonly IJwtSigningCertificateProvider _certificateProvider;
         private readonly ISigningKeysRetriever _signingKeysRetriever;
-        private readonly IUserProfileService _userProfileService;
         private readonly JwtSecurityTokenHandler _validator;
         private readonly IPublicSigningKeyProvider _designerSigningKeysResolver;
-        private readonly IOidcProvider _oidcProvider;
-        private readonly IProfile _profileService;
         private readonly IPartiesClient _partiesClient;
         private readonly IOidcServerService _oidcServerService;
         private readonly TimeProvider _timeProvider;
-
-        private readonly OidcProviderSettings _oidcProviderSettings;
-        private readonly IAntiforgery _antiforgery;
 
         private readonly IEventLog _eventLog;
         private readonly IFeatureManager _featureManager;
@@ -98,37 +78,27 @@ namespace Altinn.Platform.Authentication.Controllers
         public AuthenticationController(
             ILogger<AuthenticationController> logger,
             IOptions<GeneralSettings> generalSettings,
-            IOptions<OidcProviderSettings> oidcProviderSettings,
             ISigningKeysRetriever signingKeysRetriever,
             IJwtSigningCertificateProvider certificateProvider,
-            IUserProfileService userProfileService,
             IOrganisationsService organisationRepository,
             IPublicSigningKeyProvider signingKeysResolver,
-            IOidcProvider oidcProvider,
-            IAntiforgery antiforgery,
             IEventLog eventLog,
             IFeatureManager featureManager,
             IGuidService guidService,
-            IProfile profileService,
             IOidcServerService oidcServerService,
             TimeProvider timeProvider,
             IPartiesClient partiesClient)
         {
             _logger = logger;
             _generalSettings = generalSettings.Value;
-            _oidcProviderSettings = oidcProviderSettings.Value;
             _signingKeysRetriever = signingKeysRetriever;
             _certificateProvider = certificateProvider;
             _organisationService = organisationRepository;
-            _userProfileService = userProfileService;
             _designerSigningKeysResolver = signingKeysResolver;
             _validator = new JwtSecurityTokenHandler();
-            _oidcProvider = oidcProvider;
-            _antiforgery = antiforgery;
             _eventLog = eventLog;
             _featureManager = featureManager;
             _guidService = guidService;
-            _profileService = profileService;
             _oidcServerService = oidcServerService;
             _timeProvider = timeProvider;
             _partiesClient = partiesClient;
@@ -139,19 +109,25 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Request that handles the form authentication cookie from SBL
+        /// Endpoint to authenticate a user requested by anonymous clients like Altinn Apps or Access Management UI.
+        /// - Does not require a client registration in the OIDC server, but will redirect to the upstream ID-provider (ID-porten/FEIDE/UIDP) for authentication. Defaults to ID-porten if no iss query parameter is provided.
+        /// - Supports optional requested authentication level (acr_values) to trigger a step-up if the current session does not meet the requested level.
+        /// - Supports optional goTo parameter to redirect to a specific URL after successful authentication.
         /// </summary>
-        /// <param name="goTo">The url to redirect to if everything validates ok</param>
-        /// <param name="dontChooseReportee">Parameter to indicate disabling of reportee selection in Altinn Portal.</param>
-        /// <param name="acrValues">Optional requested authentication level (space-separated acr_values). When the current session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
+        /// <param name="goTo">The url to redirect to if everything validates ok. Only valid to redirect to URLs within the same domain.</param>
+        /// <param name="acrValues">Optional requested authentication level as space-separated acr_values. The current values are
+        /// <c>idporten-loa-substantial</c>, <c>idporten-loa-high</c> and <c>selfregistered-email</c>; the legacy values
+        /// <c>level0</c>, <c>level1</c> and <c>level2</c> are still accepted but deprecated. Any other value yields
+        /// <c>400 Bad Request</c> (validated by <see cref="AuthenticationHelper.TryParseAcrValues"/>). When the current
+        /// session does not meet the requested level, the user is re-authenticated upstream (step-up).</param>
         /// <param name="cancellationToken">The cancellation token</param>
-        /// <returns>redirect to correct url based on the validation of the form authentication sbl cookie</returns>
+        /// <returns>A 302 redirect: to <paramref name="goTo"/> when an existing session already satisfies the request, otherwise to the upstream ID-provider login.</returns>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status302Found)]
         [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(void), StatusCodes.Status503ServiceUnavailable)]
         [HttpGet("authentication")]
-        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery] bool dontChooseReportee, [FromQuery(Name = "acr_values")] string? acrValues = null, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> AuthenticateUser([FromQuery] string? goTo, [FromQuery(Name = "acr_values")] string? acrValues = null, CancellationToken cancellationToken = default)
         {
             System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
 
@@ -173,208 +149,94 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Redirect(_generalSettings.BaseUrl); // known-safe constant
             }
 
-            string platformReturnUrl = $"{_generalSettings.PlatformEndpoint}authentication/api/v1/authentication?goto={goTo}";
-
-            if (dontChooseReportee) 
-            {
-                platformReturnUrl += "&DontChooseReportee=true";
-            }
-
-            string encodedGoToUrl = HttpUtility.UrlEncode(platformReturnUrl);
-            string sblRedirectUrl = $"{_generalSettings.SBLRedirectEndpoint}?goTo={encodedGoToUrl}";
-
             string? oidcissuer = Request.Query["iss"];
-            UserAuthenticationModel userAuthentication;
-            if (_generalSettings.EnableOidc && (!string.IsNullOrEmpty(oidcissuer) || _generalSettings.ForceOidc))
+
+            // Authentication responses (including the early session-reuse redirects below) must never
+            // be cached.
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
+
+            // Verify if the user is already authenticated. Then just go directly to the target URL.
+            if (User?.Identity != null && User.Identity.IsAuthenticated)
             {
-                OidcProvider provider = GetOidcProvider(oidcissuer);
-
-                string? code = Request.Query["code"];
-                string? state = Request.Query["state"];
-
-                if (!string.IsNullOrEmpty(code))
+                try
                 {
-                    if (string.IsNullOrEmpty(state))
-                    {
-                        return BadRequest("Missing state param");
-                    }
+                    OidcSession? refreshedSession = await _oidcServerService.HandleSessionRefresh(User, cancellationToken);
 
-                    HttpContext.Request.Headers.Add("X-XSRF-TOKEN", state);
-
-                    try
+                    // Only reuse the existing session if it already satisfies the requested level.
+                    // Otherwise fall through and re-authenticate upstream at the higher level (step-up).
+                    if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues))
                     {
-                        await _antiforgery.ValidateRequestAsync(HttpContext);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogInformation("Validateion of state failed", ex.ToString());
-                        return BadRequest("Invalid state param");
-                    }
-
-                    OidcCodeResponse oidcCodeResponse = await _oidcProvider.GetTokens(code, provider, GetRedirectUri(provider), null, cancellationToken);
-                    string? originalToken = oidcCodeResponse.IdToken;
-                    JwtSecurityToken jwtSecurityToken = await ValidateAndExtractOidcToken(oidcCodeResponse.IdToken, provider.WellKnownConfigEndpoint);
-                    userAuthentication = AuthenticationHelper.GetUserFromToken(jwtSecurityToken, provider);
-                    if (!ValidateNonce(HttpContext, userAuthentication.Nonce))
-                    {
-                        return BadRequest("Invalid nonce");
-                    }
-
-                    if (!userAuthentication.UserID.HasValue)
-                    {
-                        await IdentifyOrCreateAltinnUser(userAuthentication, provider);
-                    }
-
-                    if (userAuthentication.UserID.HasValue && userAuthentication.PartyUuid == null)
-                    {
-                        UserProfile profile = await _profileService.GetUserProfile(new UserProfileLookup { UserId = userAuthentication.UserID.Value });
-                        userAuthentication.PartyUuid = profile.UserUuid;
-                    }
-
-                    if (userAuthentication.IsAuthenticated)
-                    {
-                        await CreateTokenCookie(userAuthentication);
-
                         return Redirect(validatedGoToUri.AbsoluteUri);
                     }
                 }
-                else if (_generalSettings.AuthorizationServerEnabled)
+                catch
                 {
-                    // Flow for Authorization Server Active
-                    // Verify if user is already authenticated. The just go directly to the target URL
-                    if (User?.Identity != null && User.Identity.IsAuthenticated)
+                    // Session was not able to be refreshed. Delete the cookies and continue to re-authenticate.
+                    Response.Cookies.Append(_generalSettings.JwtCookieName, string.Empty, new CookieOptions
                     {
-                        try
-                        {
-                            OidcSession? refreshedSession = await _oidcServerService.HandleSessionRefresh(User, cancellationToken);
-
-                            // Only reuse the existing session if it already satisfies the requested level.
-                            // Otherwise fall through and re-authenticate upstream at the higher level (step-up).
-                            if (!AuthenticationHelper.NeedAcrUpgrade(refreshedSession?.Acr, requestedAcrValues))
-                            {
-                                return Redirect(validatedGoToUri.AbsoluteUri);
-                            }
-                        }
-                        catch
-                        {
-                            // Sessions was not able to be refreshed. Deletes the cookies and continues to re-authenticate
-                            Response.Cookies.Append(_generalSettings.JwtCookieName, string.Empty, new CookieOptions
-                            {
-                                HttpOnly = true,
-                                Secure = true,
-                                Path = "/",
-                                Domain = _generalSettings.HostName,
-                                Expires = DateTimeOffset.UnixEpoch,
-                                SameSite = SameSiteMode.Lax
-                            });
-                        }
-                    }
-
-                    // Check to see if we have a valid Session cookie and recreate JWT Based on that
-                    if (Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out string? sessionCookieValue))
-                    {
-                        AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookieValue };
-                        AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
-
-                        // Reuse the session only when it already meets the requested level; otherwise step up.
-                        if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success)
-                            && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues))
-                        {
-                            foreach (var c in authenticateFromSessionResult.Cookies)
-                            {
-                                Response.Cookies.Append(c.Name, c.Value, new CookieOptions
-                                {
-                                    HttpOnly = c.HttpOnly,
-                                    Secure = c.Secure,
-                                    Path = c.Path ?? "/",
-                                    Domain = c.Domain,
-                                    Expires = c.Expires,
-                                    SameSite = c.SameSite
-                                });
-                            }
-
-                            return Redirect(validatedGoToUri.AbsoluteUri);
-                        }
-                    }
-
-                    Response.Headers.CacheControl = "no-store";
-                    Response.Headers.Pragma = "no-cache";
-                    string ua = Request.Headers.UserAgent.ToString();
-                    string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
-                    Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
-
-                    // User was not autenticated so start a new authorization request for unregistered clints and redirect to upstream ID- Provider like ID-porten/FEIDE/UIDP
-                    AuthorizeUnregisteredClientRequest authorizeUnregisteredClientRequest = new()
-                    {
-                        GoTo = goTo,
-                        RequestedIss = oidcissuer,
-                        ClientIp = ip,
-                        UserAgentHash = userAgentHash,
-                        CorrelationId = corr,
-                        AcrValues = requestedAcrValues
-                    };
-
-                    AuthorizeResult result = await _oidcServerService.AuthorizeUnregisteredClient(authorizeUnregisteredClientRequest, cancellationToken);
-                    return result.Kind switch
-                    {
-                        AuthorizeResultKind.RedirectUpstream
-                            => Redirect(result.UpstreamAuthorizeUrl!.ToString()),
-                        AuthorizeResultKind.LocalError
-                            => StatusCode(result.StatusCode ?? 400, result.LocalErrorMessage), // or return View("Error", ...)
-                        _ => StatusCode(500)
-                    };
-                }
-                else
-                {
-                    // Generates state tokens. One is added to a cookie and another is sent as state parameter to OIDC provider
-                    AntiforgeryTokenSet tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-
-                    // Create Nonce. One is added to a cookie and another is sent as nonce parameter to OIDC provider
-                    string nonce = CreateNonce(HttpContext);
-                    CreateGoToCookie(HttpContext, validatedGoToUri.AbsoluteUri);
-
-                    // Redirect to OIDC Provider
-                    return Redirect(CreateAuthenticationRequest(provider, tokens.RequestToken, nonce));
+                        HttpOnly = true,
+                        Secure = true,
+                        Path = "/",
+                        Domain = _generalSettings.HostName,
+                        Expires = DateTimeOffset.UnixEpoch,
+                        SameSite = SameSiteMode.Lax
+                    });
                 }
             }
-            else
+
+            // Check to see if we have a valid Session cookie and recreate JWT based on that. This can happen when user did authenticate for Arbeidsflate, but the JWT has expired. In that case we can reuse the session and create a new JWT for the user.
+            if (Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out string? sessionCookieValue))
             {
-                // Verify if user is already authenticated. The just go directly to the target URL
-                if (User?.Identity != null && User.Identity.IsAuthenticated)
+                AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookieValue };
+                AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
+
+                // Reuse the session only when it already meets the requested level; otherwise step up.
+                if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success)
+                    && !AuthenticationHelper.NeedAcrUpgrade(authenticateFromSessionResult.Acr, requestedAcrValues))
                 {
+                    foreach (var c in authenticateFromSessionResult.Cookies)
+                    {
+                        Response.Cookies.Append(c.Name, c.Value, new CookieOptions
+                        {
+                            HttpOnly = c.HttpOnly,
+                            Secure = c.Secure,
+                            Path = c.Path ?? "/",
+                            Domain = c.Domain,
+                            Expires = c.Expires,
+                            SameSite = c.SameSite
+                        });
+                    }
+
                     return Redirect(validatedGoToUri.AbsoluteUri);
                 }
-
-                // Check to see if we have a valid Session cookie and recreate JWT Based on that
-                if (Request.Cookies.TryGetValue(_generalSettings.AltinnSessionCookieName, out string? sessionCookie))
-                {
-                    AuthenticateFromSessionInput sessionCookieInput = new() { SessionHandle = sessionCookie };
-                    AuthenticateFromSessionResult authenticateFromSessionResult = await _oidcServerService.HandleAuthenticateFromSessionResult(sessionCookieInput, cancellationToken);
-                    if (authenticateFromSessionResult.Kind.Equals(AuthenticateFromSessionResultKind.Success))
-                    {
-                        foreach (var c in authenticateFromSessionResult.Cookies)
-                        {
-                            Response.Cookies.Append(c.Name, c.Value, new CookieOptions
-                            {
-                                HttpOnly = c.HttpOnly,
-                                Secure = c.Secure,
-                                Path = c.Path ?? "/",
-                                Domain = c.Domain,
-                                Expires = c.Expires,
-                                SameSite = c.SameSite
-                            });
-                        }
-
-                        return Redirect(validatedGoToUri.AbsoluteUri);
-                    }
-                }
-
-                // No active Altinn 3 session: send the user to log in. Altinn 2 cookie/ticket
-                // authentication was removed with the Altinn 2 shutdown (#2030).
-                return Redirect(sblRedirectUrl);
             }
 
-            return Redirect(sblRedirectUrl);
+            string ua = Request.Headers.UserAgent.ToString();
+            string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
+            Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
+
+            // User was not authenticated, so start a new authorization request for unregistered clients
+            // and redirect to the upstream ID-provider (ID-porten/FEIDE/UIDP).
+            AuthorizeUnregisteredClientRequest authorizeUnregisteredClientRequest = new()
+            {
+                GoTo = goTo,
+                RequestedIss = oidcissuer,
+                ClientIp = ip,
+                UserAgentHash = userAgentHash,
+                CorrelationId = corr,
+                AcrValues = requestedAcrValues
+            };
+
+            AuthorizeResult result = await _oidcServerService.AuthorizeUnregisteredClient(authorizeUnregisteredClientRequest, cancellationToken);
+            return result.Kind switch
+            {
+                AuthorizeResultKind.RedirectUpstream
+                    => Redirect(result.UpstreamAuthorizeUrl!.ToString()),
+                AuthorizeResultKind.LocalError
+                    => StatusCode(result.StatusCode ?? 400, result.LocalErrorMessage),
+                _ => StatusCode(500)
+            };
         }
 
         /// <summary>
@@ -436,8 +298,13 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Action for exchanging a JWT generated by a trusted token provider with a new JWT for further use as authentication against rest of Altinn.
+        /// Exchanges a JWT issued by a trusted external token provider (supplied as a <c>Bearer</c> token in the
+        /// Authorization header) for a new Altinn JWT used to authenticate against the rest of Altinn.
+        /// Returns <c>401 Unauthorized</c> when the token is missing/unreadable/invalid, <c>400 Bad Request</c>
+        /// for an unknown provider, and <c>429 Too Many Requests</c> when a self-identified account is locked out.
         /// </summary>
+        /// <param name="tokenProvider">The trusted provider that issued the incoming token. One of <c>id-porten</c>, <c>maskinporten</c> or <c>altinnstudio</c> (case-insensitive).</param>
+        /// <param name="test">Only relevant for the Maskinporten path: when <c>true</c> and the consumer org is <c>digdir</c>, the token is treated as a test token (see <see cref="OrgIsDigDirAndTestIsTrue"/>). Ignored for the other providers.</param>
         /// <returns>The result of the action. Contains the new token if the old token was valid and could be exchanged.</returns>
         [AllowAnonymous]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -487,6 +354,11 @@ namespace Altinn.Platform.Authentication.Controllers
             }
         }
 
+        /// <summary>
+        /// Validates a JWT issued by Altinn Studio Designer (issuer <c>studio</c>/<c>dev-studio</c>/<c>staging-studio</c>,
+        /// verified against the designer signing keys) and exchanges it for a new Altinn JWT carrying the same claims.
+        /// </summary>
+        /// <returns>The new Altinn token on success, otherwise <c>401 Unauthorized</c>.</returns>
         private async Task<ActionResult> AuthenticateAltinnStudioToken(string originalToken)
         {
             try
@@ -766,42 +638,6 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Creates a session cookie meant to be used to hold the generated JSON Web Token and appends it to the response.
-        /// </summary>
-        /// <param name="cookieValue">The cookie value.</param>
-        private void CreateJwtCookieAndAppendToResponse(string cookieValue)
-        {
-            CookieBuilder cookieBuilder = new RequestPathBaseCookieBuilder
-            {
-                Name = _generalSettings.JwtCookieName,
-                //// To support OAuth authentication, a lax mode is required, see https://github.com/aspnet/Security/issues/1231.
-                SameSite = SameSiteMode.Lax,
-                HttpOnly = true,
-                SecurePolicy = CookieSecurePolicy.Always,
-                IsEssential = true,
-                Domain = _generalSettings.HostName
-            };
-
-            CookieOptions cookieOptions = cookieBuilder.Build(HttpContext);
-
-            ICookieManager cookieManager = new ChunkingCookieManager();
-            cookieManager.AppendResponseCookie(
-                HttpContext,
-                cookieBuilder.Name,
-                cookieValue,
-                cookieOptions);
-
-            ApplyHeaders();
-        }
-
-        private void ApplyHeaders()
-        {
-            Response.Headers[HeaderNames.CacheControl] = HeaderValueNoCache;
-            Response.Headers[HeaderNames.Pragma] = HeaderValueNoCache;
-            Response.Headers[HeaderNames.Expires] = HeaderValueEpocDate;
-        }
-
-        /// <summary>
         /// Assumes that the consumer claim follows the ISO 6523. {"Identifier": {"Authority": "iso6523-actorid-upis","ID": "9908:910075918"}}
         /// </summary>
         /// <returns>organisation number found in the ID property of the ISO 6523 record</returns>
@@ -853,11 +689,20 @@ namespace Altinn.Platform.Authentication.Controllers
             return false;
         }
 
+        /// <summary>
+        /// Returns <c>true</c> when the space-separated <paramref name="scope"/> string contains at least one
+        /// Altinn scope (any token prefixed <c>altinn:</c>). Used to gate which exchanged tokens are accepted.
+        /// </summary>
         private static bool HasAltinnScope(string scope)
         {
             return scope?.Split(" ").Any(s => s.StartsWith("altinn:")) ?? false;
         }
 
+        /// <summary>
+        /// Returns <c>true</c> when the space-separated <paramref name="scope"/> string contains one of the
+        /// configured partner scopes (<see cref="GeneralSettings.PartnerScopes"/>). Used to gate which exchanged
+        /// tokens are accepted for partner integrations.
+        /// </summary>
         private bool HasPartnerScope(string scope)
         {
             string[]? scopes = scope?.Split(" ");
@@ -945,6 +790,16 @@ namespace Altinn.Platform.Authentication.Controllers
             return tokenHandler.WriteToken(token);
         }
 
+        /// <summary>
+        /// Selects the newest signing certificate that has been valid for at least <paramref name="rolloverDelayHours"/>
+        /// hours (by <c>NotBefore</c>). The delay gives a freshly-published certificate time to propagate to token
+        /// consumers before it is used to sign. If no certificate is old enough, it falls back to the newest currently
+        /// valid certificate.
+        /// </summary>
+        /// <param name="certificates">The available signing certificates.</param>
+        /// <param name="rolloverDelayHours">How long a certificate must have existed before it is used for signing.</param>
+        /// <param name="now">The current time (injected for testability).</param>
+        /// <returns>The chosen certificate, or <c>null</c> if none are usable.</returns>
         private X509Certificate2 GetLatestCertificateWithRolloverDelay(
             List<X509Certificate2> certificates, int rolloverDelayHours, DateTimeOffset now)
         {
@@ -965,47 +820,6 @@ namespace Altinn.Platform.Authentication.Controllers
                 .FirstOrDefault();
         }
         
-        private async Task IdentifyOrCreateAltinnUser(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
-        {
-            UserProfile profile;
-
-            if (!string.IsNullOrEmpty(userAuthenticationModel.ExternalIdentity))
-            {
-                string issExternalIdentity = userAuthenticationModel.Iss + ":" + userAuthenticationModel.ExternalIdentity;
-                profile = await _userProfileService.GetUser(issExternalIdentity);
-
-                if (profile != null)
-                {
-                    userAuthenticationModel.UserID = profile.UserId;
-                    userAuthenticationModel.PartyID = profile.PartyId;
-                    return;
-                }
-
-                UserProfile userToCreate = new()
-                {
-                    ExternalIdentity = issExternalIdentity,
-                    UserName = CreateUserName(userAuthenticationModel, provider),
-                    UserType = Altinn.Platform.Authentication.Core.Models.Profile.Enums.UserType.SelfIdentified
-                };
-
-                UserProfile userCreated = await _userProfileService.CreateUser(userToCreate);
-                userAuthenticationModel.UserID = userCreated.UserId;
-                userAuthenticationModel.PartyID = userCreated.PartyId;
-            }
-        }
-
-        /// <summary>
-        /// Creates a automatic username based on external identity and prefix.
-        /// </summary>
-        private static string CreateUserName(UserAuthenticationModel userAuthenticationModel, OidcProvider provider)
-        {
-            string hashedIdentity = HashNonce(userAuthenticationModel.ExternalIdentity).Substring(5, 10);
-            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-            hashedIdentity = rgx.Replace(hashedIdentity, string.Empty);
-
-            return provider.UserNamePrefix + hashedIdentity.ToLower() + DateTime.Now.Millisecond;
-        }
-
         private async Task<JwtSecurityToken> ValidateAndExtractOidcToken(string originalToken, string wellKnownConfigEndpoint, string alternativeWellKnownConfigEndpoint = null)
         {
             try
@@ -1079,195 +893,15 @@ namespace Altinn.Platform.Authentication.Controllers
         }
 
         /// <summary>
-        /// Find the OIDC provider based on given ISS or default oidc provider.
+        /// Open-redirect guard for the <c>goTo</c> parameter. Returns <c>true</c> only when <paramref name="target"/>
+        /// is safe to redirect an authenticated user to: an absolute <c>https</c> URL, with no embedded credentials,
+        /// whose host equals <paramref name="baseHost"/> or is a subdomain of it (e.g. <c>skd.apps.altinn.no</c> is
+        /// allowed when the service host is <c>altinn.no</c>). This prevents leaking the session/token to an
+        /// attacker-controlled domain via a crafted <c>goTo</c>.
         /// </summary>
-        private OidcProvider GetOidcProvider(string iss)
-        {
-            if (!string.IsNullOrEmpty(iss) && _oidcProviderSettings.ContainsKey(iss))
-            {
-                return _oidcProviderSettings[iss];
-            }
-
-            if (!string.IsNullOrEmpty(iss))
-            {
-                return _oidcProviderSettings.Where(kvp => kvp.Value.Issuer.Equals(iss)).Select(kvp => kvp.Value).FirstOrDefault();
-            }
-
-            if (!string.IsNullOrEmpty(_generalSettings.DefaultOidcProvider) && _oidcProviderSettings.ContainsKey(_generalSettings.DefaultOidcProvider))
-            {
-                return _oidcProviderSettings[_generalSettings.DefaultOidcProvider];
-            }
-
-            return _oidcProviderSettings.First().Value;
-        }
-
-        /// <summary>
-        /// Builds URI to redirect for OIDC login for authentication
-        /// Based on https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
-        /// </summary>
-        private string CreateAuthenticationRequest(OidcProvider provider, string state, string nonce)
-        {
-            string redirect_uri = GetRedirectUri(provider);
-            string authorizationEndpoint = provider.AuthorizationEndpoint;
-            Dictionary<string, string> oidcParams = new Dictionary<string, string>();
-
-            // REQUIRED. Redirection URI to which the response will be sent. This URI MUST exactly match one of the Redirection URI
-            // values for the Client pre-registered at the OpenID Provider, with the matching performed as described in Section 6.2.1 of
-            // [RFC3986] (Simple String Comparison). When using this flow, the Redirection URI SHOULD use the https scheme; however,
-            // it MAY use the http scheme, provided that the Client Type is confidential, as defined in Section 2.1 of OAuth 2.0, and
-            // provided the OP allows the use of http Redirection URIs in this case. The Redirection URI MAY use an alternate scheme,
-            // such as one that is intended to identify a callback into a native application.
-            if (!authorizationEndpoint.Contains('?'))
-            {
-                authorizationEndpoint += "?redirect_uri=" + redirect_uri;
-            }
-            else
-            {
-                authorizationEndpoint += "&redirect_uri=" + redirect_uri;
-            }
-
-            // REQUIRED. OpenID Connect requests MUST contain the openid scope value. If the openid scope value is not present,
-            // the behavior is entirely unspecified. Other scope values MAY be present.
-            // Scope values used that are not understood by an implementation SHOULD be ignored.
-            // See Sections 5.4 and 11 for additional scope values defined by this specification.
-            oidcParams.Add("scope", provider.Scope);
-
-            // REQUIRED. OAuth 2.0 Client Identifier valid at the Authorization Server.
-            oidcParams.Add("client_id", provider.ClientId);
-
-            // REQUIRED. OAuth 2.0 Response Type value that determines the authorization processing flow to be used, including what parameters
-            // are returned from the endpoints used. When using the Authorization Code Flow, this value is code.
-            oidcParams.Add("response_type", provider.ResponseType);
-
-            // RECOMMENDED. Opaque value used to maintain state between the request and the callback.
-            // Typically, Cross-Site Request Forgery (CSRF, XSRF)
-            // mitigation is done by cryptographically binding the value of this parameter with a browser cookie.
-            oidcParams.Add("state", state);
-
-            // OPTIONAL. String value used to associate a Client session with an ID Token, and to mitigate replay attacks.
-            // The value is passed through unmodified from the Authentication Request to the ID Token.
-            // Sufficient entropy MUST be present in the nonce values used to prevent attackers
-            // from guessing values. For implementation notes, see Section 15.5.2.
-            oidcParams.Add("nonce", nonce);
-            string uri = QueryHelpers.AddQueryString(authorizationEndpoint, oidcParams);
-
-            return uri;
-        }
-
-        private string GetRedirectUri(OidcProvider provider)
-        {
-            string redirectUri = $"{_generalSettings.PlatformEndpoint}authentication/api/v1/authentication";
-
-            if (provider.IncludeIssInRedirectUri)
-            {
-                redirectUri = redirectUri + "?iss=" + provider.IssuerKey;
-            }
-
-            return redirectUri;
-        }
-
-        private string CreateNonce(HttpContext httpContext)
-        {
-            string nonce = Guid.NewGuid().ToString();
-            httpContext.Response.Cookies.Append(_generalSettings.OidcNonceCookieName, nonce);
-            return HashNonce(nonce);
-        }
-
-        private void CreateGoToCookie(HttpContext httpContext, string goToUrl)
-        {
-            httpContext.Response.Cookies.Append(_generalSettings.AuthnGoToCookieName, goToUrl);
-        }
-
-        private async Task CreateTokenCookie(UserAuthenticationModel userAuthentication)
-        {
-            List<Claim> claims = new List<Claim>();
-            string issuer = _generalSettings.AltinnOidcIssuerUrl;
-            string sessionId = _guidService.NewGuid();
-            userAuthentication.Sid = sessionId;
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, userAuthentication.UserID.ToString(), ClaimValueTypes.String, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.UserId, userAuthentication.UserID.ToString(), ClaimValueTypes.String, issuer));
-
-            if (!string.IsNullOrEmpty(userAuthentication.Username))
-            {
-                claims.Add(new Claim(AltinnCoreClaimTypes.UserName, userAuthentication.Username, ClaimValueTypes.String, issuer));
-            }
-
-            if (userAuthentication.PartyUuid != null)
-            {
-               claims.Add(new Claim(AltinnCoreClaimTypes.PartyUUID, userAuthentication.PartyUuid.ToString(), ClaimValueTypes.String, issuer));
-            }
-
-            if (!string.IsNullOrEmpty(userAuthentication.Iss))
-            {
-                claims.Add(new Claim(OriginalIssClaimName, userAuthentication.Iss, ClaimValueTypes.String, issuer));
-            }
-
-            claims.Add(new Claim(AltinnCoreClaimTypes.PartyID, userAuthentication.PartyID.ToString(), ClaimValueTypes.Integer32, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticateMethod, userAuthentication.AuthenticationMethod.ToString(), ClaimValueTypes.String, issuer));
-            claims.Add(new Claim(AltinnCoreClaimTypes.AuthenticationLevel, ((int)userAuthentication.AuthenticationLevel).ToString(), ClaimValueTypes.Integer32, issuer));
-            claims.Add(new Claim(InternalSessionIdClaimName, userAuthentication.Sid, ClaimValueTypes.String, issuer));
-
-            if (userAuthentication.ProviderClaims != null && userAuthentication.ProviderClaims.Count > 0)
-            {
-                foreach (KeyValuePair<string, List<string>> kvp in userAuthentication.ProviderClaims)
-                {
-                    foreach (string claimvalue in kvp.Value)
-                    {
-                        claims.Add(new Claim(kvp.Key, claimvalue, ClaimValueTypes.String, issuer));
-                    }
-                }
-            }
-
-            if (!claims.Any(c => c.Type == AuthzConstants.CLAIM_SCOPE))
-            {
-                claims.Add(new Claim(AuthzConstants.CLAIM_SCOPE, AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
-            }
-            else
-            {
-                // Find the existing claim and modify its value
-                Claim existingClaim = claims.FirstOrDefault(c => c.Type == AuthzConstants.CLAIM_SCOPE);
-                if (existingClaim != null)
-                {
-                    claims.Remove(existingClaim);
-
-                    // Adding portal scope to list of scopes
-                    claims.Add(new Claim(AuthzConstants.CLAIM_SCOPE, existingClaim.Value + " " + AuthzConstants.SCOPE_PORTAL, ClaimValueTypes.String, issuer));
-                }
-            }
-
-            ClaimsIdentity identity = new ClaimsIdentity(_generalSettings.ClaimsIdentity);
-            identity.AddClaims(claims);
-            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
-            string serializedToken = await GenerateToken(principal);
-            _eventLog.CreateAuthenticationEventAsync(_featureManager, userAuthentication, AuthenticationEventType.Authenticate, HttpContext);
-            CreateJwtCookieAndAppendToResponse(serializedToken);
-            if (userAuthentication.TicketUpdated)
-            {
-                Response.Cookies.Append(_generalSettings.SblAuthCookieName, userAuthentication.EncryptedTicket);
-            }
-        }
-
-        private static string HashNonce(string nonce)
-        {
-            using (SHA256 nonceHash = SHA256.Create())
-            {
-                byte[] byteArrayResultOfRawData = Encoding.UTF8.GetBytes(nonce);
-                byte[] byteArrayResult = nonceHash.ComputeHash(byteArrayResultOfRawData);
-                return Convert.ToBase64String(byteArrayResult);
-            }
-        }
-
-        private bool ValidateNonce(HttpContext context, string hashedNonce)
-        {
-            string nonceCookie = context.Request.Cookies[_generalSettings.OidcNonceCookieName];
-            if (!string.IsNullOrEmpty(nonceCookie) && HashNonce(nonceCookie).Equals(hashedNonce))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
+        /// <param name="target">The requested redirect target.</param>
+        /// <param name="baseHost">The authentication service host that the target must match or be a subdomain of.</param>
+        /// <returns><c>true</c> if the target is safe to redirect to; otherwise <c>false</c>.</returns>
         private static bool IsSafeSameOrSubdomainHttps(Uri target, string baseHost)
         {
             if (target is null || !target.IsAbsoluteUri)
