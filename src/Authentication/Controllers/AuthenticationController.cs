@@ -143,6 +143,11 @@ namespace Altinn.Platform.Authentication.Controllers
 
             string? oidcissuer = Request.Query["iss"];
 
+            // Authentication responses (including the early session-reuse redirects below) must never
+            // be cached.
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
+
             // Verify if the user is already authenticated. Then just go directly to the target URL.
             if (User?.Identity != null && User.Identity.IsAuthenticated)
             {
@@ -199,8 +204,6 @@ namespace Altinn.Platform.Authentication.Controllers
                 }
             }
 
-            Response.Headers.CacheControl = "no-store";
-            Response.Headers.Pragma = "no-cache";
             string ua = Request.Headers.UserAgent.ToString();
             string? userAgentHash = string.IsNullOrEmpty(ua) ? null : Hashing.Sha256Base64Url(ua);
             Guid corr = HttpContext.TraceIdentifier is { Length: > 0 } id && Guid.TryParse(id, out var g) ? g : Guid.CreateVersion7();
