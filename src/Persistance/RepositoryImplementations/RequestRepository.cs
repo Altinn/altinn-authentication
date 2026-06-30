@@ -63,14 +63,15 @@ public class RequestRepository : IRequestRepository
                 @accesspackages,
                 @status,
                 @systemuser_type,
-                @redirect_urls);";
+                @redirect_urls)
+            RETURNING created;";
 
         try
         {
             await using NpgsqlCommand command = _dataSource.CreateCommand(QUERY);
 
             command.Parameters.AddWithValue("id", createRequest.Id);
-            command.Parameters.AddWithValue("integration_title", createRequest.IntegrationTitle ?? string.Empty); 
+            command.Parameters.AddWithValue("integration_title", createRequest.IntegrationTitle ?? string.Empty);
             command.Parameters.AddWithValue("external_ref", createRequest.ExternalRef!);
             command.Parameters.AddWithValue("system_id", createRequest.SystemId);
             command.Parameters.AddWithValue("party_org_no", createRequest.PartyOrgNo);
@@ -87,9 +88,16 @@ public class RequestRepository : IRequestRepository
             else
             {
                 command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
-            }            
+            }
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                createRequest.Created = reader.GetFieldValue<DateTime>("created");
+                return true;
+            }
+
+            return false;
         }
         catch (Exception ex)
         {
@@ -121,7 +129,8 @@ public class RequestRepository : IRequestRepository
                 @accessPackages,
                 @status,
                 @systemuser_type,
-                @redirect_urls);";
+                @redirect_urls)
+            RETURNING created;";
 
         try
         {
@@ -145,7 +154,14 @@ public class RequestRepository : IRequestRepository
                 command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
             }
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                createAgentRequest.Created = reader.GetFieldValue<DateTime>("created");
+                return true;
+            }
+
+            return false;
         }
         catch (Exception ex)
         {

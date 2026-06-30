@@ -49,7 +49,8 @@ public class ChangeRequestRepository(
                 @required_accesspackages,
                 @unwanted_accesspackages,
                 @status,
-                @redirect_urls);"
+                @redirect_urls)
+            RETURNING created;"
         ;
 
         try
@@ -77,7 +78,14 @@ public class ChangeRequestRepository(
                 command.Parameters.Add(new("redirect_urls", NpgsqlDbType.Varchar) { Value = DBNull.Value });
             }
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                createRequest.Created = reader.GetFieldValue<DateTime>("created");
+                return true;
+            }
+
+            return false;
         }
         catch (Exception ex)
         {
