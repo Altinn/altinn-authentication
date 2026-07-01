@@ -1352,6 +1352,59 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
+        public async Task SystemRegister_Update_System_NotOwner_ReturnsForbidden()
+        {
+            // A system owned by vendor 991825827.
+            const string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage createResponse = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+            Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
+
+            const string systemId = "991825827_the_matrix";
+
+            // A different vendor (write scope for its own org, not admin, not the owner) tries to update
+            // the system, supplying its own vendor id in the body. Access is evaluated against the stored
+            // system's vendor, so this is forbidden regardless of the vendor sent in the body.
+            RegisterSystemRequest update = CreateSystemRegisterRequest(systemId, []);
+            update.Vendor.ID = "0192:974761076";
+
+            HttpClient otherVendorClient = CreateClient();
+            string[] prefixes = ["altinn", "digdir"];
+            string token = PrincipalUtil.GetOrgToken("digdir", "974761076", "altinn:authentication/systemregister.write", prefixes, now: TestTime);
+            otherVendorClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            string json = JsonSerializer.Serialize(update, options);
+            using StringContent content = new(json, Encoding.UTF8, "application/json");
+            HttpRequestMessage request = new(HttpMethod.Put, $"/authentication/api/v1/systemregister/vendor/{systemId}/")
+            {
+                Content = content
+            };
+            HttpResponseMessage response = await otherVendorClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SystemRegister_Update_System_MismatchedBodyVendor_ReturnsNotFound()
+        {
+            // A system owned by vendor 991825827.
+            const string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
+            HttpClient createClient = GetAuthenticatedClient(Admin, ValidOrg);
+            HttpResponseMessage createResponse = await SystemRegisterTestHelper.CreateSystemRegister(createClient, dataFileName);
+            Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
+
+            const string systemId = "991825827_the_matrix";
+
+            // The owner is authorized, but supplies a vendor id in the body that does not match the
+            // stored system's vendor -> treated as not found (the body vendor cannot be changed here).
+            RegisterSystemRequest update = CreateSystemRegisterRequest(systemId, []);
+            update.Vendor.ID = "0192:974761076";
+
+            var resp = await PutSystemRegisterAsync(update, systemId);
+            Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        }
+
+        [Fact]
         public async Task SystemRegister_Create_WrongScope_Forbidden()
         {
             HttpClient client = CreateClient();
@@ -1608,11 +1661,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage response = await CreateSystemRegister(originalSystem);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
+            // Body carries a different system id than the (existing) one in the URL.
             List<string> newClientIds = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
-            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest(systemId, newClientIds);
+            RegisterSystemRequest updatedSystem = CreateSystemRegisterRequest("991825827_a_different_system", newClientIds);
 
-            // Expecting bad request here
-            var resp = await PutSystemRegisterAsync(updatedSystem, "991825827_does_not_match_request_bodys_system_id");
+            // Expecting bad request here (body system id does not match the URL system id)
+            var resp = await PutSystemRegisterAsync(updatedSystem, systemId);
             Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
 
             // Read the content as string

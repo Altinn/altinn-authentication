@@ -163,9 +163,26 @@ public class SystemRegisterController : ControllerBase
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest proposedUpdateToSystem, string systemId, CancellationToken cancellationToken = default)
     {
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(proposedUpdateToSystem.Vendor.ID), User))
+        RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+
+        string currentVendorId = currentSystem?.Vendor?.ID;
+        if (currentSystem == null || currentVendorId == null)
+        {
+            return NotFound($"System with ID '{systemId}' not found.");
+        }
+
+        // Authorize against the stored system's vendor before comparing the request-body vendor,
+        // so an unauthorized caller cannot distinguish a wrong-vendor guess (404) from a
+        // correct-vendor-but-no-access (403) and enumerate vendor ids for a systemId.
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(currentVendorId), User))
         {
             return Forbid();
+        }
+
+        string proposedVendorId = proposedUpdateToSystem.Vendor?.ID;
+        if (proposedVendorId == null || proposedVendorId != currentVendorId)
+        {
+            return NotFound($"System with ID '{systemId}' not found.");
         }
 
         if (proposedUpdateToSystem.Id != systemId)
@@ -176,13 +193,6 @@ public class SystemRegisterController : ControllerBase
             {
                 return result;
             }
-        }
-
-        RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-
-        if (currentSystem == null)
-        {
-            return NotFound($"System with ID '{systemId}' not found.");
         }
 
         if (currentSystem.IsDeleted)
