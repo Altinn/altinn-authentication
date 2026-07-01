@@ -163,7 +163,14 @@ public class SystemRegisterController : ControllerBase
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest proposedUpdateToSystem, string systemId, CancellationToken cancellationToken = default)
     {
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(proposedUpdateToSystem.Vendor.ID), User))
+        RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+
+        if (currentSystem == null || currentSystem.Vendor.ID == null || proposedUpdateToSystem.Vendor.ID == null || proposedUpdateToSystem.Vendor.ID != currentSystem.Vendor.ID)
+        {
+            return NotFound($"System with ID '{systemId}' not found.");
+        }
+
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(currentSystem.Vendor.ID), User))
         {
             return Forbid();
         }
@@ -176,13 +183,6 @@ public class SystemRegisterController : ControllerBase
             {
                 return result;
             }
-        }
-
-        RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-
-        if (currentSystem == null)
-        {
-            return NotFound($"System with ID '{systemId}' not found.");
         }
 
         if (currentSystem.IsDeleted)
