@@ -690,7 +690,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemInfo is not { AccessPackages.Count: { } systemInfoAccessPackagesCount } || systemInfoAccessPackagesCount < accessPackages.Count)
             {
-                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, Problem.AccessPackage_NotFound.Detail);
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, Problem.AccessPackage_NotFound.Title);
                 return Problem.AccessPackage_NotFound;
             }
 
@@ -1144,7 +1144,7 @@ namespace Altinn.Platform.Authentication.Services
             Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
             if (result.IsProblem)
             {
-                if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
+                if (result.Problem.Title == Problem.AgentSystemUser_AssignmentNotFound.Title)
                 {
                     await _repository.SetDeleteSystemUserById(systemUserId);
                     return true;

@@ -277,7 +277,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.True(result.IsProblem);
-            Assert.Equal(Problem.AccessPackage_ValidationFailed.Detail, result.Problem.Detail);      
+            Assert.Equal(Problem.AccessPackage_ValidationFailed.Title, result.Problem.Title);      
             Assert.Equal("AccessPackage { Urn = urn:invalid }", result.Problem.Extensions.GetValueOrDefault("Invalid Urn Details : "));
         }
 
@@ -318,7 +318,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.True(result.IsProblem);
-            Assert.Equal(Problem.AccessPackage_Delegation_MissingRequiredAccess.Detail, result.Problem.Detail);
+            Assert.Equal(Problem.AccessPackage_Delegation_MissingRequiredAccess.Title, result.Problem.Title);
 
             // Issue #2027: the failed package urn and its reason must be logged so the failure is debuggable in App Insights.
             loggerMock.Verify(
