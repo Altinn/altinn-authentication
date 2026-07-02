@@ -172,9 +172,9 @@ public class SystemRegisterController : ControllerBase
         {
             ValidationProblemBuilder errors = default;
             errors.Add(ValidationErrors.SystemId_Mismatch, [ErrorPathConstant.SYSTEM_ID]);
-            if (errors.TryBuild(out var result))
+            if (errors.TryToActionResult(out var result))
             {
-                return result.ToActionResult();
+                return result;
             }
         }
 
@@ -196,11 +196,11 @@ public class SystemRegisterController : ControllerBase
         ValidationProblemBuilder validateErrorRights = await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken);
         ValidationProblemBuilder validateErrorAccessPackages = await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, proposedUpdateToSystem.IsVisible, cancellationToken);
         ValidationProblemBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages);
-        ValidationProblemBuilder mergedErrors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
+        ValidationProblemBuilder mergedErrors = ValidationProblemBuilderExtensions.MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
 
-        if (mergedErrors.TryBuild(out var errorResult))
+        if (mergedErrors.TryToActionResult(out var errorResult))
         {
-            return errorResult.ToActionResult();
+            return errorResult;
         }
 
         bool success = await _systemRegisterService.UpdateWholeRegisteredSystem(proposedUpdateToSystem, PopulateSystemChangeLog(User, SystemChangeType.Update, currentSystem.InternalId, proposedUpdateToSystem), cancellationToken);
@@ -280,9 +280,9 @@ public class SystemRegisterController : ControllerBase
                     ErrorPathConstant.VENDOR_ID
                 ]);
 
-                if (errors.TryBuild(out var orgIdentifierErrorResult))
+                if (errors.TryToActionResult(out var orgIdentifierErrorResult))
                 {
-                    return orgIdentifierErrorResult.ToActionResult();
+                    return orgIdentifierErrorResult;
                 }
             }
 
@@ -290,16 +290,16 @@ public class SystemRegisterController : ControllerBase
             ValidationProblemBuilder validationErrorRights = await ValidateRights(registerNewSystem.Rights, cancellationToken);
             ValidationProblemBuilder validationErrorAccessPackages = await ValidateAccessPackages(registerNewSystem.AccessPackages, registerNewSystem.IsVisible, cancellationToken);
 
-            errors = MergeValidationErrors(validationErrorRegisteredSystem, validationErrorRights, validationErrorAccessPackages);
+            errors = ValidationProblemBuilderExtensions.MergeValidationErrors(validationErrorRegisteredSystem, validationErrorRights, validationErrorAccessPackages);
 
             if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor.ID), User))
             {
                 return Forbid();
             }
 
-            if (errors.TryBuild(out var errorResult))
+            if (errors.TryToActionResult(out var errorResult))
             {
-                return errorResult.ToActionResult();
+                return errorResult;
             }
 
             var registeredSystemGuid = await _systemRegisterService.CreateRegisteredSystem(registerNewSystem, PopulateSystemChangeLog(User, SystemChangeType.Create, null, registerNewSystem), cancellationToken);
@@ -343,9 +343,9 @@ public class SystemRegisterController : ControllerBase
 
         errors = await ValidateRights(rights, cancellationToken);
 
-        if (errors.TryBuild(out var errorResult))
+        if (errors.TryToActionResult(out var errorResult))
         {
-            return errorResult.ToActionResult();
+            return errorResult;
         }
 
         bool success = await _systemRegisterService.UpdateRightsForRegisteredSystem(rights, systemId, PopulateSystemChangeLog(User, SystemChangeType.RightsUpdate, registerSystemResponse.InternalId, rights), cancellationToken);
@@ -381,9 +381,9 @@ public class SystemRegisterController : ControllerBase
 
         ValidationProblemBuilder errors = await ValidateAccessPackages(accessPackages, registerSystemResponse.IsVisible, cancellationToken);
 
-        if (errors.TryBuild(out var errorResult))
+        if (errors.TryToActionResult(out var errorResult))
         {
-            return errorResult.ToActionResult();
+            return errorResult;
         }
 
         bool success = await _systemRegisterService.UpdateAccessPackagesForRegisteredSystem(accessPackages, systemId, PopulateSystemChangeLog(User, SystemChangeType.AccessPackageUpdate, registerSystemResponse.InternalId, accessPackages), cancellationToken);
@@ -596,20 +596,6 @@ public class SystemRegisterController : ControllerBase
         }
 
         return errors;
-    }
-
-    private static ValidationProblemBuilder MergeValidationErrors(params ValidationProblemBuilder[] errorBuilders)
-    {
-        ValidationProblemBuilder mergedErrors = default;
-        foreach (var errorBuilder in errorBuilders)
-        {
-            foreach (var error in errorBuilder)
-            {
-                mergedErrors.Add(error);
-            }
-        }
-
-        return mergedErrors;
     }
 
     private SystemChangeLog PopulateSystemChangeLog(ClaimsPrincipal organisation, SystemChangeType changeType, Guid? internalId, object changedData)

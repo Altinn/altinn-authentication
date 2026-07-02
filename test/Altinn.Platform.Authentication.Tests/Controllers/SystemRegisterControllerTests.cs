@@ -260,7 +260,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal("ttd-am-k6", notDelegableExtensionValue);
 
             AltinnValidationError invalidFormatError = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_InvalidFormat.ErrorCode);
-            Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal("/registersystemrequest/rights/resource", invalidFormatError.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
             string invalidFormatErrorExtensionValue = invalidFormatError.Extensions["Invalid Resource Id Details : "].ToString();
             Assert.Equal("ttd-am-invalidresformat", invalidFormatErrorExtensionValue);
         }

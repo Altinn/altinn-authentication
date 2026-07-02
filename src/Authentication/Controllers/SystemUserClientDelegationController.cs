@@ -49,9 +49,9 @@ namespace Altinn.Platform.Authentication.Controllers
 
             ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
-            if (systemUserErrors.TryBuild(out var errorResult))
+            if (systemUserErrors.TryToActionResult(out var errorResult))
             {
-                return errorResult.ToActionResult();
+                return errorResult;
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
@@ -109,9 +109,9 @@ namespace Altinn.Platform.Authentication.Controllers
 
             ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
-            if (systemUserErrors.TryBuild(out var errorResult))
+            if (systemUserErrors.TryToActionResult(out var errorResult))
             {
-                return errorResult.ToActionResult();
+                return errorResult;
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
@@ -168,10 +168,10 @@ namespace Altinn.Platform.Authentication.Controllers
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
             ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
             ValidationProblemBuilder clientErrors = ValidateClient(client);
-            ValidationProblemBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
-            if (mergedErrors.TryBuild(out var errorResult))
+            ValidationProblemBuilder mergedErrors = ValidationProblemBuilderExtensions.MergeValidationErrors(systemUserErrors, clientErrors);
+            if (mergedErrors.TryToActionResult(out var errorResult))
             {
-                return errorResult.ToActionResult();
+                return errorResult;
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
@@ -257,10 +257,10 @@ namespace Altinn.Platform.Authentication.Controllers
 
             ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
             ValidationProblemBuilder clientErrors = ValidateClient(client);
-            ValidationProblemBuilder mergedErrors = MergeValidationErrors(systemUserErrors, clientErrors);
-            if (mergedErrors.TryBuild(out var errorResult))
+            ValidationProblemBuilder mergedErrors = ValidationProblemBuilderExtensions.MergeValidationErrors(systemUserErrors, clientErrors);
+            if (mergedErrors.TryToActionResult(out var errorResult))
             {
-                return errorResult.ToActionResult();
+                return errorResult;
             }
 
             Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
@@ -472,20 +472,6 @@ namespace Altinn.Platform.Authentication.Controllers
             }
 
             return errors;
-        }
-
-        private static ValidationProblemBuilder MergeValidationErrors(params ValidationProblemBuilder[] errorBuilders)
-        {
-            ValidationProblemBuilder mergedErrors = default;
-            foreach (var errorBuilder in errorBuilders)
-            {
-                foreach (var error in errorBuilder)
-                {
-                    mergedErrors.Add(error);
-                }
-            }
-
-            return mergedErrors;
         }
     }
 }
