@@ -193,12 +193,14 @@ public class SystemRegisterController : ControllerBase
         List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
 
-        ValidationProblemBuilder validateErrorRights = await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken);
-        ValidationProblemBuilder validateErrorAccessPackages = await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, proposedUpdateToSystem.IsVisible, cancellationToken);
-        ValidationProblemBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages);
-        ValidationProblemBuilder mergedErrors = ValidationProblemBuilderExtensions.MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
+        ValidationProblemBuilder errors = default;
+        errors.MergeWith([
+            await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken),
+            await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, proposedUpdateToSystem.IsVisible, cancellationToken),
+            await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages),
+        ]);
 
-        if (mergedErrors.TryToActionResult(out ActionResult errorResult))
+        if (errors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
@@ -286,11 +288,11 @@ public class SystemRegisterController : ControllerBase
                 }
             }
 
-            ValidationProblemBuilder validationErrorRegisteredSystem = await ValidateRegisteredSystem(registerNewSystem, cancellationToken);
-            ValidationProblemBuilder validationErrorRights = await ValidateRights(registerNewSystem.Rights, cancellationToken);
-            ValidationProblemBuilder validationErrorAccessPackages = await ValidateAccessPackages(registerNewSystem.AccessPackages, registerNewSystem.IsVisible, cancellationToken);
-
-            errors = ValidationProblemBuilderExtensions.MergeValidationErrors(validationErrorRegisteredSystem, validationErrorRights, validationErrorAccessPackages);
+            errors.MergeWith([
+                await ValidateRegisteredSystem(registerNewSystem, cancellationToken),
+                await ValidateRights(registerNewSystem.Rights, cancellationToken),
+                await ValidateAccessPackages(registerNewSystem.AccessPackages, registerNewSystem.IsVisible, cancellationToken),
+            ]);
 
             if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor.ID), User))
             {
