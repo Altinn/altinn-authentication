@@ -49,7 +49,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
-            if (systemUserErrors.TryToActionResult(out var errorResult))
+            if (systemUserErrors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
@@ -109,7 +109,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
 
-            if (systemUserErrors.TryToActionResult(out var errorResult))
+            if (systemUserErrors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
@@ -169,7 +169,7 @@ namespace Altinn.Platform.Authentication.Controllers
             ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
             ValidationProblemBuilder clientErrors = ValidateClient(client);
             ValidationProblemBuilder mergedErrors = ValidationProblemBuilderExtensions.MergeValidationErrors(systemUserErrors, clientErrors);
-            if (mergedErrors.TryToActionResult(out var errorResult))
+            if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
@@ -258,7 +258,7 @@ namespace Altinn.Platform.Authentication.Controllers
             ValidationProblemBuilder systemUserErrors = ValidateSystemUser(systemUser, agent);
             ValidationProblemBuilder clientErrors = ValidateClient(client);
             ValidationProblemBuilder mergedErrors = ValidationProblemBuilderExtensions.MergeValidationErrors(systemUserErrors, clientErrors);
-            if (mergedErrors.TryToActionResult(out var errorResult))
+            if (mergedErrors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }

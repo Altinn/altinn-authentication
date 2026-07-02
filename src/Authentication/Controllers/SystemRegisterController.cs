@@ -172,7 +172,7 @@ public class SystemRegisterController : ControllerBase
         {
             ValidationProblemBuilder errors = default;
             errors.Add(ValidationErrors.SystemId_Mismatch, [ErrorPathConstant.SYSTEM_ID]);
-            if (errors.TryToActionResult(out var result))
+            if (errors.TryToActionResult(out ActionResult result))
             {
                 return result;
             }
@@ -198,7 +198,7 @@ public class SystemRegisterController : ControllerBase
         ValidationProblemBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages);
         ValidationProblemBuilder mergedErrors = ValidationProblemBuilderExtensions.MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
 
-        if (mergedErrors.TryToActionResult(out var errorResult))
+        if (mergedErrors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
@@ -280,7 +280,7 @@ public class SystemRegisterController : ControllerBase
                     ErrorPathConstant.VENDOR_ID
                 ]);
 
-                if (errors.TryToActionResult(out var orgIdentifierErrorResult))
+                if (errors.TryToActionResult(out ActionResult orgIdentifierErrorResult))
                 {
                     return orgIdentifierErrorResult;
                 }
@@ -297,7 +297,7 @@ public class SystemRegisterController : ControllerBase
                 return Forbid();
             }
 
-            if (errors.TryToActionResult(out var errorResult))
+            if (errors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
@@ -343,7 +343,7 @@ public class SystemRegisterController : ControllerBase
 
         errors = await ValidateRights(rights, cancellationToken);
 
-        if (errors.TryToActionResult(out var errorResult))
+        if (errors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
@@ -381,7 +381,7 @@ public class SystemRegisterController : ControllerBase
 
         ValidationProblemBuilder errors = await ValidateAccessPackages(accessPackages, registerSystemResponse.IsVisible, cancellationToken);
 
-        if (errors.TryToActionResult(out var errorResult))
+        if (errors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
