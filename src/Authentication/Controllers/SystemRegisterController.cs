@@ -168,9 +168,9 @@ public class SystemRegisterController : ControllerBase
             return Forbid();
         }
 
+        ValidationProblemBuilder errors = default;
         if (proposedUpdateToSystem.Id != systemId)
         {
-            ValidationProblemBuilder errors = default;
             errors.Add(ValidationErrors.SystemId_Mismatch, [ErrorPathConstant.SYSTEM_ID]);
             if (errors.TryToActionResult(out ActionResult result))
             {
@@ -193,7 +193,6 @@ public class SystemRegisterController : ControllerBase
         List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
 
-        ValidationProblemBuilder errors = default;
         errors.MergeWith([
             await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken),
             await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, proposedUpdateToSystem.IsVisible, cancellationToken),
