@@ -1320,7 +1320,8 @@ namespace Altinn.Platform.Authentication.Services
                     DisplayName = item.Party.Name,
                     OrganizationIdentifier = item.Party.OrganizationNumber,
                     PartyUuid = item.Party.Id,
-                    Access = item.Access
+                    Access = item.Access,
+                    UnitType = item.Party.UnitType
                 };
                 result.Add(newCustomer);
             }
@@ -1379,23 +1380,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return primitiveList;
-        }
-
-        private static Result<List<Customer>> ConvertPartyCustomerToClient(CustomerList value)
-        {
-            List<Customer> result = [];
-            foreach (var item in value.Data)
-            {
-                var newCustomer = new Customer()
-                {
-                    DisplayName = item.DisplayName,
-                    OrganizationIdentifier = item.OrganizationIdentifier,
-                    PartyUuid = item.PartyUuid,
-                };
-                result.Add(newCustomer);
-            }
-
-            return result;
         }
 
         private async Task<Result<Guid>> GetPartyUuId(int partyId, CancellationToken cancellationToken)
