@@ -91,7 +91,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             // Otherwise, get the value
             var customerList = result.Result as OkObjectResult;
-            List<ExternalClientDto>? customers = customerList?.Value as List<ExternalClientDto>;
+            List<ExternalClientDto>? customers = customerList?.Value as List<ExternalClientDto> ?? [];
 
             return MapCustomerToSystemUserInfo(customers, agent, systemUser.ReporteeOrgNo);
         }
