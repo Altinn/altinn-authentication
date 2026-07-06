@@ -2272,7 +2272,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Act - Delegate customer to agent system user (this internally calls ValidateClientForAgentSystemUser)
             string systemUserId = list[0].Id;
-            Guid clientId = Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d"); // Client from the JSON dataset
+            Guid clientId = Guid.Parse("431a181a-135c-4a27-9184-2f4b5fb109e3"); // Client from the JSON dataset
             Guid facilitatorId = Guid.NewGuid();
 
             string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?provider={facilitatorId}&client={clientId}";
@@ -2392,7 +2392,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Act - Delegate customer to agent system user (this internally calls ValidateClientForAgentSystemUser)
             string systemUserId = list[0].Id;
-            Guid clientId = Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d"); // Client from the JSON dataset
+            Guid clientId = Guid.Parse("431a181a-135c-4a27-9184-2f4b5fb109e3"); // Client from the JSON dataset
             Guid facilitatorId = Guid.NewGuid();
 
             string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}?provider={facilitatorId}&client={clientId}";

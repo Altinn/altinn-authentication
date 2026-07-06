@@ -3872,7 +3872,7 @@ public class RequestControllerTests(
 
         // Act: call the new POST agent/{party}/{systemUserId} endpoint with query params
         Guid providerGuid = Guid.NewGuid();
-        Guid clientGuid = Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d");
+        Guid clientGuid = Guid.Parse("431a181a-135c-4a27-9184-2f4b5fb109e3");
         string delegateEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUser.Id}?provider={providerGuid}&client={clientGuid}";
 
         HttpResponseMessage delegateResponse = await partyClient.SendAsync(

@@ -483,9 +483,51 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult<Result<List<DelegationDto>>>(delegations);
     }
 
-    Task<Result<List<ClientDelegationDto>>> IAccessManagementClient.GetClientsForFacilitator(Guid facilitatorId, CancellationToken cancellationToken)
+    public Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken)
     {
-        return Task.FromResult<Result<List<ClientDelegationDto>>>(GetMockClientDelegations());
+        if (facilitatorId.ToString() == "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
+        {
+            return Task.FromResult<Result<List<ClientDelegationDto>>>(new List<ClientDelegationDto>());
+        }
+
+        if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
+        {
+            return Task.FromResult<Result<List<ClientDelegationDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+        }
+
+        if (facilitatorId.ToString() == "7bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
+        {
+            return Task.FromResult<Result<List<ClientDelegationDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
+        }
+
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
+        // The data file mirrors the paginated response from Access Management's GetClients
+        // endpoint ({ "links": {...}, "data": [ ... ] }), so deserialize the wrapper and take Data.
+        string clientData = File.OpenText("Data/Customers/systemusercustomerlist.json").ReadToEnd();
+        PaginatedResult<List<ClientDelegationDto>>? paginated = JsonSerializer.Deserialize<PaginatedResult<List<ClientDelegationDto>>>(clientData, options);
+        List<ClientDelegationDto> clients = paginated?.Data ?? [];
+
+        if (packages != null && packages.Count > 0)
+        {
+            // The real API accepts either the full URN (urn:altinn:accesspackage:regnskapsforer-lonn)
+            // or the short identifier (regnskapsforer-lonn), so match a package against both forms.
+            var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
+            clients = clients
+                .Where(c =>
+                    c.Access != null &&
+                    c.Access.Any(a =>
+                        a.Packages != null &&
+                        a.Packages.Any(p =>
+                            p.Urn != null &&
+                            (packageSet.Contains(p.Urn) || packageSet.Contains(p.Urn.Split(':').Last())))))
+                .ToList();
+        }
+
+        return Task.FromResult<Result<List<ClientDelegationDto>>>(clients);
     }
 
     public async Task<Result<bool>> RevokeSystemUserAsAgent(Guid partyUuid, Guid systemuser, bool cascade = false, CancellationToken cancellationToken = default)
