@@ -19,14 +19,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="5.2.2" />
-	  <PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql.Yuniql" Version="5.2.2" />
+	  <PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql" Version="5.5.0" />
+	  <PackageReference Include="Altinn.Authorization.ServiceDefaults.Npgsql.Yuniql" Version="5.5.0" />
 	  <PackageReference Include="Altinn.Register.Contracts" Version="1.7.0" />
 	  <PackageReference Include="Azure.Identity" Version="1.21.0" />
-	  <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.8" />
+	  <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.9" />
 	  <PackageReference Include="Npgsql" Version="10.0.3" />
-	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.18.0" />
-	  <PackageReference Include="System.Linq.AsyncEnumerable" Version="10.0.8" />
+	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
+	  <PackageReference Include="System.Linq.AsyncEnumerable" Version="10.0.9" />
+	  <!-- Transitive security pins (via Altinn.Authorization.ServiceDefaults.Npgsql):
+	       GHSA-q834-8qmm-v933, GHSA-mr8r-92fq-pj8p, GHSA-4625-4j76-fww9, GHSA-g94r-2vxg-569j. -->
+	  <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+	  <PackageReference Include="OpenTelemetry.Api" Version="1.16.0" />
 	</ItemGroup>
 
 	<ItemGroup>

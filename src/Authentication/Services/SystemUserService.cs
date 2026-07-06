@@ -26,7 +26,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json.Linq;
 
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using SystemUserType = Altinn.Platform.Authentication.Core.Enums.SystemUserType;
 
 #nullable enable
@@ -691,7 +690,7 @@ namespace Altinn.Platform.Authentication.Services
 
             if (systemInfo is not { AccessPackages.Count: { } systemInfoAccessPackagesCount } || systemInfoAccessPackagesCount < accessPackages.Count)
             {
-                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, Problem.AccessPackage_NotFound.Detail);
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, Problem.AccessPackage_NotFound.Title);
                 return Problem.AccessPackage_NotFound;
             }
 
@@ -1152,7 +1151,7 @@ namespace Altinn.Platform.Authentication.Services
             Result<bool> result = await _accessManagementClient.DeleteSystemUserAssignment(facilitatorId, systemUserId, cancellationToken);
             if (result.IsProblem)
             {
-                if (result.Problem.Detail == Problem.AgentSystemUser_AssignmentNotFound.Detail)
+                if (result.Problem.ErrorCode == Problem.AgentSystemUser_AssignmentNotFound.ErrorCode)
                 {
                     await _repository.SetDeleteSystemUserById(systemUserId);
                     return true;

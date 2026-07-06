@@ -163,26 +163,36 @@ public class SystemRegisterController : ControllerBase
     [ServiceFilter(typeof(TrimStringsActionFilter))]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateWholeRegisteredSystem([FromBody] RegisterSystemRequest proposedUpdateToSystem, string systemId, CancellationToken cancellationToken = default)
     {
-        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(proposedUpdateToSystem.Vendor.ID), User))
+        RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
+
+        string currentVendorId = currentSystem?.Vendor?.ID;
+        if (currentSystem == null || currentVendorId == null)
+        {
+            return NotFound($"System with ID '{systemId}' not found.");
+        }
+
+        // Authorize against the stored system's vendor before comparing the request-body vendor,
+        // so an unauthorized caller cannot distinguish a wrong-vendor guess (404) from a
+        // correct-vendor-but-no-access (403) and enumerate vendor ids for a systemId.
+        if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(currentVendorId), User))
         {
             return Forbid();
         }
 
+        string proposedVendorId = proposedUpdateToSystem.Vendor?.ID;
+        if (proposedVendorId == null || proposedVendorId != currentVendorId)
+        {
+            return NotFound($"System with ID '{systemId}' not found.");
+        }
+
+        ValidationProblemBuilder errors = default;
         if (proposedUpdateToSystem.Id != systemId)
         {
-            ValidationErrorBuilder errors = default;
             errors.Add(ValidationErrors.SystemId_Mismatch, [ErrorPathConstant.SYSTEM_ID]);
-            if (errors.TryToActionResult(out var result))
+            if (errors.TryToActionResult(out ActionResult result))
             {
                 return result;
             }
-        }
-
-        RegisteredSystemResponse currentSystem = await _systemRegisterService.GetRegisteredSystemInfo(systemId, cancellationToken);
-
-        if (currentSystem == null)
-        {
-            return NotFound($"System with ID '{systemId}' not found.");
         }
 
         if (currentSystem.IsDeleted)
@@ -193,12 +203,13 @@ public class SystemRegisterController : ControllerBase
         List<string> allClientIds = CombineClientIds(currentSystem.ClientId, proposedUpdateToSystem.ClientId);
         List<MaskinPortenClientInfo> allClientIdUsages = await _systemRegisterService.GetMaskinportenClients(allClientIds, cancellationToken);
 
-        ValidationErrorBuilder validateErrorRights = await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken);
-        ValidationErrorBuilder validateErrorAccessPackages = await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, proposedUpdateToSystem.IsVisible, cancellationToken);
-        ValidationErrorBuilder validateErrorClientIds = await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages);
-        ValidationErrorBuilder mergedErrors = MergeValidationErrors(validateErrorRights, validateErrorAccessPackages, validateErrorClientIds);
+        errors.MergeWith([
+            await ValidateRights(proposedUpdateToSystem.Rights, cancellationToken),
+            await ValidateAccessPackages(proposedUpdateToSystem.AccessPackages, proposedUpdateToSystem.IsVisible, cancellationToken),
+            await ValidateClientIds(currentSystem, proposedUpdateToSystem, allClientIdUsages),
+        ]);
 
-        if (mergedErrors.TryToActionResult(out ActionResult errorResult))
+        if (errors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
@@ -273,31 +284,31 @@ public class SystemRegisterController : ControllerBase
     {
         try
         {
-            ValidationErrorBuilder errors = default;
+            ValidationProblemBuilder errors = default;
             if (!AuthenticationHelper.IsValidOrgIdentifier(registerNewSystem.Vendor.ID))
             {
                 errors.Add(ValidationErrors.SystemRegister_InValid_Org_Identifier, [
                     ErrorPathConstant.VENDOR_ID
                 ]);
 
-                if (errors.TryToActionResult(out var orgIdentifierErrorResult))
+                if (errors.TryToActionResult(out ActionResult orgIdentifierErrorResult))
                 {
                     return orgIdentifierErrorResult;
                 }
             }
 
-            ValidationErrorBuilder validationErrorRegisteredSystem = await ValidateRegisteredSystem(registerNewSystem, cancellationToken);
-            ValidationErrorBuilder validationErrorRights = await ValidateRights(registerNewSystem.Rights, cancellationToken);
-            ValidationErrorBuilder validationErrorAccessPackages = await ValidateAccessPackages(registerNewSystem.AccessPackages, registerNewSystem.IsVisible, cancellationToken);
-
-            errors = MergeValidationErrors(validationErrorRegisteredSystem, validationErrorRights, validationErrorAccessPackages);
+            errors.MergeWith([
+                await ValidateRegisteredSystem(registerNewSystem, cancellationToken),
+                await ValidateRights(registerNewSystem.Rights, cancellationToken),
+                await ValidateAccessPackages(registerNewSystem.AccessPackages, registerNewSystem.IsVisible, cancellationToken),
+            ]);
 
             if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerNewSystem.Vendor.ID), User))
             {
                 return Forbid();
             }
 
-            if (errors.TryToActionResult(out var errorResult))
+            if (errors.TryToActionResult(out ActionResult errorResult))
             {
                 return errorResult;
             }
@@ -329,7 +340,7 @@ public class SystemRegisterController : ControllerBase
     [Authorize(Policy = AuthzConstants.POLICY_SCOPE_SYSTEMREGISTER_WRITE)]
     public async Task<ActionResult<SystemRegisterUpdateResult>> UpdateRightsOnRegisteredSystem([FromBody] List<Right> rights, string systemId, CancellationToken cancellationToken = default)
     {
-        ValidationErrorBuilder errors = default;
+        ValidationProblemBuilder errors = default;
         RegisteredSystemResponse registerSystemResponse = await _systemRegisterService.GetRegisteredSystemInfo(systemId);
         if (!AuthenticationHelper.HasWriteAccess(AuthenticationHelper.GetOrgNumber(registerSystemResponse.Vendor.ID), User))
         {
@@ -343,7 +354,7 @@ public class SystemRegisterController : ControllerBase
 
         errors = await ValidateRights(rights, cancellationToken);
 
-        if (errors.TryToActionResult(out var errorResult))
+        if (errors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
@@ -379,9 +390,9 @@ public class SystemRegisterController : ControllerBase
             return BadRequest("Cannot update a system marked as deleted.");
         }
 
-        ValidationErrorBuilder errors = await ValidateAccessPackages(accessPackages, registerSystemResponse.IsVisible, cancellationToken);
+        ValidationProblemBuilder errors = await ValidateAccessPackages(accessPackages, registerSystemResponse.IsVisible, cancellationToken);
 
-        if (errors.TryToActionResult(out var errorResult))
+        if (errors.TryToActionResult(out ActionResult errorResult))
         {
             return errorResult;
         }
@@ -455,9 +466,9 @@ public class SystemRegisterController : ControllerBase
     private static List<string> CombineClientIds(IEnumerable<string> current, IEnumerable<string> updated) =>
         current.Union(updated, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
-    private async Task<ValidationErrorBuilder> ValidateRights(List<Right> rights, CancellationToken cancellationToken)
+    private async Task<ValidationProblemBuilder> ValidateRights(List<Right> rights, CancellationToken cancellationToken)
     {
-        ValidationErrorBuilder errors = default;
+        ValidationProblemBuilder errors = default;
 
         var (invalidFormatResourceIds, notFoundResourceIds, notDelegableResourceIds) = await _systemRegisterService.GetInvalidResourceIdsDetailed(rights, cancellationToken);
 
@@ -475,9 +486,9 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private async Task<ValidationErrorBuilder> ValidateAccessPackages(List<AccessPackage> accessPackages, bool isVisible, CancellationToken cancellationToken)
+    private async Task<ValidationProblemBuilder> ValidateAccessPackages(List<AccessPackage> accessPackages, bool isVisible, CancellationToken cancellationToken)
     {
-        ValidationErrorBuilder errors = default;
+        ValidationProblemBuilder errors = default;
 
         var (invalidFormatUrns, notFoundUrns, notDelegableUrns, nonAssignableUrns) = await _systemRegisterService.GetInvalidAccessPackageUrnsDetailed(accessPackages, cancellationToken);
         if (invalidFormatUrns.Count > 0 || notFoundUrns.Count > 0 || notDelegableUrns.Count > 0)
@@ -523,9 +534,9 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private static Task<ValidationErrorBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest proposedUpdateToSystem, List<MaskinPortenClientInfo> allClientUsages)
+    private static Task<ValidationProblemBuilder> ValidateClientIds(RegisteredSystemResponse currentSystem, RegisterSystemRequest proposedUpdateToSystem, List<MaskinPortenClientInfo> allClientUsages)
     {
-        ValidationErrorBuilder errors = default;
+        ValidationProblemBuilder errors = default;
 
         HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
         bool hasDuplicates = proposedUpdateToSystem.ClientId.Any(clientId => !seen.Add(clientId));
@@ -556,9 +567,9 @@ public class SystemRegisterController : ControllerBase
         return Task.FromResult(errors);
     }
 
-    private async Task<ValidationErrorBuilder> ValidateRegisteredSystem(RegisterSystemRequest systemToValidate, CancellationToken cancellationToken)
+    private async Task<ValidationProblemBuilder> ValidateRegisteredSystem(RegisterSystemRequest systemToValidate, CancellationToken cancellationToken)
     {
-        ValidationErrorBuilder errors = default;
+        ValidationProblemBuilder errors = default;
 
         if (AuthenticationHelper.HasSpaceInId(systemToValidate.Id))
         {
@@ -598,20 +609,6 @@ public class SystemRegisterController : ControllerBase
         return errors;
     }
 
-    private static ValidationErrorBuilder MergeValidationErrors(params ValidationErrorBuilder[] errorBuilders)
-    {
-        ValidationErrorBuilder mergedErrors = default;
-        foreach (var errorBuilder in errorBuilders)
-        {
-            foreach (var error in errorBuilder)
-            {
-                mergedErrors.Add(error);
-            }
-        }
-
-        return mergedErrors;
-    }
-
     private SystemChangeLog PopulateSystemChangeLog(ClaimsPrincipal organisation, SystemChangeType changeType, Guid? internalId, object changedData)
     {
         string? orgClaim = organisation?.Claims.Where(c => c.Type.Equals("consumer")).Select(c => c.Value).FirstOrDefault();
@@ -634,8 +631,8 @@ public class SystemRegisterController : ControllerBase
         return systemChangeLog;
     }
 
-    private static ValidationErrorBuilder AddErrorIfAny(
-        ValidationErrorBuilder errors,
+    private static ValidationProblemBuilder AddErrorIfAny(
+        ValidationProblemBuilder errors,
         List<string> items,
         ValidationErrorDescriptor errorType,
         string errorLabel)

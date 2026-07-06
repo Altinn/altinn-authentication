@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Altinn.AccessManagement.Core.Constants;
@@ -52,6 +53,12 @@ namespace Altinn.AccessManagement.Tests.Mocks
             }
 
             return await Authorize(xacmlJsonRequest.Request);
+        }
+
+        /// <inheritdoc />
+        public Task<XacmlJsonResponse> GetDecisionForRequest(XacmlJsonRequestRoot xacmlJsonRequest, CancellationToken cancellationToken)
+        {
+            return GetDecisionForRequest(xacmlJsonRequest);
         }
 
         private async Task<XacmlJsonResponse> Authorize(XacmlJsonRequest decisionRequest)
@@ -141,6 +148,12 @@ namespace Altinn.AccessManagement.Tests.Mocks
         {
             XacmlJsonResponse response = await GetDecisionForRequest(xacmlJsonRequest);
             return DecisionHelper.ValidatePdpDecision(response.Response, user);
+        }
+
+        /// <inheritdoc/>
+        public Task<bool> GetDecisionForUnvalidateRequest(XacmlJsonRequestRoot xacmlJsonRequest, ClaimsPrincipal user, CancellationToken cancellationToken)
+        {
+            return GetDecisionForUnvalidateRequest(xacmlJsonRequest, user);
         }
 
         private async Task<XacmlContextRequest> Enrich(XacmlContextRequest request)

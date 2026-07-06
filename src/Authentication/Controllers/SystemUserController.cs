@@ -26,7 +26,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace Altinn.Platform.Authentication.Controllers;
 

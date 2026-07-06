@@ -101,7 +101,7 @@ namespace Altinn.Platform.Authentication.Tests.Clients
             // Assert
             Result<AccessPackageDto.Check> single = Assert.Single(results);
             Assert.True(single.IsProblem);
-            Assert.Equal(Problem.AccessPackage_DelegationCheckFailed.Detail, single.Problem!.Detail);
+            Assert.Equal(Problem.AccessPackage_DelegationCheckFailed.Title, single.Problem!.Title);
             VerifyErrorLogged("InternalServerError", partyId.ToString(), packageUrn, responseBody);
         }
 
