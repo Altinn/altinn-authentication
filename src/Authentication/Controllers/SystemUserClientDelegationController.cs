@@ -13,6 +13,7 @@ using Altinn.Platform.Authentication.Core.Constants;
 using Altinn.Platform.Authentication.Core.Errors;
 using Altinn.Platform.Authentication.Core.Models;
 using Altinn.Platform.Authentication.Core.Models.Rights;
+using Altinn.Platform.Authentication.Core.Models.Rights.ConnectionsDtos;
 using Altinn.Platform.Authentication.Core.Models.SystemUsers;
 using Altinn.Platform.Authentication.Helpers;
 using Altinn.Platform.Authentication.Model;
@@ -90,8 +91,7 @@ namespace Altinn.Platform.Authentication.Controllers
 
             // Otherwise, get the value
             var customerList = result.Result as OkObjectResult;
-            List<Customer>? customers = new List<Customer>();
-            customers = customerList?.Value as List<Customer>;
+            List<ExternalClientDto>? customers = customerList?.Value as List<ExternalClientDto>;
 
             return MapCustomerToSystemUserInfo(customers, agent, systemUser.ReporteeOrgNo);
         }
@@ -196,39 +196,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var customerResult = await inner.GetClientsForFacilitator(party.PartyUuid.Value, null);
-
-            if (customerResult.Result is not OkObjectResult) 
-            {
-                return customerResult.Result;
-            }
-
-            // Otherwise, get the value
-            var customerList = customerResult.Result as OkObjectResult;
-            List<Customer>? customers = customerList?.Value as List<Customer>;
-
-            Customer customer = customers?.Find(c => c.PartyUuid == client);
-
-            if (customer == null)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Title = "Client not found",
-                    Detail = $"Client with client id {client} not found",
-                    Status = 404
-                });
-            }
-
-            AgentDelegationInputDto agentDelegationInput = new AgentDelegationInputDto
-            {
-                CustomerId = client.ToString(),
-                FacilitatorId = party.PartyUuid.Value.ToString(),
-                Access = customer.Access
-            };
-
             var userId = AuthenticationHelper.GetUserId(HttpContext);
 
-            Result<List<DelegationResponse>> delegationResult = await SystemUserService.OldDelegateToAgentSystemUser(systemUser, agentDelegationInput, userId, cancellationToken);
+            // The new delegation service validates the client and its access packages internally
+            // (via GetClientsForFacilitator) and builds the delegation batch itself.
+            Result<List<DelegationResponse>> delegationResult = await SystemUserService.DelegateToAgentSystemUser(systemUser, party.PartyUuid.Value, client, userId, cancellationToken);
             if (delegationResult.IsProblem)
             {
                 return delegationResult.Problem.ToActionResult();
@@ -388,7 +360,7 @@ namespace Altinn.Platform.Authentication.Controllers
             return true;
         }
 
-        private static ClientInfoPaginated<ClientInfo> MapCustomerToSystemUserInfo(List<Customer> customers, Guid systemUserId, string systemUserOwner)
+        private static ClientInfoPaginated<ClientInfo> MapCustomerToSystemUserInfo(List<ExternalClientDto> customers, Guid systemUserId, string systemUserOwner)
         {
             SystemUserInfo systemUser = new SystemUserInfo
             {

@@ -480,7 +480,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Arrange
             HttpClient client = CreateClient();
 
-            Guid clientId = new Guid("f1c7ca59-5bf9-4036-bdb8-15062d992eaa");
+            Guid clientId = new Guid("401b595d-29d1-4636-a698-ada842c0b394");
             Guid systemUserId = new Guid("b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
 
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
@@ -664,11 +664,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read, altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
-            Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
             AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
-            Assert.Equal("Client not found", problemDetails.Title);
-            Assert.Equal("Client with client id 6a734c3a-c707-4bd4-9491-cf0c4c4a54fd not found", problemDetails.Detail);
+            Assert.Equal("Client not found.", problemDetails.Detail);            
         }
 
         [Fact]

@@ -888,7 +888,7 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, CancellationToken cancellationToken = default)
+    public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
         if (facilitatorId == Guid.Empty)
@@ -896,7 +896,15 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        string endpointUrl = $"enduser/clientdelegations/clients?party={facilitatorId}";        
+        string endpointUrl = $"enduser/clientdelegations/clients?party={facilitatorId}";
+
+        if (packages != null && packages.Count > 0)
+        {
+            foreach (var package in packages)
+            {
+                endpointUrl = $"{endpointUrl}&packages={package}";
+            }
+        }
 
         try
         {

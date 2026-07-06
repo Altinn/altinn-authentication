@@ -918,16 +918,18 @@ namespace Altinn.Platform.Authentication.Services
             bool[] outerValidationSet = new bool[packages.Count];
             List<string> packageUrns = [.. packages.Select(p => p.Urn!)];
 
-            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, cancellationToken);
+            Result<List<ClientDelegationDto>> clients = await _accessManagementClient.GetClientsForFacilitator(provider, packageUrns, cancellationToken);
             if (clients.IsProblem)
             {
                 return clients.Problem;
             }
 
+            int clientCount = 0;
             foreach (var agentClient in clients.Value)
             {
                 if (agentClient.Client.Id == client)
                 {
+                    clientCount++;
                     foreach (var access in agentClient.Access)
                     {
                         List<string> clientAccessPackages = [];
@@ -958,9 +960,14 @@ namespace Altinn.Platform.Authentication.Services
                 }
             }
 
+            if (clientCount == 0)
+            {
+                return Problem.AgentSystemUser_ClientNotFound;
+            }
+
             if (!outerValidationSet.All(v => v))
             {
-                return Problem.AccessPackage_NotFound;
+                return Problem.AgentSystemUser_ClientMissingAccessPackages;
             }
 
             return clientAccessPrimitive;
@@ -1192,7 +1199,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, cancellationToken);
+            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
             if (res.IsSuccess)
             {
                 if (packages is not null && packages.Count > 0)
