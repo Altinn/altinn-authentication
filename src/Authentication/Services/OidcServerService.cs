@@ -90,7 +90,7 @@ namespace Altinn.Platform.Authentication.Services
         /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
         /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
         /// </summary>
-        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, string? encryptedTicket, CancellationToken cancellationToken)
+        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
             // 1) Client lookup
@@ -484,7 +484,6 @@ namespace Altinn.Platform.Authentication.Services
                         Domain = _generalSettings.HostName,
                     }
                 };
-                noSidCookies.AddRange(BuildLegacySblCookieDeletes());
 
                 return new EndSessionResult
                 {
@@ -589,7 +588,6 @@ namespace Altinn.Platform.Authentication.Services
             };
             
             List<CookieInstruction> finalCookies = new() { deleteRuntime, deleteSession };
-            finalCookies.AddRange(BuildLegacySblCookieDeletes());
 
             return new EndSessionResult
             {
@@ -597,36 +595,6 @@ namespace Altinn.Platform.Authentication.Services
                 State = input.State,
                 Cookies = finalCookies
             };
-        }
-
-        private IEnumerable<CookieInstruction> BuildLegacySblCookieDeletes()
-        {
-            yield return new CookieInstruction
-            {
-                Name = _generalSettings.SblAuthCookieName,
-                Value = string.Empty,
-                HttpOnly = true,
-                Secure = true,
-                Path = "/",
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UnixEpoch,
-                Domain = _generalSettings.HostName,
-            };
-
-            if (!string.Equals(_generalSettings.SblAuthCookieEnvSpecificName, _generalSettings.SblAuthCookieName, StringComparison.Ordinal))
-            {
-                yield return new CookieInstruction
-                {
-                    Name = _generalSettings.SblAuthCookieEnvSpecificName,
-                    Value = string.Empty,
-                    HttpOnly = true,
-                    Secure = true,
-                    Path = "/",
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTimeOffset.UnixEpoch,
-                    Domain = _generalSettings.HostName,
-                };
-            }
         }
 
         /// <summary>

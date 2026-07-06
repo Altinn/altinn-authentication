@@ -107,13 +107,11 @@ namespace Altinn.Platform.Authentication.Controllers
                 OidcProvider provider = GetOidcProvider(orgIss);
                 if (provider == null)
                 {
-                    DeleteLegacySblCookies();
                     _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
                     return Redirect(_generalSettings.BaseUrl);
                 }
 
                 CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-                Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
                 Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
 
                 _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
@@ -163,18 +161,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Redirect(redirectUrl.Value);
             }
 
-            DeleteLegacySblCookies();
             return Redirect(_generalSettings.BaseUrl);
-        }
-
-        private void DeleteLegacySblCookies()
-        {
-            CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
-            if (!string.Equals(_generalSettings.SblAuthCookieEnvSpecificName, _generalSettings.SblAuthCookieName, StringComparison.Ordinal))
-            {
-                Response.Cookies.Delete(_generalSettings.SblAuthCookieEnvSpecificName, opt);
-            }
         }
 
         /// <summary>
@@ -187,7 +174,6 @@ namespace Altinn.Platform.Authentication.Controllers
         public ActionResult FrontchannelLogout()
         {
             CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
             Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
             string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
             _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);

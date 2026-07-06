@@ -8,16 +8,6 @@ namespace Altinn.Platform.Authentication.Configuration
     public class GeneralSettings
     {
         /// <summary>
-        /// Gets or sets the name of the SBL authentication cookie.
-        /// </summary>
-        public string SblAuthCookieEnvSpecificName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name of the SBL authentication cookie. Only used until SblAuthCookieEnvSpecificName
-        /// is rolled out in all environments.
-        public string SblAuthCookieName { get; set; }
-
-        /// <summary>
         /// Gets or sets the name of the JSON Web Token cookie.
         /// </summary>
         public string JwtCookieName { get; set; }
