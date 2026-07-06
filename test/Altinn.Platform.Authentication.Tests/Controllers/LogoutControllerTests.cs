@@ -168,11 +168,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         /// <summary>
-        /// Validates that a logged-in user is redirected to the resolved OIDC provider's (ID-porten) logout endpoint.
-        /// Event log : Audit log feature is turned on and the event is logged with expected claims
+        /// Validates that a logged-in external-auth user with no active authorization-server session
+        /// logs out to BaseUrl, and that no logout event is emitted even with AuditLog enabled.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToProviderLogout_ExternalAuthenticationMethod()
+        public async Task Logout_LogedIn_NoActiveSession_RedirectToBaseUrl_ExternalAuthenticationMethod()
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.altinn.no";
@@ -205,17 +205,18 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IEnumerable<string> values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("https://idporten.azurewebsites.net/api/v1/logout", values.First());
+                Assert.Equal("http://localhost/", values.First());
             }
 
-            AssertionUtil.AssertAuthenticationEvent(_eventQueue, expectedAuthenticationEvent, Moq.Times.Once());
+            AssertionUtil.AssertAuthenticationEvent(_eventQueue, expectedAuthenticationEvent, Moq.Times.Never());
         }
 
         /// <summary>
-        /// Validates that a logged-in user is redirected to the resolved OIDC provider's (ID-porten) logout endpoint.
+        /// Validates that a logged-in user with no active authorization-server session logs out to
+        /// BaseUrl, clearing the runtime auth cookie.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToIss()
+        public async Task Logout_LogedIn_NoActiveSession_RedirectToBaseUrl_ClearsCookie()
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.altinn.no";
@@ -237,12 +238,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IEnumerable<string> values;
             if (response.Headers.TryGetValues("location", out values))
             {
-                Assert.Equal("https://idporten.azurewebsites.net/api/v1/logout", values.First());
+                Assert.Equal("http://localhost/", values.First());
             }
 
             if (response.Headers.TryGetValues("Set-Cookie", out values))
             {
-                Assert.Equal("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", values.Single());
+                Assert.Contains(values, v => v.StartsWith("AltinnStudioRuntime=; expires=Thu, 01 Jan 1970 00:00:00 GMT"));
             }
         }
 

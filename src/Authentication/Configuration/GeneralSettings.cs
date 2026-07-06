@@ -178,11 +178,6 @@ namespace Altinn.Platform.Authentication.Configuration
         public string DefaultPortalScopes { get; set; } = "openid digdir:dialogporten.noconsent altinn:portal/enduser altinn:instances.read";
 
         /// <summary>
-        /// Enables the authorization server
-        /// </summary>
-        public bool AuthorizationServerEnabled { get; set; }
-
-        /// <summary>
         /// Name of Oidc Nonce cookie
         /// </summary>
         public string OidcNonceCookieName { get; set; } = "oidcnonce";
