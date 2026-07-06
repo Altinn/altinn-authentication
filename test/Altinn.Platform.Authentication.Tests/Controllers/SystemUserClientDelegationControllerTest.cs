@@ -656,7 +656,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
             AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
-            Assert.Equal("Client not found.", problemDetails.Detail);            
+            Assert.Equal("Client not found.", problemDetails.Title);            
         }
 
         [Fact]
