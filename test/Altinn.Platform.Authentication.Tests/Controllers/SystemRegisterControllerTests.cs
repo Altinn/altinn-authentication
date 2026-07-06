@@ -177,6 +177,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_Invalid_SystemId_Spaces.ErrorCode);
             Assert.Equal("/registersystemrequest/systemid", error.Paths.First(p => p.Equals("/registersystemrequest/systemid")));
+            Assert.Equal(ValidationErrors.SystemRegister_Invalid_SystemId_Spaces.Title, error.Title);
         }
 
         [Fact]
@@ -195,6 +196,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_SystemId_Exists.ErrorCode);
             Assert.Equal("/registersystemrequest/systemid", error.Paths.First(p => p.Equals("/registersystemrequest/systemid")));
+            Assert.Equal(ValidationErrors.SystemRegister_SystemId_Exists.Title, error.Title);
         }
 
         [Fact]
@@ -211,6 +213,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_Invalid_SystemId_Format.ErrorCode);
             Assert.Equal("/registersystemrequest/systemid", error.Paths.Single(p => p.Equals("/registersystemrequest/systemid")));
+            Assert.Equal(ValidationErrors.SystemRegister_Invalid_SystemId_Format.Title, error.Title);
         }
 
         [Fact]
@@ -226,6 +229,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_InvalidFormat.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal(ValidationErrors.SystemRegister_ResourceId_InvalidFormat.Title, error.Title);
         }
 
         [Fact]
@@ -241,6 +245,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_DoesNotExist.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal(ValidationErrors.SystemRegister_ResourceId_DoesNotExist.Title, error.Title);
         }
 
         [Fact]
@@ -254,13 +259,15 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AltinnValidationProblemDetails problemDetails = await response.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal(2, problemDetails.Errors.Count);
-            AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_NotDelegable.ErrorCode);            
+            AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_NotDelegable.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal(ValidationErrors.SystemRegister_ResourceId_NotDelegable.Title, error.Title);
             string notDelegableExtensionValue = error.Extensions["ResourceIds Not Delegable : "].ToString();
             Assert.Equal("ttd-am-k6", notDelegableExtensionValue);
 
             AltinnValidationError invalidFormatError = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_InvalidFormat.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", invalidFormatError.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal(ValidationErrors.SystemRegister_ResourceId_InvalidFormat.Title, invalidFormatError.Title);
             string invalidFormatErrorExtensionValue = invalidFormatError.Extensions["Invalid Resource Id Details : "].ToString();
             Assert.Equal("ttd-am-invalidresformat", invalidFormatErrorExtensionValue);
         }
@@ -278,6 +285,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_NotValid.ErrorCode);
             Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
+            Assert.Equal(ValidationErrors.SystemRegister_AccessPackage_NotValid.Title, error.Title);
         }
 
         [Fact]
@@ -293,6 +301,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_Duplicates.ErrorCode);
             Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+            Assert.Equal(ValidationErrors.SystemRegister_ResourceId_Duplicates.Title, error.Title);
         }
 
         [Fact]
@@ -308,6 +317,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_Duplicates.ErrorCode);
             Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
+            Assert.Equal(ValidationErrors.SystemRegister_AccessPackage_Duplicates.Title, error.Title);
         }
 
         [Fact]
@@ -323,6 +333,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_InValid_RedirectUrlFormat.ErrorCode);
             Assert.Equal("/registersystemrequest/allowedredirecturls", error.Paths.Single(p => p.Equals("/registersystemrequest/allowedredirecturls")));
+            Assert.Equal(ValidationErrors.SystemRegister_InValid_RedirectUrlFormat.Title, error.Title);
         }
 
         [Fact]
@@ -337,6 +348,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemRegister_InValid_Org_Identifier.ErrorCode);
             Assert.Equal("/registersystemrequest/vendor/id", error.Paths.First(p => p.Equals("/registersystemrequest/vendor/id")));
+            Assert.Equal(ValidationErrors.SystemRegister_InValid_Org_Identifier.Title, error.Title);
         }
 
         [Fact]
@@ -609,6 +621,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.NotNull(problemDetails);
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_Duplicates.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+                Assert.Equal(ValidationErrors.SystemRegister_ResourceId_Duplicates.Title, error.Title);
             }
         }
 
@@ -644,6 +657,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.NotNull(problemDetails);
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_Duplicates.ErrorCode);
                 Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
+                Assert.Equal(ValidationErrors.SystemRegister_AccessPackage_Duplicates.Title, error.Title);
             }
         }
 
@@ -680,6 +694,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.Single(problemDetails.Errors);
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_DoesNotExist.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+                Assert.Equal(ValidationErrors.SystemRegister_ResourceId_DoesNotExist.Title, error.Title);
             }
         }
 
@@ -1297,9 +1312,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.Equal(2, problemDetails.Errors.Count);
                 AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_ResourceId_DoesNotExist.ErrorCode);
                 Assert.Equal("/registersystemrequest/rights/resource", error.Paths.Single(p => p.Equals("/registersystemrequest/rights/resource")));
+                Assert.Equal(ValidationErrors.SystemRegister_ResourceId_DoesNotExist.Title, error.Title);
 
                 AltinnValidationError error01 = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_Duplicates.ErrorCode);
                 Assert.Equal("/registersystemrequest/accesspackages", error01.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
+                Assert.Equal(ValidationErrors.SystemRegister_AccessPackage_Duplicates.Title, error01.Title);
             }
         }
 
@@ -1425,6 +1442,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.Single(problemDetails.Errors);
             AltinnValidationError error = problemDetails.Errors.Single(e => e.ErrorCode == ValidationErrors.SystemRegister_AccessPackage_NotValid.ErrorCode);
             Assert.Equal("/registersystemrequest/accesspackages", error.Paths.Single(p => p.Equals("/registersystemrequest/accesspackages")));
+            Assert.Equal(ValidationErrors.SystemRegister_AccessPackage_NotValid.Title, error.Title);
         }
 
         [Fact]
@@ -1449,6 +1467,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AltinnValidationError error = problemDetails.Errors.FirstOrDefault(e => e.ErrorCode == ValidationErrors.SystemRegister_IsVisible_With_NonAssignable_AccessPackage.ErrorCode);
             Assert.NotNull(error);
             Assert.Equal("/registersystemrequest/accesspackages", error.Paths.First(p => p.Equals("/registersystemrequest/accesspackages")));
+            Assert.Equal(ValidationErrors.SystemRegister_IsVisible_With_NonAssignable_AccessPackage.Title, error.Title);
         }
 
         [Fact]
