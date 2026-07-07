@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <AspNetCoreModuleName>AspNetCoreModuleV2</AspNetCoreModuleName>
     <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
