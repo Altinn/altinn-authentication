@@ -1184,18 +1184,6 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
-        {
-            var res = await _accessManagementClient.OldGetClientsForFacilitator(facilitator, packages, cancellationToken);
-            if (res.IsSuccess)
-            {
-                return OldConvertConnectionDTOToClient(res.Value);
-            }
-
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
-        }
-
-        /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
             var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);

@@ -283,47 +283,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             }
         }
     }
-
-    public Task<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
-    {
-        if (facilitatorId.ToString() == "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
-        {
-            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(new List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>());
-        }
-
-        if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
-        {
-            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-        }
-
-        if (facilitatorId.ToString() == "7bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
-        {
-            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-        }
-
-        JsonSerializerOptions options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-        };
-
-        string clientData = File.OpenText("Data/Customers/customerlist.json").ReadToEnd();
-        List<Platform.Authentication.Core.Models.SystemUsers.ClientDto> clients = JsonSerializer.Deserialize<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>(clientData, options)!;
-
-        if (packages != null && packages.Count > 0)
-        {
-            var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
-            clients = clients
-                .Where(c =>
-                    c.Access != null &&
-                    c.Access.Any(a =>
-                        a.Packages != null &&
-                        a.Packages.Any(p => packageSet.Contains(p))))
-                .ToList();
-        }
-
-        return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(clients);
-    }
-
+   
     public async IAsyncEnumerable<Result<AccessPackageDto.Check>> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         string dataFileName = string.Empty;

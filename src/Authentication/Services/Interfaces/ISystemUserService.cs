@@ -207,16 +207,6 @@ public interface ISystemUserService
     /// <param name="featureManager">FeatureManager</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of Clients</returns>
-    Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Returns a list of clients available for a facilitator,
-    /// </summary>
-    /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
-    /// <param name="packages">An array of access package URNs. Only clients associated with at least one of these access packages will be included in the result.</param>
-    /// <param name="featureManager">FeatureManager</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>List of Clients</returns>
     Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
 
     /// <summary>
