@@ -158,19 +158,9 @@ namespace Altinn.Platform.Authentication.Configuration
         }
 
         /// <summary>
-        /// Get or sets the value indicating if OIDC authentication is enabled
-        /// </summary>
-        public bool EnableOidc { get; set; }
-
-        /// <summary>
         /// Get or sets the default oidc provider
         /// </summary>
         public string DefaultOidcProvider { get; set; }
-
-        /// <summary>
-        /// Defines if OIDC is the default authentication
-        /// </summary>
-        public bool ForceOidc { get; set; }
 
         /// <summary>
         /// Scopes set when there is no client id (Altinn Apps) or source is Altinn 2

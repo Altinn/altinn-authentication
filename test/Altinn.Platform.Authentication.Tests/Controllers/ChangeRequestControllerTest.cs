@@ -68,8 +68,6 @@ public class ChangeRequestControllerTest(
     protected override void ConfigureServices(IServiceCollection services)
     {
         base.ConfigureServices(services);
-        bool enableOidc = false;
-        bool forceOidc = false;
         string defaultOidc = "altinn";
 
         string configPath = GetConfigPath();
@@ -85,8 +83,6 @@ public class ChangeRequestControllerTest(
           .AddJsonFile(configPath)
           .Build();
 
-        configuration.GetSection("GeneralSettings:EnableOidc").Value = enableOidc.ToString();
-        configuration.GetSection("GeneralSettings:ForceOidc").Value = forceOidc.ToString();
         configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = defaultOidc;
 
         IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");

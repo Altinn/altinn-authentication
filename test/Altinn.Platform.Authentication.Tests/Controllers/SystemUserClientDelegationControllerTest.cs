@@ -78,8 +78,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var configuration = new ConfigurationBuilder()
               .AddJsonFile(configPath)
               .Build();
-            configuration.GetSection("GeneralSettings:EnableOidc").Value = "false";
-            configuration.GetSection("GeneralSettings:ForceOidc").Value = "false";
             configuration.GetSection("GeneralSettings:DefaultOidcProvider").Value = "altinn";
 
             IConfigurationSection generalSettingSection = configuration.GetSection("GeneralSettings");

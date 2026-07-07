@@ -97,12 +97,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             services.AddSingleton<IUserProfileService>(_userProfileService.Object);
             services.AddSingleton<IRegisterUserProvisioningClient>(_registerUserProvisioningClient.Object);
             services.AddSingleton<IOidcDownstreamLogout>(_downstreamLogoutClient.Object);
-
-            services.PostConfigure<GeneralSettings>(o =>
-            {
-                o.ForceOidc = true;   // “true” group
-                o.EnableOidc = true;  // must be true for ForceOidc to have effect
-            });
         }
 
         /// <summary>
