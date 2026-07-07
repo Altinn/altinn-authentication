@@ -104,8 +104,7 @@ public class SystemChangeLogRepository : ISystemChangeLogRepository
                         ? null
                         : reader.GetString(reader.GetOrdinal("changedby_orgnumber")),
                     ChangeType = Enum.Parse<SystemChangeType>(enumValue, true),
-                    // changed_data is a NOT NULL jsonb column holding a serialized payload, so deserialization is non-null.
-                    ChangedData = JsonSerializer.Deserialize<object>(reader.GetString(reader.GetOrdinal("changed_data")))!,
+                    ChangedData = JsonSerializer.Deserialize<object>(reader.GetString(reader.GetOrdinal("changed_data")))!, // changed_data is a NOT NULL jsonb column; deserialization is non-null.
                     ClientId = reader.IsDBNull(reader.GetOrdinal("client_id"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("client_id")),
