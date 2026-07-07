@@ -62,8 +62,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
              .AddInMemoryCollection(
                new Dictionary<string, string>
                {
-                    { "GeneralSettings:EnableOidc", "false" },
-                    { "GeneralSettings:ForceOidc", "false" },
                     { "GeneralSettings:DefaultOidcProvider", "altinn" },
                     { "FeatureManagement:EnableAuditLog", "false" }
                })

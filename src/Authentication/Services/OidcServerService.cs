@@ -390,12 +390,6 @@ namespace Altinn.Platform.Authentication.Services
         {
             Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
             Claim? scopeClaim = principal.Claims.FirstOrDefault(c => c.Type == "scope");
-            
-            // Disable code that forces presence of sid claim. Enable when all users have new token
-            //if (sidClaim == null && _generalSettings.ForceOidc)
-            //{
-            //    throw new InvalidOperationException("No sid claim present in principal");
-            //}
 
             if (sidClaim == null)
             {
@@ -414,7 +408,7 @@ namespace Altinn.Platform.Authentication.Services
 
             await _oidcSessionRepo.SlideExpiryToAsync(sidClaim.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
             var session = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
-            if (session is null && _generalSettings.ForceOidc)
+            if (session is null)
             {
                 throw new InvalidOperationException("No valid session found for sid");
             }
