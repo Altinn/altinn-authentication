@@ -59,7 +59,7 @@ public class SystemChangeLogRepository : ISystemChangeLogRepository
                 Value = JsonSerializer.Serialize(systemChangeLog.ChangedData)
             });
             command.Parameters.AddWithValue("client_id", (object?)systemChangeLog.ClientId ?? DBNull.Value);
-            command.Parameters.AddWithValue("created", NpgsqlTypes.NpgsqlDbType.TimestampTz, systemChangeLog.Created.Value.ToOffset(TimeSpan.Zero));
+            command.Parameters.AddWithValue("created", NpgsqlTypes.NpgsqlDbType.TimestampTz, (systemChangeLog.Created ?? throw new InvalidOperationException("SystemChangeLog.Created must be set before logging a change.")).ToOffset(TimeSpan.Zero));
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -104,7 +104,7 @@ public class SystemChangeLogRepository : ISystemChangeLogRepository
                         ? null
                         : reader.GetString(reader.GetOrdinal("changedby_orgnumber")),
                     ChangeType = Enum.Parse<SystemChangeType>(enumValue, true),
-                    ChangedData = JsonSerializer.Deserialize<object>(reader.GetString(reader.GetOrdinal("changed_data"))),
+                    ChangedData = JsonSerializer.Deserialize<object>(reader.GetString(reader.GetOrdinal("changed_data")))!, // changed_data is a NOT NULL jsonb column; deserialization is non-null.
                     ClientId = reader.IsDBNull(reader.GetOrdinal("client_id"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("client_id")),
