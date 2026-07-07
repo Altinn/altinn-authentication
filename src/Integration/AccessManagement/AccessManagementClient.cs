@@ -379,7 +379,7 @@ public class AccessManagementClient : IAccessManagementClient
 
     public async Task<Package?> GetAccessPackage(string urnValue)
     {
-        Package package = null;
+        Package? package = null;
 
         try
         {
@@ -915,7 +915,7 @@ public class AccessManagementClient : IAccessManagementClient
 
             var problemExtensionData = ProblemExtensionData.Create(new[]
             {
-                    new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail)
+                    new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail ?? string.Empty)
                 });
 
             ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
@@ -935,7 +935,7 @@ public class AccessManagementClient : IAccessManagementClient
 
     private async Task<Result<bool>> HandleResponse(HttpResponseMessage response, string logContext)
     {
-        var logContextProblem = logContext switch
+        ProblemDescriptor logContextProblem = logContext switch
         {
             "AddSystemUserAsRightHolder" => Problem.SystemUser_FailedToAddAsRightHolder,
             "RemoveSystemUserAsRightHolder" => Problem.SystemUser_FailedToRemoveRightHolder,
@@ -943,7 +943,8 @@ public class AccessManagementClient : IAccessManagementClient
             "RevokeRightsToSystemUser" => Problem.Rights_FailedToRevoke,
             "DeleteSingleAccessPackageFromSystemUser" => Problem.SystemUser_FailedToDeleteAccessPackage,
             "DelegateSingleAccessPackageToSystemUser" => Problem.AccessPackage_DelegationFailed,
-            "AddSystemUserAsAgent" => Problem.SystemUser_FailedToAddAsAgent
+            "AddSystemUserAsAgent" => Problem.SystemUser_FailedToAddAsAgent,
+            _ => throw new ArgumentException($"Unknown log context: {logContext}", nameof(logContext))
         };
 
         if (response.IsSuccessStatusCode)
