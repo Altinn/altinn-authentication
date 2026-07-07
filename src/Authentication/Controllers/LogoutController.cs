@@ -48,7 +48,7 @@ namespace Altinn.Platform.Authentication.Controllers
         /// <summary>
         /// Logs out user via the OIDC end session endpoint.
         /// This is the legacy endpoint used by Altinn Studio and Altinn Apps.
-        /// See also OIDCForntChannel controller end_session endpoint.
+        /// See also OidcFrontChannel controller end_session endpoint.
         /// </summary>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status302Found)]
@@ -75,6 +75,9 @@ namespace Altinn.Platform.Authentication.Controllers
 
             // Apply cookie instructions produced by the service
             SetCookies(result.Cookies);
+
+            string? tokenCookie = Request.Cookies.TryGetValue(_generalSettings.JwtCookieName, out var tc) ? tc : null;
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
 
             if (result.RedirectUri is not null)
             {

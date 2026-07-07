@@ -87,7 +87,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Handles an incoming OIDC <c>/authorize</c> request from a Downstream client in the Altinn Platform.
         /// This can be Arbeidsflate or other application.
-        /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
+        /// Identifies the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
         /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
         /// </summary>
         public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken)

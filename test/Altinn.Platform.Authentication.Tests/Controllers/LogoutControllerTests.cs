@@ -123,7 +123,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         /// Validates that a logged-in user is redirected to BaseUrl when no OIDC provider can be resolved from the token.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToBaseUrl()
+        public async Task Logout_LoggedIn_RedirectToBaseUrl()
         {
             string token = PrincipalUtil.GetToken(1337, null);
 
@@ -146,7 +146,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         /// Validates that a logged-in self-identified user is redirected to BaseUrl when no OIDC provider can be resolved.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_RedirectToBaseUrl_SelfIdentifiedUser()
+        public async Task Logout_LoggedIn_RedirectToBaseUrl_SelfIdentifiedUser()
         {
             string token = PrincipalUtil.GetSelfIdentifiedUserToken("siusertest", "12345", "2345678");
 
@@ -167,10 +167,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         /// <summary>
         /// Validates that a logged-in external-auth user with no active authorization-server session
-        /// logs out to BaseUrl, and that no logout event is emitted even with AuditLog enabled.
+        /// logs out to BaseUrl, and that the logout audit event is recorded when AuditLog is enabled.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_NoActiveSession_RedirectToBaseUrl_ExternalAuthenticationMethod()
+        public async Task Logout_LoggedIn_NoActiveSession_RedirectToBaseUrl_ExternalAuthenticationMethod()
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.altinn.no";
@@ -206,7 +206,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 Assert.Equal("http://localhost/", values.First());
             }
 
-            AssertionUtil.AssertAuthenticationEvent(_eventQueue, expectedAuthenticationEvent, Moq.Times.Never());
+            AssertionUtil.AssertAuthenticationEvent(_eventQueue, expectedAuthenticationEvent, Moq.Times.Once());
         }
 
         /// <summary>
@@ -214,7 +214,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         /// BaseUrl, clearing the runtime auth cookie.
         /// </summary>
         [Fact]
-        public async Task Logout_LogedIn_NoActiveSession_RedirectToBaseUrl_ClearsCookie()
+        public async Task Logout_LoggedIn_NoActiveSession_RedirectToBaseUrl_ClearsCookie()
         {
             List<Claim> claims = new List<Claim>();
             string issuer = "www.altinn.no";
