@@ -43,16 +43,6 @@ public interface IAccessManagementClient
 
     /// <summary>
     /// Delegate a customer to the Agent SystemUser
-    /// </summary>    
-    /// <param name="systemUser">The Agent SystemUser</param>
-    /// <param name="request">Post Body from BFF containing customerId</param>
-    /// <param name="userId">Logged in user</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Success or Failure</returns>    
-    Task<Result<List<AgentDelegationResponse>>> OldDelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Delegate a customer to the Agent SystemUser
     /// For the new connections API
     /// </summary>    
     /// <param name="systemUserId">The Agent SystemUser delegatged TO.</param>

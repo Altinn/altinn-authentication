@@ -47,24 +47,6 @@ public class ConnectionDto
 }
 
 /// <summary>
-/// Model lifted from the AM
-/// This is the response model from two endpoints
-/// </summary>
-[ExcludeFromCodeCoverage]
-public class AgentDelegationResponse
-{
-    /// <summary>
-    /// Delegationidentifier
-    /// </summary>
-    public Guid DelegationId { get; set; }
-
-    /// <summary>
-    /// Client party identifier
-    /// </summary>
-    public Guid FromEntityId { get; set; }
-}
-
-/// <summary>
 /// Delegation between two assignments
 /// </summary>
 public class Delegation
