@@ -73,14 +73,7 @@ internal static class AuthenticationHost
         MapPostgreSqlConfiguration(builder, descriptor);
 
         services.AddAutoMapper(cfg => { }, typeof(Program));
-        services.AddControllers(options =>
-        {
-            // Enabling nullable reference types makes ASP.NET Core treat non-nullable reference
-            // properties on request models as implicitly [Required]. Suppress that so enabling
-            // nullable does not silently change model-binding validation behaviour (returning 400
-            // for previously-optional properties). Required-ness should be expressed explicitly.
-            options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
-        }).AddJsonOptions(options =>
+        services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.WriteIndented = descriptor.IsLocalDev;
             options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
