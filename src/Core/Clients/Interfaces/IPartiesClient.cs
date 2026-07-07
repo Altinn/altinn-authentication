@@ -6,7 +6,7 @@ using RegisterContracts = Altinn.Register.Contracts;
 namespace Altinn.Authentication.Core.Clients.Interfaces;
 
 /// <summary>
-/// Interface for a client wrapper for integration with SBL bridge delegation request API
+/// Interface for a client wrapper for the Register party and organisation lookup API.
 /// </summary>
 public interface IPartiesClient
 {

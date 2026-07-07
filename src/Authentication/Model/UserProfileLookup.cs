@@ -4,10 +4,10 @@ namespace Altinn.Platform.Authentication.Model;
 
 /// <summary>
 /// Input model for internal UserProfile lookup requests, where one of the lookup identifiers available must be set for performing the lookup request:
-///     UserId (from Altinn 2 Authn UserProfile)
-///     Username (from Altinn 2 Authn UserProfile)
+///     UserId (from the Altinn user profile)
+///     Username (from the Altinn user profile)
 ///     SSN/Dnr (from Freg)
-///     Uuid (from Altinn 2 Party/UserProfile implementation will be added later)
+///     Uuid (from the Party/UserProfile implementation)
 /// </summary>
 public class UserProfileLookup
 {

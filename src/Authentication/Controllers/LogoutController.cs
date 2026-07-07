@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +10,6 @@ using Altinn.Platform.Authentication.Core.Helpers;
 using Altinn.Platform.Authentication.Core.Models.Oidc;
 using Altinn.Platform.Authentication.Core.Services.Interfaces;
 using Altinn.Platform.Authentication.Enum;
-using Altinn.Platform.Authentication.Model;
 using Altinn.Platform.Authentication.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -33,19 +31,13 @@ namespace Altinn.Platform.Authentication.Controllers
     public class LogoutController(
         ILogger<LogoutController> logger,
         IOptions<GeneralSettings> generalSettings,
-        IOptions<OidcProviderSettings> oidcProviderSettings,
         IEventLog eventLog,
         IFeatureManager featureManager,
         IRequestSystemUser requestSystemUser,
         IChangeRequestSystemUser changeRequestSystemUser,
         IOidcServerService oidcServerService) : ControllerBase
     {
-        private const string OriginalIssClaimName = "originaliss";
-
         private readonly GeneralSettings _generalSettings = generalSettings.Value;
-   
-        private readonly OidcProviderSettings _oidcProviderSettings = oidcProviderSettings.Value;
-        private readonly JwtSecurityTokenHandler _validator = new JwtSecurityTokenHandler();
 
         private readonly IEventLog _eventLog = eventLog;
         private readonly IFeatureManager _featureManager = featureManager;
@@ -54,71 +46,45 @@ namespace Altinn.Platform.Authentication.Controllers
         private readonly IOidcServerService _oidcServerService = oidcServerService;
 
         /// <summary>
-        /// Logs out user. This uses OIDC end session endpoint if enabled.
+        /// Logs out user via the OIDC end session endpoint.
         /// This is the legacy endpoint used by Altinn Studio and Altinn Apps.
-        /// See also OIDCForntChannel controller end_session endpoint.
+        /// See also OidcFrontChannel controller end_session endpoint.
         /// </summary>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status302Found)]
         [HttpGet("logout")]
         public async Task<ActionResult> Logout(CancellationToken cancellationToken = default)
         {
-            if (_generalSettings.AuthorizationServerEnabled)
+            System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
+            string ua = Request.Headers.UserAgent.ToString();
+            string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : Hashing.Sha256Base64Url(ua);
+
+            EndSessionInput input = new()
             {
-                System.Net.IPAddress? ip = HttpContext.Connection.RemoteIpAddress;
-                string ua = Request.Headers.UserAgent.ToString();
-                string? userAgentHash = string.IsNullOrWhiteSpace(ua) ? null : Hashing.Sha256Base64Url(ua);
+                IdTokenHint = null,
+                PostLogoutRedirectUri = null,
+                State = null,
+                User = HttpContext.User,
+                ClientIp = ip,
+                UserAgentHash = userAgentHash
+            };
 
-                EndSessionInput input = new()
-                {
-                    IdTokenHint = null,
-                    PostLogoutRedirectUri = null,
-                    State = null,
-                    User = HttpContext.User,
-                    ClientIp = ip,
-                    UserAgentHash = userAgentHash
-                };
+            EndSessionResult result = await _oidcServerService.EndSessionAsync(input, cancellationToken);
 
-                EndSessionResult result = await _oidcServerService.EndSessionAsync(input, cancellationToken);
+            SetCacheHeaders();
 
-                SetCacheHeaders();
+            // Apply cookie instructions produced by the service
+            SetCookies(result.Cookies);
 
-                // Apply cookie instructions produced by the service
-                SetCookies(result.Cookies);
+            string? tokenCookie = Request.Cookies.TryGetValue(_generalSettings.JwtCookieName, out var tc) ? tc : null;
+            _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
 
-                if (result.RedirectUri is not null)
-                {
-                    return Redirect(result.RedirectUri.ToString());
-                }
-
-                return Redirect(_generalSettings.BaseUrl);
-            }
-            else
+            if (result.RedirectUri is not null)
             {
-                JwtSecurityToken? jwt = null;
-                string? orgIss = null;
-                string? tokenCookie = Request.Cookies.TryGetValue(_generalSettings.JwtCookieName, out var tc) ? tc : null;
-                if (!string.IsNullOrEmpty(tokenCookie) && _validator.CanReadToken(tokenCookie))
-                {
-                    jwt = _validator.ReadJwtToken(tokenCookie);
-                    orgIss = jwt.Claims.Where(c => c.Type.Equals(OriginalIssClaimName)).Select(c => c.Value).FirstOrDefault();
-                }
-
-                OidcProvider provider = GetOidcProvider(orgIss);
-                if (provider == null)
-                {
-                    DeleteLegacySblCookies();
-                    _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
-                    return Redirect(_generalSettings.BaseUrl);
-                }
-
-                CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-                Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
-                Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
-
-                _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
-                return Redirect(provider.LogoutEndpoint);
+                return Redirect(result.RedirectUri.ToString());
             }
+
+            return Redirect(_generalSettings.BaseUrl);
         }
 
         /// <summary>
@@ -163,18 +129,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Redirect(redirectUrl.Value);
             }
 
-            DeleteLegacySblCookies();
             return Redirect(_generalSettings.BaseUrl);
-        }
-
-        private void DeleteLegacySblCookies()
-        {
-            CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
-            if (!string.Equals(_generalSettings.SblAuthCookieEnvSpecificName, _generalSettings.SblAuthCookieName, StringComparison.Ordinal))
-            {
-                Response.Cookies.Delete(_generalSettings.SblAuthCookieEnvSpecificName, opt);
-            }
         }
 
         /// <summary>
@@ -187,21 +142,10 @@ namespace Altinn.Platform.Authentication.Controllers
         public ActionResult FrontchannelLogout()
         {
             CookieOptions opt = new CookieOptions() { Domain = _generalSettings.HostName, Secure = true, HttpOnly = true };
-            Response.Cookies.Delete(_generalSettings.SblAuthCookieName, opt);
             Response.Cookies.Delete(_generalSettings.JwtCookieName, opt);
             string tokenCookie = Request.Cookies[_generalSettings.JwtCookieName];
             _eventLog.CreateAuthenticationEventAsync(_featureManager, tokenCookie, AuthenticationEventType.Logout, HttpContext.Connection.RemoteIpAddress);
             return Ok();
-        }
-
-        private OidcProvider GetOidcProvider(string iss)
-        {
-            if (!string.IsNullOrEmpty(iss) && _oidcProviderSettings.ContainsKey(iss))
-            {
-                return _oidcProviderSettings[iss];
-            }
-
-            return null;
         }
 
         private void SetCacheHeaders()

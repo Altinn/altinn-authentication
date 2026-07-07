@@ -8,16 +8,6 @@ namespace Altinn.Platform.Authentication.Configuration
     public class GeneralSettings
     {
         /// <summary>
-        /// Gets or sets the name of the SBL authentication cookie.
-        /// </summary>
-        public string SblAuthCookieEnvSpecificName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name of the SBL authentication cookie. Only used until SblAuthCookieEnvSpecificName
-        /// is rolled out in all environments.
-        public string SblAuthCookieName { get; set; }
-
-        /// <summary>
         /// Gets or sets the name of the JSON Web Token cookie.
         /// </summary>
         public string JwtCookieName { get; set; }
@@ -168,29 +158,14 @@ namespace Altinn.Platform.Authentication.Configuration
         }
 
         /// <summary>
-        /// Get or sets the value indicating if OIDC authentication is enabled
-        /// </summary>
-        public bool EnableOidc { get; set; }
-
-        /// <summary>
         /// Get or sets the default oidc provider
         /// </summary>
         public string DefaultOidcProvider { get; set; }
 
         /// <summary>
-        /// Defines if OIDC is the default authentication
-        /// </summary>
-        public bool ForceOidc { get; set; }
-
-        /// <summary>
         /// Scopes set when there is no client id (Altinn Apps) or source is Altinn 2
         /// </summary>
         public string DefaultPortalScopes { get; set; } = "openid digdir:dialogporten.noconsent altinn:portal/enduser altinn:instances.read";
-
-        /// <summary>
-        /// Enables the authorization server
-        /// </summary>
-        public bool AuthorizationServerEnabled { get; set; }
 
         /// <summary>
         /// Name of Oidc Nonce cookie

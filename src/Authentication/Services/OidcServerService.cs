@@ -87,10 +87,10 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Handles an incoming OIDC <c>/authorize</c> request from a Downstream client in the Altinn Platform.
         /// This can be Arbeidsflate or other application.
-        /// Identifes the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
+        /// Identifies the correct Upstream ID Provider like ID-porten, UIDP, Testlogin or other configured provider
         /// Stores downstream login transaction and upstream transaction before redirecting to the correct upstream ID-provider
         /// </summary>
-        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, string? encryptedTicket, CancellationToken cancellationToken)
+        public async Task<AuthorizeResult> Authorize(AuthorizeRequest request, ClaimsPrincipal principal, string? sessionHandle, CancellationToken cancellationToken)
         {
             // Local helper to choose error redirect or local error based on redirect_uri validity
             // 1) Client lookup
@@ -390,12 +390,6 @@ namespace Altinn.Platform.Authentication.Services
         {
             Claim? sidClaim = principal.Claims.FirstOrDefault(c => c.Type == "sid");
             Claim? scopeClaim = principal.Claims.FirstOrDefault(c => c.Type == "scope");
-            
-            // Disable code that forces presence of sid claim. Enable when all users have new token
-            //if (sidClaim == null && _generalSettings.ForceOidc)
-            //{
-            //    throw new InvalidOperationException("No sid claim present in principal");
-            //}
 
             if (sidClaim == null)
             {
@@ -414,7 +408,7 @@ namespace Altinn.Platform.Authentication.Services
 
             await _oidcSessionRepo.SlideExpiryToAsync(sidClaim.Value, _timeProvider.GetUtcNow().AddMinutes(_generalSettings.JwtValidityMinutes), cancellationToken);
             var session = await _oidcSessionRepo.GetBySidAsync(sidClaim.Value, cancellationToken);
-            if (session is null && _generalSettings.ForceOidc)
+            if (session is null)
             {
                 throw new InvalidOperationException("No valid session found for sid");
             }
@@ -484,7 +478,6 @@ namespace Altinn.Platform.Authentication.Services
                         Domain = _generalSettings.HostName,
                     }
                 };
-                noSidCookies.AddRange(BuildLegacySblCookieDeletes());
 
                 return new EndSessionResult
                 {
@@ -589,7 +582,6 @@ namespace Altinn.Platform.Authentication.Services
             };
             
             List<CookieInstruction> finalCookies = new() { deleteRuntime, deleteSession };
-            finalCookies.AddRange(BuildLegacySblCookieDeletes());
 
             return new EndSessionResult
             {
@@ -597,36 +589,6 @@ namespace Altinn.Platform.Authentication.Services
                 State = input.State,
                 Cookies = finalCookies
             };
-        }
-
-        private IEnumerable<CookieInstruction> BuildLegacySblCookieDeletes()
-        {
-            yield return new CookieInstruction
-            {
-                Name = _generalSettings.SblAuthCookieName,
-                Value = string.Empty,
-                HttpOnly = true,
-                Secure = true,
-                Path = "/",
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UnixEpoch,
-                Domain = _generalSettings.HostName,
-            };
-
-            if (!string.Equals(_generalSettings.SblAuthCookieEnvSpecificName, _generalSettings.SblAuthCookieName, StringComparison.Ordinal))
-            {
-                yield return new CookieInstruction
-                {
-                    Name = _generalSettings.SblAuthCookieEnvSpecificName,
-                    Value = string.Empty,
-                    HttpOnly = true,
-                    Secure = true,
-                    Path = "/",
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTimeOffset.UnixEpoch,
-                    Domain = _generalSettings.HostName,
-                };
-            }
         }
 
         /// <summary>
