@@ -64,81 +64,6 @@ public class AccessManagementClientMock: IAccessManagementClient
         _env = env;
     }
 
-    public async Task<Result<List<AgentDelegationResponse>>> OldDelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
-    {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-
-        if (token == null) 
-        { 
-            return Problem.Rights_FailedToDelegate; 
-        }
-
-        List<AgentDelegationResponse> delegationResult = [];
-
-        List<AgentDelegationDetails> delegations = [];
-
-        foreach (var pac in systemUser.AccessPackages)
-        {
-            AgentDelegationDetails delegation = new()
-            {
-                ClientRole = GetRoleFromAccessPackage(pac.Urn!) ?? "NOTFOUND",
-                AccessPackage = pac.Urn!.ToString()
-            };
-
-            if (delegation.ClientRole == "NOTFOUND")
-            {
-                return Problem.Rights_FailedToDelegate;
-            }
-
-            delegations.Add(delegation);
-        }
-
-        AgentDelegationRequest agentDelegationRequest = new()
-        {
-            AgentId = Guid.Parse(systemUser.Id),
-            AgentName = systemUser.IntegrationTitle,
-            AgentRole = "Agent",
-            ClientId = Guid.Parse(request.CustomerId),
-            FacilitatorId = Guid.Parse(request.FacilitatorId),
-            Delegations = delegations
-        };
-
-        string endpointUrl = $"internal/delegation/systemagent";
-
-        var delegationId = Guid.NewGuid();
-
-        var ext = new AgentDelegationResponse()
-        {
-            DelegationId = delegationId,
-            FromEntityId = Guid.Parse(request.CustomerId)
-        };
-
-        delegationResult.Add(ext);
-
-        return delegationResult;
-    }
-
-    /// <summary>
-    ///  Only for use in the PILOT test in tt02
-    /// </summary>
-    /// <param name="accessPackage">The accesspackage requested on the system user</param>
-    /// <returns></returns>
-    private static string? GetRoleFromAccessPackage(string accessPackage)
-    {
-        Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
-
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "REGN");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "REGN");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "REGN");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "REVI");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "REVI");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:skatt-naering", "REGN");
-
-        hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);        
-        return found;   
-    }
-
     public async Task<Result<bool>> DelegateRightToSystemUser(Guid partyId, SystemUserInternalDTO systemUser, List<RightResponses> rights)
     {
         if (partyId == Guid.Parse("c48fc8fc-3695-40d5-90d1-fd12cb51075b"))
@@ -283,47 +208,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             }
         }
     }
-
-    public Task<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
-    {
-        if (facilitatorId.ToString() == "6bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
-        {
-            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(new List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>());
-        }
-
-        if (facilitatorId.ToString() == "ca00ce4a-c30c-4cf7-9523-a65cd3a40232")
-        {
-            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-        }
-
-        if (facilitatorId.ToString() == "7bb78d06-70b2-45f6-85bc-19ca7b4d34d8")
-        {
-            return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-        }
-
-        JsonSerializerOptions options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-        };
-
-        string clientData = File.OpenText("Data/Customers/customerlist.json").ReadToEnd();
-        List<Platform.Authentication.Core.Models.SystemUsers.ClientDto> clients = JsonSerializer.Deserialize<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>(clientData, options)!;
-
-        if (packages != null && packages.Count > 0)
-        {
-            var packageSet = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
-            clients = clients
-                .Where(c =>
-                    c.Access != null &&
-                    c.Access.Any(a =>
-                        a.Packages != null &&
-                        a.Packages.Any(p => packageSet.Contains(p))))
-                .ToList();
-        }
-
-        return Task.FromResult<Result<List<Platform.Authentication.Core.Models.SystemUsers.ClientDto>>>(clients);
-    }
-
+   
     public async IAsyncEnumerable<Result<AccessPackageDto.Check>> CheckDelegationAccessForAccessPackage(Guid partyId, string[] requestedPackages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         string dataFileName = string.Empty;

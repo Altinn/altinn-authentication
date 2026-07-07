@@ -547,83 +547,7 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
         }
     }
-
-    /// <inheritdoc />
-    public async Task<Result<List<AgentDelegationResponse>>> OldDelegateCustomerToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
-    {
-        const string AGENT = "agent";
-
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (!Guid.TryParse(request.FacilitatorId, out Guid facilitator))
-        {
-            return Problem.Reportee_Orgno_NotFound;
-        }
-
-        if (!Guid.TryParse(request.CustomerId, out Guid clientId))
-        {
-            return Problem.CustomerIdNotFound;
-        }
-
-        if (!Guid.TryParse(systemUser.Id, out Guid agentSystemUserId))
-        {
-            return Problem.SystemUserNotFound;
-        }
-
-        List<CreateSystemDelegationRolePackageDto> rolePackages = [];
-
-        foreach (var pac in systemUser.AccessPackages)
-        {
-            string? role;
-
-            role = GetRoleFromAccessPackages(pac.Urn!, request.Access);
-
-
-            if (role is null)
-            {
-                return Problem.RoleNotFoundForPackage;
-            }
-
-            CreateSystemDelegationRolePackageDto rolePackage = new()
-            {
-                RoleIdentifier = role,
-                PackageUrn = pac.Urn!.ToString()
-            };
-
-            rolePackages.Add(rolePackage);
-        }
-
-        AgentDelegationRequest agentDelegationRequest = new()
-        {
-            AgentId = agentSystemUserId,
-            AgentName = systemUser.IntegrationTitle,
-            AgentRole = AGENT,
-            ClientId = clientId,
-            FacilitatorId = facilitator,
-            RolePackages = rolePackages
-        };
-
-        try
-        {
-            string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}";
-            HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(agentDelegationRequest));
-
-            List<AgentDelegationResponse> found = await response.Content.ReadFromJsonAsync<List<AgentDelegationResponse>>(_serializerOptions, cancellationToken) ?? [];
-
-            if (response.IsSuccessStatusCode && found is not null)
-            {
-                return found;
-            }
-
-            return new Result<List<AgentDelegationResponse>>(Problem.Rights_FailedToDelegate);
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // DelegateCustomerToAgentSystemUser // Exception");
-            throw;
-        }
-    }
-
+    
     /// <inheritdoc />
     public async Task<Result<List<DelegationDto>>> DelegateCustomerToAgentSystemUser(Guid systemUser, DelegationBatchInputDto batch, Guid provider, Guid client, CancellationToken cancellationToken)
     {
@@ -827,67 +751,6 @@ public class AccessManagementClient : IAccessManagementClient
         return delegations;
     }
 
-    public async Task<Result<List<ClientDto>>> OldGetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
-    {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (facilitatorId == Guid.Empty)
-        {
-            return Problem.Reportee_Orgno_NotFound;
-        }
-
-        string endpointUrl = $"internal/systemuserclientdelegation/clients?party={facilitatorId}";
-
-        if (packages != null && packages.Count > 0)
-        {
-            foreach (var package in packages)
-            {
-                endpointUrl = $"{endpointUrl}&packages={package}";
-            }
-        }
-
-        try
-        {
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
-
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<ClientDto>>(_serializerOptions, cancellationToken) ?? [];
-            }
-            else
-            {
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Unauthorized);
-                    return new Result<List<ClientDto>>(problemInstance);
-                }
-                else if (response.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients_Forbidden);
-                    return new Result<List<ClientDto>>(problemInstance);
-                }
-                else
-                {
-                    string responseContent = await response.Content.ReadAsStringAsync();
-
-                    ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
-                    _logger.LogError($"Authentication // AccessManagementClient // GetClientsForFacilitator // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
-                    var problemExtensionData = ProblemExtensionData.Create(new[]
-                    {
-                    new KeyValuePair<string, string>("Problem Detail : ", problemDetails.Detail)
-                    });
-                    ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToGetClients, problemExtensionData);
-                    return new Result<List<ClientDto>>(problemInstance);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // GetClientsForFacilitator // Exception");
-            throw;
-
-        }
-    }
-
     public async Task<Result<List<ClientDelegationDto>>> GetClientsForFacilitator(Guid facilitatorId, List<string> packages, CancellationToken cancellationToken = default)
     {
         string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
@@ -990,44 +853,6 @@ public class AccessManagementClient : IAccessManagementClient
             throw;
         }
 
-    }
-
-    /// <summary>
-    ///  Gets the role identifier that gives access to the requested access package
-    /// </summary>
-    /// <param name="accessPackages">The accesspackage requested for a system user on a system</param>
-    /// <returns></returns>
-    private static string? GetRoleFromAccessPackages(string accessPackage, List<ClientRoleAccessPackages> clientRoleAccessPackages)
-    {
-        accessPackage = accessPackage?.Split(":")[3]!;
-        if (string.IsNullOrEmpty(accessPackage) || clientRoleAccessPackages == null)
-        {
-            return null;
-        }
-
-        foreach (var clientRoleAccessPackage in clientRoleAccessPackages)
-        {
-            if (clientRoleAccessPackage.Packages != null && clientRoleAccessPackage.Packages.Contains(accessPackage, StringComparer.OrdinalIgnoreCase))
-            {
-                return clientRoleAccessPackage.Role;
-            }
-        }
-
-        return null;
-    }
-
-    private static string? GetRoleFromAccessPackage(string accessPackage)
-    {
-        Dictionary<string, string> hardcodingOfAccessPackageToRole = [];
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-med-signeringsrettighet", "regnskapsforer");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-uten-signeringsrettighet", "regnskapsforer");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:regnskapsforer-lonn", "regnskapsforer");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:ansvarlig-revisor", "revisor");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:revisormedarbeider", "revisor");
-        hardcodingOfAccessPackageToRole.Add("urn:altinn:accesspackage:forretningsforer-eiendom", "forretningsforer");
-
-        hardcodingOfAccessPackageToRole.TryGetValue(accessPackage, out string? found);
-        return found;
     }
 
     private async Task<Result<bool>> HandleDeleteAgentErrors(HttpResponseMessage response, bool isDeleteAgent = false)

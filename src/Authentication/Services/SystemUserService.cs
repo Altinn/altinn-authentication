@@ -828,32 +828,6 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> OldDelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken)
-        {           
-            Result<List<AgentDelegationResponse>> result = await _accessManagementClient.OldDelegateCustomerToAgentSystemUser(systemUser, request, userId, cancellationToken);
-            if (result.IsSuccess)
-            {
-                List<DelegationResponse> theList = [];
-
-                foreach (var item in result.Value)
-                {
-                    var newDel = new DelegationResponse()
-                    {
-                        DelegationId = item.DelegationId,
-                        CustomerId = item.FromEntityId,
-                        AgentSystemUserId = new Guid(systemUser.Id!)
-                    };
-
-                    theList.Add(newDel);
-                }
-
-                return theList;
-            }
-
-            return result.Problem;
-        }
-
-        /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> DelegateToAgentSystemUser(SystemUserInternalDTO systemUser, Guid provider, Guid client, int userId, CancellationToken cancellationToken)
         {
             List<AccessPackage> packages = systemUser.AccessPackages ?? [];             
@@ -1181,18 +1155,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return true;
-        }
-
-        /// <inheritdoc/>
-        public async Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken)
-        {
-            var res = await _accessManagementClient.OldGetClientsForFacilitator(facilitator, packages, cancellationToken);
-            if (res.IsSuccess)
-            {
-                return OldConvertConnectionDTOToClient(res.Value);
-            }
-
-            return res.Problem ?? Problem.AgentSystemUser_FailedToGetClients;
         }
 
         /// <inheritdoc/>

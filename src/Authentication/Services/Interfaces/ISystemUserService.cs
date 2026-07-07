@@ -122,18 +122,7 @@ public interface ISystemUserService
     /// <param name="party">The User id for the Facilitator for the Agent SystemUser currently logged in at the FrontEnd.</param> 
     /// <returns>List of Agent SystemUsers</returns>
     Task<List<SystemUserInternalDTO>?> GetListOfAgentSystemUsersForParty(int party);
-
-    /// <summary>
-    /// Creates a new delegation of a customer to an Agent SystemUser.
-    /// The service is idempotent.
-    /// </summary>
-    /// <param name="systemUser">SystemUser</param>
-    /// <param name="request">AgentDelegationInputDto</param>
-    /// <param name="userId">the user id of the logged in user</param>
-    /// <param name="cancellationToken">CancellationToken</param>
-    /// <returns>Result of True or False</returns> 
-    Task<Result<List<DelegationResponse>>> OldDelegateToAgentSystemUser(SystemUserInternalDTO systemUser, AgentDelegationInputDto request, int userId, CancellationToken cancellationToken);
-
+    
     /// <summary>
     /// Creates a new delegation of a customer to an Agent SystemUser.
     /// The service is idempotent.
@@ -198,16 +187,6 @@ public interface ISystemUserService
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns></returns>
     Task<Result<bool>> DeleteAgentSystemUser(string partyId, Guid systemUserId, Guid facilitatorId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Returns a list of clients available for a facilitator,
-    /// </summary>
-    /// <param name="facilitator">the guid id of the logged in user, representing the Facilitator</param>
-    /// <param name="packages">An array of access package URNs. Only clients associated with at least one of these access packages will be included in the result.</param>
-    /// <param name="featureManager">FeatureManager</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>List of Clients</returns>
-    Task<Result<List<Customer>>> OldGetClientsForFacilitator(Guid facilitator, List<string> packages, IFeatureManager featureManager, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns a list of clients available for a facilitator,

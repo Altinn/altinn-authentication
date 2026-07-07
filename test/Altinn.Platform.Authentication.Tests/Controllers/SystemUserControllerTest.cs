@@ -1388,27 +1388,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Delegation of a Customer to the empty Agent System User
             string systemUserId = list[0].Id;
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
-
-            var delegationRequest = new AgentDelegationInputDto 
-            { 
-                CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString(), Access = [
-                new ClientRoleAccessPackages()
-                {
-                    Role = "REGN",
-                    Packages = ["urn:altinn:accesspackage:skatt-naering"]
-                },
-                                new ClientRoleAccessPackages()
-                {
-                    Role = "forretningsforer",
-                    Packages = ["urn:altinn:accesspackage:forretningsforer-eiendom"]
-                }
-                ]
-            };
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/?provider={Guid.NewGuid().ToString()}&client=431a181a-135c-4a27-9184-2f4b5fb109e3";
 
             HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
-            delegateMessage.Content = JsonContent.Create(delegationRequest);
             HttpResponseMessage delegationResponse = await client2.SendAsync(delegateMessage, HttpCompletionOption.ResponseContentRead);
             List<DelegationResponse>? delegations = await delegationResponse.Content.ReadFromJsonAsync<List<DelegationResponse>>();
             Assert.Equal(HttpStatusCode.OK, delegationResponse.StatusCode);
@@ -1471,7 +1454,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Delegation of a Customer to the empty Agent System User
             string systemUserId = Guid.NewGuid().ToString();
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/?provider={Guid.NewGuid().ToString()}&client=431a181a-135c-4a27-9184-2f4b5fb109e3";
 
             var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
 
@@ -1544,7 +1527,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Delegation of a Customer to the empty Agent System User
             string systemUserId = list[0].Id;
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/delegation/";
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/?provider={Guid.NewGuid().ToString()}&client=431a181a-135c-4a27-9184-2f4b5fb109e3";
 
             var delegationRequest = new AgentDelegationInputDto { CustomerId = Guid.NewGuid().ToString(), FacilitatorId = Guid.NewGuid().ToString() };
 
@@ -3355,7 +3338,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         // =====================================================================
-        // POST /agent/{party}/{systemUserId}/delegation/ — Forbid (party mismatch)
+        // POST /agent/{party}/{systemUserId}/ — Forbid (party mismatch)
         // =====================================================================
 
         [Fact]
@@ -3405,7 +3388,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Act: delegate using a *different* party in the route — triggers the PartyId != party guard
             int wrongPartyId = 500801;
-            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUserId}/delegation/";
+            string delegationEndpoint = $"/authentication/api/v1/systemuser/agent/{wrongPartyId}/{systemUserId}/?provider={Guid.NewGuid().ToString()}&client=431a181a-135c-4a27-9184-2f4b5fb109e3";
 
             HttpRequestMessage delegateMessage = new(HttpMethod.Post, delegationEndpoint);
             delegateMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
