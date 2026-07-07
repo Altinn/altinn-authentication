@@ -3,6 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
 	</PropertyGroup>
@@ -43,7 +44,8 @@
 
 	<PropertyGroup>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<NoWarn>$(NoWarn);1591</NoWarn>
+		<!-- NU1510: "PackageReference will not be pruned" — silenced per team guidance rather than removing the reference. -->
+		<NoWarn>$(NoWarn);1591;NU1510</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
