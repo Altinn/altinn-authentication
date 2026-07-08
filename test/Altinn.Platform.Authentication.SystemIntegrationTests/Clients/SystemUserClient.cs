@@ -148,7 +148,7 @@ public class SystemUserClient
         return content;
     }
 
-    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
+    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
     {
         // Get the Altinn token
         var altinnToken = await _platformClient.GetPersonalAltinnToken(testperson);
@@ -176,7 +176,7 @@ public class SystemUserClient
         Assert.Equal(HttpStatusCode.Accepted, putResponse.StatusCode);
     }
 
-    public async Task<ClientsForDelegationResponseDto> GetAvailableClientsForVendor(Testuser? facilitator, string? systemUserId, bool requireNonEmpty = true)
+    public async Task<ClientsForDelegationResponseDto> GetAvailableClientsForVendor(Testuser facilitator, string? systemUserId, bool requireNonEmpty = true)
     {
         var url = Endpoints.VendorGetAvailableClients.Url() + $"?agent={systemUserId}";
 
@@ -199,7 +199,7 @@ public class SystemUserClient
         return clients;
     }
 
-    public async Task<HttpResponseMessage> AddClient(Testuser? facilitator, string? systemUserId, string clientId)
+    public async Task<HttpResponseMessage> AddClient(Testuser facilitator, string? systemUserId, string clientId)
     {
         var urlPost = Endpoints.VendorAddClients.Url().Replace("{clientId}", clientId).Replace("{systemUserId}", systemUserId);
 
@@ -235,7 +235,7 @@ public class SystemUserClient
         return await _platformClient.Delete(urlDelete, token);
     }
 
-    public async Task<ClientsForDelegationResponseDto> GetDelegatedClientsFromVendorSystemUser(Testuser? facilitator, string? systemUserId)
+    public async Task<ClientsForDelegationResponseDto> GetDelegatedClientsFromVendorSystemUser(Testuser facilitator, string? systemUserId)
     {
         var urlGet = Endpoints.VendorGetDelegatedClients.Url().Replace("{systemUserId}", systemUserId);
 

@@ -41,6 +41,7 @@ public class SystemUserTests : IDisposable
     public async Task GetCreatedSystemUser()
     {
         var dagl = _platformClient.FindTestUserByRole("DAGL");
+        Assert.NotNull(dagl);
 
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
@@ -495,8 +496,10 @@ public class SystemUserTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    private async Task ApproveSystemUserRequest(Testuser? testuser, string requestId, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
+    private async Task ApproveSystemUserRequest(Testuser testuser, string requestId, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
     {
+        ArgumentNullException.ThrowIfNull(testuser);
+
         var approveUrl = Endpoints.ApproveSystemUserRequest.Url()
             .Replace("{party}", testuser.AltinnPartyId)
             .Replace("{requestId}", requestId);
