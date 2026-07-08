@@ -896,7 +896,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            int partyId = 500000;
             string partyOrgno = "910493353"; 
 
             SystemUserRequestDto newSystemUser = new()
