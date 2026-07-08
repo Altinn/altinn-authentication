@@ -44,7 +44,7 @@ public class SystemUserTests : IDisposable
 
         var altinnToken = await _platformClient.GetPersonalAltinnToken(dagl);
 
-        var endpoint = Endpoints.GetSystemUsersByParty.Url().Replace("{party}", dagl.AltinnPartyId);
+        var endpoint = Endpoints.GetSystemUsersByParty.Url().Replace("{party}", dagl!.AltinnPartyId);
 
         var respons = await _platformClient.GetAsync(endpoint, altinnToken);
 
@@ -497,6 +497,8 @@ public class SystemUserTests : IDisposable
 
     private async Task ApproveSystemUserRequest(Testuser? testuser, string requestId, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
     {
+        ArgumentNullException.ThrowIfNull(testuser);
+
         var approveUrl = Endpoints.ApproveSystemUserRequest.Url()
             .Replace("{party}", testuser.AltinnPartyId)
             .Replace("{requestId}", requestId);

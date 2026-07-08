@@ -67,7 +67,7 @@ public class ClientDelegationVendorTests : IClassFixture<ClientDelegationFixture
         Assert.Equal(expectedDecision, decision);
 
         //Remove clients so system user can be deleted later
-        await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(_fixture.Facilitator, systemUser.Id, delegatedClients.Data);
+        await _fixture.Platform.SystemUserClient.DeleteAllClientsFromVendorSystemUser(_fixture.Facilitator, systemUser.Id, delegatedClients.Data ?? []);
     }
 
     [Fact]

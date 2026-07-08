@@ -21,5 +21,5 @@ public class SystemUserAgentDto
 
 public class AccessPackage
 {
-    public string Urn { get; set; }
+    public string Urn { get; set; } = string.Empty;
 }

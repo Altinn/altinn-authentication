@@ -94,6 +94,8 @@ public class Common
 
     public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
     {
+        ArgumentNullException.ThrowIfNull(testperson);
+
         // Use the PostAsync method for the approval request
         var response = await _platformClient.PostAsync(endpoint, string.Empty, testperson.AltinnToken);
         return response;

@@ -213,13 +213,13 @@ public class ApiEndpoint
     {
         if (obj is not ApiEndpoint other) return false;
 
-        return Url.Equals(other.Url, StringComparison.OrdinalIgnoreCase) &&
+        return string.Equals(Url, other.Url, StringComparison.OrdinalIgnoreCase) &&
                Method.Method.Equals(other.Method.Method, StringComparison.OrdinalIgnoreCase);
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Url.ToLowerInvariant(), Method.Method.ToLowerInvariant());
+        return HashCode.Combine(Url?.ToLowerInvariant(), Method.Method.ToLowerInvariant());
     }
 
     /// <summary>
@@ -227,6 +227,7 @@ public class ApiEndpoint
     /// </summary>
     public static string? NormalizeUrl(string? url)
     {
+        if (string.IsNullOrEmpty(url)) return url;
         if (!url.StartsWith("v1/")) url = "v1/" + url; // ✅ Ensure v1 prefix
         // ✅ Remove trailing slashes for consistency
         url = url.TrimEnd('/');
