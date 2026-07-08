@@ -227,7 +227,6 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpDelete("clients")]
         public async Task<ActionResult<List<DelegationResponse>>> RemoveClientFromSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
-            Guid delegationId = Guid.Empty;
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             ValidationProblemBuilder errors = default;
@@ -263,36 +262,10 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var result = await SystemUserService.OldGetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent, client);
-            if (result.IsSuccess)
+            Result<bool> removeResult = await SystemUserService.DeleteClientDelegationToAgentSystemUser(party.PartyId.ToString(), agent, client, party.PartyUuid.Value, cancellationToken);
+            if (removeResult.IsProblem)
             {
-                DelegationResponse? delegation = result.Value?.FirstOrDefault(d => d.CustomerId == client);
-                if (delegation == null)
-                {
-                    return NotFound(new ProblemDetails
-                    {
-                        Title = "Delegation not found",
-                        Detail = $"No delegation found for customer {client} and system user {agent}",
-                        Status = 404
-                    });
-                }
-                else
-                {
-                    delegationId = delegation.DelegationId;
-                }
-            }
-            else if (result.IsProblem)
-            {
-                return result.Problem.ToActionResult();
-            }
-
-            var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, party.PartyUuid.Value, cancellationToken);
-
-            // If the result is a problem (not 200 OK), return it directly
-            // If the result is an ObjectResult and status code is not 200, return it directly
-            if (removeResult is ObjectResult objectResult && objectResult.StatusCode != 200)
-            {
-                return objectResult;
+                return removeResult.Problem.ToActionResult();
             }
 
             return Ok(new ClientDelegationResponse

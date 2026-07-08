@@ -1649,139 +1649,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         }
 
         [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsOk()
-        {
-            // Create System used for test
-            string dataFileName = "Data/SystemRegister/Json/SystemRegisterWithAccessPackage.json";
-            HttpResponseMessage response = await CreateSystemRegister(dataFileName);
-
-            HttpClient client = CreateClient();
-            string token = AddSystemUserRequestWriteTestTokenToClient(client);
-            string endpoint = $"/authentication/api/v1/systemuser/request/vendor/agent";
-
-            AccessPackage accessPackage = new()
-            {
-                Urn = "urn:altinn:accesspackage:skatt-naering"
-            };
-
-            // Arrange
-            CreateAgentRequestSystemUser req = new()
-            {
-                ExternalRef = "external",
-                SystemId = "991825827_the_matrix",
-                PartyOrgNo = "910493353",
-                AccessPackages = [accessPackage]
-            };
-
-            HttpRequestMessage request = new(HttpMethod.Post, endpoint)
-            {
-                Content = JsonContent.Create(req)
-            };
-            HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-            Assert.Equal(HttpStatusCode.Created, message.StatusCode);
-
-            AgentRequestSystemResponse? res = await message.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
-            Assert.NotNull(res);
-            Assert.Equal(req.ExternalRef, res.ExternalRef);
-
-            //// Party Get Request
-            HttpClient client2 = CreateClient();
-
-            int partyId = 500000;
-
-            string approveEndpoint = $"/authentication/api/v1/systemuser/request/agent/{partyId}/{res.Id}/approve";
-            HttpRequestMessage approveRequestMessage = new(HttpMethod.Post, approveEndpoint);
-            approveRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, true, now: TestTime));
-            HttpResponseMessage approveResponseMessage = await client2.SendAsync(approveRequestMessage, HttpCompletionOption.ResponseHeadersRead);
-            Assert.Equal(HttpStatusCode.OK, approveResponseMessage.StatusCode);
-
-            string getEndpoint = $"/authentication/api/v1/systemuser/agent/{partyId}";
-
-            HttpRequestMessage getAgent = new(HttpMethod.Get, getEndpoint);
-            getAgent.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpResponseMessage getResponse = await client2.SendAsync(getAgent, HttpCompletionOption.ResponseHeadersRead);
-
-            var systemUserApproveResponse = await getResponse.Content.ReadFromJsonAsync<List<SystemUserInternalDTO>>();
-            Assert.NotNull(systemUserApproveResponse);
-
-            Guid systemUserId = Guid.Parse(systemUserApproveResponse[0].Id);
-
-            Guid facilitatorId = new Guid("0af0688f-4743-4697-acdd-8b2c13884f65");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client3 = CreateClient();
-            client3.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request3 = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response3 = await client3.SendAsync(request3, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest()
-        {
-            int partyId = 500005;
-            Guid facilitatorId = new Guid("02ba44dc-d80b-4493-a942-9b355d491da0");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.CustomerDelegation_FailedToRevoke.Title, problemDetails?.Title);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_DelegationNotFound()
-        {
-            int partyId = 500005;
-            Guid facilitatorId = new Guid("199912a2-86e1-4c8e-b010-c8c3956535a7");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_DelegationNotFound.Title, problemDetails?.Title);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_PartyMismatch()
-        {
-            int partyId = 500005;
-            Guid facilitatorId = new Guid("1765cf28-2554-4f3c-90c6-a269a01f46c8");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_DeleteDelegation_PartyMismatch.Title, problemDetails?.Title);
-        }
-
-        [Fact]
-        public async Task AgentSystemUser_DeleteCustomer_ReturnsBadRequest_InvalidDelegationFacilitator()
-        {
-            int partyId = 500005;
-            Guid facilitatorId = new Guid("cf814a90-1a14-4323-ae8b-72738abaab49");
-            Guid delegationId = Guid.NewGuid();
-
-            HttpClient client = CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
-            HttpRequestMessage request = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/delegation/{delegationId}?facilitatorId={facilitatorId}");
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            Assert.Equal(Problem.AgentSystemUser_InvalidDelegationFacilitator.Title, problemDetails?.Title);
-        }
-
-        [Fact]
         public async Task AgentSystemUser_DeleteAgent_ReturnsOk()
         {
             // Create System used for test
@@ -3542,6 +3409,46 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // Assert
             Assert.Equal(HttpStatusCode.BadRequest, revokeResponse.StatusCode);
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_RevokeClient_ReturnsUnauthorized()
+        {
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+            Guid clientGuid = Guid.NewGuid();
+            Guid providerGuid = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+
+            // No Authorization header is set on the request
+            HttpRequestMessage revokeRequest = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/client?client={clientGuid}&provider={providerGuid}");
+            HttpResponseMessage revokeResponse = await client.SendAsync(revokeRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, revokeResponse.StatusCode);
+        }
+
+        // Agent Tests
+        [Fact]
+        public async Task AgentSystemUser_RevokeClient_ReturnsProblemDetails_WhenRevokeFails()
+        {
+            int partyId = 500000;
+            Guid systemUserId = Guid.NewGuid();
+
+            // This client id makes the AccessManagement mock return CustomerDelegation_FailedToRevoke
+            Guid clientGuid = Guid.Parse("024a0fdd-294c-45ce-9a12-262b11983f2d");
+            Guid providerGuid = Guid.NewGuid();
+
+            HttpClient client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
+            HttpRequestMessage revokeRequest = new(HttpMethod.Delete, $"/authentication/api/v1/systemuser/agent/{partyId}/{systemUserId}/client?client={clientGuid}&provider={providerGuid}");
+            HttpResponseMessage revokeResponse = await client.SendAsync(revokeRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.BadRequest, revokeResponse.StatusCode);
+            ProblemDetails? problemDetails = await revokeResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+            Assert.NotNull(problemDetails);
+            Assert.Equal(Problem.CustomerDelegation_FailedToRevoke.Title, problemDetails.Title);
         }
     }
 }
