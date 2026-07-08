@@ -6,6 +6,7 @@ using Altinn.Platform.Authentication.Core.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
@@ -54,8 +55,8 @@ public class PartiesClient : IPartiesClient
         IAccessTokenGenerator accessTokenGenerator)
     {
         _logger = logger;
-        httpClient.BaseAddress = new Uri(platformSettings.Value.ApiRegisterEndpoint);
-        httpClient.DefaultRequestHeaders.Add(platformSettings.Value.SubscriptionKeyHeaderName, platformSettings.Value.SubscriptionKey);
+        httpClient.BaseAddress = new Uri(platformSettings.Value.ApiRegisterEndpoint!);
+        httpClient.DefaultRequestHeaders.Add(platformSettings.Value.SubscriptionKeyHeaderName!, platformSettings.Value.SubscriptionKey);
         _client = httpClient;
         _httpContextAccessor = httpContextAccessor;
         _platformSettings = platformSettings.Value;
@@ -69,7 +70,8 @@ public class PartiesClient : IPartiesClient
         try
         {
             string endpointUrl = $"parties/{partyId}";
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
+            Debug.Assert(_httpContextAccessor.HttpContext is not null);
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName!);
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, accessToken, cancellationToken);
@@ -96,7 +98,8 @@ public class PartiesClient : IPartiesClient
         try
         {
             string endpointUrl = $"parties/byuuid/{partyUuId}";
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
+            Debug.Assert(_httpContextAccessor.HttpContext is not null);
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName!);
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 
             HttpResponseMessage response = await _client.GetAsync(token, endpointUrl, accessToken, cancellationToken);
@@ -123,7 +126,8 @@ public class PartiesClient : IPartiesClient
         try
         {
             string endpointUrl = $"parties/lookup";
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!);
+            Debug.Assert(_httpContextAccessor.HttpContext is not null);
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName!);
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 
             StringContent requestBody = new(JsonSerializer.Serialize((new PartyLookup() { OrgNo = orgNo })), Encoding.UTF8, "application/json");
@@ -156,6 +160,7 @@ public class PartiesClient : IPartiesClient
 
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 
+            // No bearer token: this endpoint is authenticated via the platform access token.
             HttpResponseMessage response = await _client.GetAsync(null, endpointUrl, accessToken, cancellationToken);
 
             string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -210,6 +215,7 @@ public class PartiesClient : IPartiesClient
             JsonContent requestBody = JsonContent.Create(queryRequest, options: _registerQueryOptions);
             var accessToken = _accessTokenGenerator.GenerateAccessToken("platform", "authentication");
 
+            // No bearer token: this endpoint is authenticated via the platform access token.
             HttpResponseMessage response = await _client.PostAsync(null, endpointUrl, requestBody, accessToken);
 
             // 200 = all urns matched. 206 = at least one urn did not resolve; for a single lookup that means "not found".
@@ -248,7 +254,8 @@ public class PartiesClient : IPartiesClient
                 _ => throw new ArgumentException("Invalid customer type")
             };
 
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
+            Debug.Assert(_httpContextAccessor.HttpContext is not null);
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName!);
             string endpointUrl = customerType switch
             {
                 CustomerRoleType.Revisor => $"internal/parties/{partyUuid}/customers/ccr/revisor",
@@ -270,7 +277,8 @@ public class PartiesClient : IPartiesClient
                 }
                 else
                 {
-                    return JsonSerializer.Deserialize<CustomerList>(responseContent, _serializerOptions);
+                    // On a successful, non-empty response the body is a serialized CustomerList.
+                    return JsonSerializer.Deserialize<CustomerList>(responseContent, _serializerOptions)!;
                 }
             }
 
@@ -304,7 +312,8 @@ public class PartiesClient : IPartiesClient
     {
         try
         {
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName);
+            Debug.Assert(_httpContextAccessor.HttpContext is not null);
+            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext, _platformSettings.JwtCookieName!);
             string endpointUrl = customerType switch
             {
                 CustomerRoleType.Revisor => $"internal/parties/{partyUuid}/customers/ccr/revisor",
@@ -326,7 +335,8 @@ public class PartiesClient : IPartiesClient
                 }
                 else
                 {
-                    return JsonSerializer.Deserialize<CustomerList>(responseContent, _serializerOptions);
+                    // On a successful, non-empty response the body is a serialized CustomerList.
+                    return JsonSerializer.Deserialize<CustomerList>(responseContent, _serializerOptions)!;
                 }
             }
 
