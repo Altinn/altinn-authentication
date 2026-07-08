@@ -913,12 +913,11 @@ public class AccessManagementClient : IAccessManagementClient
             ProblemDetails problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseContent, _serializerOptions)!;
             _logger.LogError($"Authentication // AccessManagementClient // {deleteString} // Title: {problemDetails.Title}, Problem: {problemDetails.Detail}");
 
-            var problemExtensionData = ProblemExtensionData.Create(new[]
-            {
-                    new KeyValuePair<string, string>("Problem Detail: ", problemDetails.Detail ?? string.Empty)
-                });
-
-            ProblemInstance problemInstance = ProblemInstance.Create(Problem.AgentSystemUser_FailedToDeleteAgent, problemExtensionData);
+            ProblemInstance problemInstance = Problem.AgentSystemUser_FailedToDeleteAgent.Create(
+            [
+                new("source.title", problemDetails.Title ?? string.Empty),
+                new("source.detail", problemDetails.Detail ?? string.Empty),
+            ]);
             return new Result<bool>(problemInstance);
         }
     }
