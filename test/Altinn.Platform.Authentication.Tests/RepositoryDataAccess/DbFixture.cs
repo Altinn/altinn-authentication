@@ -17,7 +17,7 @@ public class DbFixture
 {
     private const int MAX_CONCURRENCY = 20;
 
-    Singleton.Ref<Inner>? _inner;
+    private Singleton.Ref<Inner>? _inner;
 
     public async Task InitializeAsync()
     {
@@ -50,8 +50,8 @@ public class DbFixture
 
         private readonly AsyncConcurrencyLimiter _throtler = new(MAX_CONCURRENCY);
 
-        string? _connectionString;
-        NpgsqlDataSource? _db;
+        private string? _connectionString;
+        private NpgsqlDataSource? _db;
 
         public async Task InitializeAsync()
         {
@@ -109,10 +109,10 @@ public class DbFixture
 
     public sealed class OwnedDb : IAsyncDisposable
     {
-        readonly string _connectionString;
-        readonly string _dbName;
-        readonly DbFixture _db;
-        readonly IDisposable _ticket;
+        private readonly string _connectionString;
+        private readonly string _dbName;
+        private readonly DbFixture _db;
+        private readonly IDisposable _ticket;
 
         public OwnedDb(string connectionString, string dbName, DbFixture db, IDisposable ticket)
         {
@@ -156,7 +156,7 @@ public class DbFixture
         }
     }
 
-    class TraceService : Yuniql.Extensibility.ITraceService
+    private class TraceService : Yuniql.Extensibility.ITraceService
     {
         public static Yuniql.Extensibility.ITraceService Instance { get; } = new TraceService();
 

@@ -430,7 +430,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 string systemID = "991825827_the_matrix";
                 HttpClient client = CreateClient();
                 string[] prefixes = { "altinn", "digdir" };
-                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes  , TestTime);
+                string token = PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:authentication/systemregister.admin", prefixes, TestTime);
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 JsonSerializerOptions options = new JsonSerializerOptions()
                 {

@@ -12,13 +12,12 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
         /// <inheritdoc/>
         public Task<XacmlJsonResponse> GetDecisionForRequest(XacmlJsonRequestRoot xacmlJsonRequest)
         {
-            //var response = new XacmlJsonResponse
-            //{
+            // var response = new XacmlJsonResponse
+            // {
             //    Response = new List<XacmlJsonResult>(new[] { new XacmlJsonResult { Decision = "Permit" } })
-            //};
+            // };
 
-            //return Task.FromResult(response);
-
+            // return Task.FromResult(response);
             string decision = "Permit";
 
             // Check for claim "userid" with value "2234" in all AccessSubjects
