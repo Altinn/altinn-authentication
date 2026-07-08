@@ -20,8 +20,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     public class OpenIdControllerTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
-        private readonly WebApplicationFactory<OpenIdController> _factory;
-
         protected override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);

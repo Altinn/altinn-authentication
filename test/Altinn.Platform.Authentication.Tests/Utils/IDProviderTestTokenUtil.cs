@@ -108,8 +108,6 @@ namespace Altinn.Platform.Authentication.Tests.Utils
         public static OidcCodeResponse GetUidpTokenResponse(OidcTestScenario scenario, UpstreamLoginTransaction createdUpstreamLogingTransaction, DateTimeOffset authTime)
         {
             string sub = Guid.NewGuid().ToString();
-            string locale = "nb";
-            string digDirOrgNo = "991825827";
 
             OidcCodeResponse response = new()
             {

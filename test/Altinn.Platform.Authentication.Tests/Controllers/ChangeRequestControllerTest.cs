@@ -220,9 +220,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // Change Request, create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -348,9 +345,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // Change Request, create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -738,9 +732,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // Change Request, create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -877,9 +868,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // Change Request, create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -1030,9 +1018,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // Change Request, create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -1179,9 +1164,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // ChangeRequest create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -1343,9 +1325,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // ChangeRequest create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -1481,9 +1460,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // ChangeRequest create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -1838,9 +1814,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // ChangeRequest create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -2121,9 +2094,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // ChangeRequest create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -2261,9 +2231,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string ext = "external";
-        string sys = "991825827_the_matrix";
 
         // ChangeRequest create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";
@@ -2462,8 +2429,6 @@ public class ChangeRequestControllerTest(
         });
 
         Guid id = Guid.NewGuid();
-        string orgno = "910493353";
-        string sys = "991825827_the_matrix";
 
         // ChangeRequest create
         string createChangeRequestEndpoint = $"/authentication/api/v1/systemuser/changerequest/vendor?correlation-id={id}&system-user-id={systemuser.Id}";

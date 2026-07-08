@@ -36,7 +36,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     public class LogoutControllerTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
-        private readonly WebApplicationFactory<LogoutController> _factory;
         private IConfiguration _configuration;
   
         private readonly Mock<IUserProfileService> _userProfileService = new();

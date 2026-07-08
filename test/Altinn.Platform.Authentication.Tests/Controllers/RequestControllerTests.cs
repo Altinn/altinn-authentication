@@ -757,7 +757,6 @@ public class RequestControllerTests(
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
@@ -815,7 +814,6 @@ public class RequestControllerTests(
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
@@ -941,7 +939,6 @@ public class RequestControllerTests(
         string endpoint2 = $"/authentication/api/v1/systemuser/request/vendor/agent/{testId}";
 
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
-        string debug = "pause_here";
         Assert.Equal(HttpStatusCode.NotFound, message2.StatusCode);
         ProblemDetails? problem = await message2.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.Equal("The Id does not refer to a Request in our system.", problem!.Title);
@@ -1256,7 +1253,6 @@ public class RequestControllerTests(
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: true, now: TestTime));
 
-        int partyId = 500000;
         Guid resId = Guid.NewGuid();
 
         string partyEndpoint = $"/authentication/api/v1/systemuser/request/{resId}";
@@ -1315,8 +1311,6 @@ public class RequestControllerTests(
         // Party Get Request
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: false, now: TestTime));
-
-        int partyId = 500000;
 
         string partyEndpoint = $"/authentication/api/v1/systemuser/request/{res.Id}";
 
@@ -1726,8 +1720,6 @@ public class RequestControllerTests(
         // Party Get Request
         HttpClient client2 = CreateClient();
         client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1338, null, 3, addPortalScope: false, now: TestTime));
-
-        int partyId = 500000;
 
         string partyEndpoint = $"/authentication/api/v1/systemuser/request/agent/{res.Id}";
 
