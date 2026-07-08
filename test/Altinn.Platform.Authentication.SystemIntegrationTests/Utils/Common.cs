@@ -92,7 +92,7 @@ public class Common
         return resp.Content;
     }
 
-    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser? testperson)
+    public async Task<HttpResponseMessage> ApproveRequest(string? endpoint, Testuser testperson)
     {
         ArgumentNullException.ThrowIfNull(testperson);
 

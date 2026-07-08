@@ -229,7 +229,7 @@ public class PlatformAuthenticationClient
     /// <param name="user">User read from test config (testusers.at.json)</param>
     /// <param name="scopes">space separated list of scopes</param>
     /// <returns>The Altinn test token as a string</returns>
-    public async Task<string?> GetPersonalAltinnToken(Testuser? user, string scopes = "")
+    public async Task<string?> GetPersonalAltinnToken(Testuser user, string scopes = "")
     {
         ArgumentNullException.ThrowIfNull(user);
         var url =
@@ -334,7 +334,7 @@ public class PlatformAuthenticationClient
         return token;
     }
 
-    public async Task<HttpResponseMessage> DeleteRequest(string? endpoint, Testuser? testperson)
+    public async Task<HttpResponseMessage> DeleteRequest(string? endpoint, Testuser testperson)
     {
         // Get the Altinn token
         var altinnToken = await GetPersonalAltinnToken(testperson);

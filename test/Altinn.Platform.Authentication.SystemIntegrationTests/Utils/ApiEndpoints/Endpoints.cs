@@ -219,7 +219,9 @@ public class ApiEndpoint
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Url?.ToLowerInvariant(), Method.Method.ToLowerInvariant());
+        int urlHash = Url is null ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(Url);
+        int methodHash = StringComparer.OrdinalIgnoreCase.GetHashCode(Method.Method);
+        return HashCode.Combine(urlHash, methodHash);
     }
 
     /// <summary>
