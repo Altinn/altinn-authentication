@@ -1165,7 +1165,7 @@ public class ChangeRequestControllerTest(
         HttpRequestMessage getRequestMessage = new(HttpMethod.Get, getEndpoint);
         HttpResponseMessage getResponseMessage = await client.SendAsync(getRequestMessage);
         ////string errorContent = await getResponseMessage.Content.ReadAsStringAsync();
-        //Console.WriteLine(errorContent);
+        // Console.WriteLine(errorContent);
         SystemUserDetailExternalDTO? systemuser = await getResponseMessage.Content.ReadFromJsonAsync<SystemUserDetailExternalDTO>();
 
         Assert.NotNull(systemuser);
@@ -1561,7 +1561,7 @@ public class ChangeRequestControllerTest(
         return false;
     }
 
-    [Fact (Skip = "deprecated")]
+    [Fact(Skip = "deprecated")]
     public async Task VerifyChangeRequest_AllRightsPermit_ReturnEmptySet()
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
@@ -1651,7 +1651,7 @@ public class ChangeRequestControllerTest(
         Assert.Empty(verifyResponse.RequiredRights);
     }
 
-    [Fact (Skip = "deprecated")]
+    [Fact(Skip = "deprecated")]
     public async Task VerifyChangeRequest_NotAllRightsPermit_ReturnSet()
     {
         List<XacmlJsonResult> xacmlJsonResults = GetDecisionResultSingle();
@@ -2358,7 +2358,7 @@ public class ChangeRequestControllerTest(
 
     private async Task CreateSeveralChangeRequest(int paginationSize, string systemId)
     {
-        var tasks = Enumerable.Range(0, paginationSize +1)
+        var tasks = Enumerable.Range(0, paginationSize + 1)
                               .Select(i => CreateChangeRequest(i, systemId))
                               .ToList();
 

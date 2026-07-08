@@ -1414,7 +1414,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AccessPackage accessPackage = new()
             {
                 Urn = "urn:altinn:accesspackage:skatt-naering"
-
             };
 
             // Arrange
@@ -1481,7 +1480,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AccessPackage accessPackage = new()
             {
                 Urn = "urn:altinn:accesspackage:skatt-naering"
-
             };
 
             // Arrange
@@ -1555,7 +1553,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             AccessPackage accessPackage = new()
             {
                 Urn = "urn:altinn:accesspackage:skattnaerin" // Missing g
-
             };
 
             // Arrange
@@ -3241,14 +3238,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         // =====================================================================
         // GET /byExternalId — missing required parameters → BadRequest
         // =====================================================================
-
         [Fact]
         public async Task SystemUser_Get_byExternalId_MissingClientId_ReturnsBadRequest()
         {
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:maskinporten/systemuser.read", null, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/byExternalId?systemProviderOrgNo=991825827&systemUserOwnerOrgNo=910493353");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/byExternalId?systemProviderOrgNo=991825827&systemUserOwnerOrgNo=910493353");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -3260,7 +3256,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:maskinporten/systemuser.read", null, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/byExternalId?clientId=32ef65ac-6e62-498d-880f-76c85c2052ae&systemUserOwnerOrgNo=910493353");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/byExternalId?clientId=32ef65ac-6e62-498d-880f-76c85c2052ae&systemUserOwnerOrgNo=910493353");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -3272,7 +3268,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpClient client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetOrgToken("digdir", "991825827", "altinn:maskinporten/systemuser.read", null, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/byExternalId?clientId=32ef65ac-6e62-498d-880f-76c85c2052ae&systemProviderOrgNo=991825827");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/byExternalId?clientId=32ef65ac-6e62-498d-880f-76c85c2052ae&systemProviderOrgNo=991825827");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -3281,7 +3277,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         // =====================================================================
         // GET /vendor/byquery — Unauthorized and NotFound (wrong vendor)
         // =====================================================================
-
         [Fact]
         public async Task SystemUser_Vendors_Byquery_ReturnsForbidden_WhenNoConsumerClaim()
         {
@@ -3290,7 +3285,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Regular user token has no "consumer" claim → RetrieveOrgNoFromToken returns null
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/vendor/byquery?system-id=991825827_the_matrix&orgno=910493353");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/vendor/byquery?system-id=991825827_the_matrix&orgno=910493353");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -3313,7 +3308,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             string differentVendorToken = PrincipalUtil.GetOrgToken("digdir", "999999999", "altinn:authentication/systemuser.request.write", prefixes, now: TestTime);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", differentVendorToken);
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/vendor/byquery?system-id=991825827_the_matrix&orgno=910493353&external-ref=99");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/vendor/byquery?system-id=991825827_the_matrix&orgno=910493353&external-ref=99");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -3322,7 +3317,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         // =====================================================================
         // GET /vendor/bysystem/{systemId} — Forbidden (no consumer claim)
         // =====================================================================
-
         [Fact]
         public async Task SystemUser_ListByVendorsSystem_ReturnsForbidden_WhenNoConsumerClaim()
         {
@@ -3331,7 +3325,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Regular user token — no "consumer" claim
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetToken(1337, null, 3, now: TestTime));
 
-            HttpRequestMessage request = new(HttpMethod.Get,"/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix");
+            HttpRequestMessage request = new(HttpMethod.Get, "/authentication/api/v1/systemuser/vendor/bysystem/991825827_the_matrix");
             HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -3340,7 +3334,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         // =====================================================================
         // POST /agent/{party}/{systemUserId}/ — Forbid (party mismatch)
         // =====================================================================
-
         [Fact]
         public async Task AgentSystemUser_Delegate_Post_ReturnsForbidden_WhenPartyMismatch()
         {

@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 try
                 {
                     content = File.ReadAllText(dataFileName);
-                    res = (List<PolicyRightsDTO>) JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    res = (List<PolicyRightsDTO>)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 }
                 catch (Exception ex)
                 {

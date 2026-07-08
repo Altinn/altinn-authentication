@@ -750,7 +750,7 @@ public class RequestControllerTests(
         Assert.NotNull(res);
         Assert.Equal(req.ExternalRef, res.ExternalRef);
 
-        //Get by Guid
+        // Get by Guid
         HttpClient client2 = CreateClient();
         AddSystemUserRequesReadTestTokenToClient(client2);
         Guid testId = res.Id;
@@ -4073,11 +4073,10 @@ public class RequestControllerTests(
         Assert.Equal(req.ExternalRef, res.ExternalRef);
     }
 
-    //private void SetupDateTimeMock()
-    //{
+    // private void SetupDateTimeMock()
+    // {
     //    timeProviderMock.Setup(x => x.GetUtcNow()).Returns(TestTime);
-    //}
-
+    // }
     private void SetupGuidMock()
     {
         guidService.Setup(q => q.NewGuid()).Returns("eaec330c-1e2d-4acb-8975-5f3eba12b2fb");

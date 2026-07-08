@@ -162,7 +162,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             {
                 Id = delegationId,
                 FacilitatorId = facilitator,
-                FromId = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"),// value not from our input
+                FromId = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"), // value not from our input
                 ToId = Guid.NewGuid() // the Assignment Id
             }
         });
@@ -229,8 +229,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         string content = File.ReadAllText(dataFileName);
         PaginatedInput<AccessPackageDto.Check> paginatedAccessPackages = JsonSerializer.Deserialize<PaginatedInput<AccessPackageDto.Check>>(content, _serializerOptions)!;
 
-        //List<AccessPackageDto.Check> accessPackages = JsonSerializer.Deserialize<List<AccessPackageDto.Check>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
-
+        // List<AccessPackageDto.Check> accessPackages = JsonSerializer.Deserialize<List<AccessPackageDto.Check>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
         foreach (AccessPackageDto.Check accessPackageCheck in paginatedAccessPackages.Items)
         {
             yield return accessPackageCheck;

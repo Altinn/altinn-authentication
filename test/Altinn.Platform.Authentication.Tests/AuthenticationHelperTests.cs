@@ -144,7 +144,6 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithoutQuery_ReturnsTrue()
         {
             // Arrange
-
             List<Uri> allowedRedirectUrls = new List<Uri>
                     {
                         new Uri("https://example.com/callback")
@@ -273,7 +272,6 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_ValidUrlWithFragment_ReturnsTrue()
         {
             // Arrange
-
             List<Uri> allowedRedirectUrls = new List<Uri>
                 {
                     new Uri("https://example.com/callback")

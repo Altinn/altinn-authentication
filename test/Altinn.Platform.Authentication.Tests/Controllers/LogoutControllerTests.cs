@@ -90,13 +90,13 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         /// Initialises a new instance of the <see cref="OpenIdControllerTests"/> class with the given WebApplicationFactory.
         /// </summary>
         /// <param name="factory">The WebApplicationFactory to use when creating a test server.</param>
-        //public LogoutControllerTests(WebApplicationFactory<LogoutController> factory)
-        //{
+        // public LogoutControllerTests(WebApplicationFactory<LogoutController> factory)
+        // {
         //    _factory = factory;
         //    _userProfileService = new Mock<IUserProfileService>();
         //    _organisationsService = new Mock<IOrganisationsService>();
         //    SetupDateTimeMock();
-        //}
+        // }
 
         /// <summary>
         /// Validates that an unauthenticated user is redirected to BaseUrl (no OIDC provider can be resolved).

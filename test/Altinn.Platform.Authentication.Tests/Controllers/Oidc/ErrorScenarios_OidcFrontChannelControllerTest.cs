@@ -87,7 +87,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             var url =
                 "/authentication/api/v1/authorize" +
                 "?redirect_uri=https%3A%2F%2Faf.altinn.no%2Fapi%2Fcb" +
-                "&scope=altinn%3Aportal%2Fenduser" +                // missing openid
+                "&scope=altinn%3Aportal%2Fenduser" + // missing openid
                 $"&client_id={testScenario.DownstreamClientId}" +
                 "&response_type=code" +
                 "&state=s123" +
