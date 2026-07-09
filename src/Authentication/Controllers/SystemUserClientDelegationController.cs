@@ -227,7 +227,6 @@ namespace Altinn.Platform.Authentication.Controllers
         [HttpDelete("clients")]
         public async Task<ActionResult<List<DelegationResponse>>> RemoveClientFromSystemUser([FromQuery] Guid agent, [FromQuery] Guid client, CancellationToken cancellationToken)
         {
-            Guid delegationId = Guid.Empty;
             SystemUserInternalDTO systemUser = await SystemUserService.GetSingleSystemUserById(agent);
 
             ValidationProblemBuilder errors = default;
@@ -264,9 +263,7 @@ namespace Altinn.Platform.Authentication.Controllers
             }
             
             Result<bool> removeResult = await SystemUserService.DeleteClientDelegationToAgentSystemUser(party.PartyId.ToString(), agent, client, party.PartyUuid.Value, cancellationToken);
-
-            // If the result is a problem (not 200 OK), return it directly
-            // If the result is an ObjectResult and status code is not 200, return it directly
+            
             if (removeResult.IsProblem)
             {
                 return removeResult.Problem.ToActionResult();
