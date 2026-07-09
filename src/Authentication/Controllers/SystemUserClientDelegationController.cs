@@ -262,30 +262,7 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return Forbid();
             }
-
-            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent, client);
-            if (result.IsSuccess)
-            {
-                DelegationResponse? delegation = result.Value?.FirstOrDefault(d => d.CustomerId == client);
-                if (delegation == null)
-                {
-                    return NotFound(new ProblemDetails
-                    {
-                        Title = "Delegation not found",
-                        Detail = $"No delegation found for customer {client} and system user {agent}",
-                        Status = 404
-                    });
-                }
-                else
-                {
-                    delegationId = delegation.DelegationId;
-                }
-            }
-            else if (result.IsProblem)
-            {
-                return result.Problem.ToActionResult();
-            }
-
+            
             Result<bool> removeResult = await SystemUserService.DeleteClientDelegationToAgentSystemUser(party.PartyId.ToString(), agent, client, party.PartyUuid.Value, cancellationToken);
 
             // If the result is a problem (not 200 OK), return it directly
