@@ -81,13 +81,6 @@ public interface IAccessManagementClient
     Task<Package> GetAccessPackage(string urnValue);
 
     /// <summary>
-    /// Deletes the customer delegation to the agent systemuser
-    /// </summary>
-    /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>
-    /// <param name="delegationId">The delegation id</param>
-    Task<Result<bool>> OldDeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Revokes the assignment of
     /// </summary>
     /// <param name="facilitatorId">The party id of the  user that represents the facilitator for delegation</param>

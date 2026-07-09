@@ -158,16 +158,6 @@ public interface ISystemUserService
     Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int party, Guid facilitator, Guid systemUserId, Guid? client = null);
 
     /// <summary>
-    /// Delete the client delegation to the Agent SystemUser
-    /// </summary>
-    /// <param name="partyId">the party id of the facilitator</param>
-    /// <param name="delegationId">the id of the delegation between customer and agent system user</param>
-    /// <param name="facilitatorId">the guid of facilitator</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns></returns>
-    Task<Result<bool>> DeleteClientDelegationToAgentSystemUser(string partyId, Guid delegationId, Guid facilitatorId, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Revokes a client/customer from an Agent SystemUser.
     /// <param name="party">The party Id of the reportee.</param>
     /// <param name="systemuser">The partyUuid of the Agent SystemUser to delegete TO.</param> 
