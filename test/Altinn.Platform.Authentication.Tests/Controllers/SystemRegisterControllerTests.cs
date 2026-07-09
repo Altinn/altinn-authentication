@@ -1808,7 +1808,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         public async Task GetSystemChangeLog_InvalidSystemId_ReturnsNotFound()
         {
             // Post original System
-            const string dataFileName = "Data/SystemRegister/Json/SystemRegister.json";
             HttpClient createClient = GetAuthenticatedClient(Write, ValidOrg);
 
             string systemId = "991825827_the_matrix";

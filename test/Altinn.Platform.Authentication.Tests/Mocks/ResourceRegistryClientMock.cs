@@ -66,9 +66,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     content = File.ReadAllText(dataFileName);
                     res = (List<PolicyRightsDTO>)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    string message = $"Error reading file {dataFileName}";
                     throw;
                 }                
                                 
@@ -85,9 +84,8 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                     content = File.ReadAllText(dataFileName);
                     res = (List<PolicyRightsDTO>)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    string message = $"Error reading file {dataFileName}";
                     throw;
                 }
 

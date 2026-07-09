@@ -611,25 +611,6 @@ public class SystemUserController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a customer from an Agent SystemUser.
-    /// </summary>
-    /// <returns></returns>
-    [Authorize(Policy = AuthzConstants.POLICY_CLIENT_ADMINISTRATION_WRITE)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HttpDelete("agent/{party}/delegation/{delegationId}")]
-    public async Task<ActionResult> DeleteCustomerFromAgentSystemUser(string party, Guid delegationId, [FromQuery] Guid facilitatorId, CancellationToken cancellationToken = default)
-    {
-        Result<bool> result = await _systemUserService.DeleteClientDelegationToAgentSystemUser(party, delegationId, facilitatorId, cancellationToken);
-        if (result.IsSuccess)
-        {
-            return Ok();
-        }
-
-        return result.Problem.ToActionResult();
-    }
-
-    /// <summary>
     /// Delete an Agent SystemUser.
     /// </summary>
     /// <returns></returns>

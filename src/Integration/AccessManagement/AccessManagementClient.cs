@@ -603,23 +603,6 @@ public class AccessManagementClient : IAccessManagementClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> OldDeleteCustomerDelegationToAgent(Guid facilitatorId, Guid delegationId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            string endpointUrl = $"internal/systemuserclientdelegation/deletedelegation?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&delegationid={HttpUtility.UrlEncode(delegationId.ToString())}";
-            string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-            HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
-            return await HandleDeleteAgentErrors(response);    
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // RevokeDelegatedAccessPackageToSystemUser // Exception");
-            throw;
-        }
-    }
-
-    /// <inheritdoc />
     public async Task<Result<bool>> DeleteSystemUserAssignment(Guid facilitatorId, Guid systemUserId, CancellationToken cancellationToken)
     {
         try
