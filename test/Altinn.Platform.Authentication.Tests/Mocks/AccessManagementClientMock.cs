@@ -124,52 +124,6 @@ public class AccessManagementClientMock: IAccessManagementClient
         return await Task.FromResult(true);
     }
 
-    public async Task<Result<List<ConnectionDto>>> OldGetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default)
-    {
-        List<ConnectionDto> delegations = [];
-
-        if (systemUserId == new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"))
-        {
-            return delegations;
-        }
-
-        if (facilitator == new Guid("aafe89c4-8315-4dfa-a16b-1b1592f2b651") || facilitator == new Guid("ca00ce4a-c30c-4cf7-9523-a65cd3a40232") || facilitator == new Guid("32153b44-4da9-4793-8b8f-6aa4f7d17d17") || facilitator == new Guid("23478729-1ffa-49c7-a3d0-6e0d08540e9a"))
-        {
-            return delegations;
-        }
-
-        var delegationId = Guid.NewGuid();       
-
-        delegations.Add(new ConnectionDto() 
-        { 
-            From = new EntityParty()
-            {
-                Id = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"),
-                RefId = "313872076",
-                Name = "Testkunde AS"
-            },
-            To = new EntityParty()
-            {
-                Id = Guid.NewGuid()
-            },
-            Facilitator = new EntityParty() 
-            { 
-                Id = facilitator 
-            },
-
-            Id = delegationId,
-            Delegation = new Delegation()
-            {
-                Id = delegationId,
-                FacilitatorId = facilitator,
-                FromId = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"), // value not from our input
-                ToId = Guid.NewGuid() // the Assignment Id
-            }
-        });
-
-        return delegations;
-    }
-
     public async Task<Result<bool>> DeleteSystemUserAssignment(Guid partyUUId, Guid assignmentId, CancellationToken cancellationToken = default)
     {
         {
@@ -445,7 +399,9 @@ public class AccessManagementClientMock: IAccessManagementClient
         {
             Client = new CompactEntityDto()
             {
-                Id = Guid.NewGuid(),
+                Id = new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"),
+                Name = "Testkunde AS",
+                OrganizationIdentifier = "313872076"
             },
             Access =
             [

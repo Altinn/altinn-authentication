@@ -136,7 +136,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var result = await SystemUserService.OldGetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
+            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
 
             // If the result is a problem (not 200 OK), return it directly
             if (result.IsProblem)
@@ -261,8 +261,9 @@ namespace Altinn.Platform.Authentication.Controllers
             {
                 return Forbid();
             }
-
+            
             Result<bool> removeResult = await SystemUserService.DeleteClientDelegationToAgentSystemUser(party.PartyId.ToString(), agent, client, party.PartyUuid.Value, cancellationToken);
+            
             if (removeResult.IsProblem)
             {
                 return removeResult.Problem.ToActionResult();
