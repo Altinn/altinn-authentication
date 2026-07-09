@@ -286,13 +286,13 @@ namespace Altinn.Platform.Authentication.Controllers
                 return result.Problem.ToActionResult();
             }
 
-            var removeResult = await inner.DeleteCustomerFromAgentSystemUser(party.PartyId.ToString(), delegationId, party.PartyUuid.Value, cancellationToken);
+            Result<bool> removeResult = await SystemUserService.DeleteClientDelegationToAgentSystemUser(party.PartyId.ToString(), agent, client, party.PartyUuid.Value, cancellationToken);
 
             // If the result is a problem (not 200 OK), return it directly
             // If the result is an ObjectResult and status code is not 200, return it directly
-            if (removeResult is ObjectResult objectResult && objectResult.StatusCode != 200)
+            if (removeResult.IsProblem)
             {
-                return objectResult;
+                return removeResult.Problem.ToActionResult();
             }
 
             return Ok(new ClientDelegationResponse
