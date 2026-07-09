@@ -637,46 +637,6 @@ public class AccessManagementClient : IAccessManagementClient
         }
     }
 
-    public async Task<Result<List<ConnectionDto>>> OldGetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default)
-    {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
-        if (facilitator == Guid.Empty)
-        {
-            return Problem.Reportee_Orgno_NotFound;
-        }
-
-        if (systemUserId == Guid.Empty)
-        {
-            return Problem.SystemUserNotFound;
-        }
-        ;
-
-        string endpointUrl = $"internal/systemuserclientdelegation?party={facilitator}&systemuser={systemUserId}";
-        if (client.HasValue)
-        {
-            endpointUrl += $"&client={client}";
-        }
-
-        try
-        {
-            HttpResponseMessage response = await _client.GetAsync(token, endpointUrl);
-
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<ConnectionDto>>(_serializerOptions, cancellationToken) ?? [];
-            }
-
-            return Problem.UnableToDoDelegationCheck;
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Authentication // AccessManagementClient // GetDelegationsForAgent // Exception");
-            throw;
-
-        }
-    }
-
     /// <inheritdoc />
     public async Task<Result<List<RightDelegation>>> GetSingleRightDelegationsForStandardUser(Guid systemUserId, Guid partyUuid, CancellationToken cancellationToken = default)
     {

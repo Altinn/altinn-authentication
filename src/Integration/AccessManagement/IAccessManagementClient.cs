@@ -62,17 +62,7 @@ public interface IAccessManagementClient
     /// </summary>
     /// <returns></returns>
     Task<Result<bool>> RevokeClientFromAgentSystemUser(Guid provider, Guid client, Guid systemuser, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Retrieves the list of all delegationIds 
-    /// </summary>
-    /// <param name="systemUserId">The Guid Id for the Agent SystemUser</param>
-    /// <param name="facilitator">The Guid Id for the Facilitator</param>
-    /// <param name="client">The Guid Id for the Client</param>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns></returns>
-    Task<Result<List<ConnectionDto>>> OldGetDelegationsForAgent(Guid systemUserId, Guid facilitator, Guid? client = null, CancellationToken cancellationToken = default);
-
+   
     /// <summary>
     /// Retrieves the access package for the given urn value
     /// </summary>

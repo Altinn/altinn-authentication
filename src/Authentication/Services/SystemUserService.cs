@@ -1034,25 +1034,6 @@ namespace Altinn.Platform.Authentication.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Result<List<DelegationResponse>>> OldGetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
-        {
-            Party party = await _partiesClient.GetPartyAsync(partyId);
-
-            if (party.PartyUuid != facilitator)
-            {
-                return Problem.AgentSystemUser_DelegationNotFound;
-            }
-
-            var res = await _accessManagementClient.OldGetDelegationsForAgent(systemUserId, facilitator, client);
-            if (res.IsSuccess)
-            {
-                return ConvertExtDelegationToDTO(res.Value);
-            }
-
-            return res.Problem ?? Problem.UnableToDoDelegationCheck;
-        }
-
-        /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
         {
             Party party = await _partiesClient.GetPartyAsync(partyId);
@@ -1255,28 +1236,6 @@ namespace Altinn.Platform.Authentication.Services
             }).ToList();
 
             return rights;
-        }
-
-        private static Result<List<DelegationResponse>> ConvertExtDelegationToDTO(List<ConnectionDto> value)
-        {
-            List<DelegationResponse> result = [];
-
-            foreach (var item in value)
-            {
-                var newDel = new DelegationResponse()
-                {
-                    AgentSystemUserId = item.To.Id,
-                    DelegationId = item.Id,
-                    CustomerId = item.From.Id,
-                    AssignmentId = item.Delegation.ToId,
-                    CustomerName = item.From.Name,
-                    CustomerOrganizationNumber = item.From.RefId
-                };
-
-                result.Add(newDel);
-            }
-
-            return result;
         }
 
         private static Result<List<Customer>> OldConvertConnectionDTOToClient(List<ClientDto> value)
