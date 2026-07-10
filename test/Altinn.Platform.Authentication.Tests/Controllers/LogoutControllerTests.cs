@@ -18,7 +18,6 @@ using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,12 +48,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             base.ConfigureServices(services);
 
             string configPath = GetConfigPath();
-            WebHostBuilder builder = new();
-
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                conf.AddJsonFile(configPath);
-            });
 
             var configuration = new ConfigurationBuilder()
              .AddJsonFile(configPath)
@@ -84,18 +77,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             services.AddSingleton(_organisationsService.Object);            
             _configuration = configuration;
         }
-
-        /// <summary>
-        /// Initialises a new instance of the <see cref="OpenIdControllerTests"/> class with the given WebApplicationFactory.
-        /// </summary>
-        /// <param name="factory">The WebApplicationFactory to use when creating a test server.</param>
-        // public LogoutControllerTests(WebApplicationFactory<LogoutController> factory)
-        // {
-        //    _factory = factory;
-        //    _userProfileService = new Mock<IUserProfileService>();
-        //    _organisationsService = new Mock<IOrganisationsService>();
-        //    SetupDateTimeMock();
-        // }
 
         /// <summary>
         /// Validates that an unauthenticated user is redirected to BaseUrl (no OIDC provider can be resolved).

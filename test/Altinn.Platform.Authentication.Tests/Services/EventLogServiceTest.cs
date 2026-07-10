@@ -45,7 +45,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             Mock<HttpContext> context = new Mock<HttpContext>();
 
             // Act
-            service.CreateAuthenticationEventAsync(featureManageMock.Object, authenticatedUser, AuthenticationEventType.Authenticate, context.Object);
+            await service.CreateAuthenticationEventAsync(featureManageMock.Object, authenticatedUser, AuthenticationEventType.Authenticate, context.Object);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Once);
         }
@@ -90,7 +90,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             IPAddress address = IPAddress.Parse("255.1.3.12");
 
             // Act
-            service.CreateAuthenticationEventAsync(featureManageMock.Object, externalToken, AuthenticationEventType.Authenticate, address);
+            await service.CreateAuthenticationEventAsync(featureManageMock.Object, externalToken, AuthenticationEventType.Authenticate, address);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Once);
         }
@@ -113,7 +113,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             Mock<HttpContext> context = new Mock<HttpContext>();
 
             // Act
-            service.CreateAuthenticationEventAsync(featureManageMock.Object, authenticatedUser, AuthenticationEventType.Authenticate, context.Object);
+            await service.CreateAuthenticationEventAsync(featureManageMock.Object, authenticatedUser, AuthenticationEventType.Authenticate, context.Object);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Never);
         }
@@ -138,7 +138,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
             IPAddress ipadress = IPAddress.Parse("244.233.12.2");
 
             // Act
-            service.CreateAuthenticationEventAsync(featureManageMock.Object, token, AuthenticationEventType.Authenticate, ipadress);
+            await service.CreateAuthenticationEventAsync(featureManageMock.Object, token, AuthenticationEventType.Authenticate, ipadress);
 
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Never);
         }
