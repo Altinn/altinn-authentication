@@ -37,7 +37,6 @@ using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
 using App.IntegrationTests.Utils;
 using Azure;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -67,13 +66,6 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             base.ConfigureServices(services);
 
             string configPath = GetConfigPath();
-
-            WebHostBuilder builder = new();
-
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                conf.AddJsonFile(configPath);
-            });
 
             var configuration = new ConfigurationBuilder()
               .AddJsonFile(configPath)

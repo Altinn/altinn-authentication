@@ -18,8 +18,8 @@ namespace Altinn.Platform.Authentication.Tests.Services;
 
 /// <summary>
 /// Unit tests for the local self-identified credential validation path in
-/// <see cref="UserProfileService"/> (feature flag
-/// <see cref="FeatureFlags.LocalSelfIdentifiedCredentialValidation"/> enabled). These tests do not
+/// <see cref="UserProfileService"/> (the local path is permanent since the
+/// LocalSelfIdentifiedCredentialValidation flag was removed, see ADR-0004). These tests do not
 /// require Docker - they exercise the service directly with mocks and a throwing HTTP handler that
 /// guarantees the SBL Bridge is never contacted on the local path.
 /// </summary>

@@ -15,7 +15,7 @@ namespace Altinn.Platform.Authentication.Tests.Fakes
         {
             List<SecurityKey> signingKeys = new List<SecurityKey>();
 
-            X509Certificate2 cert = new X509Certificate2("JWTValidationCert.cer");
+            X509Certificate2 cert = X509CertificateLoader.LoadCertificateFromFile("JWTValidationCert.cer");
             SecurityKey key = new X509SecurityKey(cert);
 
             signingKeys.Add(key);

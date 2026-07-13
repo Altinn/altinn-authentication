@@ -34,7 +34,6 @@ using Altinn.Platform.Authentication.Tests.Mocks;
 using Altinn.Platform.Authentication.Tests.RepositoryDataAccess;
 using Altinn.Platform.Authentication.Tests.Utils;
 using AltinnCore.Authentication.JwtCookie;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -71,13 +70,6 @@ public class RequestControllerTests(
         string defaultOidc = "altinn";
 
         string configPath = GetConfigPath();
-
-        WebHostBuilder builder = new();
-
-        builder.ConfigureAppConfiguration((context, conf) =>
-        {
-            conf.AddJsonFile(configPath);
-        });
 
         var configuration = new ConfigurationBuilder()
           .AddJsonFile(configPath)
