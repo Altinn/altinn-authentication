@@ -84,7 +84,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             PropertyNameCaseInsensitive = true,
         };
 
-        string packagesData = File.OpenText("Data/Packages/packages.json").ReadToEnd();
+        string packagesData = File.ReadAllText("Data/Packages/packages.json");
         List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
         package = packages?.FirstOrDefault(p => p.Urn.Contains(urnValue, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(package!); // null when urn is not in test data; IAccessManagementClient declares non-nullable
@@ -98,7 +98,7 @@ public class AccessManagementClientMock: IAccessManagementClient
             PropertyNameCaseInsensitive = true,
         };
 
-        string packagesData = File.OpenText("Data/Packages/packages.json").ReadToEnd();
+        string packagesData = File.ReadAllText("Data/Packages/packages.json");
         List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
         package = packages?.FirstOrDefault(p => p.Urn.Contains(packageId, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(package);
@@ -328,7 +328,7 @@ public class AccessManagementClientMock: IAccessManagementClient
 
         // The data file mirrors the paginated response from Access Management's GetClients
         // endpoint ({ "links": {...}, "data": [ ... ] }), so deserialize the wrapper and take Data.
-        string clientData = File.OpenText("Data/Customers/systemusercustomerlist.json").ReadToEnd();
+        string clientData = File.ReadAllText("Data/Customers/systemusercustomerlist.json");
         PaginatedResult<List<ClientDelegationDto>>? paginated = JsonSerializer.Deserialize<PaginatedResult<List<ClientDelegationDto>>>(clientData, options);
         List<ClientDelegationDto> clients = paginated?.Data ?? [];
 

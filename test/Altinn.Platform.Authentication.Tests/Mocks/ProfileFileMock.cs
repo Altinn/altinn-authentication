@@ -26,7 +26,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
             if (profileLookup.Ssn != null)
             {
-                userProfile = profileList.Find(p => p.Party.SSN == profileLookup.Ssn) ?? new UserProfile
+                userProfile = profileList.Find(p => p.Party?.SSN == profileLookup.Ssn) ?? new UserProfile
                 {
                     Party = new Party() { SSN = profileLookup.Ssn },
                     UserId = profileLookup.UserId,

@@ -55,41 +55,16 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
 
         public async Task<List<PolicyRightsDTO>> GetRights(string resourceId)
         {
-            string dataFileName = string.Empty;
             if (resourceId == "ske-krav-og-betalinger")
             {
-                List<PolicyRightsDTO> res = [];
-                dataFileName = "Data/ResourceRegistry/policyrightDTO-kravogbetaling.json";
-                string content = string.Empty;
-                try
-                {
-                    content = File.ReadAllText(dataFileName);
-                    res = (List<PolicyRightsDTO>?)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
-
-                return res;
+                string content = File.ReadAllText("Data/ResourceRegistry/policyrightDTO-kravogbetaling.json");
+                return JsonSerializer.Deserialize<List<PolicyRightsDTO>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
             }
 
             if (resourceId == "ske-krav-og-betalinger-2")
             {
-                List<PolicyRightsDTO> res = [];
-                dataFileName = "Data/ResourceRegistry/policyrightDTO-kravogbetaling2.json";
-                string content = string.Empty;
-                try
-                {
-                    content = File.ReadAllText(dataFileName);
-                    res = (List<PolicyRightsDTO>?)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
-
-                return res;
+                string content = File.ReadAllText("Data/ResourceRegistry/policyrightDTO-kravogbetaling2.json");
+                return JsonSerializer.Deserialize<List<PolicyRightsDTO>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
             }
 
             return null!; // interface declares a non-nullable list, but the mock mirrors the null returned for unknown resources

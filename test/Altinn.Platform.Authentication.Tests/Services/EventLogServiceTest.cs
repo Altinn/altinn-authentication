@@ -143,14 +143,9 @@ namespace Altinn.Platform.Authentication.Tests.Services
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Never);
         }
 
-        private static IEventLog GetEventLogService(IEventsQueueClient? queueMock = null, TimeProvider? timeProviderMock = null)
+        private static IEventLog GetEventLogService(IEventsQueueClient queueMock, TimeProvider timeProviderMock)
         {
-            if (queueMock == null)
-            {
-                queueMock = new EventsQueueClientMock();
-            }
-
-            var service = new EventLogService(queueMock, timeProviderMock!); // every call site passes a time provider
+            var service = new EventLogService(queueMock, timeProviderMock);
             return service;
         }
 

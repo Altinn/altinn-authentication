@@ -427,7 +427,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
             if (File.Exists(rolesPath))
             {
                 string content = File.ReadAllText(rolesPath);
-                roles = (List<Role>?)JsonConvert.DeserializeObject(content, typeof(List<Role>)) ?? new List<Role>();
+                roles = JsonConvert.DeserializeObject<List<Role>>(content) ?? new List<Role>();
             }
 
             return Task.FromResult(roles);
@@ -504,7 +504,7 @@ namespace Altinn.AccessManagement.Tests.Mocks
             string instancePart = instanceId.Split('/')[1];
 
             string content = File.ReadAllText(Path.Combine(GetInstancePath(), $"{partyPart}/{instancePart}.json"));
-            Instance instance = (Instance)JsonConvert.DeserializeObject(content, typeof(Instance))!; // test data instance files always deserialize
+            Instance instance = JsonConvert.DeserializeObject<Instance>(content)!; // test data instance files always deserialize
             return instance;
         }
     }
