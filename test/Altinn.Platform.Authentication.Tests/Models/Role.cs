@@ -13,11 +13,11 @@ public class Role
     /// Gets or sets the role type
     /// </summary>
     [JsonProperty]
-    public string Type { get; set; }
+    public string Type { get; set; } = null!; // always populated by JSON deserialization of test data
 
     /// <summary>
     /// Gets or sets the role
     /// </summary>
     [JsonProperty]
-    public string Value { get; set; }
+    public string Value { get; set; } = null!; // always populated by JSON deserialization of test data
 }

@@ -44,7 +44,7 @@ namespace Altinn.Platform.Authentication.Tests
             Assert.False(SyntheticPersonIdentifier.IsSyntheticTenor(null));
         }
 
-        private static JwtSecurityToken TokenWithPid(string pid)
+        private static JwtSecurityToken TokenWithPid(string? pid)
         {
             var claims = new List<Claim>();
             if (pid != null)

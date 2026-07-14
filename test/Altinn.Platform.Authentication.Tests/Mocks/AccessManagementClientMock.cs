@@ -87,10 +87,10 @@ public class AccessManagementClientMock: IAccessManagementClient
         string packagesData = File.OpenText("Data/Packages/packages.json").ReadToEnd();
         List<Package>? packages = JsonSerializer.Deserialize<List<Package>>(packagesData, options);
         package = packages?.FirstOrDefault(p => p.Urn.Contains(urnValue, StringComparison.OrdinalIgnoreCase));
-        return Task.FromResult(package);
+        return Task.FromResult(package!); // null when urn is not in test data; IAccessManagementClient declares non-nullable
     }
 
-    public Task<Package> GetPackage(string packageId)
+    public Task<Package?> GetPackage(string packageId)
     {
         Package? package = null;
         JsonSerializerOptions options = new JsonSerializerOptions
@@ -114,7 +114,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return Task.FromResult(true);
     }
 
-    public async Task<AuthorizedPartyExternal> GetPartyFromReporteeListIfExists(int partyId, string token)
+    public async Task<AuthorizedPartyExternal?> GetPartyFromReporteeListIfExists(int partyId, string token)
     {
         return new AuthorizedPartyExternal();
     }
@@ -205,7 +205,7 @@ public class AccessManagementClientMock: IAccessManagementClient
         return true;
     }
 
-    public async IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, CancellationToken cancellationToken)
+    public async IAsyncEnumerable<Result<PackagePermission>> GetAccessPackagesForSystemUser(Guid partyUuId, Guid systemUserId, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         string dataFileName = string.Empty;
         if (partyUuId == new Guid("39c4f60a-d432-4672-820d-2825c4a0d881"))

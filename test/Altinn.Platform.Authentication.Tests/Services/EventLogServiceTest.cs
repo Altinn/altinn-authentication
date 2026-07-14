@@ -99,7 +99,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         public async Task QueueAuthenticationEvent_Error()
         {
             // Arrange
-            UserAuthenticationModel authenticatedUser = null;
+            UserAuthenticationModel authenticatedUser = null!; // deliberately null: testing guard clause
 
             Mock<IEventsQueueClient> queueMock = new();
             queueMock
@@ -122,7 +122,7 @@ namespace Altinn.Platform.Authentication.Tests.Services
         public async Task QueueAuthenticationEvent_Token_Error()
         {
             // Arrange
-            string token = null;
+            string token = null!; // deliberately null: testing guard clause
 
             Mock<IEventsQueueClient> queueMock = new();
             queueMock
@@ -143,14 +143,14 @@ namespace Altinn.Platform.Authentication.Tests.Services
             queueMock.Verify(r => r.EnqueueAuthenticationEvent(It.IsAny<string>()), Times.Never);
         }
 
-        private static IEventLog GetEventLogService(IEventsQueueClient queueMock = null, TimeProvider timeProviderMock = null)
+        private static IEventLog GetEventLogService(IEventsQueueClient? queueMock = null, TimeProvider? timeProviderMock = null)
         {
             if (queueMock == null)
             {
                 queueMock = new EventsQueueClientMock();
             }
 
-            var service = new EventLogService(queueMock, timeProviderMock);
+            var service = new EventLogService(queueMock, timeProviderMock!); // every call site passes a time provider
             return service;
         }
 

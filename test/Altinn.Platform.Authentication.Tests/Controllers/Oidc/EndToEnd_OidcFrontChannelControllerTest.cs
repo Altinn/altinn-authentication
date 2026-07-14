@@ -161,7 +161,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             _ = await Repository.InsertClientAsync(create);
 
             // Sanity: the test scenario seeds the client with a legacy PBKDF2 hash.
-            await TokenAssertsHelper.AssertClientSecretIsLegacyPbkdf2(Repository, testScenario.DownstreamClientId);
+            await TokenAssertsHelper.AssertClientSecretIsLegacyPbkdf2(Repository, testScenario.DownstreamClientId!); // always set by OidcScenarioHelper.GetScenario
 
             // 08:00:00 UTC — start of day: user signs in to Arbeidsflate (RP).
             // Arbeidsflate redirects the browser to the Altinn Authentication OIDC Provider’s /authorize endpoint.
@@ -202,11 +202,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string tokenString = await tokenResp.Content.ReadAsStringAsync();
 
             // The first successful client_secret verify must have rehashed the stored hash to HMAC-SHA256.
-            await TokenAssertsHelper.AssertClientSecretMigratedToHmac(Repository, testScenario.DownstreamClientId);
+            await TokenAssertsHelper.AssertClientSecretMigratedToHmac(Repository, testScenario.DownstreamClientId!); // always set by OidcScenarioHelper.GetScenario
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
-            Debug.Assert(tokenResult != null);
 
             OidcSession? originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
@@ -263,7 +263,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // ===== Phase 7: Try to reuse old but still active refresh_token =====
             // User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
-            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token);
+            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token!);
 
             using var refreshRespAfterAppVisit = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -297,7 +297,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // ==== Phase 10: Returns to Arbeidsflate  =====
             // The refresh token should now be expired (max lifetime is 30 minutes and the token was issued at 08:01).
             // Arbeidsflate needs to redirect user to /authorize again to get a new code/refresh_token.
-            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token);
+            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token!);
 
             using var reuseResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -330,6 +330,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto? tokenResult2 = JsonSerializer.Deserialize<TokenResponseDto>(json2);
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult2);
             string sid2 = TokenAssertsHelper.AssertTokenResponse(tokenResult2, testScenario, _fakeTime.GetUtcNow());
 
             Assert.Equal(sid, sid2); // should be same session as before
@@ -422,8 +423,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string tokenString = await tokenResp.Content.ReadAsStringAsync();
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
-            Debug.Assert(tokenResult != null);
 
             OidcSession? originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
@@ -480,7 +481,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // ===== Phase 7: Try to reuse old but still active refresh_token =====
             // User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
-            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token);
+            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token!);
 
             using var refreshRespAfterAppVisit = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -514,7 +515,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // ==== Phase 10: Returns to Arbeidsflate  =====
             // The refresh token should now be expired (max lifetime is 30 minutes and the token was issued at 08:01).
             // Arbeidsflate needs to redirect user to /authorize again to get a new code/refresh_token.
-            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token);
+            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token!);
 
             using var reuseResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -547,6 +548,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto? tokenResult2 = JsonSerializer.Deserialize<TokenResponseDto>(json2);
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult2);
             string sid2 = TokenAssertsHelper.AssertTokenResponse(tokenResult2, testScenario, _fakeTime.GetUtcNow());
 
             Assert.Equal(sid, sid2); // should be same session as before
@@ -648,8 +650,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto? tokenResult = await tokenResp.Content.ReadFromJsonAsync<TokenResponseDto>(jsonSerializerOptions);
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
-            Debug.Assert(tokenResult != null);
 
             OidcSession? originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
@@ -686,7 +688,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // ===== Phase 6: Try to reuse old but still active refresh_token =====
             // User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
-            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, tokenResult.refresh_token);
+            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, tokenResult.refresh_token!);
 
             using var refreshRespAfterAppVisit = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -840,6 +842,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto? tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sidFromCodeResponse = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
 
             // ===== Phase 5: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
@@ -1111,6 +1114,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto? tokenResult = JsonSerializer.Deserialize<TokenResponseDto>(json);
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sidFromCodeResponse = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
 
             // ===== Phase 5: User is done for the day. Press Logout in Arbeidsflate. This should log the user out both in Altinn and Idporten. =====
@@ -1205,8 +1209,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string tokenString = await tokenResp.Content.ReadAsStringAsync();
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
-            Debug.Assert(tokenResult != null);
 
             OidcSession? originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
@@ -1631,8 +1635,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string tokenString = await tokenResp.Content.ReadAsStringAsync();
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
-            Debug.Assert(tokenResult != null);
 
             OidcSession? originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
@@ -1719,8 +1723,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string tokenString = await tokenResp.Content.ReadAsStringAsync();
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
-            Debug.Assert(tokenResult != null);
 
             OidcSession? originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
@@ -1777,7 +1781,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // ===== Phase 7: Try to reuse old but still active refresh_token =====
             // User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
-            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token);
+            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token!);
 
             using var refreshRespAfterAppVisit = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -1811,7 +1815,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // ==== Phase 10: Returns to Arbeidsflate  =====
             // The refresh token should now be expired (max lifetime is 30 minutes and the token was issued at 08:01).
             // Arbeidsflate needs to redirect user to /authorize again to get a new code/refresh_token.
-            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token);
+            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token!);
 
             using var reuseResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -1844,6 +1848,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto? tokenResult2 = JsonSerializer.Deserialize<TokenResponseDto>(json2);
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult2);
             string sid2 = TokenAssertsHelper.AssertTokenResponse(tokenResult2, testScenario, _fakeTime.GetUtcNow());
 
             Assert.Equal(sid, sid2); // should be same session as before
@@ -1933,8 +1938,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             string tokenString = await tokenResp.Content.ReadAsStringAsync();
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult);
             string sid = TokenAssertsHelper.AssertTokenResponse(tokenResult, testScenario, _fakeTime.GetUtcNow());
-            Debug.Assert(tokenResult != null);
 
             OidcSession? originalSession = await OidcServerDatabaseUtil.GetOidcSessionAsync(sid, DataSource);
             OidcAssertHelper.AssertValidSession(originalSession, testScenario, _fakeTime.GetUtcNow());
@@ -1991,7 +1996,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
             // ===== Phase 7: Try to reuse old but still active refresh_token =====
             // User returns to arbeisflate and do a new refresh. Arbeidsflate has still active session and do a refresh.
-            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token);
+            Dictionary<string, string> refreshFormAfterAppVisit = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshed.refresh_token!);
 
             using var refreshRespAfterAppVisit = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -2025,7 +2030,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             // ==== Phase 10: Returns to Arbeidsflate  =====
             // The refresh token should now be expired (max lifetime is 30 minutes and the token was issued at 08:01).
             // Arbeidsflate needs to redirect user to /authorize again to get a new code/refresh_token.
-            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token);
+            Dictionary<string, string> reuseForm = OidcServerTestUtils.GetRefreshForm(testScenario, create, refreshedAfterAppVisit.refresh_token!);
 
             using var reuseResp = await client.PostAsync(
                 "/authentication/api/v1/token",
@@ -2058,6 +2063,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             TokenResponseDto? tokenResult2 = JsonSerializer.Deserialize<TokenResponseDto>(json2);
 
             // Asserts on token response structure
+            Assert.NotNull(tokenResult2);
             string sid2 = TokenAssertsHelper.AssertTokenResponse(tokenResult2, testScenario, _fakeTime.GetUtcNow());
 
             Assert.Equal(sid, sid2); // should be same session as before
@@ -2103,10 +2109,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
             return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
-        private async Task<(string? UpstreamState, UpstreamLoginTransaction? CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
+        private async Task<(string UpstreamState, UpstreamLoginTransaction CreatedUpstreamLogingTransaction)> AssertAutorizeRequestResult(OidcTestScenario testScenario, HttpResponseMessage authorizationRequestResponse, DateTimeOffset now)
         {
             OidcAssertHelper.AssertAuthorizeResponse(authorizationRequestResponse);
             string? upstreamState = HttpUtility.ParseQueryString(authorizationRequestResponse.Headers.Location!.Query)["state"];
+            Assert.NotNull(upstreamState);
 
             UpstreamLoginTransaction? createdUpstreamLogingTransaction = await OidcServerDatabaseUtil.GetUpstreamTransaction(upstreamState, DataSource);
             Assert.NotNull(createdUpstreamLogingTransaction);
@@ -2117,6 +2124,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
                 // Asserting DB persistence after /authorize
                 Debug.Assert(testScenario?.DownstreamClientId != null);
                 LoginTransaction? loginTransaction = await OidcServerDatabaseUtil.GetDownstreamTransaction(testScenario.DownstreamClientId, testScenario.GetDownstreamState(), DataSource);
+                Assert.NotNull(loginTransaction);
                 OidcAssertHelper.AssertLoginTransaction(loginTransaction, testScenario, now);
             }
 
@@ -2127,12 +2135,12 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
         {
             Guid upstreamSID = Guid.NewGuid();
             OidcCodeResponse oidcCodeResponse = IDProviderTestTokenUtil.GetIdPortenTokenResponse(
-                testScenario.Ssn,
-                testScenario.Email,
+                testScenario.Ssn!, // deliberately null in e-mail user scenarios: token util omits the pid claim
+                testScenario.Email!, // deliberately null in scenarios without e-mail: token util omits the email claim
                 createdUpstreamLogingTransaction.Nonce, 
                 upstreamSID.ToString(),
                 testScenario.Acr.ToArray(), 
-                testScenario.Amr?.ToArray(),
+                testScenario.Amr?.ToArray()!, // deliberately null when scenario has no amr: token util guards against null
                 createdUpstreamLogingTransaction.UpstreamClientId, 
                 createdUpstreamLogingTransaction.Scopes,
                 authTime);

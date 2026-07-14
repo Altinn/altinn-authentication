@@ -354,14 +354,14 @@ namespace Altinn.Platform.Authentication.Tests.Controllers.Oidc
 
         private static string GetConfigPath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
         private static OidcClientCreate NewClientCreate(OidcTestScenario testScenario) =>
             new()
             {
-                ClientId = testScenario.DownstreamClientId,
+                ClientId = testScenario.DownstreamClientId!, // always set by OidcScenarioHelper.GetScenario
                 ClientName = "Test Client",
                 ClientType = ClientType.Confidential,
                 TokenEndpointAuthMethod = TokenEndpointAuthMethod.ClientSecretBasic,

@@ -252,6 +252,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
+            Assert.NotNull(result.Value);
             Assert.True(result.Value.CanDelegate);
             Assert.NotNull(result.Value.AccessPackages);
             Assert.Single(result.Value.AccessPackages);
@@ -354,7 +355,9 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
+            Assert.NotNull(result.Value);
             Assert.True(result.Value.CanDelegate);
+            Assert.NotNull(result.Value.AccessPackages);
             Assert.Empty(result.Value.AccessPackages);
         }
 
@@ -382,7 +385,9 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
+            Assert.NotNull(result.Value);
             Assert.True(result.Value.CanDelegate);
+            Assert.NotNull(result.Value.AccessPackages);
             Assert.Empty(result.Value.AccessPackages);
             accessManagementClient.Verify(
                 a => a.CheckDelegationAccessForAccessPackage(It.IsAny<Guid>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()),
@@ -412,7 +417,9 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
             // Assert
+            Assert.NotNull(result.Value);
             Assert.True(result.Value.CanDelegate);
+            Assert.NotNull(result.Value.AccessPackages);
             Assert.All(result.Value.AccessPackages, p => Assert.Null(p.Urn));
         }
 
@@ -478,6 +485,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             // Assert
             Assert.True(result.CanDelegate);
             Assert.NotNull(result.RightResponses);
+            Assert.NotNull(result.errors);
             Assert.Empty(result.errors);
             Assert.Single(result.RightResponses);
         }
@@ -504,6 +512,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             // Assert
             Assert.False(result.CanDelegate);
             Assert.Null(result.RightResponses);
+            Assert.NotNull(result.errors);
             Assert.NotEmpty(result.errors);
             Assert.Contains(result.errors, e => e.Description == "Unknown Right");
         }
@@ -558,7 +567,9 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.False(result.CanDelegate);
+            Assert.NotNull(result.RightResponses);
             Assert.Empty(result.RightResponses);
+            Assert.NotNull(result.errors);
             Assert.Empty(result.errors);
         }
 
@@ -622,6 +633,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             // Assert
             Assert.False(result.CanDelegate);
             Assert.NotNull(result.RightResponses);
+            Assert.NotNull(result.errors);
             Assert.NotEmpty(result.errors);
             Assert.Contains(result.errors, e => e.Description == "Delegation denied");
 

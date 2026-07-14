@@ -29,8 +29,8 @@ public abstract class WebApplicationTests
         _webApplicationFixture = webApplicationFixture;
     }
 
-    private WebApplicationFactory<Program> _webApp;
-    private IServiceProvider _services;
+    private WebApplicationFactory<Program> _webApp = null!; // set in IAsyncLifetime.InitializeAsync
+    private IServiceProvider _services = null!; // set in IAsyncLifetime.InitializeAsync
     private AsyncServiceScope _scope;
     private DbFixture.OwnedDb? _db;
 

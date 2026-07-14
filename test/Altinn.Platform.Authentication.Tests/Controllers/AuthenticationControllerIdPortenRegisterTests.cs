@@ -57,7 +57,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             IConfiguration configuration = new ConfigurationBuilder()
                 .AddJsonFile(configPath)
                 .AddInMemoryCollection(
-                    new Dictionary<string, string>
+                    new Dictionary<string, string?>
                     {
                         { "GeneralSettings:DefaultOidcProvider", "altinn" }
                     })
@@ -111,7 +111,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             // The mock returns a Register party (deserialized to exercise the real polymorphic contract)
             // whose User object carries the Altinn user id and username.
-            RegisterContracts.Party party = JsonSerializer.Deserialize<RegisterContracts.Party>(
+            RegisterContracts.Party? party = JsonSerializer.Deserialize<RegisterContracts.Party>(
                 """
                 {
                   "partyType": "person",
@@ -127,6 +127,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 }
                 """,
                 new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+            Assert.NotNull(party);
 
             _partiesClient
                 .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -158,7 +160,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private static string GetConfigPath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerIdPortenRegisterTests).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerIdPortenRegisterTests).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
     }

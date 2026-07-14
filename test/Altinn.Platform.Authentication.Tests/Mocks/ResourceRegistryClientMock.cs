@@ -64,13 +64,13 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 try
                 {
                     content = File.ReadAllText(dataFileName);
-                    res = (List<PolicyRightsDTO>)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    res = (List<PolicyRightsDTO>?)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
                 }
                 catch (Exception)
                 {
                     throw;
-                }                
-                                
+                }
+
                 return res;
             }
 
@@ -82,7 +82,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 try
                 {
                     content = File.ReadAllText(dataFileName);
-                    res = (List<PolicyRightsDTO>)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    res = (List<PolicyRightsDTO>?)JsonSerializer.Deserialize(content, typeof(List<PolicyRightsDTO>), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
                 }
                 catch (Exception)
                 {
@@ -92,7 +92,7 @@ namespace Altinn.Platform.Authentication.Tests.Mocks
                 return res;
             }
 
-            return null;
+            return null!; // interface declares a non-nullable list, but the mock mirrors the null returned for unknown resources
         }
     }
 }

@@ -79,10 +79,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Act
             HttpResponseMessage res = await client.SendAsync(requestMessage);
             string responseString = await res.Content.ReadAsStringAsync();
-            IntrospectionResponse actual = JsonSerializer.Deserialize<IntrospectionResponse>(responseString, _options);
+            IntrospectionResponse? actual = JsonSerializer.Deserialize<IntrospectionResponse>(responseString, _options);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+            Assert.NotNull(actual);
             AdvancedAsserts.Equal(expected, actual);
             _eformidlingValidatorService.Verify(efvs => efvs.ValidateToken(It.IsAny<string>()), Times.Once());
         }
@@ -119,10 +120,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Act
             HttpResponseMessage res = await client.SendAsync(requestMessage);
             string responseString = await res.Content.ReadAsStringAsync();
-            IntrospectionResponse actual = JsonSerializer.Deserialize<IntrospectionResponse>(responseString, _options);
+            IntrospectionResponse? actual = JsonSerializer.Deserialize<IntrospectionResponse>(responseString, _options);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+            Assert.NotNull(actual);
             Assert.False(actual.Active);
             _eformidlingValidatorService.Verify(efvs => efvs.ValidateToken(It.IsAny<string>()), Times.Once());
         }

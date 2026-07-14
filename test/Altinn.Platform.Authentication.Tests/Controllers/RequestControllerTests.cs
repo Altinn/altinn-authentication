@@ -293,7 +293,7 @@ public class RequestControllerTests(
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
-        ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
         Assert.Equal(Problem.AccessPackage_NotDelegable_Standard.Title, problemDetails.Title);
         Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
@@ -431,6 +431,7 @@ public class RequestControllerTests(
         };
         HttpResponseMessage message2 = await client.SendAsync(request2, HttpCompletionOption.ResponseHeadersRead);
         AgentRequestSystemResponse? createdResponse = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(createdResponse);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", createdResponse.ConfirmUrl);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
     }
@@ -569,7 +570,7 @@ public class RequestControllerTests(
         HttpResponseMessage message = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         Assert.Equal(HttpStatusCode.BadRequest, message.StatusCode);
-        ProblemDetails problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
+        ProblemDetails? problemDetails = await message.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
         Assert.Equal(Problem.AccessPackage_NotDelegable_Agent.Title, problemDetails.Title);
         Assert.True(problemDetails.Extensions.ContainsKey("NotDelegablePackages"));
@@ -751,8 +752,8 @@ public class RequestControllerTests(
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(res2);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
-        Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
         Assert.NotEqual(default(DateTime), res2.Created);
     }
@@ -808,8 +809,8 @@ public class RequestControllerTests(
         HttpResponseMessage message2 = await client2.GetAsync(endpoint2);
         Assert.Equal(HttpStatusCode.OK, message2.StatusCode);
         AgentRequestSystemResponse? res2 = await message2.Content.ReadFromJsonAsync<AgentRequestSystemResponse>();
+        Assert.NotNull(res2);
         Assert.Contains("&DONTCHOOSEREPORTEE=true", res2.ConfirmUrl);
-        Assert.True(res2 is not null);
         Assert.Equal(testId, res2.Id);
         Assert.True(res2.TimedOut);
         timeProvider.AdjustTime(prev.UtcDateTime);
