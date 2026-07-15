@@ -35,7 +35,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
     public class LogoutControllerTests(DbFixture dbFixture, WebApplicationFixture webApplicationFixture)
         : WebApplicationTests(dbFixture, webApplicationFixture)
     {
-        private IConfiguration _configuration;
+        private IConfiguration _configuration = null!; // set in ConfigureServices
   
         private readonly Mock<IUserProfileService> _userProfileService = new();
         private readonly Mock<IOrganisationsService> _organisationsService = new();
@@ -52,7 +52,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var configuration = new ConfigurationBuilder()
              .AddJsonFile(configPath)
              .AddInMemoryCollection(
-               new Dictionary<string, string>
+               new Dictionary<string, string?>
                {
                     { "GeneralSettings:DefaultOidcProvider", "altinn" },
                     { "FeatureManagement:EnableAuditLog", "false" }
@@ -180,7 +180,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
+            IEnumerable<string>? values;
             if (response.Headers.TryGetValues("location", out values))
             {
                 Assert.Equal("http://localhost/", values.First());
@@ -213,7 +213,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            IEnumerable<string> values;
+            IEnumerable<string>? values;
             if (response.Headers.TryGetValues("location", out values))
             {
                 Assert.Equal("http://localhost/", values.First());
@@ -240,10 +240,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("https://smartcloudaltinn.azurewebsites.net/request", locationValues?.First());
         }
 
@@ -262,10 +262,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("https://smartcloudaltinn.azurewebsites.net/changerequest", locationValues?.First());
         }
 
@@ -284,10 +284,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("https://smartcloudaltinn.azurewebsites.net/agentrequest", locationValues?.First());
         }
 
@@ -306,7 +306,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("https://am.ui.localhost/accessmanagement/api/v1/logoutredirect", locationValues?.First());
         }
 
@@ -324,10 +324,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.Found, response.StatusCode);
 
-            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string> cookieValues);
+            response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
             Assert.Equal("AltinnLogoutInfo=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=localhost; path=/; secure; httponly", cookieValues?.First());
 
-            response.Headers.TryGetValues("location", out IEnumerable<string> locationValues);
+            response.Headers.TryGetValues("location", out IEnumerable<string>? locationValues);
             Assert.Equal("http://localhost/", locationValues?.First());
         }
 
@@ -364,7 +364,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
 
-            IEnumerable<string> values;
+            IEnumerable<string>? values;
 
             if (response.Headers.TryGetValues("Set-Cookie", out values))
             {
@@ -406,7 +406,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
 
-            IEnumerable<string> values;
+            IEnumerable<string>? values;
 
             if (response.Headers.TryGetValues("Set-Cookie", out values))
             {
@@ -418,7 +418,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
        
         private static string GetConfigPath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 

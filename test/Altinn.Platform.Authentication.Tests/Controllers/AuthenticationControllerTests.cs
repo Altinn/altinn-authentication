@@ -51,7 +51,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
         private readonly Mock<IGuidService> guidService = new();
         private readonly Mock<IEventsQueueClient> _eventQueue = new();
         private readonly Mock<IPartiesClient> _partiesClient = new();
-        private IConfiguration _configuration;
+        private IConfiguration _configuration = null!; // set in ConfigureServices
 
         protected override void ConfigureHost(IWebHostBuilder builder)
         {
@@ -69,7 +69,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             var configuration = new ConfigurationBuilder()
               .AddJsonFile(configPath)
               .AddInMemoryCollection(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "GeneralSettings:DefaultOidcProvider", "altinn" }
                 })
@@ -333,7 +333,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.True(principal.HasClaim(c => c.Type == "urn:altinn:org"));
 
-            Assert.Equal("ttd", principal.FindFirst(c => c.Type == "urn:altinn:org").Value);
+            Assert.Equal("ttd", principal.FindFirst(c => c.Type == "urn:altinn:org")!.Value); // non-null: HasClaim asserted above
         }
 
         /// <summary>
@@ -434,7 +434,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            RegisterContracts.Party party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+            RegisterContracts.Party? party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
                 """
                 {
                   "partyType": "person",
@@ -450,6 +450,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 }
                 """,
                 new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+            Assert.NotNull(party);
 
             _partiesClient
                 .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -508,7 +510,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            RegisterContracts.Party party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+            RegisterContracts.Party? party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
                 """
                 {
                   "partyType": "person",
@@ -524,6 +526,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 }
                 """,
                 new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+            Assert.NotNull(party);
 
             _partiesClient
                 .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -610,7 +614,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            RegisterContracts.Party party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+            RegisterContracts.Party? party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
                 """
                 {
                   "partyType": "person",
@@ -626,6 +630,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 }
                 """,
                 new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+            Assert.NotNull(party);
 
             _partiesClient
                 .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -737,7 +743,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             string externalToken = JwtTokenMock.GenerateEncryptedAndSignedToken(externalPrincipal, TimeSpan.FromMinutes(2), now: TimeProvider.GetUtcNow());
             ClaimsPrincipal claimsPrincipal = JwtTokenMock.ValidateEncryptedAndSignedToken(externalToken);
-            Assert.Equal(externalPrincipal.Identity.Name, claimsPrincipal.Identity.Name);
+            Assert.Equal(externalPrincipal.Identity!.Name, claimsPrincipal.Identity!.Name); // non-null: both principals are constructed with an identity
         }
 
         /// <summary>
@@ -812,7 +818,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             identity.AddClaims(claims);
             ClaimsPrincipal externalPrincipal = new ClaimsPrincipal(identity);
 
-            RegisterContracts.Party party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
+            RegisterContracts.Party? party = System.Text.Json.JsonSerializer.Deserialize<RegisterContracts.Party>(
                 """
                 {
                   "partyType": "person",
@@ -828,6 +834,8 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                 }
                 """,
                 new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+            Assert.NotNull(party);
 
             _partiesClient
                 .Setup(p => p.GetPartyIdentifiersAndUsernameByPersonIdentifier(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -845,7 +853,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Get the altinn token
             string token = await response.Content.ReadAsStringAsync();
             ClaimsPrincipal altinnTokenPrincipal = JwtTokenMock.ValidateToken(token, TimeProvider.GetUtcNow());
-            string altinnSessionId = altinnTokenPrincipal.FindFirstValue("sid");
+            string? altinnSessionId = altinnTokenPrincipal.FindFirstValue("sid");
 
             url = "/authentication/api/v1/refresh";
 
@@ -909,11 +917,11 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
         private static string GetConfigPath()
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(AuthenticationControllerTests).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, $"../../../appsettings.test.json");
         }
 
-        private AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string externalSessionId = null)
+        private AuthenticationEvent GetAuthenticationEvent(AuthenticationMethod authMethod, SecurityLevel authLevel, int? orgNumber, AuthenticationEventType authEventType, int? userId = null, bool isAuthenticated = true, string? externalSessionId = null)
         {
             AuthenticationEvent authenticationEvent = new AuthenticationEvent();
             authenticationEvent.Created = TimeProvider.GetUtcNow();

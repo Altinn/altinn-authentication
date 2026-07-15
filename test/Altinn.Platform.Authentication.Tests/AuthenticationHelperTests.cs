@@ -323,7 +323,7 @@ namespace Altinn.Platform.Authentication.Tests
         public void ValidateRedirectUrl_NullAllowedRedirectUrls_ReturnsProblem()
         {
             // Arrange
-            List<Uri> allowedRedirectUrls = null;
+            List<Uri> allowedRedirectUrls = null!; // deliberately null: testing guard clause
             string redirectURL = "https://example.com/callback";
 
             // Act
@@ -367,7 +367,7 @@ namespace Altinn.Platform.Authentication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void TryParseAcrValues_NoValueRequested_IsValidAndEmpty(string input)
+        public void TryParseAcrValues_NoValueRequested_IsValidAndEmpty(string? input)
         {
             bool ok = AuthenticationHelper.TryParseAcrValues(input, out string[] values);
 

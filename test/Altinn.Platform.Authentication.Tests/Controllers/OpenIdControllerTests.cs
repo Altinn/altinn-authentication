@@ -44,7 +44,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string json = await response.Content.ReadAsStringAsync();
 
-            DiscoveryDocument discoveryDocument = JsonSerializer.Deserialize<DiscoveryDocument>(json);
+            DiscoveryDocument? discoveryDocument = JsonSerializer.Deserialize<DiscoveryDocument>(json);
 
             Assert.NotNull(discoveryDocument);
             Assert.EndsWith("jwks", discoveryDocument.JwksUri);
@@ -67,7 +67,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             // Assert
             string json = await response.Content.ReadAsStringAsync();
 
-            JwksDocument jwksDocument = JsonSerializer.Deserialize<JwksDocument>(json);
+            JwksDocument? jwksDocument = JsonSerializer.Deserialize<JwksDocument>(json);
 
             Assert.NotNull(jwksDocument);
             Assert.Single(jwksDocument.Keys);

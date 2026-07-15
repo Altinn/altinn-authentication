@@ -20,7 +20,7 @@ public class PartiesClientMock : IPartiesClient
     /// <inheritdoc/>
     public Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(GetTestDataParties(GetPartiesPath()).Find(p => p.PartyId == partyId));
+        return Task.FromResult(GetTestDataParties(GetPartiesPath()).Find(p => p.PartyId == partyId)!); // null when partyId is not in test data; IPartiesClient declares non-nullable
     }
 
     private static List<Party> GetTestDataParties(string partiesPath)
@@ -30,7 +30,7 @@ public class PartiesClientMock : IPartiesClient
         if (File.Exists(partiesPath))
         {
             string content = File.ReadAllText(partiesPath);
-            partyList = JsonSerializer.Deserialize<List<Party>>(content);
+            partyList = JsonSerializer.Deserialize<List<Party>>(content) ?? [];
         }
 
         return partyList;
@@ -38,36 +38,36 @@ public class PartiesClientMock : IPartiesClient
 
     private static string GetPartiesPath()
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, "Data", "Parties", "parties.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, "Data", "Parties", "parties.json"); // assembly location always has a directory
     }
 
     private static string GetCustomerPartiesPath()
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, "Data", "Parties", "customerparties.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, "Data", "Parties", "customerparties.json"); // assembly location always has a directory
     }
 
     private static string GetMainUnitsPath(int subunitPartyId)
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, "Data", "MainUnits", $"{subunitPartyId}", "mainunits.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, "Data", "MainUnits", $"{subunitPartyId}", "mainunits.json"); // assembly location always has a directory
     }
 
     private static string GetKeyRoleUnitsPaths(int userId)
     {
-        string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
-        return Path.Combine(unitTestFolder, "Data", "KeyRoleUnits", $"{userId}", "keyroleunits.json");
+        string? unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+        return Path.Combine(unitTestFolder!, "Data", "KeyRoleUnits", $"{userId}", "keyroleunits.json"); // assembly location always has a directory
     }
 
-    public Task<Organization> GetOrganizationAsync(string partyOrgNo, CancellationToken cancellationToken = default)
+    public Task<Organization?> GetOrganizationAsync(string partyOrgNo, CancellationToken cancellationToken = default)
     {
         Organization organization = new()
         {
             OrgNumber = partyOrgNo,
         };
 
-        return Task.FromResult<Organization>(organization);
+        return Task.FromResult<Organization?>(organization);
     }
 
     public Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
@@ -90,7 +90,7 @@ public class PartiesClientMock : IPartiesClient
 
         if (!string.IsNullOrEmpty(orgNo) && orgNo == "123447789")
         {
-            party = null;
+            party = null!; // deliberately null: tests use orgNo 123447789 to trigger "System Owner not Found"
         }
 
         return Task.FromResult<Party>(party);
@@ -109,7 +109,7 @@ public class PartiesClientMock : IPartiesClient
 
     public Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(GetTestDataParties(GetCustomerPartiesPath()).Find(p => p.PartyUuid == partyUuId));
+        return Task.FromResult(GetTestDataParties(GetCustomerPartiesPath()).Find(p => p.PartyUuid == partyUuId)!); // null when partyUuId is not in test data; IPartiesClient declares non-nullable
     }
 
     public async Task<Result<bool>> CheckIfUserHasRelationToPartyUuid()

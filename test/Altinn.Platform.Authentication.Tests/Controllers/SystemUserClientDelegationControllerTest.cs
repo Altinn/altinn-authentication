@@ -191,10 +191,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/available?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            ClientInfoPaginated<ClientInfo>? result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
-            Assert.True(result is not null);
+            Assert.NotNull(result);
             Assert.True(result.Items.Count() > 0);
             Assert.True(result.Links.Next is null);
         }
@@ -235,7 +235,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
-            AltinnValidationProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_SystemUserId_NotFound.ErrorCode);
@@ -253,7 +253,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
-            AltinnValidationProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_SystemUserId.ErrorCode);
@@ -271,7 +271,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
-            AltinnValidationProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Invalid_SystemUserId.ErrorCode);
@@ -289,10 +289,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
                                                         "Bearer", 
                                                         PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            ClientInfoPaginated<ClientInfo>? result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
-            Assert.True(result is not null);
+            Assert.NotNull(result);
             Assert.True(result.Items.Count() == 0);
             Assert.True(result.Links.Next is null);
         }
@@ -320,7 +320,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
-            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);            
             Assert.Equal("System Owner not Found", problemDetails.Title);
             Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
@@ -335,10 +335,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            ClientInfoPaginated<ClientInfo>? result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
-            Assert.True(result is not null);
+            Assert.NotNull(result);
             Assert.True(result.Items.Count() > 0);
             Assert.Contains(result.Items, c => c.ClientId == new Guid("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36"));
             Assert.Contains(result.Items, c => c.ClientOrganizationNumber == "313872076");
@@ -355,10 +355,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=fd9d93c7-1dd7-45bc-9772-6ba977b3cd36");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            ClientInfoPaginated<ClientInfo> result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            ClientInfoPaginated<ClientInfo>? result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
-            Assert.True(result is not null);
+            Assert.NotNull(result);
             Assert.True(result.Items.Count() == 0);
         }
 
@@ -398,7 +398,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
-            AltinnValidationProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_SystemUserId_NotFound.ErrorCode);
@@ -416,7 +416,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
-            AltinnValidationProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_SystemUserId.ErrorCode);
@@ -434,7 +434,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
-            AltinnValidationProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.True(problemDetails.Errors.Count > 0);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Invalid_SystemUserId.ErrorCode);
@@ -452,7 +452,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
-            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal("System Owner not Found", problemDetails.Title);
             Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
@@ -470,10 +470,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Post, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            ClientDelegationResponse clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            ClientDelegationResponse? clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
-            Assert.True(clientDelegationResponse is not null);
+            Assert.NotNull(clientDelegationResponse);
             Assert.Equal(clientId, clientDelegationResponse.Client);
             Assert.Equal(systemUserId, clientDelegationResponse.Agent);
         }
@@ -491,7 +491,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
 
-            AltinnValidationProblemDetails problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.True(problemDetails.Errors.Count > 1);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_SystemUserId.ErrorCode);
@@ -533,7 +533,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
 
-            AltinnValidationProblemDetails problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Invalid_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error.Paths.First(p => p.Equals("?agent")));
@@ -571,7 +571,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
 
-            AltinnValidationProblemDetails problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_SystemUserId_NotFound.ErrorCode);
             Assert.Equal("?agent", error.Paths.First(p => p.Equals("?agent")));
@@ -605,7 +605,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
-            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal("System Owner not Found", problemDetails.Title);
             Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
@@ -625,7 +625,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.Forbidden, clientListResponse.StatusCode);
-            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal("Forbidden", problemDetails.Title);
         }
@@ -644,7 +644,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.BadRequest, clientListResponse.StatusCode);
-            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal("Client not found.", problemDetails.Title);            
         }
@@ -661,10 +661,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent={systemUserId}&client={clientId}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.write", 3, TestTime));
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            ClientDelegationResponse clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+            ClientDelegationResponse? clientDelegationResponse = JsonSerializer.Deserialize<ClientDelegationResponse>(await clientListResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
-            Assert.True(clientDelegationResponse is not null);
+            Assert.NotNull(clientDelegationResponse);
             Assert.Equal(clientId, clientDelegationResponse.Client);
             Assert.Equal(systemUserId, clientDelegationResponse.Agent);
         }
@@ -681,7 +681,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
 
-            AltinnValidationProblemDetails problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.True(problemDetails.Errors.Count > 1);
             AltinnValidationError error1 = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Missing_SystemUserId.ErrorCode);
@@ -706,7 +706,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
 
-            AltinnValidationProblemDetails problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_Invalid_SystemUserId.ErrorCode);
             Assert.Equal("?agent", error.Paths.First(p => p.Equals("?agent")));
@@ -727,7 +727,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
 
             Assert.Equal(HttpStatusCode.BadRequest, removeClientResponse.StatusCode);
 
-            AltinnValidationProblemDetails problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnValidationProblemDetails? problemDetails = await removeClientResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             AltinnValidationError error = problemDetails.Errors.First(e => e.ErrorCode == ValidationErrors.SystemUser_SystemUserId_NotFound.ErrorCode);
             Assert.Equal("?agent", error.Paths.First(p => p.Equals("?agent")));
@@ -761,7 +761,7 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
 
             Assert.Equal(HttpStatusCode.NotFound, clientListResponse.StatusCode);
-            AltinnProblemDetails problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
+            AltinnProblemDetails? problemDetails = await clientListResponse.Content.ReadFromJsonAsync<AltinnValidationProblemDetails>();
             Assert.NotNull(problemDetails);
             Assert.Equal("System Owner not Found", problemDetails.Title);
             Assert.Equal("No associated party information found for systemuser owner 123447789", problemDetails.Detail);
@@ -776,10 +776,10 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents?party={orgnummer}");
             clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
             HttpResponseMessage systemUsersResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
-            List<SystemUserInternalDTO> result = JsonSerializer.Deserialize<List<SystemUserInternalDTO>>(await systemUsersResponse.Content.ReadAsStringAsync(), _options);
+            List<SystemUserInternalDTO>? result = JsonSerializer.Deserialize<List<SystemUserInternalDTO>>(await systemUsersResponse.Content.ReadAsStringAsync(), _options);
 
             Assert.Equal(HttpStatusCode.OK, systemUsersResponse.StatusCode);
-            Assert.True(result is not null);
+            Assert.NotNull(result);
             Assert.True(result.Count() > 0);
         }
 

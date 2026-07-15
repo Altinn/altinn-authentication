@@ -16,7 +16,8 @@ namespace Altinn.Platform.Authentication.Tests.Utils
             if (File.Exists(path))
             {
                 string content = File.ReadAllText(path);
-                scenario = System.Text.Json.JsonSerializer.Deserialize<OidcTestScenario>(content);
+                scenario = System.Text.Json.JsonSerializer.Deserialize<OidcTestScenario>(content)
+                    ?? throw new InvalidOperationException($"Failed to deserialize scenario file: {path}");
             }
             else
             {
@@ -55,7 +56,7 @@ namespace Altinn.Platform.Authentication.Tests.Utils
 
         private static string GetOidcScenarioPath(string scenario)
         {
-            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath);
+            string unitTestFolder = Path.GetDirectoryName(new Uri(typeof(PartiesClientMock).Assembly.Location).LocalPath)!; // assembly location always has a directory
             return Path.Combine(unitTestFolder, "Data", "OidcScenarios", $"{scenario.ToLower()}.json");
         }
     }
