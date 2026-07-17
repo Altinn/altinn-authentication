@@ -271,7 +271,7 @@ public class ChangeRequestSystemUserService(
     /// <inheritdoc/>
     public async Task<Result<ChangeRequestResponse>> GetChangeRequestByPartyAndRequestId(int partyId, Guid requestId)
     {
-        Party party = await partiesClient.GetPartyAsync(partyId);
+        Party? party = await partiesClient.GetPartyAsync(partyId);
         if (party is null)
         {
             return Problem.Reportee_Orgno_NotFound;
@@ -335,7 +335,7 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemUserNotFound;
         }
 
-        Party party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
+        Party? party = await partiesClient.GetPartyAsync(partyId, cancellationToken);
 
         if (party is null || string.IsNullOrEmpty(party.OrgNumber))
         {
@@ -579,7 +579,7 @@ public class ChangeRequestSystemUserService(
 
         ChangeRequestStatus changeRequestStatus = ChangeRequestStatus.NoChangeNeeded;
 
-        Party party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+        Party? party = await partiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
 
         if (party is null || party.PartyUuid is null)
         {
@@ -903,9 +903,9 @@ public class ChangeRequestSystemUserService(
 
         IEnumerable<Claim> claims = context.User.Claims;
 
-        Party party = await partiesClient.GetPartyByOrgNo(req.PartyOrgNo);
+        Party? party = await partiesClient.GetPartyByOrgNo(req.PartyOrgNo);
 
-        if (!party.PartyUuid.HasValue)
+        if (party?.PartyUuid is null)
         {
             return Problem.Reportee_Orgno_NotFound;
         }

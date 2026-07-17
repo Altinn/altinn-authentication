@@ -67,8 +67,8 @@ public interface IAccessManagementClient
     /// Retrieves the access package for the given urn value
     /// </summary>
     /// <param name="urnValue">the urn for the package</param>
-    /// <returns>package</returns>
-    Task<Package> GetAccessPackage(string urnValue);
+    /// <returns>the package, or <see langword="null"/> if no package matches the urn</returns>
+    Task<Package?> GetAccessPackage(string urnValue);
 
     /// <summary>
     /// Revokes the assignment of

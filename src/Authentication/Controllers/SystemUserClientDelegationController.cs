@@ -55,7 +55,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return errorResult;
             }
 
-            Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            Party? party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
 
             if (party is null)
             {
@@ -114,7 +114,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return errorResult;
             }
 
-            Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            Party? party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (party is null)
             {
                 return NotFound(new ProblemDetails
@@ -177,7 +177,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return errorResult;
             }
 
-            Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            Party? party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (party is null)
             {
                 return NotFound(new ProblemDetails
@@ -240,7 +240,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return errorResult;
             }
 
-            Party party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
+            Party? party = await PartiesClient.GetPartyByOrgNo(systemUser.ReporteeOrgNo);
             if (party is null)
             {
                 return NotFound(new ProblemDetails
@@ -288,7 +288,7 @@ namespace Altinn.Platform.Authentication.Controllers
         [Authorize(Policy = AuthzConstants.POLICY_CLIENTDELEGATION_READ)]
         public async Task<ActionResult<List<SystemUserInternalDTO>>> GetAllAgentSystemUsersForParty([FromQuery] string party)
         {
-            Party partyInfo = await PartiesClient.GetPartyByOrgNo(party);
+            Party? partyInfo = await PartiesClient.GetPartyByOrgNo(party);
             if (partyInfo is null)
             {
                 return NotFound(new ProblemDetails

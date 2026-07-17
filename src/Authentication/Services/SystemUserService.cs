@@ -76,7 +76,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
+            Party? party = await _partiesClient.GetPartyAsync(int.Parse(partyId));
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -164,7 +164,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <returns>Boolean True if row affected</returns>
         public async Task<Result<bool>> SetDeleteFlagOnSystemUser(string partyId, Guid systemUserId, CancellationToken cancellationToken = default)
         {
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -325,7 +325,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -423,7 +423,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemIdNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(int.Parse(partyId), cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -713,17 +713,17 @@ namespace Altinn.Platform.Authentication.Services
                 if (found)
                 {
                     string urnValue = accessPackage.Urn!;
-                    Package package = await _accessManagementClient.GetAccessPackage(urnValue);
+                    Package? package = await _accessManagementClient.GetAccessPackage(urnValue);
                     if (isAgentRequest)
                     {
-                        if (!package.IsDelegable)
+                        if (package is null || !package.IsDelegable)
                         {
                             notDelegablePackages.Add(accessPackage.Urn!);
                         }
                     }
                     else
                     {
-                        if (!package.IsAssignable)
+                        if (package is null || !package.IsAssignable)
                         {
                             notDelegablePackages.Add(accessPackage.Urn!);
                         }
@@ -1036,10 +1036,10 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<DelegationResponse>>> GetListOfDelegationsForAgentSystemUser(int partyId, Guid facilitator, Guid systemUserId, Guid? client = null)
         {
-            Party party = await _partiesClient.GetPartyAsync(partyId);
+            Party? party = await _partiesClient.GetPartyAsync(partyId);
             List<DelegationResponse> found = [];
 
-            if (party.PartyUuid != facilitator)
+            if (party?.PartyUuid != facilitator)
             {
                 return Problem.AgentSystemUser_DelegationNotFound;
             }
@@ -1153,7 +1153,7 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUserNotFound;
             }
 
-            Party party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
@@ -1316,7 +1316,7 @@ namespace Altinn.Platform.Authentication.Services
 
         private async Task<Result<Guid>> GetPartyUuId(int partyId, CancellationToken cancellationToken)
         {
-            Party party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
+            Party? party = await _partiesClient.GetPartyAsync(partyId, cancellationToken);
 
             if (party is null || string.IsNullOrEmpty(party.OrgNumber))
             {
