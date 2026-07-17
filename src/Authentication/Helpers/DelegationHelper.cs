@@ -25,6 +25,12 @@ public class DelegationHelper(
     ILogger<DelegationHelper> logger)
 {
     /// <summary>
+    /// Parameter key used to carry the display label (friendly name or identifier) of the resource a
+    /// not-delegable reason belongs to, so it can be listed in the user-facing delegation reasons.
+    /// </summary>
+    private const string ResourceLabelParameterKey = "resourceName";
+
+    /// <summary>
     /// Checks Delegation for a user
     /// </summary>
     /// <param name="partyUuid">reportee</param>
@@ -68,6 +74,7 @@ public class DelegationHelper(
 
         List<RightResponses> rightResponsesList = [];
         List<DetailExternal> allErrorDetails = [];
+        bool anyResourceNotDelegable = false;
 
         foreach (Right right in verifiedRights)
         {
@@ -86,6 +93,8 @@ public class DelegationHelper(
 
             if (!canDelegate)
             {
+                anyResourceNotDelegable = true;
+
                 // The delegation check completed (HTTP 200) but the resource right is not delegable.
                 // Access Management returns the actual reason in each right's ReasonCodes (e.g.
                 // MissingPackageAccess, MissingRoleAccess, MissingDelegationAccess) - not in Permissions -
@@ -109,7 +118,26 @@ public class DelegationHelper(
                     resourceId,
                     reasonDetails);
 
-                return new DelegationCheckResult(false, rightResponsesList, errors);
+                // Tag each error with the resource it belongs to and keep checking the remaining
+                // resources, so the caller can list every resource that could not be delegated -
+                // not just the first one that failed. Prefer the friendly resource name returned by
+                // Access Management; fall back to the resource identifier when the name is absent.
+                string resourceLabel = !string.IsNullOrWhiteSpace(resourceCheckDto.Resource?.Name)
+                    ? resourceCheckDto.Resource!.Name
+                    : resourceId;
+
+                if (!string.IsNullOrEmpty(resourceLabel))
+                {
+                    foreach (DetailExternal error in errors)
+                    {
+                        error.Parameters ??= [];
+                        error.Parameters[ResourceLabelParameterKey] =
+                            [new AttributePair { Id = ResourceLabelParameterKey, Value = resourceLabel }];
+                    }
+                }
+
+                allErrorDetails.AddRange(errors);
+                continue;
             }
 
             RightKeyListDto rightKeyList = new RightKeyListDto { DirectRightKeys = rightKeys };
@@ -117,7 +145,7 @@ public class DelegationHelper(
             rightResponsesList.Add(new RightResponses(resourceId, rightKeyList));
         }
 
-        if (allErrorDetails.Count > 0)
+        if (anyResourceNotDelegable)
         {
             return new DelegationCheckResult(false, rightResponsesList, allErrorDetails);
         }
@@ -208,8 +236,22 @@ public class DelegationHelper(
         {
             return Problem.UnableToDoDelegationCheck;
         }
-  
-        return errors[0].Code switch
+
+        // On a failed delegation check Access Management returns a mix of positive codes (ways the
+        // reportee DOES have access, e.g. PackageAccess/RoleAccess) and the blocking code(s) that
+        // actually prevent delegation (e.g. ResourceIsMaskinPortenSchema). Only the blocking codes
+        // explain the failure, so drive the message off those and ignore the positive ones. If AM sent
+        // only non-blocking codes we keep the original list so we never end up with an empty reason.
+        List<DetailExternal> blockingErrors = errors.Where(e => IsBlockingReason(e.Code)).ToList();
+        if (blockingErrors.Count == 0)
+        {
+            blockingErrors = errors;
+        }
+
+        // A ProblemInstance carries a single headline ErrorCode; use the first blocking reason as the
+        // representative. The complete, per-resource breakdown of every blocking reason (all resources,
+        // all codes) is carried in the delegationReasons extension below.
+        ProblemDescriptor descriptor = blockingErrors[0].Code switch
         {
             DetailCodeExternal.MissingPackageAccess => Problem.DelegationRightMissingPackageAccess,
             DetailCodeExternal.MissingRoleAccess => Problem.DelegationRightMissingRoleAccess,
@@ -221,7 +263,88 @@ public class DelegationHelper(
             DetailCodeExternal.ResourceIsMaskinPortenSchema => Problem.DelegationRightResourceIsMaskinPortenSchema,
             _ => Problem.UnableToDoDelegationCheck
         };
+
+        // Group every blocking reason by the resource it belongs to and list its distinct codes, so all
+        // reasons from Access Management end up in this one problem instance, e.g.
+        // "Resource A: MissingRoleAccess, MissingPackageAccess | Resource B: ResourceIsMaskinPortenSchema".
+        string reasons = BuildGroupedDelegationReasons(blockingErrors);
+
+        if (string.IsNullOrWhiteSpace(reasons))
+        {
+            return descriptor;
+        }
+
+        ProblemExtensionData extensionData = ProblemExtensionData.Create(
+        [
+            new KeyValuePair<string, string>("delegationReasons", reasons)
+        ]);
+
+        return descriptor.Create(extensionData);
     }
+
+    /// <summary>
+    /// Builds the delegation reasons string, grouped by the resource each reason belongs to and listing the
+    /// distinct blocking codes per resource. The reason code is the reliable, mappable signal (the frontend
+    /// maps it to localized text); Access Management's free-text description is used only as a fallback for
+    /// <see cref="DetailCodeExternal.Unknown"/>, where there is no meaningful code (it is otherwise
+    /// unreliable, e.g. "NoAccess").
+    /// </summary>
+    private static string BuildGroupedDelegationReasons(List<DetailExternal> blockingErrors)
+    {
+        IEnumerable<string> groups = blockingErrors
+            .GroupBy(GetResourceLabel)
+            .Select(group =>
+            {
+                string codes = string.Join(", ", group.Select(FormatReasonCode).Distinct());
+                return string.IsNullOrEmpty(group.Key) ? codes : $"{group.Key}: {codes}";
+            });
+
+        return string.Join(" | ", groups);
+    }
+
+    /// <summary>
+    /// Gets the display label (friendly resource name or identifier) tagged onto the error, or an empty
+    /// string when the reason is not tied to a specific resource.
+    /// </summary>
+    private static string GetResourceLabel(DetailExternal error)
+    {
+        return error.Parameters is not null
+            && error.Parameters.TryGetValue(ResourceLabelParameterKey, out List<AttributePair>? resourceAttrs)
+                ? resourceAttrs.FirstOrDefault()?.Value ?? string.Empty
+                : string.Empty;
+    }
+
+    /// <summary>
+    /// Formats a single reason as its code, falling back to the free-text description only for
+    /// <see cref="DetailCodeExternal.Unknown"/>.
+    /// </summary>
+    private static string FormatReasonCode(DetailExternal error)
+    {
+        return error.Code == DetailCodeExternal.Unknown && !string.IsNullOrWhiteSpace(error.Description)
+            ? error.Description
+            : error.Code.ToString();
+    }
+
+    /// <summary>
+    /// Returns true for reason codes that actually block delegation. Access Management can return
+    /// positive codes (RoleAccess, PackageAccess, ...) alongside a failure, describing how the reportee
+    /// does have access; those must not be treated as the reason a right/resource is not delegable.
+    /// <see cref="DetailCodeExternal.Unknown"/> is treated as blocking so a genuinely unknown reason
+    /// still surfaces instead of being filtered away.
+    /// </summary>
+    private static bool IsBlockingReason(DetailCodeExternal code) => code switch
+    {
+        DetailCodeExternal.MissingRoleAccess
+        or DetailCodeExternal.MissingDelegationAccess
+        or DetailCodeExternal.MissingSrrRightAccess
+        or DetailCodeExternal.InsufficientAuthenticationLevel
+        or DetailCodeExternal.AccessListValidationFail
+        or DetailCodeExternal.MissingPackageAccess
+        or DetailCodeExternal.ResourceNotDelegable
+        or DetailCodeExternal.ResourceIsMaskinPortenSchema
+        or DetailCodeExternal.Unknown => true,
+        _ => false
+    };
 
     /// <summary>
     /// Validates delegation rights for a list of access packages for a party
@@ -330,7 +453,16 @@ public class DelegationHelper(
                 systemId,
                 notDelegableDetails);
 
-            return new Result<AccessPackageDelegationCheckResult>(Problem.AccessPackage_Delegation_MissingRequiredAccess);
+            // Carry which package(s) failed and why as a problem extension so the end user (and support)
+            // sees the reason directly, 
+            ProblemInstance problem = string.IsNullOrWhiteSpace(notDelegableDetails)
+                ? Problem.AccessPackage_Delegation_MissingRequiredAccess
+                : Problem.AccessPackage_Delegation_MissingRequiredAccess.Create(ProblemExtensionData.Create(
+                [
+                    new KeyValuePair<string, string>("delegationReasons", notDelegableDetails)
+                ]));
+
+            return new Result<AccessPackageDelegationCheckResult>(problem);
         }
     }
 
