@@ -65,7 +65,7 @@ public class PartiesClient : IPartiesClient
     }
 
     /// <inheritdoc/>
-    public async Task<Party> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
+    public async Task<Party?> GetPartyAsync(int partyId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -93,7 +93,7 @@ public class PartiesClient : IPartiesClient
     }
 
     /// <inheritdoc/>
-    public async Task<Party> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
+    public async Task<Party?> GetPartyByUuId(Guid partyUuId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -121,7 +121,7 @@ public class PartiesClient : IPartiesClient
     }
 
     /// <inheritdoc/>
-    public async Task<Party> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
+    public async Task<Party?> GetPartyByOrgNo(string orgNo, CancellationToken cancellationToken = default)
     {
         try
         {
