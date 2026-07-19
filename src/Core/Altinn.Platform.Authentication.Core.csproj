@@ -18,7 +18,7 @@
 		<PackageReference Include="Altinn.Common.AccessTokenClient" Version="3.2.8" />
 		<PackageReference Include="Altinn.Register.Contracts" Version="1.7.0" />
 		<PackageReference Include="Altinn.Urn" Version="4.3.0" />
-		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.2" />
 		<PackageReference Include="Npgsql" Version="10.0.3" />
 	</ItemGroup>
 
