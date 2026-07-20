@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
@@ -25,10 +26,18 @@ public class DelegationHelper(
     ILogger<DelegationHelper> logger)
 {
     /// <summary>
-    /// Parameter key used to carry the display label (friendly name or identifier) of the resource a
-    /// not-delegable reason belongs to, so it can be listed in the user-facing delegation reasons.
+    /// Options used to serialize the structured delegation reasons carried in the problem extension.
+    /// camelCase to match the JSON the frontend consumes.
     /// </summary>
-    private const string ResourceLabelParameterKey = "resourceName";
+    private static readonly JsonSerializerOptions ReasonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    /// <summary>
+    /// One not-delegable item in the structured delegation reasons: the id of the resource or access
+    /// package (so the frontend can resolve and show the localized name) and the blocking reason codes
+    /// (which the frontend maps to localized text). Packages carry no codes today (Access Management
+    /// returns none for them).
+    /// </summary>
+    private sealed record DelegationReasonEntry(string Type, string Id, IReadOnlyList<string> Codes);
 
     /// <summary>
     /// Checks Delegation for a user
@@ -118,21 +127,17 @@ public class DelegationHelper(
                     resourceId,
                     reasonDetails);
 
-                // Tag each error with the resource it belongs to and keep checking the remaining
-                // resources, so the caller can list every resource that could not be delegated -
-                // not just the first one that failed. Prefer the friendly resource name returned by
-                // Access Management; fall back to the resource identifier when the name is absent.
-                string resourceLabel = !string.IsNullOrWhiteSpace(resourceCheckDto.Resource?.Name)
-                    ? resourceCheckDto.Resource!.Name
-                    : resourceId;
-
-                if (!string.IsNullOrEmpty(resourceLabel))
+                // Tag each error with the resource identifier it belongs to and keep checking the
+                // remaining resources, so the caller can list every resource that could not be delegated
+                // - not just the first one that failed. We carry the identifier (not the name) so the
+                // frontend can resolve and show the localized name.
+                if (!string.IsNullOrEmpty(resourceId))
                 {
                     foreach (DetailExternal error in errors)
                     {
                         error.Parameters ??= [];
-                        error.Parameters[ResourceLabelParameterKey] =
-                            [new AttributePair { Id = ResourceLabelParameterKey, Value = resourceLabel }];
+                        error.Parameters[AttributeIdentifier.ResourceRegistryAttribute] =
+                            [new AttributePair { Id = AttributeIdentifier.ResourceRegistryAttribute, Value = resourceId }];
                     }
                 }
 
@@ -264,10 +269,10 @@ public class DelegationHelper(
             _ => Problem.UnableToDoDelegationCheck
         };
 
-        // Group every blocking reason by the resource it belongs to and list its distinct codes, so all
-        // reasons from Access Management end up in this one problem instance, e.g.
-        // "Resource A: MissingRoleAccess, MissingPackageAccess | Resource B: ResourceIsMaskinPortenSchema".
-        string reasons = BuildGroupedDelegationReasons(blockingErrors);
+        // Group every blocking reason by the resource id it belongs to and carry the structured list
+        // (resource id + its distinct codes) as a JSON string, so all resources/codes end up in this one
+        // problem instance and the frontend can resolve the localized resource name and localize the codes.
+        string reasons = BuildStructuredDelegationReasons(blockingErrors);
 
         if (string.IsNullOrWhiteSpace(reasons))
         {
@@ -283,46 +288,34 @@ public class DelegationHelper(
     }
 
     /// <summary>
-    /// Builds the delegation reasons string, grouped by the resource each reason belongs to and listing the
-    /// distinct blocking codes per resource. The reason code is the reliable, mappable signal (the frontend
-    /// maps it to localized text); Access Management's free-text description is used only as a fallback for
-    /// <see cref="DetailCodeExternal.Unknown"/>, where there is no meaningful code (it is otherwise
-    /// unreliable, e.g. "NoAccess").
+    /// Builds the structured delegation reasons for a resource-based delegation check: one entry per
+    /// resource id, each with its distinct blocking codes, serialized as a JSON string so it can travel in
+    /// the problem extension. The id (not a name) and the codes are carried so the frontend can resolve the
+    /// localized resource name and localize each code.
     /// </summary>
-    private static string BuildGroupedDelegationReasons(List<DetailExternal> blockingErrors)
+    private static string BuildStructuredDelegationReasons(List<DetailExternal> blockingErrors)
     {
-        IEnumerable<string> groups = blockingErrors
-            .GroupBy(GetResourceLabel)
-            .Select(group =>
-            {
-                string codes = string.Join(", ", group.Select(FormatReasonCode).Distinct());
-                return string.IsNullOrEmpty(group.Key) ? codes : $"{group.Key}: {codes}";
-            });
+        List<DelegationReasonEntry> entries = blockingErrors
+            .GroupBy(GetResourceId)
+            .Select(group => new DelegationReasonEntry(
+                "resource",
+                group.Key,
+                group.Select(e => e.Code.ToString()).Distinct().ToList()))
+            .ToList();
 
-        return string.Join(" | ", groups);
+        return JsonSerializer.Serialize(entries, ReasonSerializerOptions);
     }
 
     /// <summary>
-    /// Gets the display label (friendly resource name or identifier) tagged onto the error, or an empty
-    /// string when the reason is not tied to a specific resource.
+    /// Gets the resource identifier tagged onto the error, or an empty string when the reason is not tied
+    /// to a specific resource.
     /// </summary>
-    private static string GetResourceLabel(DetailExternal error)
+    private static string GetResourceId(DetailExternal error)
     {
         return error.Parameters is not null
-            && error.Parameters.TryGetValue(ResourceLabelParameterKey, out List<AttributePair>? resourceAttrs)
+            && error.Parameters.TryGetValue(AttributeIdentifier.ResourceRegistryAttribute, out List<AttributePair>? resourceAttrs)
                 ? resourceAttrs.FirstOrDefault()?.Value ?? string.Empty
                 : string.Empty;
-    }
-
-    /// <summary>
-    /// Formats a single reason as its code, falling back to the free-text description only for
-    /// <see cref="DetailCodeExternal.Unknown"/>.
-    /// </summary>
-    private static string FormatReasonCode(DetailExternal error)
-    {
-        return error.Code == DetailCodeExternal.Unknown && !string.IsNullOrWhiteSpace(error.Description)
-            ? error.Description
-            : error.Code.ToString();
     }
 
     /// <summary>
@@ -453,13 +446,19 @@ public class DelegationHelper(
                 systemId,
                 notDelegableDetails);
 
-            // Carry which package(s) failed and why as a problem extension so the end user (and support)
-            // sees the reason directly, 
-            ProblemInstance problem = string.IsNullOrWhiteSpace(notDelegableDetails)
+            // Carry which package(s) failed as structured reasons (package id + codes) so the frontend can
+            // resolve the localized package name. Access Management returns no reason code for packages
+            // today, so codes is empty; the log above keeps the raw AM text for support.
+            List<DelegationReasonEntry> reasonEntries = notDelegable
+                .Where(r => !string.IsNullOrEmpty(r.Package?.Urn))
+                .Select(r => new DelegationReasonEntry("package", r.Package!.Urn, []))
+                .ToList();
+
+            ProblemInstance problem = reasonEntries.Count == 0
                 ? Problem.AccessPackage_Delegation_MissingRequiredAccess
                 : Problem.AccessPackage_Delegation_MissingRequiredAccess.Create(ProblemExtensionData.Create(
                 [
-                    new KeyValuePair<string, string>("delegationReasons", notDelegableDetails)
+                    new KeyValuePair<string, string>("delegationReasons", JsonSerializer.Serialize(reasonEntries, ReasonSerializerOptions))
                 ]));
 
             return new Result<AccessPackageDelegationCheckResult>(problem);

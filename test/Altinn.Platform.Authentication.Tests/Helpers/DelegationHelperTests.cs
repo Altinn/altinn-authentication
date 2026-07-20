@@ -47,7 +47,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.UnableToDoDelegationCheck.ErrorCode, result.ErrorCode);
-            Assert.Equal("Unknown error", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("Unknown", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -64,7 +64,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.DelegationRightMissingPackageAccess.ErrorCode, result.ErrorCode);
-            Assert.Equal("MissingPackageAccess", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("MissingPackageAccess", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -81,7 +81,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.DelegationRightAccessListValidationFail.ErrorCode, result.ErrorCode);
-            Assert.Equal("AccessListValidationFail", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("AccessListValidationFail", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -98,7 +98,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.DelegationRightResourceNotDelegable.ErrorCode, result.ErrorCode);
-            Assert.Equal("ResourceNotDelegable", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("ResourceNotDelegable", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -115,7 +115,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.DelegationRightResourceIsMaskinPortenSchema.ErrorCode, result.ErrorCode);
-            Assert.Equal("ResourceIsMaskinPortenSchema", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("ResourceIsMaskinPortenSchema", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.DelegationRightMissingRoleAccess.ErrorCode, result.ErrorCode);
-            Assert.Equal("MissingRoleAccess", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("MissingRoleAccess", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -149,7 +149,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.DelegationRightMissingDelegationAccess.ErrorCode, result.ErrorCode);
-            Assert.Equal("MissingDelegationAccess", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("MissingDelegationAccess", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -166,7 +166,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.DelegationRightMissingSrrRightAccess.ErrorCode, result.ErrorCode);
-            Assert.Equal("MissingSrrRightAccess", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("MissingSrrRightAccess", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -183,7 +183,7 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
 
             // Assert
             Assert.Equal(Problem.DelegationRightInsufficientAuthenticationLevel.ErrorCode, result.ErrorCode);
-            Assert.Equal("InsufficientAuthenticationLevel", result.Extensions.GetValueOrDefault("delegationReasons"));
+            Assert.Contains("InsufficientAuthenticationLevel", result.Extensions.GetValueOrDefault("delegationReasons")!);
         }
 
         [Fact]
@@ -355,9 +355,12 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             Assert.True(result.IsProblem);
             Assert.Equal(Problem.AccessPackage_Delegation_MissingRequiredAccess.Title, result.Problem.Title);
 
-            // The failed package urn and its reason are also carried to the caller as a problem extension
-            // so the reason is explainable to the end user, not only debuggable in the logs.
-            Assert.Equal("urn:valid: Not allowed", result.Problem.Extensions.GetValueOrDefault("delegationReasons"));
+            // The failed package id is carried to the caller as a structured problem extension so the
+            // frontend can resolve the localized package name (packages carry no reason code from AM).
+            string? reasons = result.Problem.Extensions.GetValueOrDefault("delegationReasons")?.ToString();
+            Assert.NotNull(reasons);
+            Assert.Contains("\"type\":\"package\"", reasons);
+            Assert.Contains("\"id\":\"urn:valid\"", reasons);
 
             // Issue #2027: the failed package urn and its reason must be logged so the failure is debuggable in App Insights.
             loggerMock.Verify(
@@ -747,12 +750,11 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
                 .Setup(s => s.GetRightsForRegisteredSystem(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Right> { rightA, rightB });
 
-            // resource-a returns a friendly Name; resource-b returns none (must fall back to its identifier).
             accessManagementClient
                 .Setup(a => a.CheckDelegationAccess(It.IsAny<Guid>(), "resource-a"))
                 .ReturnsAsync(new ResourceCheckDto
                 {
-                    Resource = new ResourceDto { Id = Guid.NewGuid(), RefId = "resource-a", Name = "Resource A friendly name" },
+                    Resource = new ResourceDto { Id = Guid.NewGuid(), RefId = "resource-a" },
                     Rights = [new RightCheckDto { Right = new() { Key = "resource-a" }, Result = false, ReasonCodes = [DetailCodeExternal.MissingRoleAccess] }]
                 });
             accessManagementClient
@@ -774,13 +776,12 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             Assert.Contains(result.errors, e => e.Code == DetailCodeExternal.MissingRoleAccess);
             Assert.Contains(result.errors, e => e.Code == DetailCodeExternal.MissingPackageAccess);
 
-            // And the problem lists BOTH resources with their reason code: resource-a by its friendly name,
-            // resource-b by its identifier (name absent).
+            // And the problem lists BOTH resources by id with their reason code (frontend resolves names).
             var problem = DelegationHelper.MapDetailExternalErrorListToProblemInstance(result.errors);
             string? reasons = problem.Extensions.GetValueOrDefault("delegationReasons")?.ToString();
             Assert.NotNull(reasons);
-            Assert.Contains("Resource A friendly name: MissingRoleAccess", reasons);
-            Assert.Contains("resource-b: MissingPackageAccess", reasons);
+            Assert.Contains("\"id\":\"resource-a\",\"codes\":[\"MissingRoleAccess\"]", reasons);
+            Assert.Contains("\"id\":\"resource-b\",\"codes\":[\"MissingPackageAccess\"]", reasons);
         }
 
         [Fact]
@@ -812,12 +813,12 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             // Act
             var result = await helper.ValidateDelegationRightsForAccessPackages(Guid.NewGuid(), "sys", requested, false, CancellationToken.None);
 
-            // Assert - only the failed packages (b, c) are listed with their reason, not the delegable one (a)
+            // Assert - only the failed packages (b, c) are listed by id, not the delegable one (a)
             Assert.True(result.IsProblem);
             string? reasons = result.Problem.Extensions.GetValueOrDefault("delegationReasons")?.ToString();
             Assert.NotNull(reasons);
-            Assert.Contains("urn:b: Reason B", reasons);
-            Assert.Contains("urn:c: Reason C", reasons);
+            Assert.Contains("\"id\":\"urn:b\"", reasons);
+            Assert.Contains("\"id\":\"urn:c\"", reasons);
             Assert.DoesNotContain("urn:a", reasons);
         }
     }
