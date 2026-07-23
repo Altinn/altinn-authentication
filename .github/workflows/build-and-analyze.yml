@@ -12,7 +12,7 @@ jobs:
     if: ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) || github.event_name == 'push') && github.repository_owner == 'Altinn' && github.actor != 'dependabot[bot]' 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set inotify watchers
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
       - name: Set inotify instances
@@ -41,7 +41,7 @@ jobs:
         with:
           distribution: 'microsoft'
           java-version: 17
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Cache SonarCloud packages
