@@ -61,7 +61,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <summary>
         /// Used to set the stream chunk limit, for the internal API
         /// </summary>
-        const int STREAM_LIMIT = 100;
+        private const int STREAM_LIMIT = 100;
 
         /// <summary>
         /// Creates a new SystemUser
@@ -450,12 +450,17 @@ namespace Altinn.Platform.Authentication.Services
                 return Problem.SystemUser_AlreadyExists;
             }
 
+            // Stage 1 - request/format validation. Run both rights and packages (do not bail after rights)
+            // so problems from both are reported together, then combine into one problem. When both fail the
+            // rights code is used as the headline; the package specifics ride along in the extensions.
+            List<ProblemInstance> validationProblems = [];
+
             if (rights is not null && rights.Count > 0)
             {
                 Result<bool> validatedRequestedRights = ValidateRights(rights, regSystem);
                 if (validatedRequestedRights.IsProblem)
                 {
-                    return validatedRequestedRights.Problem;
+                    validationProblems.Add(validatedRequestedRights.Problem);
                 }
             }
 
@@ -464,9 +469,25 @@ namespace Altinn.Platform.Authentication.Services
                 Result<bool> validatedRequestedPackages = await ValidateAccessPackages(accessPackages, regSystem, systemUserType == SystemUserType.Agent);
                 if (validatedRequestedPackages.IsProblem)
                 {
-                    return validatedRequestedPackages.Problem;
+                    validationProblems.Add(validatedRequestedPackages.Problem);
                 }
             }
+
+            if (validationProblems.Count == 1)
+            {
+                return validationProblems[0];
+            }
+
+            if (validationProblems.Count > 1)
+            {
+                return DelegationHelper.CombineProblems(Problem.Rights_NotFound_Or_NotDelegable, [.. validationProblems]);
+            }
+
+            // Stage 2 - delegation check (only reached when validation passed). Run both the rights and the
+            // access package check so the reportee sees every not-delegable resource/package together; their
+            // delegationReasons are merged into one problem (rights code as headline when both fail).
+            List<ProblemInstance> delegationProblems = [];
+            ProblemDescriptor? delegationHeadline = null;
 
             if (systemUserType == SystemUserType.Standard && rights is not null && rights.Count > 0)
             {
@@ -480,8 +501,10 @@ namespace Altinn.Platform.Authentication.Services
 
                 if (!delegationCheckFinalResult.CanDelegate)
                 {
-                    // This represents that the rights are not delegable, but the DelegationCheck method call has been completed.
-                    return DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors);
+                    // The rights are not delegable, but the DelegationCheck call completed. Collect the problem
+                    // instead of returning, so a package failure can be reported alongside it.
+                    delegationProblems.Add(DelegationHelper.MapDetailExternalErrorListToProblemInstance(delegationCheckFinalResult.errors));
+                    delegationHeadline = DelegationHelper.SelectRightsProblemDescriptor(delegationCheckFinalResult.errors);
                 }
             }
 
@@ -490,12 +513,23 @@ namespace Altinn.Platform.Authentication.Services
                 var accessPackageCheckResult = await delegationHelper.ValidateDelegationRightsForAccessPackages(partyUuid, regSystem.Id, accessPackages, fromBff: false, cancellationToken);
                 if (accessPackageCheckResult.IsProblem)
                 {
-                    return accessPackageCheckResult.Problem;
+                    delegationProblems.Add(accessPackageCheckResult.Problem);
+                    delegationHeadline ??= Problem.AccessPackage_Delegation_MissingRequiredAccess;
                 }
                 else
                 {
                     accessPackageDelegationCheckResult = accessPackageCheckResult.Value;
                 }
+            }
+
+            if (delegationProblems.Count == 1)
+            {
+                return delegationProblems[0];
+            }
+
+            if (delegationProblems.Count > 1)
+            {
+                return DelegationHelper.CombineProblems(delegationHeadline!, [.. delegationProblems]);
             }
 
             regSystem.Name.TryGetValue("nb", out string? systemName);
@@ -523,7 +557,6 @@ namespace Altinn.Platform.Authentication.Services
             }
 
             return await InsertNewSystemUser(newSystemUser, userId, regSystem, delegationCheckFinalResult, partyId, accessPackageDelegationCheckResult, partyUuid, cancellationToken);
-
         }
 
         private async Task<Result<SystemUserInternalDTO>> InsertNewSystemUser(
@@ -693,16 +726,6 @@ namespace Altinn.Platform.Authentication.Services
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, Problem.AccessPackage_NotFound.Title);
                 return Problem.AccessPackage_NotFound;
             }
-
-            //if (systemInfo.AccessPackages.Count == 0)
-            //{
-            //    return Problem.AccessPackage_NotFound;
-            //}
-
-            //if (accessPackages.Count > systemInfo.AccessPackages.Count)
-            //{
-            //    return Problem.AccessPackage_NotFound;
-            //}
 
             List<string> notFoundPackages = [];
             List<string> notDelegablePackages = [];
@@ -1129,7 +1152,7 @@ namespace Altinn.Platform.Authentication.Services
         /// <inheritdoc/>
         public async Task<Result<List<ExternalClientDto>>> GetClientsForFacilitator(Guid facilitator, List<string>? packages, IFeatureManager featureManager, CancellationToken cancellationToken)
         {
-            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages, cancellationToken);
+            var res = await _accessManagementClient.GetClientsForFacilitator(facilitator, packages!, cancellationToken);
             if (res.IsSuccess)
             {
                 if (packages is not null && packages.Count > 0)

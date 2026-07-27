@@ -833,5 +833,56 @@ namespace Altinn.Platform.Authentication.Helpers.Tests
             Assert.Contains("\"id\":\"urn:c\"", reasons);
             Assert.DoesNotContain("urn:a", reasons);
         }
+
+        [Fact]
+        public void CombineProblems_MergesDelegationReasonsFromRightsAndPackages()
+        {
+            // Arrange - a rights problem (resource entries) and a package problem (package entries), each
+            // carrying its own delegationReasons JSON array.
+            var rightsErrors = new List<DetailExternal>
+            {
+                new()
+                {
+                    Code = DetailCodeExternal.MissingRoleAccess,
+                    Parameters = new Dictionary<string, List<AttributePair>>
+                    {
+                        { AttributeIdentifier.ResourceRegistryAttribute, new List<AttributePair> { new() { Id = AttributeIdentifier.ResourceRegistryAttribute, Value = "resource-a" } } }
+                    }
+                }
+            };
+            ProblemInstance rightsProblem = DelegationHelper.MapDetailExternalErrorListToProblemInstance(rightsErrors);
+            ProblemInstance packageProblem = Problem.AccessPackage_Delegation_MissingRequiredAccess.Create(
+                ProblemExtensionData.Create([new KeyValuePair<string, string>("delegationReasons", """[{"type":"package","id":"urn:pkg","codes":[]}]""")]));
+
+            // Act
+            ProblemInstance combined = DelegationHelper.CombineProblems(
+                DelegationHelper.SelectRightsProblemDescriptor(rightsErrors),
+                rightsProblem,
+                packageProblem);
+
+            // Assert - headline is the rights code, and delegationReasons lists BOTH the resource and package entries
+            Assert.Equal(Problem.DelegationRightMissingRoleAccess.ErrorCode, combined.ErrorCode);
+            string? reasons = combined.Extensions.GetValueOrDefault("delegationReasons")?.ToString();
+            Assert.NotNull(reasons);
+            Assert.Contains("\"id\":\"resource-a\"", reasons);
+            Assert.Contains("\"id\":\"urn:pkg\"", reasons);
+            Assert.Contains("MissingRoleAccess", reasons);
+        }
+
+        [Fact]
+        public void CombineProblems_UnionsDifferentExtensionKeys()
+        {
+            // Arrange - validation-stage problems: rights carries no extension, packages carries its own list.
+            ProblemInstance rightsProblem = Problem.Rights_NotFound_Or_NotDelegable.Create();
+            ProblemInstance packageProblem = Problem.AccessPackage_NotDelegable_Standard.Create(
+                ProblemExtensionData.Create([new KeyValuePair<string, string>("NotDelegablePackages", "urn:x, urn:y")]));
+
+            // Act
+            ProblemInstance combined = DelegationHelper.CombineProblems(Problem.Rights_NotFound_Or_NotDelegable, rightsProblem, packageProblem);
+
+            // Assert - headline is the rights code and the package extension is preserved
+            Assert.Equal(Problem.Rights_NotFound_Or_NotDelegable.ErrorCode, combined.ErrorCode);
+            Assert.Equal("urn:x, urn:y", combined.Extensions.GetValueOrDefault("NotDelegablePackages"));
+        }
     }
 }
