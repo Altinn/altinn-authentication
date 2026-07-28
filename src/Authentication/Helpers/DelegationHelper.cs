@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Altinn.Authentication.Core.Problems;
@@ -256,18 +257,7 @@ public class DelegationHelper(
         // A ProblemInstance carries a single headline ErrorCode; use the first blocking reason as the
         // representative. The complete, per-resource breakdown of every blocking reason (all resources,
         // all codes) is carried in the delegationReasons extension below.
-        ProblemDescriptor descriptor = blockingErrors[0].Code switch
-        {
-            DetailCodeExternal.MissingPackageAccess => Problem.DelegationRightMissingPackageAccess,
-            DetailCodeExternal.MissingRoleAccess => Problem.DelegationRightMissingRoleAccess,
-            DetailCodeExternal.MissingDelegationAccess => Problem.DelegationRightMissingDelegationAccess,
-            DetailCodeExternal.MissingSrrRightAccess => Problem.DelegationRightMissingSrrRightAccess,
-            DetailCodeExternal.InsufficientAuthenticationLevel => Problem.DelegationRightInsufficientAuthenticationLevel,
-            DetailCodeExternal.AccessListValidationFail => Problem.DelegationRightAccessListValidationFail,
-            DetailCodeExternal.ResourceNotDelegable => Problem.DelegationRightResourceNotDelegable,
-            DetailCodeExternal.ResourceIsMaskinPortenSchema => Problem.DelegationRightResourceIsMaskinPortenSchema,
-            _ => Problem.UnableToDoDelegationCheck
-        };
+        ProblemDescriptor descriptor = SelectRightsProblemDescriptor(errors);
 
         // Group every blocking reason by the resource id it belongs to and carry the structured list
         // (resource id + its distinct codes) as a JSON string, so all resources/codes end up in this one
@@ -285,6 +275,96 @@ public class DelegationHelper(
         ]);
 
         return descriptor.Create(extensionData);
+    }
+
+    /// <summary>
+    /// Selects the single headline problem descriptor for a set of not-delegable rights, from the first
+    /// blocking reason code (positive codes are ignored; see <see cref="IsBlockingReason"/>).
+    /// </summary>
+    public static ProblemDescriptor SelectRightsProblemDescriptor(List<DetailExternal>? errors)
+    {
+        if (errors is null || errors.Count == 0)
+        {
+            return Problem.UnableToDoDelegationCheck;
+        }
+
+        List<DetailExternal> blockingErrors = errors.Where(e => IsBlockingReason(e.Code)).ToList();
+        if (blockingErrors.Count == 0)
+        {
+            blockingErrors = errors;
+        }
+
+        return blockingErrors[0].Code switch
+        {
+            DetailCodeExternal.MissingPackageAccess => Problem.DelegationRightMissingPackageAccess,
+            DetailCodeExternal.MissingRoleAccess => Problem.DelegationRightMissingRoleAccess,
+            DetailCodeExternal.MissingDelegationAccess => Problem.DelegationRightMissingDelegationAccess,
+            DetailCodeExternal.MissingSrrRightAccess => Problem.DelegationRightMissingSrrRightAccess,
+            DetailCodeExternal.InsufficientAuthenticationLevel => Problem.DelegationRightInsufficientAuthenticationLevel,
+            DetailCodeExternal.AccessListValidationFail => Problem.DelegationRightAccessListValidationFail,
+            DetailCodeExternal.ResourceNotDelegable => Problem.DelegationRightResourceNotDelegable,
+            DetailCodeExternal.ResourceIsMaskinPortenSchema => Problem.DelegationRightResourceIsMaskinPortenSchema,
+            _ => Problem.UnableToDoDelegationCheck
+        };
+    }
+
+    /// <summary>
+    /// Combines several problems into a single <see cref="ProblemInstance"/> under the given headline
+    /// descriptor, so failures from both rights and access packages can be reported together. Extension
+    /// members are unioned; when the same key appears on more than one problem and both values are JSON
+    /// arrays (e.g. "delegationReasons"), the arrays are concatenated so nothing is lost.
+    /// </summary>
+    public static ProblemInstance CombineProblems(ProblemDescriptor headline, params ProblemInstance[] problems)
+    {
+        Dictionary<string, string> merged = new(StringComparer.Ordinal);
+
+        foreach (ProblemInstance problem in problems)
+        {
+            foreach (KeyValuePair<string, string> extension in problem.Extensions)
+            {
+                if (merged.TryGetValue(extension.Key, out string? existing))
+                {
+                    merged[extension.Key] = TryConcatJsonArrays(existing, extension.Value, out string? combined) ? combined : existing;
+                }
+                else
+                {
+                    merged[extension.Key] = extension.Value;
+                }
+            }
+        }
+
+        if (merged.Count == 0)
+        {
+            return headline.Create();
+        }
+
+        return headline.Create(ProblemExtensionData.Create([.. merged.Select(kv => new KeyValuePair<string, string>(kv.Key, kv.Value))]));
+    }
+
+    /// <summary>
+    /// Concatenates two JSON-array strings into one. Returns false when either value is not a JSON array.
+    /// </summary>
+    private static bool TryConcatJsonArrays(string first, string second, out string? combined)
+    {
+        combined = null;
+        if (JsonNode.Parse(first) is not JsonArray firstArray || JsonNode.Parse(second) is not JsonArray secondArray)
+        {
+            return false;
+        }
+
+        JsonArray result = [];
+        foreach (JsonNode? node in firstArray)
+        {
+            result.Add(node is null ? null : JsonNode.Parse(node.ToJsonString()));
+        }
+
+        foreach (JsonNode? node in secondArray)
+        {
+            result.Add(node is null ? null : JsonNode.Parse(node.ToJsonString()));
+        }
+
+        combined = result.ToJsonString();
+        return true;
     }
 
     /// <summary>
