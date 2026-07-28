@@ -346,6 +346,90 @@ namespace Altinn.Platform.Authentication.Tests.Controllers
             Assert.True(result.Links.Next is null);
         }
 
+        /// <summary>
+        /// Regression test for #1916.
+        /// </summary>
+        /// <remarks>
+        /// System user 65055192 is owned by org 123357789, which resolves by org number to partyId 700000 —
+        /// a party that deliberately does not exist in parties.json, so the lookup by partyId returns null.
+        /// That models production, where the lookup by partyId hits an endpoint requiring a user context and
+        /// fails for system users while the lookup by org number succeeds. The endpoint must not depend on it.
+        /// </remarks>
+        [Fact]
+        public async Task GetClientsDelegatedToSystemUser_PartyNotResolvableById_ReturnsOk()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=65055192-f4a9-4b47-bc24-46c4b97081c1");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+            ClientInfoPaginated<ClientInfo>? result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
+            Assert.NotNull(result);
+            Assert.True(result.Items.Count() > 0);
+        }
+
+        /// <summary>
+        /// Regression test for #1916: the reported repro used a Maskinporten system user token exchanged for
+        /// an Altinn token. Such a principal has no userid claim, so nothing on this path may require one.
+        /// </summary>
+        [Fact]
+        public async Task GetClientsDelegatedToSystemUser_SystemUserToken_ReturnsOk()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            Guid callingSystemUser = new("2ee2e3c0-3f2a-4a37-a5b2-1c9d4e6f8a01");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/clients/?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetSystemUserToken(callingSystemUser, "altinn:clientdelegations.read", now: TestTime));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+            ClientInfoPaginated<ClientInfo>? result = JsonSerializer.Deserialize<ClientInfoPaginated<ClientInfo>>(await clientListResponse.Content.ReadAsStringAsync(), _options);
+
+            Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
+            Assert.NotNull(result);
+            Assert.True(result.Items.Count() > 0);
+        }
+
+        /// <summary>
+        /// Regression test for #1916: the DELETE endpoint was reported alongside GET and must also work
+        /// without a user context.
+        /// </summary>
+        [Fact]
+        public async Task RemoveClientFromSystemUser_SystemUserToken_ReturnsOk()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            Guid callingSystemUser = new("2ee2e3c0-3f2a-4a37-a5b2-1c9d4e6f8a01");
+            Guid clientId = new("fd9d93c7-1dd7-45bc-9772-6ba977b3cd36");
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Delete, $"/authentication/api/v1/enduser/systemuser/clients/?agent=b8d4d4d9-680b-4905-90c1-47ac5ff0c0a4&client={clientId}");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetSystemUserToken(callingSystemUser, "altinn:clientdelegations.write", now: TestTime));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.OK, clientListResponse.StatusCode);
+        }
+
+        /// <summary>
+        /// The agents endpoint dereferenced PartyUuid without checking it was set. Org 123557789 resolves to a
+        /// party that has no PartyUuid, which must be rejected rather than throwing.
+        /// </summary>
+        [Fact]
+        public async Task GetAllAgentSystemUsersForParty_PartyWithoutUuid_ReturnsUnauthorized()
+        {
+            // Arrange
+            HttpClient client = CreateClient();
+
+            HttpRequestMessage clientListRequest = new(HttpMethod.Get, $"/authentication/api/v1/enduser/systemuser/agents?party=123557789");
+            clientListRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", PrincipalUtil.GetClientDelegationToken(1337, null, "altinn:clientdelegations.read", 3, TestTime));
+            HttpResponseMessage clientListResponse = await client.SendAsync(clientListRequest, HttpCompletionOption.ResponseContentRead);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, clientListResponse.StatusCode);
+        }
+
         [Fact]
         public async Task GetClientsDelegatedToSystemUser_ValidRequest_Returns_NoClients()
         {

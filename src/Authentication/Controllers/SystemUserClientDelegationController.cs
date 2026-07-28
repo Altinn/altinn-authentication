@@ -136,7 +136,7 @@ namespace Altinn.Platform.Authentication.Controllers
                 return Forbid();
             }
 
-            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyId, party.PartyUuid.Value, agent);
+            var result = await SystemUserService.GetListOfDelegationsForAgentSystemUser(party.PartyUuid.Value, agent);
 
             // If the result is a problem (not 200 OK), return it directly
             if (result.IsProblem)
@@ -297,6 +297,11 @@ namespace Altinn.Platform.Authentication.Controllers
                     Detail = $"No associated party information found for organisation {party}",
                     Status = 404
                 });
+            }
+
+            if (!partyInfo.PartyUuid.HasValue)
+            {
+                return Unauthorized();
             }
 
             bool isAuthorized = await AuthorizeResourceAccess(ClientDelegationResource, partyInfo.PartyUuid.Value, User, "read");
