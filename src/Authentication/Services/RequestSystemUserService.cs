@@ -63,6 +63,11 @@ public class RequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
+        }
+
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
         if (valRef.IsProblem)
         {
@@ -177,6 +182,11 @@ public class RequestSystemUserService(
         if (systemInfo is null)
         {
             return Problem.SystemIdNotFound;
+        }
+
+        if (systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
         }
 
         Result<bool> valRef = await ValidateExternalRequestId(externalRequestId);
