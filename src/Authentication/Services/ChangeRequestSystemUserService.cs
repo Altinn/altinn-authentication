@@ -526,6 +526,11 @@ public class ChangeRequestSystemUserService(
             return Problem.SystemIdNotFound;
         }
 
+        if (createNew && systemInfo.IsDeleted)
+        {
+            return Problem.SystemIsDeleted;
+        }
+
         Result<bool> valVendor = ValidateVendorOrgNo(vendorOrgNo, systemInfo);
         if (valVendor.IsProblem)
         {

@@ -496,4 +496,10 @@ public static class Problem
     /// </summary>
     public static ProblemDescriptor AgentSystemUser_ClientMissingAccessPackages { get; }
         = _factory.Create(80, HttpStatusCode.BadRequest, "Client does not have the accesspackages the agent system user requires");
+
+    /// <summary>
+    /// Gets a <see cref="ProblemDescriptor"/>.
+    /// </summary>
+    public static ProblemDescriptor SystemIsDeleted { get; }
+        = _factory.Create(81, HttpStatusCode.BadRequest, "The Registered System is deleted and cannot be used to create new requests.");
 }
