@@ -255,6 +255,16 @@ namespace Altinn.Platform.Authentication.Tests.Clients
             Assert.DoesNotContain("agent=", url);
         }
 
+        [Theory]
+        [InlineData("http://localhost:5117/accessmanagement/api/v2/")]
+        [InlineData("http://localhost:5117/accessmanagement/api/v1")]
+        public void Constructor_EndpointNotEndingInV1Slash_Throws(string apiEndpoint)
+        {
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                () => CreateClient(CreateHttpClient(HttpStatusCode.OK, string.Empty), apiEndpoint: apiEndpoint));
+            Assert.Contains("/v1/", ex.Message);
+        }
+
         [Fact]
         public async Task GetClientsForFacilitator_FlagOn_ParsesV2PayloadIncludingNewResourcesField()
         {
@@ -307,7 +317,7 @@ namespace Altinn.Platform.Authentication.Tests.Clients
             return new HttpClient(handlerMock.Object);
         }
 
-        private AccessManagementClient CreateClient(HttpClient httpClient, bool clientDelegationV2 = false)
+        private AccessManagementClient CreateClient(HttpClient httpClient, bool clientDelegationV2 = false, string apiEndpoint = "http://localhost:5117/accessmanagement/api/v1/")
         {
             DefaultHttpContext httpContext = new();
             httpContext.Request.Headers.Authorization = "Bearer unittest-token";
@@ -317,7 +327,7 @@ namespace Altinn.Platform.Authentication.Tests.Clients
 
             IOptions<AccessManagementSettings> accessManagementSettings = Options.Create(new AccessManagementSettings
             {
-                ApiAccessManagementEndpoint = "http://localhost:5117/accessmanagement/api/v1/"
+                ApiAccessManagementEndpoint = apiEndpoint
             });
 
             IOptions<PlatformSettings> platformSettings = Options.Create(new PlatformSettings

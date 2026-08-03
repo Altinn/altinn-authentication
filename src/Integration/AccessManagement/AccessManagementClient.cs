@@ -87,7 +87,16 @@ public class AccessManagementClient : IAccessManagementClient
 
         // The configured endpoint targets api/v1/ (e.g. ".../accessmanagement/api/v1/"). Resolve the
         // sibling v2 client-delegations base once so the version bump is a pure prefix swap at call time.
-        _clientDelegationsBaseUrlV2 = new Uri(_client.BaseAddress!, "../v2/enduser/clientdelegations").ToString();
+        // The "../v2/" relative resolution only lands on the right path when the base ends in "/v1/"
+        // (the trailing slash makes "v1" a segment we can step out of), so guard the assumption.
+        if (!_client.BaseAddress!.AbsolutePath.EndsWith("/v1/", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"{nameof(AccessManagementSettings.ApiAccessManagementEndpoint)} must end with '/v1/' " +
+                $"for the client-delegation v2 route to be derived correctly, but was '{_client.BaseAddress}'.");
+        }
+
+        _clientDelegationsBaseUrlV2 = new Uri(_client.BaseAddress, "../v2/enduser/clientdelegations").ToString();
     }
 
     /// <summary>
