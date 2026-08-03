@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
@@ -47,6 +48,14 @@ public class AccessManagementClient : IAccessManagementClient
         new() { PropertyNameCaseInsensitive = true };
     private readonly IWebHostEnvironment _env;
     private readonly IAccessTokenGenerator _accessTokenGenerator;
+    private readonly IFeatureManager _featureManager;
+
+    /// <summary>
+    /// Absolute base URL for the client-delegation endpoints on the Access Management v2 API, derived
+    /// from the configured (v1) endpoint. Only used when the <see cref="AccessManagementFeatureFlags.ClientDelegationApiV2"/>
+    /// feature flag is enabled.
+    /// </summary>
+    private readonly string _clientDelegationsBaseUrlV2;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LookupClient"/> class
@@ -62,7 +71,8 @@ public class AccessManagementClient : IAccessManagementClient
         IOptions<AccessManagementSettings> accessManagementSettings,
         IOptions<PlatformSettings> platformSettings,
         IWebHostEnvironment env,
-        IAccessTokenGenerator accessTokenGenerator)
+        IAccessTokenGenerator accessTokenGenerator,
+        IFeatureManager featureManager)
     {
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
@@ -73,6 +83,28 @@ public class AccessManagementClient : IAccessManagementClient
         _serializerOptions.Converters.Add(new JsonStringEnumConverter());
         _env = env;
         _accessTokenGenerator = accessTokenGenerator;
+        _featureManager = featureManager;
+
+        // The configured endpoint targets api/v1/ (e.g. ".../accessmanagement/api/v1/"). Resolve the
+        // sibling v2 client-delegations base once so the version bump is a pure prefix swap at call time.
+        _clientDelegationsBaseUrlV2 = new Uri(_client.BaseAddress!, "../v2/enduser/clientdelegations").ToString();
+    }
+
+    /// <summary>
+    /// Resolves the client-delegation route for the current request based on the
+    /// <see cref="AccessManagementFeatureFlags.ClientDelegationApiV2"/> feature flag.
+    /// v2 both moves the endpoints under api/v2 and renames the <c>from</c>/<c>to</c> query parameters
+    /// to <c>client</c>/<c>agent</c>.
+    /// </summary>
+    /// <returns>
+    /// The endpoint base path plus the version-specific query-parameter names for the client and agent parties.
+    /// </returns>
+    private async Task<(string BasePath, string ClientParam, string AgentParam)> ResolveClientDelegationRouteAsync()
+    {
+        bool useV2 = await _featureManager.IsEnabledAsync(AccessManagementFeatureFlags.ClientDelegationApiV2);
+        return useV2
+            ? (_clientDelegationsBaseUrlV2, "client", "agent")
+            : ("enduser/clientdelegations", "from", "to");
     }
 
     /// <inheritdoc/>
@@ -283,7 +315,8 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"enduser/clientdelegations/agents?party={partyUuId}&to={systemUserId}&cascade={cascade}";
+            var (basePath, _, agentParam) = await ResolveClientDelegationRouteAsync();
+            string endpointUrl = $"{basePath}/agents?party={partyUuId}&{agentParam}={systemUserId}&cascade={cascade}";
 
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl, null);
@@ -555,7 +588,8 @@ public class AccessManagementClient : IAccessManagementClient
         
         try
         {
-            string endpointUrl = $"enduser/clientdelegations/agents/accesspackages?party={provider}&from={client}&to={systemUser}";
+            var (basePath, clientParam, agentParam) = await ResolveClientDelegationRouteAsync();
+            string endpointUrl = $"{basePath}/agents/accesspackages?party={provider}&{clientParam}={client}&{agentParam}={systemUser}";
             HttpResponseMessage response = await _client.PostAsync(token, endpointUrl, JsonContent.Create(batch));
 
             if (response.IsSuccessStatusCode && response.StatusCode == HttpStatusCode.OK)
@@ -584,7 +618,8 @@ public class AccessManagementClient : IAccessManagementClient
 
         try
         {
-            string endpointUrl = $"enduser/clientdelegations/agents/clients?party={provider}&from={client}&to={systemuser}&cascade=true";
+            var (basePath, clientParam, agentParam) = await ResolveClientDelegationRouteAsync();
+            string endpointUrl = $"{basePath}/agents/clients?party={provider}&{clientParam}={client}&{agentParam}={systemuser}&cascade=true";
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
             if (response.IsSuccessStatusCode)
@@ -607,7 +642,8 @@ public class AccessManagementClient : IAccessManagementClient
     {
         try
         {
-            string endpointUrl = $"enduser/clientdelegations/agents?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&to={HttpUtility.UrlEncode(systemUserId.ToString())}&cascade=true";
+            var (basePath, _, agentParam) = await ResolveClientDelegationRouteAsync();
+            string endpointUrl = $"{basePath}/agents?party={HttpUtility.UrlEncode(facilitatorId.ToString())}&{agentParam}={HttpUtility.UrlEncode(systemUserId.ToString())}&cascade=true";
             string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
             HttpResponseMessage response = await _client.DeleteAsync(token, endpointUrl);
 
@@ -702,7 +738,8 @@ public class AccessManagementClient : IAccessManagementClient
             return Problem.Reportee_Orgno_NotFound;
         }
 
-        string endpointUrl = $"enduser/clientdelegations/clients?party={facilitatorId}";
+        var (basePath, _, _) = await ResolveClientDelegationRouteAsync();
+        string endpointUrl = $"{basePath}/clients?party={facilitatorId}";
 
         if (packages != null && packages.Count > 0)
         {
@@ -756,8 +793,9 @@ public class AccessManagementClient : IAccessManagementClient
     /// <inheritdoc />
     public async Task<Result<List<ClientDelegationDto>>> GetClientDelegationsForAgent(Guid systemUserId, Guid provider, CancellationToken cancellationToken = default)
     {
-        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;        
-        string endpointUrl = $"enduser/clientdelegations/agents/accesspackages?party={provider}&to={systemUserId}";
+        string token = JwtTokenUtil.GetTokenFromContext(_httpContextAccessor.HttpContext!, _platformSettings.JwtCookieName!)!;
+        var (basePath, _, agentParam) = await ResolveClientDelegationRouteAsync();
+        string endpointUrl = $"{basePath}/agents/accesspackages?party={provider}&{agentParam}={systemUserId}";
 
         try
         {
