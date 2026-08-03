@@ -132,17 +132,17 @@ namespace Altinn.Platform.Authentication.Tests.Clients
         {
             // Arrange
             HttpRequestMessage? captured = null;
-            var client = CreateClient(CreateHttpClient(HttpStatusCode.OK, string.Empty, capture: r => captured = r));
-            Guid provider = Guid.NewGuid(), agent = Guid.NewGuid(), systemuser = Guid.NewGuid();
+            var sut = CreateClient(CreateHttpClient(HttpStatusCode.OK, string.Empty, capture: r => captured = r));
+            Guid provider = Guid.NewGuid(), client = Guid.NewGuid(), systemuser = Guid.NewGuid();
 
             // Act
-            await client.RevokeClientFromAgentSystemUser(provider, agent, systemuser, CancellationToken.None);
+            await sut.RevokeClientFromAgentSystemUser(provider, client, systemuser, CancellationToken.None);
 
             // Assert
             Assert.NotNull(captured);
             string url = captured!.RequestUri!.ToString();
             Assert.Contains("/accessmanagement/api/v1/enduser/clientdelegations/agents/clients", url);
-            Assert.Contains($"from={agent}", url);
+            Assert.Contains($"from={client}", url);
             Assert.Contains($"to={systemuser}", url);
         }
 
@@ -151,17 +151,17 @@ namespace Altinn.Platform.Authentication.Tests.Clients
         {
             // Arrange
             HttpRequestMessage? captured = null;
-            var client = CreateClient(CreateHttpClient(HttpStatusCode.OK, string.Empty, capture: r => captured = r), clientDelegationV2: true);
-            Guid provider = Guid.NewGuid(), agent = Guid.NewGuid(), systemuser = Guid.NewGuid();
+            var sut = CreateClient(CreateHttpClient(HttpStatusCode.OK, string.Empty, capture: r => captured = r), clientDelegationV2: true);
+            Guid provider = Guid.NewGuid(), client = Guid.NewGuid(), systemuser = Guid.NewGuid();
 
             // Act
-            await client.RevokeClientFromAgentSystemUser(provider, agent, systemuser, CancellationToken.None);
+            await sut.RevokeClientFromAgentSystemUser(provider, client, systemuser, CancellationToken.None);
 
             // Assert
             Assert.NotNull(captured);
             string url = captured!.RequestUri!.ToString();
             Assert.Contains("/accessmanagement/api/v2/enduser/clientdelegations/agents/clients", url);
-            Assert.Contains($"client={agent}", url);
+            Assert.Contains($"client={client}", url);
             Assert.Contains($"agent={systemuser}", url);
             Assert.DoesNotContain("/api/v1/", url);
         }
